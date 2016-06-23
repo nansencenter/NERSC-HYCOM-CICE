@@ -1,0 +1,72 @@
+module cice_comp_esmf
+USE ESMF
+IMPLICIT NONE
+
+!=======================================================================
+
+contains
+
+!=======================================================================
+subroutine cice_setservices(comp, rc)
+    type(ESMF_GridComp)  :: comp
+    integer, intent(out) :: rc
+    rc = ESMF_SUCCESS
+    print *, "In ice register routine"
+    ! Register the callback routines.
+
+    call ESMF_GridCompSetEntryPoint(comp, ESMF_METHOD_INITIALIZE, &
+      ice_init_esmf, phase=1, rc=rc)
+    if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
+
+    call ESMF_GridCompSetEntryPoint(comp, ESMF_METHOD_RUN, &
+      ice_run_esmf, phase=1, rc=rc)
+    if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
+
+    call ESMF_GridCompSetEntryPoint(comp, ESMF_METHOD_FINALIZE, &
+      ice_final_esmf, phase=1, rc=rc)
+    if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
+
+end subroutine
+
+subroutine ice_init_esmf(comp, import_state, export_state, EClock, rc)
+use CICE_InitMod
+implicit none
+! !ARGUMENTS:
+    type(ESMF_GridComp)          :: comp
+    type(ESMF_State)             :: import_state
+    type(ESMF_State)             :: export_state
+    type(ESMF_Clock)             :: EClock
+    integer, intent(out)         :: rc
+    call CICE_Init()
+end subroutine
+
+
+subroutine ice_run_esmf(comp, import_state, export_state, EClock, rc)
+use CICE_RunMod
+implicit none
+! !ARGUMENTS:
+    type(ESMF_GridComp)          :: comp
+    type(ESMF_State)             :: import_state
+    type(ESMF_State)             :: export_state
+    type(ESMF_Clock)             :: EClock
+    integer, intent(out)         :: rc
+    ! Use import state
+    call CICE_Run()
+    ! Assign to export state
+end subroutine
+
+subroutine ice_final_esmf(comp, import_state, export_state, EClock, rc)
+use CICE_FinalMod
+implicit none
+! !ARGUMENTS:
+    type(ESMF_GridComp)          :: comp
+    type(ESMF_State)             :: import_state
+    type(ESMF_State)             :: export_state
+    type(ESMF_Clock)             :: EClock
+    integer, intent(out)         :: rc
+    ! Use import state
+    call CICE_Finalize()
+    ! A
+end subroutine
+
+end module
