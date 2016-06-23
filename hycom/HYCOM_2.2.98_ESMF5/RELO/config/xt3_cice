@@ -1,0 +1,49 @@
+#
+# ---------------------------------------------------------------------
+# common definitions for Cray XT3 ESMF/MPI real*8
+# see http://www.esmf.ucar.edu/ for ESMF
+# HYCOM+CICE using ESMF.
+# ---------------------------------------------------------------------
+#
+# MACROS      DESCRIPTIONS:
+#
+# FC:         Fortran 90 compiler.
+# FCFFLAGS:   Fortran 90 compilation flags.
+# CC:         C compiler.
+# CCFLAGS:    C compilation flags.
+# CPP:        cpp preprocessor (may be implied by FC).
+# CPPFLAGS:   cpp -D macro flags.
+# LD:         Loader.
+# LDFLAGS:    Loader flags.
+# EXTRALIBS:  Extra local libraries (if any).
+#
+FC            = ftn
+INCLUDES      = -I$(MPI_HOME)/include -I${ESMF_DIR}/mod/modO -I${ESMF_DIR}/include -I${CICE_DIR}/esmf/compile
+FCFFLAGS      =	-target=catamount -fastsse -byteswapio -r8 $(INCLUDES)
+
+CC            =	cc
+CCFLAGS       =	-O 
+CPP           =	cpp -P
+CPPFLAGS      =	-DUSE_ESMF -DESMF_CURVILINEAR -DXT3 -DREAL8 -DMPI -DSERIAL_IO -DTIMER
+LD            =	$(FC)
+LDFLAGS       =	$(FCFFLAGS) 
+EXTRALIBS     = -L/usr/local/usp/PETtools/netcdf-3.6.1/lib_yod -lnetcdf -L${ESMF_DIR}/lib/libO/ -lesmf -lrt -lC -lc -lnspgc -lpgc -lm -lgcc -lc -lgcc
+
+#
+# --- generic make definitions
+#
+SHELL         = /bin/sh
+RM            = \rm -f
+
+#
+# rules.
+#
+
+.c.o:
+	$(CC) $(CPPFLAGS) $(CCFLAGS)  -c $*.c
+
+.f.o:
+	$(FC)             $(FCFFLAGS) -c $*.f
+
+.F.o:
+	$(FC) $(CPPFLAGS) $(FCFFLAGS) -c $*.F

@@ -1,0 +1,45 @@
+#
+# ---------------------------------------------------------------------
+# common definitions for Sun E10000, OpenMP, real*8, 64-bit
+# ---------------------------------------------------------------------
+#
+# MACROS      DESCRIPTIONS:
+#
+# FC:         Fortran 90 compiler.
+# FCFFLAGS:   Fortran 90 compilation flags.
+# CC:         C compiler.
+# CCFLAGS:    C compilation flags.
+# CPP:        cpp preprocessor (may be implied by FC).
+# CPPFLAGS:   cpp -D macro flags.
+# LD:         Loader.
+# LDFLAGS:    Loader flags.
+# EXTRALIBS:  Extra local libraries (if any).
+#
+FC            =	f95
+FCFFLAGS      =	-g -fast -xarch=native64 -explicitpar -stackvar -mp=openmp -xpp=cpp -xtypemap=real:64,double:64,integer:32
+CC            =	cc
+CCFLAGS       =	-g -fast -xarch=native64
+CPP           =	/usr/ccs/lib/cpp -P
+CPPFLAGS      =	-DSUN -DREAL8
+LD            =	$(FC)
+LDFLAGS       =	$(FCFFLAGS)
+EXTRALIBS     =
+
+#
+# --- generic make definitions
+#
+SHELL         = /bin/sh
+RM            = \rm -f
+
+#
+# rules.
+#
+
+.c.o:
+	$(CC) $(CPPFLAGS) $(CCFLAGS)  -c $*.c
+
+.f.o:
+	$(FC)             $(FCFFLAGS) -c $*.f
+
+.F.o:
+	$(FC) $(CPPFLAGS) $(FCFFLAGS) -c $*.F

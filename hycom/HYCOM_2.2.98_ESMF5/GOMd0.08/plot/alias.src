@@ -1,0 +1,40 @@
+#
+# --- aliases for HYCOM/MICOM plotting.
+#
+# --- Usage:  xp2yy plot.IN   (creates plot.log and plot.ps)
+#
+# --- hp2ps  hycomproc to PostScript
+# --- hp2gv  hycomproc to PostScript to GhostView (on screen display)
+# --- mp2ps  micomproc to PostScript
+# --- mp2gv  micomproc to PostScript to GhostView (on screen display)
+# --- fp2ps  fieldproc to PostScript
+# --- fp2gv  fieldproc to PostScript to GhostView (on screen display)
+#
+# --- Usage:  xp2x  plot.IN   (creates plot.log and X11 window)
+#
+# --- hp2x   hycomproc to X11
+# --- mp2x   micomproc to X11
+# --- fp2x   fieldproc to X11
+#
+alias hp2ps '(time env NCARG_GKS_PS=\!^:r.ps ./src/hycomproc < \!^ >&! \!^:r.log)'
+alias hp2gv '(time env NCARG_GKS_PS=\!^:r.ps ./src/hycomproc < \!^ >&! \!^:r.log; \\
+              ghostview -portrait  -magstep 0 \!^:r.ps)'
+#
+alias mp2ps '(time env NCARG_GKS_PS=\!^:r.ps ./src/micomproc < \!^ >&! \!^:r.log)'
+alias mp2gv '(time env NCARG_GKS_PS=\!^:r.ps ./src/micomproc < \!^ >&! \!^:r.log; \\
+              ghostview -portrait  -magstep 0 \!^:r.ps)'
+#
+alias fp2ps '(time env NCARG_GKS_PS=\!^:r.ps ./src/fieldproc < \!^ >&! \!^:r.log)'
+alias fp2gv '(time env NCARG_GKS_PS=\!^:r.ps ./src/fieldproc < \!^ >&! \!^:r.log; \\
+              ghostview -portrait  -magstep 0 \!^:r.ps)'
+#
+alias hp2x  '(./src/hp_x11 < \!^ >&! \!^:r.log)'
+alias mp2x  '(./src/mp_x11 < \!^ >&! \!^:r.log)'
+alias fp2x  '(./src/fp_x11 < \!^ >&! \!^:r.log)'
+#
+# --- tp2ps  hycomtest to PostScript
+# --- tp2gv  hycomtest to PostScript to GhostView (on screen display)
+#
+alias tp2ps '(time env NCARG_GKS_PS=\!^:r.ps ./src/hycomtest < \!^ >&! \!^:r.log)'
+alias tp2gv '(time env NCARG_GKS_PS=\!^:r.ps ./src/hycomtest < \!^ >&! \!^:r.log; \\
+              ghostview -portrait  -magstep 0 \!^:r.ps)'

@@ -1,0 +1,9 @@
+This tar bundle contains the files needed to run a nested GOMd0.08 case
+with HYCOM version 2.2.98 and CFSR atmospheric forcing (including 10m winds, 
+downward radiation fields and surface pressure).  It assumes that you already 
+have GOMd0.08 configured for the standard expt_06.0 case (version 2.1.20), 
+and most data files are from that case.  However, 30.6 uses CFSR forcing
+and so you also need forcing_cfsrDW_099.tar.gz to replace the old NOGAPS
+forcing.  Note that many blkdat.input variables for expt_30.6 are set at 
+different values than in 06.0.  The new values are nearer to what we now 
+typically use at 1/12 degree.

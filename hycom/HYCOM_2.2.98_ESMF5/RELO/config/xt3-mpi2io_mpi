@@ -1,0 +1,48 @@
+#
+# ---------------------------------------------------------------------
+# common definitions for Cray XT3 MPI real*8
+# version that uses MPI-2 I/O.
+# ---------------------------------------------------------------------
+#
+# MACROS      DESCRIPTIONS:
+#
+# FC:         Fortran 90 compiler.
+# FCFFLAGS:   Fortran 90 compilation flags.
+# CC:         C compiler.
+# CCFLAGS:    C compilation flags.
+# CPP:        cpp preprocessor (may be implied by FC).
+# CPPFLAGS:   cpp -D macro flags.
+# LD:         Loader.
+# LDFLAGS:    Loader flags.
+# EXTRALIBS:  Extra local libraries (if any).
+#
+FC            = ftn
+INCLUDES      = -I$(MPI_HOME)/include
+FCFFLAGS      =	-target=catamount -fastsse -r8 $(INCLUDES)
+
+CC            =	cc
+CCFLAGS       =	-O 
+CPP           =	cpp -P
+CPPFLAGS      =	-DXT3 -DREAL8 -DMPI -DENDIAN_IO -DTIMER
+LD            =	$(FC)
+LDFLAGS       =	$(FCFFLAGS) 
+EXTRALIBS     = 
+
+#
+# --- generic make definitions
+#
+SHELL         = /bin/sh
+RM            = \rm -f
+
+#
+# rules.
+#
+
+.c.o:
+	$(CC) $(CPPFLAGS) $(CCFLAGS)  -c $*.c
+
+.f.o:
+	$(FC)             $(FCFFLAGS) -c $*.f
+
+.F.o:
+	$(FC) $(CPPFLAGS) $(FCFFLAGS) -c $*.F

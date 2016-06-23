@@ -1,0 +1,63 @@
+#
+# ---------------------------------------------------------------------
+# common definitions for IBM SMP Power5, MPI, real*8, 64-bit
+# ---------------------------------------------------------------------
+#
+# MACROS      DESCRIPTIONS:
+#
+# FC:         Fortran 90 compiler.
+# FCFFLAGS:   Fortran 90 compilation flags.
+# CC:         C compiler.
+# CCFLAGS:    C compilation flags.
+# CPP:        cpp preprocessor (may be implied by FC).
+# CPPFLAGS:   cpp -D macro flags.
+# LD:         Loader.
+# LDFLAGS:    Loader flags.
+# EXTRALIBS:  Extra local libraries (if any).
+#
+FC            =	/usr/bin/mpxlf95_r
+#FCFFLAGS      =	-qfixed -O3 -qstrict -qarch=pwr5 -qtune=pwr5 -qcache=auto -qspillsize=32000 -qrealsize=8 -qintsize=4 -q64 -qwarn64
+#FCFFLAGS      =	-b64 -q64 -qrealsize=8 -O3 -qstrict -qarch=auto -qtune=auto -qcache=auto -qsmp=omp -qmaxmem=-1 -qnosave -qfixed
+FCFFLAGS      =	-b64 -q64 -qrealsize=8 -O3 -qstrict -qarch=auto -qtune=auto -qcache=auto -qsmp=omp -qmaxmem=-1 -qnosave -qfixed
+#F90FLAGS      =	-b64 -q64 -qrealsize=8 -O3 -qstrict -qarch=auto -qtune=auto -qcache=auto -qsmp=omp -qmaxmem=-1 -qnosave -qsuffix=f=f90 -qfree=f90 
+#F90FLAGS      =	-b64 -q64 -qrealsize=8 -O3 -qstrict -qarch=auto -qcache=auto -qsmp=omp -qmaxmem=-1 -qnosave -qsuffix=f=f90 -qfree=f90 
+F90FLAGS      =	-b64 -q64 -qrealsize=8 -O3 -qstrict -qarch=auto -qtune=auto -qcache=auto -qsmp=omp -qmaxmem=-1 -qnosave -qsuffix=f=f90 -qfree=f90 
+#LD0FLAGS      =	-b64 -q64 -qrealsize=8 -O3 -qstrict -qsmp=omp -qmaxmem=-1 -qnosave
+LD0FLAGS      =	-b64 -q64 -qrealsize=8 -O3 -qstrict -qsmp=omp -qmaxmem=-1 -qnosave
+#FCFFLAGS      =	-b64 -q64 -qrealsize=8 -O3 -qstrict -qarch=auto -qtune=auto -qcache=auto -qsmp=omp -qmaxmem=-1 -qnosave 
+#FCFFLAGS      =	-d -b64 -q64 -qrealsize=8 -qarch=auto -qtune=auto -qcache=auto -O3 -qstrict -qsuppress=1501-245 
+#CC            =	mpcc
+CC            =	mpcc_r
+CCFLAGS       =	-q64
+#CPP           =	/usr/lib/cpp -P
+CPP           =	/usr/lib/cpp 
+CPPFLAGS      =	-DAIX -DREAL8 -DMPI -DSERIAL_IO -DTIMER
+LD            =	$(FC)
+EXTRALDFLAGS  =	-Wl,-btextpsize:64K -Wl,-bdatapsize:64K -Wl,-bstackpsize:64K -bloadmap:map.load
+LDFLAGS       =	$(LD0FLAGS) $(EXTRALDFLAGS)
+#LDFLAGS       =	$(FCFFLAGS) -b64 -q64 -qrealsize=8
+EXTRALIBS     = -lessl -L/usr/local/netcdf/netcdf-3.6.1/lib/ -lnetcdf -L/usr/local/fftw/fftw-3.1.2/lib/ -lfftw3
+
+#
+# --- generic make definitions
+#
+SHELL         = /bin/sh
+RM            = \rm -f
+
+#
+# rules.
+#
+
+.c.o:
+	$(CC) $(CPPFLAGS) $(CCFLAGS)  -c $*.c
+
+.f.o:
+	$(FC)             $(FCFFLAGS) -c $*.f
+.F.o:
+	$(FC) $(CPPFLAGS) $(FCFFLAGS) -c $*.F
+#.F.o:
+#	$(RM) $<.f
+#	$(CPP) $(CPPFLAGS) $< | sed -e '/^ *$$/d' > $<.f
+#	$(FC) $(FCFFLAGS) -c $<.f
+#	-\mv $<.o $*.o
+#	$(RM) $<.f
