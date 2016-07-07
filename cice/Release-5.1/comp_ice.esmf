@@ -9,7 +9,10 @@ setenv SITE hexagon   # also works for mustang
 
 ### SYSTEM_USERDIR is predefined on ORNL machines
 #setenv SYSTEM_USERDIR /scratch/eclare/CICE.v5.1  # conejo
-setenv SYSTEM_USERDIR /home/nersc/knutali/Models/Model_tests/cice/Release-5.1/
+#setenv SYSTEM_USERDIR /home/nersc/knutali/Models/Model_tests/cice/Release-5.1/
+setenv SYSTEM_USERDIR `dirname $0` 
+setenv SYSTEM_USERDIR `cd ${SYSTEM_USERDIR} && pwd` 
+echo $SYSTEM_USERDIR
 #setenv SYSTEM_USERDIR /Users/akt/Work/MPAS-CICE/Column_Package/cice_package/run_dirs
 
 ### Grid resolution
@@ -83,7 +86,6 @@ setenv NUMAX 99           # maximum file unit number
 #setenv SRCDIR /usr/projects/climate/eclare/CICE.v5.1/cice  # conejo
 #setenv SRCDIR /Users/akt/Work/MPAS-CICE/Column_Package/cice_package/cice
 setenv SRCDIR /home/nersc/knutali/Models/Model_tests/cice/Release-5.1
-
 setenv EXEDIR $SYSTEM_USERDIR/rundir
                                           if !(-d $EXEDIR) mkdir -p $EXEDIR
 setenv CBLD   $SRCDIR/bld
@@ -103,7 +105,6 @@ endif
 setenv ARCH $ARCH.$SITE
 
 cd $SRCDIR/source
-
 cd $EXEDIR
 
 if !($RES == 'col') then
