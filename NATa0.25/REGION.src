@@ -1,0 +1,70 @@
+#!/bin/bash
+#
+# --- environment variables defining the region and experiment number.
+#
+export R=NATa0.25
+
+# Consistency check. 
+mydir=$(cd $(dirname ${BASH_SOURCE}) && pwd)
+tmp=$(basename $mydir)
+if [ "$tmp" != "${R}" ] ;then
+   echo "Error: Mismatch between path of region $R and path with REGION.src file:${tmp}"
+   exit 1
+fi
+
+# Point to the location of the ALL routines from hycom. Assumed to be in repo location
+export HYCOM_ALL=$mydir/hycom_ALL/hycom_2.2.72_ALL/
+if [ ! -d $HYCOM_ALL ] ; then
+   echo "Error: Can not find HYCOM_ALL location: $HYCOM_ALL"
+   if [[ $- != *i* ]] ; then
+      #echo not interactive
+      exit 1
+   fi
+fi
+
+
+# Point to the location of the MSC routines. TODO: Include in repo?
+export MSCPROGS=/home/nersc/knutali/Models/hycom/MSCPROGS/
+
+
+# PATHS to hycom-supplied ocean climatologies, on specially formatted input files
+export LEVITUS_PATH=/work/shared/nersc/msc/ModelInput/clim/levitus/   
+export PHC_PATH=/work/shared/nersc/msc/ModelInput/clim/PHC/
+export WOA2013_PATH=/work/shared/nersc/msc/ModelInput/clim/WOA2013/hycom_0.25
+
+export SEAWIFS=/work/shared/nersc/msc/ModelInput/clim/seawifs/
+export COADSWIND=/work/shared/nersc/msc/ModelInput/force/wind_ieee/coads/
+export COADSFLUX=/work/shared/nersc/msc/ModelInput/force/flux_ieee/coads/
+export ERA15=/work/shared/nersc/msc/ModelInput/force/era15/monthly/
+export NCEP_CLIM_PATH=/work/shared/nersc/NCEP_Clim/
+export ERA40_CLIM_PATH=/work/shared/nersc/ERA40-Clim/
+export ERA40_PATH=/work/shared/nersc/ERA40/
+export ERAI_PATH=/work/shared/nersc/ERA-I/
+export WOA2005_PATH=/work/shared/nersc/msc/WOA2005/
+export ECNC_PATH=/work/shared/nersc/ECMWFR_T799/
+export NCEP_PATH=/work/shared/nersc/NCEP/
+export ETOPO5_PATH=/work/shared/nersc//msc/ModelInput/bathymetry/ETOPO5/
+export GEBCO_PATH=/work/shared/nersc//msc/ModelInput/bathymetry/GEBCO/
+export IBCAO_PATH=/work/shared/nersc//msc/ModelInput/bathymetry/IBCAO_v3/
+export FES_PATH=/work/shared/nersc/msc/ModelInput/tides/FES2004/
+export CSR_PATH=/work/shared/nersc/msc/ModelInput/tides/CSR/
+export TRIP_PATH=/work/shared/nersc/TRIP/
+export WAM_PATH=/work/shared/nersc/msc/WAM
+export WAMNSEA_PATH=/work/shared/nersc/msc/WAMNSEA/
+export BACKUP_PATH=/migrate/${USER}
+
+
+# These variables sets climatology to use when setting up the model. Sourced by run script
+# Note that NERSC forcing is (for now) also experiment-dependent 
+# (or to be specific: topography dependent)
+#
+#export FN=ecmwf-reanal_7993-mn6hr --        unsafe - needs further work on setup
+#export FN=coads                   -- not so unsafe - needs further work on setup
+#export FN=nersc_old/${E}/
+export FN=nersc_era40/${E}/   # necessary?
+#
+export AO=""  # Air temperature offset
+export PO=""  # precipitation offset
+export FO=""  # flux offset
+export FS=$FN # KAL FS is uhm..
+export OF=""  # Time-invariant flux offset
