@@ -1,0 +1,6 @@
+1.1      # File version
+ 7200.   # EVP time step
+27500.   # EVP ice strength
+ 20.     # EVP ice concentration factor
+120     # EVP nb of subcycles=elastic_tstep/dyn_tstep
+

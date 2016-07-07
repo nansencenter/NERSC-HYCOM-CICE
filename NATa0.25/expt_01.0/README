@@ -1,0 +1,52 @@
+Setup:
+------
+
+Environment:
+------------
+Scratch/data directories are set in EXPT.src. Scratch directories are where
+models run, the preprocess.sh script will copy necessary files to that location
+before running the model. Data directories are where model output is stored. The
+postprocess.sh script will move data files from the scratch directory to the
+data directory.
+
+Note that by sourcing the REGION.src file (in the top-level region directory)
+and the EXPT.src file (in the experiment directory), the shell wil set the
+variables S and D which point to the scratch and data directories respectively.
+type 
+  cd $S  
+or
+  cd $D
+to go to the respective directories.
+
+initialize flag:
+-------------
+Create an empty file called "INITIALIZE" and start the model. 
+
+If yrflag<2 in blkdat.input and this file is present you will start from 
+climatology (if clmflg=2 in blkdat.input). The model will be initialized 
+from the time specified in infile.in.
+
+If yrflag==3 in blkdat.input, this allows you to start from a restart 
+file without considering the value of "dtime" which is kept in the restart 
+file header. This is useful when running a spinup, and then using the resulting
+file to start an experiment with "realistic" forcing (ex era40).
+
+Running jobs :
+--------------
+Before jobs are run the scripts preprocess.sh must be run, this can be set in
+the job queue script. You can also run this script from the experiment
+directory, to make sure you have all data files you need. It should cover most
+of the data files we use. 
+
+If you add new data files for the model, you will have to modify preprocess.sh
+so that the script copies them to the scratch directory. Otherwise you must copy
+them by hand to the scratch directory.
+
+postprocess.sh copies files from the scratch directory to your data directory.
+If you find some files are not copied from the  scratch directory you will have
+to modify postprocess.sh. Also, if a job runs out of time, postprocess.sh will
+not be run. In that case you can run the postprocess.sh script interactively to
+retrieve the files to the data directory.
+
+Job scripts will have to be modified from machine to machine, but the
+preprocess.sh / postprocess.sh scripts should be able to run on all machines.

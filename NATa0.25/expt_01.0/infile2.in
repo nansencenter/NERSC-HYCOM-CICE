@@ -1,0 +1,14 @@
+  1.2	'fversn' = version of inputfile (infile2.in)
+  0 	'randf ' = 1=random forcing, 0= no random forcing
+ 11	'seed  ' = Random forcing seed
+  3.0 	'vslp  ' = Variance in slp
+  1.e-3	'vtaux ' = Variance in tau_x
+  1.e-3	'vtauy ' = Variance in tau_y
+ 10.0 	'vwspd ' = Maximum of the perturbed windspeed allowed
+  5.e-3	'vcloud' = Variance in clouds
+  9.0 	'vtair ' = Variance in air temperature
+  0.0 	'vprcp ' = Variance in precipitation
+  0.0 	'vrlhum' = Variance in relative humidity
+  5.e5 	'scorr ' = Horizontal radius of correlation (meters)
+  5.0 	'tcorr ' = Temporal radius of correlation (days)
+  0   	'prsflg' = 0 uncorr wind/slp, 1= wind from slp, 2=wind from slp limited by wndspd
