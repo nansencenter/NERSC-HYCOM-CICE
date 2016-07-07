@@ -1,0 +1,2 @@
+pgf90             -g -fastsse -byteswapio -tp k8-64 -mcmodel=medium -c roms2grid.f
+pgf90 -g -fastsse -byteswapio -tp k8-64 -mcmodel=medium roms2grid.o     mod_xc.o mod_za.o wtime.o zh.o libnetcdf.a -o roms2grid

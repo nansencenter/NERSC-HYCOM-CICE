@@ -1,0 +1,58 @@
+To: Birol.Kara@nrlssc.navy.mil
+Subject: Re: back wind calculation
+Cc: metzger@leahy.nrlssc.navy.mil
+
+Birol,
+
+>  Please confirm that both HYCOM code and atmospheric forcing from ERA
+>  obtain Va, using formulations shown in
+>  
+>  gs /net/leahy/data3/kara/Test/backwind.ps
+>  
+>               IF     (WSTR.LE.0.7711) THEN
+>                 STRSPD = 1.0/(1.22*(((3.236E-3 *WSTR -
+>      +                                5.230E-3)*WSTR +
+>      +                                3.218E-3)*WSTR +
+>      +                                0.926E-3)       )
+>               ELSE
+>                 STRSPD = 1.0/(1.22*(((0.007E-3 *WSTR -
+>      +                                0.092E-3)*WSTR +
+>      +                                0.485E-3)*WSTR +
+>      +                                1.461E-3)       )
+>               ENDIF
+
+The latest (HYCOM) atmospheric forcing program (ALL/plot/src/wi) has:
+
+C        ISPEED - WIND SPEED OUTPUT FLAG                  
+C                    =0 ; NO WIND SPEED OUTPUT
+C                    =1 ; USE CONSTANT STRESS TO SPEED FACTOR (WVSCAL)
+C                    =2 ; USE KARA      SPEED-DEPENDENT SCALE FACTOR  
+C                    =3 ; USE COARE 3.0 SPEED-DEPENDENT SCALE FACTOR  
+
+The ISPEED.EQ.2 case is as you have above, and there is currently no 
+ISPEED.EQ.3 case (i.e. this has not been implemented).
+
+HYCOM does not internally calculate wind speed from wind stress, but it 
+can calculate ustar from wind speed and this requires a cd:
+
+c --- 'ustrmn' = minimum ustar
+      parameter (ustrmn=1.0e-5,
+
+        elseif (ustflg.eq.2) then !ustar from wndspd, variable cd
+          wsph = min( wsmax, max( wsmin, wind ) )
+          cd0  = 0.862e-3 + 0.088e-3 * wsph - 0.00089e-3 * wsph**2
+          rair = pairc / (rgas * ( tzero + airt ))
+          ustar(i,j)=sqrt(thref*cd0*rair)*wind
+
+        ustar( i,j)=max(ustrmn,ustar(i,j))
+
+I think this CD is the inverse of the above formulation (i.e. Kara for
+neutral conditions).
+
+When we use the COARE algorithm for CL, we have been extracting ustar
+from wind stress - so the above calculation from wind speed is not used.
+Note that it is almost EXACTLY correct when the original wind speed was
+calculated using the ISPEED.EQ.2 option to wi, because then both
+wind speed and ustar are from wind stress assuming neutral conditions.
+
+Alan.

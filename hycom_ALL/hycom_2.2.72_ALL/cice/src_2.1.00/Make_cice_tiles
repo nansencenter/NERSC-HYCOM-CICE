@@ -1,0 +1,2 @@
+pgf90 -DIA32 -DREAL4 -g -fastsse -byteswapio -tp k8-64 -mcmodel=medium -Mnolarge_arrays -c cice_tiles.F
+pgf90 -g -fastsse -byteswapio -tp k8-64 -mcmodel=medium -Mnolarge_arrays -o cice_tiles  cice_tiles.o  blkin.o

@@ -1,0 +1,60 @@
+#
+# ---------------------------------------------------------------------
+# common definitions for Mac G5, OSX, IBM XLF single processor, real*4.
+# ---------------------------------------------------------------------
+#
+# MACROS      DESCRIPTIONS:
+#
+# FC:         Fortran 90 compiler.
+# FCFFLAGS:   Fortran 90 compilation flags.
+# CC:         C compiler.
+# CCFLAGS:    C compilation flags.
+# CPP:        cpp preprocessor (may be implied by FC).
+# CPPFLAGS:   cpp -D macro flags.
+# LD:         Loader.
+# LDFLAGS:    Loader flags.
+# EXTRALIBS:  Extra local libraries (if any).
+#
+FC            =	xlf95
+FCFFLAGS      =	-qfixed -O3 -qstrict -qarch=g5 -qtune=g5 -qcache=auto -qspillsize=32000 -qflttrap=overflow:zerodivide:invalid:enable:imprecise -qsigtrap
+#
+# -qfixed     = fixed line structure,
+# -O3         = medium optimization (2,3,4,5 possible),
+# -qstrict    = keeps O3 optimization from changing semantics,
+# -qarch      = the architecture,
+# -qtune      = tunes machine instruction to processor,
+# -qcache     = the cache configuration,
+# -qspillsize = internal compiler memory option,
+# -qflttrap   = throw IEEE error flags,
+# -qsigtrap   = turn on IEEE error trapping in main program.
+#
+CC            =	/usr/bin/gcc
+CCFLAGS       =	
+CPP           =	/opt/ibmcmp/xlf/8.1/exe/cpp -P 
+CPPFLAGS      =	-DREAL4 -DOSX
+LD            =	$(FC)
+LDFLAGS       =	$(FCFFLAGS) 
+EXTRALIBS     = -lxlf90 -lxlopt -lxlomp_ser -lxl -lxlfmath 
+
+#
+# --- generic make definitions
+#
+SHELL         = /bin/sh
+RM            = \rm -f
+
+#
+# rules.
+#
+
+.c.o:
+	$(CC) $(CPPFLAGS) $(CCFLAGS)  -c $*.c
+
+.f.o:
+	$(FC)             $(FCFFLAGS) -c $*.f
+
+.F.o:
+	$(RM) $<.f
+	$(CPP) $(CPPFLAGS) $< | sed -e '/^ *$$/d' | sed -n '/^#pragma/!p' > $<.f
+	$(FC) $(FCFFLAGS) -c $<.f
+	-\mv $<.o $*.o
+	$(RM) $<.f

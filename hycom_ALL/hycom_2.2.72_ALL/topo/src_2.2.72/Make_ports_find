@@ -1,0 +1,2 @@
+pgf90             -g -fastsse -byteswapio -tp k8-64 -mcmodel=medium -Mnolarge_arrays -c topo_ports_find.f
+pgf90 -g -fastsse -byteswapio -tp k8-64 -mcmodel=medium -Mnolarge_arrays topo_ports_find.o zh.o mod_xc.o mod_za.o wtime.o -o topo_ports_find

@@ -1,0 +1,2 @@
+pgf90             -g -fastsse -byteswapio -tp k8-64 -mcmodel=medium -Mnolarge_arrays -c tp_sal.f
+pgf90 -g -fastsse -byteswapio -tp k8-64 -mcmodel=medium -Mnolarge_arrays tp_sal.o       mod_xc.o mod_za.o wtime.o interp.o zh.o -o tp_sal

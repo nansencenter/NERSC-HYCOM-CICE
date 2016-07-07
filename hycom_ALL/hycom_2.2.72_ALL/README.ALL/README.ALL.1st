@@ -1,0 +1,45 @@
+hycom/ALL/README.ALL.1st:
+
+Domain-independent source code for HYCOM pre/post processing.
+
+Some common source files in */src are hardlinked to those in 
+hycom/ALL/libsrc.  Replicating these files in all source directories 
+avoids issues with compiler-dependent module processing.
+
+All programs read regional.grid.b at run-time to get idm and jdm for the 
+particular region being processed.  They may also read regional.grid.a to
+find the grid location.
+
+The */src/Makefiles are configured to key on ../../config/$(ARCH)_setup 
+for machine-dependent definitions, see config/README.ALL.config.  When 
+running on (say) a Linux PC, ARCH is "intel" and an individual make 
+command might be:  make zero ARCH=intel >& Make_zero
+
+Typically almost all executables are created just once by editing 
+Make_all.src for the correct ARCH and then issuing the command 
+csh Make_all.com.  All instances of Make_all.src are hardlinked 
+together, so the file need only be edited once.  Running Make_all.com 
+in the ALL root directory creates all executables in all source 
+directories, except those that depend on the NetCDF library (see below).  
+Also, programs in plot/src depend on NCAR graphics and require the 
+ALL/bin/ncargf90 wrapper script be defined correctly for this machine 
+type.  These are optional if you instead use your favorate graphics 
+package.  See ALL/plot/src/README.ALL.plot.src for more details.
+
+Make_all.com in ALL/bin does not use Make_all.src, but it should only
+need editing if you are running Solaris and would prefer 64-bit to 32-bit 
+executables.  Running Make_all.com in the ALL root directory invokes
+ALL/bin/Make_all.com.
+
+The executables that depend on the NetCDF library are optional.  If you
+want to use netCDF, then edit ALL/Make_ncdf.src for the correct location
+of the netCDF version 3.5 (or later) library and then issuing the command
+csh Make_ncdf.com.  Running Make_ncdf.com in the ALL root directory creates 
+all netCDF executables in all source directories, including ALL/bin.
+
+For a complete make from source in a source directory, first issue 
+the command make clean.  This deletes all executables, .o and .mod files.
+A subsequent csh Make_all.com (or make all) and csh Make_ncdf.com (if
+necessary) builds all executables from scratch.  Issuing the command 
+csh Make_clean.com in the ALL root directory runs Make clean in each 
+*/src directory.

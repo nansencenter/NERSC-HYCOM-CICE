@@ -1,0 +1,46 @@
+#
+# ---------------------------------------------------------------------
+# common definitions for SGI Altix ICE, single processor, real*4
+# removed -mcmodel=medium for compatibility with standard netCDF build
+# ---------------------------------------------------------------------
+#
+# MACROS      DESCRIPTIONS:
+#
+# FC:         Fortran 90 compiler.
+# FCFFLAGS:   Fortran 90 compilation flags.
+# CC:         C compiler.
+# CCFLAGS:    C compilation flags.
+# CPP:        cpp preprocessor (may be implied by FC).
+# CPPFLAGS:   cpp -D macro flags.
+# LD:         Loader.
+# LDFLAGS:    Loader flags.
+# EXTRALIBS:  Extra local libraries (if any).
+#
+FC            =	ifort
+FCFFLAGS      =	-g -O3 -fp-model source -convert big_endian
+CC            =	icc
+CCFLAGS       =	-O
+CPP           =	cpp -P
+CPPFLAGS      =	-DIA32 -DREAL4
+LD            =	$(FC)
+LDFLAGS       =	-V $(FCFFLAGS) -shared-intel
+EXTRALIBS     =
+
+#
+# --- generic make definitions
+#
+SHELL         = /bin/sh
+RM            = \rm -f
+
+#
+# rules.
+#
+
+.c.o:
+	$(CC) $(CPPFLAGS) $(CCFLAGS)  -c $*.c
+
+.f.o:
+	$(FC)             $(FCFFLAGS) -c $*.f
+
+.F.o:
+	$(FC) $(CPPFLAGS) $(FCFFLAGS) -c $*.F

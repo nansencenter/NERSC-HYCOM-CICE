@@ -1,0 +1,2 @@
+pgf90             -g -fastsse -byteswapio -tp k8-64 -mcmodel=medium -Mnolarge_arrays -c landsea_30sec.f
+pgf90 -g -fastsse -byteswapio -tp k8-64 -mcmodel=medium -Mnolarge_arrays landsea_30sec.o interp.o zh.o mod_xc.o mod_za.o wtime.o libnetcdf.a -o landsea_30sec

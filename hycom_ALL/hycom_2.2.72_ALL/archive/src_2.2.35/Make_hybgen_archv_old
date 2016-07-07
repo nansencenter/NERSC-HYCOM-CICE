@@ -1,0 +1,2 @@
+pgf90             -g -fastsse -byteswapio -tp k8-64 -mcmodel=medium -Mnolarge_arrays -c hybgen_archv_old.f
+pgf90 -g -fastsse -byteswapio -tp k8-64 -mcmodel=medium -Mnolarge_arrays -o hybgen_archv_old  hybgen_archv_old.o mod_plot.o mod_xc.o mod_za.o               wtime.o bigrid.o blkin.o extrct.o extrot.o fordate.o getdat.o getdtm.o getdepth.o putdat.o indxi.o  indxj.o  pakk.o     psmoo.o zebra.o   zh.o    dum_gks.o 

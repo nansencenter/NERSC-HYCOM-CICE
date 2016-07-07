@@ -1,0 +1,121 @@
+      subroutine landfill_np(a,amsk,m,n, npass, larctic)
+      implicit none
+c
+      logical larctic
+      integer m,n,npass
+      real    a(m,n),amsk(m,n)
+c
+c --- extrapolate to fill voids in a that are not voids in amsk, using
+c --- multiple pass's of a 9-point smoother based extrapolation scheme.
+c --- extrapolate into points that are masked in amsk, but do no more
+c --- than npass passes.
+c
+      real*4     spval
+      parameter (spval=2.0**100)
+c
+      integer, allocatable :: mm(:,:,:)
+c
+      integer landa,landm,lande
+      integer i,ii,ip0,ip1,ipass,j,jj,ki,kj,nup,nall,na
+      real    sa,ss
+c
+      real s(-1:1,-1:1)
+      data s / 1.0,2.0,1.0, 2.0,4.0,2.0, 1.0,2.0,1.0 /
+c
+      allocate( mm(0:m+1,0:n+1,0:1) )
+c
+      mm( : , : ,0) = 0
+      do j= 1,n
+        do i= 1,m
+          if     (a(i,j).ne.spval) then
+            mm(i,j,0) = 1
+          endif
+        enddo
+      enddo
+
+      if     (larctic) then
+        na = n-1
+      else
+        na = n
+      endif
+
+      landa = 0
+      landm = 0
+      lande = 0
+      do j= 1,na
+        do i= 1,m
+          if     (a(i,j).eq.spval) then
+            landa = landa + 1
+            if (amsk(i,j).ne.spval) then
+              lande = lande + 1
+            endif
+          endif
+          if     (amsk(i,j).eq.spval) then
+            landm = landm + 1
+          endif
+        enddo
+      enddo
+      write(6,'(a,4i9)')
+     &  '   pts,land = ',m*na,landa,landm,lande
+c
+      nall = 0
+      do ipass= 1,npass
+        ip0 = mod(ipass+1,2)
+        ip1 = mod(ipass,  2)
+        mm(:,:,ip1) = mm(:,:,ip0)
+        nup  = 0
+        do j= 1,na
+          do i= 1,m
+            if     (mm(i,j,ip0).eq.0) then
+              sa = 0.0
+              ss = 0.0
+              do kj= -1,1
+                jj = j+kj
+                do ki= -1,1
+                  ii = i+ki
+                  if     (ii.eq.  0) then
+                    ii = m  !periodic wrap
+                  elseif (ii.eq.m+1) then
+                    ii = 1  !periodic wrap
+                  endif
+                  if     (mm(ii,jj,ip0).eq.1) then
+                    sa = sa + s(ki,kj)*a(ii,jj)
+                    ss = ss + s(ki,kj)
+                  endif
+                enddo !ki
+              enddo !kj
+              if     (ss.ne.0.0) then
+                a( i,j)     = sa/ss
+                mm(i,j,ip1) = 1
+                if     (amsk(i,j).ne.spval) then
+                  nup = nup + 1
+*                 if     (mod(nup,1000).eq.1) then
+*                   write(6,'(a,2i5,f5.1,f10.3)') 
+*    &                '   i,j,ss,a = ',i,j,ss,a(i,j)
+*                 endif
+                endif
+              endif
+            endif
+          enddo !i
+        enddo !j
+        if     (larctic) then
+          do i= 1,m
+            ii = m-mod(i-1,m)
+             a(i,n)     =  a(ii,n-1)
+            mm(i,n,ip1) = mm(ii,n-1,ip1)
+          enddo !i
+        endif
+        nall = nall + nup
+        write(6,'(a,i4,a,i6,a,a,i9,a)') 'landfill: pass',ipass,
+     &                                  ' filled in',nup,' points',
+     &                                  ' (total',nall,')'
+        if     (nup.eq.0) then
+          exit
+        endif
+      enddo  ! ipass
+      write(6,*)
+c
+      deallocate( mm )
+c
+      return
+      end

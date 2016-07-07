@@ -1,0 +1,48 @@
+#
+# -----------------------------------------------------------------
+# Common definitions for AMD64 Linux/g95, single processor, real*4
+# 64-bit; probably also works on Intel Nocona (EMT64).
+# Use intel_setup for 32-bit Intel/AMD.
+# See http://www.g95.org/ for the g95 compiler
+# -----------------------------------------------------------------
+#
+# MACROS      DESCRIPTIONS:
+#
+# FC:         Fortran 90 compiler.
+# FCFFLAGS:   Fortran 90 compilation flags.
+# CC:         C compiler.
+# CCFLAGS:    C compilation flags.
+# CPP:        cpp preprocessor (may be implied by FC).
+# CPPFLAGS:   cpp -D macro flags.
+# LD:         Loader.
+# LDFLAGS:    Loader flags.
+# EXTRALIBS:  Extra local libraries (if any).
+#
+FC            =	g95
+FCFFLAGS      =	-g -O -march=k8 -m64 -mcmodel=medium -fendian=big -ffixed-line-length-132
+CC            =	gcc4
+CCFLAGS       =	-g -O -march=k8 -m64 -mcmodel=medium
+CPP           =	cpp -P
+CPPFLAGS      =	-DIA32 -DREAL4
+LD            =	$(FC)
+LDFLAGS       =	$(FCFFLAGS)
+EXTRALIBS     =
+
+#
+# --- generic make definitions
+#
+SHELL         = /bin/sh
+RM            = \rm -f
+
+#
+# rules.
+#
+
+.c.o:
+	$(CC) $(CPPFLAGS) $(CCFLAGS)  -c $*.c
+
+.f.o:
+	$(FC)             $(FCFFLAGS) -c $*.f
+
+.F.o:
+	$(FC) $(CPPFLAGS) $(FCFFLAGS) -c $*.F

@@ -1,0 +1,57 @@
+All Makefiles under the ALL directory source ALL/config/$(ARCH)_setup, 
+where ARCH defines exactly what machine architecture to target.  This is 
+typically identical to HYCOM's standard config/$(ARCH)_one4 if real is 
+real*4.  If real is real*8 but real*4 is available, ALL/config/$(ARCH)_setup 
+is like config/$(ARCH)_one except that the macro REAL4 is set (in addition 
+to REAL8).
+
+The specified ALL/config/$(ARCH)_setup file must already exist.  So far
+the following are available:
+
+alpha_setup	- Compaq Alpha
+alphaL_setup	- Compaq Alpha Linux
+intel_setup	- Intel Linux/pgf90
+intelIFC_setup	- Intel Linux/ifc (little-endian)
+o2k_setup	- SGI Origin 2800
+sp3_setup	- IBM SMP Power3
+sun_setup	- Sun (32-bit)
+sun64_setup	- Sun (64-bit)
+t3e_setup	- Cray T3E
+
+Some IBM SP filesystems (e.g. GPFS) cannot be used to compile Fortran 
+modules.  If the src directory is on such a filesystem, use TYPE=sp3GPFS
+instead of TYPE=sp3, i.e. the configuration file is sp3GPFS_setup instead of 
+sp3_setup.  This version does the compile on a non-GPFS filesystem, which is
+currently set to /scratch/$(USER)/NOT_GPFS.  Since all compiles use this
+directory, only perform one make at a time.
+
+The following environment variables must be defined in each config file:
+
+# FC:         Fortran 90 compiler.
+# FCFFLAGS:   Fortran 90 compilation flags.
+# CC:         C compiler.
+# CCFLAGS:    C compilation flags.
+# CPP:        cpp preprocessor (may be implied by FC).
+# CPPFLAGS:   cpp -D macro flags (see README.macros).
+# LD:         Loader.
+# LDFLAGS:    Loader flags.
+# EXTRALIBS:  Extra local libraries (if any).
+
+In addition, make suffix rules are required for .c.o, .f.o, and .F.o 
+(i.e. how to create .o files from .c, .f and .F files).  In the 
+simplest case these are:
+
+#
+# rules.
+#
+
+.c.o:
+	$(CC) $(CPPFLAGS) $(CCFLAGS)  -c $*.c
+
+.f.o:
+	$(FC)             $(FCFFLAGS) -c $*.f
+
+.F.o:
+	$(FC) $(CPPFLAGS) $(FCFFLAGS) -c $*.F
+
+Note that the rule command lines start with a tab character.

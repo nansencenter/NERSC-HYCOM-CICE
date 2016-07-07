@@ -1,0 +1,20 @@
+#
+# --- set NCDF to the root directory for netCDF version 3.5 or 3.6 or later.
+# --- available from: http://www.unidata.ucar.edu/packages/netcdf/
+#
+# --- Note that the Fortran 90 routines and module files are required.
+#
+#setenv NCDF /net/ajax/data/scrf/wallcraf/NETCDF/netcdf-3.5.0
+#setenv NCDF /net/ajax/data/scrf/wallcraf/NETCDF/netcdf-3.5.1-intel
+#setenv NCDF /net/ajax/data/scrf/wallcraf/NETCDF/netcdf-3.6.0-p1-amd64
+#setenv NCDF /u/home/wallcraf/netcdf-3.5.0
+#setenv NCDF /common/netcdf-3.6.2-amd64
+#setenv NCDF /common/netcdf-3.6.2-amd64pg
+#setenv NCDF /common/netcdf/deprecated/netcdf-3.6.2-amd64pg
+#
+setenv NCDF /common/netcdf/pgi11.8/3.6.3
+#
+# --- Use EXTRANCDF for the extra libraries needed for NCDF v4
+#
+#setenv EXTRANCDF "/u/home/wallcraf/pkgs/hdf5-1.8.4-serial/lib/libhdf5_hl.a /u/home/wallcraf/pkgs/hdf5-1.8.4-serial/lib/libhdf5.a /u/home/wallcraf/pkgs/zlib-1.2.3/lib/libz.a"
+setenv EXTRANCDF ""

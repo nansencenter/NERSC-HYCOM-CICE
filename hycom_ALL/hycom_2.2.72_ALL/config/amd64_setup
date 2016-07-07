@@ -1,0 +1,48 @@
+#
+# -----------------------------------------------------------------
+# Common definitions for AMD64 Linux/PGI, single processor, real*4
+# 64-bit; AMD64 (-Mnolarge_arrays to support netCDF)
+# Use intel_setup for 32-bit Intel/AMD.
+# See http://www.pgroup.com/ for Portland Group f90 compiler.
+# -----------------------------------------------------------------
+#
+# MACROS      DESCRIPTIONS:
+#
+# FC:         Fortran 90 compiler.
+# FCFFLAGS:   Fortran 90 compilation flags.
+# CC:         C compiler.
+# CCFLAGS:    C compilation flags.
+# CPP:        cpp preprocessor (may be implied by FC).
+# CPPFLAGS:   cpp -D macro flags.
+# LD:         Loader.
+# LDFLAGS:    Loader flags.
+# EXTRALIBS:  Extra local libraries (if any).
+#
+FC            =	pgf90
+FCFFLAGS      =	-g -fastsse -byteswapio -tp k8-64 -mcmodel=medium -Mnolarge_arrays
+CC            =	gcc
+CCFLAGS       =	-g -O -march=k8 -m64 -mcmodel=medium
+CPP           =	cpp -P
+CPPFLAGS      =	-DIA32 -DREAL4
+LD            =	$(FC)
+LDFLAGS       =	$(FCFFLAGS)
+EXTRALIBS     =
+
+#
+# --- generic make definitions
+#
+SHELL         = /bin/sh
+RM            = \rm -f
+
+#
+# rules.
+#
+
+.c.o:
+	$(CC) $(CPPFLAGS) $(CCFLAGS)  -c $*.c
+
+.f.o:
+	$(FC)             $(FCFFLAGS) -c $*.f
+
+.F.o:
+	$(FC) $(CPPFLAGS) $(FCFFLAGS) -c $*.F

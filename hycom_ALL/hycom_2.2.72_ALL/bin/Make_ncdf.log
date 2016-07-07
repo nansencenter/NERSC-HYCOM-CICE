@@ -1,0 +1,101 @@
+source ../Make_ncdf.src
+setenv NCDF /common/netcdf/pgi11.8/3.6.3
+setenv EXTRANCDF 
+/bin/rm -f netcdf.mod libnetcdf.a
+/bin/rm -f typesizes.mod
+ln -s /common/netcdf/pgi11.8/3.6.3/include/netcdf.mod /common/netcdf/pgi11.8/3.6.3/include/typesizes.mod .
+ln -s /common/netcdf/pgi11.8/3.6.3/lib/libnetcdf.a .
+setenv OS `/bin/uname`
+/bin/uname
+if ( Linux == Linux ) then
+if ( `/bin/uname -m` == alpha ) then
+/bin/uname -m
+if ( `/bin/uname -m` == x86_64 ) then
+/bin/uname -m
+setenv OS Linux64
+endif
+endif
+switch ( Linux64 )
+setenv FC pgf90
+setenv FFLAGS -g -fast -byteswapio -tp k8-64 -mcmodel=medium -Mnolarge_arrays
+setenv CC gcc
+setenv CFLAGS -O -march=k8 -m64 -mcmodel=medium
+breaksw
+foreach f ( hycom_binning_nc hycom_scrip_nc )
+if ( ! -e hycom_binning_nc_Linux64 ) then
+if ( -f `find ${f}.F -prune -newer ${f}_${OS}` ) then
+find hycom_binning_nc.F -prune -newer hycom_binning_nc_Linux64
+echo hycom_binning_nc_Linux64 is already up to date
+hycom_binning_nc_Linux64 is already up to date
+endif
+touch hycom_binning_nc
+/bin/rm -f hycom_binning_nc
+chmod a+rx hycom_binning_nc_Linux64
+/bin/ln -s hycom_binning_nc_Linux64 hycom_binning_nc
+end
+if ( ! -e hycom_scrip_nc_Linux64 ) then
+if ( -f `find ${f}.F -prune -newer ${f}_${OS}` ) then
+find hycom_scrip_nc.F -prune -newer hycom_scrip_nc_Linux64
+echo hycom_scrip_nc_Linux64 is already up to date
+hycom_scrip_nc_Linux64 is already up to date
+endif
+touch hycom_scrip_nc
+/bin/rm -f hycom_scrip_nc
+chmod a+rx hycom_scrip_nc_Linux64
+/bin/ln -s hycom_scrip_nc_Linux64 hycom_scrip_nc
+end
+foreach f ( hycom_profile2z_nc hycom_profile2s_nc hycom_seaice_nc )
+if ( ! -e hycom_profile2z_nc_Linux64 ) then
+if ( -f `find ${f}.F -prune -newer ${f}_${OS}` ) then
+find hycom_profile2z_nc.F -prune -newer hycom_profile2z_nc_Linux64
+echo hycom_profile2z_nc_Linux64 is already up to date
+hycom_profile2z_nc_Linux64 is already up to date
+endif
+touch hycom_profile2z_nc
+/bin/rm -f hycom_profile2z_nc
+chmod a+rx hycom_profile2z_nc_Linux64
+/bin/ln -s hycom_profile2z_nc_Linux64 hycom_profile2z_nc
+end
+if ( ! -e hycom_profile2s_nc_Linux64 ) then
+if ( -f `find ${f}.F -prune -newer ${f}_${OS}` ) then
+find hycom_profile2s_nc.F -prune -newer hycom_profile2s_nc_Linux64
+echo hycom_profile2s_nc_Linux64 is already up to date
+hycom_profile2s_nc_Linux64 is already up to date
+endif
+touch hycom_profile2s_nc
+/bin/rm -f hycom_profile2s_nc
+chmod a+rx hycom_profile2s_nc_Linux64
+/bin/ln -s hycom_profile2s_nc_Linux64 hycom_profile2s_nc
+end
+if ( ! -e hycom_seaice_nc_Linux64 ) then
+if ( -f `find ${f}.F -prune -newer ${f}_${OS}` ) then
+find hycom_seaice_nc.F -prune -newer hycom_seaice_nc_Linux64
+echo hycom_seaice_nc_Linux64 is already up to date
+hycom_seaice_nc_Linux64 is already up to date
+endif
+touch hycom_seaice_nc
+/bin/rm -f hycom_seaice_nc
+chmod a+rx hycom_seaice_nc_Linux64
+/bin/ln -s hycom_seaice_nc_Linux64 hycom_seaice_nc
+end
+foreach f ( wind_stat_nc wind_stat_range_nc )
+if ( ! -e wind_stat_nc_Linux64 ) then
+if ( -f `find ${f}.f -prune -newer ${f}_${OS}` ) then
+find wind_stat_nc.f -prune -newer wind_stat_nc_Linux64
+echo wind_stat_nc_Linux64 is already up to date
+wind_stat_nc_Linux64 is already up to date
+endif
+touch wind_stat_nc
+/bin/rm -f wind_stat_nc
+chmod a+rx wind_stat_nc_Linux64
+end
+if ( ! -e wind_stat_range_nc_Linux64 ) then
+if ( -f `find ${f}.f -prune -newer ${f}_${OS}` ) then
+find wind_stat_range_nc.f -prune -newer wind_stat_range_nc_Linux64
+echo wind_stat_range_nc_Linux64 is already up to date
+wind_stat_range_nc_Linux64 is already up to date
+endif
+touch wind_stat_range_nc
+/bin/rm -f wind_stat_range_nc
+chmod a+rx wind_stat_range_nc_Linux64
+end

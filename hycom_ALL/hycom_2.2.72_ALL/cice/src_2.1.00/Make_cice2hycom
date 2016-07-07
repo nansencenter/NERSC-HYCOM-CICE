@@ -1,0 +1,2 @@
+pgf90             -g -fastsse -byteswapio -tp k8-64 -mcmodel=medium -Mnolarge_arrays -c cice2hycom.f
+pgf90 -g -fastsse -byteswapio -tp k8-64 -mcmodel=medium -Mnolarge_arrays -o cice2hycom  cice2hycom.o  blkin.o zh.o    dum_gks.o  mod_cice.o mod_xc.o mod_za.o wtime.o libnetcdf.a

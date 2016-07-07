@@ -1,0 +1,46 @@
+#
+# ---------------------------------------------------------------------
+# common definitions for SGI Origin 2000, single processor, real*4
+# using -O3 instead of -Ofast=ip27 because of a bug in 7.3+ compilers
+# ---------------------------------------------------------------------
+#
+# MACROS      DESCRIPTIONS:
+#
+# FC:         Fortran 90 compiler.
+# FCFFLAGS:   Fortran 90 compilation flags.
+# CC:         C compiler.
+# CCFLAGS:    C compilation flags.
+# CPP:        cpp preprocessor (may be implied by FC).
+# CPPFLAGS:   cpp -D macro flags.
+# LD:         Loader.
+# LDFLAGS:    Loader flags.
+# EXTRALIBS:  Extra local libraries (if any).
+#
+FC            =	f90
+FCFFLAGS      =	-g3 -64 -O3 -macro_expand
+CC            =	cc
+CCFLAGS       =	-g3 -64 -O3
+CPP           =	/usr/lib/acpp -P
+CPPFLAGS      =	-DSGI -DREAL4
+LD            =	$(FC)
+LDFLAGS       =	$(FCFFLAGS)
+EXTRALIBS     =
+
+#
+# --- generic make definitions
+#
+SHELL         = /bin/sh
+RM            = \rm -f
+
+#
+# rules.
+#
+
+.c.o:
+	$(CC)      $(CPPFLAGS) $(CCFLAGS)  -c $*.c
+
+.f.o:
+	$(FC) -nocpp           $(FCFFLAGS) -c $*.f
+
+.F.o:
+	$(FC) -cpp $(CPPFLAGS) $(FCFFLAGS) -c $*.F

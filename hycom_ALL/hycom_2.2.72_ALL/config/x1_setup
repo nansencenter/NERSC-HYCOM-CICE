@@ -1,0 +1,50 @@
+#
+# ---------------------------------------------------------------------
+# common definitions for Cray X1, setup, single processor.
+# ---------------------------------------------------------------------
+#
+# MACROS      DESCRIPTIONS:
+#
+# FC:         Fortran 90 compiler.
+# FCFFLAGS:   Fortran 90 compilation flags.
+# CC:         C compiler.
+# CCFLAGS:    C compilation flags.
+# CPP:        cpp preprocessor (may be implied by FC).
+# CPPFLAGS:   cpp -D macro flags.
+# LD:         Loader.
+# LDFLAGS:    Loader flags.
+# EXTRALIBS:  Extra local libraries (if any).
+#
+FC            =	ftn
+FCFFLAGS      =	-O ssp -x omp
+CC            =	cc
+CCFLAGS       =	-h ssp
+CPP           =	cpp -P
+CPPFLAGS      =	-Ucray -DX1 -DREAL4
+LD            =	$(FC)
+LDFLAGS       =	$(FCFFLAGS) -V
+EXTRALIBS     =
+
+#
+# --- generic make definitions
+#
+SHELL         = /bin/sh
+RM            = \rm -f
+
+#
+# rules.
+#
+
+.c.o:
+	$(CC) $(CPPFLAGS) $(CCFLAGS)  -c $*.c
+
+.f.o:
+	$(FC)             $(FCFFLAGS) -c $*.f
+
+.F.o:
+	$(RM) $<.f $<.C
+	sed -e 's? */// *?/ / /?g' -e 's? *// *?/ /?g' $< >  $<.C
+	$(CPP) $(CPPFLAGS) $<.C | sed -e '/^ *$$/d' > $<.f
+	$(FC) $(FCFFLAGS) -c $<.f
+	-\mv $<.o $*.o
+	$(RM) $<.f $<.C

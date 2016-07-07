@@ -1,0 +1,2 @@
+pgf90             -g -fastsse -byteswapio -tp k8-64 -mcmodel=medium -Mnolarge_arrays -c bathy_30sec.f
+pgf90 -g -fastsse -byteswapio -tp k8-64 -mcmodel=medium -Mnolarge_arrays bathy_30sec.o   interp.o zh.o mod_xc.o mod_za.o wtime.o libnetcdf.a -o bathy_30sec

@@ -1,0 +1,13 @@
+#!/bin/csh
+#
+# --- more digits in regional.grid.b min,max's.
+#
+setenv IDM `head -n 1 regional.grid.b           | awk '{print $1}'`
+setenv JDM `head -n 2 regional.grid.b | tail -1 | awk '{print $1}'`
+hycom_range regional.grid.a $IDM $JDM | grep "^min, max =" | cut -c 11- >! regional.grid.b_r
+#
+mv        regional.grid.b        regional.grid.b_orig
+head -n 3 regional.grid.b_orig > regional.grid.b
+tail -19  regional.grid.b_orig | cut -c 1-16     >! regional.grid.b_1
+paste -d" " regional.grid.b_1 regional.grid.b_r  >> regional.grid.b
+/bin/rm     regional.grid.b_1 regional.grid.b_r

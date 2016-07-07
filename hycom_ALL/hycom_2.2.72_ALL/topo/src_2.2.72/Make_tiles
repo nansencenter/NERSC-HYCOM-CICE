@@ -1,0 +1,1 @@
+pgf90 -g -fastsse -byteswapio -tp k8-64 -mcmodel=medium -Mnolarge_arrays topo_tiles.o      zh.o mod_xc.o mod_za.o wtime.o -o topo_tiles

@@ -1,0 +1,51 @@
+#
+# ---------------------------------------------------------------------
+# common definitions for Cray T3E, setup, single processor.
+# REAL is REAL*8, but REAL*4 is available.
+# ---------------------------------------------------------------------
+#
+# MACROS      DESCRIPTIONS:
+#
+# FC:         Fortran 90 compiler.
+# FCFFLAGS:   Fortran 90 compilation flags.
+# CC:         C compiler.
+# CCFLAGS:    C compilation flags.
+# CPP:        cpp preprocessor (may be implied by FC).
+# CPPFLAGS:   cpp -D macro flags.
+# LD:         Loader.
+# LDFLAGS:    Loader flags.
+# EXTRALIBS:  Extra local libraries (if any).
+#
+FC            =	f90
+FCFFLAGS      =	-X 1 -V -f fixed -O scalar2,unroll2,pipeline1,vector3 -d p -M 801
+CC            =	cc
+CCFLAGS       =	
+CPP           =	cpp -P
+CPPFLAGS      =	-Ucray -DT3E -DREAL8 -DREAL4
+LD            =	$(FC)
+LDFLAGS       =	$(FCFFLAGS)
+EXTRALIBS     =
+
+#
+# --- generic make definitions
+#
+SHELL         = /bin/sh
+RM            = \rm -f
+
+#
+# rules.
+#
+
+.c.o:
+	$(CC) $(CPPFLAGS) $(CCFLAGS)  -c $*.c
+
+.f.o:
+	$(FC)             $(FCFFLAGS) -c $*.f
+
+.F.o:
+	$(RM) $<.f $<.C
+	sed -e 's? */// *?/ / /?g' -e 's? *// *?/ /?g' $< >  $<.C
+	$(CPP) $(CPPFLAGS) $<.C | sed -e '/^ *$$/d' > $<.f
+	$(FC) $(FCFFLAGS) -c $<.f
+	-\mv $<.o $*.o
+	$(RM) $<.f $<.C

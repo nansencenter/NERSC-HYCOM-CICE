@@ -1,0 +1,16 @@
+At least one of REAL4 and REAL8 must be used in ALL/config/$(ARCH)_setup
+
+REAL4		REAL is REAL*4, or (with REAL8) REAL*4 is available
+REAL8		REAL is REAL*8
+
+Other macros that may be used in ALL/config/$(ARCH)_setup
+
+ALPHA		Compaq Alpha (Linux or OSF)
+AIX		IBM AIX
+ENDIAN_IO	Swap endian-ness as part of array I/O
+HPUX		HP HP-UX
+IA32		IA32 Linux (Intel Pentium II/III/IV or AMD Athlon)
+SGI		SGI IRIX64
+SUN		SUN Solaris
+T3E		Cray T3E
+YMP		Cray YMP/C90/T90/SV1

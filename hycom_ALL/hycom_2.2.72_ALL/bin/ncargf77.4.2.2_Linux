@@ -1,0 +1,184 @@
+#!/bin/csh -f
+#
+#   $Id: ncargf77.csh,v 1.31 2000/08/22 04:34:27 haley Exp $
+#                                                                      
+#                Copyright (C)  2000
+#        University Corporation for Atmospheric Research
+#                All Rights Reserved
+#
+# This file is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published
+# by the Free Software Foundation; either version 2 of the License,
+# or (at your option) any later version.
+#
+# This software is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this software; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+# USA.
+#
+
+#*********************************************#
+#                                             #
+# Make sure NCARG_ROOT is set for this script #
+#                                             #
+#*********************************************#
+setenv NCARG_ROOT  `ncargpath root`
+
+if ($status != 0) then
+	exit 1
+endif
+
+set syslibdir = "-L/usr/X11R6/lib"
+set xlib     = "-lX11"
+set system   = "LINUX"
+set fortran  = "g77"
+set loadflags  = "-O    "
+set libdir   = `ncargpath lib`
+set ro       = "$libdir/ncarg/robj"
+set libpath = "-L$libdir $syslibdir"
+
+set libextra = ""
+
+if (! -d "$libdir") then
+  echo "Library directory <$libdir> does not exist."
+  exit 1
+endif
+
+set newargv = "$fortran $loadflags"
+
+set ctrans_libs = ""
+set stub_file   = ""
+
+#
+# set up default libraries
+#
+set libncarg  =  "-lncarg"
+set libgks     = "-lncarg_gks"
+set libncarg_c = "-lncarg_c"
+set libmath  = ""
+
+
+set smooth = "$ro/libdashsmth.o"
+set quick  = "$ro/libdashline.o $ro/libconrcqck.o $ro/libconraq.o"
+set super  = "$ro/libdashsupr.o $ro/libconrcspr.o $ro/libconras.o"
+
+set robjs
+
+foreach arg ($argv)
+
+    switch ($arg)
+
+    case "-ngmath":
+      set libmath     = "-lngmath"
+      breaksw
+
+    case "-sungks":
+        echo "Using Sun GKS"
+        set libgks="-lgks77 -lgks -lsuntool -lsunwindow -lpixrect -lm"
+        breaksw
+
+    case "-smooth":
+        echo "Smooth g77 of NCAR Graphics"
+        set robjs = "$robjs $smooth"
+        breaksw
+
+    case "-super":
+        echo "Super g77 of NCAR Graphics"
+        set robjs = "$robjs $super"
+        breaksw
+
+    case "-quick":
+        echo "Quick g77 of NCAR Graphics"
+        set robjs = "$robjs $quick"
+        breaksw
+
+    case "-agupwrtx":
+        echo "Autograph with PWRITX"
+        set robjs = "$robjs $ro/libagupwrtx.o"
+        breaksw
+
+    case "-conransmooth":
+        echo "Smooth Conran"
+        set robjs = "$robjs $smooth"
+        breaksw
+
+    case "-conranquick":
+        echo "Quick Conran"
+        set robjs = "$robjs $ro/libconraq.o"
+        breaksw
+
+    case "-conransuper":
+        echo "Super Conran"
+        set robjs = "$robjs $ro/libconras.o $ro/libdashsupr.o"
+        breaksw
+
+    case "-conrecsmooth":
+        echo "Smooth Conrec"
+        set robjs = "$robjs $ro/libdashsmth.o"
+        breaksw
+
+    case "-conrecquick":
+        echo "Quick Conrec"
+        set robjs = "$robjs $ro/libconrcqck.o"
+        breaksw
+
+    case "-conrecsuper":
+        echo "Super Conrec"
+        set robjs = "$robjs $ro/libconrcspr.o $ro/libdashsupr.o"
+        breaksw
+
+    case "-dashsmooth":
+        echo "Smooth Dash"
+        set robjs = "$robjs $ro/libdashsmth.o"
+        breaksw
+
+    case "-dashquick":
+    case "-dashline":
+        echo "Quick Dash"
+        set robjs = "$robjs $ro/libdashline.o"
+        breaksw
+
+    case "-dashsuper":
+        echo "Super Dash"
+        set robjs = "$robjs $ro/libdashsupr.o"
+        breaksw
+
+    case "-dashchar":
+        echo "Normal Dash"
+        breaksw
+
+    case "-ictrans":
+        echo "Output to ictrans"
+        set ctrans_libs = `ctlib`
+        set xlib   = ""
+        set libmath  = ""
+        set stub_file = $ro/ggkwdr_stub.o
+        breaksw
+
+    case "-noX11"
+    case "-nox11"
+        set stub_file = $ro/ggkwdr_stub.o
+        set xlib = ""
+        breaksw
+
+    case "-*":
+        set newargv = "$newargv $arg"
+        breaksw
+
+    default:
+        set newargv = "$newargv $arg"
+        breaksw
+
+    endsw
+end
+
+set ncarg_libs  = "$libncarg $libgks $libncarg_c $libmath"
+set newargv = "$newargv $stub_file $libpath $ctrans_libs $robjs $ncarg_libs $xlib $libextra"
+
+echo $newargv
+eval $newargv

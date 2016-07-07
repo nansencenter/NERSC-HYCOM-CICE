@@ -1,0 +1,23 @@
+      do j= 1,jj
+        do i= 1,ii
+          if     (ip(i,j).eq.1) then
+c
+c ---       calculate montg and srfht, assuming no thermobaricity
+c
+            p(i,j,1) = 0.0
+            do k= 1,kk
+              p(i,j,k+1) = p(i,j,k)+dp(i,j,k)
+            enddo !k
+            oneta = 1.0 + pbaro(i,j)/p(i,j,kk+1)
+            montg(i,j) = psikk(i,j)+
+     &          ( p(i,j,kk+1)*(thkk(i,j)-th3d(i,j,2*kk))
+     &            -pbaro(i,j)*(th3d(i,j,2*kk)+thbase) )*thref**2
+            do k=kk-1,1,-1
+              montg(i,j)=montg(i,j)+p(i,j,k+1)*oneta
+     &                    *(th3d(i,j,2*k+2)-th3d(i,j,2*k))*thref**2
+            enddo !k
+c
+            srfht(i,j) = montg(i,j) + thref*pbaro(i,j)
+          endif !ip.eq.1
+        enddo !i
+      enddo !j

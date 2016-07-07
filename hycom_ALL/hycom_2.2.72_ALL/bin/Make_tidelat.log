@@ -1,0 +1,30 @@
+setenv OS `uname`
+uname
+if ( Linux == Linux ) then
+if ( `/bin/uname -m` == alpha ) then
+/bin/uname -m
+if ( `/bin/uname -m` == x86_64 ) then
+/bin/uname -m
+setenv OS Linux64
+endif
+endif
+if ( Linux64 == UNICOS/mp ) then
+switch ( Linux64 )
+setenv FC pgf90
+setenv FFLAGS -g -fast -byteswapio -tp k8-64 -mcmodel=medium -Mnolarge_arrays
+setenv FLIBS 
+setenv CC gcc
+setenv CFLAGS -O -march=k8 -m64 -mcmodel=medium
+breaksw
+pgf90 -g -fast -byteswapio -tp k8-64 -mcmodel=medium -Mnolarge_arrays -c hycom_endian_io.F
+gcc -O -march=k8 -m64 -mcmodel=medium -c parse.c
+foreach f ( hycom_tidelat )
+if ( ! -e hycom_tidelat_Linux64 ) then
+pgf90 -g -fast -byteswapio -tp k8-64 -mcmodel=medium -Mnolarge_arrays hycom_tidelat.F hycom_endian_io.o parse.o -o hycom_tidelat_Linux64
+hycom_tidelat.F:
+else if ( -f `find ${f}.F -prune -newer ${f}_${OS}` ) then
+touch hycom_tidelat
+/bin/rm -f hycom_tidelat
+chmod a+rx hycom_tidelat_Linux64
+/bin/ln -s hycom_tidelat_Linux64 hycom_tidelat
+end

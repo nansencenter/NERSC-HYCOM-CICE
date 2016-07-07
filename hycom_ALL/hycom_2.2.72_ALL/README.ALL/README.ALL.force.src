@@ -1,0 +1,43 @@
+hycom/ALL/force/src/README.ALL.force.src:
+
+Domain-independent source code for interpolation of NRL (Naval Research 
+Laboratory) format wind/flux files on "native" grid to HYCOM model grid.
+
+Some common source files are hardlinked to those in hycom/ALL/libsrc.  
+Replicating these files in all source directories avoids issues with 
+compiler-dependent module processing.
+
+All programs read regional.grid.b at run-time to get idm and jdm for the 
+particular region being processed.  They may also read regional.grid.a to
+find the grid location.
+
+The Makefile is configured to key on ../../config/$(ARCH)_setup for
+machine-dependent definitions, see ../../config/README.ALL.config.  When 
+running on (say) a Linux PC, ARCH is "intel" and an individual make 
+command might be:  make zero ARCH=intel >& Make_zero
+
+Typically all executables are created just once by editing Make_all.src 
+for the correct ARCH and then issuing the command csh Make_all.com.
+
+Executables that use the netCDF library (version 3.5) are created just 
+once by editing ALL/Make_ncdf.src for the correct root directory and then 
+issuing the command  csh Make_ncdf.com.  The netCDF library is at:
+    http://www.unidata.ucar.edu/packages/netcdf/
+These are optional, ignore Make_ncdf.com if you don't want to use NetCDF.
+
+The programs that read "NRL format" wind/flux files are now domain 
+independent.  The original versions were domain specific (e.g. the 
+new wi.f was wi_100_co.f, wi_1125_ec.f, etcetera).  The old versions
+are still available in ALL/force/src_2.1.00 but are no longer supported.
+
+The wind/flux data sets are input on their native grid, from standard NRL
+format wind/flux files (a Fortran unformatted sequential file with a 
+single header record identifying wind dates, followed by the wind/flux
+data).  There is also a wind "offset" input file, that is often zero
+but allows the annual mean wind to be from a different wind data set.
+The offset can also be a different field for each sample time.  This 
+allows combining a climatology with an anomaly field.
+
+The output data sets are atmospheric forcing in MKS (except temperature
+is in degrees C), with heat flux positive into the ocean.  They also 
+include any bias or minimum wind speed constraints.  

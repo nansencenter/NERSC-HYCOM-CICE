@@ -1,0 +1,3 @@
+pgf90             -g -fastsse -byteswapio -tp k8-64 -mcmodel=medium -Mnolarge_arrays -c isuba_gmapi.f
+pgf90 -g -fastsse -byteswapio -tp k8-64 -mcmodel=medium -Mnolarge_arrays isuba_gmapi.o mod_xc.o mod_za.o mod_zb.o wtime.o zh.o -o isuba_gmapi
+make: Nothing to be done for `Make_isuba_gmapi'.

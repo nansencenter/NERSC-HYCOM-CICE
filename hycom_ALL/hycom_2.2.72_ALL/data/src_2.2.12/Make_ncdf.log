@@ -1,0 +1,3 @@
+NCDF =  /common/netcdf-3.6.2-amd64pg
+ARCH =  amd64
+Make worked: archv2nc

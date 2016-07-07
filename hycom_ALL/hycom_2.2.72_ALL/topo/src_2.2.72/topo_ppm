@@ -1,0 +1,6 @@
+#!/bin/csh
+#
+# --- topo_ppm replaced by topo_ppmX
+#
+setenv A $0:h
+echo 1 | $A/topo_ppmX
