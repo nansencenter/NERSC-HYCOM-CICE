@@ -108,3 +108,54 @@ function archv_property {
    fi
 
 }
+
+function copy_grid_files {
+   if [ $# -ne 1 ]  ;then
+      echo "Need target location and what to look for" 2>&1
+      return 1
+   fi
+   TARGETDIR=$1
+   [ ! -d $TARGETDIR ] && mkdir -p $TARGETDIR
+   cd $TARGETDIR
+   touch regional.grid.a regional.grid.b
+   rm    regional.grid.a regional.grid.b
+   cp ${BASEDIR}/topo/regional.grid.b regional.grid.b     || { echo "Could not get regional.grid.b file " ; exit 1 ; }
+   cp ${BASEDIR}/topo/regional.grid.a regional.grid.a     || { echo "Could not get regional.grid.a file " ; exit 1 ; }
+}
+
+
+
+function copy_topo_files {
+   if [ $# -ne 1 ]  ;then
+      echo "Need target location and what to look for" 2>&1
+      return 1
+   fi
+   TARGETDIR=$1
+   [ ! -d $TARGETDIR ] && mkdir -p $TARGETDIR
+   cd $TARGETDIR
+   touch regional.depth.a regional.depth.b
+   rm    regional.depth.a regional.depth.b
+   cp ${BASEDIR}/topo/depth_${R}_${T}.a regional.depth.a  || { echo "Could not get regional.depth.a file " ; exit 1 ; }
+   cp ${BASEDIR}/topo/depth_${R}_${T}.b regional.depth.b  || { echo "Could not get regional.depth.b file " ; exit 1 ; }
+}
+
+
+function copy_setup_files {
+   if [ $# -ne 1 ]  ;then
+      echo "Need target location and what to look for" 2>&1
+      return 1
+   fi
+   TARGETDIR=$1
+   [ ! -d $TARGETDIR ] && mkdir -p $TARGETDIR
+   cd $TARGETDIR
+   touch infile.in blkdat.input
+   rm    infile.in blkdat.input
+   copy_grid_files $S
+   copy_topo_files $S
+   #cp ${BASEDIR}/topo/regional.grid.b regional.grid.b     || { echo "Could not get regional.grid.b file " ; exit 1 ; }
+   #cp ${BASEDIR}/topo/regional.grid.a regional.grid.a     || { echo "Could not get regional.grid.a file " ; exit 1 ; }
+   #cp ${BASEDIR}/topo/depth_${R}_${T}.a regional.depth.a  || { echo "Could not get regional.depth.a file " ; exit 1 ; }
+   #cp ${BASEDIR}/topo/depth_${R}_${T}.b regional.depth.b  || { echo "Could not get regional.depth.b file " ; exit 1 ; }
+   cp ${BASEDIR}/expt_${X}/blkdat.input blkdat.input      || { echo "Could not get file blkdat.input " ; exit 1 ; }
+   cp ${BASEDIR}/expt_${X}/infile.in infile.in            || { echo "Could not get file infile.in " ; exit 1 ; }
+}
