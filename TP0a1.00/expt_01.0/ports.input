@@ -1,0 +1,16 @@
+     2    'nports' = number of boundary port sections
+     1    'pefold   ' = port transport e-folding time in days
+     1    'kdport' = port orientation (1=N, 2=S, 3=E, 4=W)
+   216    'ifport' = first i-index
+   216    'ilport' = last  i-index
+    91    'jfport' = first j-index
+   142    'jlport' = last  j-index
+   0.0    'svpnow   ' = existing port transport in Sv (+ve towards E or S)
+   0.7    'svport   ' = target   port transport in Sv (+ve towards E or S)
+     1    'kdport' = port orientation (1=N, 2=S, 3=E, 4=W)
+   140    'ifport' = first i-index
+   142    'ilport' = last  i-index
+   144    'jfport' = first j-index
+   144    'jlport' = last  j-index
+   0.0    'svpnow   ' = existing port transport in Sv (+ve towards E or S)
+   0.7    'svport   ' = target   port transport in Sv (+ve towards E or S)
