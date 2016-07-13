@@ -78,11 +78,25 @@ function topo_file {
       echo "Need region name and topo version" 2>&1
       return 1
    fi
-
-   echo "depth_${1}_${2}"
+   R=$1
+   topov=$(echo 0$2 | tail -c3)
+   #echo $topov $R 1>&2
+   echo "depth_${R}_${topov}"
    return 0
 }
 
+
+function kmt_file {
+   if [ $# -ne 2 ]  ;then
+      echo "Need region name and topo version" 2>&1
+      return 1
+   fi
+   R=$1
+   topov=$(echo 0$2 | tail -c3)
+   #echo $topov $R 1>&2
+   echo "kmt_${R}_${topov}.nc"
+   return 0
+}
 
 function archv_property {
    # Get properties from archive .b  file 
