@@ -26,6 +26,7 @@ export X=$1
 # than setting basedir directly
 export BASEDIR=$(cd $(dirname $0)/.. && pwd)/  
 source ${BASEDIR}/REGION.src || { echo "Could not source ${BASEDIR}/REGION.src" ; exit 1 ; }
+source ${BASEDIR}/bin/common_functions.sh || { echo "Could not source ${BASEDIR}/common_functions.sh" ; exit 1 ; }
 source ${BASEDIR}/expt_$X/EXPT.src || { echo "Could not source ${BASEDIR}/expt_$X/EXPT.src" ; exit 1 ; }
 D=$BASEDIR/force/rivers/
 S=$D/SCRATCH
@@ -61,14 +62,12 @@ cd       $S || { echo " Could not descend scratch dir $S" ; exit 1;}
 #
 # --- Input.
 #
-touch regional.grid.a regional.grid.b blkdat.input infile.in regional.depth.a regional.grid.b
-rm    regional.grid.a regional.grid.b blkdat.input infile.in regional.depth.a regional.grid.b
-${pget} ${BASEDIR}/topo/regional.grid.b regional.grid.b || { echo "Could not get regional.grid.b file " ; exit 1 ; }
-${pget} ${BASEDIR}/topo/regional.grid.a regional.grid.a  || { echo "Could not get regional.grid.a file " ; exit 1 ; }
-${pget} ${BASEDIR}/topo/depth_${R}_${T}.a regional.depth.a || { echo "Could not get regional.depth.a file " ; exit 1 ; }
-${pget} ${BASEDIR}/topo/depth_${R}_${T}.b regional.depth.b  || { echo "Could not get regional.depth.b file " ; exit 1 ; }
+touch blkdat.input infile.in
+rm    blkdat.input infile.in 
+copy_topo_files $S
+copy_grid_files $S
 ${pget} ${BASEDIR}/expt_${X}/blkdat.input blkdat.input  || { echo "Could not get file blkdat.input " ; exit 1 ; }
-${pget} ${BASEDIR}/force/rivers.dat Data/rivers.dat  || { echo "Could not get file rivers.dat " ; exit 1 ; }
+${pget} ${BASEDIR}/expt_${X}/rivers.dat Data/rivers.dat || { echo "Could not get file rivers.dat " ; exit 1 ; }
 ${pget} ${BASEDIR}/topo/grid.info grid.info  || { echo "Could not get file rivers.dat " ; exit 1 ; }
 
 
