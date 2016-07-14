@@ -76,7 +76,7 @@ res=$?
 [ $res -ne 0 ] && echo "Failure..."
 
 echo "If things went fine, you can now generate test forcing like this: "
-echo "    ../bin/atmo_synoptic_new.sh 01.0 erai 2013-01-02T00:00:00  2013-01-05T00:00:00"
+echo "    ../bin/atmo_synoptic_new.sh 01.0 erai 2015-01-02T00:00:00  2015-01-05T00:00:00"
 echo "Then edit the job script pbsjob.sh to read and make sure expt_preprocess.sh is called like this"
 echo "    ../bin/preprocess_expt.sh 2015-01-02T00:00:00 2015-01-05T00:00:00 --init    ... "
 
