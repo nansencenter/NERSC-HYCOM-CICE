@@ -27,7 +27,7 @@ export K=`grep "'kdm   ' =" $mydir/blkdat.input | awk '{printf("%03d", $1)}'`   
 export P=$mydir                                                  #  ---""---
 export D=$P/data                                                 # Where data ends up
 export S=$P/SCRATCH                  # Scratch area 
-export NMPI=149
+export NMPI=4
 
 # Consistency check. Ensures expt dir ends in expt_X
 echo $tmp

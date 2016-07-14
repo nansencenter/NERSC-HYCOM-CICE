@@ -6,7 +6,7 @@
 #
 #  Give the job a name
 #
-#PBS -N TP5a0.06_X04.0
+#PBS -N TP0a1.00_X01.0
 #
 #  Specify the project the job belongs to
 #
@@ -14,8 +14,8 @@
 #
 #  We want 24 hours on 32 cpu's:
 #
-#PBS -l walltime=00:40:00,mppwidth=149
-##PBS -l walltime=00:10:00,mppwidth=149
+##PBS -l walltime=00:40:00,mppwidth=4
+#PBS -l walltime=00:10:00,mppwidth=4
 #
 #  The job needs 1 GB memory per cpu:
 ##PBS -l mppmem=1000mb
