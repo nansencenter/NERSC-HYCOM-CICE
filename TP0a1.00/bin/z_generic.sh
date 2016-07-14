@@ -8,13 +8,16 @@ if [ $# -ne 2 ] ; then
    echo "are needed for setting up the relaxation files to be used in"
    echo "HYCOM."
    echo
-   echo "The only input is climatology and  ksigma"
-   echo "ksigma can be 0 or 2"
+   echo "The only input is experiment number and climatology"
    echo "climatology can be phc, levitus or woa2013"
+   echo
+   echo "Example:"
+   echo "$(basename $0) 01.0 phc"
+   echo
    exit
 fi
-export CLIM_CHOICE=$1
-export KSIGMA=$2
+export CLIM_CHOICE=$2
+export X=$1
 
 
 # Set basedir based on relative paths of script
@@ -23,6 +26,7 @@ export KSIGMA=$2
 export BASEDIR=$(cd $(dirname $0)/../ && pwd)/
 source ${BASEDIR}/bin/common_functions.sh || { echo "Could not source ${BASEDIR}/bin/common_functions.sh" ; exit 1 ; }
 source ${BASEDIR}/REGION.src || { echo "Could not source ${BASEDIR}/REGION.src" ; exit 1 ; }
+source ${BASEDIR}/expt_$X/EXPT.src || { echo "Could not source ${BASEDIR}/expt_$X/EXPT.src" ; exit 1 ; }
 D=$BASEDIR/relax/${CLIM_CHOICE}/
 S=$D/SCRATCH
 mkdir -p $S
@@ -75,11 +79,21 @@ fi
 [ ! -d ${CLIM_PATH} ] && { echo "Cant find CLIM_PATH directory at ${CLIM_PATH}" ; exit 1; }
 
 copy_grid_files $S
+cp $P/blkdat.input $S || tellerror "No $P/blkdat.input file" 
+export KSIGMA=$(blkdat_get blkdat.input thflag)
+
 touch   z_woa_dynamic && /bin/rm z_woa_dynamic
 #
 # --- 12 months
 #
 for MM  in  01 02 03 04 05 06 07 08 09 10 11 12 ; do
+
+   if [ -f ${D}/temp_sig${KSIGMA}_m${MM}.b -a -f ${D}/temp_sig${KSIGMA}_m${MM}.a -a -f ${D}/saln_sig${KSIGMA}_m${MM}.b -a -f ${D}/saln_sig${KSIGMA}_m${MM}.a ]
+   then
+      echo "Found existing z-climatology files  ${D}/[temp|saln]_sig${KSIGMA}_m${MM}.b  - delete these first if you want to regenerate them"
+      continue
+   fi
+
    #
    # --- Input.
    #

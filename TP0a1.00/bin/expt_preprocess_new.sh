@@ -328,17 +328,20 @@ for i in radflx shwflx vapmix \
    echo "|--> $i"
    [ -f  $DIR/$i.a ] || tellerror "File $DIR/$i.a does not exist"
    [ -f  $DIR/$i.b ] || tellerror "File $DIR/$i.b does not exist"
-   ln -sf $DIR/${i}.a forcing.${i}.a ||  tellerror "Could not fetch $DIR/$i.a"
-   ln -sf $DIR/${i}.b forcing.${i}.b ||  tellerror "Could not fetch $DIR/$i.b"
 
    # Check range of file against start and stop times
-   frcstart=$(head -n  6 forcing.$i.b | tail -n1 | sed "s/.*=//" | sed "s/^[ ]*//" | cut -d " " -f 1)
-   frcstop=$(tail -n 1 forcing.$i.b             | sed "s/.*=//" | sed "s/^[ ]*//" | cut -d " " -f 1)
-   test1=$(echo ${tstart#-}'>='$frcstart | bc -l)
-   test2=$(echo $tstop '<='$frcstop  | bc -l)
-   [ $test1 -eq 1 ] || tellerror "File $S/forcing.$i.b: forcing starts after  model starts"
-   [ $test2 -eq 1 ] || tellerror "File $S/forcing.$i.b: forcing stops  before model stops"
-   
+   if [ -f  $DIR/$i.a -a  -f $DIR/$i.b ] 
+   then
+      ln -sf $DIR/${i}.a forcing.${i}.a ||  tellerror "Could not fetch $DIR/$i.a"
+      ln -sf $DIR/${i}.b forcing.${i}.b ||  tellerror "Could not fetch $DIR/$i.b"
+      frcstart=$(head -n  6 forcing.$i.b | tail -n1 | sed "s/.*=//" | sed "s/^[ ]*//" | cut -d " " -f 1)
+      frcstop=$(tail -n 1 forcing.$i.b             | sed "s/.*=//" | sed "s/^[ ]*//" | cut -d " " -f 1)
+      test1=$(echo ${tstart#-}'>='$frcstart | bc -l)
+      test2=$(echo $tstop '<='$frcstop  | bc -l)
+      [ $test1 -eq 1 ] || tellerror "File $S/forcing.$i.b: forcing starts after  model starts"
+      [ $test2 -eq 1 ] || tellerror "File $S/forcing.$i.b: forcing stops  before model stops"
+   fi
+      
 
 done
 
