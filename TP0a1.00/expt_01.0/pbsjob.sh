@@ -54,7 +54,7 @@ source ../REGION.src  || { echo "Could not source ../REGION.src "; exit 1; }
 source ./EXPT.src  || { echo "Could not source EXPT.src"; exit 1; }
 
 # Transfer data files to scratch - must be in "expt_XXX" dir for this script
-../bin/preprocess_expt.sh 2015-01-02T00:00:00 2015-01-05T00:00:00 --init        ||  { echo "Preprocess had fatal errors "; exit 1; }
+../bin/expt_preprocess_new.sh 2015-01-02T00:00:00 2015-01-05T00:00:00 --init        ||  { echo "Preprocess had fatal errors "; exit 1; }
 
 # Enter Scratch/run dir and Run model
 cd $S  ||  { echo "Could not go to dir $S  "; exit 1; }
