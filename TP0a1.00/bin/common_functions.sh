@@ -25,7 +25,7 @@ function blkdat_get {
 
 
    integers=("iexpt" "priver" "yrflag" "jerlv0" "sssflg" "sstflg" "relax" "vsigma" "idm" "jdm" "kdm" "nhybrd" "nsigma" "lbflag")
-   floats=("thkdf4","kapref" "sigma" "dp00" "dp00x" "dp00f" "ds00" "ds00x" "ds00f" "dp0k" "ds0k" "skmap" "nestfq" "bnstfq")
+   floats=("thkdf4","kapref" "sigma" "dp00" "dp00x" "dp00f" "ds00" "ds00x" "ds00f" "dp0k" "ds0k" "skmap" "nestfq" "bnstfq" "thkdf2")
 
    param=$(printf %-6s $par)
    if    array_contains "$par" ${integers[@]}  ; then
@@ -166,10 +166,20 @@ function copy_setup_files {
    rm    infile.in blkdat.input
    copy_grid_files $S
    copy_topo_files $S
-   #cp ${BASEDIR}/topo/regional.grid.b regional.grid.b     || { echo "Could not get regional.grid.b file " ; exit 1 ; }
-   #cp ${BASEDIR}/topo/regional.grid.a regional.grid.a     || { echo "Could not get regional.grid.a file " ; exit 1 ; }
-   #cp ${BASEDIR}/topo/depth_${R}_${T}.a regional.depth.a  || { echo "Could not get regional.depth.a file " ; exit 1 ; }
-   #cp ${BASEDIR}/topo/depth_${R}_${T}.b regional.depth.b  || { echo "Could not get regional.depth.b file " ; exit 1 ; }
    cp ${BASEDIR}/expt_${X}/blkdat.input blkdat.input      || { echo "Could not get file blkdat.input " ; exit 1 ; }
    cp ${BASEDIR}/expt_${X}/infile.in infile.in            || { echo "Could not get file infile.in " ; exit 1 ; }
+}
+
+
+
+
+tellerror () {
+  echo "[FATAL  ] $1" 
+  let numerr=$numerr+1; 
+  #echo "[FATAL  ] $1" >> $logfile
+}
+
+tellwarn () {
+  echo "[WARNING] $1" 
+  #echo "[WARNING] $1" >> $logfile
 }

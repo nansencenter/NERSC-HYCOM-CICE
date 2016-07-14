@@ -1,45 +1,33 @@
 #!/bin/bash
-# Error counter for preprocessing
-#Check environment
-export BASEDIR=$(cd $(dirname 0)/.. && pwd)/
-echo BASEDIR=$BASEDIR
-if [ -z ${BASEDIR} ] ; then
-   tellerror "preprocess.sh: BASEDIR Environment not set "
-   exit
-fi
 
 # Initialize environment (sets Scratch dir ($S), Data dir $D ++ )
+export BASEDIR=$(cd $(dirname 0)/.. && pwd)/
 source ../REGION.src  || { echo "Could not source ../REGION.src "; exit 1; }
 source ./EXPT.src  || { echo "Could not source EXPT.src "; exit 1; }
 source $(dirname $0)/common_functions.sh  || { echo "Could not source common_functions.sh "; exit 1; }
 
+# KAL - new input start and end date times in ISO format
+if [ $# -lt 2 ] ; then
+   tellerror " Need start and stop times as input"
+else 
+   starttime=$1
+   endtime=$2
+   initstr=""
+   if [ $# -eq 3 ] ; then
+      initstr="$3"
+   fi
+fi
+
+# Init error counter (global var used by function tellerror)
 numerr=0
 
-tellerror () {
-  echo "[FATAL  ] $1" 
-  let numerr=$numerr+1; 
-  #echo "[FATAL  ] $1" >> $logfile
-}
-tellwarn () {
-  echo "[WARNING] $1" 
-  #echo "[WARNING] $1" >> $logfile
-}
-
-# Create data and scratch dirs
+# Create data and scratch dirs. Enter scratch dir
 if [ ! -d $D ] ; then
    mkdir -p $D   || { echo "Could not create data dir : $S " ; exit 1 ; }
 fi
 if [ ! -d $S ] ; then
    mkdir -p $S   || { echo "Could not create data dir : $S " ; exit 1 ; }
 fi
-
-# Set integration limits
-$BASEDIR/bin/setlimits.py
-
-# Remove init file after limits are set
-[ -f INITIALIZE ]  && rm INITIALIZE
-
-# Source info from current experiment - listed in "THIS_EXPT.src"
 cd       $S || { tellerror "no scratch dir $S" ;  exit 1 ;}
 
 
@@ -49,22 +37,10 @@ cd       $S || { tellerror "no scratch dir $S" ;  exit 1 ;}
 # --- Set up time limits for this segment
 #
 #
-mv $P/limits limits             || tellerror "no limits file created by setlimits.py"  
 cp $P/blkdat.input blkdat.input || tellerror "No blkdat.input file" 
-cp $P/infile.in infile.in       || tellerror "no infile.in" 
-cp $P/infile2.in infile2.in     || tellerror "no infile2.in" 
 
-
-touch ports.input tracer.input infile.evp infile.icestate
-rm    ports.input tracer.input infile.evp infile.icestate
-[ -s  $P/tracer.input ] && cp $P/tracer.input tracer.input
-[ -s  $P/infile.evp ] && cp $P/infile.evp infile.evp
-[ -s  $P/infile.icestate ] && cp $P/infile.icestate infile.icestate
-
-#
-# --- check that iexpt from blkdat.input agrees with E from this script.
 # --- fetch some things from blkdat.input 
-#
+# --- check that iexpt from blkdat.input agrees with E from this script.
 export LBFLAG=`grep "'lbflag' =" blkdat.input | awk '{printf("%03d", $1)}'`
 export EB=`grep "'iexpt ' =" blkdat.input | awk '{printf("%03d", $1)}'`
 export PRIVER=`grep "'priver' =" blkdat.input | awk '{printf("%1d", $1)}'`
@@ -78,6 +54,7 @@ export KAPREF=`grep "'kapref' =" blkdat.input | awk '{printf("%f", $1)}'`
 export VSIGMA=`grep "'vsigma' =" blkdat.input | awk '{printf("%1d", $1)}'`
 export BNSTFQ=$(blkdat_get blkdat.input bnstfq)
 export NESTFQ=$(blkdat_get blkdat.input nestfq)
+export THKDF2=$(blkdat_get blkdat.input thkdf2)
 [ "$EB" == "$E" ] || tellerror " blkdat.input iexpt ${EB} different from this experiment ${E} set in EXPT.src"
 echo "Fetched from blkdat.input:"
 echo "--------------------------"
@@ -89,51 +66,78 @@ echo "SSS    is $SSSRLX"
 echo "SST    is $SSTRLX"
 echo "BNSTFQ is $BNSTFQ"
 echo "NESTFQ is $NESTFQ"
-echo
+
+# TODO: Limitation for now. Note that newest hycom can initialize with yrflag=3 (realistic forcing)
+if [ $YRFLAG -ne 3 ] ; then
+   tellerror "must use yrflag=3 in blkdat.input"
+   exit 1
+fi
+
+# Set integration limits
+cmd="hycom_limits.py $starttime $endtime $initstr"
+eval $cmd ||  tellerror "$cmd failed"
 
 
-#
-# --- Fetch some things from infile.in
-#
-# TODO iday may be ordinal day > days in year
-rungen=$(head -n 2 infile.in  | tail -n1 | cut -c1-3)
-refyear=$(head -n 3 infile.in  | tail -n1 | cut -c1-4)
-refyear=$(printf "%4.4d" $refyear)
-iday=$(head -n 4 infile.in  | tail -n1 | cut -c1-4)
-iday=`echo 00$iday | tail -4c`
-ihour=$(head -n 4 infile.in  | tail -n1 | cut -c7-8)
-ihour=`echo 0$ihour | tail -3c`
-frc=$(head -n 6 infile.in  | tail -n1 | cut -c1-5 | tr -d " ")
-clm=$(head -n 6 infile.in  | tail -n1 | cut -c7-11 | tr -d " ") 
-nestoflag=$(head -n 11 infile.in | tail -n1 | awk '{printf("%1s", $1)}')
-nestiflag=$(head -n 12 infile.in | tail -n1 | awk '{printf("%1s", $1)}')
-tideflag=$(head -n 13 infile.in | tail -n1 | cut -c1 )
-tidechoice=$(head -n 13 infile.in | tail -n1 | cut -c3-5 )
-gpflag=$(head -n 14 infile.in | tail -n1 | awk '{printf("%1s", $1)}')
-echo "Fetched from infile.in:"
-echo "-----------------------"
-echo "rungen  is              : $rungen"
-echo "refyear is              : $refyear"
-echo "iday    is              : $iday"
-echo "ihour   is              : $ihour"
-echo "Forcing option is       : ${frc}"
-echo "Climatology option is   : ${clm}"
-echo "Outer nest flag is      : $nestoflag"
-echo "Inner nest flag is      : $nestiflag"
-echo "Tide flag and choice is : $tideflag $tidechoice"
-echo "Gidpoint flag is        : $gpflag "
-echo
+touch ports.input tracer.input
+rm    ports.input tracer.input
+[ -s  $P/tracer.input ] && cp $P/tracer.input tracer.input
 
 
-#
-# --- Fetch some things from limits
-#
-tstart=$(cat limits | tr " " -s | sed "s/^[ ]*//" | cut -d " " -f1)
-tstop=$(cat limits | tr " " -s | sed "s/^[ ]*//" | cut -d " " -f2)
+
+##
+## --- Fetch some things from infile.in
+##
+## TODO iday may be ordinal day > days in year
+#rungen=$(head -n 2 infile.in  | tail -n1 | cut -c1-3)
+#refyear=$(head -n 3 infile.in  | tail -n1 | cut -c1-4)
+#refyear=$(printf "%4.4d" $refyear)
+#iday=$(head -n 4 infile.in  | tail -n1 | cut -c1-4)
+#iday=`echo 00$iday | tail -4c`
+#ihour=$(head -n 4 infile.in  | tail -n1 | cut -c7-8)
+#ihour=`echo 0$ihour | tail -3c`
+#frc=$(head -n 6 infile.in  | tail -n1 | cut -c1-5 | tr -d " ")
+#clm=$(head -n 6 infile.in  | tail -n1 | cut -c7-11 | tr -d " ") 
+#nestoflag=$(head -n 11 infile.in | tail -n1 | awk '{printf("%1s", $1)}')
+#nestiflag=$(head -n 12 infile.in | tail -n1 | awk '{printf("%1s", $1)}')
+#tideflag=$(head -n 13 infile.in | tail -n1 | cut -c1 )
+#tidechoice=$(head -n 13 infile.in | tail -n1 | cut -c3-5 )
+#gpflag=$(head -n 14 infile.in | tail -n1 | awk '{printf("%1s", $1)}')
+#echo "Fetched from infile.in:"
+#echo "-----------------------"
+#echo "rungen  is              : $rungen"
+#echo "refyear is              : $refyear"
+#echo "iday    is              : $iday"
+#echo "ihour   is              : $ihour"
+#echo "Forcing option is       : ${frc}"
+#echo "Climatology option is   : ${clm}"
+#echo "Outer nest flag is      : $nestoflag"
+#echo "Inner nest flag is      : $nestiflag"
+#echo "Tide flag and choice is : $tideflag $tidechoice"
+#echo "Gidpoint flag is        : $gpflag "
+#echo
+
+
+##
+## --- Fetch some things from limits
+##
+#tstart=$(cat limits | tr " " -s | sed "s/^[ ]*//" | cut -d " " -f1)
+#tstop=$(cat limits | tr " " -s | sed "s/^[ ]*//" | cut -d " " -f2)
+
+## Get init flag from start time
+#init=0
+#[ `echo $tstart | awk '{print ($1 < 0.0)}'` == 1  ] && init=1
+#echo "Fetched from limits:"
+#echo "--------------------"
+#echo "init is $init"
+#echo
+
 
 # Get init flag from start time
-init=0
-[ `echo $tstart | awk '{print ($1 < 0.0)}'` == 1  ] && init=1
+if [ $initstr == "--init" ] ;then
+   init=1
+else 
+   init=0
+fi
 echo "Fetched from limits:"
 echo "--------------------"
 echo "init is $init"
@@ -148,12 +152,11 @@ echo
 # --- pget, pput "copy" files between scratch and permanent storage.
 # --- Can both be cp if the permanent filesystem is mounted locally.
 # --- KAL - we use pget=pput=cp
-#
 export pget=/bin/cp
 export pput=/bin/cp
 
-echo
 echo "Initialization complete - now copying necessary files to scratch area"
+echo
 
 #
 #
@@ -179,43 +182,42 @@ ${pget} $BASEDIR/topo/regional.grid.a regional.grid.a || telerror "no grid file 
 ${pget} $BASEDIR/topo/regional.grid.b regional.grid.b || telerror "no grid file regional.grid.a" 
 ${pget} $BASEDIR/topo/depth_${R}_${T}.a regional.depth.a || telerror "no topo file depth_${R}_${T}.a" 
 ${pget} $BASEDIR/topo/depth_${R}_${T}.b regional.depth.b || telerror "no topo file depth_${R}_${T}.b" 
-${pget} $BASEDIR/topo/grid.info  grid.info || telerror "no grid.info file " 
+#${pget} $BASEDIR/topo/grid.info  grid.info || telerror "no grid.info file "  # KAL - Should not be needed
 
 
-#
-# --- Check forcing and climatology option in infile.in
-#
-if [ "$clm" == "era40" ] ; then
-   CLMDIR=$BASEDIR/force/nersc_era40/$E/
-elif [ "$clm" == "old" ] ; then
-   CLMDIR=$BASEDIR/force/nersc_old/$E/
-elif [ "$clm" == "ncepr" ] ; then
-   CLMDIR=$BASEDIR/force/nersc_ncepr/$E/
-elif [ "$clm" != "prep" ] ; then
-   tellerror "Unknown climate option $clm"
-   CLMDIR=""
-fi
+##
+## --- Check forcing and climatology option in infile.in
+##
+#if [ "$clm" == "era40" ] ; then
+#   CLMDIR=$BASEDIR/force/nersc_era40/$E/
+#elif [ "$clm" == "old" ] ; then
+#   CLMDIR=$BASEDIR/force/nersc_old/$E/
+#elif [ "$clm" == "ncepr" ] ; then
+#   CLMDIR=$BASEDIR/force/nersc_ncepr/$E/
+#elif [ "$clm" != "prep" ] ; then
+#   tellerror "Unknown climate option $clm"
+#   CLMDIR=""
+#fi
 
    
 
-#
-#
-# --- Climatology atmospheric forcing - always copied
-#
-#
-if [ "$CLMDIR" != "" -a "$clm" != "prep" ] ; then
-   echo "**Retrieving climatology forcing files"
-   for i in tauewd taunwd wndspd radflx shwflx vapmix \
-      airtmp precip uwind vwind clouds relhum slp ; do
-      # TODO - doesnt handle offsets
-      #${pget} $CLMDIR/$i.a      forcing.$i.a || tellerror "Could not fetch $CLMDIR/$i.a"
-      [ -f  $CLMDIR/$i.a ] || tellerror "File $CLMDIR/$i.a does not exist"
-      [ -f  $CLMDIR/$i.b ] || tellerror "File $CLMDIR/$i.b does not exist"
-      ln -sf $CLMDIR/$i.a      forcing.$i.a || tellerror "Could not link $CLMDIR/$i.a"
-      ln -sf $CLMDIR/$i.b      forcing.$i.b || tellerror "Could not link $CLMDIR/$i.b"
-   done
-
-fi
+##
+##
+## --- Climatology atmospheric forcing - always copied
+##
+##
+#if [ "$CLMDIR" != "" -a "$clm" != "prep" ] ; then
+#   echo "**Retrieving climatology forcing files"
+#   for i in tauewd taunwd wndspd radflx shwflx vapmix \
+#      airtmp precip uwind vwind clouds relhum slp ; do
+#      # TODO - doesnt handle offsets
+#      #${pget} $CLMDIR/$i.a      forcing.$i.a || tellerror "Could not fetch $CLMDIR/$i.a"
+#      [ -f  $CLMDIR/$i.a ] || tellerror "File $CLMDIR/$i.a does not exist"
+#      [ -f  $CLMDIR/$i.b ] || tellerror "File $CLMDIR/$i.b does not exist"
+#      ln -sf $CLMDIR/$i.a      forcing.$i.a || tellerror "Could not link $CLMDIR/$i.a"
+#      ln -sf $CLMDIR/$i.b      forcing.$i.b || tellerror "Could not link $CLMDIR/$i.b"
+#   done
+#fi
 
 
 if [ "$SSTRLX" -eq 3 ] ; then
@@ -233,75 +235,94 @@ if [ 0 -eq 1 ] ; then
    ln -sf $CLMDIR/surtmp.b forcing.surtmp.b || tellwarn "Could not link $CLMDIR/surtmp.b"
 fi
 
+##
+## --- Synoptic forcing option - for now just sets up links
+##
+#if [ "$frc" != "month" -a  "$clm" != "prep" ] ; then
+#   echo "**Setting up INLINE_FORCING synoptic forcing"
 #
-# --- Synoptic forcing option - for now just sets up links
+#   # pathvar is name of variable
+#   pathvar=""
+#   if [ "${frc}" == "era40" ] ; then
+#      pathvar="ERA40_PATH"
+#   elif [ "${frc}" == "era-i" ] ; then
+#      pathvar="ERAI_PATH"
+#   elif [ "${frc}" == "ncepr" ] ; then
+#      pathvar="NCEP_PATH"
+#   elif [ "${frc}" == "ecmwf" ] ; then
+#      pathvar="ECMWF_PATH"
+#      pathvar2="./Ecmwfr"
+#   elif [ "${frc}" == "metno" ] ; then
+#      pathvar="METNO_PATH"
+#      pathvar2="./Met.no"
+#   elif [ "${frc}" == "ecnc" ] ; then
+#      pathvar="ECNC_PATH"
+#      pathvar2="./Ecmwf.nc"
+#   elif [ "${frc}" == "ncepr" ] ; then
+#      pathvar="NCEP_PATH"
+#   else
+#      tellerror "No method for forcing $frc (did you set it up?)"
+#   fi
 #
-if [ "$frc" != "month" -a  "$clm" != "prep" ] ; then
-   echo "**Setting up INLINE_FORCING synoptic forcing"
-
-   # pathvar is name of variable
-   pathvar=""
-   if [ "${frc}" == "era40" ] ; then
-      pathvar="ERA40_PATH"
-   elif [ "${frc}" == "era-i" ] ; then
-      pathvar="ERAI_PATH"
-   elif [ "${frc}" == "ncepr" ] ; then
-      pathvar="NCEP_PATH"
-   elif [ "${frc}" == "ecmwf" ] ; then
-      pathvar="ECMWF_PATH"
-      pathvar2="./Ecmwfr"
-   elif [ "${frc}" == "metno" ] ; then
-      pathvar="METNO_PATH"
-      pathvar2="./Met.no"
-   elif [ "${frc}" == "ecnc" ] ; then
-      pathvar="ECNC_PATH"
-      pathvar2="./Ecmwf.nc"
-   elif [ "${frc}" == "ncepr" ] ; then
-      pathvar="NCEP_PATH"
-   else
-      tellerror "No method for forcing $frc (did you set it up?)"
-   fi
-
-   if [ "$pathvar" != "" ] ; then
-      pathval="${!pathvar}" # pathval is value of variable named pathvar
-      echo "Forcing is $frc, environment variable $pathvar is $pathval"
-      if [ "${pathval}" == "" -o ! -d ${pathval:=tomtomtom} ] ; then  #tomtomtom is substituted if pathval is empty
-         tellerror "$pathvar not set or not a directory"
-      else # Could be present
-         if [ "$pathvar2" != ""  ] ; then
-            ln -s ${pathval} $pathvar2 || tellwarn "Could not link $pathvar ${pathval} as $pathvar2 (it might be present already)"
-         else
-            ln -s ${pathval} . || tellwarn "Could not link $pathvar ${pathval} (it might be present)"
-         fi
-      fi
-   else
-      tellerror "No pathvar $pathvar set up for forcing $frc. Set it in REGION.src "
-   fi
-#else
-#   tellerror "Forcing variable frc undefined"
-fi
-
-
+#   if [ "$pathvar" != "" ] ; then
+#      pathval="${!pathvar}" # pathval is value of variable named pathvar
+#      echo "Forcing is $frc, environment variable $pathvar is $pathval"
+#      if [ "${pathval}" == "" -o ! -d ${pathval:=tomtomtom} ] ; then  #tomtomtom is substituted if pathval is empty
+#         tellerror "$pathvar not set or not a directory"
+#      else # Could be present
+#         if [ "$pathvar2" != ""  ] ; then
+#            ln -s ${pathval} $pathvar2 || tellwarn "Could not link $pathvar ${pathval} as $pathvar2 (it might be present already)"
+#         else
+#            ln -s ${pathval} . || tellwarn "Could not link $pathvar ${pathval} (it might be present)"
+#         fi
+#      fi
+#   else
+#      tellerror "No pathvar $pathvar set up for forcing $frc. Set it in REGION.src "
+#   fi
+##else
+##   tellerror "Forcing variable frc undefined"
+#fi
 #
+#
+
+##
+## --- Pre-prepared forcing option - for now just sets up links
+##
+#if [ "$clm" == "prep" ] ; then
+#   echo "**Setting up pre-prepared synoptic forcing from force/synoptic/$E"
+#
+#   DIR=$BASEDIR/force/synoptic/$E/
+#
+#   for i in tauewd taunwd wndspd radflx shwflx vapmix \
+#      airtmp precip uwind vwind clouds relhum slp ; do
+#
+#      echo "|--> $i"
+#
+#      [ -f  $DIR/$i.a ] || tellerror "File $DIR/$i.a does not exist"
+#      [ -f  $DIR/$i.b ] || tellerror "File $DIR/$i.b does not exist"
+#      ln -sf $DIR/${i}.a forcing.${i}.a ||  tellerror "Could not fetch $DIR/$i.a"
+#      ln -sf $DIR/${i}.b forcing.${i}.b ||  tellerror "Could not fetch $DIR/$i.b"
+#   done
+#fi
+
+# ---
 # --- Pre-prepared forcing option - for now just sets up links
-#
-if [ "$clm" == "prep" ] ; then
-   echo "**Setting up pre-prepared synoptic forcing from force/synoptic/$E"
+# --- TODO: To verify, we have to go into file and check timings
+# ---
+echo "**Setting up pre-prepared synoptic forcing from force/synoptic/$E"
+DIR=$BASEDIR/force/synoptic/$E/
+for i in tauewd taunwd wndspd radflx shwflx vapmix \
+   airtmp precip uwind vwind clouds relhum slp ; do
 
-   DIR=$BASEDIR/force/synoptic/$E/
+   echo "|--> $i"
 
-   for i in tauewd taunwd wndspd radflx shwflx vapmix \
-      airtmp precip uwind vwind clouds relhum slp ; do
+   [ -f  $DIR/$i.a ] || tellerror "File $DIR/$i.a does not exist"
+   [ -f  $DIR/$i.b ] || tellerror "File $DIR/$i.b does not exist"
+   ln -sf $DIR/${i}.a forcing.${i}.a ||  tellerror "Could not fetch $DIR/$i.a"
+   ln -sf $DIR/${i}.b forcing.${i}.b ||  tellerror "Could not fetch $DIR/$i.b"
+done
 
-      echo "|--> $i"
-
-      [ -f  $DIR/$i.a ] || tellerror "File $DIR/$i.a does not exist"
-      [ -f  $DIR/$i.b ] || tellerror "File $DIR/$i.b does not exist"
-      ln -sf $DIR/${i}.a forcing.${i}.a ||  tellerror "Could not fetch $DIR/$i.a"
-      ln -sf $DIR/${i}.b forcing.${i}.b ||  tellerror "Could not fetch $DIR/$i.b"
-   done
-fi
-
+exit
 
 #
 # --- time-invarent heat flux offset
@@ -377,119 +398,30 @@ if [ ${KAPREF:0:1} == "-" ] ;then
 fi
 
 #
-# - Mystery field ....
+# Spatially varying isopycnal densities
 #
 if [ ${VSIGMA} -ne  0 ] ;then
    ${pget} $BASEDIR/relax/${E}/iso_sigma.a iso.sigma.a  || tellerror "Could not get iso.sigma.a"
    ${pget} $BASEDIR/relax/${E}/iso_sigma.b iso.sigma.b  || tellerror "Could not get iso.sigma.b"
 fi
 
-#
-# - 
-#
-${pget} ${D}/../../force/other/iwh_tabulated.dat . || tellerror "Could not get iwh_tabulated.dat"
 
-#C
-#touch iso.top.a
-#touch iso.top.b
-#if (-z iso.top.a) then
-#   ${pget} ${D}/../../relax/${E}/iso_top.a iso.top.a  &
-#endif
-#if (-z iso.top.b) then
-#   ${pget} ${D}/../../relax/${E}/iso_top.b iso.top.b  &
-#endif
-#C
-
+# Thickness diffusion
+testthkdf2=$(echo $THKDF2'<'0.0 | bc -l)
+testthkdf4=$(echo $THKDF4'<'0.0 | bc -l)
 [ -f thkdf4.a ] && rm thkdf4.a
 [ -f thkdf4.b ] && rm thkdf4.b
-if [ ${THKDF4:0:1} == "-" ] ; then 
+if [ ${testthkdf4} -eq 1 ] ; then 
    ${pget} ${D}/../../relax/${E}/thkdf4.a thkdf4.a  || tellerror "Could not get thkdf4.a"
    ${pget} ${D}/../../relax/${E}/thkdf4.b thkdf4.b  || tellerror "Could not get thkdf4.b"
 fi
 
-# Retrieve infile_gp if gp is active
-if [ "$gpflag" == "T" ] ; then
-   ${pget} ${P}/infile_gp.in . || tellerror "Could not get infile_gp.in"
+[ -f thkdf2.a ] && rm thkdf2.a
+[ -f thkdf2.b ] && rm thkdf2.b
+if [ ${testthkdf2} -eq 1 ] ; then 
+   ${pget} ${D}/../../relax/${E}/thkdf2.a thkdf2.a  || tellerror "Could not get thkdf2.a"
+   ${pget} ${D}/../../relax/${E}/thkdf2.b thkdf2.b  || tellerror "Could not get thkdf2.b"
 fi
-
-## Retrieve nesting.in if outer nesting is active
-#if [ "$nestoflag" == "T" ] ; then
-#   echo "**Setting up outer nesting"
-#
-#   # The nesting files will be dumped in a subdirectory of the outer model scratch dir. This 
-#   # is a new approach. After the run is finished, data should be copied to the data dir. The naming
-#   # scheme of the output directory is ./nest_out_${IR}_${IT}/
-#   ${pget} ${P}/nesting.in . || tellerror "Could not get nesting.in"
-#
-#   # Due to the naming scheme we can retrieve the inner region and topo version like this
-#   cat nesting.in | \
-#   while read NESTDIR ; do
-#      #get the last name part of the path i.e. nest_out_${IR}_${IT} and etract IR and IT
-#      #multiple path is possible
-#      #example: /work/dany/FR1b0.12/expt_01.1/nest_out_FR1b0.12_01/
-#      II=`echo $NESTDIR | awk --field-separator=/  '{print $(NF-1)}'`
-#      IT=`echo $II | awk --field-separator=_  '{print $(NF)}'`
-#      IR=`echo $II | awk --field-separator=_  '{print $(NF-1)}'`
-#      echo $II $IT $IR
-#      # Set up nest dir
-#      mkdir -p $NESTDIR || tellerror "Could not create directory $NESTDIR"
-#      ${pget} $BASEDIR/nest_nersc/${E}/outer/depth_${IR}_${IT}.b $NESTDIR/regional.depth.b  || \
-#         tellerror "Could not get $BASEDIR/nest_nersc/${E}/outer/depth_${IR}_${IT}.b"
-#      ${pget} $BASEDIR/nest_nersc/${E}/outer/depth_${IR}_${IT}.a $NESTDIR/regional.depth.a  || \
-#         tellerror "Could not get $BASEDIR/nest_nersc/${E}/outer/depth_${IR}_${IT}.a"
-#      ${pget} $BASEDIR/nest_nersc/${E}/outer/regional.grid_${IR}_${IT}.a $NESTDIR/regional.grid.a  || \
-#         tellerror "Could not get $BASEDIR/nest_nersc/${E}/outer/regional.grid_${IR}_${IT}.a"
-#      ${pget} $BASEDIR/nest_nersc/${E}/outer/regional.grid_${IR}_${IT}.b $NESTDIR/regional.grid.b  || \
-#         tellerror "Could not get $BASEDIR/nest_nersc/${E}/outer/regional.grid_${IR}_${IT}.b"
-#      ${pget} $BASEDIR/nest_nersc/${E}/outer/${IR}_${IT}_pivots.uf $NESTDIR/pivots.uf || \
-#         tellerror "Could not get $BASEDIR/nest_nersc/${E}/outer/${IR}_${IT}_pivots.uf"
-#   done
-#      
-#fi
-
-
-## Retrieve inner nesting files if active
-#if [ "$nestiflag" == "T" ] ; then
-#   echo "**Setting up inner nesting"
-#
-#   # We need one output nesting directory - to be linked in as "nest" in SCRATCH dir
-#   [ ! -d $BASEDIR/expt_${X}/nest_out_${R}_${T}  -a ! -L $BASEDIR/expt_${X}/nest_out_${R}_${T}  ]  && \
-#      tellerror "No nest input directory $BASEDIR/expt_${X}/nest_out_${R}_${T} exists for this model"
-#
-#   [ -L nest ] && rm nest  
-#   ln -sf $BASEDIR/expt_${X}/nest_out_${R}_${T}/  nest
-#
-##   [ ! -d nest ] && mkdir nest  
-##   [ ! -d nest ] &&  tellerror "Could not create nesting subdirectory"
-#   ${pget} ${BASEDIR}/nest_nersc/$E/inner/ports.input.nest ports.input || tellerror "Could not get nesting ports.input"
-#   ${pget} ${BASEDIR}/nest_nersc/$E/inner/rmu.a nest/ || tellerror "Could not get nesting rmu.a"
-#   ${pget} ${BASEDIR}/nest_nersc/$E/inner/rmu.b nest/ || tellerror "Could not get nesting rmu.b"
-#
-##   # Also copy regional.grid.[ab] and regional.depth.[ab] to nesting directory
-##   ${pget} $BASEDIR/topo/regional.grid.a nest/regional.grid.a || telerror "no grid file regional.grid.a" 
-##   ${pget} $BASEDIR/topo/regional.grid.b nest/regional.grid.b || telerror "no grid file regional.grid.a" 
-##   ${pget} $BASEDIR/topo/depth_${R}_${T}.a nest/regional.depth.a || telerror "no topo file depth_${R}_${T}.a" 
-##   ${pget} $BASEDIR/topo/depth_${R}_${T}.b nest/regional.depth.b || telerror "no topo file depth_${R}_${T}.b" 
-#
-#
-#   # Number of files in nest dir
-#   numnest=$(ls -1 nest/ | grep \.hdr$ | wc -l)
-#
-#   if [ $numnest -eq 0 ]  ; then
-#      tellerror "nest directory does not contain .hdr files"
-#      
-#   else
-#
-#      # Sample file
-#      filenest=$(ls -1 nest/ | grep \.hdr$ | head -n1)
-#
-#      # Very crude sanity check on input nest dir
-#      nestk=$(head -n 1 $filenest  | sed "s/.*://" | awk '{printf("%d", $2)}')
-#
-#      [ $nestk -ne $K ] && tellerror "Nest files and blkdat.input have different vertical dim $K vs $nestk "
-#   fi
-#
-#fi
 
 
 # TODO Limited set of tests for now. 
@@ -524,7 +456,6 @@ elif [ $tmp -eq 1 -a $LBFLAG -eq 2 ] ; then
 fi
 
 # Need nest rmu in this case:
-echo $nestdir
 if [ $tmp2 -eq 1  ] ; then
    # Nest relaxation - use file in  experiment dir if present. Otherwise look in nest dir
    if [ -f $P/rmu_nest.a -a -f $P/rmu_nest.a ] ; then
@@ -541,24 +472,10 @@ if [ $tmp2 -eq 1  ] ; then
 fi
 
 
-   
-
-
-#export RLX=`grep "'relax ' =" blkdat.input | awk '{printf("%1d", $1)}'`
-#export THKDF4=`grep "'thkdf4' =" blkdat.input | awk '{printf("%f", $1)}'`
-#export KAPREF=`grep "'kapref' =" blkdat.input | awk '{printf("%f", $1)}'`
-#export VSIGMA=`grep "'vsigma' =" blkdat.input | awk '{printf("%1d", $1)}'`
-#export BNSTFQ=$(blkdat_get blkdat.input bnstfq)
-#export NESTFQ=$(blkdat_get blkdat.input nestfq)
-
-
-
-
-
-# Retrieve nersc tidal data set if active
-if [ "$tideflag" == "T" ] ; then
-   ${pget} ${BASEDIR}/tides_nersc/$E/${tidechoice}obc_elev.dat . || tellerror "Could not get tidal data ${tidechoice}obc_elev.dat "
-fi
+## Retrieve nersc tidal data set if active
+#if [ "$tideflag" == "T" ] ; then
+#   ${pget} ${BASEDIR}/tides_nersc/$E/${tidechoice}obc_elev.dat . || tellerror "Could not get tidal data ${tidechoice}obc_elev.dat "
+#fi
    
 
 
@@ -613,9 +530,9 @@ fi
 
 
 #
-# --- model executable
+# --- model executable. One executable to rule them all!
 #
-/bin/cp ${BASEDIR}/Build_V${V}_X${X}/hycom . || tellerror "Could not get hycom executable"
+/bin/cp $BASEDIR/../hycom/HYCOM_2.2.98_ESMF5/RELO/src_2.2.98ZA-07Tsig0-i-sm-sse_relo_mpi/hycom_cice || tellerror "Could not get hycom executable"
 
 
 
