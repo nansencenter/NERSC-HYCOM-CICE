@@ -3,7 +3,7 @@ Sigma0; GDEM3 init; KPP mixed layer; SeaWiFS mon KPAR; nested in ATLd0.08 2.6;
 S-Z(15-11): dp00/f/x/i=3m/1.125/12m/1m; ds=1m/1.125/4m; src_2.2.12;
 12345678901234567890123456789012345678901234567890123456789012345678901234567890
   22	  'iversn' = hycom version number x10
- 040	  'iexpt ' = experiment number x10
+ 010	  'iexpt ' = experiment number x10
  100	  'idm   ' = longitudinal array size
  110	  'jdm   ' = latitudinal  array size
   -1	  'itest ' = grid point where detailed diagnostics are desired
@@ -59,7 +59,7 @@ S-Z(15-11): dp00/f/x/i=3m/1.125/12m/1m; ds=1m/1.125/4m; src_2.2.12;
   37.48   'sigma ' = layer 32 isopycnal target density (sigma units)
    2	  'iniflg' = initial state flag (0=levl, 1=zonl, 2=clim)
    0	  'jerlv0' = initial jerlov water type (1 to 5; 0 to use KPAR)
-   0	  'yrflag' = days in year flag   (0=360,  1=366,  2=366J1, 3=actual)
+   3	  'yrflag' = days in year flag   (0=360,  1=366,  2=366J1, 3=actual)
    0	  'sshflg' = diagnostic SSH flag (0=SSH,1=SSH&stericSSH)
    0.25 'dsurfq' = number of days between model diagnostics at the surface
  5.00    'diagfq' = number of days between model diagnostics
