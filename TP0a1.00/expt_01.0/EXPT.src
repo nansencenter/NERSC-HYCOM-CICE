@@ -30,7 +30,7 @@ export S=$P/SCRATCH                  # Scratch area
 export NMPI=4
 
 # Consistency check. Ensures expt dir ends in expt_X
-echo $tmp
+#echo $tmp
 tmp=$(basename $P)
 if [ "$tmp" != "expt_${X}" ] ;then
    echo "Error: Mismatch between path of experiment $P and assumed name expt_${X}"

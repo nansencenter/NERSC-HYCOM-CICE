@@ -8,8 +8,8 @@ import numpy
 import os
 
 
-def main(start_time,end_time,infile,init) :
-   fnml = "ice_in"
+def main(start_time,end_time,fnml,init) :
+   #fnml = "ice_in"
    nml  = f90nml.read(fnml)
    dt   = nml["setup_nml"]["dt"]
 

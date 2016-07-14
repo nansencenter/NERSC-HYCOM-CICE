@@ -5,6 +5,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot
 import abfile
+import modeltools.cice.io
 import numpy
 from mpl_toolkits.basemap import Basemap
 import logging
@@ -27,6 +28,10 @@ def main(grid) :
    abfile.write_diag_nc(griddict)
    logger.info("grid shown in grid.png")
    grid.plotgrid(2.).canvas.print_figure("grid.png")
+
+   # Also dump cice grid file
+   modeltools.cice.io.write_netcdf_grid(grid,"cice_grid.nc")
+
 
 def main_proj4(proj4_string,ll_lon,ll_lat,dx,dy,nx,ny):
    # Create grids and write to file

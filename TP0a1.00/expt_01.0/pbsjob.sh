@@ -15,7 +15,7 @@
 #  We want 24 hours on 32 cpu's:
 #
 ##PBS -l walltime=00:40:00,mppwidth=4
-#PBS -l walltime=00:10:00,mppwidth=4
+#PBS -l walltime=00:10:00,mppwidth=32
 #
 #  The job needs 1 GB memory per cpu:
 ##PBS -l mppmem=1000mb
@@ -54,11 +54,12 @@ source ../REGION.src  || { echo "Could not source ../REGION.src "; exit 1; }
 source ./EXPT.src  || { echo "Could not source EXPT.src"; exit 1; }
 
 # Transfer data files to scratch - must be in "expt_XXX" dir for this script
-../bin/preprocess_expt.sh         ||  { echo "Preprocess had fatal errors "; exit 1; }
+../bin/preprocess_expt.sh 2015-01-02T00:00:00 2015-01-05T00:00:00 --init        ||  { echo "Preprocess had fatal errors "; exit 1; }
 
 # Enter Scratch/run dir and Run model
 cd $S  ||  { echo "Could not go to dir $S  "; exit 1; }
-aprun -n $NMPI -m 1000M ./hycom  > ../log/hycom.out 2>&1
+#aprun -n $NMPI -m 1000M ./hycom_cice  > ../log/hycom.out 2>&1
+aprun -n 4 -m 1000M ./hycom_cice  > ../log/hycom.out 2>&1
 
 # Cleanup and move data files to data directory - must be in "expt_XXX" dir for this script
 cd $P     ||  { echo "Could not go to dir $P  "; exit 1; }

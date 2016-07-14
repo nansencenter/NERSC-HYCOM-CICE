@@ -35,6 +35,14 @@ cd       $S || { echo " Could not descend scratch dir $S" ; exit 1;}
 #
 # --- Sanity check on forcing option
 #
+if [ $forcing == "erai" ] ; then
+   xmlfile=$BASEDIR/force/input/era-interim.xml
+   xmlident="era-interim+lw"
+else 
+   tellerror "Forcing option is erai only..."
+   exit 1
+fi
+
 
 #
 # --- Input. Function in common_functions.sh
@@ -45,13 +53,15 @@ copy_setup_files $S
 
 
 
-$MSCPROGS/bin_setup/forfun_nersc-2.2.37 $2 $3 ||  { echo "Error running forfun_nersc-2.2.37 " ; exit 1 ; }
+cmd="$BASEDIR/../python/hycom_atmfor.py $start $stop $xmlfile $xmlident"
+eval $cmd   ||  { echo "Error running $cmd " ; exit 1 ; }
 
 # The nersc era40 forcing is region-independent 
 mkdir -p $D/$E  || { echo " Could not create data  destination dir $D/$E" ; exit 1;}
 for i in forcing.*.[ab] ; do
    new=$(echo $i | sed "s/^forcing\.//")
    mv $i $D/$E/$new
+   echo "Created  $D/$E/$new"
 done
 
 

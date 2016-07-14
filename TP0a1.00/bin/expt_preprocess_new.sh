@@ -9,6 +9,7 @@ source $(dirname $0)/common_functions.sh  || { echo "Could not source common_fun
 # KAL - new input start and end date times in ISO format
 if [ $# -lt 2 ] ; then
    tellerror " Need start and stop times as input"
+   exit 1
 else 
    starttime=$1
    endtime=$2
@@ -66,6 +67,7 @@ echo "SSS    is $SSSRLX"
 echo "SST    is $SSTRLX"
 echo "BNSTFQ is $BNSTFQ"
 echo "NESTFQ is $NESTFQ"
+echo "--------------------"
 
 # TODO: Limitation for now. Note that newest hycom can initialize with yrflag=3 (realistic forcing)
 if [ $YRFLAG -ne 3 ] ; then
@@ -74,7 +76,9 @@ if [ $YRFLAG -ne 3 ] ; then
 fi
 
 # Set integration limits
-cmd="hycom_limits.py $starttime $endtime $initstr"
+cmd="$BASEDIR/../python/hycom_limits.py $starttime $endtime $initstr"
+eval $cmd ||  tellerror "$cmd failed"
+cmd="$BASEDIR/../python/cice_limits.py $initstr $starttime $endtime $P/ice_in"
 eval $cmd ||  tellerror "$cmd failed"
 
 
@@ -138,10 +142,14 @@ if [ $initstr == "--init" ] ;then
 else 
    init=0
 fi
+tstart=$(cat limits | tr -s " " | sed "s/^[ ]*//" | cut -d " " -f1)
+tstop=$(cat limits  | tr -s " " | sed "s/^[ ]*//" | cut -d " " -f2)
 echo "Fetched from limits:"
 echo "--------------------"
-echo "init is $init"
-echo
+echo "init   is $init"
+echo "tstart is $tstart"
+echo "tstop  is $tstop"
+echo "--------------------"
 
 #C
 #C --- turn on detailed debugging.
@@ -178,11 +186,12 @@ fi
 # --- input files from file server.
 #
 echo "**Retrieving grid ant topography files"
-${pget} $BASEDIR/topo/regional.grid.a regional.grid.a || telerror "no grid file regional.grid.a" 
-${pget} $BASEDIR/topo/regional.grid.b regional.grid.b || telerror "no grid file regional.grid.a" 
-${pget} $BASEDIR/topo/depth_${R}_${T}.a regional.depth.a || telerror "no topo file depth_${R}_${T}.a" 
-${pget} $BASEDIR/topo/depth_${R}_${T}.b regional.depth.b || telerror "no topo file depth_${R}_${T}.b" 
-#${pget} $BASEDIR/topo/grid.info  grid.info || telerror "no grid.info file "  # KAL - Should not be needed
+${pget} $BASEDIR/topo/regional.grid.a regional.grid.a || tellerror "no grid file regional.grid.a" 
+${pget} $BASEDIR/topo/regional.grid.b regional.grid.b || tellerror "no grid file regional.grid.a" 
+${pget} $BASEDIR/topo/depth_${R}_${T}.a regional.depth.a || tellerror "no topo file depth_${R}_${T}.a" 
+${pget} $BASEDIR/topo/depth_${R}_${T}.b regional.depth.b || tellerror "no topo file depth_${R}_${T}.b" 
+${pget} $BASEDIR/topo/kmt_${R}_${T}.nc cice_kmt.nc     || tellerror "no kmt file $BASEDIR/topo/kmt_${R}_${T}.nc "
+${pget} $BASEDIR/topo/cice_grid.nc cice_grid.nc        || tellerror "no cice grid file $BASEDIR/topo/cice_grid.nc "
 
 
 ##
@@ -311,18 +320,27 @@ fi
 # ---
 echo "**Setting up pre-prepared synoptic forcing from force/synoptic/$E"
 DIR=$BASEDIR/force/synoptic/$E/
-for i in tauewd taunwd wndspd radflx shwflx vapmix \
-   airtmp precip uwind vwind clouds relhum slp ; do
-
+#for i in tauewd taunwd wndspd radflx shwflx vapmix \
+#   airtmp precip uwind vwind clouds relhum slp ; do
+for i in radflx shwflx vapmix \
+   airtmp precip mslprs \
+   wndewd wndnwd ; do
    echo "|--> $i"
-
    [ -f  $DIR/$i.a ] || tellerror "File $DIR/$i.a does not exist"
    [ -f  $DIR/$i.b ] || tellerror "File $DIR/$i.b does not exist"
    ln -sf $DIR/${i}.a forcing.${i}.a ||  tellerror "Could not fetch $DIR/$i.a"
    ln -sf $DIR/${i}.b forcing.${i}.b ||  tellerror "Could not fetch $DIR/$i.b"
-done
 
-exit
+   # Check range of file against start and stop times
+   frcstart=$(head -n  6 forcing.$i.b | tail -n1 | sed "s/.*=//" | sed "s/^[ ]*//" | cut -d " " -f 1)
+   frcstop=$(tail -n 1 forcing.$i.b             | sed "s/.*=//" | sed "s/^[ ]*//" | cut -d " " -f 1)
+   test1=$(echo ${tstart#-}'>='$frcstart | bc -l)
+   test2=$(echo $tstop '<='$frcstop  | bc -l)
+   [ $test1 -eq 1 ] || tellerror "File $S/forcing.$i.b: forcing starts after  model starts"
+   [ $test2 -eq 1 ] || tellerror "File $S/forcing.$i.b: forcing stops  before model stops"
+   
+
+done
 
 #
 # --- time-invarent heat flux offset
@@ -485,21 +503,19 @@ echo
 #
 # --- move old restart files to KEEP, typically from batch system rerun.
 #
-touch restart.dummy.b ${rungen}restart.dummy.b
+touch restart.dummy.b restart.dummy.a
 for f  in restart* ; do
-  /bin/mv $f KEEP/$f
-done
-for f  in ${rungen}restart* ; do
   /bin/mv $f KEEP/$f
 done
 
 #
 # --- try to get restart input from various areas
 #
-if [ $YRFLAG -ne 3 -a $init -eq 1 ] ; then
+#if [ $YRFLAG -ne 3 -a $init -eq 1 ] ; then
+if [ $init -eq 1 ] ; then
    echo "No restart needed"
 else
-   filename=${rungen}restart${refyear}_${iday}_${ihour}
+   filename=restart${refyear}_${iday}_${ihour}
 
    # Special case if CURVIINT flag set
    if [ -f $P/CURVIINT ] ; then
@@ -532,7 +548,7 @@ fi
 #
 # --- model executable. One executable to rule them all!
 #
-/bin/cp $BASEDIR/../hycom/HYCOM_2.2.98_ESMF5/RELO/src_2.2.98ZA-07Tsig0-i-sm-sse_relo_mpi/hycom_cice || tellerror "Could not get hycom executable"
+/bin/cp $BASEDIR/../hycom/HYCOM_2.2.98_ESMF5/RELO/src_2.2.98ZA-07Tsig0-i-sm-sse_relo_mpi/hycom_cice  . || tellerror "Could not get hycom_cice executable"
 
 
 
@@ -558,16 +574,10 @@ touch   ovrtn_out
 #
 # --- clean up old archive files, typically from batch system rerun.
 #
-if [ ! -d KEEP ]
-then
-    mkdir KEEP
-fi
-touch archv.dummy.b ${rungen}archv.dummy.n
+[ ! -d KEEP ] && mkdir KEEP
+touch archv.dummy.b archv.dummy.a
 for f  in arch* ; do
-  /bin/mv $f KEEP/$f
-done
-for f  in ${rungen}arch* ; do
-  /bin/mv $f KEEP/$f
+  /bin/mv $f KEEP/
 done
 
 
@@ -603,7 +613,7 @@ fi
 #endif
 
 
-#echo
+echo $numerr
 if [ $numerr -ne 0 ] ; then
    echo "Some errors were fatal - rectify."
 #   echo "$logfile"  
