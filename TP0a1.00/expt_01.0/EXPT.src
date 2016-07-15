@@ -21,7 +21,7 @@ unset -v X E T V K P D S
 X="01.0"                # X based on dir name (expt_03.1)
 E="010"                 # E is X without "."
 T="01"                                                           # Topography version
-export V=2.2.37                                                  # hycom version              
+export V=2.2.98                                                  # hycom version              
 #export K=`grep "'kdm   ' =" blk* | awk '{printf("%03d", $1)}'`   # get kdm from blkdat
 export K=`grep "'kdm   ' =" $mydir/blkdat.input | awk '{printf("%03d", $1)}'`   # get kdm from blkdat
 export P=$mydir                                                  #  ---""---
