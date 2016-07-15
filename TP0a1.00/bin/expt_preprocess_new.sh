@@ -71,8 +71,8 @@ if [ $YRFLAG -ge 1 ] ; then
 else 
    tmp2=86400.
 fi
-tmp=$(echo $BACLIN"%"$tmp2 | bc -l)
-testbc=$(echo $tmp"=="0 | bc -l )
+tmp=$(echo $tmp2"%"$BACLIN | bc)
+testbc=$(echo $tmp"=="0 | bc )
 if [ $testbc -ne 1 ] ; then
    tellerror "$tmp2 seconds is not divisible with baclin=$BACLIN".
 fi

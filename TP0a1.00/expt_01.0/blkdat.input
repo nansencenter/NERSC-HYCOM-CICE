@@ -69,9 +69,9 @@ S-Z(15-11): dp00/f/x/i=3m/1.125/12m/1m; ds=1m/1.125/4m; src_2.2.12;
 99999.0	  'rstrfq' = number of days between model restart output
  0.000	  'bnstfq' = number of days between baro nesting archive input
  0.000	  'nestfq' = number of days between 3-d  nesting archive input
-   0.125  'cplifq' = number of days (or time steps) between sea ice coupling
-2700.0	  'baclin' = baroclinic time step (seconds), int. divisor of 86400
- 135.0	  'batrop' = barotropic time step (seconds), int. div. of baclin/2
+  -4      'cplifq' = number of days (or time steps) between sea ice coupling
+1440.0	  'baclin' = baroclinic time step (seconds), int. divisor of 86400
+ 144.0	  'batrop' = barotropic time step (seconds), int. div. of baclin/2
    0	  'incflg' = incremental update flag (0=no, 1=yes, 2=full-velocity)
  100	  'incstp' = no. timesteps for full update (1=direct insertion)
    1	  'incupf' = number of days of incremental updating input

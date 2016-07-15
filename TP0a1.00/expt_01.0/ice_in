@@ -3,7 +3,7 @@
   , use_leap_years = .true.
   , year_init      = 1958
   , istep0         = 0
-  , dt             = 5400.0
+  , dt             = 2880.0
   , npt            = 8760
   , ndtd           = 1
   , runtype        = 'initial'
