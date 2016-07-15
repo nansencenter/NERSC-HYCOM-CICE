@@ -1,2 +1,0 @@
-pgf90             -g -fastsse -byteswapio -tp k8-64 -mcmodel=medium -Mnolarge_arrays -c z_woa_dynamic.f
-pgf90 -g -fastsse -byteswapio -tp k8-64 -mcmodel=medium -Mnolarge_arrays z_woa_dynamic.o         mod_xc.o mod_za.o wtime.o blkdat.o interp.o zh.o -o z_woa_dynamic
