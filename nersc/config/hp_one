@@ -1,0 +1,47 @@
+#
+# ---------------------------------------------------------------------
+# common definitions for HP, single processor, real*8
+# ---------------------------------------------------------------------
+#
+# MACROS      DESCRIPTIONS:
+#
+# FC:         Fortran 90 compiler.
+# FCFFLAGS:   Fortran 90 compilation flags.
+# CC:         C compiler.
+# CCFLAGS:    C compilation flags.
+# CPP:        cpp preprocessor (may be implied by FC).
+# CPPFLAGS:   cpp -D macro flags.
+# LD:         Loader.
+# LDFLAGS:    Loader flags.
+# EXTRALIBS:  Extra local libraries (if any).
+#
+FC            =	f90
+#FCFFLAGS     =	+O3 +r8 +DD64
+FCFFLAGS      =	+O3 +r8
+CC            =	cc
+#CCFLAGS      =	-O +DD64
+CCFLAGS       =	-O
+CPP           =	cpp -P
+CPPFLAGS      =	-DHPUX -DREAL8
+LD            =	$(FC)
+LDFLAGS       =	$(FCFFLAGS)
+EXTRALIBS     =
+
+#
+# --- generic make definitions
+#
+SHELL         = /bin/sh
+RM            = \rm -f
+
+#
+# rules.
+#
+
+.c.o:
+	$(CC) $(CPPFLAGS) $(CCFLAGS)  -c $*.c
+
+.f.o:
+	$(FC)             $(FCFFLAGS) -c $*.f
+
+.F.o:
+	$(FC) $(CPPFLAGS) $(FCFFLAGS) -c $*.F

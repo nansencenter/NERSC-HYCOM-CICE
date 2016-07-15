@@ -1,0 +1,45 @@
+#
+# ---------------------------------------------------------------------
+# common definitions for Intel Linux/IFC, OpenMP, real*8
+# ---------------------------------------------------------------------
+#
+# MACROS      DESCRIPTIONS:
+#
+# FC:         Fortran 90 compiler.
+# FCFFLAGS:   Fortran 90 compilation flags.
+# CC:         C compiler.
+# CCFLAGS:    C compilation flags.
+# CPP:        cpp preprocessor (may be implied by FC).
+# CPPFLAGS:   cpp -D macro flags.
+# LD:         Loader.
+# LDFLAGS:    Loader flags.
+# EXTRALIBS:  Extra local libraries (if any).
+#
+FC            =	ifc
+FCFFLAGS      =	-g -cm -vec_report0 -w -O3 -tpp7 -xW -r8 -openmp -auto
+CC            =	gcc
+CCFLAGS       =	-O 
+CPP           =	cpp -P
+CPPFLAGS      =	-DIA32 -DIFC -DREAL8 -DENDIAN_IO
+LD            =	$(FC)
+LDFLAGS       =	$(FCFFLAGS) -Vaxlib -Bstatic
+EXTRALIBS     =
+
+#
+# --- generic make definitions
+#
+SHELL         = /bin/sh
+RM            = \rm -f
+
+#
+# rules.
+#
+
+.c.o:
+	$(CC) $(CPPFLAGS) $(CCFLAGS)  -c $*.c
+
+.f.o:
+	$(FC)             $(FCFFLAGS) -c $*.f
+
+.F.o:
+	$(FC) $(CPPFLAGS) $(FCFFLAGS) -c $*.F

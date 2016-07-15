@@ -1,0 +1,50 @@
+#
+# ---------------------------------------------------------------------
+# common definitions for SGI Origin 2000, ESMF/MPI, real*8
+# using -O3 instead of -Ofast=ip27 because of a bug in 7.3+ compilers
+# see http://www.esmf.ucar.edu/ for ESMF
+# HYCOM+CICE using ESMF.
+# ---------------------------------------------------------------------
+#
+# MACROS      DESCRIPTIONS:
+#
+# FC:         Fortran 90 compiler.
+# FCFFLAGS:   Fortran 90 compilation flags.
+# CC:         C compiler.
+# CCFLAGS:    C compilation flags.
+# CPP:        cpp preprocessor (may be implied by FC).
+# CPPFLAGS:   cpp -D macro flags.
+# LD:         Loader.
+# LDFLAGS:    Loader flags.
+# EXTRALIBS:  Extra local libraries (if any).
+#
+FC            =	f90
+FCFFLAGS      =	-g3 -64 -O3 -r8 -d8 -i4 -macro_expand -I${ESMF_DIR}/mod/modO -I${CICE_DIR}/esmf/compile
+CC            =	cc
+CCFLAGS       =	-g3 -64 -O3
+CPP           =	/usr/lib/acpp -P
+CPPFLAGS      =	-DUSE_ESMF -DESMF_CURVILINEAR -DSGI -DREAL8 -DMPI -DSERIAL_IO -DTIMER
+LD            =	CC
+LDFLAGS       =	-64 
+EXTRALIBS     = -L/usr/local/usp/netcdf/netcdf-3.6.0-p1_64/lib -lnetcdf \
+                -L${ESMF_DIR}/lib/libO -Bstatic -lesmf \
+                -Bdynamic -lmpi++ -lmpi -lftn -lfortran -lm
+
+#
+# --- generic make definitions
+#
+SHELL         = /bin/sh
+RM            = \rm -f
+
+#
+# rules.
+#
+
+.c.o:
+	$(CC)      $(CPPFLAGS) $(CCFLAGS)  -c $*.c
+
+.f.o:
+	$(FC) -nocpp           $(FCFFLAGS) -c $*.f
+
+.F.o:
+	$(FC) -cpp $(CPPFLAGS) $(FCFFLAGS) -c $*.F

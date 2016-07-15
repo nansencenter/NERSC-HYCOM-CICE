@@ -1,0 +1,47 @@
+#
+# ---------------------------------------------------------------------
+# common definitions for Intel Linux/PGI, LAM-MPI, real*8
+# see http://www.pgroup.com  for Portland Group f90 compiler
+# see http://www.lam-mpi.org for LAM-MPI
+# ---------------------------------------------------------------------
+#
+# MACROS      DESCRIPTIONS:
+#
+# FC:         Fortran 90 compiler.
+# FCFFLAGS:   Fortran 90 compilation flags.
+# CC:         C compiler.
+# CCFLAGS:    C compilation flags.
+# CPP:        cpp preprocessor (may be implied by FC).
+# CPPFLAGS:   cpp -D macro flags.
+# LD:         Loader.
+# LDFLAGS:    Loader flags.
+# EXTRALIBS:  Extra local libraries (if any).
+#
+FC            =	mpif77
+FCFFLAGS      =	-g -fast -byteswapio -r8 -Mextend
+CC            =	gcc
+CCFLAGS       =	-O 
+CPP           =	cpp -P
+CPPFLAGS      =	-DIA32 -DREAL8 -DMPI -DNOMPIR8 -DSERIAL_IO -DTIMER
+LD            =	$(FC)
+LDFLAGS       =	$(FCFFLAGS) -Wl,-Bstatic
+EXTRALIBS     = 
+
+#
+# --- generic make definitions
+#
+SHELL         = /bin/sh
+RM            = \rm -f
+
+#
+# rules.
+#
+
+.c.o:
+	$(CC) $(CPPFLAGS) $(CCFLAGS)  -c $*.c
+
+.f.o:
+	$(FC)             $(FCFFLAGS) -c $*.f
+
+.F.o:
+	$(FC) $(CPPFLAGS) $(FCFFLAGS) -c $*.F
