@@ -8,9 +8,9 @@ c
 #else
       use ESMF_Mod
 #endif
-*     use mod_hycom, only : OCEAN_SetServices => HYCOM_SetServices
-      use mod_hycom, only : end_of_run,
-     &                      OCEAN_SetServices => HYCOM_SetServices
+      use mod_hycom, only : OCEAN_SetServices => HYCOM_SetServices
+cKAL  use mod_hycom, only : end_of_run,
+cKAL &                      OCEAN_SetServices => HYCOM_SetServices
 c
       implicit none
 c
@@ -206,6 +206,7 @@ c
 #endif
 c
 c ---   use end_of_run, rather than a ESMF Clock
+c ---   KAL - end_of_run is attached to model comp, so we should query it here
         if     (end_of_run) then
           exit
         endif

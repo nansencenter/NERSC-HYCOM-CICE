@@ -11,27 +11,12 @@ cd $cwd
 # --- set ARCH to the correct value for this machine.
 # --- ARCH that start with A are for ARCTIC patch regions
 #
-#module swap compiler compiler/intel/12.1.3
-#module swap mpi      mpi/intel/ibmpe
-#module list
 #setenv ARCH intelsse-pe-sm-relo
 setenv ARCH xt4
 setenv TYPE esmf
 
 #
-#module swap compiler compiler/intel/12.1.3
-#module swap mpi      mpi/intel/impi/4.1.3
-#module list
-#setenv ARCH intelsse-impi-sm-relo
-#setenv ARCH intelsse-impi-sm-SD-relo
-#
-#module switch PrgEnv-cray PrgEnv-intel
-#module list
-#setenv ARCH xc30-intel-relo
-#
-#setenv ARCH intel-pgi-SD-relo
-#
-setenv TYPE `echo $cwd | awk -F"_" '{print $NF}'`
+#setenv TYPE `echo $cwd | awk -F"_" '{print $NF}'`
 echo "ARCH = " $ARCH "  TYPE = " $TYPE
 #
 if (! -e ../config/${ARCH}_${TYPE}) then
