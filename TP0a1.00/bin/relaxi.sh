@@ -57,9 +57,35 @@ pput=cp
 #
 D=${BASEDIR}/relax/$E/   # Where data ends up
 S=$D/SCRATCH              # SCRATCH dir 
-
 mkdir -p $S
 cd       $S || { echo " Could not descend scratch dir $S" ; exit 1;}
+
+#
+# --- Existing files must be deleted first
+#
+proceed=1
+if [ -f $D/relax_sal.a -a -f $D/relax_sal.b ] ; 
+then
+   echo "Salinity   relaxation files already exist: $D/relax_sal.[ab]"
+   proceed=0
+fi
+if [ -f $D/relax_tem.a -a -f $D/relax_tem.b ] ; 
+then
+   echo "Temperature rlaxation files already exist: $D/relax_tem.[ab]"
+   proceed=0
+fi
+if [ -f $D/relax_int.a -a -f $D/relax_int.b ] ; 
+then
+   echo "Interface   relaxation files already exist: $D/relax_int.[ab]"
+   proceed=0
+fi
+if [ $proceed -eq 0 ] ; then
+   echo "one or more relaxation files already present in $D "
+   echo "Delete these first if you want to regenerate the relax files"
+   exit 0
+fi
+   
+   
 
 
 KSIGMA=$(egrep "'thflag'"  ${BASEDIR}/expt_${X}/blkdat.input  | sed "s/.thflag.*$//" | tr -d "[:blank:]")

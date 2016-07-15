@@ -83,10 +83,11 @@ rm fort.*
 
 # Show it if ImageMagick (display) is present...
 echo "Output partition file is  depth_${R}_${T}.$nm, with $nm tiles"
-which display &> /dev/null && display  depth_${R}_${T}.$nm.ppm
+#which display &> /dev/null && display  depth_${R}_${T}.$nm.ppm 
 
 # Copy partitions to parent directory - overwrite if present
 mv depth_${R}_${T}.$nm.ppm depth_${R}_${T}.$nm $BASEDIR/topo/partit
 
 echo
-echo "partition file depth_${R}_${T}.$nm placed in $BASEDIR/topo/partit"
+echo "Created partition file    :  $BASEDIR/topo/partit/depth_${R}_${T}.$nm"
+echo "Created ppm graphics file :  $BASEDIR/topo/partit/depth_${R}_${T}.$nm.ppm"

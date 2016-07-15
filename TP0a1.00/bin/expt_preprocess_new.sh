@@ -32,16 +32,8 @@ fi
 cd       $S || { tellerror "no scratch dir $S" ;  exit 1 ;}
 
 
-#
-#
-#
-# --- Set up time limits for this segment
-#
-#
-cp $P/blkdat.input blkdat.input || tellerror "No blkdat.input file" 
-
 # --- fetch some things from blkdat.input 
-# --- check that iexpt from blkdat.input agrees with E from this script.
+cp $P/blkdat.input blkdat.input || tellerror "No blkdat.input file" 
 export LBFLAG=`grep "'lbflag' =" blkdat.input | awk '{printf("%03d", $1)}'`
 export EB=`grep "'iexpt ' =" blkdat.input | awk '{printf("%03d", $1)}'`
 export PRIVER=`grep "'priver' =" blkdat.input | awk '{printf("%1d", $1)}'`
@@ -56,6 +48,10 @@ export VSIGMA=`grep "'vsigma' =" blkdat.input | awk '{printf("%1d", $1)}'`
 export BNSTFQ=$(blkdat_get blkdat.input bnstfq)
 export NESTFQ=$(blkdat_get blkdat.input nestfq)
 export THKDF2=$(blkdat_get blkdat.input thkdf2)
+export THFLAG=$(blkdat_get blkdat.input thflag)
+export BACLIN=$(blkdat_get blkdat.input baclin)
+export BATROP=$(blkdat_get blkdat.input batrop)
+# --- check that iexpt from blkdat.input agrees with E from this script.
 [ "$EB" == "$E" ] || tellerror " blkdat.input iexpt ${EB} different from this experiment ${E} set in EXPT.src"
 echo "Fetched from blkdat.input:"
 echo "--------------------------"
@@ -69,13 +65,34 @@ echo "BNSTFQ is $BNSTFQ"
 echo "NESTFQ is $NESTFQ"
 echo "--------------------"
 
+# Check baroclinic time step 
+if [ $YRFLAG -ge 1 ] ; then
+   tmp2=21600.
+else 
+   tmp2=86400.
+fi
+tmp=$(echo $BACLIN"%"$tmp2 | bc -l)
+testbc=$(echo $tmp"=="0 | bc -l )
+if [ $testbc -ne 1 ] ; then
+   tellerror "$tmp2 seconds is not divisible with baclin=$BACLIN".
+fi
+
+# Check barotropic time step 
+tmp=$(echo $BATROP"/"$BACLIN | bc -l)
+testbt=$(echo $tmp"%2==0" | bc -l )
+if [ $testbt -ne 1 ] ; then
+   tellerror "($BACLIN / $BATROP ) %2 not zero ".
+fi
+
 # TODO: Limitation for now. Note that newest hycom can initialize with yrflag=3 (realistic forcing)
 if [ $YRFLAG -ne 3 ] ; then
    tellerror "must use yrflag=3 in blkdat.input"
    exit 1
 fi
 
-# Set integration limits
+#
+# --- Set up time limits
+#
 cmd="$BASEDIR/../python/hycom_limits.py $starttime $endtime $initstr"
 eval $cmd ||  tellerror "$cmd failed"
 cmd="$BASEDIR/../python/cice_limits.py $initstr $starttime $endtime $P/ice_in"
@@ -551,7 +568,7 @@ fi
 #
 # --- model executable. One executable to rule them all!
 #
-/bin/cp $BASEDIR/../hycom/HYCOM_2.2.98_ESMF5/RELO/src_2.2.98ZA-07Tsig0-i-sm-sse_relo_mpi/hycom_cice  . || tellerror "Could not get hycom_cice executable"
+/bin/cp $BASEDIR/../hycom/RELO/src_${V}ZA-07Tsig${THFLAG}-i-sm-sse_relo_mpi/hycom_cice  . || tellerror "Could not get hycom_cice executable"
 
 
 
