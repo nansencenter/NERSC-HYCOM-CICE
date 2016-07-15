@@ -95,7 +95,7 @@ fi
 #
 cmd="$BASEDIR/../python/hycom_limits.py $starttime $endtime $initstr"
 eval $cmd ||  tellerror "$cmd failed"
-cmd="$BASEDIR/../python/cice_limits.py $initstr $starttime $endtime $P/ice_in"
+cmd="$BASEDIR/../python/cice_limits.py $initstr $starttime $endtime $NMPI $P/ice_in"
 eval $cmd ||  tellerror "$cmd failed"
 
 
@@ -196,7 +196,6 @@ if [ $NMPI != 0 ] ; then
   echo /bin/cp $BASEDIR/topo/partit/depth_${R}_${T}.${NPATCH}  patch.input
   /bin/cp $BASEDIR/topo/partit/depth_${R}_${T}.${NPATCH}  patch.input || \
      tellerror "Could not get patch.input  ($BASEDIR/topo/partit/depth_${R}_${T}.${NPATCH})"
-# /bin/cp $BASEDIR/topo/partit/depth_${R}_${T}.${NPATCH}u patch.input
 fi
 
 #

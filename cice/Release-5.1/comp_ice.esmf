@@ -20,7 +20,7 @@ echo $SYSTEM_USERDIR
 #setenv RES gx3 ; setenv GRID 100x116
 #setenv RES gx1 ; setenv GRID 320x384
 #setenv RES tx1 ; setenv GRID 360x240
-setenv RES gx3 ; setenv GRID 400x300
+setenv RES gx3 ; setenv GRID 100x110
 
 set NXGLOB = `echo $GRID | sed s/x.\*//`
 set NYGLOB = `echo $GRID | sed s/.\*x//`

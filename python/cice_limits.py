@@ -8,7 +8,7 @@ import numpy
 import os
 
 
-def main(start_time,end_time,fnml,init) :
+def main(start_time,end_time,init,nmpi,fnml) :
    #fnml = "ice_in"
    nml  = f90nml.read(fnml)
    dt   = nml["setup_nml"]["dt"]
@@ -40,6 +40,8 @@ def main(start_time,end_time,fnml,init) :
    print "istep0    = ",nml["setup_nml"]["istep0"]
    print "npt       = ",nml["setup_nml"]["npt"]
 
+   nml["domain_nml"]["nprocs"]=nmpi
+
    if init :
       nml["setup_nml"]["runtype"]="initial"
       nml["setup_nml"]["restart"]=False
@@ -70,9 +72,10 @@ if __name__ == "__main__" :
    parser.add_argument('--init',       action="store_true", default=False)
    parser.add_argument('start_time', action=DateTimeParseAction, help='Start time in UTC zone. Format = YYYY-mm-ddTHH:MM:SS')
    parser.add_argument('end_time',   action=DateTimeParseAction, help='Stop  time in UTC zone. Format = YYYY-mm-ddTHH:MM:SS')
+   parser.add_argument('nmpi',       type=int)
    parser.add_argument('infile',     help='CICE namelist')
    args = parser.parse_args()
-   main(args.start_time,args.end_time,args.infile,args.init)
+   main(args.start_time,args.end_time,args.init,args.nmpi,args.infile)
 
 
 
