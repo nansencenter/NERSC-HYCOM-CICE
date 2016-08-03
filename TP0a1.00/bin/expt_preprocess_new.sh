@@ -567,7 +567,24 @@ fi
 #
 # --- model executable. One executable to rule them all!
 #
-/bin/cp $BASEDIR/../hycom/RELO/src_${V}ZA-07Tsig${THFLAG}-i-sm-sse_relo_mpi/hycom_cice  . || tellerror "Could not get hycom_cice executable"
+if [ $SIGVER -eq 1 ] ; then
+   TERMS=7
+   MYTHFLAG=0
+elif [ $SIGVER -eq 2 ] ; then
+   TERMS=7
+   MYTHFLAG=2
+else
+   echo "SIGVER = $SIGVER"
+   echo "So far only 7 term eq of state is supported (SIGVER=1 or 2) is supported"
+   exit 1
+fi
+TERMS2=$(echo 0$TERMS | tail -c3)
+echo "SIGVER      = $SIGVER .There are $TERMS terms in equation of state"
+
+# Set up rel path and stmt fnc
+#stmt=stmt_fns_SIGMA${MYTHFLAG}_${TERMS}term.h
+compdir=$P/build/src_${V}ZA-${TERMS2}Tsig${MYTHFLAG}-i-sm-sse_relo_mpi/
+/bin/cp $compdir/hycom_cice  . || tellerror "Could not get hycom_cice executable"
 
 
 
@@ -632,13 +649,12 @@ fi
 #endif
 
 
-echo $numerr
-if [ $numerr -ne 0 ] ; then
-   echo "Some errors were fatal - rectify."
+if [ $numerr -eq 0 ] ; then
+   echo "No known errors."
 #   echo "$logfile"  
 #   echo "$logfile.err"
 else
-   echo "Some nonfatal errors errors occured. Model may run anyway..."
+   echo "Some fatal errors occured. See above"
 #   echo "$logfile"  
 #   echo "$logfile.err"
 #   echo
