@@ -115,20 +115,20 @@ def main(meshfile) :
       idm=idm-2
       plon =plon[:,2:]
       plat =plat[:,2:]
-      scpx = ncid.variables["e1t"][0,:,2:]
-      scpy = ncid.variables["e2t"][0,:,2:]
+      scpx = ncid.variables["e1t"][0,:,1:-1]
+      scpy = ncid.variables["e2t"][0,:,1:-1]
 
       # u shifted one grid cell to the left in hycom (rel to nemo)
-      ulon = ncid.variables["glamu"][0,:,1:-1]
-      ulat = ncid.variables["gphiu"][0,:,1:-1]
-      scux = ncid.variables["e1u"][0,:,1:-1]
-      scuy = ncid.variables["e2u"][0,:,1:-1]
+      ulon = ncid.variables["glamu"][0,:,:-2]
+      ulat = ncid.variables["gphiu"][0,:,:-2]
+      scux = ncid.variables["e1u"][0,:,:-2]
+      scuy = ncid.variables["e2u"][0,:,:-2]
 
       # v shifted one grid cell down in hycom (rel to nemo). Extrapolated below
-      vlon = ncid.variables["glamv"][0,:,2:]
-      vlat = ncid.variables["gphiu"][0,:,2:]
-      scvx = ncid.variables["e1v"][0,:,2:]
-      scvy = ncid.variables["e2v"][0,:,2:]
+      vlon = ncid.variables["glamv"][0,:,1:-1]
+      vlat = ncid.variables["gphiu"][0,:,1:-1]
+      scvx = ncid.variables["e1v"][0,:,1:-1]
+      scvy = ncid.variables["e2v"][0,:,1:-1]
       dlon=numpy.mod(vlon[0,:] - numpy.roll(vlon[0,:],1,axis=0) + 360.,360.)
       dlat=vlat[1,:]-vlat[0,:]
       # TODO: Make more generic approach if necessary
@@ -153,10 +153,10 @@ def main(meshfile) :
 
       # q shifted one grid cell down and one cell to the left in hycom (rel to nemo). Extrapolation below
       # TODO: extrapolate
-      qlon = ncid.variables["glamf"][0,0:,1:-1]
-      qlat = ncid.variables["gphif"][0,0:,1:-1]
-      scqx = ncid.variables["e1f"][0,0:,1:-1]
-      scqy = ncid.variables["e2f"][0,0:,1:-1]
+      qlon = ncid.variables["glamf"][0,0:,:-2]
+      qlat = ncid.variables["gphif"][0,0:,:-2]
+      scqx = ncid.variables["e1f"][0,0:,:-2]
+      scqy = ncid.variables["e2f"][0,0:,:-2]
       dlon=numpy.mod(qlon[0,:] - numpy.roll(qlon[0,:],1,axis=0) + 360.,360.)
       dlat=qlat[1,:]-qlat[0,:]
       # TODO: Make more generic approach if necessary
