@@ -1,7 +1,7 @@
 #!/bin/bash
 export BASEDIR=$(cd $(dirname $0)/.. && pwd)
 export SCRATCH=$BASEDIR/subregion/SCRATCH
-[ ! -d $SCRATCH ] && mkdir $SCRATCH
+[ ! -d $SCRATCH ] && mkdir -p $SCRATCH
 
 usage="
    This script will set up mapping from this hycom region to the region in the input dir.
@@ -25,7 +25,8 @@ usage="
    Example:
       $(basename $0) /work/$USER/hycom/TP4a0.12/
 
-   Optional argument m n denotes maxinc parameter sent to isuba_gmapi. From source code:
+   Optional argument m n denotes maxinc parameter sent to isuba_gmapi. Default value is 50
+   From source code:
    c     'maxinc' is the user provided maximum input array index jump 
    c     on the target grid, i.e. abs(x_out(i,j-1)-x_out(i,j)) and
    c     abs(y_out(i,j-1)-y_out(i,j)) must both be less than maxinc (after
@@ -67,6 +68,7 @@ newregionpath=$1
 source ${newregionpath}/REGION.src || { echo "Could not source ${newregionpath}/REGION.src" ; exit 1 ; }
 NR=$R
 source ${BASEDIR}/REGION.src || { echo "Could not source ${BASEDIR}/REGION.src" ; exit 1 ; }
+source ${BASEDIR}/bin/common_functions.sh || { echo "Could not source ${BASEDIR}/bin/common_functions.sh" ; exit 1 ; }
 echo "This region name :$R"
 echo "New  region name :$NR"
 
@@ -82,36 +84,41 @@ cp $newregionpath/topo/regional.grid.b $SCRATCH/$newgrid.b || { echo "Could not 
 
 # Get dimensions from target region
 cd $SCRATCH || { echo "Could not cd to $SCRATCH" ; exit 1 ; }
-idm=$(blkdat_get regional.grid.b idm)
-jdm=$(blkdat_get regional.grid.b jdm)
-echo "New idm          :$idm"
-echo "New jdm          :$jdm"
+idm=$(blkdat_get $newgrid.b idm)
+jdm=$(blkdat_get $newgrid.b jdm)
+#echo "New idm          :$idm"
+#echo "New jdm          :$jdm"
 
 
 newmap=${NR}.gmap
 touch ${newmap}.a && rm ${newmap}.a
 touch ${newmap}.b && rm ${newmap}.b
-prog=/home/nersc/knutali/Models/hycom/HYCOM_ALL_2.2.72/ALL/subregion/src_2.2.12/isuba_gmapi
-$prog << EOF 
+prog=${HYCOM_ALL}/subregion/src_2.2.12/isuba_gmapi
+logfile=$SCRATCH/gmapi.log
+echo "Running $prog - log in $logfile"
+$prog<<EOF > $logfile
 ${newgrid}.a
 ${newmap}.a
 Mapping from region $R to region $NR
   $idm   'idm   '
   $jdm   'jdm   '
-  50    'maxinc'
+  $maxinc    'maxinc'
 EOF
 
+
 # Not exhaustive
-pwd
+#pwd
 if [ -s ${newmap}.a ] ; then
    cp ${newmap}.a ..
 else 
-   { echo "Error - File $newmap.a is empty " ; exit 1 ; }
+   echo "Error - File $newmap.a is empty " 
+   exit 1
 fi
 if [ -s ${newmap}.b ] ; then
    cp ${newmap}.b ..
 else 
-   { echo "Error - File $newmap.b is empty " ; exit 1 ; }
+   echo "Error - File $newmap.b is empty " 
+   exit 1 
 fi
 
 echo "Normal exit. ${newmap}.[ab] placed in $(cd .. && pwd)"

@@ -107,6 +107,9 @@ for source_archv in $@ ; do
 
 #c --- 'thbase' = new reference density (sigma units)
 
+prog=${HYCOM_ALL}/archive/src/remap_archv
+logfile="$SCRATCH/remap_archv_${target_archv}.log"
+echo "Running $prog - logfile is $logfile"
 if [ -n "$dp00" ] ; then
 #c --- 'flnm_i' = name of original archive file
 #c --- 'flnm_o' = name of target   archive file
@@ -124,8 +127,7 @@ if [ -n "$dp00" ] ; then
 #c --- 'ds00'   = new shallow z-level spacing minimum thickness (m)
 #c --- 'ds00x'  = new shallow z-level spacing maximum thickness (m)
 #c --- 'ds00f'  = new shallow z-level spacing stretching factor (1.0=const.z)
-echo
-/home/nersc/knutali/Models/hycom/HYCOM_ALL_2.2.72/ALL/archive/src/remap_archv<<EOF
+$prog<<EOF > $logfile 2>&1
 ${my_source_archv}.a
 ${target_archv}.a
 $(blkdat_pipe blkdat.input iexpt)
@@ -159,7 +161,7 @@ else
 #c --- 'dp0k'   = new deep    z-level spacing minimum thickness (m)
 #c --- 'ds0k '  = new deep    z-level spacing maximum thickness (m)
 echo
-/home/nersc/knutali/Models/hycom/HYCOM_ALL_2.2.72/ALL/archive/src/remap_archv<<EOF
+$prog<<EOF > $logfile 2>&1
 ${my_source_archv}.a
 ${target_archv}.a
 $(blkdat_pipe blkdat.input iexpt)
@@ -178,7 +180,15 @@ EOF
 fi
 
 if [ -f ${target_archv}.a -a -f ${target_archv}.b ] ; then
+   echo "Found ${target_archv}.[ab] - moving to $TARGETDIR"
    cp ${target_archv}.* ${TARGETDIR}
+else 
+   echo "${target_archv}.[ab] not found - aborting. See $logfile for diag"
+   exit 1
 fi
 
+echo
 done 
+
+echo "Normal exit"
+exit 0

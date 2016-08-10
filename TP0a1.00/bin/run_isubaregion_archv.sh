@@ -5,25 +5,28 @@ source $BASEDIR/bin/common_functions.sh
 export SCRATCH=$BASEDIR/subregion/SCRATCH
 [ ! -d $SCRATCH ] && mkdir $SCRATCH
 
+iscan=15
 usage="
    Example:
-      $(basename $0) expt  new_region_path new_region_expt archive1 archive2 ....
+      $(basename $0) [-s iscan] expt  new_region_path new_region_expt archive1 archive2 ....
 
    Example:
       $(basename $0) 90.9 /work/$USER/hycom/TP4a0.12/ 03.1 archive1 
+      $(basename $0) -s $iscan 90.9 /work/$USER/hycom/TP4a0.12/ 03.1 archive1 
+
+   Optional argument 'iscan' has default value of 15
 "
-options=$(getopt -o m:  -- "$@")
+options=$(getopt -o s:  -- "$@")
 [ $? -lt 4 ] || {
     echo "Incorrect options provided"
     exit 1
 }
-maxinc=50
 eval set -- "$options"
 while true; do
     case "$1" in
-    -m)
+    -s)
        shift;
-       maxinc=$1
+       iscan=$1
         ;;
     --)
         shift
@@ -102,7 +105,6 @@ echo "Target dir = ${target_dir}"
 
 logfile=$SCRATCH/isubaregion.log
 touch $logfile && rm $logfile
-echo "Running isubaregion. Log can be found in $logfile"
 for source_archv in $@ ; do
    echo "***"
 
@@ -110,7 +112,7 @@ for source_archv in $@ ; do
    echo "Processing $my_source_archv"
 
    if [ ! -f ${my_source_archv}.a -o ! -f ${my_source_archv}.b ] ; then
-      echo "${my_source_archv}.[ab] does not exist"
+      echo "Source file ${my_source_archv}.[ab] does not exist"
       exit 1
    fi
    target_archv=$(basename $my_source_archv)
@@ -129,8 +131,10 @@ for source_archv in $@ ; do
 #c --- 'jdm   ' = latitudinal  array size
 #c --- 'smooth' = smooth interface depths (0=F,1=T)
 #c --- 'iscan ' = How many grid points to search for landfill process
-#TODO - redirect isubaregion log to file
-/home/nersc/knutali/Models/hycom/HYCOM_ALL_2.2.72/ALL/subregion/src/isubaregion >> $logfile <<EOF
+echo "Running isubaregion. Log can be found in $logfile"
+prog=${HYCOM_ALL}/subregion/src/isubaregion
+#cat << EOF # For diag
+${prog} >> $logfile <<EOF
 ${target_grid}.a
 ${target_gmap}.a
 ${target_topo}.a
@@ -142,12 +146,13 @@ test
   ${target_jdm}    'jdm   '    
     0    'iceflg'    
     0    'smooth'    
-   15   'iscan '    
+   $iscan   'iscan '    
 EOF
 
 
    if [ ! -f ${target_archv}.a -o ! -f ${target_archv}.b ] ; then
-      echo "Error : ${target_archv}.[ab] does not exist"
+      echo "Error : New file ${target_archv}.[ab] does not exist"
+      echo "This is probably due to errors during extrapolation. Check log file $logfile"
       exit 1
    else 
       echo "Moving ${target_archv}.[ab] to $BASEDIR/subregion/${target_dir}"
