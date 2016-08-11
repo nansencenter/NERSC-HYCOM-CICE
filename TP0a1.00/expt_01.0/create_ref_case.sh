@@ -130,9 +130,9 @@ res=$?
 [ $res -ne 0 ] && echo "Failure..."
 echo ".."
 
-# Create tiling 
+# Create tiling. 
 echo "grid tiling"
-../bin/tile_grid.sh -2 -2 9.5 01 > $EDIR/log/ref_tiling.out 2>&1
+../bin/tile_grid.sh -2 -2 9.5 ${T} > $EDIR/log/ref_tiling.out 2>&1
 res=$?
 [ $res -eq 0 ] && echo "Success"
 [ $res -ne 0 ] && echo "Failure..."
