@@ -109,21 +109,7 @@ for i in $BASEDIR/expt_* ; do
    #cp    $i/rivers.dat $TARGETDIR/$regname/$(basename $i)/
 done
 
-## Special case for force/other/
-#cp -r $BASEDIR/force/other/ $TARGETDIR/$regname/force/other
-## Copy folders for compiling the code
-#if [ -d $BASEDIR/Build_V${V}_X01.0 ] ; then
-#   mkdir $TARGETDIR/$regname/Build_V${V}_X01.0
-#   cp $BASEDIR/Build_V${V}_X01.0/dependencies  $TARGETDIR/$regname/Build_V${V}_X01.0
-#   cp $BASEDIR/Build_V${V}_X01.0/flags  $TARGETDIR/$regname/Build_V${V}_X01.0
-#   cp $BASEDIR/Build_V${V}_X01.0/Makefile  $TARGETDIR/$regname/Build_V${V}_X01.0
-#   cp $BASEDIR/Build_V${V}_X01.0/setuppatch.sh  $TARGETDIR/$regname/Build_V${V}_X01.0
-#fi
-
 # Set up EXPT.src so that it is correct
 cat  $TARGETDIR/$regname/REGION.src | sed "s/R=.*/R=$regname/" >  $TARGETDIR/$regname/REGION.src.new
 mv $TARGETDIR/$regname/REGION.src.new $TARGETDIR/$regname/REGION.src
-
-#ln -s $BASEDIR/src_${V} $TARGETDIR/$regname/.
-#ln -s $BASEDIR/config $TARGETDIR/$regname/.
 
