@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # KAL - get X from input
-if [ $# -ne 2 ] ; then
+if [ $# -ne 1 ] ; then
    echo "This script will set up the final relaxation files to be used by HYCOM."
    echo "Before this you should have set up the z-level files based on either PHC or "
    echo "Levitus climatologies."
@@ -11,7 +11,7 @@ if [ $# -ne 2 ] ; then
    echo ""
    echo "Example:"
    echo "   $0 woa2013"
-   exit
+   exit 1
 fi
 export CLIM=$1
 

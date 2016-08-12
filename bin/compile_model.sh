@@ -35,7 +35,7 @@ fi
 TERMS2=$(echo 0$TERMS | tail -c3)
 echo "SIGVER      = $SIGVER .There are $TERMS terms in equation of state"
 
-# Set up rel path and stmt fnc
+# Set up rel path and statment function name fnc
 stmt=stmt_fns_SIGMA${MYTHFLAG}_${TERMS}term.h
 targetdir=$EDIR/build/src_${V}ZA-${TERMS2}Tsig${MYTHFLAG}-i-sm-sse_relo_mpi/
 targetconfdir=$EDIR/build/config/

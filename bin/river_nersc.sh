@@ -16,7 +16,7 @@ if [ $# -ne 2 ] ; then
    echo "   nersc_rivers.sh 100 300"
    echo "Will place rivers at most 100 km from land, and at most 300 km along the land "
    echo "contour."
-   exit
+   exit 1
 fi
 
 

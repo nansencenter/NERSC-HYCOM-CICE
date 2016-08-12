@@ -12,7 +12,7 @@ if [ $# -ne 1 ] ; then
    echo "Example:"
    echo "$(basename $0) phc"
    echo
-   exit
+   exit 1
 fi
 export CLIM_CHOICE=$1
 
