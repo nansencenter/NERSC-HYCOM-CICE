@@ -26,16 +26,12 @@ else
 fi
 
 # Dont create region if one already exists
+BASEDIR=$(cd $(dirname $0) && pwd)/..
+TARGETDIR=$(cd $TARGETDIR && pwd)
 if [ -a $TARGETDIR/$regname ] ; then
    echo "Directory or file $TARGETDIR/$regname already exists"
    exit 1
 fi
-
-BASEDIR=$(dirname $0)/..
-cd $BASEDIR
-BASEDIR=$(pwd)/
-cd - > /dev/null
-
 
 # Safety check - see that basedir does not contain ";"
 if echo $BASEDIR | grep ";" ; then
@@ -50,45 +46,35 @@ if echo $regname | grep "_" ; then
 fi
 
 # start copying bin 
-bindirs=$(find $BASEDIR -type d -name bin )
-for i in $bindirs ; do
-   relpath=$(echo $i | sed "s;${BASEDIR};;")
+mkdir -p $TARGETDIR/$regname/bin
+cp -r  $BASEDIR/bin/* $TARGETDIR/$regname/bin
 
-   # Check relative path
-   cd $BASEDIR
-   if [ ! -d $relpath ] ; then
-      echo "Error in relative path generation - you will have to copy by hand"
-      exit 1
-   fi
-   cd - > /dev/null
-
-   #echo "test0: $i $relpath"
-   mkdir -p $TARGETDIR/$regname/$relpath
-   cp -r  $i/* $TARGETDIR/$regname/$relpath
-done
-
-# start copying READMEs
-bindirs=$(find $BASEDIR -type f -name "README*" )
-for i in $bindirs ; do
-   relpath=$(echo $i | sed "s;${BASEDIR};;")
-
-   # Check relative path
-   cd $BASEDIR
-   if [ ! -f $relpath ] ; then
-      echo "Error in relative path generation - you will have to copy by hand"
-      exit 1
-   fi
-   cd - > /dev/null
-
-   #echo "test1: $i $relpath"
-   mkdir -p $(dirname $TARGETDIR/$regname/$relpath)
-   cp -r  $i $TARGETDIR/$regname/$relpath
-done
+## start copying READMEs
+#bindirs=$(find $BASEDIR -type f -name "README*" )
+#for i in $bindirs ; do
+#   relpath=$(echo $i | sed "s;${BASEDIR};;")
+#
+#   # Check relative path
+#   cd $BASEDIR
+#   if [ ! -f $relpath ] ; then
+#      echo "Error in relative path generation - you will have to copy by hand"
+#      exit 1
+#   fi
+#   cd - > /dev/null
+#
+#   #echo "test1: $i $relpath"
+#   mkdir -p $(dirname $TARGETDIR/$regname/$relpath)
+#   cp -r  $i $TARGETDIR/$regname/$relpath
+#done
 
 # Copy files in top-level directory (only files)
-cp $BASEDIR/rmu.in $TARGETDIR/$regname/
-cp $BASEDIR/REGION.src $TARGETDIR/$regname/
+#cp $BASEDIR/rmu.in $TARGETDIR/$regname/
 #cp $BASEDIR/README.KAL $TARGETDIR/$regname/
+cp $BASEDIR/REGION.src $TARGETDIR/$regname/
+
+# Copy files in force/input/ directory
+mkdir -p $TARGETDIR/$regname/force/input/
+cp  $BASEDIR/force/input/* $TARGETDIR/$regname/force/input/
 
 
 # Copy all experiment dirs, nut not their data subdirectory
@@ -100,16 +86,10 @@ for i in $BASEDIR/expt_* ; do
    [ ! -d $newdir/data ] && mkdir $newdir/data
    cp -r $i/subprogs $TARGETDIR/$regname/$(basename $i)/
    cp $i/* $TARGETDIR/$regname/$(basename $i)/
-   #cp    $i/blkdat.input $TARGETDIR/$regname/$(basename $i)/
-   #cp    $i/EXPT.src $TARGETDIR/$regname/$(basename $i)/
-   #cp    $i/infile* $TARGETDIR/$regname/$(basename $i)/
-   #cp    $i/*.sh $TARGETDIR/$regname/$(basename $i)/
-   #cp    $i/ports.input $TARGETDIR/$regname/$(basename $i)/
-   #cp    $i/README $TARGETDIR/$regname/$(basename $i)/
-   #cp    $i/rivers.dat $TARGETDIR/$regname/$(basename $i)/
 done
 
 # Set up EXPT.src so that it is correct
 cat  $TARGETDIR/$regname/REGION.src | sed "s/R=.*/R=$regname/" >  $TARGETDIR/$regname/REGION.src.new
 mv $TARGETDIR/$regname/REGION.src.new $TARGETDIR/$regname/REGION.src
+
 
