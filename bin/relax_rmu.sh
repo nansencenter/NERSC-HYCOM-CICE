@@ -3,20 +3,18 @@
 #
 # --- Generate a HYCOM relaxation mask.
 #
-# KAL - get X from input
-if [ $# -ne 1 ] ; then
-   echo "You must input experiment name (ex 01.0)"
-   exit
-fi
-export X=$1
 
-# Set basedir based on relative paths of script
-# Can be troublesome, but should be less prone to errors
-# than setting basedir directly
-export BASEDIR=$(cd $(dirname $0)/../ && pwd)/
-source ${BASEDIR}/bin/common_functions.sh || { echo "Could not source ${BASEDIR}/common_functions.sh" ; exit 1 ; }
+# Must be in expt dir to run this script
+if [ -f EXPT.src ] ; then
+   export BASEDIR=$(cd .. && pwd)
+else
+   echo "Could not find EXPT.src. This script must be run in expt dir"
+   exit 1
+fi
+BINDIR=$(cd $(dirname $0) && pwd)
+source ${BINDIR}/common_functions.sh || { echo "Could not source ${BINDIR}/common_functions.sh" ; exit 1 ; }
 source ${BASEDIR}/REGION.src || { echo "Could not source ${BASEDIR}/REGION.src" ; exit 1 ; }
-source ${BASEDIR}/expt_$X/EXPT.src || { echo "Could not source ${BASEDIR}/expt_$X/EXPT.src" ; exit 1 ; }
+source ./EXPT.src || { echo "Could not source ./EXPT.src" ; exit 1 ; }
 
 D=$BASEDIR/relax/$E/
 C=$D/SCRATCH

@@ -4,6 +4,9 @@ pget=cp
 pput=cp
 #set -x
 
+
+echo "not yet implemented" 
+exit 1
 # Experiment  needs experiment number
 if [ $# -ne 3 ] ; then
    echo "This script will set up river nutrient forcing files used by HYCOM. You will"

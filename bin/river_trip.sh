@@ -5,34 +5,39 @@ pput=cp
 #set -x
 
 # Experiment  needs experiment number
-if [ $# -ne 1 ] ; then
-   echo "This script will set up river forcing files used by HYCOM. The forcing"
-   echo "is based on the ERA40 runoff data set, coupled with the TRIP data base "
-   echo "for directing the runoff towards the ocean. "
-   echo 
-   echo "Example:"
-   echo "   nersc_trip 01.0"
-   echo 
-   echo "NB :River discharge radius set to 200 km - modify trip_to_hycom to change this"
-   echo "NB2:This script might take some time to finish since it calculates river flow "
-   echo "    for ~50 years. However, the riverflow need only be calculated once, and "
-   echo "    the resulting trip_era40_clim.nc file will be valid for ALL model grids.  "
-   echo "    If you store trip_era40_clim.nc somewhere safe you might modify this script "
-   echo "    so that only the routine trip_to_hycom is called. That routine will use  "
-   echo "    an existing trip_era40_clim.nc to calculate a hycom river climatology.     "
-   echo "NB3:This script will overwrite any other river forcing files in force/rivers/E !!"
-   exit
-fi
-export X=$1
+echo "This script will set up river forcing files used by HYCOM. The forcing"
+echo "is based on the ERA40 runoff data set, coupled with the TRIP data base "
+echo "for directing the runoff towards the ocean. "
+echo 
+echo "Example:"
+echo "   nersc_trip"
+echo 
+echo "NB :River discharge radius set to 200 km - modify trip_to_hycom to change this"
+echo "NB2:This script might take some time to finish since it calculates river flow "
+echo "    for ~50 years. However, the riverflow need only be calculated once, and "
+echo "    the resulting trip_era40_clim.nc file will be valid for ALL model grids.  "
+echo "    If you store trip_era40_clim.nc somewhere safe you might modify this script "
+echo "    so that only the routine trip_to_hycom is called. That routine will use  "
+echo "    an existing trip_era40_clim.nc to calculate a hycom river climatology.     "
+echo "NB3:This script will overwrite any other river forcing files in force/rivers/E !!"
+sleep 6
+
 
 
 # Set basedir based on relative paths of script
 # Can be troublesome, but should be less prone to errors
 # than setting basedir directly
-export BASEDIR=$(cd $(dirname $0)/../ && pwd)/
-source ${BASEDIR}/bin/common_functions.sh || { echo "Could not source ${BASEDIR}/bin/common_functions.sh" ; exit 1 ; }
+# Must be in expt dir to run this script
+if [ -f EXPT.src ] ; then
+   export BASEDIR=$(cd .. && pwd)
+else
+   echo "Could not find EXPT.src. This script must be run in expt dir"
+   exit 1
+fi
+export BINDIR=$(cd $(dirname $0) && pwd)/
+source ${BINDIR}/common_functions.sh || { echo "Could not source ${BINDIR}/common_functions.sh" ; exit 1 ; }
 source ${BASEDIR}/REGION.src || { echo "Could not source ${BASEDIR}/REGION.src" ; exit 1 ; }
-source ${BASEDIR}/expt_$X/EXPT.src || { echo "Could not source ${BASEDIR}/expt_$X/EXPT.src" ; exit 1 ; }
+source ./EXPT.src            || { echo "Could not source ./EXPT.src" ; exit 1 ; }
 
 # Check that pointer to MSCPROGS is set
 if [ -z ${MSCPROGS} ] ; then

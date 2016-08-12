@@ -29,7 +29,16 @@ T=$4
 # Set basedir based on relative paths of script
 # Can be troublesome, but should be less prone to errors
 # than setting basedir directly
-export BASEDIR=$(cd $(dirname $0)/.. && pwd)/  
+# Must be in expt dir to run this script
+if [ -f EXPT.src ] ; then
+   export BASEDIR=$(cd .. && pwd)
+elif [ -f REGION.src ] ; then
+   export BASEDIR=$(pwd)
+else
+   echo "Could not find EXPT.src or REGION.src. This script must be run in expt dir or region dir"
+   exit 1
+fi
+export BINDIR=$(cd $(dirname $0) && pwd)/
 source ${BASEDIR}/REGION.src || { echo "Could not source ${BASEDIR}/REGION.src" ; exit 1 ; }
 
 # Check that pointer to HYCOM_ALL is set (from EXPT.src)
@@ -59,7 +68,7 @@ cp  $BASEDIR/topo/regional.grid.a . || { echo "Could not copy regional.grid.a " 
 cp  $BASEDIR/topo/regional.grid.b . || { echo "Could not copy regional.grid.b " ; exit 1 ;}
 cp  $BASEDIR/topo/depth_${R}_${T}.a regional.depth.a || { echo "Could not copy depth_${R}_${T}.a " ; exit 1 ;}
 cp  $BASEDIR/topo/depth_${R}_${T}.b regional.depth.b || { echo "Could not copy depth_${R}_${T}.b " ; exit 1 ;}
-cp  $BASEDIR/bin/xbathy.pal  . ||  { echo "Could not copy xbathy.pal " ; exit 1 ;}
+cp  $INPUTDIR/xbathy.pal  . ||  { echo "Could not copy xbathy.pal " ; exit 1 ;}
 
 # The tiler program needs these
 export FOR051=regional.depth.b

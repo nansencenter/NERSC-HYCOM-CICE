@@ -26,7 +26,16 @@ else
 fi
 
 # Dont create region if one already exists
-BASEDIR=$(cd $(dirname $0) && pwd)/..
+# Must be in expt or region dir to run this script
+if [ -f EXPT.src ] ; then
+   export BASEDIR=$(cd .. && pwd)
+elif [ -f REGION.src ] ; then
+   export BASEDIR=$(pwd)
+else
+   echo "Could not find EXPT.src or REGION.src. This script must be run in expt  opr region dir"
+   exit 1
+fi
+
 TARGETDIR=$(cd $TARGETDIR && pwd)
 if [ -a $TARGETDIR/$regname ] ; then
    echo "Directory or file $TARGETDIR/$regname already exists"
@@ -45,37 +54,10 @@ if echo $regname | grep "_" ; then
    exit 1
 fi
 
-# start copying bin 
-mkdir -p $TARGETDIR/$regname/bin
-cp -r  $BASEDIR/bin/* $TARGETDIR/$regname/bin
-
-## start copying READMEs
-#bindirs=$(find $BASEDIR -type f -name "README*" )
-#for i in $bindirs ; do
-#   relpath=$(echo $i | sed "s;${BASEDIR};;")
-#
-#   # Check relative path
-#   cd $BASEDIR
-#   if [ ! -f $relpath ] ; then
-#      echo "Error in relative path generation - you will have to copy by hand"
-#      exit 1
-#   fi
-#   cd - > /dev/null
-#
-#   #echo "test1: $i $relpath"
-#   mkdir -p $(dirname $TARGETDIR/$regname/$relpath)
-#   cp -r  $i $TARGETDIR/$regname/$relpath
-#done
+mkdir -p $TARGETDIR/$regname
 
 # Copy files in top-level directory (only files)
-#cp $BASEDIR/rmu.in $TARGETDIR/$regname/
-#cp $BASEDIR/README.KAL $TARGETDIR/$regname/
 cp $BASEDIR/REGION.src $TARGETDIR/$regname/
-
-# Copy files in force/input/ directory
-mkdir -p $TARGETDIR/$regname/force/input/
-cp  $BASEDIR/force/input/* $TARGETDIR/$regname/force/input/
-
 
 # Copy all experiment dirs, nut not their data subdirectory
 for i in $BASEDIR/expt_* ; do
@@ -84,7 +66,7 @@ for i in $BASEDIR/expt_* ; do
    [ ! -d $newdir ] && mkdir $newdir
    [ ! -d $newdir/log ] && mkdir $newdir/log
    [ ! -d $newdir/data ] && mkdir $newdir/data
-   cp -r $i/subprogs $TARGETDIR/$regname/$(basename $i)/
+   #cp -r $i/subprogs $TARGETDIR/$regname/$(basename $i)/
    cp $i/* $TARGETDIR/$regname/$(basename $i)/
 done
 

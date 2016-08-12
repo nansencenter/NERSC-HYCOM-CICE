@@ -1,3 +1,7 @@
+echo "not yet implemented"
+
+exit 1
+
 if [ $# -ne 1 ] ; then
    echo "This routine will back up one experiment to migrate"
    echo "You need to specify the experiment number "

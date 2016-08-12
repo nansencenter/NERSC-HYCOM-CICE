@@ -18,12 +18,16 @@ if [ $# -ne 2 ] ; then
    echo
    exit 1
 fi
-BASEDIR=$(dirname $0)/..
-cd $BASEDIR
-BASEDIR=$(pwd)/
-cd -
 
-
+# Must be in expt or region dir to run this script
+if [ -f EXPT.src ] ; then
+   export BASEDIR=$(cd .. && pwd)
+elif [ -f REGION.src ] ; then
+   export BASEDIR=$(pwd)
+else
+   echo "Could not find EXPT.src REGION.src . This script must be run in expt dir or region dir"
+   exit 1
+fi
 exptold=$1
 exptnew=$2
 
@@ -42,7 +46,7 @@ fi
 
 mkdir $BASEDIR/expt_$exptnew
 cp $BASEDIR/expt_$exptold/* $BASEDIR/expt_$exptnew/
-cp -r $BASEDIR/expt_$exptold/subprogs $BASEDIR/expt_$exptnew/subprogs
+#cp -r $BASEDIR/expt_$exptold/subprogs $BASEDIR/expt_$exptnew/subprogs
 mkdir $BASEDIR/expt_$exptnew/log
 mkdir $BASEDIR/expt_$exptnew/data
 
@@ -78,19 +82,6 @@ for i in pbsjob*.sh ; do
    mv $i $i.tmp
    cat $i.tmp | sed "s/PBS[ ]*-N.*$/PBS -N ${R}_X${X}/"  > $i
 done
-
-#set up a Build directory
-# Dont create Build if one already exists
-if [ -a $BASEDIR/Build_V${V}_X$exptnew ] ; then
-      echo "Directory or file $BASEDIR/Build_V${V}_X$exptnew  already exists"
-      exit 1
-fi
-mkdir $BASEDIR/Build_V${V}_X$exptnew
-cp $BASEDIR/Build_V${V}_X$exptold/flags $BASEDIR/Build_V${V}_X$exptnew
-cp $BASEDIR/Build_V${V}_X$exptold/setuppatch.sh $BASEDIR/Build_V${V}_X$exptnew
-cp $BASEDIR/Build_V${V}_X$exptold/Makefile $BASEDIR/Build_V${V}_X$exptnew
-cp $BASEDIR/Build_V${V}_X$exptold/dependencies $BASEDIR/Build_V${V}_X$exptnew
-
 
 echo
 echo

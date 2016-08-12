@@ -1,30 +1,30 @@
 #!/bin/bash
 #
 # KAL - get X from input
-if [ $# -ne 3 ] ; then
+if [ $# -ne 2 ] ; then
    echo "This script will set up the final relaxation files to be used by HYCOM."
    echo "Before this you should have set up the z-level files based on either PHC or "
    echo "Levitus climatologies."
    echo
-   echo "You must input experiment name (example: 01.0), climatology (phc or levitus) and sigver"
+   echo "You must input climatology (phc or levitus)"
    echo "when running this script"
    echo ""
    echo "Example:"
-   echo "   $0 01.2 woa2013 1"
+   echo "   $0 woa2013"
    exit
 fi
-export X=$1
-export CLIM=$2
-export SIGVER=$3
+export CLIM=$1
 
 
-
-# Set basedir based on relative paths of script
-# Can be troublesome, but should be less prone to errors
-# than setting basedir directly
-export BASEDIR=$(cd $(dirname $0)/.. && pwd)
+# Must be in expt dir to run this script
+if [ -f EXPT.src ] ; then
+   export BASEDIR=$(cd .. && pwd)
+else
+   echo "Could not find EXPT.src. This script must be run in expt dir"
+   exit 1
+fi
 source ${BASEDIR}/REGION.src || { echo "Could not source ${BASEDIR}/REGION.src" ; exit 1 ; }
-source ${BASEDIR}/expt_$X/EXPT.src || { echo "Could not source ${BASEDIR}/expt_$X/EXPT.src" ; exit 1 ; }
+source EXPT.src || { echo "Could not source ./EXPT.src" ; exit 1 ; }
 
 # Check that pointer to HYCOM_ALL is set (from EXPT.src)
 if [ -z ${HYCOM_ALL} ] ; then
@@ -66,12 +66,12 @@ cd       $S || { echo " Could not descend scratch dir $S" ; exit 1;}
 proceed=1
 if [ -f $D/relax_sal.a -a -f $D/relax_sal.b ] ; 
 then
-   echo "Salinity   relaxation files already exist: $D/relax_sal.[ab]"
+   echo "Salinity   relaxation files already exist : $D/relax_sal.[ab]"
    proceed=0
 fi
 if [ -f $D/relax_tem.a -a -f $D/relax_tem.b ] ; 
 then
-   echo "Temperature rlaxation files already exist: $D/relax_tem.[ab]"
+   echo "Temperature relaxation files already exist: $D/relax_tem.[ab]"
    proceed=0
 fi
 if [ -f $D/relax_int.a -a -f $D/relax_int.b ] ; 
@@ -93,6 +93,15 @@ IVERSN=$(egrep "'iversn'"  ${BASEDIR}/expt_${X}/blkdat.input  | sed "s/.iversn.*
 IVERSN=$(echo $IVERSN | sed "s/^0*//")
 echo "IVERSN = $IVERSN"
 echo "KSIGMA = $KSIGMA"
+echo "SIGVER = $SIGVER"
+tmp=$(expr $SIGVER % 2)
+if [ $KSIGMA -eq 0 -a $tmp -ne 1 ] ; then
+   echo "Recommend SIGVER=1,3,5 or 7 when thflag=0"
+   exit 1
+elif [ $KSIGMA -eq 2 -a $tmp -ne 0 ] ; then
+   echo "Recommend SIGVER=2,4,6 or 8 when thflag=2"
+   exit 1
+fi
 
 # Retrieve blkdat.input and create subset
 touch blkdat.subset
@@ -201,8 +210,10 @@ for MM in   01 02 03 04 05 06 07 08 09 10 11 12 ; do
    export FOR073A=fort.73A
    /bin/rm -f fort.10  fort.11  fort.12  fort.21
    /bin/rm -f fort.10A fort.11A fort.12A fort.21A
-   
-   ./relaxi
+ 
+   logfile=$S/log_$MM.out
+   echo "Running relaxi, log in $logfile"
+   ./relaxi > $logfile 2>&1
    #
    # --- Output.
    #
@@ -256,6 +267,7 @@ ${pput} relax_tem.a ${D}/relax_tem.a
 /bin/rm relax_int_m??.[ab]
 /bin/rm relax_sal_m??.[ab]
 /bin/rm relax_tem_m??.[ab]
+echo "Final files in $D"
 
 
 

@@ -28,9 +28,16 @@ PF=$2
 
 
 
-# Set basedir based on relative paths of script
-# Can be troublesome, but should be less prone to errors
-# than setting basedir directly
+# Must be in expt dir to run this script
+if [ -f REGION.src ] ; then
+   export BASEDIR=$(pwd)
+elif [ -f EXPT.src ] ; then
+   export BASEDIR=$(cd .. && pwd)
+else
+   echo "Could not find REGION.src. This script must be run in expt dir or in region dir"
+   exit 1
+fi
+export BINDIR=$(cd $(dirname $0) && pwd)/
 export BASEDIR=$(cd $(dirname $0)/.. && pwd)/  
 source ${BASEDIR}/REGION.src || { echo "Could not source ${BASEDIR}/REGION.src" ; exit 1 ; }
 
@@ -71,29 +78,4 @@ export FOR051A=regional.depth.a
 export FOR021=fort.21
 
 ${TOPO_PORTS}
-exit
-
-## Calculate "load-balancing" patches
-#echo "$iqr $jqr $sfudge" | $PARTIT
-#nm=$(head -n2 fort.21 | tail -n1 | tr -s  " " | cut -d " " -f 2)
-##nm=$(printf "%4.4d" $nm)
-#nm=`echo 000$nm | tail -5c`
-#echo "partitioning finished"
-
-cp fort.21 depth_${R}_${T}.$nm
-
-## Create graphics
-##echo 1 | $TOPO_PPM
-#$TOPO_PPM
-#mv fort.31 depth_${R}_${T}.$nm.ppm
-#rm fort.*
-#
-## Show it if ImageMagick (display) is present...
-#echo "Output partition file is  depth_${R}_${T}.$nm, with $nm tiles"
-#which display &> /dev/null && display  depth_${R}_${T}.$nm.ppm
-#
-## Copy partitions to parent directory - overwrite if present
-#mv depth_${R}_${T}.$nm.ppm depth_${R}_${T}.$nm $BASEDIR/topo/partit
-#
-#echo
-#echo "partition file depth_${R}_${T}.$nm placed in $BASEDIR/topo/partit"
+exit 0

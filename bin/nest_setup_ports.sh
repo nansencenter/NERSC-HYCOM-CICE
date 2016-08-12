@@ -2,7 +2,7 @@
 # Set up 2d tiling for region
 
 # Input args
-if [ $# -ne 3 ]  ; then
+if [ $# -ne 2 ]  ; then
 #    echo "This script will set up the partition files needed when running HYCOM with"
 #    echo "MPI parallelization. The input is the number of partitions along the 1st"
 #    echo "and 2nd dimensions, and the topography version to apply the partitioning to"
@@ -17,21 +17,27 @@ if [ $# -ne 3 ]  ; then
 #    echo " c ---              < 1.0 to keep all  constant-sized tiles"
 #    echo " c ---              > 9.0 to shift     constant-sized tiles"
 #    echo " c ---              > 9.8 to double-up constant-sized tiles"
-    echo "Need experiment number, width of relax zone, efold time in days"
+    echo "Need  width of relax zone, efold time in days"
     exit 1
 fi
-X=$1
-width=$2
-efold=$3
+width=$1
+efold=$2
 
 
 
 # Set basedir based on relative paths of script
 # Can be troublesome, but should be less prone to errors
 # than setting basedir directly
-export BASEDIR=$(cd $(dirname $0)/.. && pwd)/  
+# Must be in expt dir to run this script
+if [ -f EXPT.src ] ; then
+   export BASEDIR=$(cd .. && pwd)
+else
+   echo "Could not find EXPT.src. This script must be run in expt dir"
+   exit 1
+fi
+export BINDIR=$(cd $(dirname $0) && pwd)/
 source ${BASEDIR}/REGION.src || { echo "Could not source ${BASEDIR}/REGION.src" ; exit 1 ; }
-source ${BASEDIR}/expt_$X/EXPT.src || { echo "Could not source ${BASEDIR}/expt_$X/EXPT.src" ; exit 1 ; }
+source ./EXPT.src || { echo "Could not source ./EXPT.src" ; exit 1 ; }
 export TARGETDIR=$BASEDIR/nest/$E
 export SCRATCH=$BASEDIR/nest/SCRATCH/
 [ ! -d $TARGETDIR ] && mkdir $TARGETDIR
@@ -51,8 +57,7 @@ fi
 
 # Pointers to programs
 #export TOPO_FIND=/home/nersc/knutali/Models/hycom/HYCOM_ALL_2.2.72/ALL/topo/src/topo_ports_find
-export PORT_ROUTINE=topo_ports.py
-
+export PORT_ROUTINE=$BASEDIR/../python/hycom_topo_ports.py
 
 # Create work dir, and copy files to it
 cd $SCRATCH || { echo "Could not descend dir  $SCRATCH" ; exit 1 ;}
@@ -62,7 +67,7 @@ cp  $BASEDIR/topo/regional.grid.a . || { echo "Could not copy regional.grid.a " 
 cp  $BASEDIR/topo/regional.grid.b . || { echo "Could not copy regional.grid.b " ; exit 1 ;}
 cp  $BASEDIR/topo/depth_${R}_${T}.a . || { echo "Could not copy depth_${R}_${T}.a " ; exit 1 ;}
 cp  $BASEDIR/topo/depth_${R}_${T}.b . || { echo "Could not copy depth_${R}_${T}.b " ; exit 1 ;}
-cp  $BASEDIR/bin/xbathy.pal  . ||  { echo "Could not copy xbathy.pal " ; exit 1 ;}
+cp  $INPUTDIR/xbathy.pal  . ||  { echo "Could not copy xbathy.pal " ; exit 1 ;}
 
 
 touch  ports.input.tmp && rm ports.input.tmp

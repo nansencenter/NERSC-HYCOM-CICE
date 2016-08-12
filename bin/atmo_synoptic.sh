@@ -2,29 +2,35 @@
 #
 
 # Experiment number needed
-if [ $# -ne 4 ] ; then
+if [ $# -ne 3 ] ; then
    echo " $(basename $0) needs experiment version as input (ex 01.0) "
    echo " in addition to synoptic forcing option, start time and end time"
    echo ""
    echo "Example:"
-   echo "    $(basename $0) 01.0 erai 2013-01-01T00:00:00  2013-01-05T00:00:00 "
+   echo "    $(basename $0) erai 2013-01-01T00:00:00  2013-01-05T00:00:00 "
    echo "Generates forcing from erai over the time span"
    exit
 fi
-export X=$1
-export forcing=$2
-export start=$3
-export stop=$4
+export forcing=$1
+export start=$2
+export stop=$3
 
 # Set basedir based on relative paths of script
 # Can be troublesome, but should be less prone to errors
 # than setting basedir directly
 # --- S is scratch directory,
 # --- D is permanent directory,
-export BASEDIR=$(cd  $(dirname $0)/../ && pwd)/
-source ${BASEDIR}/bin/common_functions.sh || { echo "Could not source ${BASEDIR}/bin/common_functions.sh" ; exit 1 ; }
+# Must be in expt dir to run this script
+if [ -f EXPT.src ] ; then
+   export BASEDIR=$(cd .. && pwd)
+else
+   echo "Could not find EXPT.src. This script must be run in expt dir"
+   exit 1
+fi
+export BINDIR=$(cd $(dirname $0) && pwd)/
+source ${BINDIR}/common_functions.sh || { echo "Could not source ${BINDIR}/common_functions.sh" ; exit 1 ; }
 source ${BASEDIR}/REGION.src || { echo "Could not source ${BASEDIR}/REGION.src" ; exit 1 ; }
-source ${BASEDIR}/expt_$X/EXPT.src || { echo "Could not source ${BASEDIR}/expt_$X/EXPT.src" ; exit 1 ; }
+source ./EXPT.src || { echo "Could not source ./EXPT.src" ; exit 1 ; }
 D=$BASEDIR/force/synoptic/
 S=$D/SCRATCH
 [ ! -d $D ] && mkdir -p $D
@@ -36,7 +42,7 @@ cd       $S || { echo " Could not descend scratch dir $S" ; exit 1;}
 # --- Sanity check on forcing option
 #
 if [ $forcing == "erai" ] ; then
-   xmlfile=$BASEDIR/force/input/era-interim.xml
+   xmlfile=$BASEDIR/../input/era-interim.xml
    xmlident="era-interim+lw"
 else 
    tellerror "Forcing option is erai only..."

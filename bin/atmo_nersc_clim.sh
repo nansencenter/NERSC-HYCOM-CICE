@@ -4,6 +4,12 @@
 pget=cp
 pput=cp
 
+
+echo "Climatology not yet implemented for this version"
+
+
+exit 0
+
 # Experiment number needed
 if [ $# -ne 2 ] ; then
    echo "This script will set up climatology forcing files for hycom. The"

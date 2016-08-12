@@ -1,7 +1,5 @@
 #!/bin/bash
-
-# KAL - get X from input
-if [ $# -ne 2 ] ; then
+if [ $# -ne 1 ] ; then
    echo "This script will set up files with the  climatology. The "
    echo "climatology will be given on z-levels, and interpolated in "
    echo "the horizontal - also onto land points. The resulting files"
@@ -12,21 +10,25 @@ if [ $# -ne 2 ] ; then
    echo "climatology can be phc, levitus or woa2013"
    echo
    echo "Example:"
-   echo "$(basename $0) 01.0 phc"
+   echo "$(basename $0) phc"
    echo
    exit
 fi
-export CLIM_CHOICE=$2
-export X=$1
+export CLIM_CHOICE=$1
 
 
-# Set basedir based on relative paths of script
-# Can be troublesome, but should be less prone to errors
-# than setting basedir directly
-export BASEDIR=$(cd $(dirname $0)/../ && pwd)/
-source ${BASEDIR}/bin/common_functions.sh || { echo "Could not source ${BASEDIR}/bin/common_functions.sh" ; exit 1 ; }
-source ${BASEDIR}/REGION.src || { echo "Could not source ${BASEDIR}/REGION.src" ; exit 1 ; }
-source ${BASEDIR}/expt_$X/EXPT.src || { echo "Could not source ${BASEDIR}/expt_$X/EXPT.src" ; exit 1 ; }
+# Must be in expt dir to run this script
+if [ -f EXPT.src ] ; then
+   export BASEDIR=$(cd .. && pwd)
+   echo $BASEDIR
+else
+   echo "Could not find EXPT.src. This script must be run in expt dir"
+   exit 1
+fi
+export BINDIR=$(cd $(dirname $0) && pwd)/
+source ${BINDIR}/common_functions.sh || { echo "Could not source ${BINDIR}/common_functions.sh" ; exit 1 ; }
+source ${BASEDIR}/REGION.src         || { echo "Could not source ${BASEDIR}/REGION.src" ; exit 1 ; }
+source EXPT.src                      || { echo "Could not source EXPT.src" ; exit 1 ; }
 D=$BASEDIR/relax/${CLIM_CHOICE}/
 S=$D/SCRATCH
 mkdir -p $S
@@ -104,6 +106,7 @@ for MM  in  01 02 03 04 05 06 07 08 09 10 11 12 ; do
    /bin/rm -f fort.71 fort.73
    ${pget} ${CLIM_PATH}/r_m${MM}.d fort.71 || { echo "Cant copy ${CLIM_PATH}/r_m${MM}.d "; exit 1 ; }
    ${pget} ${CLIM_PATH}/s_m${MM}.d fort.73 || { echo "Cant copy ${CLIM_PATH}/r_m${MM}.d "; exit 1 ; }
+   logfile=$S/z_woa_dynamic_${MM}.log
 
    touch z_woa_dynamic
    if [ ! -s  z_woa_dynamic ] ; then
@@ -118,7 +121,8 @@ for MM  in  01 02 03 04 05 06 07 08 09 10 11 12 ; do
    export FOR011A=fort.11A
    export FOR012A=fort.12A
    /bin/rm -f fort.10 fort.10A fort.11 fort.11A fort.12 fort.12A
-   ./z_woa_dynamic <<E-o-D
+   echo "Running z_woa_dynamic for month $MM. Log in $logfile"
+   ./z_woa_dynamic <<E-o-D > $logfile 2>&1
     &AFTITL
      CTITLE = '1234567890123456789012345678901234567890',
      CTITLE = '${CLIM_TITLE}',
@@ -135,6 +139,7 @@ E-o-D
    #
    # --- Required Output, potential density and temperature.
    #
+   echo "Moving output to $D/[temp|saln|dens]_sig${KSIGMA}_m${MM}.[ab]"
    ${pput} fort.10  ${D}/temp_sig${KSIGMA}_m${MM}.b
    ${pput} fort.10A ${D}/temp_sig${KSIGMA}_m${MM}.a
    ${pput} fort.12  ${D}/dens_sig${KSIGMA}_m${MM}.b

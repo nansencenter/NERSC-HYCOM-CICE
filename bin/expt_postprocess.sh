@@ -2,10 +2,14 @@
 #######################################################################
 # Start post-processing
 
-#Check environment
-cd $(dirname 0)/../
-export BASEDIR=$(pwd)
-cd -
+# Must be in expt dir to run this script
+if [ -f EXPT.src ] ; then
+   export BASEDIR=$(cd .. && pwd)
+else
+   echo "Could not find EXPT.src. This script must be run in expt dir"
+   exit 1
+fi
+export BINDIR=$(cd $(dirname $0) && pwd)/
 if [ -z ${BASEDIR} ] ; then
    tellerror "BASEDIR Environment not set "
    exit

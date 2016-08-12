@@ -167,7 +167,7 @@ function copy_setup_files {
    copy_grid_files $S
    copy_topo_files $S
    cp ${BASEDIR}/expt_${X}/blkdat.input blkdat.input      || { echo "Could not get file blkdat.input " ; exit 1 ; }
-   cp ${BASEDIR}/expt_${X}/infile.in infile.in            || { echo "Could not get file infile.in " ; exit 1 ; }
+   #cp ${BASEDIR}/expt_${X}/infile.in infile.in            || { echo "Could not get file infile.in " ; exit 1 ; }
 }
 
 

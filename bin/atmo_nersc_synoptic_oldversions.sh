@@ -5,21 +5,26 @@ pget=cp
 pput=cp
 
 # Experiment number needed
-if [ $# -ne 3 ] ; then
+if [ $# -ne 2 ] ; then
    echo " $(basename $0) needs experiment version as input (ex 01.0) "
    echo " in addition to synoptic and climate forcing options"
    echo "Example:"
-   echo "$(basename $0) 01.0 era40 era40"
+   echo "$(basename $0) era40 era40"
    exit
 fi
-export X=$1
+echo "Not implemented for new version"
+exit 1
 
-# Set basedir based on relative paths of script
-# Can be troublesome, but should be less prone to errors
-# than setting basedir directly
-export BASEDIR=$(cd  $(dirname $0)/../ && pwd)/
+
+# Must be in expt dir to run this script
+if [ -f EXPT.src ] ; then
+   export BASEDIR=$(cd .. && pwd)
+else
+   echo "Could not find EXPT.src. This script must be run in expt dir"
+   exit 1
+fi
 source ${BASEDIR}/REGION.src || { echo "Could not source ${BASEDIR}/REGION.src" ; exit 1 ; }
-source ${BASEDIR}/expt_$X/EXPT.src || { echo "Could not source ${BASEDIR}/expt_$X/EXPT.src" ; exit 1 ; }
+source ./EXPT.src            || { echo "Could not source ./EXPT.src" ; exit 1 ; }
 # --- S is scratch directory,
 # --- D is permanent directory,
 D=$BASEDIR/force/synoptic/
@@ -56,7 +61,7 @@ ${pget} ${BASEDIR}/expt_${X}/blkdat.input blkdat.input      || { echo "Could not
 ${pget} ${BASEDIR}/expt_${X}/infile.in infile.in            || { echo "Could not get file infile.in " ; exit 1 ; }
 
 
-$MSCPROGS/bin_setup/forfun_nersc-2.2.37 $2 $3 ||  { echo "Error running forfun_nersc-2.2.37 " ; exit 1 ; }
+$MSCPROGS/bin_setup/forfun_nersc-2.2.37 $1 $2 ||  { echo "Error running forfun_nersc-2.2.37 " ; exit 1 ; }
 
 # The nersc era40 forcing is region-independent 
 mkdir -p $D/$E  || { echo " Could not create data  destination dir $D/$E" ; exit 1;}

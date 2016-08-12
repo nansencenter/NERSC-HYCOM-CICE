@@ -3,6 +3,7 @@
 # Set basedir based on relative paths of script
 # Can be troublesome, but should be less prone to errors
 # than setting basedir directly
+echo "not yet implemented"
 cd $(dirname $0)/../
 export BASEDIR=$(pwd)/  
 cd -

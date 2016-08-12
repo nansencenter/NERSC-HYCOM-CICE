@@ -1,9 +1,17 @@
 #!/bin/bash
-EDIR=$(cd $(dirname $0) && pwd)/         # Location of this script
-BASEDIR=$(cd $(dirname $0)/.. && pwd)/   # Location of basedir
-source $BASEDIR/bin/common_functions.sh
+# Must be in expt dir to run this script
+if [ -f EXPT.src ] ; then
+   export BASEDIR=$(cd .. && pwd)
+else
+   echo "Could not find EXPT.src. This script must be run in expt dir"
+   exit 1
+fi
+BINDIR="../../bin"
+EDIR=$(pwd)/                           # Location of this script
+BASEDIR=$(cd $(dirname $0)/.. && pwd)/ # Location of basedir
 source $BASEDIR/REGION.src
 source $EDIR/EXPT.src
+source ../../bin//common_functions.sh
 echo "Logs can be found in $EDIR/log"
 echo ".."
 
@@ -82,7 +90,7 @@ echo ".."
 # Create z-level relaxation files
 cd $EDIR
 echo "z climatology"
-../bin/z_generic.sh ${X} $myclim > $EDIR/log/ref_z_relax.out 2>&1
+$BINDIR/z_generic.sh ${X} $myclim > $EDIR/log/ref_z_relax.out 2>&1
 res=$?
 [ $res -eq 0 ] && echo "Success"
 [ $res -ne 0 ] && echo "Failure..."
@@ -91,7 +99,7 @@ echo ".."
 # Create relaxation files on hybrid coordinates
 cd $EDIR
 echo "hybrid climatology"
-../bin/relaxi.sh ${X} $myclim 2    > $EDIR/log/ref_hybrid_relax.out 2>&1
+$BINDIR/relaxi.sh ${X} $myclim 2    > $EDIR/log/ref_hybrid_relax.out 2>&1
 res=$?
 [ $res -eq 0 ] && echo "Success"
 [ $res -ne 0 ] && echo "Failure..."
@@ -99,7 +107,7 @@ echo ".."
 
 # Create relaxation mask
 echo "relaxation mask"
-cat <<EOF | ../bin/relax_rmu.sh ${X}  > $EDIR/log/ref_rmu_mask.out 2>&1
+cat <<EOF | $BINDIR/relax_rmu.sh ${X}  > $EDIR/log/ref_rmu_mask.out 2>&1
 F
 F
 F
@@ -116,7 +124,7 @@ echo ".."
 # Create simple river forcing
 cd $EDIR
 echo "river forcing"
-../bin/river_nersc.sh ${X} 100 300 > $EDIR/log/ref_river_nersc.out 2>&1
+$BINDIR/river_nersc.sh ${X} 100 300 > $EDIR/log/ref_river_nersc.out 2>&1
 res=$?
 [ $res -eq 0 ] && echo "Success"
 [ $res -ne 0 ] && echo "Failure..."
@@ -124,7 +132,7 @@ echo ".."
 
 # Create kpar file
 echo "kpar forcing"
-../bin/seawifs_mon_kpar.sh > $EDIR/log/ref_seawifs.out 2>&1
+$BINDIR/seawifs_mon_kpar.sh > $EDIR/log/ref_seawifs.out 2>&1
 res=$?
 [ $res -eq 0 ] && echo "Success"
 [ $res -ne 0 ] && echo "Failure..."
@@ -132,16 +140,16 @@ echo ".."
 
 # Create tiling. 
 echo "grid tiling"
-../bin/tile_grid.sh -2 -2 9.5 ${T} > $EDIR/log/ref_tiling.out 2>&1
+$BINDIR/tile_grid.sh -2 -2 9.5 ${T} > $EDIR/log/ref_tiling.out 2>&1
 res=$?
 [ $res -eq 0 ] && echo "Success"
 [ $res -ne 0 ] && echo "Failure..."
 echo ".."
 
 echo "If things went fine, you can now generate test forcing like this: "
-echo "    ../bin/atmo_synoptic_new.sh ${X} erai 2015-01-02T00:00:00  2015-01-05T00:00:00"
+echo "    $BINDIR/atmo_synoptic_new.sh ${X} erai 2015-01-02T00:00:00  2015-01-05T00:00:00"
 echo "Then edit the job script pbsjob.sh to read and make sure expt_preprocess.sh is called like this"
-echo "    ../bin/expt_preprocess_new.sh 2015-01-02T00:00:00 2015-01-05T00:00:00 --init "
+echo "    $BINDIR/expt_preprocess_new.sh 2015-01-02T00:00:00 2015-01-05T00:00:00 --init "
 echo
 echo "TODO: Current limitations on synoptic forcing routines mean that only erai forcing from 2015 can be used."
 
