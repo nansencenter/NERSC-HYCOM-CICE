@@ -1,7 +1,4 @@
 #!/bin/bash
-export BASEDIR=$(cd $(dirname $0)/.. && pwd)
-export SCRATCH=$BASEDIR/subregion/SCRATCH
-[ ! -d $SCRATCH ] && mkdir -p $SCRATCH
 
 usage="
    This script will set up mapping from this hycom region to the region in the input dir.
@@ -59,16 +56,28 @@ done
 # Experiment  needs experiment number
 if [ $# -ne 1 ] ; then
    echo -e "$usage"
-   exit
+   exit 1
 fi
+newregionpath=$1
 
 
 # Explore provided input path to get target region 
-newregionpath=$1
+# Must be in expt dir to run this script
+if [ -f EXPT.src ] ; then
+   export BASEDIR=$(cd .. && pwd)
+elif [ -f REGION.src ] ; then
+   export BASEDIR=$(pwd)
+else
+   echo "Could not find EXPT.src or REGION.src. This script must be run in expt dir or region dir"
+   exit 1
+fi
+export BINDIR=$(cd $(dirname $0) && pwd)/
 source ${newregionpath}/REGION.src || { echo "Could not source ${newregionpath}/REGION.src" ; exit 1 ; }
 NR=$R
 source ${BASEDIR}/REGION.src || { echo "Could not source ${BASEDIR}/REGION.src" ; exit 1 ; }
-source ${BASEDIR}/bin/common_functions.sh || { echo "Could not source ${BASEDIR}/bin/common_functions.sh" ; exit 1 ; }
+source ${BINDIR}/common_functions.sh || { echo "Could not source ${BINDIR}/common_functions.sh" ; exit 1 ; }
+export SCRATCH=$BASEDIR/subregion/SCRATCH
+[ ! -d $SCRATCH ] && mkdir -p $SCRATCH
 echo "This region name :$R"
 echo "New  region name :$NR"
 

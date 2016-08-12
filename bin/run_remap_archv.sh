@@ -1,11 +1,11 @@
 # Remapping of archive file to new vertical grid
 usage="
    Example:
-      $(basename $0) expt  archive1 archive2 ....
+      $(basename $0) archive1 archive2 ....
 
 
    Example:
-      $(basename $0) 90.9  archive1 archive2 ....
+      $(basename $0) archive1 archive2 ....
 "
 options=$(getopt -o m:  -- "$@")
 maxinc=50
@@ -23,23 +23,29 @@ while true; do
     esac
     shift
 done
-if [ $# -lt 2 ] ; then
+if [ $# -lt 1 ] ; then
     echo "Incorrect options provided"
     echo "$usage"
     exit 1
 fi
 
 export STARTDIR=$(pwd)
-export BASEDIR=$(cd $(dirname $0)/.. && pwd)
-source $BASEDIR/bin/common_functions.sh
-export SCRATCH=$BASEDIR/nest/SCRATCH
-[ ! -d $SCRATCH ] && mkdir $SCRATCH
-
-
-thisexpt=$1
-shift 
+# Must be in expt dir to run this script
+if [ -f EXPT.src ] ; then
+   export BASEDIR=$(cd .. && pwd)
+else
+   echo "Could not find EXPT.src. This script must be run in expt dir"
+   exit 1
+fi
+export BINDIR=$(cd $(dirname $0) && pwd)/
 source ${BASEDIR}/REGION.src || { echo "Could not source ${BASEDIR}/REGION.src" ; exit 1 ; }
-source ${BASEDIR}/expt_$thisexpt/EXPT.src || { echo "Could not source ${BASEDIR}/expt_$thisexpt/EXPT.src" ; exit 1 ; }
+source ./EXPT.src || { echo "Could not source ./EXPT.src" ; exit 1 ; }
+source ${BINDIR}/common_functions.sh || { echo "Could not source ${BINDIR}/common_functions.sh" ; exit 1 ; }
+export SCRATCH=$BASEDIR/nest/SCRATCH
+[ ! -d $SCRATCH ] && mkdir -p $SCRATCH
+
+
+thisexpt=$X
 echo "This region name    :$R"
 echo "This experiment     :$X"
 echo "This experiment topo:$T"

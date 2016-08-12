@@ -1,23 +1,18 @@
 #!/bin/bash
-export STARTDIR=$(pwd)
-export BASEDIR=$(cd $(dirname $0)/.. && pwd)
-source $BASEDIR/bin/common_functions.sh
-export SCRATCH=$BASEDIR/subregion/SCRATCH
-[ ! -d $SCRATCH ] && mkdir $SCRATCH
 
 iscan=15
 usage="
    Example:
-      $(basename $0) [-s iscan] expt  new_region_path new_region_expt archive1 archive2 ....
+      $(basename $0) [-s iscan]  new_region_path new_region_expt archive1 archive2 ....
 
    Example:
-      $(basename $0) 90.9 /work/$USER/hycom/TP4a0.12/ 03.1 archive1 
-      $(basename $0) -s $iscan 90.9 /work/$USER/hycom/TP4a0.12/ 03.1 archive1 
+      $(basename $0) /work/$USER/hycom/TP4a0.12/ 03.1 archive1 
+      $(basename $0) -s $iscan /work/$USER/hycom/TP4a0.12/ 03.1 archive1 
 
    Optional argument 'iscan' has default value of 15
 "
 options=$(getopt -o s:  -- "$@")
-[ $? -lt 4 ] || {
+[ $? -lt 3 ] || {
     echo "Incorrect options provided"
     exit 1
 }
@@ -36,18 +31,32 @@ while true; do
     shift
 done
 
-
-# Experiment  needs experiment number
-if [ $# -lt 4 ] ; then
+echo $#
+if [ $# -lt 3 ] ; then
    echo -e "$usage"
    exit
 fi
 
+# Must be in expt dir to run this script
+if [ -f EXPT.src ] ; then
+   export BASEDIR=$(cd .. && pwd)
+else
+   echo "Could not find EXPT.src. This script must be run in expt dir"
+   exit 1
+fi
+export BINDIR=$(cd $(dirname $0) && pwd)/
+export STARTDIR=$(pwd)
+source ${BASEDIR}/REGION.src || { echo "Could not source ${BASEDIR}/REGION.src" ; exit 1 ; }
+source ./EXPT.src || { echo "Could not source ./EXPT.src" ; exit 1 ; }
+source ${BINDIR}/common_functions.sh || { echo "Could not source ${BINDIR}/common_functions.sh" ; exit 1 ; }
+export SCRATCH=$BASEDIR/subregion/SCRATCH
+[ ! -d $SCRATCH ] && mkdir $SCRATCH
+
 # Explore provided input path to get target region 
-thisexpt=$1
-newregionpath=$2
-newregionexpt=$3
-shift 3
+thisexpt=$X
+newregionpath=$1
+newregionexpt=$2
+shift 2
 source ${newregionpath}/REGION.src || { echo "Could not source ${newregionpath}/REGION.src" ; exit 1 ; }
 source ${newregionpath}/expt_${newregionexpt}/EXPT.src || { echo "Could not source ${newregionpath}/expt_${newregionexpt}/EXPT.src" ; exit 1 ; }
 NR=$R
