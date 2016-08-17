@@ -68,10 +68,16 @@ for i in $BASEDIR/expt_* ; do
    [ ! -d $newdir/data ] && mkdir $newdir/data
    #cp -r $i/subprogs $TARGETDIR/$regname/$(basename $i)/
    cp $i/* $TARGETDIR/$regname/$(basename $i)/
+
+   # Set up pbsjob.sh with suitable job name
+   source $i/EXPT.src
+   cat $i/pbsjob.sh | sed -s "s/^#PBS[ ]*-N[ ]*.*/#PBS -N ${regname}_${X}/" >  $TARGETDIR/$regname/$(basename $i)/pbsjob.sh
+
 done
 
 # Set up EXPT.src so that it is correct
 cat  $TARGETDIR/$regname/REGION.src | sed "s/R=.*/R=$regname/" >  $TARGETDIR/$regname/REGION.src.new
 mv $TARGETDIR/$regname/REGION.src.new $TARGETDIR/$regname/REGION.src
+
 
 

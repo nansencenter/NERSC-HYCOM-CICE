@@ -3,6 +3,7 @@
 
 # Input args
 if [ $# -ne 2 ]  ; then
+   echo " Script calculates ports and relaxation zones for usw ehen nesting"
 #    echo "This script will set up the partition files needed when running HYCOM with"
 #    echo "MPI parallelization. The input is the number of partitions along the 1st"
 #    echo "and 2nd dimensions, and the topography version to apply the partitioning to"
@@ -60,6 +61,7 @@ fi
 export PORT_ROUTINE=$BASEDIR/../python/hycom_topo_ports.py
 
 # Create work dir, and copy files to it
+echo "running routine in $SCRATCH"
 cd $SCRATCH || { echo "Could not descend dir  $SCRATCH" ; exit 1 ;}
 touch regional.grid.a regional.grid.b regional.depth.a regional.depth.b fort.21 fort.31
 rm    regional.grid.a regional.grid.b regional.depth.a regional.depth.b fort.21 fort.31
@@ -76,8 +78,8 @@ ${PORT_ROUTINE}  depth_${R}_${T} $width $efold
 if [ $? -eq 0 ] ; then
    cp  ports.input.tmp $TARGETDIR/ports.nest
    echo "Created ports file $TARGETDIR/ports.nest"
-   cp  rmu.a $TARGETDIR/rmu_nest.a
-   cp  rmu.b $TARGETDIR/rmu_nest.b
+   cp  rmu.a $TARGETDIR/rmu.a
+   cp  rmu.b $TARGETDIR/rmu.b
 else 
    echo "port creation routine failed "
    exit 1

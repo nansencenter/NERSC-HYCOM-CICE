@@ -90,7 +90,6 @@ def port_setup(kdport,in_depth_m) :
          ilports.append(ilport+1) # Move towards edge, accounting for iu mask
          jfports.append(jfport)
          jlports.append(jlport)
-         kdports.append(kdport)
       elif kdport == 4 :
          jfport=I[0]
          jlport=I[-1]
@@ -99,7 +98,6 @@ def port_setup(kdport,in_depth_m) :
          ilports.append(ilport)
          jfports.append(jfport)
          jlports.append(jlport)
-         kdports.append(kdport)
       else :
          raise ValueError,"Unknown kdport value %d"%kdport
 
@@ -126,15 +124,22 @@ def relaxation_mask(rmumask,ifport,ilport,jfport,jlport,kdport,rmu_width) :
    distedge=numpy.zeros(rmumask.shape)
    tmp = numpy.arange(rmu_width,dtype=float) ; tmp=1.-tmp/rmu_width ; tmp.shape=(tmp.size,1)
    if kdport == 2 : # South 
+      #print "south"
+      #print  distedge[jfport:rmu_width+jfport,ifport:ilport+1].shape, tmp.shape
       distedge[jfport:rmu_width+jfport,ifport:ilport+1] = tmp
    elif kdport == 1 : # North
+      #print "north"
       #distedge[jfport-rmu_width:jfport,ifport:ilport+1] = tmp[::-1]
+      #print distedge[jfport-rmu_width-1:jfport-1,ifport:ilport+1].shape, tmp[::-1].shape
       distedge[jfport-rmu_width-1:jfport-1,ifport:ilport+1] = tmp[::-1]
    elif kdport == 3 : # East
+      #print "east"
       #distedge[jfport:jlport+1,ifport-rmu_width:ifport] = tmp[::-1]
       distedge[jfport:jlport+1,ifport-rmu_width-1:ifport-1] = tmp[::-1]
    elif kdport == 4 : # West
-      distedge[jfport:jlport+1,ifport:ifport+rmu_width] = tmp
+      #print "west"
+      #print distedge[jfport:jlport+1,ifport:ifport+rmu_width].shape, tmp.shape
+      distedge[jfport:jlport+1,ifport:ifport+rmu_width] = tmp.transpose()
    rmumask = numpy.maximum(rmumask,distedge)
 
    return rmumask
@@ -242,6 +247,7 @@ def main(infile,rmu_width,rmu_efold):
       jfports.extend(t_jfports)
       jlports.extend(t_jlports)
       kdports.extend(t_kdports)
+
 
 
    # Build mask

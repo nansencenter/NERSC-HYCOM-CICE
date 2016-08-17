@@ -2,14 +2,21 @@
 
 iscan=15
 usage="
-   Example:
+   This routine will use an existing mapping from this region to a new region to create
+   a new archive file from the archives files given as argument(s).
+
+   To use this routine, you must have already created a mapping, and placed it under subregion
+   dir with the correct name  (run_isuba_gmapi.sh aims to do this for you).
+
+   Usage:
       $(basename $0) [-s iscan]  new_region_path new_region_expt archive1 archive2 ....
 
    Example:
-      $(basename $0) /work/$USER/hycom/TP4a0.12/ 03.1 archive1 
-      $(basename $0) -s $iscan /work/$USER/hycom/TP4a0.12/ 03.1 archive1 
+      $(basename $0) /work/$USER/hycom/TP4a0.12/ 03.1 archv.2013_003_12.a archv.2013_004.a
+      $(basename $0) -s $iscan /work/$USER/hycom/TP4a0.12/ 03.1 archv.2013_003_12.a
 
-   Optional argument 'iscan' has default value of 15
+   Optional argument 'iscan' has default value of 15. This is the distance that will be scanned on
+   this region grid to find  a sea point for the new region grid points.
 "
 options=$(getopt -o s:  -- "$@")
 [ $? -lt 3 ] || {
@@ -31,7 +38,6 @@ while true; do
     shift
 done
 
-echo $#
 if [ $# -lt 3 ] ; then
    echo -e "$usage"
    exit
@@ -91,8 +97,10 @@ cp $tmp.a $SCRATCH/${source_topo}.a || { echo "Could not get $tmp.a " ; exit 1 ;
 cp $tmp.b $SCRATCH/${source_topo}.b || { echo "Could not get $tmp.b " ; exit 1 ; }
 
 # Get gmap file
-target_gmap=$NR.gmap
+#target_gmap=$NR.gmap
+target_gmap=$(gmap_file $NR)
 tmp=$BASEDIR/subregion/${target_gmap}
+echo "New  region gmap file:$target_gmap"
 if [ ! -f $tmp.a -o ! -f  $BASEDIR/$tmp.b ] ; then
    cp $tmp.a $SCRATCH/${target_gmap}.a
    cp $tmp.b $SCRATCH/${target_gmap}.b
@@ -107,8 +115,11 @@ cd $SCRATCH || { echo "Could not cd to $SCRATCH" ; exit 1 ; }
 target_idm=$(blkdat_get ${target_grid}.b idm)
 target_jdm=$(blkdat_get ${target_grid}.b jdm)
 
-target_dir=../${R}_${E}/${NR}_${NE}/
-mkdir -p $target_dir || { echo "Could not create ${trget_dir}" ; exit 1 ; }
+
+
+#target_dir=../${R}_${E}/${NR}_${NE}/
+target_dir=$BASEDIR/subregion/${E}/${NR}_${NE}/
+mkdir -p $target_dir || { echo "Could not create ${target_dir}" ; exit 1 ; }
 target_dir=$(cd ${target_dir} && pwd)/
 echo "Target dir = ${target_dir}"
 

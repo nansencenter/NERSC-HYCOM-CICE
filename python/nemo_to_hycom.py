@@ -56,11 +56,16 @@ logger.propagate=False
 
    
 
-def main(filemesh,grid2dfiles,first_j=0) :
+def main(filemesh,grid2dfiles,first_j=0,mean_file=False) :
 
-   fnametemplate="archv.%Y_%j_%H"
+   if mean_file :
+      fnametemplate="archm.%Y_%j_%H"
+   else :
+      fnametemplate="archv.%Y_%j_%H"
    itest=1
    jtest=200
+   logger.info("Mean file:%s"%str(mean_file))
+   logger.info("Output file template:%s"%str(fnametemplate))
 
    # Write regional files
    nemo_mesh_to_hycom.main(filemesh,first_j=first_j)
@@ -263,9 +268,10 @@ if __name__ == "__main__" :
 
    parser = argparse.ArgumentParser(description='')
    parser.add_argument('--first_j',   type=int,default=0)
+   parser.add_argument('--mean',   action="store_true",default=False)
    parser.add_argument('meshfile',   type=str)
    parser.add_argument('grid2dfile', type=str, nargs="+")
    args = parser.parse_args()
-   main(args.meshfile,args.grid2dfile,first_j=args.first_j)
+   main(args.meshfile,args.grid2dfile,first_j=args.first_j,mean_file=args.mean)
 
 

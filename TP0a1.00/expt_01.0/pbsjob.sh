@@ -17,7 +17,7 @@
 ##PBS -l walltime=00:40:00,mppwidth=4
 #PBS -l walltime=00:05:00,mppwidth=4
 #
-#  The job needs 1 GB memory per cpu:
+#  The job needs 100mb  memory per cpu:
 #PBS -l mppmem=100mb
 #
 #  Send me an email on  a=abort, b=begin, e=end
@@ -28,23 +28,25 @@
 #PBS -M knut.lisaeter@nersc.no
 #
 #  Write the standard output of the job to file 'mpijob.out' (optional)
-#PBS -o log/mpijob.out
+#PBS -o log/mpijob.${PBS_JOBID}.out
 #
 #  Write the standard error of the job to file 'mpijob.err' (optional)
-#PBS -e log/mpijob.err
+#PBS -e log/mpijob.${PBS_JOBID}.err
 #
 
 # ------------------- Fetch Environment ------------------------------
 # -------- these are needed in preprocess scripts---------------------
-NMPI=`qstat -f $PBS_JOBID | awk '/mppwidth/ {print $3}'`
-NOMP=`qstat -f $PBS_JOBID | awk '/mppdepth/ {print $3}'`
-[ -z "$NOMP" ] && NOMP=0
-export NOMP NMPI
-echo "nmpi=$NMPI"
-echo "nomp=$NOMP" # Not really used yet
+MYMPI=`qstat -f $PBS_JOBID | awk '/mppwidth/ {print $3}'`
+MYOMP=`qstat -f $PBS_JOBID | awk '/mppdepth/ {print $3}'`
+echo "PBS_JOBID    = $PBS_JOBID     "
+echo "PBS_JOBNAME  = $PBS_JOBNAME   "
 echo "PBS_O_WORKDIR= $PBS_O_WORKDIR "
+echo "PBS_TASKNUM  = $PBS_TASKNUM "
+echo "PBS_NUM_PPN  = $PBS_NUM_PPN "
+[ -z "$NOMP" ] && NOMP=0
+echo "MYMPI=$MYMPI  (Number of system MPI tasks requested)"
+echo "MYOMP=$MYOMP  (Number of systems OMP threads requested" # Not really used yet
 # -----------------End Fetch Environment -----------------------------
-
 
 # Enter directory from where the job was submitted
 cd $PBS_O_WORKDIR       ||  { echo "Could not go to dir $PBS_O_WORKDIR  "; exit 1; }
@@ -52,13 +54,22 @@ cd $PBS_O_WORKDIR       ||  { echo "Could not go to dir $PBS_O_WORKDIR  "; exit 
 # Initialize environment (sets Scratch dir ($S), Data dir $D ++ )
 source ../REGION.src  || { echo "Could not source ../REGION.src "; exit 1; }
 source ./EXPT.src  || { echo "Could not source EXPT.src"; exit 1; }
+echo "NMPI =$NMPI (Number of MPI tasks needed for running job) "
+
+START="2013-01-02T00:00:00"
+END="2013-01-10T00:00:00"
+echo "Start time in pbsjob.sh: $START"
+echo "End   time in pbsjob.sh: $END"
+
+# Generate atmospheric forcing :
+../../bin/atmo_synoptic.sh erai-lw $START $END 
 
 # Transfer data files to scratch - must be in "expt_XXX" dir for this script
-../bin/expt_preprocess_new.sh 2015-01-02T00:00:00 2015-01-05T00:00:00 --init        ||  { echo "Preprocess had fatal errors "; exit 1; }
+../../bin/expt_preprocess.sh $START $END --init        ||  { echo "Preprocess had fatal errors "; exit 1; }
 
 # Enter Scratch/run dir and Run model
 cd $S  ||  { echo "Could not go to dir $S  "; exit 1; }
-aprun -n $NMPI -m 100M ./hycom_cice  > ../log/hycom.out 2>&1
+aprun -n $NMPI -m 100M ./hycom_cice  > ../log/hycom.${PBS_JOBID}.out 2>&1
 
 # Cleanup and move data files to data directory - must be in "expt_XXX" dir for this script
 cd $P     ||  { echo "Could not go to dir $P  "; exit 1; }

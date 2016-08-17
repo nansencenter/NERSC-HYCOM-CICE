@@ -24,6 +24,8 @@ else
       initstr="$3"
    fi
 fi
+echo "Start time is $starttime"
+echo "Stop  time is $stoptime"
 
 # Init error counter (global var used by function tellerror)
 numerr=0
@@ -99,6 +101,7 @@ fi
 #
 # --- Set up time limits
 #
+echo "*Setting up time limits"
 cmd="$BASEDIR/../python/hycom_limits.py $starttime $endtime $initstr"
 eval $cmd ||  tellerror "$cmd failed"
 cmd="$BASEDIR/../python/cice_limits.py $initstr $starttime $endtime $NMPI $P/ice_in"
@@ -469,13 +472,17 @@ fi
 
 # TODO Limited set of tests for now. 
 # Link in nest dir if nesting activated
-tmp=$(echo $BNSTFQ'>'0.0 | bc -l)
-tmp2=$(echo $NESTFQ'>'0.0 | bc -l)
+#tmp=$(echo $BNSTFQ'>'0.0 | bc -l)
+#tmp2=$(echo $NESTFQ'>'0.0 | bc -l)
+tmp=$(echo $BNSTFQ'!='0.0 | bc -l)
+tmp2=$(echo $NESTFQ'!='0.0 | bc -l)
 if [ $tmp -eq 1 -o $tmp2 -eq 1 ] ; then
-   nestdir=$BASEDIR/nest/$E/
+   nestdir=$BASEDIR/nest/$E
    echo "Nesting input from $nestdir"
+   ls nest
    if [ -d $nestdir ]  ; then
-      ln -sf $nestdir nest
+      [ -e nest ] && rm nest
+      ln -s $nestdir nest
    else 
       tellerror "Nesting dir $nest does not exist"
    fi
@@ -588,8 +595,8 @@ TERMS2=$(echo 0$TERMS | tail -c3)
 echo "SIGVER      = $SIGVER .There are $TERMS terms in equation of state"
 
 # Set up rel path and stmt fnc
-#stmt=stmt_fns_SIGMA${MYTHFLAG}_${TERMS}term.h
-compdir=$P/build/src_${V}ZA-${TERMS2}Tsig${MYTHFLAG}-i-sm-sse_relo_mpi/
+compdir=$(source_dir $V $TERMS $THFLAG)
+compdir=$P/build/${compdir}
 /bin/cp $compdir/hycom_cice  . || tellerror "Could not get hycom_cice executable"
 
 
@@ -656,7 +663,7 @@ fi
 
 
 if [ $numerr -eq 0 ] ; then
-   echo "No known errors."
+   echo "No fatal errors."
 #   echo "$logfile"  
 #   echo "$logfile.err"
 else

@@ -156,7 +156,7 @@ function copy_topo_files {
 
 function copy_setup_files {
    if [ $# -ne 1 ]  ;then
-      echo "Need target location and what to look for" 2>&1
+      echo "common_functions.sh - copy_setup_files : Need target location and what to look for" 2>&2
       return 1
    fi
    TARGETDIR=$1
@@ -168,6 +168,31 @@ function copy_setup_files {
    copy_topo_files $S
    cp ${BASEDIR}/expt_${X}/blkdat.input blkdat.input      || { echo "Could not get file blkdat.input " ; exit 1 ; }
    #cp ${BASEDIR}/expt_${X}/infile.in infile.in            || { echo "Could not get file infile.in " ; exit 1 ; }
+}
+
+
+function gmap_file {
+   if [ $# -ne 1 ]  ;then
+      echo "$(basename $0) - $FUNCNAME : Need region name as input" 1>&2
+      return 1
+   fi
+   echo "${1}.gmap"
+}
+
+
+function source_dir {
+   if [ $# -ne 3 ]  ;then
+      echo "$(basename $0) - $FUNCNAME : Need version, number of terms and thflag as input" 1>&2
+      return 1
+   fi
+   V=$1
+   TERMS=$2
+   THFLAG=$3
+   TERMS2=$(echo 0$TERMS | tail -c3)
+   # Set up rel path
+   bd=src_${V}ZA-${TERMS2}Tsig${THFLAG}-i-sm-sse_relo_mpi/
+   echo $bd
+   return 0
 }
 
 

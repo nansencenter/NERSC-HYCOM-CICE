@@ -191,7 +191,7 @@
 
       integer(kind=int_kind) :: iblk
       !KAL 
-      print *,"in init_restart!"
+      !KAL print *,"in init_restart!"
 
 
       if (trim(runtype) == 'continue') then 

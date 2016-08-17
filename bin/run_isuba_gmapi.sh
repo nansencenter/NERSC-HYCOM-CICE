@@ -3,6 +3,9 @@
 usage="
    This script will set up mapping from this hycom region to the region in the input dir.
    The input dir contains a hycom \"tree\" with forcing, experimetns, etc etc.
+
+   TODO: Add similar routine for the conformal mapping tools used at NERSC.
+
    The script uses isuba_gmapi, which uses a conjugate gradient method to find the
    mapping. From source code:
 
@@ -99,7 +102,8 @@ jdm=$(blkdat_get $newgrid.b jdm)
 #echo "New jdm          :$jdm"
 
 
-newmap=${NR}.gmap
+#newmap=${NR}.gmap
+newmap=$(gmap_file $NR)
 touch ${newmap}.a && rm ${newmap}.a
 touch ${newmap}.b && rm ${newmap}.b
 prog=${HYCOM_ALL}/subregion/src_2.2.12/isuba_gmapi

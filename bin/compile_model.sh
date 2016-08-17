@@ -1,5 +1,7 @@
 #!/bin/bash
 #
+# Script for quickly setting up model source code and compiling it. Does not 
+# Really account for 
 
 # Must be in expt dir to run this script
 if [ -f EXPT.src ] ; then
@@ -15,7 +17,7 @@ source ${BASEDIR}/REGION.src || { echo "Could not source ${BASEDIR}/REGION.src" 
 source ./EXPT.src || { echo "Could not source ./EXPT.src" ; exit 1 ; }
 
 
-# Get some useful info
+# Get some useful info from blkdat.input
 THFLAG=$(blkdat_get blkdat.input thflag)
 IDM=$(blkdat_get blkdat.input idm)
 JDM=$(blkdat_get blkdat.input jdm)
@@ -35,26 +37,33 @@ fi
 TERMS2=$(echo 0$TERMS | tail -c3)
 echo "SIGVER      = $SIGVER .There are $TERMS terms in equation of state"
 
-# Set up rel path and statment function name fnc
-stmt=stmt_fns_SIGMA${MYTHFLAG}_${TERMS}term.h
-targetdir=$EDIR/build/src_${V}ZA-${TERMS2}Tsig${MYTHFLAG}-i-sm-sse_relo_mpi/
-targetconfdir=$EDIR/build/config/
-
 # Sanity check
 if [ $THFLAG -ne $MYTHFLAG ] ; then
    echo "thflag in blkdat.input ($THFLAG) does not match thflag from eq of state ($MYTHFLAG)"
    exit 1
 fi
 
+# Set up rel path and statment function name fnc
+stmt=stmt_fns_SIGMA${MYTHFLAG}_${TERMS}term.h
+targetdir=$(source_dir $V $TERMS $THFLAG)
+targetdir=$EDIR/build/$targetdir
+targetconfdir=$EDIR/build/config/
+
 # Create hycom executable. Copy code to expt dir
 sourcedir=$BASEDIR/../hycom/RELO/src_${V}ZA-07Tsig0-i-sm-sse_relo_mpi/ # Yes, we always use this version
 sourceconfdir=$BASEDIR/../hycom/RELO/config/
-[ ! -d $EDIR/build/ ] && mkdir $EDIR/build
-cp -r -L $sourcedir $targetdir
-cp -r -L $sourceconfdir $targetconfdir
+if [ ! -d $EDIR/build/ ] ; then 
+   mkdir $EDIR/build
+   cp -r -L $sourcedir $targetdir
+   cp -r -L $sourceconfdir $targetconfdir
+   echo "build dir $EDIR/build not found. Setting it up with repo code from $sourcedir"
+else 
+   echo "build dir $EDIR/build found. Using code in that subdirectory"
+fi
 
 # Create hycom executable. Set up correct eq of state
 cd $targetdir
+echo "Now setting up stmt_fns.h in $targetdir"
 source set_env.sh
 rm stmt_fns.h
 ln -s ALT_CODE/$stmt stmt_fns.h
@@ -62,9 +71,8 @@ ln -s ALT_CODE/$stmt stmt_fns.h
 # Create hycom executable. Set up correct domain size in CICE code, and pass this through to the compile script
 # NB: hycom is domain-independent, CICE is not. So the grid size info needs to be there. It is passed on to the CICE
 # compilation script by hycoms makefile
-echo "compiling hycom_cice in $targetdir"
-env RES=gx3 GRID=${IDM}x${JDM} csh Make_cice.csh > $EDIR/log/ref_hycom.out 2>&1
+echo "Now compiling hycom_cice in $targetdir. Log in $EDIR/log/compile_hycom.out"
+env RES=gx3 GRID=${IDM}x${JDM} csh Make_cice.csh > $EDIR/log/compile_hycom.out 2>&1
 res=$?
 [ $res -eq 0 ] && echo "Success"
 [ $res -ne 0 ] && echo "Failure..."
-echo ".."

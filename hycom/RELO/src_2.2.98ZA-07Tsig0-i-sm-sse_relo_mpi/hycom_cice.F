@@ -413,11 +413,11 @@ c --- Initialize OCEAN  gridded component
       call ESMF_TimeGet(startTime,timestring=msg)
       write(msg,'("hycom_cice startTime from ocnClock:",a)') trim(msg)
       call ESMF_LogWrite(msg, ESMF_LOGMSG_INFO, rc=rc)
-      print '(a)',msg
+      if (localPet .eq. 0 ) print '(a)',msg
       call ESMF_TimeGet(stopTime,timestring=msg)
       write(msg,'("hycom_cice stopTime from ocnClock :",a)') trim(msg)
       call ESMF_LogWrite(msg, ESMF_LOGMSG_INFO, rc=rc)
-      print '(a)',msg
+      if (localPet .eq. 0 ) print '(a)',msg
 
 C --- HYCOM determines the clock - here we copy HYCOMS ocnClock to CICEs iceClock
       iceClock = ESMF_ClockCreate(ocnClock)
@@ -835,9 +835,9 @@ c --- Finalize OACPL coupler component
 
 c
 10    continue
-      write(6,'(a)') 'Exiting hycom_cice'
+      if (localPet .eq. 0) write(6,'(a)') 'Exiting hycom_cice'
       call ESMF_VMBarrier(worldVM)
       call ESMF_Finalize(rc=rc)
 c
-      stop
+      !KAL stop
       end program hycom_cice
