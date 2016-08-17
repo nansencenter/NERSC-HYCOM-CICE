@@ -1165,7 +1165,7 @@
          amin = minval(work_g1)
          amax = maxval(work_g1, mask = work_g1 /= spval_dbl)
          asum = sum   (work_g1, mask = work_g1 /= spval_dbl)
-         write(nu_diag,*) ' min, max, sum =', amin, amax, asum
+         !KAL write(nu_diag,*) ' min, max, sum =', amin, amax, asum
       endif
 
     !-------------------------------------------------------------------
@@ -1788,7 +1788,7 @@
             amin = minval(work_g1(:,:,n))
             amax = maxval(work_g1(:,:,n), mask = work_g1(:,:,n) /= spval_dbl)
             asum = sum   (work_g1(:,:,n), mask = work_g1(:,:,n) /= spval_dbl)
-            write(nu_diag,*) ' min, max, sum =', amin, amax, asum
+            !KAL write(nu_diag,*) ' min, max, sum =', amin, amax, asum
          enddo
       endif
 
@@ -1901,7 +1901,7 @@
          amin = minval(work_g)
          amax = maxval(work_g, mask = work_g /= spval_dbl)
          asum = sum   (work_g, mask = work_g /= spval_dbl)
-         write(nu_diag,*) 'min, max, sum = ', amin, amax, asum
+         !KAL write(nu_diag,*) 'min, max, sum = ', amin, amax, asum
       endif
 
 #ifdef ORCA_GRID
