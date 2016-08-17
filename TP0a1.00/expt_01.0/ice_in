@@ -30,7 +30,7 @@
   , latpnt(2)      = -65.
   , lonpnt(2)      = -45.
   , dbug           = .false.
-  , histfreq       = '1','x','x','x','x'
+  , histfreq       = '1','d','x','x','x'
   , histfreq_n     =  1 , 1 , 1 , 1 , 1
   , hist_avg       = .true.
   , history_dir    = './cice/'
@@ -198,9 +198,9 @@
   , f_VGRDs        = .false.
   , f_VGRDb        = .false.
   , f_bounds       = .false.
-  , f_aice         = '1' 
-  , f_hi           = '1'
-  , f_hs           = '1' 
+  , f_aice         = 'd' 
+  , f_hi           = 'd'
+  , f_hs           = 'd' 
   , f_Tsfc         = 'h' 
   , f_sice         = 'm' 
   , f_uvel         = 'h' 
