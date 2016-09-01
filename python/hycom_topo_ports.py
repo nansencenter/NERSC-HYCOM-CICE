@@ -253,7 +253,7 @@ def main(infile,rmu_width,rmu_efold):
    # Build mask
    for i in range(len(ifports)) :
       rmumask = relaxation_mask(rmumask,ifports[i],ilports[i],jfports[i],jlports[i],kdports[i],rmu_width) 
-   print rmumask.min(),rmumask.max()
+   #print rmumask.min(),rmumask.max()
    rmumask = numpy.minimum(rmumask,1.) * 1./ (rmu_efold * 86400.)
    rmumask_m = numpy.ma.masked_where(in_depth_m.mask,rmumask)
 

@@ -71,8 +71,6 @@ ln -s ALT_CODE/$stmt stmt_fns.h
 # Create hycom executable. Set up correct domain size in CICE code, and pass this through to the compile script
 # NB: hycom is domain-independent, CICE is not. So the grid size info needs to be there. It is passed on to the CICE
 # compilation script by hycoms makefile
-echo "Now compiling hycom_cice in $targetdir. Log in $EDIR/log/compile_hycom.out"
-env RES=gx3 GRID=${IDM}x${JDM} csh Make_cice.csh > $EDIR/log/compile_hycom.out 2>&1
-res=$?
-[ $res -eq 0 ] && echo "Success"
-[ $res -ne 0 ] && echo "Failure..."
+echo "Now compiling hycom_cice in $targetdir." 
+env RES=gx3 GRID=${IDM}x${JDM} csh Make_cice.csh 
+exit $?

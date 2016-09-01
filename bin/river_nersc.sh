@@ -5,19 +5,25 @@ pput=cp
 #set -x
 
 # Experiment  needs experiment number
-if [ $# -ne 2 ] ; then
+if [ $# -ne 3 ] ; then
+   echo 
+   echo "Usage:"
+   echo "   $(basename $0) normal_radius alongshore_radius rivers.dat-file"
+   echo 
    echo "This script will set up river forcing files used by HYCOM. You will"
-   echo "need to have a \"rivers.dat\" file present in the experiment directory."
-   echo "Input to this script is experiment number, and normal and alongshore radius."
-   echo "The two latter are used to place river discharge, with the majority of "
-   echo "the discharge concentrated along land."
+   echo "need to have a \"rivers.dat\" file. There should be one present in GITROOT/input."
+   echo "Input to this script is normal and alongshore radius and rivers.dat file."
+   echo "The two first are used to place river discharge, along and normal to the coase. "
    echo 
    echo "Example:"
-   echo "   nersc_rivers.sh 100 300"
+   echo "   $(basename $0)h 100 300" ../../inputdir/rivers.dat
    echo "Will place rivers at most 100 km from land, and at most 300 km along the land "
    echo "contour."
    exit 1
 fi
+
+# Full path 
+riverfile=$(readlink -f $3)
 
 
 # Set basedir based on relative paths of script
@@ -70,7 +76,7 @@ rm    blkdat.input infile.in
 copy_topo_files $S
 copy_grid_files $S
 ${pget} ${BASEDIR}/expt_${X}/blkdat.input blkdat.input  || { echo "Could not get file blkdat.input " ; exit 1 ; }
-${pget} ${BASEDIR}/expt_${X}/rivers.dat Data/rivers.dat || { echo "Could not get file rivers.dat " ; exit 1 ; }
+${pget} $riverfile Data/rivers.dat || { echo "Could not get file rivers.dat " ; exit 1 ; }
 ${pget} ${BASEDIR}/topo/grid.info grid.info  || { echo "Could not get file rivers.dat " ; exit 1 ; }
 
 

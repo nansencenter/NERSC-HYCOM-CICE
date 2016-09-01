@@ -25,7 +25,7 @@ else
    fi
 fi
 echo "Start time is $starttime"
-echo "Stop  time is $stoptime"
+echo "Stop  time is $endtime"
 
 # Init error counter (global var used by function tellerror)
 numerr=0
@@ -543,7 +543,6 @@ done
 #
 # --- try to get restart input from various areas
 #
-#if [ $YRFLAG -ne 3 -a $init -eq 1 ] ; then
 if [ $init -eq 1 ] ; then
    echo "No restart needed"
 else

@@ -3,8 +3,7 @@
 
 # Experiment number needed
 if [ $# -ne 3 ] ; then
-   echo " $(basename $0) needs experiment version as input (ex 01.0) "
-   echo " in addition to synoptic forcing option, start time and end time"
+   echo " $(basename $0) needs synoptic forcing option, start time and end time"
    echo ""
    echo "Example:"
    echo "    $(basename $0) erai 2013-01-01T00:00:00  2013-01-05T00:00:00 "

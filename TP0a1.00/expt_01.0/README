@@ -1,12 +1,15 @@
-Setup:
+Intro
 ------
+This is the experiment directory. It will contain the necessary input files as well 
+as the hycom executable, and the output files. There are directories for logs, 
+scratch (where the model runs) and data (where output data is placed).
 
-Environment:
+Environment
 ------------
-Scratch/data directories are set in EXPT.src. Scratch directories are where
-models run, the preprocess.sh script will copy necessary files to that location
+Scratch/data directories are set in EXPT.src. Scratch directories are where the
+models run, the expt_preprocess.sh script will copy necessary files to that location
 before running the model. Data directories are where model output is stored. The
-postprocess.sh script will move data files from the scratch directory to the
+expt_postprocess.sh script will move data files from the scratch directory to the
 data directory.
 
 Note that by sourcing the REGION.src file (in the top-level region directory)
@@ -18,25 +21,36 @@ or
   cd $D
 to go to the respective directories.
 
-initialize flag:
--------------
-Create an empty file called "INITIALIZE" and start the model. 
+Most of the scripts in ../../bin/ source the REGION.src and EXPT.src files before 
+proceeding.
 
-If yrflag<2 in blkdat.input and this file is present you will start from 
-climatology (if clmflg=2 in blkdat.input). The model will be initialized 
-from the time specified in infile.in.
+expt_preprocess.sh
+------------------
+This script will fetch the files needed to run the model and place them in the 
+SCRATCH directory. In most cases you will be alerted if there is a missing filesx
+or if there are inconcistencies. The expt_preprocess.sh is called like this:
 
-If yrflag==3 in blkdat.input, this allows you to start from a restart 
-file without considering the value of "dtime" which is kept in the restart 
-file header. This is useful when running a spinup, and then using the resulting
-file to start an experiment with "realistic" forcing (ex era40).
+   ../../bin/expt_preprocess.sh 2015-01-01T00:00:00 2015-01-10T00:00:00 
 
-Running jobs :
---------------
-Before jobs are run the scripts preprocess.sh must be run, this can be set in
+or 
+
+   ../../bin/expt_preprocess.sh 2015-01-01T00:00:00 2015-01-10T00:00:00  --init
+
+The optional init flag tells that the script is to set up hycom from a initial state.
+In new hycom versions, this works even if yrflag ==3.
+
+You will have to set the iniflg in blkdat.input appropriately if you wish to initialize
+the model. Depending on the value of iniflg, you may also have to create relaxation 
+fields first.
+
+
+Running jobs
+------------
+Before jobs are run the scripts expt_preprocess.sh must be run, this can be set in
 the job queue script. You can also run this script from the experiment
 directory, to make sure you have all data files you need. It should cover most
-of the data files we use. 
+of the data files we use, and handle most (but not all) inconsistencies. If there
+is a inconsistency not caught by the script, it will eventually be caught by hycom.
 
 If you add new data files for the model, you will have to modify preprocess.sh
 so that the script copies them to the scratch directory. Otherwise you must copy
@@ -44,9 +58,16 @@ them by hand to the scratch directory.
 
 postprocess.sh copies files from the scratch directory to your data directory.
 If you find some files are not copied from the  scratch directory you will have
-to modify postprocess.sh. Also, if a job runs out of time, postprocess.sh will
+to modify postprocess.sh. Also, if a job runs out of time, expt_postprocess.sh will
 not be run. In that case you can run the postprocess.sh script interactively to
 retrieve the files to the data directory.
 
 Job scripts will have to be modified from machine to machine, but the
-preprocess.sh / postprocess.sh scripts should be able to run on all machines.
+expt_preprocess.sh /expt_postprocess.sh scripts should be able to run on all machines.
+
+create_ref_case
+---------------
+
+Submitting jobs
+---------------
+
