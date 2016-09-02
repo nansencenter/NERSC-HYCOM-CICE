@@ -25,12 +25,11 @@ logger.propagate=False
 def main(myfiles,fieldname,fieldlevel,idm=None,jdm=None,clim=None,filetype="archive") :
 
 
-
-
    cmap=matplotlib.pyplot.get_cmap("jet")
 
    for i,myfile0 in enumerate(myfiles) :
 
+      logger.info("Now processing  %s"%myfile0)
       m=re.match("(.*)\.[ab]",myfile0)
       if m :
          myfile=m.group(1)
@@ -44,16 +43,17 @@ def main(myfiles,fieldname,fieldlevel,idm=None,jdm=None,clim=None,filetype="arch
       else :
          raise NotImplementedError,"Filetype %s not implemented"%filetype
 
+      # Check that fieldname is actually in file
       if fieldname not in  ab.fieldnames :
          logger.error("Unknown field %s at level %d"%(fieldname,fieldlevel))
          logger.error("Available fields : %s"%(" ".join(ab.fieldnames)))
          raise ValueError,"Unknown field %s at level %d"%(fieldname,fieldlevel)
 
-       
+      # Read ab file of different types
       fld = ab.read_field(fieldname,fieldlevel)
 
 
-
+      # Create simple figure
       figure = matplotlib.pyplot.figure(figsize=(8,8))
       ax=figure.add_subplot(111)
       #P=ax.pcolormesh(fld)
@@ -61,14 +61,9 @@ def main(myfiles,fieldname,fieldlevel,idm=None,jdm=None,clim=None,filetype="arch
       P=ax.pcolormesh(fld,cmap=cmap)
       ax.figure.colorbar(P)
       if clim is not None : P.set_clim(clim)
-
       ax.set_title("%s:%s(%d)"%(myfile0,fieldname,fieldlevel))
 
-
-      #figure.colorbar(P,norm=matplotlib.colors.LogNorm(vmin=w5.min(), vmax=w5.max()))
-      #ax.contour(w5)#,[-10.,-100.,-500.,-1000.])
-      #ax.set_title("Slope fac in color, depth contours in black")
-      #logger.info("Slope factor in slopefac.png")
+      # Print figure.
       figure.canvas.print_figure("tst%03d.png"%i)
 
 

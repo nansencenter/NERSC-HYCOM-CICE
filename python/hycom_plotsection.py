@@ -2,14 +2,10 @@
 import modeltools.hycom
 import modeltools.tools
 import argparse
-
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot
-#import modeltools.forcing.bathy
-#import modeltools.hycom.io
 import abfile
-#import modeltools.cice.io
 import numpy
 from mpl_toolkits.basemap import Basemap
 import netCDF4
@@ -32,17 +28,19 @@ logger.propagate=False
 
 def main(lon1,lat1,lon2,lat2,variable,files,filetype="archive",clim=None) :
 
-   print filetype
+   logger.info("Filetype is %s"% filetype)
    gfile = abfile.ABFileGrid("regional.grid","r")
    plon=gfile.read_field("plon")
    plat=gfile.read_field("plat")
-   sec = modeltools.tools.Section([lon1,lon2],[lat1,lat2],plon,plat)
 
+   # Set up section info
+   sec = modeltools.tools.Section([lon1,lon2],[lat1,lat2],plon,plat)
    I,J=sec.grid_indexes
    dist=sec.distance
    slon=sec.longitude
    slat=sec.latitude
 
+   # Plot map showing the location of the section
    m = Basemap(projection='mill', llcrnrlon=-180., llcrnrlat=-90., urcrnrlon=180., urcrnrlat=90., resolution='l')
    (x,y) = m(slon,slat)
    figure = matplotlib.pyplot.figure()
@@ -56,57 +54,60 @@ def main(lon1,lat1,lon2,lat2,variable,files,filetype="archive",clim=None) :
    m.scatter(x,y,s=20,c=dist)
    figure.canvas.print_figure("map.png")
 
+   # Get layer thickness variable used in hycom
    dpname = modeltools.hycom.layer_thickness_variable[filetype]
    logger.info("Filetype %s: layer thickness variable is %s"%(filetype,dpname))
 
 
-
-
+   # Loop over archive files
    for fcnt,myfile0 in enumerate(files) :
 
-
+      # Remove [ab] ending if present
       m=re.match("(.*)\.[ab]",myfile0)
       if m :
          myfile=m.group(1)
       else :
          myfile=myfile0
 
-
-
-
+      # Add more filetypes if needed. By def we assume archive
       if filetype == "archive" :
-         tmp = abfile.ABFileArchv(myfile,"r")
+         i_abfile = abfile.ABFileArchv(myfile,"r")
       elif filetype == "restart" :
-         tmp = abfile.ABFileRestart(myfile,"r",idm=gfile.idm,jdm=gfile.jdm)
+         i_abfile = abfile.ABFileRestart(myfile,"r",idm=gfile.idm,jdm=gfile.jdm)
       else :
          raise NotImplementedError,"Filetype %s not implemented"%filetype
 
-      kdm=max(tmp.fieldlevels)
+      # kdm assumed to be max level in ab file
+      kdm=max(i_abfile.fieldlevels)
 
-
+      # Set up interface and daat arrays
       intfsec=numpy.zeros((kdm+1,I.size))
       datasec=numpy.zeros((kdm+1,I.size))
 
+      # Loop over layers in file. 
       for k in range(kdm) :
          logger.info("File %s, layer %03d/%03d"%(myfile,k,kdm))
 
-         dp2d=tmp.read_field(dpname,k+1)
-         data2d=tmp.read_field(variable,k+1)
-
+         # Get 2D fields
+         dp2d=i_abfile.read_field(dpname,k+1)
+         data2d=i_abfile.read_field(variable,k+1)
          dp2d=numpy.ma.filled(dp2d,0.)/modeltools.hycom.onem
-
          data2d=numpy.ma.filled(data2d,1e30)
 
+         # Place data into section arrays
          intfsec[k+1,:] = intfsec[k,:] + dp2d[J,I]
          if k==0 : datasec[k,:] = data2d[J,I]
          datasec[k+1,:] = data2d[J,I]
 
-
+      
+      # Set up section plot
       datasec = numpy.ma.masked_where(datasec==1e30,datasec)
       figure = matplotlib.pyplot.figure()
       ax=figure.add_subplot(111)
       P=ax.pcolormesh(dist/1000.,-intfsec,datasec)
       if clim is not None : P.set_clim(clim)
+
+      # Plot layer interfaces
       for k in range(1,kdm+1) :
          if k%10 == 0 : 
             PL=ax.plot(dist/1000.,-intfsec[k,:],"-",color="k")
@@ -117,47 +118,22 @@ def main(lon1,lat1,lon2,lat2,variable,files,filetype="archive",clim=None) :
 
          textx = dist[dist.size/2]/1000.
          texty = -0.5*(intfsec[k-1,dist.size/2] + intfsec[k,dist.size/2])
-         #print "textx,texty",textx,texty
          ax.text(textx,texty,str(k),verticalalignment="center",horizontalalignment="center",fontsize=6)
       ax.figure.colorbar(P)
       ax.set_title(myfile)
       ax.set_ylabel(variable)
       ax.set_xlabel("distance along section [km]")
       matplotlib.pyplot.tight_layout()
-      figure.canvas.print_figure("sec_%s_full_%s.png"%(variable,os.path.basename(myfile)))
 
+      # Print in different y-lims 
+      figure.canvas.print_figure("sec_%s_full_%s.png"%(variable,os.path.basename(myfile)))
       ax.set_ylim(-1000,0)
       figure.canvas.print_figure("sec_%s_1000m_%s.png"%(variable,os.path.basename(myfile)))
-
       ax.set_ylim(-300,0)
       figure.canvas.print_figure("sec_%s_300m_%s.png"%(variable,os.path.basename(myfile)))
 
-
-      tmp.close()
-
-
-      #figure.colorbar(P,norm=matplotlib.colors.LogNorm(vmin=w5.min(), vmax=w5.max()))
-      #ax.contour(w5)#,[-10.,-100.,-500.,-1000.])
-      #ax.set_title("Slope fac in color, depth contours in black")
-      #logger.info("Slope factor in slopefac.png")
-      #figure.canvas.print_figure("tst%03d.png"%record)
-
-
-
-
-
-
-      
-
-
-
-
-
-
-
-
-
-
+      # Close input file
+      i_abfile.close()
 
 
 

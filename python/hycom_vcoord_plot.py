@@ -48,33 +48,36 @@ def main(blkdat_file):
    nsigma=bp["nsigma"]
    logger.info("%d layers, %d hybrid layers, %d sigma layers"%(kdm,nhybrd,nsigma))
 
-   # Check for "dp0k" 
-   if bp["dp0k"] :
-      dp0k=bp["dp0k"]
-   else  :
-      # Create dp0k (deep z-level) from parameters
-      dp00=bp["dp00"]
-      dp00x=bp["dp00x"]
-      dp00f=bp["dp00f"]
-      dp0k=[]
-      for k in range(kdm) :
-         dp0k.append(dp00*dp00f**k)
-      dp0k=[min(elem,dp00x) for elem in dp0k]
-      dp0k=numpy.array(dp0k)
+#   # Check for "dp0k" 
+#   if bp["dp0k"] :
+#      dp0k=bp["dp0k"]
+#   else  :
+#      # Create dp0k (deep z-level) from parameters
+#      dp00=bp["dp00"]
+#      dp00x=bp["dp00x"]
+#      dp00f=bp["dp00f"]
+#      dp0k=[]
+#      for k in range(kdm) :
+#         dp0k.append(dp00*dp00f**k)
+#      dp0k=[min(elem,dp00x) for elem in dp0k]
+#      dp0k=numpy.array(dp0k)
+#
+#   # Check for "ds0k" 
+#   if bp["ds0k"] :
+#      ds0k=bp["ds0k"]
+#   else  :
+#      # Create ds0k (shallow z-level)  from parameters
+#      ds00=bp["ds00"]
+#      ds00x=bp["ds00x"]
+#      ds00f=bp["ds00f"]
+#      ds0k=[]
+#      for k in range(kdm) :
+#         ds0k.append(ds00*ds00f**k)
+#      ds0k=[min(elem,ds00x) for elem in ds0k]
+#      ds0k=numpy.array(ds0k)
 
-   # Check for "ds0k" 
-   if bp["ds0k"] :
-      ds0k=bp["ds0k"]
-   else  :
-      # Create ds0k (shallow z-level)  from parameters
-      ds00=bp["ds00"]
-      ds00x=bp["ds00x"]
-      ds00f=bp["ds00f"]
-      ds0k=[]
-      for k in range(kdm) :
-         ds0k.append(ds00*ds00f**k)
-      ds0k=[min(elem,ds00x) for elem in ds0k]
-      ds0k=numpy.array(ds0k)
+   dp0k = bp["dp0k"]
+   ds0k = bp["ds0k"]
     
    for i in dp0k : print "%12.3f "%i,
 
