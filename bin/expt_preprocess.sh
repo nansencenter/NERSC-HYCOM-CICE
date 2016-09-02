@@ -59,6 +59,15 @@ export THKDF2=$(blkdat_get blkdat.input thkdf2)
 export THFLAG=$(blkdat_get blkdat.input thflag)
 export BACLIN=$(blkdat_get blkdat.input baclin)
 export BATROP=$(blkdat_get blkdat.input batrop)
+export CPLIFQ=$(blkdat_get blkdat.input cplifq)
+export ICEFLG=$(blkdat_get blkdat.input iceflg)
+export MOMTYP=$(blkdat_get blkdat.input momtyp)
+export VISCO2=$(blkdat_get blkdat.input visco2)
+export VELDF2=$(blkdat_get blkdat.input veldf2)
+
+# --- fetch some things from the ice model
+export icedt=`egrep "^[ ,]*dt[ ]*=" ../ice_in | sed "s/.*=//" | sed "s/,.*//"`
+
 # --- check that iexpt from blkdat.input agrees with E from this script.
 [ "$EB" == "$E" ] || tellerror " blkdat.input iexpt ${EB} different from this experiment ${E} set in EXPT.src"
 echo "Fetched from blkdat.input:"
@@ -92,11 +101,45 @@ if [ $testbt -ne 1 ] ; then
    tellerror "($BACLIN / $BATROP ) %2 not zero ".
 fi
 
+
+# Cehck coupling time step
+if [ $ICEFLG -gt 0 ] ; then
+   # Check that icedt = cplifq*baclin
+   test1=$(echo ${CPLIFQ}'<'0.0 | bc -l)
+
+   # cplifq negative = number of time steps between coupling
+   if [ $test1 -eq 1 ] ; then
+      dtcpl=$(echo "-1.*"$CPLIFQ"*"$BACLIN | bc -l)
+   # cplifq positive = fraction of days
+   else 
+      dtcpl=$(echo $CPLIFQ"*"86400. | bc -l)
+   fi
+   echo "Coupling time step=$dtcpl"
+
+   # Check ice model dt against $dtcpl. dtcpl must be a multiple of icedt
+   test2=$(echo "scale=0;"$icedt"%"$dtcpl | bc -l)
+   test2=$(echo ${test2}'=='0.0 | bc -l)
+   if [ $test2 -eq 0 ] ; then
+      tellerror "ice model time step $icedt not an integer multiple of coupling time step $dtcpl"
+   fi
+fi
+
+
 # TODO: Limitation for now. Note that newest hycom can initialize with yrflag=3 (realistic forcing)
 if [ $YRFLAG -ne 3 ] ; then
    tellerror "must use yrflag=3 in blkdat.input"
    exit 1
 fi
+
+# Check momtyp. veldf2 and visco2 must be zero in this case
+if [ $MOMTYP -eq 4 ] ; then
+   test1=$(echo ${VISCO2}'!='0.0 | bc -l)
+   test2=$(echo ${VELDF2}'!='0.0 | bc -l)
+   if [ $test1 -ne 0 -o $test2 -ne 0 ] ; then
+      tellerror "momtyp=4; visco2 and veldf2 must be zero"
+   fi
+fi
+
 
 #
 # --- Set up time limits
@@ -111,55 +154,6 @@ eval $cmd ||  tellerror "$cmd failed"
 touch ports.input tracer.input
 rm    ports.input tracer.input
 [ -s  $P/tracer.input ] && cp $P/tracer.input tracer.input
-
-
-
-##
-## --- Fetch some things from infile.in
-##
-## TODO iday may be ordinal day > days in year
-#rungen=$(head -n 2 infile.in  | tail -n1 | cut -c1-3)
-#refyear=$(head -n 3 infile.in  | tail -n1 | cut -c1-4)
-#refyear=$(printf "%4.4d" $refyear)
-#iday=$(head -n 4 infile.in  | tail -n1 | cut -c1-4)
-#iday=`echo 00$iday | tail -4c`
-#ihour=$(head -n 4 infile.in  | tail -n1 | cut -c7-8)
-#ihour=`echo 0$ihour | tail -3c`
-#frc=$(head -n 6 infile.in  | tail -n1 | cut -c1-5 | tr -d " ")
-#clm=$(head -n 6 infile.in  | tail -n1 | cut -c7-11 | tr -d " ") 
-#nestoflag=$(head -n 11 infile.in | tail -n1 | awk '{printf("%1s", $1)}')
-#nestiflag=$(head -n 12 infile.in | tail -n1 | awk '{printf("%1s", $1)}')
-#tideflag=$(head -n 13 infile.in | tail -n1 | cut -c1 )
-#tidechoice=$(head -n 13 infile.in | tail -n1 | cut -c3-5 )
-#gpflag=$(head -n 14 infile.in | tail -n1 | awk '{printf("%1s", $1)}')
-#echo "Fetched from infile.in:"
-#echo "-----------------------"
-#echo "rungen  is              : $rungen"
-#echo "refyear is              : $refyear"
-#echo "iday    is              : $iday"
-#echo "ihour   is              : $ihour"
-#echo "Forcing option is       : ${frc}"
-#echo "Climatology option is   : ${clm}"
-#echo "Outer nest flag is      : $nestoflag"
-#echo "Inner nest flag is      : $nestiflag"
-#echo "Tide flag and choice is : $tideflag $tidechoice"
-#echo "Gidpoint flag is        : $gpflag "
-#echo
-
-
-##
-## --- Fetch some things from limits
-##
-#tstart=$(cat limits | tr " " -s | sed "s/^[ ]*//" | cut -d " " -f1)
-#tstop=$(cat limits | tr " " -s | sed "s/^[ ]*//" | cut -d " " -f2)
-
-## Get init flag from start time
-#init=0
-#[ `echo $tstart | awk '{print ($1 < 0.0)}'` == 1  ] && init=1
-#echo "Fetched from limits:"
-#echo "--------------------"
-#echo "init is $init"
-#echo
 
 
 # Get init flag from start time
@@ -219,41 +213,6 @@ ${pget} $BASEDIR/topo/kmt_${R}_${T}.nc cice_kmt.nc     || tellerror "no kmt file
 ${pget} $BASEDIR/topo/cice_grid.nc cice_grid.nc        || tellerror "no cice grid file $BASEDIR/topo/cice_grid.nc "
 
 
-##
-## --- Check forcing and climatology option in infile.in
-##
-#if [ "$clm" == "era40" ] ; then
-#   CLMDIR=$BASEDIR/force/nersc_era40/$E/
-#elif [ "$clm" == "old" ] ; then
-#   CLMDIR=$BASEDIR/force/nersc_old/$E/
-#elif [ "$clm" == "ncepr" ] ; then
-#   CLMDIR=$BASEDIR/force/nersc_ncepr/$E/
-#elif [ "$clm" != "prep" ] ; then
-#   tellerror "Unknown climate option $clm"
-#   CLMDIR=""
-#fi
-
-   
-
-##
-##
-## --- Climatology atmospheric forcing - always copied
-##
-##
-#if [ "$CLMDIR" != "" -a "$clm" != "prep" ] ; then
-#   echo "**Retrieving climatology forcing files"
-#   for i in tauewd taunwd wndspd radflx shwflx vapmix \
-#      airtmp precip uwind vwind clouds relhum slp ; do
-#      # TODO - doesnt handle offsets
-#      #${pget} $CLMDIR/$i.a      forcing.$i.a || tellerror "Could not fetch $CLMDIR/$i.a"
-#      [ -f  $CLMDIR/$i.a ] || tellerror "File $CLMDIR/$i.a does not exist"
-#      [ -f  $CLMDIR/$i.b ] || tellerror "File $CLMDIR/$i.b does not exist"
-#      ln -sf $CLMDIR/$i.a      forcing.$i.a || tellerror "Could not link $CLMDIR/$i.a"
-#      ln -sf $CLMDIR/$i.b      forcing.$i.b || tellerror "Could not link $CLMDIR/$i.b"
-#   done
-#fi
-
-
 if [ "$SSTRLX" -eq 3 ] ; then
    [ -f  $CLMDIR/seatmp.a ] || tellerror "File $CLMDIR/seatmp.a does not exist"
    [ -f  $CLMDIR/seatmp.b ] || tellerror "File $CLMDIR/seatmp.b does not exist"
@@ -268,76 +227,6 @@ if [ 0 -eq 1 ] ; then
    ln -sf $CLMDIR/surtmp.a forcing.surtmp.a || tellwarn "Could not link $CLMDIR/surtmp.a"
    ln -sf $CLMDIR/surtmp.b forcing.surtmp.b || tellwarn "Could not link $CLMDIR/surtmp.b"
 fi
-
-##
-## --- Synoptic forcing option - for now just sets up links
-##
-#if [ "$frc" != "month" -a  "$clm" != "prep" ] ; then
-#   echo "**Setting up INLINE_FORCING synoptic forcing"
-#
-#   # pathvar is name of variable
-#   pathvar=""
-#   if [ "${frc}" == "era40" ] ; then
-#      pathvar="ERA40_PATH"
-#   elif [ "${frc}" == "era-i" ] ; then
-#      pathvar="ERAI_PATH"
-#   elif [ "${frc}" == "ncepr" ] ; then
-#      pathvar="NCEP_PATH"
-#   elif [ "${frc}" == "ecmwf" ] ; then
-#      pathvar="ECMWF_PATH"
-#      pathvar2="./Ecmwfr"
-#   elif [ "${frc}" == "metno" ] ; then
-#      pathvar="METNO_PATH"
-#      pathvar2="./Met.no"
-#   elif [ "${frc}" == "ecnc" ] ; then
-#      pathvar="ECNC_PATH"
-#      pathvar2="./Ecmwf.nc"
-#   elif [ "${frc}" == "ncepr" ] ; then
-#      pathvar="NCEP_PATH"
-#   else
-#      tellerror "No method for forcing $frc (did you set it up?)"
-#   fi
-#
-#   if [ "$pathvar" != "" ] ; then
-#      pathval="${!pathvar}" # pathval is value of variable named pathvar
-#      echo "Forcing is $frc, environment variable $pathvar is $pathval"
-#      if [ "${pathval}" == "" -o ! -d ${pathval:=tomtomtom} ] ; then  #tomtomtom is substituted if pathval is empty
-#         tellerror "$pathvar not set or not a directory"
-#      else # Could be present
-#         if [ "$pathvar2" != ""  ] ; then
-#            ln -s ${pathval} $pathvar2 || tellwarn "Could not link $pathvar ${pathval} as $pathvar2 (it might be present already)"
-#         else
-#            ln -s ${pathval} . || tellwarn "Could not link $pathvar ${pathval} (it might be present)"
-#         fi
-#      fi
-#   else
-#      tellerror "No pathvar $pathvar set up for forcing $frc. Set it in REGION.src "
-#   fi
-##else
-##   tellerror "Forcing variable frc undefined"
-#fi
-#
-#
-
-##
-## --- Pre-prepared forcing option - for now just sets up links
-##
-#if [ "$clm" == "prep" ] ; then
-#   echo "**Setting up pre-prepared synoptic forcing from force/synoptic/$E"
-#
-#   DIR=$BASEDIR/force/synoptic/$E/
-#
-#   for i in tauewd taunwd wndspd radflx shwflx vapmix \
-#      airtmp precip uwind vwind clouds relhum slp ; do
-#
-#      echo "|--> $i"
-#
-#      [ -f  $DIR/$i.a ] || tellerror "File $DIR/$i.a does not exist"
-#      [ -f  $DIR/$i.b ] || tellerror "File $DIR/$i.b does not exist"
-#      ln -sf $DIR/${i}.a forcing.${i}.a ||  tellerror "Could not fetch $DIR/$i.a"
-#      ln -sf $DIR/${i}.b forcing.${i}.b ||  tellerror "Could not fetch $DIR/$i.b"
-#   done
-#fi
 
 # ---
 # --- Pre-prepared forcing option - for now just sets up links
