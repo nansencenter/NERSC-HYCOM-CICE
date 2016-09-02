@@ -51,6 +51,9 @@ echo ".."
 cd $EDIR
 echo "Compiling hycom_cice"
 $BINDIR/compile_model.sh > $EDIR/log/ref_hycom.out 2>&1
+[ $res -eq 0 ] && echo "Success"
+[ $res -ne 0 ] && echo "Failure..."
+echo ".."
 
 # Create z-level relaxation files
 cd $EDIR
@@ -77,7 +80,7 @@ F
 F
 F
 T
-F
+T
 20
 20
 EOF
@@ -89,7 +92,6 @@ echo ".."
 # Create simple river forcing
 cd $EDIR
 echo "river forcing"
-#$BINDIR/river_nersc.sh 100 300 > $EDIR/log/ref_river_nersc.out 2>&1
 $BINDIR/river_nersc.sh 100 300 ../../input/rivers.dat > $EDIR/log/ref_river_nersc.out 2>&1
 res=$?
 [ $res -eq 0 ] && echo "Success"
@@ -113,9 +115,9 @@ res=$?
 echo ".."
 
 echo "If things went fine, you can now generate test forcing like this: "
-echo "    $BINDIR/atmo_synoptic_new.sh ${X} erai 2015-01-02T00:00:00  2015-01-05T00:00:00"
+echo "    $BINDIR/atmo_synoptic.sh erai 2015-01-02T00:00:00  2015-01-05T00:00:00"
 echo "Then edit the job script pbsjob.sh to read and make sure expt_preprocess.sh is called like this"
-echo "    $BINDIR/expt_preprocess_new.sh 2015-01-02T00:00:00 2015-01-05T00:00:00 --init "
+echo "    $BINDIR/expt_preprocess.sh 2015-01-02T00:00:00 2015-01-05T00:00:00 --init "
 echo
 echo "TODO: Current limitations on synoptic forcing routines mean that only erai forcing from 2015 can be used."
 
