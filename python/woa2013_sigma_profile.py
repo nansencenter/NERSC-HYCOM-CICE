@@ -150,54 +150,14 @@ def main(blkdatfile,saltfile,lon,lat):
    thflag=bp["thflag"]
    mysig   = modeltools.hycom.Sigma(thflag)
    sigprof = mysig.SIG(temprof,salprof)
-   print dp0k
 
-   # Interface from dp
-   intf0k=numpy.zeros((kdm+1))
-   intf0s=numpy.zeros((kdm+1))
-   intf  =numpy.zeros((kdm+1))
-   for i in range(nsigma) :
-      intf0s[i+1] = intf0s[i] + ds0k[i]
-   for i in range(nhybrd) :
-      intf0k[i+1] = intf0k[i] + dp0k[i]
-
-   # Shallow  level
-   if   intf0s[nsigma] > maxd :
-      intf=numpy.copy(intf0s)
-      logger.info("Shallow z level")
-   else :
-      # Sigma level (stretched w depth)
-      if intf0k[nsigma] > maxd:
-         logger.info("Sigma level")
-         fac = maxd/intf0k[nsigma] 
-         intf=numpy.copy(intf0k) * fac
-         print intf
-      # Deep z level
-      else :
-         logger.info("Deep z level")
-         intf=numpy.copy(intf0k)
-   intf=numpy.minimum(intf,maxd)
-   print "intf0s:",intf0s
-   print "intf0k:",intf0k
-   print "intf:",intf
+   # Min thickness interface values
+   intf,masks=bp.intf_min_profile(numpy.array([maxd]))
+   intf=numpy.squeeze(intf)
    dp0=intf[1:]-intf[:-1]
    intfmid=(intf[1:]+intf[:-1])*.5
 
-   # Plot vertical profile of sig-2 vs depth amd index ?
-   f,(ax1,ax2) = plt.subplots(1,2,sharey=False)
-   ax1.plot(sigma,-intfmid,lw=2,color=colt)
-   ax1.set_ylabel("Min interface depth",color=colt)
-   ax1.set_xlabel("sigma-%d"%thflag,color=colt)
-   ax2.plot(sigma,-numpy.arange(intfmid.size),lw=2,color=colt)
-   ax2.set_ylabel("Layer index",color=colt)
-   ax2.set_xlabel("sigma-%d"%thflag,color=colt)
-   #ax1.set_ylabel("Temperature[C]",color=colt)
-   #ax1.grid(True)
-   #for t in ax1.get_xticklabels() :
-   #   t.set_color(colt)
-   #   t.set_size(8)
-   #   t.set_rotation(-45)
-   plt.gcf().savefig("blkdat_sigma.png",dpi=180)
+
 
 
    # We have interface values, now use designated layer sigma values and actual sigma
@@ -205,7 +165,7 @@ def main(blkdatfile,saltfile,lon,lat):
 
    # Loop over output layers
    newintf=numpy.zeros(intf.shape)
-   intsig=numpy.zeros(dp0.shape)
+   intsig=numpy.zeros(kdm)
    for k in range(kdm) :
 
       # Target layer upper interface

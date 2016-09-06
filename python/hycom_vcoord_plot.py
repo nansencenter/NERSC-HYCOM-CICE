@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 ##!/usr/bin/python -E
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import matplotlib.patches
 import modeltools.hycom
 import logging
 import argparse
@@ -30,7 +33,7 @@ def my_fill_between(x, y1, y2=0, ax=None, **kwargs):
     label=kwargs["label"]
     del kwargs["label"]
     ax.fill_between(x, y1, y2, **kwargs)
-    del kwargs["where"]
+    if "where" in kwargs.keys() : del kwargs["where"]
     del kwargs["interpolate"]
     #print kwargs
     kwargs["label"]=label
@@ -48,48 +51,10 @@ def main(blkdat_file):
    nsigma=bp["nsigma"]
    logger.info("%d layers, %d hybrid layers, %d sigma layers"%(kdm,nhybrd,nsigma))
 
-#   # Check for "dp0k" 
-#   if bp["dp0k"] :
-#      dp0k=bp["dp0k"]
-#   else  :
-#      # Create dp0k (deep z-level) from parameters
-#      dp00=bp["dp00"]
-#      dp00x=bp["dp00x"]
-#      dp00f=bp["dp00f"]
-#      dp0k=[]
-#      for k in range(kdm) :
-#         dp0k.append(dp00*dp00f**k)
-#      dp0k=[min(elem,dp00x) for elem in dp0k]
-#      dp0k=numpy.array(dp0k)
-#
-#   # Check for "ds0k" 
-#   if bp["ds0k"] :
-#      ds0k=bp["ds0k"]
-#   else  :
-#      # Create ds0k (shallow z-level)  from parameters
-#      ds00=bp["ds00"]
-#      ds00x=bp["ds00x"]
-#      ds00f=bp["ds00f"]
-#      ds0k=[]
-#      for k in range(kdm) :
-#         ds0k.append(ds00*ds00f**k)
-#      ds0k=[min(elem,ds00x) for elem in ds0k]
-#      ds0k=numpy.array(ds0k)
-
-   dp0k = bp["dp0k"]
-   ds0k = bp["ds0k"]
-    
-   for i in dp0k : print "%12.3f "%i,
-
-   # Interface from dp
-   intf0k=numpy.zeros((kdm+1))
-   intf0s=numpy.zeros((kdm+1))
-   for i in range(nsigma) :
-      intf0s[i+1] = intf0s[i] + ds0k[i]
-   for i in range(nhybrd) :
-      intf0k[i+1] = intf0k[i] + dp0k[i]
-
-   maxdepth = max(intf0k.max(),intf0s.max())
+   # Get min interface thickness profile 
+   #tmp,tmpmasks=bp.intf_min_profile(numpy.array([10000]))
+   #maxdepth=numpy.max(tmp)
+   maxdepth=3000.
 
    # x and depth arrays
    x      = numpy.linspace(0., 30.*1000,120)
@@ -98,97 +63,68 @@ def main(blkdat_file):
    bottom[:nx/2] = numpy.linspace(5., 100.,nx/2) + 80.*numpy.sin(x[0:nx/2] * 2*numpy.pi / 20000.)
    bottom[nx/2:] = numpy.linspace(bottom[nx/2-1], maxdepth+500.,nx/2)
    bottom[nx/2:] = bottom[nx/2:] + 250.*numpy.sin((x[nx/2:]-x[nx/2-1]) * 2*numpy.pi / 20000.)
-   #bottom = numpy.linspace(5., 500.,x.shape[0])
 
-   #Initialize interfaces
-   intf=numpy.zeros((bottom.shape[0],intf0k.shape[0]))
+   # Get a min interface section and masks describing "regime"
+   intf,masks=bp.intf_min_profile(bottom)
+   Imask=masks["Shallow z"]
+   Jmask=masks["Deep z"]
+   Kmask=masks["Sigma"]
 
-   # Depth of deepest sigma interface, compared to bottom
-   ideep      = intf0k[nsigma]
-   ishallow   = intf0s[nsigma]
-   f_ishallow = ishallow/bottom
-   f_ideep    = ideep/bottom
-
-   # Fixed shallow z_level (nsigma shallow z levels extend beyond ocean floor)
-   Imask=f_ishallow>1.
-   I=numpy.where(Imask)
-   #print "Imask",Imask
-   intf[I[0],:nsigma+1] = intf0s[:nsigma+1]
-   intf[I[0],nsigma+1:] = intf0s[nsigma]
-
-   # Fixed deep z_level (nsigma deep z levels extend beyond ocean floor)
-   Jmask=f_ideep>1.
-   J=numpy.where(~Jmask)
-   #print "Jmask",Jmask
-   intf[J[0],:nhybrd+1] = intf0k[:nhybrd+1]
-   intf[J[0],nhybrd+1:] = intf0k[nhybrd]
-
-   # Sigma coordinates where sigma-th deep z levels is below ocean floor, and sigma-th shallow z level is above ocean floor
-   Kmask=numpy.logical_and(Jmask,numpy.logical_not(Imask))
-   #print "Kmask",Kmask
-   K=numpy.where(Kmask)
-   intf[K[0],:nsigma+1] = intf0k[:nsigma+1]
-   tmp        = numpy.transpose(intf[K[0],:])*bottom[K[0]]/ideep
-   tmp[nsigma+1:,] = tmp[nsigma,:]
-   intf[K[0],:] = tmp.transpose()
-
-   #tmp        = numpy.transpose(intf[K[0],:nsigma+1])*bottom[K[0]]/ideep
-   #intf[K[0],:nsigma+1] = tmp.transpose()
-   #intf[K[0],nsigma+1:] = intf[K[0],nsigma]
-
-   #print intf[:,-1] 
-   #print intf[:,nhybrd-1]
-
-
-   intf = numpy.transpose(numpy.minimum(numpy.transpose(intf),bottom))
-   #print x.shape
-   #print intf.shape
    ax=plt.gca()
    ax.hold(True)
-   #print x
-   #print intf[Imask,-1],
-   #print intf[Imask,kdm-nsigma+1]
 
+   # Plot colors for regimes
+   my_fill_between(x,intf[:,nsigma]*-1.,0.,ax,color="g",interpolate=False,label="Sigma")
    my_fill_between(x,intf[:,nsigma]*-1.,0.,ax,color="r",interpolate=False,where=Imask,label="Shallow z")
-   my_fill_between(x,intf[:,nhybrd]*-1.,0.,ax,color="b",interpolate=False,where=~Jmask,label="Deep z")
-   my_fill_between(x,intf[:,nsigma]*-1.,0.,ax,color="g",interpolate=False,where=Kmask,label="Sigma")
+   my_fill_between(x,intf[:,nhybrd]*-1.,0.,ax,color="b",interpolate=False,where=Jmask,label="Deep z")
+   #my_fill_between(x,intf[:,nsigma]*-1.,0.,ax,color="g",interpolate=False,where=Kmask,label="Sigma")
    if nhybrd <> kdm :
       my_fill_between(x,-bottom,intf[:,nhybrd]*-1.,ax,color="c",interpolate=False,where=~Jmask,label="Isopycnal")
-      print -bottom,
-      print -intf[:,nhybrd]
 
+   # Plot layers
    for k in range(intf.shape[1]) :
-      if (k+1)%5 == 0 :
-         plt.plot(x,-intf[:,k],color="k",linestyle="--",label=str(k+1))
-      else:
-         plt.plot(x,-intf[:,k],color=".5")
+      #if (k+1)%5 == 0 :
+      #   plt.plot(x,-intf[:,k],color="k",linestyle="--",label=str(k+1))
+      #else:
+      #   plt.plot(x,-intf[:,k],color=".5")
+      plt.plot(x,-intf[:,k],color=".5")
 
       if k>=1 :
          xpos = int(x.size*.8)
          textx = x[xpos]
          texty = -0.5*(intf[xpos,k-1] + intf[xpos,k])
-         #print k,textx,texty,intf[xpos,k-1],intf[xpos,k]
-         ax.text(textx,texty,str(k),verticalalignment="center",horizontalalignment="center",fontsize=6)
+         ax.text(textx,texty,str(k),verticalalignment="center",horizontalalignment="center",fontsize=6,fontweight="bold")
+         #
+         xpos = int(x.size*.2)
+         textx = x[xpos]
+         texty = -0.5*(intf[xpos,k-1] + intf[xpos,k])
+         ax.text(textx,texty,str(k),verticalalignment="center",horizontalalignment="center",fontsize=6,fontweight="bold")
 
+      if (k+1)%2 == 0 :
+         pc=ax.fill_between(x,-intf[:,k-1],-intf[:,k],color="none")
+         for path in pc.get_paths()  :
+            patch = matplotlib.patches.PathPatch(path, hatch='//', facecolor='none',linewidth=.1)
+            ax.add_patch(patch)
+
+
+   # Save to full-depth file
    ax.plot(x,-bottom,lw=4,color="k")
    ax.legend(fontsize=6)
-   plt.gcf().savefig("vcoord.png",dpi=180)
+   fname="vcoord.png"
+   logger.info("Min thickness section in %s"%fname)
+   plt.gcf().savefig(fname,dpi=180)
       
+   # Save to top 200 m depth file
    ax.set_ylim(-200,0)
-   plt.gcf().savefig("vcoord200.png",dpi=180)
-
-   
-
-
-
-
-
-
-   dp00i=bp["dp00i"]
-
-   isotop=bp["isotop"]
-
-
+   fname="vcoord200.png"
+   logger.info("Min thickness section [top 200 m] in %s"%fname)
+   plt.gcf().savefig(fname,dpi=180)
+      
+   # Save to top 200 m depth file
+   ax.set_ylim(-50,0)
+   fname="vcoord050.png"
+   logger.info("Min thickness section [top 50 m] in %s"%fname)
+   plt.gcf().savefig(fname,dpi=180)
 
 
 if __name__ == "__main__" :
