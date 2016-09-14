@@ -43,7 +43,7 @@ cd       $S || { echo " Could not descend scratch dir $S" ; exit 1;}
 if [ $forcing == "erai" ] ; then
    xmlfile=$BASEDIR/../input/era-interim.xml
    xmlident="era-interim+lw"
-elif [ $forcing == "erai-lw" ] ; then
+elif [ $forcing == "erai-nolw" ] ; then
    xmlfile=$BASEDIR/../input/era-interim.xml
    xmlident="era-interim"
 else 
