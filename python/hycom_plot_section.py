@@ -105,7 +105,7 @@ def main(lon1,lat1,lon2,lat2,variable,files,filetype="archive",clim=None) :
       # Set up section plot
       #datasec = numpy.ma.masked_where(datasec==1e30,datasec)
       datasec = numpy.ma.masked_where(datasec>0.5*1e30,datasec)
-      print datasec.min(),datasec.max()
+      #print datasec.min(),datasec.max()
       figure = matplotlib.pyplot.figure()
       ax=figure.add_subplot(111)
       P=ax.pcolormesh(dist/1000.,-intfsec,datasec)

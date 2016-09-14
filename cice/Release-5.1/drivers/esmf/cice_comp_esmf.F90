@@ -807,7 +807,10 @@ implicit none
    !   end if
    !end if
    ! KAL - our restriction
-   if (use_leap_years .and. days_per_year==365) then
+   ! TODO: This test does not work since days_per_year is set in set_calendar,
+   ! TODO: and overrides namelist value. For now we only test for leap year
+   ! if (use_leap_years .and. days_per_year==365) then
+   if (use_leap_years) then
       e_calendar = ESMF_CalendarCreate(ESMF_CALKIND_GREGORIAN,name="Gregorian", rc=rc)
    else 
       write(msg,'("Must use leap years and days_per_year=365")')

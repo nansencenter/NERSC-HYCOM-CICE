@@ -16,8 +16,8 @@ def main(start_time,end_time,init,nmpi,fnml) :
    # Integration time, initial year
    tint      = end_time - start_time
    tint_secs = tint.days*86400. + tint.seconds
-   #year_init = start_time.year
-   year_init = 1958
+   year_init = start_time.year
+   #year_init = 1958
    npt=int(numpy.floor(tint_secs/dt))
    
    # Seconds lapsed into this year
@@ -60,8 +60,6 @@ def main(start_time,end_time,init,nmpi,fnml) :
    path_pointer= os.path.join("./", os.path.dirname(nml["setup_nml"]["pointer_file"]))
    if not os.path.isdir(path_pointer) :
       os.mkdir(path_pointer)
-
-   print "test"
 
 if __name__ == "__main__" :
    class DateTimeParseAction(argparse.Action) :

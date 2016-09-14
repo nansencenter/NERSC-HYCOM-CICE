@@ -1,7 +1,8 @@
 #!/bin/bash
 #
-# Script for quickly setting up model source code and compiling it. Does not 
-# Really account for 
+# Script for quickly setting up model source code and compiling it. 
+update=$1
+
 
 # Must be in expt dir to run this script
 if [ -f EXPT.src ] ; then
@@ -52,13 +53,27 @@ targetconfdir=$EDIR/build/config/
 # Create hycom executable. Copy code to expt dir
 sourcedir=$BASEDIR/../hycom/RELO/src_${V}ZA-07Tsig0-i-sm-sse_relo_mpi/ # Yes, we always use this version
 sourceconfdir=$BASEDIR/../hycom/RELO/config/
+#if [ ! -d $EDIR/build/ ] ; then 
+#   mkdir $EDIR/build
+#   cp -r -L $sourcedir $targetdir
+#   cp -r -L $sourceconfdir $targetconfdir
+#   echo "build dir $EDIR/build not found. Setting it up with repo code from $sourcedir"
+#else 
+#   echo "build dir $EDIR/build found. Using code in that subdirectory"
+#fi
 if [ ! -d $EDIR/build/ ] ; then 
    mkdir $EDIR/build
-   cp -r -L $sourcedir $targetdir
-   cp -r -L $sourceconfdir $targetconfdir
    echo "build dir $EDIR/build not found. Setting it up with repo code from $sourcedir"
+   rsync -avhL $sourcedir/ $targetdir/
+   rsync -avhL $sourceconfdir/ $targetconfdir/
 else 
-   echo "build dir $EDIR/build found. Using code in that subdirectory"
+   if [ "$update" == "update" ] ; then
+      echo "build dir $EDIR/build found. Updating code in that subdirectory"
+      rsync -avhL $sourcedir/ $targetdir/
+      rsync -avhL $sourceconfdir/ $targetconfdir/
+   else 
+      echo "build dir $EDIR/build found. Using code in that subdirectory [not updated with code in $sourcedir]"
+   fi
 fi
 
 # Create hycom executable. Set up correct eq of state

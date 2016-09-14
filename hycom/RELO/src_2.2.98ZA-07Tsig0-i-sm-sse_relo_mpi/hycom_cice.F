@@ -539,7 +539,7 @@ c ---   OCEAN
         do its= 1,OCN_nts_cpl !couple period, OCEAN
           if     (localPet.eq.0) then !master
             write(6,'(a,3i8)') 
-     &         ' OCEAN run - icpl,its,ocn_nts_cpl = ',
+     &         'OCEAN run - icpl,its,ocn_nts_cpl = ',
      &         icpl,its,ocn_nts_cpl
           endif
           OCN_get_import = its.eq.1           !import at start of period

@@ -95,7 +95,7 @@ if [ $testbc -ne 1 ] ; then
 fi
 
 # Check barotropic time step 
-tmp=$(echo $BATROP"/"$BACLIN | bc -l)
+tmp=$(echo $BACLIN"/"$BATROP | bc -l)
 testbt=$(echo $tmp"%2==0" | bc -l )
 if [ $testbt -ne 1 ] ; then
    tellerror "($BACLIN / $BATROP ) %2 not zero ".
@@ -144,10 +144,11 @@ fi
 #
 # --- Set up time limits
 #
-echo "*Setting up time limits"
 cmd="$BASEDIR/../python/hycom_limits.py $starttime $endtime $initstr"
+echo "*Setting up HYCOM time limits : $cmd "
 eval $cmd ||  tellerror "$cmd failed"
 cmd="$BASEDIR/../python/cice_limits.py $initstr $starttime $endtime $NMPI $P/ice_in"
+echo "*Setting up CICE  time limits : $cmd "
 eval $cmd ||  tellerror "$cmd failed"
 
 
