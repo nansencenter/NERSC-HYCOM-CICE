@@ -4,6 +4,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import modeltools.hycom
+import gridxsec
 import logging
 import argparse
 import datetime
@@ -26,7 +27,7 @@ logger.addHandler(ch)
 logger.propagate=False
 
 
-def main(blkdatfile,saltfile,lon,lat):
+def main(blkdatfile,saltfile,lon,lat,lon2=None,lat2=None,sectionid=None):
 
    logger.info("Salinity file:%s"%saltfile)
    m=re.match("(.*)_s([0-9]{2})_([0-9a-z]{4}\.nc)",saltfile)
@@ -55,89 +56,57 @@ def main(blkdatfile,saltfile,lon,lat):
    elif int(m.group(2)) == 16 :
       sinfo="ond"
 
+   if sectionid : sinfo=sinfo+"_%s"%sectionid
+
 
    s_ncid = netCDF4.Dataset(saltfile,"r")
    t_ncid = netCDF4.Dataset(tempfile,"r")
-
-   #Closest point
    s_lon=s_ncid.variables["lon"][:]
    s_lat=s_ncid.variables["lat"][:]
-   j=numpy.argmin(numpy.abs(numpy.mod(s_lon-lon+360.,360.)))
-   i=numpy.argmin(numpy.abs(s_lat-lat))
-   print lon,s_lon[j]
-   print lat,s_lat[i]
-
    dprof = s_ncid["depth"][:]
-   salprof = s_ncid["s_an"][0,:,i,j]
-   temprof = t_ncid["t_an"][0,:,i,j]
-   try :
-      nz=salprof[~salprof.mask].size
-   except :
-      nz=salprof.size
+   nz=dprof.size
 
+   #Closest point
+   if lon2 is None or lat2 is None :
+      section=False
+      i=numpy.argmin(numpy.abs(numpy.mod(s_lon-lon+360.,360.)))
+      j=numpy.argmin(numpy.abs(s_lat-lat))
+
+      salprof = s_ncid["s_an"][0,:,j,i]
+      temprof = t_ncid["t_an"][0,:,j,i]
+      salprof=numpy.expand_dims(salprof,axis=1)
+      temprof=numpy.expand_dims(temprof,axis=1)
+   
+   # Section
+   else  :
+      section=True
+      lon2d,lat2d=numpy.meshgrid(s_lon,s_lat)
+      sec=gridxsec.Section([lon,lon2],[lat,lat2],lon2d,lat2d)
+      i,j=sec.grid_indexes
+      salprof = s_ncid["s_an"][0,:,:,:]
+      temprof = t_ncid["t_an"][0,:,:,:]
+      salprof = salprof[:,j,i]
+      temprof = temprof[:,j,i]
+
+   # MAsk salinity and temperature profiles
+   salprof=numpy.ma.masked_where(salprof ==  s_ncid["s_an"]._FillValue,salprof)
+   temprof=numpy.ma.masked_where(temprof ==  t_ncid["t_an"]._FillValue,temprof)
 
    # Interface values dprofi
-   dprofi=numpy.zeros(dprof.size+1)
+   dprofi=numpy.zeros(nz+1)
    for k in range(dprof.size) :
       if k < dprof.size -1 :
          dprofi[k] = 0.5 * (dprof[k]+dprof[k+1])
       else :
          dprofi[k] = dprof[k]
 
-   
-   cols="b"
-   colt="r"
-   cold="m"
 
+   # MAx depth in data. TODO. Get from profiles
+   maxd=numpy.zeros(salprof[0,:].shape)
+   for k in range(nz) :
+      maxd[~salprof[k,:].mask] = dprof[k]
 
-   # MAx depth in data
-   try :
-      maxd = numpy.max(dprof[~salprof.mask])
-   except :
-      maxd = numpy.max(dprof)
-   logger.info("MAx depth in data is %d m"%maxd)
-
-
-   
-   # Plot vertical profile of t and s in point
-   f,axes = plt.subplots(2,2,sharey=True)
-   ax1=axes[0,0]
-   ax2=axes[0,1]
-   ax3=axes[1,0]
-   ax4=axes[1,1]
-   ax1.set_title("Profiles at lon=%6.2f, lat=%6.2f"%(lon,lat))
-   ax1.plot(temprof,-dprof,lw=2,color=colt)
-   ax1.set_ylabel("Temperature[C]",color=colt)
-   ax1.grid(True)
-   for t in ax1.get_xticklabels() :
-      t.set_color(colt)
-      t.set_size(8)
-      t.set_rotation(-45)
-   ax2.plot(salprof,-dprof,lw=2,color=cols)
-   ax2.set_ylabel("Salinity[psu]",color=cols)
-   ax2.grid(True)
-   for t in ax2.get_xticklabels() :
-      t.set_color(cols)
-      t.set_size(8)
-      t.set_rotation(-45)
-   ax3.plot(sig0.SIG(temprof,salprof),-dprof,lw=2,color=cold)
-   ax3.set_ylabel("Density[sigma-0]",color=cold)
-   ax3.grid(True)
-   for t in ax3.get_xticklabels() :
-      t.set_color(cold)
-      t.set_size(8)
-      t.set_rotation(-45)
-   ax4.plot(sig2.SIG(temprof,salprof),-dprof,lw=2,color=cold)
-   ax4.set_ylabel("Density[sigma-2]",color=cold)
-   ax4.grid(True)
-   for t in ax4.get_xticklabels() :
-      t.set_color(cold)
-      t.set_size(8)
-      t.set_rotation(-45)
-   plt.gcf().subplots_adjust()
-   plt.gcf().savefig("ts_%s.png"%(sinfo),dpi=180)
-   
-
+   logger.info("MAx depth in data is %d m"%numpy.max(maxd))
 
    # Open blkdat.input
    bp=modeltools.hycom.BlkdatParser(blkdatfile)
@@ -148,16 +117,29 @@ def main(blkdatfile,saltfile,lon,lat):
    nhybrd=bp["nhybrd"]
    nsigma=bp["nsigma"]
    thflag=bp["thflag"]
-   mysig   = modeltools.hycom.Sigma(thflag)
-   sigprof = mysig.SIG(temprof,salprof)
+   eqstate   = modeltools.hycom.Sigma(thflag)
+   #eqstate   = modeltools.hycom.Sigma12Term(thflag)  #Test 12 term sigma
+   #eqstate   = modeltools.hycom.Sigma17Term(thflag)  #Test 17 term sigma
+   sigprof = eqstate.sig(temprof,salprof)
+  
+
+   #if thflag == 2 :
+   #   mykappa=modeltools.hycom.Kappa(2,2000.0e4)
+   #elif thflag == 0  :
+   #   mykappa=modeltools.hycom.Kappa(2,0.)
+   #else :
+   #   raise ValueError,"Unknown value of thflag"
+   #tmp = mykappa.kappaf(salprof.transpose(),temprof.transpose(),sigprof.transpose(),dprof*9806)
+   #print tmp.shape,sigprof.shape
+   #sigprof = sigprof - tmp.transpose()
+
+
 
    # Min thickness interface values
-   intf,masks=bp.intf_min_profile(numpy.array([maxd]))
-   intf=numpy.squeeze(intf)
-   dp0=intf[1:]-intf[:-1]
-   intfmid=(intf[1:]+intf[:-1])*.5
-
-
+   intf,masks=bp.intf_min_profile(numpy.array(maxd))
+   dp0=intf[:,1:]-intf[:,:-1]
+   intfmid=(intf[:,1:]+intf[:,:-1])*.5
+   #print dp0[numpy.argmax(maxd),:],dp0.shape
 
 
    # We have interface values, now use designated layer sigma values and actual sigma
@@ -165,150 +147,269 @@ def main(blkdatfile,saltfile,lon,lat):
 
    # Loop over output layers
    newintf=numpy.zeros(intf.shape)
-   intsig=numpy.zeros(kdm)
+   intsig=numpy.zeros(dp0.shape)
    for k in range(kdm) :
 
       # Target layer upper interface
-      upint=newintf[k]
+      upint=newintf[:,k]
+      #print upint
 
       # Mix water over integration range
-      dpsum=0.
-      sgsum=0.
+      dpsum=numpy.zeros(upint.shape)
+      sgsum=numpy.zeros(upint.shape)
+      sg   =numpy.zeros(upint.shape)
       for k2 in range(nz) :
+
 
          # Range of this layer
          upint2=dprofi[k2]
          lwint2=dprofi[k2+1]
 
          # Part of this layer in target layer
-         u = max(upint2,upint)
+         u = numpy.maximum(upint2,upint)
          l = lwint2
-         dp=max(0.,l-u)
-         
-         if dpsum > 0. : 
+         dp=numpy.maximum(0.,l-u)
 
-            # Integrated value of sigma up to this point
-            sg = sgsum/dpsum
+         #Mask where dpsum > 0  
+         Imask = dpsum > 0.
 
-            # target layer lighter than integrated value. 
-            # No need to add layers as they will only become heavier.
-            if sigma[k] <= sg :
-               pass
+         ####################  dpsum > 0  and summed layer density < target density ###########
 
-            # target layer heavier than integrated value. Ok to add more layers
-            elif sigma[k] > sg :
-               
-               # Sum of layers at this point
-               dpsum2=dpsum+dp
-               sgsum2=sgsum+sigprof[k2]*dp
-               sg2 = sgsum2/dpsum2
+         # Integrated value of sigma up to this point
+         sg[Imask]=sgsum[Imask]/dpsum[Imask]
 
-               # new layer > sigma[k]. Add only a part of the new layer
-               if sigma[k] < sg2 :
-                  dpfrac = (dpsum*sg - dpsum*sigma[k]) / (sigma[k] - sigprof[k2])
-                  dpsum=dpsum+dpfrac
-                  sgsum=sgsum+sigprof[k2]*dpfrac
-               # new layer still < sigma[k]. Add full layer
-               else :
-                  dpsum=dpsum+dp
-                  sgsum=sgsum+sigprof[k2]*dp
+         # Mask where target layer heavier than integrated value => Ok to add more layers
+         Jmask = numpy.logical_and(Imask,sigma[k] > sg)
+         Jmask = numpy.logical_and(Jmask,~salprof.mask[k2,:])
 
-         # dpsum = 0.
-         else :
-            sg = sigprof[k2]
-            # target layer lighter than layer value. 
-            # No need to add layers as they will only become heavier.
-            if sigma[k] <= sg :
-               pass
-            # target layer heavier than layer value. Ok to add more layers to mix downward
-            else :
-               #print "hei",sg,sigma[k2]
-               dpsum=dpsum+dp
-               sgsum=sgsum+sigprof[k2]*dp
-            #print sg,sigma[k],dpsum,sgsum
+         # Fraction of layer to be added
+         dpfrac = (dpsum[Jmask]*sg[Jmask] - dpsum[Jmask]*sigma[k]) / (sigma[k] - sigprof[k2,Jmask])
+
+         # Can not add more than dp!
+         dpfrac = numpy.minimum(dpfrac,dp[Jmask]) #
+
+         # Dpfrac can be negative if sigprof[k2,Jmask] < sigma[k] ( must mix "negatively"). 
+         # In that case add entire layer. Perhaps next heavy layer can tip the scale ...
+         dpfrac=numpy.where(dpfrac < 0.,dp[Jmask],dpfrac)
+
+         # Update values 
+         dpsum[Jmask]=dpsum[Jmask]+dpfrac
+         sgsum[Jmask]=sgsum[Jmask]+sigprof[k2,Jmask]*dpfrac
+
+         # NB: No need to treat summed layer density > target density, since mixing wont 
+         # enable us to reach target density. (sg can only increase as we sum deeper)
 
 
+         ####################  dpsum == 0  and sigma[k] > sigprof[k2,:] ######################
 
-      # End k2 loop
+         #sg = sigprof[k2,k2]
+
+         # target layer heavier than layer value. Ok to add more layers to mix downward
+         Jmask = numpy.logical_and(~Imask,sigma[k] >  sigprof[k2,:])
+         Jmask = numpy.logical_and(Jmask,~salprof.mask[k2,:])
+         dpsum[Jmask]=dpsum[Jmask]+dp[Jmask]
+         sgsum[Jmask]=sgsum[Jmask]+sigprof[k2,Jmask]*dp[Jmask]
+
+         # No need to treat new layer density > target layer density, since mixing wont enable 
+         # us to reach target density
+
+         #################### ######################################### ######################
+
+
+
+
+      # end k2 loop
+      #print dpsum
 
       # Make sure dpsum adheres to minimum layer thickness
-      #print "0:",k,dpsum,sgsum
-      dpsum=max(dpsum,dp0[k])
-      #print "1:",k,dpsum
+      dpsum=numpy.maximum(dpsum,dp0[:,k])
       
       # Adjust layer interface
-      newintf[k+1] = newintf[k] + dpsum
+      newintf[:,k+1] = newintf[:,k] + dpsum
 
       # MAke sure lowest interface is above sea floor
-      newintf[k+1] = min(newintf[k+1],maxd)
+      newintf[:,k+1] = numpy.minimum(newintf[:,k+1],maxd)
       
       # Effective layer thickness
-      dpsum = newintf[k+1] - newintf[k]
+      dpsum = newintf[:,k+1] - newintf[:,k]
 
       # Estimated sigma
-      intsig[k]=sgsum/dpsum
+      msk=dpsum>0.
+      intsig[msk,k]=sgsum[msk]/dpsum[msk]
+
+      # TODO: Keep track of final layer density for all layers (not just isopycnals)
    # End k loop
 
    # Make sure bottom layer reaches sea floor
-   newintf[kdm] = max(newintf[kdm],maxd)
+   newintf[:,kdm] = numpy.maximum(newintf[:,kdm],maxd)
+   newintfmid=(newintf[:,1:]+newintf[:,:-1])*.5
+
+#   # Smooth eine bitchen...
+#   if maxd.size > 5 :
+#      w=numpy.ones(5)
+#      for k in range(kdm+1) :
+#         newintf[:,k]=numpy.convolve(w/w.sum(),newintf[:,k],mode="same")
+#         # But make sure we adhere to minimum layer thicknesses and max depth
+#         if k>0 :
+#            newintf[:,k]=numpy.maximum( newintf[:,k-1]+dp0[:,k-1], newintf[:,k])
+#         newintf[:,k]=numpy.minimum( newintf[:,k],maxd[:])
+
+
+   # TODO: Integrate over temp and sal profiles for plotting these
 
 
 
+
+
+   # Find segments where its ok to place layer legend
+   import scipy.ndimage.measurements
+   lab,num_features =scipy.ndimage.measurements.label(maxd > numpy.max(maxd)*.25)
+   feat_count = {}
+   for i in range(num_features): feat_count[i+1] = numpy.count_nonzero(lab==i+1)
+   tmp = sorted(feat_count.items(), key=lambda x:x[1],reverse=True) # Order by feature count
+   main_feature=tmp[0][0]
+   ft_ind=[]
+   for i_enum,i in enumerate(tmp) :
+      #logger.info( "Feature %03d: %d cells" %(i[0],i[1]))
+      tmp=numpy.where(lab==i[0])
+      ft_ind.append(int(tmp[0].mean()))
+   #print ft_ind
+   #tmp=numpy.where(lab==main_feature)
+   #print tmp
+   #sec_xpind = int (tmp[0].mean())
+   #print sec_xpind
    
-   # Plot vertical profile and layers
-   f,ax = plt.subplots(1)
-   ax.set_title("Sigma-%d profile and vertical layers at lon=%6.2f, lat=%6.2f"%(thflag,lon,lat))
-   ax.plot(sigprof,-dprof,lw=2,color=cold,label="Sigma-%d"%thflag)
-   #ax.semilogy(sigprof,dprof,lw=2,color=cold)
-   xlim=ax.get_xlim()
-   ylim=ax.get_ylim()
+   cols="b"
+   colt="r"
+   cold="m"
+   
+   # Plot vertical profile and layers. Two cases: section or not
+   if section :
+      f,ax = plt.subplots(1,figsize=(10,5))
+      ax.set_title("sigma-%d layers from lon=%6.2f, lat=%6.2f to lon=%6.2f, lat=%6.2f to "%(thflag,lon,lat,lon2,lat2))
+      x = sec.distance / 1000.
+      ymult=1.
+      xlim=[x.min(),x.max()]
+   else :
+      f,ax = plt.subplots(1)
+      ax.set_title("Sigma-%d profile and layers at lon=%6.2f, lat=%6.2f"%(thflag,lon,lat))
+      x = numpy.array([-100,100])
+      ymult=numpy.ones((2))
+      ax.plot(sigprof,-dprof,lw=2,color=cold,label="Sigma-%d"%thflag)
+      xlim=ax.get_xlim()
+   #print ax.get_position()
+   ax.set_position([.1,.1,.7,.7])
+
+
+   ylim=[-numpy.max(maxd)+10,0.]
    for k in range(kdm+1) :
 
-
       if k<kdm :
-         ax.plot([-100,100],-newintf[k]*numpy.ones((2)),lw=.1,color=".5")
-         textx = numpy.sum(xlim)/2.
-         texty = -0.5*(newintf[k] + newintf[k+1])
-         ax.text(textx,texty,"layer %d: %4.2f"%(k+1,sigma[k]),verticalalignment="center",horizontalalignment="center",fontsize=6)
+         ax.plot(x,-newintf[:,k]*ymult,lw=.1,color=".5",label="layer %d: %6.3f"%(k+1,sigma[k]))
+         if section :
+            ##ind = x.size/2
+            #ind = numpy.argmax(maxd)
+            #xp = x[ind]
+            #yp = -0.5*(newintf[ind,k] + newintf[ind,k+1])
+            ##ax.text(xp,yp,"layer %d: %4.2f"%(k+1,sigma[k]),verticalalignment="center",horizontalalignment="left",fontsize=6)
+            #ax.text(xp,yp,"%d"%(k+1),verticalalignment="center",horizontalalignment="left",fontsize=6)
+            for ind in ft_ind :
+               xp = x[ind]
+               yp = -0.5*(newintf[ind,k] + newintf[ind,k+1])
+               #ax.text(xp,yp,"layer %d: %4.2f"%(k+1,sigma[k]),verticalalignment="center",horizontalalignment="left",fontsize=6)
+               ax.text(xp,yp,"%d"%(k+1),verticalalignment="center",horizontalalignment="left",fontsize=6)
+            # TODO
+            #ind = x.size-x.size/6
+            #xp = x[ind]
+            #yp = -0.5*(newintf[ind,k] + newintf[ind,k+1])
+            #ax.annotate("layer %d: %4.2f"%(k+1,sigma[k]),
+            #    xy=(xp, yp), xycoords='data',
+            #    xytext=(1.01,0.0-k*.03), textcoords='axes fraction',
+            #    arrowprops=dict(facecolor='b', shrink=0.01,alpha=.5,ec="none",width=1,headwidth=3,frac=.03),
+            #    horizontalalignment='left', verticalalignment='center',
+            #    fontsize=6
+            #    )
+         else :
+            xp = numpy.sum(xlim)/2.
+            yp = -0.5*(newintf[0,k] + newintf[0,k+1])
+            ax.text(xp,yp,"layer %d: %4.2f"%(k+1,sigma[k]),verticalalignment="center",horizontalalignment="left",fontsize=6)
 
-         # Check if layer is isopycnal
-         isopyc = numpy.abs(intsig[k]-sigma[k])<1e-4
-
-         if isopyc :
-            ax.fill_between([-100,100],-newintf[k+1]*numpy.ones((2)),-newintf[k]*numpy.ones((2)),color="g",alpha=".5")
-
+         isopyc = numpy.abs(intsig[:,k]-sigma[k])<1e-3
+         ax.fill_between(x,-newintf[:,k+1]*ymult,-newintf[:,k]*ymult,color="g",alpha=".5",where=isopyc*ymult)
       else :
-         ax.plot([-100,100],-newintf[k]*numpy.ones((2)),lw=2,color="k",label="Sea floor")
-
+         # Plot sea floor
+         #ax.plot(x,-newintf[:,k]*ymult,lw=2,color="k",label="Sea floor")
+         ax.fill_between(x,-newintf[:,k]*ymult,-10*numpy.ones(x.shape)*maxd.max(),color=".5")
 
    # Some dummy plots for the legend
    ax.plot([-100,100],[1e5,1e5],lw=.1,color=".5",label="Layer interface")
-   ax.fill_between([-100,100],[1e5,1e5],[2e5,2e5],color="g",alpha=".5",label="Isopycnal layer") #NB: Label doesnt work
+#   ax.fill_between([-100,100],[1e5,1e5],[2e5,2e5],color="g",alpha=".5",label="Isopycnal layer") #NB: Label doesnt work
 
 
-   
+
+   ax.grid(False)
    ax.set_xlim(xlim)
    ax.set_ylim(ylim)
-   ax.set_ylabel("Density[sigma-%d]"%thflag,color=cold)
+   ax.set_ylabel("Depth")
+   if section : 
+      ax.set_xlabel("Distance along section[km]")
+   else :
+      ax.set_xlabel("Density[sigma-%d]"%thflag,color=cold)
    for t in ax.get_xticklabels() :
-      t.set_color(cold)
+      if not section : t.set_color(cold)
       t.set_size(8)
       t.set_rotation(-45)
-   #ax.legend(bbox_to_anchor=(1.2, 0.95))
-   ax.legend(loc="lower left")
-   plt.gcf().savefig("vert_%s.png"%sinfo,dpi=180)
+   #ax.legend(loc="lower left")
+   leg=ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.,labelspacing=-.5)
+   ltext=leg.get_texts()
+   plt.setp(ltext,fontsize=4)
+
+   fname="layers_%s.png"%sinfo
+   logger.info("Layers in %s"%fname)
+   plt.gcf().savefig(fname,dpi=180)
+   #
    ax.set_ylim(-750,0)
-   plt.gcf().savefig("vert750_%s.png"%sinfo,dpi=180)
+   fname="layers750_%s.png"%sinfo
+   logger.info("Layers for top 750m in %s"%fname)
+   plt.gcf().savefig("layers750_%s.png"%sinfo,dpi=180)
+   #
+   ax.set_ylim(-100,0)
+   fname="layers100_%s.png"%sinfo
+   logger.info("Layers for top 100m in %s"%fname)
+   plt.gcf().savefig("layers100_%s.png"%sinfo,dpi=180)
 
 
+   # Plot density of original data
+   f,ax = plt.subplots(1,figsize=(10,5))
+   P=ax.pcolormesh(x,-dprof,sigprof,cmap="Paired")
+   CS=ax.contour(x,-dprof,sigprof,sigma)
+   ax.clabel(CS, inline=1, fontsize=4)
+   f.colorbar(P,ax=ax)
+   f.savefig("dens_data_%s.png"%sinfo,dpi=180)
+
+   # Plot vertical density gradient of original data
+   #print sigprof.shape,dprof.shape
+   dsigprof = numpy.zeros(sigprof.shape)
+   for k in range(nz) :
+      #print k,nz
+      if k<nz-1 :
+         dsigprof[k,:] = (sigprof[k+1,:] - sigprof[k,:])/dprof[k]
+      else :
+         dsigprof[k,:] = dsigprof[k-1,:] 
+   dsigprof = numpy.ma.masked_where(numpy.abs(dsigprof)>1e10,dsigprof)
+   dsigprof=dsigprof * 100 # DS per 100 meters
+   f,ax = plt.subplots(1,figsize=(10,5))
+   P=ax.pcolormesh(x,-dprof,dsigprof,
+         norm=matplotlib.colors.LogNorm(vmin=0.001,vmax=10),
+         cmap="Paired")
+   CS=ax.contour(x,-dprof,sigprof,sigma)
+   ax.clabel(CS, inline=1, fontsize=4)
+   f.colorbar(P,ax=ax)
+   f.savefig("densgrad_data_%s.png"%sinfo,dpi=180)
 
 
+   # TODO: Plot Temperature and Salinity sections
 
-
-
-
-
-   raise NameError,"test"
 
 
 
@@ -319,9 +420,15 @@ if __name__ == "__main__" :
    parser.add_argument('saltfile' , help="")
    parser.add_argument('lon'      , type=float) 
    parser.add_argument('lat'      , type=float) 
+   parser.add_argument('--lon2'      , type=float) 
+   parser.add_argument('--lat2'      , type=float) 
+   parser.add_argument('--sectionid'      , type=str,default="") 
+
+
 
    args = parser.parse_args()
-   main(args.blkdatfile,args.saltfile,args.lon,args.lat)
+   #print args
+   main(args.blkdatfile,args.saltfile,args.lon,args.lat,lon2=args.lon2,lat2=args.lat2,sectionid=args.sectionid)
 
 
 

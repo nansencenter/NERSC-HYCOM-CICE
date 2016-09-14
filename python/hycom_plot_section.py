@@ -12,6 +12,7 @@ import netCDF4
 import logging
 import re
 import os.path
+import gridxsec
 
 # Set up logger
 _loglevel=logging.DEBUG
@@ -34,7 +35,8 @@ def main(lon1,lat1,lon2,lat2,variable,files,filetype="archive",clim=None) :
    plat=gfile.read_field("plat")
 
    # Set up section info
-   sec = modeltools.tools.Section([lon1,lon2],[lat1,lat2],plon,plat)
+   #sec = modeltools.tools.Section([lon1,lon2],[lat1,lat2],plon,plat)
+   sec = gridxsec.Section([lon1,lon2],[lat1,lat2],plon,plat)
    I,J=sec.grid_indexes
    dist=sec.distance
    slon=sec.longitude
@@ -101,7 +103,9 @@ def main(lon1,lat1,lon2,lat2,variable,files,filetype="archive",clim=None) :
 
       
       # Set up section plot
-      datasec = numpy.ma.masked_where(datasec==1e30,datasec)
+      #datasec = numpy.ma.masked_where(datasec==1e30,datasec)
+      datasec = numpy.ma.masked_where(datasec>0.5*1e30,datasec)
+      print datasec.min(),datasec.max()
       figure = matplotlib.pyplot.figure()
       ax=figure.add_subplot(111)
       P=ax.pcolormesh(dist/1000.,-intfsec,datasec)

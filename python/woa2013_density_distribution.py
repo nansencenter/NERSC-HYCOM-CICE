@@ -26,7 +26,7 @@ logger.addHandler(ch)
 logger.propagate=False
 
 
-def main(saltfile,lon1,lon2,lat1,lat2,layerskip=1,minlayer=0,maxlayer=None):
+def main(saltfile,lon1,lon2,lat1,lat2,layerskip=1,minlayer=0,maxlayer=None,blkdatfile=""):
 
    #TODO: Allow mupltiple salinity files ?
 
@@ -74,8 +74,8 @@ def main(saltfile,lon1,lon2,lat1,lat2,layerskip=1,minlayer=0,maxlayer=None):
    I,J=numpy.meshgrid(I,J)
    #print J
    #print I
-   la = s_lon[I]
-   lo = s_lat[J]
+   lo = s_lon[I]
+   la = s_lat[J]
 
 
 
@@ -84,8 +84,9 @@ def main(saltfile,lon1,lon2,lat1,lat2,layerskip=1,minlayer=0,maxlayer=None):
    else :
       maxlayer=min(maxlayer,nz)
 
+
    # Loop over vertical layers.  Skip layers if requested.
-   nzs = maxlayer/layerskip +1 
+   nzs = maxlayer/layerskip
    s0_max = numpy.zeros((nzs))
    s0_plo = numpy.zeros((nzs))
    s0_p10 = numpy.zeros((nzs))
@@ -102,10 +103,16 @@ def main(saltfile,lon1,lon2,lat1,lat2,layerskip=1,minlayer=0,maxlayer=None):
    s2_phi = numpy.zeros((nzs))
    s2_max = numpy.zeros((nzs))
    dprofs= numpy.zeros(nzs)
+   #print maxlayer,nzs,nz
 
-   plo=5
-   phi=95
+   plo=1
+   phi=99
 
+
+   s0_min_map=numpy.ones(I.shape)*1e8
+   s2_min_map=numpy.ones(I.shape)*1e8
+   s0_max_map=numpy.ones(I.shape)*-1e8
+   s2_max_map=numpy.ones(I.shape)*-1e8
 
    t_bins=numpy.linspace(-2,30,50)
    s_bins=numpy.linspace(0,39,50)
@@ -117,6 +124,7 @@ def main(saltfile,lon1,lon2,lat1,lat2,layerskip=1,minlayer=0,maxlayer=None):
       s = s[J,I]
       t = t_ncid["t_an"][0,k,:,:]
       t = t[J,I]
+      mask0=~s.mask
 
       # For geo stats
       mylo=lo[~s.mask]
@@ -125,11 +133,20 @@ def main(saltfile,lon1,lon2,lat1,lat2,layerskip=1,minlayer=0,maxlayer=None):
       # Valid points
       s = s[~s.mask]
       t = t[~t.mask]
-      #print s.shape
+
+      if s.size == 0 : 
+         break
 
       # Densities:
-      s0 =sig0.SIG(t,s)
-      s2 =sig2.SIG(t,s)
+      s0 =sig0.sig(t,s)
+      s2 =sig2.sig(t,s)
+
+
+      s0_min_map[mask0]=numpy.minimum(s0_min_map[mask0],s0)
+      s0_max_map[mask0]=numpy.maximum(s0_max_map[mask0],s0)
+      s2_min_map[mask0]=numpy.minimum(s2_min_map[mask0],s2)
+      s2_max_map[mask0]=numpy.maximum(s2_max_map[mask0],s2)
+
 
       # Percentiles
       s0_plo[ks],s0_p10[ks],s0_p50[ks],s0_p90[ks],s0_phi[ks] = numpy.percentile(s0,[plo,10,50,90,phi])
@@ -145,7 +162,33 @@ def main(saltfile,lon1,lon2,lat1,lat2,layerskip=1,minlayer=0,maxlayer=None):
       ind_t_bin=numpy.digitize(t,t_bins)
       for i,j in zip(ind_s_bin,ind_t_bin) :
          tsbin[j,i] = tsbin[j,i] +1
+
+      maxk=k
    tsbin = numpy.ma.masked_where(tsbin<1,tsbin)
+
+   s0_min_map=numpy.ma.masked_where(numpy.abs(s0_min_map)>1e6,s0_min_map)
+   s0_max_map=numpy.ma.masked_where(numpy.abs(s0_max_map)>1e6,s0_max_map)
+   s2_min_map=numpy.ma.masked_where(numpy.abs(s0_min_map)>1e6,s2_min_map)
+   s2_max_map=numpy.ma.masked_where(numpy.abs(s2_max_map)>1e6,s2_max_map)
+
+
+   dprofs=dprofs[0:maxk]
+   s0_min=s0_min[0:maxk]
+   s0_max=s0_max[0:maxk]
+   s0_plo=s0_plo[0:maxk]
+   s0_phi=s0_phi[0:maxk]
+   s0_p50=s0_p50[0:maxk]
+   s0_p10=s0_p10[0:maxk]
+   s0_p90=s0_p90[0:maxk]
+   #
+   s2_min=s2_min[0:maxk]
+   s2_max=s2_max[0:maxk]
+   s2_plo=s2_plo[0:maxk]
+   s2_phi=s2_phi[0:maxk]
+   s2_p50=s2_p50[0:maxk]
+   s2_p10=s2_p10[0:maxk]
+   s2_p90=s2_p90[0:maxk]
+
 
    # Scatter plot
    f1,ax1 = plt.subplots(1)
@@ -154,9 +197,9 @@ def main(saltfile,lon1,lon2,lat1,lat2,layerskip=1,minlayer=0,maxlayer=None):
          norm=matplotlib.colors.LogNorm(vmin=tsbin.min(), vmax=tsbin.max()),
          cmap="summer")
    plt.colorbar(P,ax=ax1)
-   cs0 = ax1.contour(S_BINS,T_BINS,sig0.SIG(T_BINS,S_BINS),20,colors="r",lw=.005,label="Sigma-0")
+   cs0 = ax1.contour(S_BINS,T_BINS,sig0.sig(T_BINS,S_BINS),20,colors="r",lw=.005,label="Sigma-0")
    plt.clabel(cs0, fontsize=6, inline=1,fmt="%1.1f")
-   cs2=ax1.contour(S_BINS,T_BINS,sig2.SIG(T_BINS,S_BINS),20,colors="b",lw=.005,label="Sigma-2")
+   cs2=ax1.contour(S_BINS,T_BINS,sig2.sig(T_BINS,S_BINS),20,colors="b",lw=.005,label="Sigma-2")
    plt.clabel(cs2, fontsize=6, inline=1,fmt="%1.1f")
    ax1.set_xlabel("Salinity")
    ax1.set_ylabel("Temperature")
@@ -164,35 +207,134 @@ def main(saltfile,lon1,lon2,lat1,lat2,layerskip=1,minlayer=0,maxlayer=None):
    ax1.set_title("Densities from %d to %d m"%(dprof[minlayer],dprof[maxlayer-1]))
    f1.savefig("density_dist_bin.png",dpi=180)
 
+   if blkdatfile :
+      bp=modeltools.hycom.BlkdatParser(blkdatfile)
+
+
    # Plot density distribution
    f1,ax1 = plt.subplots(1)
-   ax1.fill_betweenx(-dprofs,s0_p10,s0_p90,-dprofs,color="g",alpha=".5")
-   #ax1.plot(s0_min,-dprofs,linewidth=2,color="r")
-   #ax1.plot(s0_max,-dprofs,linewidth=2,color="r")
-   ax1.plot(s0_plo,-dprofs,linewidth=2,color="r",label="p%02d/p%02d"%(plo,phi))
-   ax1.plot(s0_phi,-dprofs,linewidth=2,color="r")
-   ax1.plot(s0_p10,-dprofs,linewidth=2,color="b",label="p10/p90")
-   ax1.plot(s0_p50,-dprofs,linewidth=2,color="k",label="p50")
-   ax1.plot(s0_p90,-dprofs,linewidth=2,color="b")
+   if blkdatfile and bp["thflag"]== 2 :
+      for k in range(bp["kdm"]) :
+         if k==0 :
+            label="blkdat"
+         else :
+            label=None
+         ax1.plot(bp["sigma"][k]*numpy.ones(2),[dprofs[0],dprofs[-1]],color="m",label=label,lw=.5)
+   ax1.fill_betweenx(dprofs,s0_p10,s0_p90,color="g",alpha=".5")
+   ax1.plot(s0_min,dprofs,"k+",linewidth=2,label="min/max")
+   ax1.plot(s0_max,dprofs,"k+",linewidth=2)
+   ax1.plot(s0_plo,dprofs,linewidth=2,color="r",label="p%02d/p%02d"%(plo,phi))
+   ax1.plot(s0_phi,dprofs,linewidth=2,color="r")
+   ax1.plot(s0_p10,dprofs,linewidth=2,color="b",label="p10/p90")
+   ax1.plot(s0_p50,dprofs,linewidth=2,color="k",label="p50")
+   ax1.plot(s0_p90,dprofs,linewidth=2,color="b")
+   ax1.text(0.05,0.95,"min: %5.2f"%(s0_min.min()),transform=ax1.transAxes)
+   ax1.text(0.05,0.91,"max: %5.2f"%(s0_max.max()),transform=ax1.transAxes)
    ax1.grid(True)
+   ax1.set_yscale("log")
+   ax1.invert_yaxis()
    ax1.legend(loc="lower left")
-   f1.savefig("vert_density_dist_sigma0.png",dpi=180)
+   ax1.set_ylabel("Depth[m]")
+   ax1.set_xlabel("Sigma-0")
+   xlim=ax1.get_xlim()
+   ax1.xaxis.set_ticks(numpy.arange(xlim[0],xlim[1],(xlim[1]-xlim[0])/30))
+   for t in ax1.get_xticklabels() :
+      t.set_size(8)
+      t.set_rotation(-90)
+   for line in ax1.get_xgridlines() +ax1.get_ygridlines() :
+      line.set_linewidth(.1)
+      line.set_linestyle("-")
+      line.set_color(".5")
+   f1.savefig("sigma0_vdist.png",dpi=180)
+
    #
    f1,ax1 = plt.subplots(1)
-   ax1.fill_betweenx(-dprofs,s2_p10,s2_p90,-dprofs,color="g",alpha=".5")
-   #ax1.plot(s2_min,-dprofs,linewidth=2,color="r")
-   #ax1.plot(s2_max,-dprofs,linewidth=2,color="r")
-   ax1.plot(s2_plo,-dprofs,linewidth=2,color="r",label="p%02d/p%02d"%(plo,phi))
-   ax1.plot(s2_phi,-dprofs,linewidth=2,color="r")
-   ax1.plot(s2_p10,-dprofs,linewidth=2,color="b",label="p10/p90")
-   ax1.plot(s2_p50,-dprofs,linewidth=2,color="k",label="p50")
-   ax1.plot(s2_p90,-dprofs,linewidth=2,color="b")
+   if blkdatfile and bp["thflag"]== 2 :
+      for k in range(bp["kdm"]) :
+         if k==0 :
+            label="blkdat"
+         else :
+            label=None
+         ax1.plot(bp["sigma"][k]*numpy.ones(2),[dprofs[0],dprofs[-1]],color="m",label=label,lw=.5)
+   ax1.fill_betweenx(dprofs,s2_p10,s2_p90,color="g",alpha=".5")
+   ax1.plot(s2_min,dprofs,"k+",linewidth=2,label="min/max")
+   ax1.plot(s2_max,dprofs,"k+",linewidth=2)
+   ax1.plot(s2_plo,dprofs,linewidth=2,color="r",label="p%02d/p%02d"%(plo,phi))
+   ax1.plot(s2_phi,dprofs,linewidth=2,color="r")
+   ax1.plot(s2_p10,dprofs,linewidth=2,color="b",label="p10/p90")
+   ax1.plot(s2_p50,dprofs,linewidth=2,color="k",label="p50")
+   ax1.plot(s2_p90,dprofs,linewidth=2,color="b")
+   ax1.text(0.05,0.95,"min: %5.2f"%(s2_min.min()),transform=ax1.transAxes)
+   ax1.text(0.05,0.91,"max: %5.2f"%(s2_max.max()),transform=ax1.transAxes)
    ax1.grid(True)
+   ax1.set_yscale("log")
+   ax1.invert_yaxis()
    ax1.legend(loc="lower left")
-   f1.savefig("vert_density_dist_sigma2.png",dpi=180)
+   ax1.set_ylabel("Depth[m]")
+   ax1.set_xlabel("Sigma-2")
+   ax1.legend(loc="lower left")
+   #ax1.set_xlim(s2_plo.min(),s2_phi.max())
+   xlim=ax1.get_xlim()
+   ax1.xaxis.set_ticks(numpy.arange(xlim[0],xlim[1],(xlim[1]-xlim[0])/30))
+   for t in ax1.get_xticklabels() :
+      t.set_size(8)
+      t.set_rotation(-90)
+   for line in ax1.get_xgridlines() +ax1.get_ygridlines() :
+      line.set_linewidth(.1)
+      line.set_linestyle("-")
+      line.set_color(".5")
+   f1.savefig("sigma2_vdist.png",dpi=180)
+
+
+   #Plot of maps
+   cmap="Paired"
+   f1,ax1 = plt.subplots(1)
+   vmin=s0_min_map.min()
+   vmax=s0_min_map.max()
+   vmax=vmin+(vmax-vmin)*.20
+   P=ax1.pcolormesh(lo,la,s0_min_map,
+         #norm=matplotlib.colors.LogNorm(vmin=vmin,vmax=vmax),
+         vmin=vmin,vmax=vmax,
+         cmap=cmap)
+   f1.colorbar(P,ax=ax1,extend="both")
+   f1.savefig("sigma0_min.png",dpi=180)
+   #
+   f1,ax1 = plt.subplots(1)
+   vmin=s0_max_map.min()
+   vmax=s0_max_map.max()
+   vmin=vmax-(vmax-vmin)*.20
+   P=ax1.pcolormesh(lo,la,s0_max_map,
+         #norm=matplotlib.colors.LogNorm(vmin=vmin,vmax=vmax),
+         vmin=vmin,vmax=vmax,
+         cmap=cmap)
+   f1.colorbar(P,ax=ax1,extend="both")
+   f1.savefig("sigma0_max.png",dpi=180)
 
 
 
+   #Plot of maps
+   cmap="Paired"
+   f1,ax1 = plt.subplots(1)
+   vmin=s2_min_map.min()
+   vmax=s2_min_map.max()
+   vmax=vmin+(vmax-vmin)*.20
+   P=ax1.pcolormesh(lo,la,s2_min_map,
+         #norm=matplotlib.colors.LogNorm(vmin=vmin,vmax=vmax),
+         vmin=vmin,vmax=vmax,
+         cmap=cmap)
+   f1.colorbar(P,ax=ax1,extend="both")
+   f1.savefig("sigma2_min.png",dpi=180)
+   #
+   f1,ax1 = plt.subplots(1)
+   vmin=s2_max_map.min()
+   vmax=s2_max_map.max()
+   vmin=vmax-(vmax-vmin)*.20
+   P=ax1.pcolormesh(lo,la,s2_max_map,
+         #norm=matplotlib.colors.LogNorm(vmin=vmin,vmax=vmax),
+         vmin=vmin,vmax=vmax,
+         cmap=cmap)
+   f1.colorbar(P,ax=ax1,extend="both")
+   f1.savefig("sigma2_max.png",dpi=180)
 
 
 if __name__ == "__main__" :
@@ -200,6 +342,7 @@ if __name__ == "__main__" :
    parser.add_argument('--layerskip'     , type=int,default=1) 
    parser.add_argument('--maxlayer'      , type=int,default=None) 
    parser.add_argument('--minlayer'      , type=int,default=0) 
+   parser.add_argument('--blkdatfile'      , type=str,default="") 
    parser.add_argument('lon1'      , type=float) 
    parser.add_argument('lat1'      , type=float) 
    parser.add_argument('lon2'      , type=float) 
@@ -207,7 +350,8 @@ if __name__ == "__main__" :
    parser.add_argument('saltfile' , help="")
 
    args = parser.parse_args()
-   main(args.saltfile,args.lon1,args.lon2,args.lat1,args.lat2,layerskip=args.layerskip,maxlayer=args.maxlayer,minlayer=args.minlayer)
+   main(args.saltfile,args.lon1,args.lon2,args.lat1,args.lat2,layerskip=args.layerskip,maxlayer=args.maxlayer,minlayer=args.minlayer,
+         blkdatfile=args.blkdatfile)
 
 
 
