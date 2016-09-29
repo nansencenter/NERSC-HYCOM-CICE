@@ -15,7 +15,7 @@ import os.path
 import gridxsec
 
 # Set up logger
-_loglevel=logging.DEBUG
+_loglevel=logging.INFO
 logger = logging.getLogger(__name__)
 logger.setLevel(_loglevel)
 formatter = logging.Formatter("%(asctime)s - %(name)10s - %(levelname)7s: %(message)s")
@@ -27,41 +27,96 @@ logger.propagate=False
 
 
 
-def main(lon1,lat1,lon2,lat2,variable,files,filetype="archive",clim=None) :
+def main(lon1,lat1,lon2,lat2,variable,files,filetype="archive",clim=None,sectionid="",
+      ijspace=False,xaxis="distance") :
+   print xaxis
 
    logger.info("Filetype is %s"% filetype)
    gfile = abfile.ABFileGrid("regional.grid","r")
    plon=gfile.read_field("plon")
    plat=gfile.read_field("plat")
+   qlon=gfile.read_field("qlon")
+   qlat=gfile.read_field("qlat")
 
    # Set up section info
-   #sec = modeltools.tools.Section([lon1,lon2],[lat1,lat2],plon,plat)
-   sec = gridxsec.Section([lon1,lon2],[lat1,lat2],plon,plat)
+   if ijspace :
+      sec = gridxsec.SectionIJSpace([lon1,lon2],[lat1,lat2],plon,plat)
+   else  :
+      sec = gridxsec.Section([lon1,lon2],[lat1,lat2],plon,plat)
    I,J=sec.grid_indexes
    dist=sec.distance
    slon=sec.longitude
    slat=sec.latitude
 
-   # Plot map showing the location of the section
-   m = Basemap(projection='mill', llcrnrlon=-180., llcrnrlat=-90., urcrnrlon=180., urcrnrlat=90., resolution='l')
+   # In testing
+   #I,J,slon,slat,case,dist=sec.find_intersection(qlon,qlat)
+
+
+
+   logger.info("Min max I-index (starts from 0):%d %d"%(I.min(),I.max()))
+   logger.info("Min max J-index (starts from 0):%d %d"%(J.min(),J.max()))
+
+   ll_lon=slon.min()-10.
+   ur_lon=slon.max()+10.
+   ll_lat=numpy.maximum(-90.,slat.min()-10.)
+   ur_lat=numpy.minimum(90. ,slat.max()+10.)
+   m = Basemap(projection='mill', llcrnrlon=ll_lon, llcrnrlat=ll_lat, urcrnrlon=ur_lon, urcrnrlat=ur_lat, resolution='l')
    (x,y) = m(slon,slat)
    figure = matplotlib.pyplot.figure()
    ax=figure.add_subplot(111)
    m.drawcoastlines()
-   m.fillcontinents(color='coral',lake_color='aqua')
+   #m.fillcontinents(color='coral',lake_color='aqua')
    m.drawparallels(numpy.arange(-90.,120.,30.),labels=[1,0,0,0]) # draw parallels
    m.drawmeridians(numpy.arange(0.,420.,60.),labels=[0,0,0,1]) # draw meridians
    m.drawmapboundary() # draw a line around the map region
-   #m.plot(x,y,"r",lw=3)
-   m.scatter(x,y,s=20,c=dist)
-   figure.canvas.print_figure("map.png")
+   m.plot(x,y,"r",lw=3)
+   m.etopo()
+   #m.scatter(x,y,s=20,c=dist)
+   pos = ax.get_position()
+   #print pos
+   asp=pos.height/pos.width
+   #print asp
+   w=figure.get_figwidth()
+   #print w
+   h=asp*w
+   figure.set_figheight(h)
+   if sectionid :
+      figure.canvas.print_figure("map_%s.png"%sectionid)
+   else :
+      figure.canvas.print_figure("map.png")
 
    # Get layer thickness variable used in hycom
    dpname = modeltools.hycom.layer_thickness_variable[filetype]
    logger.info("Filetype %s: layer thickness variable is %s"%(filetype,dpname))
 
 
+   if xaxis == "distance" :
+      x=dist/1000.
+      xlab="Distance along section[km]"
+   elif xaxis == "i" :
+      x=I
+      xlab="i-index"
+   elif xaxis == "j" :
+      x=J
+      xlab="j-index"
+   elif xaxis == "lon" :
+      x=slon
+      xlab="longitude"
+   elif xaxis == "lat" :
+      x=slat
+      xlab="latitude"
+   else :
+      logger.warning("xaxis must be i,j,lo,lat or distance")
+      x=dist/1000.
+      xlab="Distance along section[km]"
+
+   print xlab
+
+
    # Loop over archive files
+   figure = matplotlib.pyplot.figure()
+   ax=figure.add_subplot(111)
+   pos = ax.get_position()
    for fcnt,myfile0 in enumerate(files) :
 
       # Remove [ab] ending if present
@@ -87,8 +142,9 @@ def main(lon1,lat1,lon2,lat2,variable,files,filetype="archive",clim=None) :
       datasec=numpy.zeros((kdm+1,I.size))
 
       # Loop over layers in file. 
+      logger.info("File %s"%(myfile))
       for k in range(kdm) :
-         logger.info("File %s, layer %03d/%03d"%(myfile,k,kdm))
+         logger.debug("File %s, layer %03d/%03d"%(myfile,k,kdm))
 
          # Get 2D fields
          dp2d=i_abfile.read_field(dpname,k+1)
@@ -101,43 +157,53 @@ def main(lon1,lat1,lon2,lat2,variable,files,filetype="archive",clim=None) :
          if k==0 : datasec[k,:] = data2d[J,I]
          datasec[k+1,:] = data2d[J,I]
 
+      i_maxd=numpy.argmax(numpy.abs(intfsec[kdm,:]))
+      #print i_maxd
       
       # Set up section plot
       #datasec = numpy.ma.masked_where(datasec==1e30,datasec)
       datasec = numpy.ma.masked_where(datasec>0.5*1e30,datasec)
       #print datasec.min(),datasec.max()
-      figure = matplotlib.pyplot.figure()
-      ax=figure.add_subplot(111)
-      P=ax.pcolormesh(dist/1000.,-intfsec,datasec)
+      #figure = matplotlib.pyplot.figure()
+      #ax=figure.add_subplot(111)
+      #P=ax.pcolormesh(dist/1000.,-intfsec,datasec)
+      P=ax.pcolormesh(x,-intfsec,datasec)
       if clim is not None : P.set_clim(clim)
 
       # Plot layer interfaces
       for k in range(1,kdm+1) :
          if k%10 == 0 : 
-            PL=ax.plot(dist/1000.,-intfsec[k,:],"-",color="k")
+            PL=ax.plot(x,-intfsec[k,:],"-",color="k")
          elif k%5 == 0 : 
-            PL=ax.plot(dist/1000.,-intfsec[k,:],"--",color="k")
+            PL=ax.plot(x,-intfsec[k,:],"--",color="k")
          else :
-            PL=ax.plot(dist/1000.,-intfsec[k,:],"-",color=".5")
+            PL=ax.plot(x,-intfsec[k,:],"-",color=".5")
 
-         textx = dist[dist.size/2]/1000.
-         texty = -0.5*(intfsec[k-1,dist.size/2] + intfsec[k,dist.size/2])
+         textx = x[i_maxd]
+         texty = -0.5*(intfsec[k-1,i_maxd] + intfsec[k,i_maxd])
          ax.text(textx,texty,str(k),verticalalignment="center",horizontalalignment="center",fontsize=6)
-      ax.figure.colorbar(P)
+      cb=ax.figure.colorbar(P)
       ax.set_title(myfile)
       ax.set_ylabel(variable)
-      ax.set_xlabel("distance along section [km]")
-      matplotlib.pyplot.tight_layout()
+      ax.set_xlabel(xlab)
+      #ax.set_position(pos)
+      #matplotlib.pyplot.tight_layout()
 
       # Print in different y-lims 
-      figure.canvas.print_figure("sec_%s_full_%s.png"%(variable,os.path.basename(myfile)))
+      suff=os.path.basename(myfile)
+      if sectionid : suff=suff+"_"+sectionid
+      figure.canvas.print_figure("sec_%s_full_%s.png"%(variable,suff),dpi=180)
       ax.set_ylim(-1000,0)
-      figure.canvas.print_figure("sec_%s_1000m_%s.png"%(variable,os.path.basename(myfile)))
+      figure.canvas.print_figure("sec_%s_1000m_%s.png"%(variable,suff),dpi=180)
       ax.set_ylim(-300,0)
-      figure.canvas.print_figure("sec_%s_300m_%s.png"%(variable,os.path.basename(myfile)))
+      figure.canvas.print_figure("sec_%s_300m_%s.png"%(variable,suff),dpi=180)
 
       # Close input file
       i_abfile.close()
+
+      #
+      ax.clear()
+      cb.remove()
 
 
 
@@ -153,6 +219,9 @@ if __name__ == "__main__" :
    parser = argparse.ArgumentParser(description='')
    parser.add_argument('--clim',     action=ClimParseAction,default=None)
    parser.add_argument('--filetype'    ,     type=str, help='',default="archive")
+   parser.add_argument('--ij'      , action="store_true",default=False)
+   parser.add_argument('--sectionid'      , type=str,default="") 
+   parser.add_argument('--xaxis'          , type=str,default="distance") 
    parser.add_argument('lon1',     type=int, help='')
    parser.add_argument('lat1',     type=int, help='')
    parser.add_argument('lon2',     type=int, help='')
@@ -162,4 +231,5 @@ if __name__ == "__main__" :
 
    args = parser.parse_args()
 
-   main(args.lon1,args.lat1,args.lon2,args.lat2,args.variable,args.files,filetype=args.filetype,clim=args.clim) 
+   main(args.lon1,args.lat1,args.lon2,args.lat2,args.variable,args.files,filetype=args.filetype,clim=args.clim,sectionid=args.sectionid,ijspace=args.ij,
+         xaxis=args.xaxis) 
