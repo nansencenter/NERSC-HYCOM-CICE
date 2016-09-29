@@ -30,7 +30,7 @@ export BINDIR=$(cd $(dirname $0) && pwd)/
 source ${BINDIR}/common_functions.sh || { echo "Could not source ${BINDIR}/common_functions.sh" ; exit 1 ; }
 source ${BASEDIR}/REGION.src || { echo "Could not source ${BASEDIR}/REGION.src" ; exit 1 ; }
 source ./EXPT.src || { echo "Could not source ./EXPT.src" ; exit 1 ; }
-D=$BASEDIR/force/synoptic/
+D=$BASEDIR/force/synoptic/$E/
 S=$D/SCRATCH
 [ ! -d $D ] && mkdir -p $D
 [ ! -d $S ] && mkdir -p $S
@@ -65,11 +65,10 @@ cmd="$BASEDIR/../python/hycom_atmfor.py $start $stop $xmlfile $xmlident"
 eval $cmd   ||  { echo "Error running $cmd " ; exit 1 ; }
 
 # The nersc era40 forcing is region-independent 
-mkdir -p $D/$E  || { echo " Could not create data  destination dir $D/$E" ; exit 1;}
 for i in forcing.*.[ab] ; do
    new=$(echo $i | sed "s/^forcing\.//")
-   mv $i $D/$E/$new
-   echo "Created  $D/$E/$new"
+   mv $i $D/$new
+   echo "Created  $D/$new"
 done
 
 
