@@ -30,6 +30,18 @@ if [ $SIGVER -eq 1 ] ; then
 elif [ $SIGVER -eq 2 ] ; then
    TERMS=7
    MYTHFLAG=2
+elif [ $SIGVER -eq 3 ] ; then
+   TERMS=9
+   MYTHFLAG=0
+elif [ $SIGVER -eq 4 ] ; then
+   TERMS=9
+   MYTHFLAG=2
+elif [ $SIGVER -eq 5 ] ; then
+   TERMS=17
+   MYTHFLAG=0
+elif [ $SIGVER -eq 6 ] ; then
+   TERMS=17
+   MYTHFLAG=2
 else
    echo "SIGVER = $SIGVER"
    echo "So far only 7 term eq of state is supported (SIGVER=1 or 2) is supported"
