@@ -107,6 +107,8 @@ c
       character*80 cformat,flnmarcvs
       integer      i,j,k,ktr,ldot,nop,nopa
       real         coord,xmin,xmax
+cKAL 
+cKAL  integer      mysec
 c
       if     (kkout.eq.1) then
         flnmarcvs = flnmarcs
@@ -135,6 +137,13 @@ c ---   indicate the archive time step
         write(flnmarcvs(ldot+1:ldot+11),'(i11.11)') nstep
         ldot=ldot+11
       endif
+CKAL  Include second in file name
+cKAL  mysec=mod(nstep,nint(86400.d0/baclin)) ! Time steps starting from midnight
+cKAL  mysec=nint(mod(mysec*baclin,3600.d0))  ! Seconds into this hour
+cKAL  write(flnmarcvs(ldot+1:ldot+16),'(i4.4,a1,i3.3,a1,i2.2,a1,i4.4)') 
+cKAL &   iyear,'_',iday,'_',ihour,'_',mysec
+cKAL  ldot=ldot+16
+
       nopa=13
       nop =13+uoff
 c
