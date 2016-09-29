@@ -27,7 +27,7 @@ logger.addHandler(ch)
 logger.propagate=False
 
 
-def main(blkdatfile,saltfile,lon,lat,lon2=None,lat2=None,sectionid=None):
+def main(blkdatfile,saltfile,lon,lat,lon2=None,lat2=None,sectionid=None,dpi=180):
 
    logger.info("Salinity file:%s"%saltfile)
    m=re.match("(.*)_s([0-9]{2})_([0-9a-z]{4}\.nc)",saltfile)
@@ -105,7 +105,6 @@ def main(blkdatfile,saltfile,lon,lat,lon2=None,lat2=None,sectionid=None):
    maxd=numpy.zeros(salprof[0,:].shape)
    for k in range(nz) :
       maxd[~salprof[k,:].mask] = dprof[k]
-
    logger.info("MAx depth in data is %d m"%numpy.max(maxd))
 
    # Open blkdat.input
@@ -117,10 +116,12 @@ def main(blkdatfile,saltfile,lon,lat,lon2=None,lat2=None,sectionid=None):
    nhybrd=bp["nhybrd"]
    nsigma=bp["nsigma"]
    thflag=bp["thflag"]
+   isotop=bp["isotop"]
    eqstate   = modeltools.hycom.Sigma(thflag)
    #eqstate   = modeltools.hycom.Sigma12Term(thflag)  #Test 12 term sigma
    #eqstate   = modeltools.hycom.Sigma17Term(thflag)  #Test 17 term sigma
    sigprof = eqstate.sig(temprof,salprof)
+   sigprof=numpy.ma.masked_where(salprof.mask,sigprof)
   
 
    #if thflag == 2 :
@@ -144,105 +145,110 @@ def main(blkdatfile,saltfile,lon,lat,lon2=None,lat2=None,sectionid=None):
 
    # We have interface values, now use designated layer sigma values and actual sigma
    # values to find an approximate vertical coordinate setup. 
-
-   # Loop over output layers
-   newintf=numpy.zeros(intf.shape)
-   intsig=numpy.zeros(dp0.shape)
-   for k in range(kdm) :
-
-      # Target layer upper interface
-      upint=newintf[:,k]
-      #print upint
-
-      # Mix water over integration range
-      dpsum=numpy.zeros(upint.shape)
-      sgsum=numpy.zeros(upint.shape)
-      sg   =numpy.zeros(upint.shape)
-      for k2 in range(nz) :
+   newintf,intsig=modeltools.tools.isopycnal_coordinate_layers(dprofi,sigprof,dp0,numpy.array(sigma),isotop)
 
 
-         # Range of this layer
-         upint2=dprofi[k2]
-         lwint2=dprofi[k2+1]
+   # TODO: move into function
+#   # Loop over output layers
+#   newintf=numpy.zeros(intf.shape)
+#   intsig=numpy.zeros(dp0.shape)
+#   for k in range(kdm) :
+#
+#      # Target layer upper interface
+#      upint=newintf[:,k]
+#      #print upint
+#
+#      # Mix water over integration range
+#      dpsum=numpy.zeros(upint.shape)
+#      sgsum=numpy.zeros(upint.shape)
+#      sg   =numpy.zeros(upint.shape)
+#      for k2 in range(nz) :
+#
+#
+#         # Range of this layer
+#         upint2=dprofi[k2]
+#         lwint2=dprofi[k2+1]
+#
+#         # Part of this layer in target layer
+#         u = numpy.maximum(upint2,upint)
+#         l = lwint2
+#         dp=numpy.maximum(0.,l-u)
+#
+#         #Mask where dpsum > 0  
+#         Imask = dpsum > 0.
+#
+#         ####################  dpsum > 0  and summed layer density < target density ###########
+#
+#         # Integrated value of sigma up to this point
+#         sg[Imask]=sgsum[Imask]/dpsum[Imask]
+#
+#         # Mask where target layer heavier than integrated value => Ok to add more layers
+#         Jmask = numpy.logical_and(Imask,sigma[k] > sg)
+#         Jmask = numpy.logical_and(Jmask,~salprof.mask[k2,:])
+#
+#         # Fraction of layer to be added
+#         dpfrac = (dpsum[Jmask]*sg[Jmask] - dpsum[Jmask]*sigma[k]) / (sigma[k] - sigprof[k2,Jmask])
+#
+#         # Can not add more than dp!
+#         dpfrac = numpy.minimum(dpfrac,dp[Jmask]) #
+#
+#         # Dpfrac can be negative if sigprof[k2,Jmask] < sigma[k] ( must mix "negatively"). 
+#         # In that case add entire layer. Perhaps next heavy layer can tip the scale ...
+#         dpfrac=numpy.where(dpfrac < 0.,dp[Jmask],dpfrac)
+#
+#         # Update values 
+#         dpsum[Jmask]=dpsum[Jmask]+dpfrac
+#         sgsum[Jmask]=sgsum[Jmask]+sigprof[k2,Jmask]*dpfrac
+#
+#         # NB: No need to treat summed layer density > target density, since mixing wont 
+#         # enable us to reach target density. (sg can only increase as we sum deeper)
+#
+#
+#         ####################  dpsum == 0  and sigma[k] > sigprof[k2,:] ######################
+#
+#         #sg = sigprof[k2,k2]
+#
+#         # target layer heavier than layer value. Ok to add more layers to mix downward
+#         Jmask = numpy.logical_and(~Imask,sigma[k] >  sigprof[k2,:])
+#         Jmask = numpy.logical_and(Jmask,~salprof.mask[k2,:])
+#         dpsum[Jmask]=dpsum[Jmask]+dp[Jmask]
+#         sgsum[Jmask]=sgsum[Jmask]+sigprof[k2,Jmask]*dp[Jmask]
+#
+#         # No need to treat new layer density > target layer density, since mixing wont enable 
+#         # us to reach target density
+#
+#         #################### ######################################### ######################
+#
+#
+#
+#
+#      # end k2 loop
+#      #print dpsum
+#
+#      # Make sure dpsum adheres to minimum layer thickness
+#      dpsum=numpy.maximum(dpsum,dp0[:,k])
+#      
+#      # Adjust layer interface
+#      newintf[:,k+1] = newintf[:,k] + dpsum
+#
+#      # MAke sure lowest interface is above sea floor
+#      newintf[:,k+1] = numpy.minimum(newintf[:,k+1],maxd)
+#      
+#      # Effective layer thickness
+#      dpsum = newintf[:,k+1] - newintf[:,k]
+#
+#      # Estimated sigma
+#      msk=dpsum>0.
+#      intsig[msk,k]=sgsum[msk]/dpsum[msk]
+#
+#      # TODO: Keep track of final layer density for all layers (not just isopycnals)
+#   # End k loop
+#
+#   # Make sure bottom layer reaches sea floor
+#   newintf[:,kdm] = numpy.maximum(newintf[:,kdm],maxd)
+#   newintfmid=(newintf[:,1:]+newintf[:,:-1])*.5
 
-         # Part of this layer in target layer
-         u = numpy.maximum(upint2,upint)
-         l = lwint2
-         dp=numpy.maximum(0.,l-u)
 
-         #Mask where dpsum > 0  
-         Imask = dpsum > 0.
-
-         ####################  dpsum > 0  and summed layer density < target density ###########
-
-         # Integrated value of sigma up to this point
-         sg[Imask]=sgsum[Imask]/dpsum[Imask]
-
-         # Mask where target layer heavier than integrated value => Ok to add more layers
-         Jmask = numpy.logical_and(Imask,sigma[k] > sg)
-         Jmask = numpy.logical_and(Jmask,~salprof.mask[k2,:])
-
-         # Fraction of layer to be added
-         dpfrac = (dpsum[Jmask]*sg[Jmask] - dpsum[Jmask]*sigma[k]) / (sigma[k] - sigprof[k2,Jmask])
-
-         # Can not add more than dp!
-         dpfrac = numpy.minimum(dpfrac,dp[Jmask]) #
-
-         # Dpfrac can be negative if sigprof[k2,Jmask] < sigma[k] ( must mix "negatively"). 
-         # In that case add entire layer. Perhaps next heavy layer can tip the scale ...
-         dpfrac=numpy.where(dpfrac < 0.,dp[Jmask],dpfrac)
-
-         # Update values 
-         dpsum[Jmask]=dpsum[Jmask]+dpfrac
-         sgsum[Jmask]=sgsum[Jmask]+sigprof[k2,Jmask]*dpfrac
-
-         # NB: No need to treat summed layer density > target density, since mixing wont 
-         # enable us to reach target density. (sg can only increase as we sum deeper)
-
-
-         ####################  dpsum == 0  and sigma[k] > sigprof[k2,:] ######################
-
-         #sg = sigprof[k2,k2]
-
-         # target layer heavier than layer value. Ok to add more layers to mix downward
-         Jmask = numpy.logical_and(~Imask,sigma[k] >  sigprof[k2,:])
-         Jmask = numpy.logical_and(Jmask,~salprof.mask[k2,:])
-         dpsum[Jmask]=dpsum[Jmask]+dp[Jmask]
-         sgsum[Jmask]=sgsum[Jmask]+sigprof[k2,Jmask]*dp[Jmask]
-
-         # No need to treat new layer density > target layer density, since mixing wont enable 
-         # us to reach target density
-
-         #################### ######################################### ######################
-
-
-
-
-      # end k2 loop
-      #print dpsum
-
-      # Make sure dpsum adheres to minimum layer thickness
-      dpsum=numpy.maximum(dpsum,dp0[:,k])
-      
-      # Adjust layer interface
-      newintf[:,k+1] = newintf[:,k] + dpsum
-
-      # MAke sure lowest interface is above sea floor
-      newintf[:,k+1] = numpy.minimum(newintf[:,k+1],maxd)
-      
-      # Effective layer thickness
-      dpsum = newintf[:,k+1] - newintf[:,k]
-
-      # Estimated sigma
-      msk=dpsum>0.
-      intsig[msk,k]=sgsum[msk]/dpsum[msk]
-
-      # TODO: Keep track of final layer density for all layers (not just isopycnals)
-   # End k loop
-
-   # Make sure bottom layer reaches sea floor
-   newintf[:,kdm] = numpy.maximum(newintf[:,kdm],maxd)
-   newintfmid=(newintf[:,1:]+newintf[:,:-1])*.5
 
 #   # Smooth eine bitchen...
 #   if maxd.size > 5 :
@@ -286,7 +292,7 @@ def main(blkdatfile,saltfile,lon,lat,lon2=None,lat2=None,sectionid=None):
    # Plot vertical profile and layers. Two cases: section or not
    if section :
       f,ax = plt.subplots(1,figsize=(10,5))
-      ax.set_title("sigma-%d layers from lon=%6.2f, lat=%6.2f to lon=%6.2f, lat=%6.2f to "%(thflag,lon,lat,lon2,lat2))
+      ax.set_title("sigma-%d layers from lon=%6.2f, lat=%6.2f to lon=%6.2f, lat=%6.2f"%(thflag,lon,lat,lon2,lat2))
       x = sec.distance / 1000.
       ymult=1.
       xlim=[x.min(),x.max()]
@@ -364,19 +370,21 @@ def main(blkdatfile,saltfile,lon,lat,lon2=None,lat2=None,sectionid=None):
    ltext=leg.get_texts()
    plt.setp(ltext,fontsize=4)
 
+
+   
    fname="layers_%s.png"%sinfo
    logger.info("Layers in %s"%fname)
-   plt.gcf().savefig(fname,dpi=180)
+   plt.gcf().savefig(fname,dpi=dpi)
    #
    ax.set_ylim(-750,0)
    fname="layers750_%s.png"%sinfo
    logger.info("Layers for top 750m in %s"%fname)
-   plt.gcf().savefig("layers750_%s.png"%sinfo,dpi=180)
+   plt.gcf().savefig("layers750_%s.png"%sinfo,dpi=dpi)
    #
    ax.set_ylim(-100,0)
    fname="layers100_%s.png"%sinfo
    logger.info("Layers for top 100m in %s"%fname)
-   plt.gcf().savefig("layers100_%s.png"%sinfo,dpi=180)
+   plt.gcf().savefig("layers100_%s.png"%sinfo,dpi=dpi)
 
 
    # Plot density of original data
@@ -385,7 +393,7 @@ def main(blkdatfile,saltfile,lon,lat,lon2=None,lat2=None,sectionid=None):
    CS=ax.contour(x,-dprof,sigprof,sigma)
    ax.clabel(CS, inline=1, fontsize=4)
    f.colorbar(P,ax=ax)
-   f.savefig("dens_data_%s.png"%sinfo,dpi=180)
+   f.savefig("dens_data_%s.png"%sinfo,dpi=dpi)
 
    # Plot vertical density gradient of original data
    #print sigprof.shape,dprof.shape
@@ -405,7 +413,7 @@ def main(blkdatfile,saltfile,lon,lat,lon2=None,lat2=None,sectionid=None):
    CS=ax.contour(x,-dprof,sigprof,sigma)
    ax.clabel(CS, inline=1, fontsize=4)
    f.colorbar(P,ax=ax)
-   f.savefig("densgrad_data_%s.png"%sinfo,dpi=180)
+   f.savefig("densgrad_data_%s.png"%sinfo,dpi=dpi)
 
 
    # TODO: Plot Temperature and Salinity sections
