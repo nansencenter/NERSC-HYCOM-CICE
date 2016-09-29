@@ -2086,6 +2086,13 @@ c
                stop '(blkdat)'
       endif
 #endif   
+cKAL  Read filenames
+      call blkins(flnmrsi ,'nmrsti')
+      call blkins(flnmrso ,'nmrsto ')
+      call blkins(flnmarcs,'nmarcs')
+      call blkins(flnmarc ,'nmarcv')
+      call blkins(flnmarcm,'nmarcm')
+cKAL
 c
       close(unit=uoff+99)  !file='blkdat.input'
 c
@@ -2198,14 +2205,47 @@ c
       flnmshlf = 'regional.iceshelf'
       flnmdep  = 'regional.depth'
       flnmgrd  = 'regional.grid'
-      flnmarc  = 'archv.0000_000_00'
-      flnmarcs = 'archs.0000_000_00'
-      flnmarcm = 'archm.0000_000_00'
+cKAL
+cKAL  flnmarc  = 'archv.0000_000_00'
+cKAL  flnmarcs = 'archs.0000_000_00'
+cKAL  flnmarcm = 'archm.0000_000_00'
+cKAL  flnmrsi  = 'restart_in'
+cKAL  flnmrso  = 'restart_out'
+cKAL  
+cKAL--Allow file names based on values in blkdat.input  (if present)
+      if (len_trim(flnmrso)==0) then
+         flnmrso = 'restart_out'
+      else 
+         ! Append time info
+         flnmrso=trim(flnmrso)//".0000_000_00_0000"
+      endif
+      if (len_trim(flnmrsi)==0) then
+         flnmrsi = 'restart_in'
+      else 
+         ! Append time info
+         flnmrsi=trim(flnmrsi)//".0000_000_00_0000"
+      endif
+      if (len_trim(flnmarc)==0) then
+         flnmarc = 'archv.0000_000_00'
+      else 
+         ! Append time info
+         flnmarc=trim(flnmarc)//".0000_000_00"
+      endif
+      if (len_trim(flnmarcs)==0) then
+         flnmarcs = 'archs.0000_000_00'
+      else 
+         ! Append time info
+         flnmarcs=trim(flnmarcs)//".0000_000_00"
+      endif
+      if (len_trim(flnmarcm)==0) then
+         flnmarcm = 'archm.0000_000_00'
+      else 
+         ! Append time info
+         flnmarcm=trim(flnmarcm)//".0000_000_00"
+      endif
       flnmarct = 'archt.0000_000_00'
       flnmovr  = 'ovrtn_out'
       flnmflx  = 'flxdp_out'
-      flnmrsi  = 'restart_in'
-      flnmrso  = 'restart_out'
 c
 c --- i/o directory names
 c
@@ -2383,6 +2423,61 @@ c
       return
  6000 format(a6,' =',l10)
       end
+cKAL
+cKAL  For reading strings
+      subroutine blkins(svar,cvar)
+      use mod_xc         ! HYCOM communication interface
+      use mod_cb_arrays  ! HYCOM saved arrays
+      implicit none
+c
+      integer     ivar,itmp
+      character*6 cvar
+      character*256 tmp
+      character*(*) svar
+c
+c     read in one integer value
+c
+      character*6 cvarin
+c
+      read(uoff+99,'(a)',iostat=itmp) tmp
+c
+c     End of input reached
+      if (itmp<0) then
+         svar=""
+         return
+      end if
+c     NB: ivar is ignored for now, but can indicate datestring, etc
+      itmp = index(tmp,"=")
+      svar=""
+      read(tmp(1:itmp),*) ivar,cvarin
+      read(tmp(itmp+1:len_trim(tmp)),*) svar
+c     if (mnproc.eq.1) then
+c        print *,itmp
+c        print *,tmp(1:itmp)
+c        print *,tmp(itmp+1:len_trim(tmp))
+c     end if
+
+
+      if (mnproc.eq.1) then
+      write(lp,6000) cvarin,ivar,trim(svar)
+      call flush(lp)
+      endif !1st tile
+c
+      if     (cvar.ne.cvarin) then
+        if (mnproc.eq.1) then
+        write(lp,*) 
+        write(lp,*) 'error in blkins - input ',cvarin,
+     +                       ' but should be ',cvar
+        write(lp,*) 
+        call flush(lp)
+        endif !1st tile
+        call xcstop('(blkins)')
+               stop
+      endif
+      return
+ 6000 format(a6,' =',i10,' filename=',a)
+      end
+cKAL
 c>
 c> Revision history
 c>
