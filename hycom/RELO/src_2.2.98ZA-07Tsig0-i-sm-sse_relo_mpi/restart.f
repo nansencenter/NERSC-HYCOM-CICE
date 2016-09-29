@@ -948,6 +948,73 @@ c
       return
       end subroutine restart_zero3d
 c
+cKAL
+      function restart_name(dtimex, yrflag, dir)
+      use mod_xc
+      use mod_cb_arrays
+      implicit none
+
+      real*8,   intent(in)    :: dtimex
+      integer,  intent(in)    :: yrflag
+      character(len=*),intent(in)    :: dir
+c
+      character(len=80) :: restart_name
+
+      integer :: ldot, n
+      integer :: iyear, jday, ihour, isec
+c
+c
+c     If dir is "in" and name ends with restart_in, dont touch it.
+      if (trim(dir) == "in") then
+         restart_name=trim(flnmrsi)
+         n=len_trim(restart_name)
+         if (n>=10 .and. restart_name(n-9:n) == "restart_in") then
+            return
+         end if
+c     If dir is "out" and name ends with restart_out, dont touch it.
+      elseif (trim(dir) == "out") then
+         restart_name=trim(flnmrso)
+         n=len_trim(restart_name)
+         if (n>=11 .and. restart_name(n-10:n) == "restart_out") then
+            return
+         end if
+      else 
+         if     (mnproc.eq.1) then
+            write (lp,*) 'restart_name, dir must be in or out'
+            write (lp,*) 'dir = ',trim(dir)
+         endif
+         call xcstop('(restart_filename)')
+                stop '(restart_filename)'
+      endif
+c
+c     If still here ... Append dateinfo after last dot in flnmrs
+      ldot = index(restart_name,'.',back=.true.)
+      if     (ldot.eq.0) then
+        if     (mnproc.eq.1) then
+           write (lp,*) 'need decimal point in restart_name '
+           if (trim(dir) =="in") then 
+              write (lp,*) 'unless output restart file = restart_in'
+           else 
+              write (lp,*) 'unless input restart file  = restart_out'
+           end if
+           write (lp,*) 'direction=',trim(dir)
+           write (lp,*) 'name     =',trim(restart_name)
+        endif
+        call xcstop('(restart_name)')
+               stop '(restart_name)'
+      endif
+c
+c     Time format is always iyear_jday_hour_sec (ex 2001_005_12_0000)
+      call forday(dtimex,yrflag, iyear,jday,ihour)
+      isec=mod(nstep,nint(86400.d0/baclin)) ! Time steps starting from midnight
+      isec=nint(mod(isec*baclin,3600.d0))   ! Seconds into this hour
+      write(restart_name(ldot+1:ldot+16),
+     &   '(i4.4,a1,i3.3,a1,i2.2,a1,i4.4)')
+     &   iyear,'_',jday,'_',ihour,'_',isec
+      restart_name(ldot+17:)= ""
+      return
+      end function restart_name
+cKAL
 c
 c> Revision history:
 c>
