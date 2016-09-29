@@ -240,10 +240,22 @@ if __name__ == "__main__" :
    elif args.subparser_name == "lin" :
       s,N=args.sNpair
       s=main_2(args.s0,s,N)
-
-
    else :
       raise ValueError,"Unknown parser "
+
+   #import scipy.signal
+   #N=7
+   #w=numpy.ones(N)
+   #print len(s)
+   #print s
+   #s2=numpy.convolve(w/w.sum(),s[:],mode="valid")
+   #print len(s2)
+   #print s2
+   #print s[N/2:-N/2+1]
+   #s[N/2:-N/2+1]=s2
+   
+
+
    main_plot(s)
    if args.blkdatfile is not None :
       main_blkdat(args.blkdatfile,s)
