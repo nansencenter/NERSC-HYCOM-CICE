@@ -1228,6 +1228,7 @@ c
       logical      lexist
       integer      i,j,k,nop,nopa,rc
       real         coord,xmin,xmax,sumssu,sumssv,sumsiu,sumsiv
+      integer mysec !KAL
 c
 c --- Report
 #if (USE_ESMF_5)
@@ -1239,8 +1240,13 @@ c --- Report
 #endif
       call ESMF_LogFlush(rc=rc)
 c
-      write(cfile,'(a,i4.4,a1,i3.3,a1,i2.2)')
-     &   'arche.',iyear,'_',jday,'_',ihour
+CKAL  write(cfile,'(a,i4.4,a1,i3.3,a1,i2.2)')
+CKAL &   'arche.',iyear,'_',jday,'_',ihour
+CKAL  mysec =int(mod( (dtime-floor(dtime))*86400.d0,3600.d0))
+      mysec=mod(nstep,nint(86400.d0/baclin)) ! Time steps starting from midnight
+      mysec=nint(mod(mysec*baclin,3600.d0))  ! Seconds into this hour
+      write(cfile,'(a,i4.4,a1,i3.3,a1,i2.2,a1,i4.4)')
+     &   'arche.',iyear,'_',jday,'_',ihour,'_',mysec
       nopa=13
       nop =13+uoff
 c
@@ -1503,6 +1509,9 @@ c
       type(ESMF_Time)            :: startTime, endTime, refTime
       integer, parameter, dimension(12) :: 
      &   daypm_366=(/31,29,31,30,31,30,31,31,30,31,30,31/)
+cKAL  
+      character*80, external :: restart_name
+cKAL  
 c
 c --- Report
 #if (USE_ESMF_5)
@@ -2063,8 +2072,11 @@ c
 c
 c ---   start from restart file
 c
-        flnmra = trim(flnmrsi)//'.a'
-        flnmrb = trim(flnmrsi)//'.b'
+cKAL    flnmra = trim(flnmrsi)//'.a'
+cKAL    flnmrb = trim(flnmrsi)//'.b'
+        flnmra = restart_name(dtime0,yrflag,"in")
+        flnmrb = trim(flnmra)//".b"
+        flnmra = trim(flnmra)//".a"
         call restart_in(nstep0,dtime0, flnmra,flnmrb)
         surflx(:,:) = 0.0
         salflx(:,:) = 0.0
@@ -2590,7 +2602,9 @@ cKAL  Moved to state attribute
       logical  :: get_import 
       logical  :: put_export
       logical  :: end_of_run 
-cKAL
+cKAL  
+      character*80, external :: restart_name
+cKAL  
 c
       include 'stmt_fns.h'
 c
@@ -4119,8 +4133,19 @@ c
         call flush(lp)
         endif !1st tile
 c
-        flnmra = flnmrso  !.a extension added by restart_out
-        flnmrb = flnmrso  !.b extension added by restart_out
+cKAL    flnmra = flnmrso  !.a extension added by restart_out
+cKAL    flnmrb = flnmrso  !.b extension added by restart_out
+        flnmra = restart_name(dtime,yrflag,"out")
+cKAL    Falls back to standard HYCOM behaviour
+        if (trim(flnmra)=="restart_out") then
+           flnmra = flnmrso  !.a extension added by restart_out
+           flnmrb = flnmrso  !.b extension added by restart_out
+cKAL    New behaviour - appends date info to restart file
+        else 
+           flnmrb = trim(flnmra)//".b"
+           flnmra = trim(flnmra)//".a"
+        end if
+cKAL
 #endif
 c
         call restart_out(nstep,dtime, flnmra,flnmrb, nstep.ge.nstep2)
