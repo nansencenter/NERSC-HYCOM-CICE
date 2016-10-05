@@ -116,6 +116,7 @@ def main(blkdatfile,saltfile,lon,lat,lon2=None,lat2=None,sectionid=None,dpi=180)
    nhybrd=bp["nhybrd"]
    nsigma=bp["nsigma"]
    thflag=bp["thflag"]
+   kapref=bp["kapref"]
    isotop=bp["isotop"]
    eqstate   = modeltools.hycom.Sigma(thflag)
    #eqstate   = modeltools.hycom.Sigma12Term(thflag)  #Test 12 term sigma
@@ -124,15 +125,17 @@ def main(blkdatfile,saltfile,lon,lat,lon2=None,lat2=None,sectionid=None,dpi=180)
    sigprof=numpy.ma.masked_where(salprof.mask,sigprof)
   
 
-   #if thflag == 2 :
-   #   mykappa=modeltools.hycom.Kappa(2,2000.0e4)
-   #elif thflag == 0  :
-   #   mykappa=modeltools.hycom.Kappa(2,0.)
-   #else :
-   #   raise ValueError,"Unknown value of thflag"
-   #tmp = mykappa.kappaf(salprof.transpose(),temprof.transpose(),sigprof.transpose(),dprof*9806)
-   #print tmp.shape,sigprof.shape
-   #sigprof = sigprof - tmp.transpose()
+   # Thermobaricity 
+   if kapref <> 0 :
+      if thflag == 2 :
+         mykappa=modeltools.hycom.Kappa(kapref,2000.0e4)
+      elif thflag == 0  :
+         mykappa=modeltools.hycom.Kappa(kapref,0.)
+      else :
+         raise ValueError,"Unknown value of thflag"
+      tmp = mykappa.kappaf(salprof.transpose(),temprof.transpose(),sigprof.transpose(),dprof*9806)
+      #print tmp.shape,sigprof.shape
+      sigprof_tbar = sigprof - tmp.transpose()
 
 
 
@@ -395,6 +398,15 @@ def main(blkdatfile,saltfile,lon,lat,lon2=None,lat2=None,sectionid=None,dpi=180)
    f.colorbar(P,ax=ax)
    f.savefig("dens_data_%s.png"%sinfo,dpi=dpi)
 
+   # Plot density of original data
+   if kapref > 0 :
+      f,ax = plt.subplots(1,figsize=(10,5))
+      P=ax.pcolormesh(x,-dprof,sigprof_tbar,cmap="Paired")
+      CS=ax.contour(x,-dprof,sigprof_tbar,sigma)
+      ax.clabel(CS, inline=1, fontsize=4)
+      f.colorbar(P,ax=ax)
+      f.savefig("dens_data_kappa%d_%s.png"%(kapref,sinfo),dpi=dpi)
+
    # Plot vertical density gradient of original data
    #print sigprof.shape,dprof.shape
    dsigprof = numpy.zeros(sigprof.shape)
@@ -412,8 +424,23 @@ def main(blkdatfile,saltfile,lon,lat,lon2=None,lat2=None,sectionid=None,dpi=180)
          cmap="Paired")
    CS=ax.contour(x,-dprof,sigprof,sigma)
    ax.clabel(CS, inline=1, fontsize=4)
+   ax.set_title("Delta rho per 100 meter in the vertical")
    f.colorbar(P,ax=ax)
    f.savefig("densgrad_data_%s.png"%sinfo,dpi=dpi)
+
+   # Plot Buoyancy frequency
+   Nsq=dsigprof/100. * 9.81/1000.
+   f,ax = plt.subplots(1,figsize=(10,5))
+   P=ax.pcolormesh(x,-dprof,Nsq,
+         norm=matplotlib.colors.LogNorm(vmin=1e-9,vmax=1e-4),
+         cmap="Paired")
+   #CS=ax.contour(x,-dprof,Nsq,sigma)
+   ax.clabel(CS, inline=1, fontsize=4)
+   f.colorbar(P,ax=ax)
+   ax.set_title("N^2")
+   f.savefig("Nsq_data_%s.png"%sinfo,dpi=dpi)
+
+
 
 
    # TODO: Plot Temperature and Salinity sections

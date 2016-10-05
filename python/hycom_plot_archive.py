@@ -8,6 +8,7 @@ import abfile
 import numpy
 from mpl_toolkits.basemap import Basemap
 import logging
+import datetime
 import re
 
 # Set up logger
@@ -22,7 +23,8 @@ logger.addHandler(ch)
 logger.propagate=False
 
 
-def main(myfiles,fieldname,fieldlevel,idm=None,jdm=None,clim=None,filetype="archive",window=None,cmap="jet") :
+def main(myfiles,fieldname,fieldlevel,idm=None,jdm=None,clim=None,filetype="archive",window=None,
+      cmap="jet",datetime1=None,datetime2=None) :
 
 
    #cmap=matplotlib.pyplot.get_cmap("jet")
@@ -41,7 +43,8 @@ def main(myfiles,fieldname,fieldlevel,idm=None,jdm=None,clim=None,filetype="arch
    figure = matplotlib.pyplot.figure(figsize=(8,8))
    ax=figure.add_subplot(111)
 
-   for i,myfile0 in enumerate(myfiles) :
+   counter=0
+   for myfile0 in myfiles :
 
 
       logger.info("Now processing  %s"%myfile0)
@@ -53,10 +56,32 @@ def main(myfiles,fieldname,fieldlevel,idm=None,jdm=None,clim=None,filetype="arch
 
       if filetype == "archive" :
          ab = abfile.ABFileArchv(myfile,"r")
+         n_intloop=1
       #elif filetype == "restart" :
       #   tmp = abfile.ABFileRestart(myfile,"r",idm=gfile.idm,jdm=gfile.jdm)
       elif filetype == "regional.depth" :
          ab = abfile.ABFileBathy(myfile,"r",idm=idm,jdm=jdm)
+         n_intloop=1
+      elif filetype == "forcing" :
+         ab = abfile.ABFileForcing(myfile,"r",idm=idm,jdm=jdm)
+         if datetime1 is None or datetime2 is None :
+            raise NameError,"datetime1 and datetime2 must be specified when plotting forcing files"
+         else :
+            print datetime1
+            iday1,ihour1,isec1 = modeltools.hycom.datetime_to_ordinal(datetime1,3)
+            print iday1,ihour1,isec1
+            print datetime1.year
+            rdtime1 = modeltools.hycom.dayfor(datetime1.year,iday1,ihour1,3)
+            #
+            iday2,ihour2,isec2 = modeltools.hycom.datetime_to_ordinal(datetime2,3)
+            rdtime2 = modeltools.hycom.dayfor(datetime2.year,iday2,ihour2,3)
+            #
+            #print ab.field_times
+            #print rdtime1,rdtime2
+            rdtimes=sorted([elem for elem in ab.field_times if elem >rdtime1 and elem < rdtime2])
+            n_intloop=len(rdtimes)
+            #print n_intloop
+
       else :
          raise NotImplementedError,"Filetype %s not implemented"%filetype
 
@@ -66,43 +91,53 @@ def main(myfiles,fieldname,fieldlevel,idm=None,jdm=None,clim=None,filetype="arch
          logger.error("Available fields : %s"%(" ".join(ab.fieldnames)))
          raise ValueError,"Unknown field %s at level %d"%(fieldname,fieldlevel)
 
-      # Read ab file of different types
-      if filetype == "archive" :
-         fld = ab.read_field(fieldname,fieldlevel)
-      elif filetype == "regional.depth" :
-         fld = ab.read_field(fieldname)
-      else :
-         raise NotImplementedError,"Filetype %s not implemented"%filetype
-
-      if not window :
-         J,I=numpy.meshgrid(numpy.arange(fld.shape[0]),numpy.arange(fld.shape[1]))
-      else :
-         J,I=numpy.meshgrid( numpy.arange(window[1],window[3]),numpy.arange(window[0],window[2]))
+      # Intloop used to read more fields in one file. Only for forcing for now
+      for i_intloop in range(n_intloop) :
 
 
+         # Read ab file of different types
+         if filetype == "archive" :
+            fld = ab.read_field(fieldname,fieldlevel)
+         elif filetype == "regional.depth" :
+            fld = ab.read_field(fieldname)
+         elif filetype == "forcing" :
+            fld = ab.read_field(fieldname,rdtimes[i_intloop])
+            logger.info("Processing time %.2f"%rdtimes[i_intloop])
+         else :
+            raise NotImplementedError,"Filetype %s not implemented"%filetype
 
-      # Create simple figure
-      #figure = matplotlib.pyplot.figure(figsize=(8,8))
-      #ax=figure.add_subplot(111)
-      if bm is not None :
-         P=bm.pcolormesh(x[J,I],y[J,I],fld[J,I],cmap=cmap)
-         bm.drawcoastlines()
-         bm.fillcontinents(color='.5',lake_color='aqua')
-         # draw parallels and meridians.
-         bm.drawparallels(numpy.arange(-80.,81.,20.))
-         bm.drawmeridians(numpy.arange(-180.,181.,20.))
-         bm.drawmapboundary() #fill_color='aqua')
-      else :
-         P=ax.pcolormesh(I,J,fld[J,I],cmap=cmap)
-      cb=ax.figure.colorbar(P)
-      if clim is not None : P.set_clim(clim)
-      ax.set_title("%s:%s(%d)"%(myfile0,fieldname,fieldlevel))
+         if not window :
+            J,I=numpy.meshgrid(numpy.arange(fld.shape[0]),numpy.arange(fld.shape[1]))
+         else :
+            J,I=numpy.meshgrid( numpy.arange(window[1],window[3]),numpy.arange(window[0],window[2]))
 
-      # Print figure.
-      figure.canvas.print_figure("tst%03d.png"%i,dpi=180)
 
-      ax.clear()
-      cb.remove()
+
+         # Create simple figure
+         #figure = matplotlib.pyplot.figure(figsize=(8,8))
+         #ax=figure.add_subplot(111)
+         if bm is not None :
+            P=bm.pcolormesh(x[J,I],y[J,I],fld[J,I],cmap=cmap)
+            bm.drawcoastlines()
+            bm.fillcontinents(color='.5',lake_color='aqua')
+            # draw parallels and meridians.
+            bm.drawparallels(numpy.arange(-80.,81.,20.))
+            bm.drawmeridians(numpy.arange(-180.,181.,20.))
+            bm.drawmapboundary() #fill_color='aqua')
+         else :
+            P=ax.pcolormesh(I,J,fld[J,I],cmap=cmap)
+         cb=ax.figure.colorbar(P)
+         if clim is not None : P.set_clim(clim)
+         ax.set_title("%s:%s(%d)"%(myfile0,fieldname,fieldlevel))
+
+         # Print figure.
+         figure.canvas.print_figure("tst%03d.png"%counter,dpi=180)
+
+         ax.clear()
+         cb.remove()
+         counter=counter+1
+
+      # End i_intloop
 
 
 
@@ -115,10 +150,12 @@ if __name__ == "__main__" :
    class WindowParseAction(argparse.Action) :
      def __call__(self, parser, args, values, option_string=None):
        tmp = values.split(",")
-       print tmp
        tmp = [int(elem) for elem in tmp[0:4]]
-       print tmp
        setattr(args, self.dest, tmp)
+   class DateTimeParseAction(argparse.Action) :
+       def __call__(self, parser, args, values, option_string=None):
+          tmp = datetime.datetime.strptime( values, "%Y-%m-%dT%H:%M:%S")
+          setattr(args, self.dest, tmp)
 
    parser = argparse.ArgumentParser(description='')
    parser.add_argument('--clim',       action=ClimParseAction,default=None)
@@ -127,11 +164,16 @@ if __name__ == "__main__" :
    parser.add_argument('--window',     action=WindowParseAction, help='firsti,firstj,lasti,lastj', default=None)
    parser.add_argument('--idm',        type=int, help='Grid dimension 1st index []', default=None)
    parser.add_argument('--jdm',        type=int, help='Grid dimension 2nd index []', default=None)
+   parser.add_argument('--datetime1',      action=DateTimeParseAction)
+   parser.add_argument('--datetime2',      action=DateTimeParseAction)
    parser.add_argument('fieldname',  type=str)
    parser.add_argument('fieldlevel', type=int)
    parser.add_argument('filename',   help="",nargs="+")
    args = parser.parse_args()
 
-   main(args.filename,args.fieldname,args.fieldlevel,idm=args.idm,jdm=args.jdm,clim=args.clim,filetype=args.filetype,window=args.window,cmap=args.cmap)
+   main(args.filename,args.fieldname,args.fieldlevel,
+         idm=args.idm,jdm=args.jdm,clim=args.clim,filetype=args.filetype,
+         window=args.window,cmap=args.cmap,
+         datetime1=args.datetime1,datetime2=args.datetime2)
 
 

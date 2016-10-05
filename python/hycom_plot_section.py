@@ -28,8 +28,7 @@ logger.propagate=False
 
 
 def main(lon1,lat1,lon2,lat2,variable,files,filetype="archive",clim=None,sectionid="",
-      ijspace=False,xaxis="distance") :
-   print xaxis
+      ijspace=False,xaxis="distance",section_map=False) :
 
    logger.info("Filetype is %s"% filetype)
    gfile = abfile.ABFileGrid("regional.grid","r")
@@ -49,41 +48,45 @@ def main(lon1,lat1,lon2,lat2,variable,files,filetype="archive",clim=None,section
    slat=sec.latitude
 
    # In testing
-   #I,J,slon,slat,case,dist=sec.find_intersection(qlon,qlat)
+   #J,I,slon,slat,case,dist=sec.find_intersection(qlon,qlat)
+   #print I,J
+   #raise NameError,"test"
 
 
 
    logger.info("Min max I-index (starts from 0):%d %d"%(I.min(),I.max()))
    logger.info("Min max J-index (starts from 0):%d %d"%(J.min(),J.max()))
 
-   ll_lon=slon.min()-10.
-   ur_lon=slon.max()+10.
-   ll_lat=numpy.maximum(-90.,slat.min()-10.)
-   ur_lat=numpy.minimum(90. ,slat.max()+10.)
-   m = Basemap(projection='mill', llcrnrlon=ll_lon, llcrnrlat=ll_lat, urcrnrlon=ur_lon, urcrnrlat=ur_lat, resolution='l')
-   (x,y) = m(slon,slat)
-   figure = matplotlib.pyplot.figure()
-   ax=figure.add_subplot(111)
-   m.drawcoastlines()
-   #m.fillcontinents(color='coral',lake_color='aqua')
-   m.drawparallels(numpy.arange(-90.,120.,30.),labels=[1,0,0,0]) # draw parallels
-   m.drawmeridians(numpy.arange(0.,420.,60.),labels=[0,0,0,1]) # draw meridians
-   m.drawmapboundary() # draw a line around the map region
-   m.plot(x,y,"r",lw=3)
-   m.etopo()
-   #m.scatter(x,y,s=20,c=dist)
-   pos = ax.get_position()
-   #print pos
-   asp=pos.height/pos.width
-   #print asp
-   w=figure.get_figwidth()
-   #print w
-   h=asp*w
-   figure.set_figheight(h)
-   if sectionid :
-      figure.canvas.print_figure("map_%s.png"%sectionid)
-   else :
-      figure.canvas.print_figure("map.png")
+
+   if section_map :
+      ll_lon=slon.min()-10.
+      ur_lon=slon.max()+10.
+      ll_lat=numpy.maximum(-90.,slat.min()-10.)
+      ur_lat=numpy.minimum(90. ,slat.max()+10.)
+      m = Basemap(projection='mill', llcrnrlon=ll_lon, llcrnrlat=ll_lat, urcrnrlon=ur_lon, urcrnrlat=ur_lat, resolution='l')
+      (x,y) = m(slon,slat)
+      figure = matplotlib.pyplot.figure()
+      ax=figure.add_subplot(111)
+      m.drawcoastlines()
+      #m.fillcontinents(color='coral',lake_color='aqua')
+      m.drawparallels(numpy.arange(-90.,120.,30.),labels=[1,0,0,0]) # draw parallels
+      m.drawmeridians(numpy.arange(0.,420.,60.),labels=[0,0,0,1]) # draw meridians
+      m.drawmapboundary() # draw a line around the map region
+      m.plot(x,y,"r",lw=3)
+      m.etopo()
+      #m.scatter(x,y,s=20,c=dist)
+      pos = ax.get_position()
+      #print pos
+      asp=pos.height/pos.width
+      #print asp
+      w=figure.get_figwidth()
+      #print w
+      h=asp*w
+      figure.set_figheight(h)
+      if sectionid :
+         figure.canvas.print_figure("map_%s.png"%sectionid)
+      else :
+         figure.canvas.print_figure("map.png")
 
    # Get layer thickness variable used in hycom
    dpname = modeltools.hycom.layer_thickness_variable[filetype]
@@ -109,9 +112,6 @@ def main(lon1,lat1,lon2,lat2,variable,files,filetype="archive",clim=None,section
       logger.warning("xaxis must be i,j,lo,lat or distance")
       x=dist/1000.
       xlab="Distance along section[km]"
-
-   print xlab
-
 
    # Loop over archive files
    figure = matplotlib.pyplot.figure()
@@ -222,6 +222,7 @@ if __name__ == "__main__" :
    parser.add_argument('--ij'      , action="store_true",default=False)
    parser.add_argument('--sectionid'      , type=str,default="") 
    parser.add_argument('--xaxis'          , type=str,default="distance") 
+   parser.add_argument('--section_map'    , action="store_true",default=False,help="Produces a simple map of the section")
    parser.add_argument('lon1',     type=int, help='')
    parser.add_argument('lat1',     type=int, help='')
    parser.add_argument('lon2',     type=int, help='')
@@ -232,4 +233,4 @@ if __name__ == "__main__" :
    args = parser.parse_args()
 
    main(args.lon1,args.lat1,args.lon2,args.lat2,args.variable,args.files,filetype=args.filetype,clim=args.clim,sectionid=args.sectionid,ijspace=args.ij,
-         xaxis=args.xaxis) 
+         xaxis=args.xaxis,section_map=args.section_map) 
