@@ -34,7 +34,7 @@
 !         Philip W. Jones, LANL
 !         William H. Lipscomb, LANL
 
-      subroutine CICE_Run
+      subroutine CICE_Run(force_restart)
 
       use ice_aerosol, only: faero_default
       use ice_algae, only: get_forcing_bgc
@@ -45,6 +45,7 @@
       use ice_timers, only: ice_timer_start, ice_timer_stop, &
           timer_couple, timer_step
       use ice_zbgc_shared, only: skl_bgc
+      logical, intent(in) :: force_restart
 
    !--------------------------------------------------------------------
    !  initialize error code and step timer
@@ -77,7 +78,7 @@
 
          call calendar(time)    ! at the end of the timestep
 
-         call ice_step
+         call ice_step(force_restart)
 
 !         if (stop_now >= 1) exit timeLoop
 
@@ -98,7 +99,7 @@
 !  author Elizabeth C. Hunke, LANL
 !         William H. Lipscomb, LANL
 
-      subroutine ice_step
+      subroutine ice_step(force_restart)
 
       use ice_age, only: write_restart_age
       use ice_aerosol, only: write_restart_aero
@@ -136,6 +137,7 @@
       integer (kind=int_kind) :: &
          iblk        , & ! block index 
          k               ! dynamics supercycling index
+      logical, intent(in) :: force_restart
 
       !-----------------------------------------------------------------
       ! restoring on grid boundaries
@@ -235,7 +237,8 @@
          call ice_timer_stop(timer_hist)    ! history
 
          call ice_timer_start(timer_readwrite)  ! reading/writing
-         if (write_restart == 1) then
+         !KAL if (write_restart == 1) then
+         if (write_restart == 1 .or. force_restart) then
             call dumpfile     ! core variables for restarting
             if (tr_iage)      call write_restart_age
             if (tr_FY)        call write_restart_FY

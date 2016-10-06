@@ -1211,7 +1211,8 @@ subroutine cice_get_import(import_state)
    ! Get import fields - Import fields must match export fields of "the other" model
    ! TODO: OMP
    do ifld=1,numImpFields
-      !print *,ifld,trim(impFieldName(ifld))
+      !KAL !print *,ifld,trim(impFieldName(ifld))
+      !KAL if (my_task==master_task .and. iblk==1) print '(a)',"CICE:importing "//trim(impFieldName(ifld))
       do iblk=1,nblocks
          this_block = get_block(blocks_ice(iblk),iblk)         
          ilo = this_block%ilo
@@ -1421,7 +1422,7 @@ implicit none
     integer, intent(out)         :: rc
 
     integer :: rc2
-    logical :: get_import, put_export
+    logical :: get_import, put_export, ice_restart
     character(len=100) :: msg
 
     call ESMF_LogWrite("CICE run routine started",ESMF_LOGMSG_INFO, rc=rc)
@@ -1435,8 +1436,15 @@ implicit none
        call cice_get_import(import_state)
     end if
 
+    ! Flag from gridcomp that we should save restart
+    call ESMF_AttributeGet(comp, name="ICE_restart",value=ICE_restart,rc=rc)
+    if (ESMF_LogFoundError(rc,  msg="ice_run_esmf: attributeget ICE_restart", rcToReturn=rc2)) & 
+       call ESMF_Finalize(rc=rc)
+    write(msg,'("ice_run_esmf: ICE_restart:",l7)') ice_restart
+    call ESMF_LogWrite(msg,ESMF_LOGMSG_INFO, rc=rc)
+
     ! Run single time step
-    call CICE_Run()
+    call CICE_Run(ice_restart)
 
     ! Update accumulated fields
     call update_accumulated_fields()
