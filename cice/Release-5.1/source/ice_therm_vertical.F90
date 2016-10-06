@@ -1773,6 +1773,7 @@
             hsn_new(ij) = fsnow(i,j)/rhos * dt
             zqsnew = -rhos*Lfresh
             hstot = dzs(ij,1) + hsn_new(ij)
+            !KAL print *,"hsn_new(ij)",ij,fsnow(i,j),hsn_new(ij),hstot
 
             if (hstot > c0) then
                zqsn(ij,1) =  (dzs(ij,1) * zqsn(ij,1) &
