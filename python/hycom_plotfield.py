@@ -26,7 +26,20 @@ logger.addHandler(ch)
 logger.propagate=False
 
 if __name__ == "__main__" :
+   class ClimParseAction(argparse.Action) :
+     def __call__(self, parser, args, values, option_string=None):
+       tmp = values.split(",")
+       tmp = [float(elem) for elem in tmp[0:2]]
+       setattr(args, self.dest, tmp)
+   class WindowParseAction(argparse.Action) :
+     def __call__(self, parser, args, values, option_string=None):
+       tmp = values.split(",")
+       tmp = [int(elem) for elem in tmp[0:4]]
+       setattr(args, self.dest, tmp)
+
    parser = argparse.ArgumentParser(description='')
+   parser.add_argument('--clim',       action=ClimParseAction,default=None)
+   parser.add_argument('--window',     action=WindowParseAction, help='firsti,firstj,lasti,lastj', default=None)
    parser.add_argument('idm',     type=int, help='Grid dimension 1st index []')
    parser.add_argument('jdm',     type=int, help='Grid dimension 2nd index []')
    parser.add_argument('filename', help="")
@@ -46,9 +59,8 @@ if __name__ == "__main__" :
       fld = afile.read_record(record)
       figure = matplotlib.pyplot.figure(figsize=(8,8))
       ax=figure.add_subplot(111)
-      #P=ax.pcolormesh(fld)
-      #P=ax.pcolormesh(fld[2200:2800,3500:4500],cmap=cmap)
       P=ax.pcolormesh(fld,cmap=cmap)
+      if args.clim is not None :P.set_clim(args.clim)
       ax.figure.colorbar(P)
 
 
