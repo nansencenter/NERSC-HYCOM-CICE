@@ -2086,12 +2086,12 @@ c
                stop '(blkdat)'
       endif
 #endif   
-cKAL  Read filenames
-      call blkins(flnmrsi ,'nmrsti')
-      call blkins(flnmrso ,'nmrsto ')
-      call blkins(flnmarcs,'nmarcs')
-      call blkins(flnmarc ,'nmarcv')
-      call blkins(flnmarcm,'nmarcm')
+cKAL  Read filenames. NB: This can get overwritten below 
+      call blkins(flnmrsi ,'nmrsti','restart_in'       ,.true.)
+      call blkins(flnmrso ,'nmrsto','restart_out'      ,.true.)
+      call blkins(flnmarcs,'nmarcs','archs.0000_000_00',.true.)
+      call blkins(flnmarc ,'nmarcv','archv.0000_000_00',.true.)
+      call blkins(flnmarcm,'nmarcm','archm.0000_000_00',.true.)
 cKAL
 c
       close(unit=uoff+99)  !file='blkdat.input'
@@ -2205,44 +2205,13 @@ c
       flnmshlf = 'regional.iceshelf'
       flnmdep  = 'regional.depth'
       flnmgrd  = 'regional.grid'
-cKAL
+c  
+cKAL  NOW based on blkdat.input
 cKAL  flnmarc  = 'archv.0000_000_00'
 cKAL  flnmarcs = 'archs.0000_000_00'
 cKAL  flnmarcm = 'archm.0000_000_00'
 cKAL  flnmrsi  = 'restart_in'
 cKAL  flnmrso  = 'restart_out'
-cKAL  
-cKAL--Allow file names based on values in blkdat.input  (if present)
-      if (len_trim(flnmrso)==0) then
-         flnmrso = 'restart_out'
-      else 
-         ! Append time info
-         flnmrso=trim(flnmrso)//".0000_000_00_0000"
-      endif
-      if (len_trim(flnmrsi)==0) then
-         flnmrsi = 'restart_in'
-      else 
-         ! Append time info
-         flnmrsi=trim(flnmrsi)//".0000_000_00_0000"
-      endif
-      if (len_trim(flnmarc)==0) then
-         flnmarc = 'archv.0000_000_00'
-      else 
-         ! Append time info
-         flnmarc=trim(flnmarc)//".0000_000_00"
-      endif
-      if (len_trim(flnmarcs)==0) then
-         flnmarcs = 'archs.0000_000_00'
-      else 
-         ! Append time info
-         flnmarcs=trim(flnmarcs)//".0000_000_00"
-      endif
-      if (len_trim(flnmarcm)==0) then
-         flnmarcm = 'archm.0000_000_00'
-      else 
-         ! Append time info
-         flnmarcm=trim(flnmarcm)//".0000_000_00"
-      endif
       flnmarct = 'archt.0000_000_00'
       flnmovr  = 'ovrtn_out'
       flnmflx  = 'flxdp_out'
@@ -2425,28 +2394,29 @@ c
       end
 cKAL
 cKAL  For reading strings
-      subroutine blkins(svar,cvar)
+      subroutine blkins(svar,cvar,sdefault,append_dot)
       use mod_xc         ! HYCOM communication interface
       use mod_cb_arrays  ! HYCOM saved arrays
       implicit none
 c
-      integer     ivar,itmp
-      character*6 cvar
+      character(len=*),intent(out):: svar
+      character(len=6),intent(in) :: cvar
+      character(len=*),intent(in) :: sdefault
+      logical,         intent(in) :: append_dot
+      integer     ivar,itmp,ldot
       character*256 tmp
-      character*(*) svar
-c
-c     read in one integer value
-c
       character*6 cvarin
 c
+c --- read in one string
       read(uoff+99,'(a)',iostat=itmp) tmp
 c
-c     End of input reached
+c --- End of input reached
       if (itmp<0) then
-         svar=""
+         svar=trim(sdefault)
          return
       end if
-c     NB: ivar is ignored for now, but can indicate datestring, etc
+c
+c --- NB: ivar is ignored for now, but can be used to indicate type of datestring, etc
       itmp = index(tmp,"=")
       svar=""
       read(tmp(1:itmp),*) ivar,cvarin
@@ -2456,14 +2426,9 @@ c        print *,itmp
 c        print *,tmp(1:itmp)
 c        print *,tmp(itmp+1:len_trim(tmp))
 c     end if
-
-
-      if (mnproc.eq.1) then
-      write(lp,6000) cvarin,ivar,trim(svar)
-      call flush(lp)
-      endif !1st tile
 c
-      if     (cvar.ne.cvarin) then
+c --- Check that we read the correct variable
+      if     (cvar.ne.cvarin) then 
         if (mnproc.eq.1) then
         write(lp,*) 
         write(lp,*) 'error in blkins - input ',cvarin,
@@ -2474,6 +2439,29 @@ c
         call xcstop('(blkins)')
                stop
       endif
+c
+c --- Empty string, return default
+      if (len_trim(svar) == 0) then
+         svar=sdefault
+         if (mnproc==1) write(lp,'(a,a,a)') 
+     &      "NB: Setting ",trim(cvar)," to default value "
+         write(lp,6000) cvarin,ivar,trim(svar)
+         return
+      end if
+c
+c --- Append dot if requested and needed..
+      ldot=index(svar,".",back=.true.)
+      if (ldot==0 .and. append_dot) then
+         if (mnproc.eq.1) 
+     &      write(lp,'(a,a)') "NB: Appending . to file name ",trim(svar)
+         svar=trim(svar)//"."
+      endif
+c
+      if (mnproc.eq.1) then
+      write(lp,6000) cvarin,ivar,trim(svar)
+      call flush(lp)
+      endif !1st tile
+c
       return
  6000 format(a6,' =',i10,' filename=',a)
       end
