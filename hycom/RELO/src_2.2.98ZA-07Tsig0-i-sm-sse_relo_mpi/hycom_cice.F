@@ -89,6 +89,7 @@ c --- KAL - Moved from module acces to state access
 !KAL  integer :: ICE_nts_day, ICE_get_import, ICE_put_export
       logical :: ICE_get_import, ICE_put_export
       integer :: ICE_nts_cpl
+      logical :: ICE_restart, OCN_restart
 !KAL  integer :: ICE_nx, ICE_ny ! New
 !KAL  integer :: OCN_nx, OCN_ny ! New
 !KAL  real    :: iceTimeStep_sr8
@@ -598,7 +599,22 @@ c
 c ---     ! Advance ocean Clock TODO
           call ESMF_ClockAdvance(ocnClock,rc=rc)
         enddo !its; OCEAN
- 
+
+c---    Get OCN_restart attribute. TODO: Will only work if restart at
+c---    end of coupling interval
+        call ESMF_AttributeGet(ocnGridComp, 
+     &      name="OCN_restart",value=OCN_restart,rc=rc)
+#if (USE_ESMF_5)
+        if (ESMF_LogFoundError(rc, msg=
+     &     "hycom_cice: attributeget OCN_restart", rcToReturn=rc2))
+     &     call ESMF_Finalize(rc=rc)
+#else
+        if (ESMF_LogMsgFoundError(rc,
+     &     "hycom_cice: attributeget OCN_restart", rcToReturn=rc2))
+     &     call ESMF_Finalize(rc=rc)
+#endif
+c
+c
 c ---   SEAICE
         do its= 1,ice_nts_cpl !couple period, SEAICE
           if     ( localPet.eq.0) then !master
@@ -608,6 +624,8 @@ c ---   SEAICE
           endif
           ICE_get_import = its.eq.1           !import at start of period
           ICE_put_export = its.eq.ice_nts_cpl !export at   end of period
+c---      TODO: Will only work if restart at end of coupling interval
+          ICE_restart = OCN_restart .and. ICE_put_export
 c
 c ---     Set get_import on ice import state
           call ESMF_AttributeSet(iceImpState, 
@@ -632,6 +650,18 @@ c ---     Set put_export on ice export state
 #else
           if (ESMF_LogMsgFoundError(rc,
      &     "hycom_cice: attributeset ICE_put_export", rcToReturn=rc2))
+     &     call ESMF_Finalize(rc=rc)
+#endif
+c---      Set ICE_restart on ice grid comp
+          call ESMF_AttributeSet(iceGridComp, 
+     &        name="ICE_restart",value=OCN_restart,rc=rc)
+#if (USE_ESMF_5)
+          if (ESMF_LogFoundError(rc, msg=
+     &       "hycom_cice: attributeset ICE_restart", rcToReturn=rc2))
+     &       call ESMF_Finalize(rc=rc)
+#else
+          if (ESMF_LogMsgFoundError(rc,
+     &       "hycom_cice: attributeset ICE_restart", rcToReturn=rc2))
      &     call ESMF_Finalize(rc=rc)
 #endif
 c
@@ -665,7 +695,7 @@ c ---     Advance CICE clock
         enddo !its; SEAICE
 
 c
-c---    Set put_export on ice export state
+c---    Get end_of_run attribute
         call ESMF_AttributeGet(ocnGridComp, 
      &      name="end_of_run",value=OCN_end_of_run,rc=rc)
 #if (USE_ESMF_5)

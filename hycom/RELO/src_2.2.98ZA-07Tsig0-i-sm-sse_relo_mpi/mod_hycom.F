@@ -418,7 +418,7 @@ c
       expFieldStdName( 15) = ""
       expFieldUnits(   15) = "kg kg**-1"
       expFieldName(    16) = "rhoair"
-      expFieldLongName(16) = "Specific humidity of air"
+      expFieldLongName(16) = "Density of air"
       expFieldStdName( 16) = ""
       expFieldUnits(   16) = "kg m**-3"
       expFieldName(    17) = "swvdr"
@@ -762,8 +762,9 @@ c
 !KAL
       real :: w_s, t_x, t_y, t_dir, wndx, wndy,airt
       real :: ss_tltx, ss_tlty, vpmx, radfl, qswdwn
-      real :: flagtemp, prcp
+      real :: flagtemp, prcp, pair
       real, parameter ::  tzero=273.16       !celsius to kelvin offset
+      real, parameter ::  rgas=287.1d0       !gas constant (j/kg/k)
 !KAL
       !TODO: Make coupler do the majority of transformations
       !TODO: Utilize units in transformation
@@ -905,7 +906,6 @@ c ---       Read Air temp and vapor mixing ratio
                 vpmx=vapmix(i,j,l0)*w0+vapmix(i,j,l1)*w1
      &              +vapmix(i,j,l2)*w2+vapmix(i,j,l3)*w3
               endif !natm
-            !else 
             else 
                call xchalt('Export_ESMF: unhandled flxflg=3')
                stop 'Export_ESMF: unhandled flxflg=3'
@@ -916,10 +916,7 @@ c ---       Read wind speed
             if (wndflg.eq.2.and. .not. stroff) then
                if     (natm.eq.2) then
                  w_s = wndspd(i,j,l0)*w0+wndspd(i,j,l1)*w1
-                 w_s = wndspd(i,j,l0)*w0+wndspd(i,j,l1)*w1
                else
-                 w_s = wndspd(i,j,l0)*w0+wndspd(i,j,l1)*w1
-     &                +wndspd(i,j,l2)*w2+wndspd(i,j,l3)*w3 
                  w_s = wndspd(i,j,l0)*w0+wndspd(i,j,l1)*w1
      &                +wndspd(i,j,l2)*w2+wndspd(i,j,l3)*w3 
                endif !natm
@@ -942,6 +939,18 @@ c ---       Read wind speed
                call xchalt('Setup_ESMF: unhandled windflag')
                stop 'Setup_ESMF: unhandled windflag'
             end if
+c ---       SLP if present
+            if     (mslprf .or. flxflg.eq.6) then
+               if     (natm.eq.2) then
+                 pair= mslprs(i,j,l0)*w0+mslprs(i,j,l1)*w1
+               else
+                 pair= mslprs(i,j,l0)*w0+mslprs(i,j,l1)*w1
+     &                +mslprs(i,j,l2)*w2+mslprs(i,j,l3)*w3 
+               endif !natm
+            else
+               pair = 1e5
+            end if
+c
             expData( 9)%p(i+i0,j+j0) = wndx  ! uair
             expData(10)%p(i+i0,j+j0) = wndy  ! vair
             expData(11)%p(i+i0,j+j0) = 10.0 ! zair
@@ -952,8 +961,11 @@ c ---       Sea surface slope in x- and y- direction. Centered diff
             expData(13)%p(i+i0,j+j0) = ss_tltx
             expData(14)%p(i+i0,j+j0) = ss_tlty
 c ---       vapour mixing ration ~ specific humidity
-            expData(16)%p(i+i0,j+j0) = vpmx
-            !expData(15)%p(i+i0,j+j0)  TODO: Rhoair
+            expData(15)%p(i+i0,j+j0) = vpmx
+c ---       Density of air at sea level pressure
+            !expData(16)%p(i+i0,j+j0) = pair / ( rgas * tair )
+            expData(16)%p(i+i0,j+j0) = pair / 
+     &         ( rgas * airt * (1.0+0.608*vpmx) )
 c ---       SW down, visible, direct. diffuse and infrared components set to 0.
 C ---       radfl is downwelling sw
             if (lwflag.eq.-1) then
@@ -4240,6 +4252,19 @@ cKAL Add end_of_run to gridComp as attribute
 #else
       if (ESMF_LogMsgFoundError(rc,
      &   "hycom_run: attributeset end_of_run", rcToReturn=rc2))
+     &   call ESMF_Finalize(rc=rc)
+#endif
+cKAL Add OCN_restart to gridComp as attribute
+      call ESMF_AttributeSet(gridComp,
+     &   name="OCN_restart",value=restrt,
+     &    rc=rc)
+#if (USE_ESMF_5)
+      if (ESMF_LogFoundError(rc,
+     &   msg="hycom_run: attributeset OCN_restart", rcToReturn=rc2))
+     &   call ESMF_Finalize(rc=rc)
+#else
+      if (ESMF_LogMsgFoundError(rc,
+     &   "hycom_run: attributeset OCN_restart", rcToReturn=rc2))
      &   call ESMF_Finalize(rc=rc)
 #endif
 cKAL
