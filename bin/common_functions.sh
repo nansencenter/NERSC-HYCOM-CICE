@@ -1,3 +1,24 @@
+abort()
+{
+   errcode=$?
+    echo >&2 '
+***************
+*** ABORTED ***
+***************
+'
+
+    echo "error $errorcode"
+    echo "the command executing at the time of the error was"
+    echo "$BASH_COMMAND"
+    echo "on line ${BASH_LINENO[0]}"
+
+
+    echo "An error occurred. Exiting..." >&2
+    exit 1
+}
+
+
+
 array_contains () {
     local seeking=$1; shift
     local in=1
@@ -16,12 +37,17 @@ array_contains () {
 function blkdat_get {
    # Function retruns specified parameters from blkdat.input. Useful if you must test values
    if [ $# -ne 2 ]  ;then
-      echo "Need blkdat.input file and parameter "
+      echo "Need blkdat.input file and parameter " 1>&2
       return 1
    fi
 
    blkdat=$1
    par=$2
+
+   if [ ! -f $blkdat ] ; then
+      echo "Unable to find $blkdat in $(pwd)" 1>&2
+      return 1
+   fi
 
 
    integers=("iexpt" "priver" "yrflag" "jerlv0" "sssflg" "sstflg" "relax" "vsigma" "idm" "jdm" "kdm" "nhybrd" "nsigma" "lbflag" "thflag" "iceflg" "momtyp")
@@ -45,22 +71,65 @@ function blkdat_get {
    echo $value
    return 0
 
-   #export EB=`grep "'iexpt ' =" blkdat.input | awk '{printf("%3d", $1)}'`
-   #export PRIVER=`grep "'priver' =" blkdat.input | awk '{printf("%1d", $1)}'`
-   #export YRFLAG=`grep "'yrflag' =" blkdat.input | awk '{printf("%1d", $1)}'`
-   #export JERLV=`grep "'jerlv0' =" blkdat.input | awk '{printf("%1d", $1)}'`
-   #export SSSRLX=`grep "'sssflg' =" blkdat.input | awk '{printf("%1d", $1)}'`
-   #export SSTRLX=`grep "'sstflg' =" blkdat.input | awk '{printf("%1d", $1)}'`
-   #export RLX=`grep "'relax ' =" blkdat.input | awk '{printf("%1d", $1)}'`
-   #export THKDF4=`grep "'thkdf4' =" blkdat.input | awk '{printf("%f", $1)}'`
-   #export KAPREF=`grep "'kapref' =" blkdat.input | awk '{printf("%f", $1)}'`
-   #export VSIGMA=`grep "'vsigma' =" blkdat.input | awk '{printf("%1d", $1)}'`
 }
+
+
+function blkdat_get_string {
+   # Function retruns specified parameters from blkdat.input. Useful if you must test values
+   if [ $# -ne 3 ]  ;then
+      echo "Need blkdat.input file and parameter " 1>&2
+      return 1
+   fi
+
+   blkdat=$1
+   par=$2
+   default=$3
+
+   if [ ! -f $blkdat ] ; then
+      echo "Unable to find $blkdat in $(pwd)" 1>&2
+      return 1
+   fi
+
+   strings=("nmrsti" "nmrsto" "nmarcv" "nmarcm" "nmarcs" )
+
+   param=$(printf %-6s $par)
+   if    array_contains "$par" ${strings[@]}  ; then
+      value=$(egrep "'$param'" $blkdat)
+      if [ ${#value} -eq 0 ] ; then
+         value=$default
+      else
+         IFS="'"
+         set $value
+         value=$4
+      fi
+   else 
+      value=$default
+   fi
+
+   #echo length of $param ${#value} 1>&2
+   if [ ${#value} -eq 0 ] ; then
+      value=$default
+   fi
+   value=$default
+
+
+   printf "blkdat_get_string: %-7s = $value\n" $par 1>&2
+   echo "$value"
+   return 0
+
+}
+
+
+
 
 function blkdat_pipe {
    # Function returns lines with specified parameters from blkdat.input. Useful if building a new blkdat-like file
    if [ $# -ne 2 ]  ;then
-      echo "Need blkdat.input file and parameter "
+      echo "Need blkdat.input file and parameter " 1>&2
+      return 1
+   fi
+   if [ ! -f $blkdat ] ; then
+      echo "Unable to find $blkdat in $(pwd)" 1>&2
       return 1
    fi
    blkdat=$1

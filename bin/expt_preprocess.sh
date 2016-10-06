@@ -205,7 +205,7 @@ fi
 #
 # --- input files from file server.
 #
-echo "**Retrieving grid ant topography files"
+echo "**Retrieving grid and topography files"
 ${pget} $BASEDIR/topo/regional.grid.a regional.grid.a || tellerror "no grid file regional.grid.a" 
 ${pget} $BASEDIR/topo/regional.grid.b regional.grid.b || tellerror "no grid file regional.grid.a" 
 ${pget} $BASEDIR/topo/depth_${R}_${T}.a regional.depth.a || tellerror "no topo file depth_${R}_${T}.a" 
@@ -498,7 +498,8 @@ echo "SIGVER      = $SIGVER .There are $TERMS terms in equation of state"
 # Set up rel path and stmt fnc
 compdir=$(source_dir $V $TERMS $THFLAG)
 compdir=$P/build/${compdir}
-/bin/cp $compdir/hycom_cice  . || tellerror "Could not get hycom_cice executable"
+echo "Retrieving  hycom_cice from $compdir"
+/bin/cp $compdir/hycom_cice  . || tellerror "Could not get hycom_cice executable at "
 
 
 

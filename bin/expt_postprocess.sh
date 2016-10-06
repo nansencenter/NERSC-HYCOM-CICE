@@ -1,6 +1,8 @@
 #!/bin/bash
 #######################################################################
 # Start post-processing
+set -e
+trap 'abort' ERR
 
 # Must be in expt dir to run this script
 if [ -f EXPT.src ] ; then
@@ -19,6 +21,8 @@ fi
 # experiment dir for this to work
 source ../REGION.src  || { echo "Could not source ../REGION.src "; exit 1; }
 source ./EXPT.src  || { echo "Could not source EXPT.src "; exit 1; }
+source $BINDIR/common_functions.sh  || { echo "Could not source common_functions.sh "; exit 1; }
+
 
 [ ! -d $D ] && mkdir $D
 [ ! -d $D/cice ] && mkdir $D/cice
@@ -29,33 +33,44 @@ cd       $S || { cd $P ; echo "BADRUN" > log/hycom.stop ;  exit 1 ;}
 touch   PIPE_DEBUG
 /bin/rm PIPE_DEBUG
 
+# Get names of archive files, restart files, etc
+restarto=$(blkdat_get_string blkdat.input nmrsto 'restart_out')
+nmarcv=$(blkdat_get_string blkdat.input nmarcv "archv.")
+nmarcs=$(blkdat_get_string blkdat.input nmarcv "archs.")
+nmarcm=$(blkdat_get_string blkdat.input nmarcv "archm.")
 
 
-#
 # Move restart and daily files to data location $D
 #Delete link first to avoid recursive links
-#for i in ???restart*
-#do
-#  if [ -L "${i}" ]
-#    then
-#       rm $i
-#  fi
-#done
-#
-#mv ???restart* ???DAILY* ???AVE* ???archv.* ???GP[0-9][0-9][0-9][0-9]_[0-9][0-9]/  $D
+for i in $(ls -- ${restarto}*.[ab]) 
+do
+  if [ -L "${i}" ]
+    then
+       rm $i
+    else 
+       mv $i $D
+  fi
+done
 
-mv arch* $D/
-mv cice/* $D/cice/
-cp summary_out $D/
+# Move archive files
+for i in $(ls ${nmarcv}*.[ab] ${nmarcs}*.[ab] ${nmarcm}*.[ab]) 
+do
+   echo "Moving $i to  $D"
+   mv $i $D
+done
+
+# Move cice archive files 
+for i in $(ls -- cice/)  ; do
+   echo $i
+   mv cice/$i $D/cice/
+done
+[ -f summary.out ] && cp summary_out $D/
 
 
 # Copy some files useful for analysis
-cp regional.grid.* regional.depth.* blkdat.input ice_in cice_*.nc $D
-
-## Move the nesting output files to the data directory.
-#mv nest_out_* $D
-
-
+for i in $(ls regional.grid.* regional.depth.* blkdat.input ice_in cice_*.nc) ; do
+   cp $i $D
+done
 
 #
 # --- HYCOM error stop is implied by the absence of a normal stop.
