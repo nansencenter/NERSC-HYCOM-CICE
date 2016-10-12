@@ -34,10 +34,15 @@ touch   PIPE_DEBUG
 /bin/rm PIPE_DEBUG
 
 # Get names of archive files, restart files, etc
-restarto=$(blkdat_get_string blkdat.input nmrsto 'restart_out')
+restarto=$(blkdat_get_string blkdat.input nmrsto "restart_out")
+restarto=$(blkdat_get_string blkdat.input nmrsti "restart_in")
 nmarcv=$(blkdat_get_string blkdat.input nmarcv "archv.")
 nmarcs=$(blkdat_get_string blkdat.input nmarcv "archs.")
 nmarcm=$(blkdat_get_string blkdat.input nmarcv "archm.")
+#echo $restarto
+#echo $restarti
+#echo "test"
+#exit 1
 
 
 # Move restart and daily files to data location $D

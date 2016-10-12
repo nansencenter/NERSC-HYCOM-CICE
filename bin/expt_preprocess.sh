@@ -27,6 +27,44 @@ fi
 echo "Start time is $starttime"
 echo "Stop  time is $endtime"
 
+# Parse starttime and endtime
+if [[ $starttime =~  ([0-9]{4})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2}) ]] ; then
+   start_year=${BASH_REMATCH[1]}
+   echo ${start_year}
+   start_month=${BASH_REMATCH[2]}
+   start_day=${BASH_REMATCH[3]}
+   start_hour=${BASH_REMATCH[4]}
+   start_min=${BASH_REMATCH[5]}
+   start_sec=${BASH_REMATCH[6]}
+   start_hsec=$(echo ${start_min}\*60+${start_sec} | bc )
+   start_hsec=$(echo 000${start_hsec} | tail -c5)
+   start_dsec=$(echo ${start_hour}\*3600+${start_hsec} | bc )
+   start_dsec=$(echo 0000${start_dsec} | tail -c6)
+   start_oday=$(date -u -d "${start_year}-${start_month}-${start_day} 00:00:00 UTC" +%j)
+else 
+   tellerror "start time not in righ format" ; exit 1
+fi
+if [[ $endtime =~  ([0-9]){4}-([0-9]){2}-([0-9]){2}T([0-9]){2}:([0-9]){2}:([0-9]){2} ]] ; then
+   end_year=${BASH_REMATCH[1]}
+   end_month=${BASH_REMATCH[2]}
+   end_day=${BASH_REMATCH[3]}
+   end_hour=${BASH_REMATCH[4]}
+   end_min=${BASH_REMATCH[5]}
+   end_sec=${BASH_REMATCH[6]}
+   end_hsec=$(echo ${end_min}\*60+${end_sec} | bc )
+   end_hsec=$(echo 0000${end_hsec} | tail -c5)
+   end_dsec=$(echo ${end_hour}\*3600+${end_hsec} | bc )
+   end_dsec=$(echo 0000${end_dsec} | tail -c6)
+   end_oday=$(date -u -d "$end_year-$end_month-$end_day 00:00:00 UTC" +%j)
+else 
+   tellerror "end time not in righ format" ; exit 1
+fi
+#echo hsec $start_hsec $end_hsec
+#echo $starttime
+#echo dsec $start_dsec $end_dsec
+#echo oday $start_oday $end_oday
+#exit
+
 # Init error counter (global var used by function tellerror)
 numerr=0
 
@@ -38,6 +76,7 @@ if [ ! -d $S ] ; then
    mkdir -p $S   || { echo "Could not create data dir : $S " ; exit 1 ; }
 fi
 cd       $S || { tellerror "no scratch dir $S" ;  exit 1 ;}
+
 
 
 # --- fetch some things from blkdat.input 
@@ -64,9 +103,35 @@ export ICEFLG=$(blkdat_get blkdat.input iceflg)
 export MOMTYP=$(blkdat_get blkdat.input momtyp)
 export VISCO2=$(blkdat_get blkdat.input visco2)
 export VELDF2=$(blkdat_get blkdat.input veldf2)
+restarti=$(blkdat_get_string blkdat.input nmrsti "restart_in")
+
+# Add period to restart file name if not present...
+if [ $restarti != "restart_in" -a ${restarti: -1} != "."  ] ;then
+   restarti="${restarti}."
+fi
+
+
+#
+# --- Set up time limits
+#
+cmd="$BASEDIR/../python/hycom_limits.py $starttime $endtime $initstr"
+echo "*Setting up HYCOM time limits : $cmd "
+eval $cmd ||  tellerror "$cmd failed"
+if [ $ICEFLG -eq 2 ] ; then
+   cmd="$BASEDIR/../python/cice_limits.py $initstr $starttime $endtime $NMPI $P/ice_in"
+   echo "*Setting up CICE  time limits : $cmd "
+   eval $cmd ||  tellerror "$cmd failed"
+fi
 
 # --- fetch some things from the ice model
-export icedt=`egrep "^[ ,]*dt[ ]*=" ../ice_in | sed "s/.*=//" | sed "s/,.*//"`
+if [ $ICEFLG -eq 2 ] ; then
+   #export icedt=`egrep "^[ ,]*dt[ ]*=" ../ice_in | sed "s/.*=//" | sed "s/,.*//"`
+   export icedt=$($HYCOM_PYTHON_ROUTINES/namelist_extract.py ice_in setup_nml dt)
+   export ice_restart_dir=$($HYCOM_PYTHON_ROUTINES/namelist_extract.py ice_in setup_nml restart_dir)
+   export ice_restart_file=$($HYCOM_PYTHON_ROUTINES/namelist_extract.py ice_in setup_nml restart_file)
+   export ice_restart_pointer_file=$($HYCOM_PYTHON_ROUTINES/namelist_extract.py ice_in setup_nml pointer_file)
+fi
+
 
 # --- check that iexpt from blkdat.input agrees with E from this script.
 [ "$EB" == "$E" ] || tellerror " blkdat.input iexpt ${EB} different from this experiment ${E} set in EXPT.src"
@@ -103,7 +168,7 @@ fi
 
 
 # Cehck coupling time step
-if [ $ICEFLG -gt 0 ] ; then
+if [ $ICEFLG -eq 2 ] ; then
    # Check that icedt = cplifq*baclin
    test1=$(echo ${CPLIFQ}'<'0.0 | bc -l)
 
@@ -141,16 +206,6 @@ if [ $MOMTYP -eq 4 ] ; then
 fi
 
 
-#
-# --- Set up time limits
-#
-cmd="$BASEDIR/../python/hycom_limits.py $starttime $endtime $initstr"
-echo "*Setting up HYCOM time limits : $cmd "
-eval $cmd ||  tellerror "$cmd failed"
-cmd="$BASEDIR/../python/cice_limits.py $initstr $starttime $endtime $NMPI $P/ice_in"
-echo "*Setting up CICE  time limits : $cmd "
-eval $cmd ||  tellerror "$cmd failed"
-
 
 touch ports.input tracer.input
 rm    ports.input tracer.input
@@ -158,7 +213,7 @@ rm    ports.input tracer.input
 
 
 # Get init flag from start time
-if [ $initstr == "--init" ] ;then
+if [ "$initstr" == "--init" ] ;then
    init=1
 else 
    init=0
@@ -431,43 +486,45 @@ for f  in restart* ; do
 done
 
 #
-# --- try to get restart input from various areas
+# --- try to get HYCOM restart from various areas
 #
 if [ $init -eq 1 ] ; then
    echo "No restart needed"
 else
-   filename=restart${refyear}_${iday}_${ihour}
 
-   # Special case if CURVIINT flag set
-   if [ -f $P/CURVIINT ] ; then
-      if [ -f $BASEDIR/curviint/$E/${filename}.a -a $BASEDIR/curviint/$E/${filename}.b ] ; then
-         echo "using CURVIINT restart files"
-         for i in $BASEDIR/curviint/$E/${filename}* ; do
-            echo "Using restart file $i"
-            nname=$(basename $i)
-            cp $i $nname
-         done
-         rm $P/CURVIINT
-      else
-         tellerror "CURVIINT set but could not find CURVIINT restart file ${filename}.[ab]"
-      fi
+   #HYCOM restart
+   filename=${restarti}${start_year}_${start_oday}_${start_hour}_${start_hsec}
 
    # Try to fetch restart from data dir $D
-   elif [ -f $D/${filename}.a -o -f $D/${filename}_mem001.a ] ; then
-      echo "using restart files ${filename}.[ab] from data dir $D"
-      ln -sf $D/${filename}* .
-
+   if [ -f $D/${filename}.a -a -f $D/${filename}.b ] ; then
+      echo "using HYCOM restart files ${filename}.[ab] from data dir $D"
+      cp $D/${filename}.a .
+      cp $D/${filename}.b .
    else
-      tellerror "Could not find restart file ${filename}.[ab] (for init make sur yrflag < 3)"
+      tellerror "Could not find HYCOM restart file ${filename}.[ab] in $D"
    fi
+
+   #CICE restart
+   if [ $ICEFLG -eq 2 ] ; then
+      filenameice="${ice_restart_dir}/${ice_restart_file}.${start_year}-${start_month}-${start_day}-${start_dsec}.nc"
+
+      # Try to fetch restart from data dir $D
+      if [ -f $D/${filenameice} ] ; then
+         echo "using CICE restart file ${filenameice} from data dir $D"
+         cp $D/${filenameice} ${filenameice}
+         echo $filenameice > ${ice_restart_pointer_file}
+      else
+         tellerror "Could not find CICE restart file ${filenameice} in $D"
+      fi
+   fi
+
 
 fi
 
 
 
-
 #
-# --- model executable. One executable to rule them all!
+# --- model executable. One executable to rule them all (if it wasnt for CICE, that is...)
 #
 if [ $SIGVER -eq 1 ] ; then
    TERMS=7

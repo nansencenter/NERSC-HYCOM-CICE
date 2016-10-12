@@ -95,22 +95,28 @@ function blkdat_get_string {
    param=$(printf %-6s $par)
    if    array_contains "$par" ${strings[@]}  ; then
       value=$(egrep "'$param'" $blkdat)
+      #echo "test of $param ${value}" 1>&2
+
       if [ ${#value} -eq 0 ] ; then
          value=$default
       else
+         #echo "test2 of $param ${#value}" 1>&2
          IFS="'"
          set $value
          value=$4
+         #echo "test3 of $param $value" 1>&2
+         #echo "test4 of $param $4" 1>&2
       fi
    else 
       value=$default
    fi
+   #echo "test5 of $param $value" 1>&2
 
    #echo length of $param ${#value} 1>&2
    if [ ${#value} -eq 0 ] ; then
       value=$default
    fi
-   value=$default
+   #echo "test6 of $param $value" 1>&2
 
 
    printf "blkdat_get_string: %-7s = $value\n" $par 1>&2
