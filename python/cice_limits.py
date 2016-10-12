@@ -12,11 +12,12 @@ def main(start_time,end_time,init,nmpi,fnml) :
    #fnml = "ice_in"
    nml  = f90nml.read(fnml)
    dt   = nml["setup_nml"]["dt"]
+   year_init   = nml["setup_nml"]["year_init"]
 
    # Integration time, initial year
    tint      = end_time - start_time
    tint_secs = tint.days*86400. + tint.seconds
-   year_init = start_time.year
+   #year_init = start_time.year
    #year_init = 1958
    npt=int(numpy.floor(tint_secs/dt))+1
    
@@ -26,11 +27,11 @@ def main(start_time,end_time,init,nmpi,fnml) :
    istep0=int(numpy.floor(sec0/dt))-1
 
    if istep0 < 0 :
-      year_init=year_init-1
-      sec0=start_time - datetime.datetime(year_init,1,1,0,0,0)
-      sec0=sec0.days*86400. + sec0.seconds
-      istep0=int(numpy.floor(sec0/dt))-1
-      #raise NameError,"negative istep0, adjust year_init"
+      #year_init=year_init-1
+      #sec0=start_time - datetime.datetime(year_init,1,1,0,0,0)
+      #sec0=sec0.days*86400. + sec0.seconds
+      #istep0=int(numpy.floor(sec0/dt))-1
+      raise NameError,"negative istep0, adjust year_init"
 
 
    nml["setup_nml"]["year_init"] = year_init

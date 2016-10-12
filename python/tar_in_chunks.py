@@ -50,12 +50,21 @@ class TarChunk(object) :
    def add_file(self,infile,file_size) :
       #logger.info("%s - Size %14.2f%s. Adding %s"%(tf.name,float(current_size)/unitfac,unit,infile))
       logger.info("%s - Size %14.2f%s. Adding %s"%(os.path.basename(self._tf.name),float(self._current_size)/self._unitfac,self._unit,infile))
-      self._tf.add(infile,recursive=False)
+      if os.path.isdir(infile) :
+         #self._tf.add(infile,recursive=True)
+         pass
+      elif os.path.islink(infile) :
+         logger.warning("%s - Size %14.2f%s. Not adding %s"%(os.path.basename(self._tf.name),float(self._current_size)/self._unitfac,self._unit,infile))
+      elif os.path.isfile(infile) :
+         self._tf.add(infile,recursive=False)
 
-      ## md5 sum of file
-      mymd5sum = hashlib.md5(open(infile, 'rb').read()).hexdigest()
-      self._md5f.write("%s  %s\n"%(infile, mymd5sum))
-      self._current_size=self._current_size+file_size
+         ## md5 sum of file
+         mymd5sum = hashlib.md5(open(infile, 'rb').read()).hexdigest()
+         #self._md5f.write("%s  %s\n"%(infile, mymd5sum))
+         self._md5f.write("%s  %s\n"%(mymd5sum, infile))
+         self._current_size=self._current_size+file_size
+      else :
+         logger.warning("%s - Size %14.2f%s. Not adding %s"%(os.path.basename(self._tf.name),float(self._current_size)/self._unitfac,self._unit,infile))
 
 
    def next_chunk(self) :
@@ -73,7 +82,7 @@ class TarChunk(object) :
       self._md5f=open(fname+".md5","w")
       self._current_size=0
 
-   def close() : 
+   def close(self) : 
       self._tf.close()
       self._tf=None
       self._md5f=None
@@ -85,42 +94,6 @@ class TarChunk(object) :
    @property
    def current_size(self) : return self._current_size
 
-
-         
-
-
-#def new_chunk(chunk_counter,prefix) :
-#
-#   # Dont overwrite local files
-#   fname = "%s-%05d.tar"%(prefix,chunk_counter)
-#   while os.path.exists(fname) :
-#      fname = "%s-%05d.tar"%(prefix,chunk_counter)
-#      chunk_counter=chunk_counter+1
-#   
-#   # Open file and set info
-#   tf=tarfile.TarFile("%s-%05d.tar"%(prefix,chunk_counter),"w")
-#   chunk_counter = chunk_counter + 1
-#   current_size=0
-#   return tf,chunk_counter,current_size
-#
-#def add_file(tf,infile,current_size,file_size,unitfac,unit) :
-#   #logger.info("%s - Size %14.2f%s. Adding %s"%(tf.name,float(current_size)/unitfac,unit,infile))
-#   logger.info("%s - Size %14.2f%s. Adding %s"%(os.path.basename(tf.name),float(current_size)/unitfac,unit,infile))
-#   tf.add(infile,recursive=False)
-#   current_size=current_size+file_size
-#   return current_size
-#
-## Not 100% bomb-proof, but should normally be good enough. The worst that can happen
-## is that we avoid compressing a file by mistake.
-#def file_is_gzip(fname) :
-#   try :
-#      tst=open(fname).read(_max_len)
-#      if tst.startswith(_magic_dict["gz"]) :
-#         return True
-#      else :
-#         return False
-#   except :
-#      return False
 
 
 def get_chunk_size(chunk_size) :
@@ -161,13 +134,32 @@ def main(files,prefix="ARCHIVE",compression="",chunk_size=None) :
 
 
    unitfac,unit,chunk_size=get_chunk_size(chunk_size)
-   logger.info("Chunk_size=%d"%chunk_size)
+   if chunk_size : logger.info("Chunk_size=%d"%chunk_size)
 
    tc = TarChunk(prefix,chunk_size,unitfac,unit)
    tc.next_chunk()
 
-
+   # Create list of files recursively. If this becomes slow use generators
+   allfiles=[]
    for file in files :
+      if os.path.isdir(file) :
+         for a,b,c in os.walk(file) :
+            for wfile in c :
+               tmp = os.path.join(a,wfile)
+               if not os.path.islink(tmp) :
+                  allfiles.append(os.path.join(a,wfile))
+      elif os.path.islink(file) :
+         # Dont follow links
+         pass
+      elif os.path.isfile(file) :
+         allfiles.append(file)
+      else :
+         msg="Dont know how to handle file %s"%file
+         logger.error(msg)
+         raise ValueError,msg
+
+
+   for file in allfiles :
 
       # Do compression on file-by-file basis. This makes it faster to retrieve/list
       # individual files from a large archive than if the whole tar file is compressed...
@@ -184,11 +176,6 @@ def main(files,prefix="ARCHIVE",compression="",chunk_size=None) :
                shutil.copyfileobj(f_in, f_out)
       else :
          raise NotImplementedError,""
-
-      ## md5 sum of file
-      #mymd5sum = hashlib.md5(open(infile, 'rb').read()).hexdigest()
-      #logger.info("MD5 sum of %s:%s"%(infile,mymd5sum))
-      #md5sums.append(mymd5)
 
       # Get size of next file to be archived
       file_size = os.stat(infile).st_size
@@ -210,7 +197,6 @@ def main(files,prefix="ARCHIVE",compression="",chunk_size=None) :
             tc.add_file(infile,file_size)
             tc.next_chunk()
 
-
    # Close last file. TODO: Make sure its not empty
    tc.close()
 
@@ -221,7 +207,7 @@ if __name__ == "__main__"  :
 
    parser = argparse.ArgumentParser(description='')
    parser.add_argument('--chunk_size',        type=str,default=None)
-   parser.add_argument('--prefix',      action="store_true", default="ARCHIVE")
+   parser.add_argument('--prefix',      type=str, default="ARCHIVE")
    parser.add_argument('--compression', type=str, default="")
    parser.add_argument('filename',   help="",nargs="+")
    args = parser.parse_args()
