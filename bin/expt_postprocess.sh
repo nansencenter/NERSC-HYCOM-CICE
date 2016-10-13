@@ -35,7 +35,7 @@ touch   PIPE_DEBUG
 
 # Get names of archive files, restart files, etc
 restarto=$(blkdat_get_string blkdat.input nmrsto "restart_out")
-restarto=$(blkdat_get_string blkdat.input nmrsti "restart_in")
+restarti=$(blkdat_get_string blkdat.input nmrsti "restart_in")
 nmarcv=$(blkdat_get_string blkdat.input nmarcv "archv.")
 nmarcs=$(blkdat_get_string blkdat.input nmarcv "archs.")
 nmarcm=$(blkdat_get_string blkdat.input nmarcv "archm.")
