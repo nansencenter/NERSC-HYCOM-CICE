@@ -562,9 +562,10 @@ implicit none
    character(ESMF_MAXSTR)     :: msg
    type(ESMF_Calendar)     :: e_calendar
    type(ESMF_TimeInterval)     :: timeStep, runDuration
-   type(ESMF_Time)     :: startTime, stopTime, refTime
+   type(ESMF_Time)     :: startTime, stopTime, refTime, tmpTime
    integer :: start_year, start_month, start_mday, start_sec
    integer :: stop_year, stop_month, stop_mday, stop_sec
+   integer :: tmp_year, tmp_month, tmp_mday, tmp_sec
    real*8  :: tmp1,tmp2
    integer :: allocstat 
 
@@ -830,10 +831,17 @@ implicit none
       rcToReturn=rc2))                                      & 
       call ESMF_Finalize(rc=rc)
 
+   ! Set timeStep (thermo)
+   call ESMF_TimeIntervalSet(timeStep,s_r8=dt)
+   if (ESMF_LogFoundError(rc, msg="cice_setup_Esmf: unable to set ESMF timeStep", rcToReturn=rc2)) &
+      call ESMF_Finalize(rc=rc)
+
    ! Set CICE internal time state to match that of extClock for initialization
    if (localPet==0) then 
-      print *,"cice_setup_esmf: CICE time:",nyr,year_init+nyr-1,month,mday,sec
-      print *,"cice_setup_esmf: Ext time :",start_year,start_month,start_mday,start_sec
+      print '(a,5i6)',"cice_setup_esmf: CICE time[ice_in]:",nyr,year_init+nyr-1,month,mday,sec
+      print '(a,5i6)',"cice_setup_esmf: Ext time         :",start_year,start_month,start_mday,start_sec
+      !print '(a,5i6)',"cice_setup_esmf: Time             :",start_year,start_month,start_mday,start_sec
+      !print *,"time ",time
    end if
    if (runtype=='initial') then 
       call time2sec(start_year, start_month, start_mday,time)
@@ -843,20 +851,33 @@ implicit none
    !KALelseif (runtype=='restart') then 
    elseif (runtype=='continue') then 
       if (use_restart_time) then
-         !TODO:  Need to check that clock and restart time info actually match(!)
-         if (start_year <> nyr + year_init -1 .or.  start_month <> month .or. start_mday <> mday .or.  sec <> start_sec) then
+         !Need to check that clock and restart time info actually match.
+         !Note that at this time, the model has jumped one time step in the init routine ..
+         tmpTime = startTime + timeStep
+         call ESMF_TimeGet(tmpTime,yy=tmp_year,mm=tmp_month, dd=tmp_mday,s=tmp_sec,rc=rc)
+         if (localPet == 0 ) &
+            print '(a,5i6)',"cice_setup_esmf: Ext  time + dt   :",tmp_year,tmp_month,tmp_mday,tmp_sec
+         if (tmp_year <> year_init+nyr-1 .or.  tmp_month <> month .or. tmp_mday <> mday .or.  sec <> tmp_sec) then
             tmp1=start_year*10000+start_mday*100+start_mday + start_sec/86400.
             tmp2=(nyr+year_init-1)*10000+month*100+mday + sec/86400.
             write(msg,"('cice_setup_esmf: Time from restart do not match external clock',2f14.4)") tmp1,tmp2
             if (my_task==master_task) print *,msg
             call ESMF_LogWrite(msg, ESMF_LOGMSG_ERROR, rc=rc)
             call ESMF_Finalize(rc=rc)
+         else 
+            !KAL - yes, reset back to startTime
+            call time2sec(start_year, start_month, start_mday,time)
+            time = time + start_sec
+            time = time - basis_seconds
+            call calendar(time)
          end if
       else 
-         call time2sec(start_year, start_month, start_mday,time)
-         time = time + start_sec
-         time = time - basis_seconds
-         call calendar(time)
+         if (localPet == 0 ) &
+            print '(a,5i6)',"cice_setup_esmf: Using cice time  :",nyr,year_init+nyr-1,month,mday,sec
+         !call time2sec(start_year, start_month, start_mday,time)
+         !time = time + start_sec
+         !time = time - basis_seconds
+         !call calendar(time)
       end if
       write(msg,"('Not checking init clocks on restartfor runtype =',a)") runtype
       call ESMF_LogWrite(msg, ESMF_LOGMSG_INFO, rc=rc)
@@ -866,11 +887,6 @@ implicit none
       call ESMF_LogWrite(msg, ESMF_LOGMSG_ERROR, rc=rc)
       call ESMF_Finalize(rc=rc)
    end if
-
-   ! Set timeStep (thermo)
-   call ESMF_TimeIntervalSet(timeStep,s_r8=dt)
-   if (ESMF_LogFoundError(rc, msg="cice_setup_Esmf: unable to set ESMF timeStep", rcToReturn=rc2)) &
-      call ESMF_Finalize(rc=rc)
 
    ! Apply settings to clock
    call ESMF_ClockSet(extClock,name="CICE Clock", timeStep=timeStep, rc=rc)
@@ -1027,10 +1043,10 @@ implicit none
    !---------------------------------------------------------------------
    !-- Add some relevant metadata to gridComp
    !---------------------------------------------------------------------
-   call ESMF_AttributeSet(gridComp, name="ktherm",value=ktherm, rc=rc)
-   if (ESMF_LogFoundError(rc, msg="cice_setup_esmf: attributeset ktherm", rcToReturn=rc2)) call ESMF_Finalize(rc=rc)
+   call ESMF_AttributeSet(gridComp, name="CICE_ktherm",value=ktherm, rc=rc)
+   if (ESMF_LogFoundError(rc, msg="cice_setup_esmf: attributeset CICE_ktherm", rcToReturn=rc2)) call ESMF_Finalize(rc=rc)
    
-   call ESMF_AttributeSet(gridComp, name="tfrz_option",value=tfrz_option, rc=rc)
+   call ESMF_AttributeSet(gridComp, name="CICE_tfrz_option",value=tfrz_option, rc=rc)
    if (ESMF_LogFoundError(rc, msg="cice_setup_esmf: attributeset tfrz_option", rcToReturn=rc2)) call ESMF_Finalize(rc=rc)
 
 
