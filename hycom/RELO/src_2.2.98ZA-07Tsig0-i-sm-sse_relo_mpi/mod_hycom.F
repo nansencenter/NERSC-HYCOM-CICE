@@ -189,6 +189,12 @@ c
      &,      ocn_mask   !Ocean Currents Mask
       logical, save ::
      &       ocn_mask_init
+      integer, save ::
+     &       CICE_ktherm
+      character(ESMF_MAXSTR), save ::
+     &       CICE_tfrz_option
+      integer, save ::
+     &       tfrz_opt = 0
 #endif
 
       contains
@@ -206,6 +212,14 @@ c
      &     HYCOM_Init,
      &     phase=1,
      &     rc=rc)
+cKAL  NEW
+      call ESMF_GridCompSetEntryPoint(
+     &     gridComp,
+     &     ESMF_METHOD_INITIALIZE,
+     &     HYCOM_Init_2,
+     &     phase=2,
+     &     rc=rc)
+cKAL  NEW
       call ESMF_GridCompSetEntryPoint(
      &     gridComp,
      &     ESMF_METHOD_RUN,
@@ -266,10 +280,10 @@ c
 c
 c --- Report
 #if (USE_ESMF_5)
-      call ESMF_LogWrite("HYCOM Setup routine called",
+      call ESMF_LogWrite("HYCOM Setup_ESMF routine called",
      &     ESMF_LOGMSG_INFO, rc=rc)
 #else
-      call ESMF_LogWrite("HYCOM Setup routine called",
+      call ESMF_LogWrite("HYCOM Setup_ESMF routine called",
      &     ESMF_LOG_INFO, rc=rc)
 #endif
       call ESMF_LogFlush(rc=rc)
@@ -519,11 +533,11 @@ c Now create a 2D grid
      &                       rc=rc)
 #if (USE_ESMF_5)
       if (ESMF_LogFoundError(rc,
-     &   msg="GridCreate failed",rcToReturn=rc2))
+     &   msg="Setup_ESMF: GridCreate failed",rcToReturn=rc2))
      &   call ESMF_Finalize(rc=rc)
 #else
       if (ESMF_LogMsgFoundError(rc,
-     &   "GridCreate failed",rcToReturn=rc2))
+     &   "Setup_ESMF: GridCreate failed",rcToReturn=rc2))
      &   call ESMF_Finalize(rc=rc)
 #endif
 c
@@ -533,11 +547,11 @@ c Add Grid Coordinates
      &                       rc=rc)
 #if (USE_ESMF_5)
       if (ESMF_LogFoundError(rc,
-     &   msg="GridAddCoord failed",rcToReturn=rc2))
+     &   msg="Setup_ESMF: GridAddCoord failed",rcToReturn=rc2))
      &   call ESMF_Finalize(rc=rc)
 #else
       if (ESMF_LogMsgFoundError(rc,
-     &   "GridAddCoord failed",rcToReturn=rc2))
+     &   "Setup_ESMF: GridAddCoord failed",rcToReturn=rc2))
      &   call ESMF_Finalize(rc=rc)
 #endif
        call ESMF_GridGetCoord(grid=grid2D,
@@ -554,9 +568,9 @@ c Add Grid Coordinates
      &                        rc=rc)
       if (ESMF_LogFoundError(rc,
 #if (USE_ESMF_5)
-     &   msg="GridGetCoord-1 failed",rcToReturn=rc2))
+     &   msg="Setup_ESMF: GridGetCoord-1 failed",rcToReturn=rc2))
 #else
-     &   "GridGetCoord-1 failed",rcToReturn=rc2))
+     &   "Setup_ESMF: GridGetCoord-1 failed",rcToReturn=rc2))
 #endif
      &   call ESMF_Finalize(rc=rc)
 #if defined(ARCTIC)
@@ -584,11 +598,11 @@ c --- Arctic (tripole) domain, top row is replicated (ignore it)
      &                       rc=rc)
 #if (USE_ESMF_5)
       if (ESMF_LogFoundError(rc,
-     &   msg="GridGetCoord-2 failed",rcToReturn=rc2))
+     &   msg="Setup_ESMF: GridGetCoord-2 failed",rcToReturn=rc2))
      &   call ESMF_Finalize(rc=rc)
 #else
       if (ESMF_LogMsgFoundError(rc,
-     &   "GridGetCoord-2 failed",rcToReturn=rc2))
+     &   "Setup_ESMF: GridGetCoord-2 failed",rcToReturn=rc2))
      &   call ESMF_Finalize(rc=rc)
 #endif
       do j= 1,jja
@@ -609,11 +623,11 @@ c --- Arctic (tripole) domain, top row is replicated (ignore it)
 #endif
 #if (USE_ESMF_5)
       if (ESMF_LogFoundError(rc,
-     &   msg="GridAddItem failed",rcToReturn=rc2))
+     &   msg="Setup_ESMF: GridAddItem failed",rcToReturn=rc2))
      &   call ESMF_Finalize(rc=rc)
 #else
       if (ESMF_LogMsgFoundError(rc,
-     &   "GridAddItem failed",rcToReturn=rc2))
+     &   "Setup_ESMF: GridAddItem failed",rcToReturn=rc2))
      &   call ESMF_Finalize(rc=rc)
 #endif
 #if (USE_ESMF_5)
@@ -633,11 +647,11 @@ c --- Arctic (tripole) domain, top row is replicated (ignore it)
 #endif
 #if (USE_ESMF_5)
       if (ESMF_LogFoundError(rc,
-     &   msg="GridGetItem failed",rcToReturn=rc2))
+     &   msg="Setup_ESMF: GridGetItem failed",rcToReturn=rc2))
      &   call ESMF_Finalize(rc=rc)
 #else
       if (ESMF_LogMsgFoundError(rc,
-     &   "GridGetItem failed",rcToReturn=rc2))
+     &   "Setup_ESMF: GridGetItem failed",rcToReturn=rc2))
      &   call ESMF_Finalize(rc=rc)
 #endif
       mask_ptr(:,:) = 0  !all land, outside active tile
@@ -763,6 +777,7 @@ c
       real :: w_s, t_x, t_y, t_dir, wndx, wndy,airt
       real :: ss_tltx, ss_tlty, vpmx, radfl, qswdwn
       real :: flagtemp, prcp, pair
+      real :: t2f1, t2f2, tfrz1, tfrz2
       real, parameter ::  tzero=273.16       !celsius to kelvin offset
       real, parameter ::  rgas=287.1d0       !gas constant (j/kg/k)
 !KAL
@@ -771,10 +786,10 @@ c
 c
 c --- Report
 #if (USE_ESMF_5)
-      call ESMF_LogWrite("HYCOM Export routine called",
+      call ESMF_LogWrite("HYCOM Export_ESMF called",
      &     ESMF_LOGMSG_INFO, rc=rc)
 #else
-      call ESMF_LogWrite("HYCOM Export routine called",
+      call ESMF_LogWrite("HYCOM Export_ESMF called",
      &     ESMF_LOG_INFO, rc=rc)
 #endif
       call ESMF_LogFlush(rc=rc)
@@ -818,21 +833,61 @@ c
       do j= 1,jja
         do i= 1,ii
           if     (ishlf(i,j).eq.1) then
-c ---       quantities for available freeze/melt heat flux
-c ---       relax to tfrz with e-folding time of icefrq time steps
-c ---       assuming the effective surface layer thickness is hfrz
-c ---       multiply by dpbl(i,j)/hfrz to get the actual e-folding time
+Cc ---       quantities for available freeze/melt heat flux
+Cc ---       relax to tfrz with e-folding time of icefrq time steps
+Cc ---       assuming the effective surface layer thickness is hfrz
+Cc ---       multiply by dpbl(i,j)/hfrz to get the actual e-folding time
+C            hfrz = min( thkfrz*onem, dpbl(i,j) )
+C            t2f  = (spcifh*hfrz)/(baclin*icefrq*g)
+Cc
+Cc ---       average both available time steps, to avoid time splitting.
+C            smxl = 0.5*(saln(i,j,1,n)+saln(i,j,1,m))
+C            tmxl = 0.5*(temp(i,j,1,n)+temp(i,j,1,m))
+C            !tfrz = tfrz_0 + smxl*tfrz_s  !salinity dependent freezing point
+C            !tfrz = smxl / (-18.48 + ((18.48/1000.) * smxl))  ! CICE mushy
+C            tfrz=CICE_tf(smxl,tfrz_opt)
+C            ssfi = (tfrz-tmxl)*t2f       !W/m^2 into ocean
+Cc
+c --------- KAL - new for smxl, tmxl, ssfi. Integrate through water column down to 
+c --------- thkfrz (set in blkdat.inut). Tfreeze is now calc for each layer
+            psur1=0.
+            psur2=0.
+            ssfi=0.
+            smxl=0.
+            tmxl=0.
             hfrz = min( thkfrz*onem, dpbl(i,j) )
-            t2f  = (spcifh*hfrz)/(baclin*icefrq*g)
-c ---       average both available time steps, to avoid time splitting.
-            smxl = 0.5*(saln(i,j,1,n)+saln(i,j,1,m))
-            tmxl = 0.5*(temp(i,j,1,n)+temp(i,j,1,m))
-            tfrz = tfrz_0 + smxl*tfrz_s  !salinity dependent freezing point
-            !tfrz = smxl / (-18.48 + ((18.48/1000.) * smxl))  ! CICE mushy
-            ssfi = (tfrz-tmxl)*t2f       !W/m^2 into ocean
-!KAL - flux limting moved here
+            do k= 1,kk
+              dp1   = min( dp(i,j,k,n), max( 0.0, hfrz-psur1 ) )
+              dp2   = min( dp(i,j,k,m), max( 0.0, hfrz-psur2 ) )
+c 
+              t2f1  = (spcifh*dp1)/(baclin*icefrq*g)
+              t2f2  = (spcifh*dp2)/(baclin*icefrq*g)
+c 
+              tfrz1 = CICE_tf(saln(i,j,k,n),tfrz_opt)
+              tfrz2 = CICE_tf(saln(i,j,k,m),tfrz_opt)
+c 
+c ----------- Integrated freezing potential
+              ssfi =  ssfi + (tfrz1-temp(i,j,k,n))*t2f1 
+     &                     + (tfrz2-temp(i,j,k,m))*t2f2
+c 
+c ----------- Averaged salinity and temperature
+              smxl = smxl + dp1*saln(i,j,k,n) + dp2*saln(i,j,k,m)
+              tmxl = tmxl + dp1*temp(i,j,k,n) + dp2*temp(i,j,k,m)
+              psur1 = psur1 + dp1
+              psur2 = psur2 + dp2
+              if     (min(psur1,psur2).ge.hfrz) then
+                exit
+              endif
+            end do
+            smxl = smxl / max(psur1+psur2,onemm)
+            tmxl = tmxl / max(psur1+psur2,onemm)
+            ssfi = ssfi*.5
+c
+c --------- KAL - flux limting moved here
             ssfi = max(-1000.0,min(1000.0,ssfi))  !as in CICE
-c ---       average currents over top thkcdw meters
+c
+c --------- TODO: Average to p-cell center, but use dp correctly...
+c --------- average currents over top thkcdw meters
             thksur = onem*min( thkcdw, depths(i,j) ) 
             usur1  = 0.0
             vsur1  = 0.0
@@ -1073,10 +1128,10 @@ c
 c
 c --- Report
 #if (USE_ESMF_5)
-      call ESMF_LogWrite("HYCOM Import routine called",
+      call ESMF_LogWrite("HYCOM Import_ESMF called",
      &     ESMF_LOGMSG_INFO, rc=rc)
 #else
-      call ESMF_LogWrite("HYCOM Import routine called",
+      call ESMF_LogWrite("HYCOM Import_ESMF called",
      &     ESMF_LOG_INFO, rc=rc)
 #endif
       call ESMF_LogFlush(rc=rc)
@@ -1244,35 +1299,37 @@ c
 c
 c --- Report
 #if (USE_ESMF_5)
-      call ESMF_LogWrite("HYCOM Archive routine called",
+      call ESMF_LogWrite("HYCOM Archive_ESMF called",
      &     ESMF_LOGMSG_INFO, rc=rc)
 #else
-      call ESMF_LogWrite("HYCOM Archive routine called",
+      call ESMF_LogWrite("HYCOM Archive_ESMF called",
      &     ESMF_LOG_INFO, rc=rc)
 #endif
       call ESMF_LogFlush(rc=rc)
 c
-CKAL  write(cfile,'(a,i4.4,a1,i3.3,a1,i2.2)')
-CKAL &   'arche.',iyear,'_',jday,'_',ihour
-CKAL  mysec =int(mod( (dtime-floor(dtime))*86400.d0,3600.d0))
-      mysec=mod(nstep,nint(86400.d0/baclin)) ! Time steps starting from midnight
-      mysec=nint(mod(mysec*baclin,3600.d0))  ! Seconds into this hour
-      write(cfile,'(a,i4.4,a1,i3.3,a1,i2.2,a1,i4.4)')
-     &   'arche.',iyear,'_',jday,'_',ihour,'_',mysec
+      write(cfile,'(a,i4.4,a1,i3.3,a1,i2.2)')
+     &   'arche.',iyear,'_',jday,'_',ihour
+CKAL  Debugging
+CKAL  mysec=mod(nstep,nint(86400.d0/baclin)) ! Time steps starting from midnight
+CKAL  mysec=nint(mod(mysec*baclin,3600.d0))  ! Seconds into this hour
+CKAL  write(cfile,'(a,i4.4,a1,i3.3,a1,i2.2,a1,i4.4)')
+CKAL &   'arche.',iyear,'_',jday,'_',ihour,'_',mysec
       nopa=13
       nop =13+uoff
 c
 c --- Only write out one archive per hour
 c
       inquire(file=trim(cfile)//'.a',exist=lexist)
-      if     (lexist) then
+CKAL  Further limits on writes
+CKAL  if     (lexist) then
+      if     (lexist .or. mod(ihour,6) /= 0) then
 c
 c ---   Report
 #if (USE_ESMF_5)
-        call ESMF_LogWrite("HYCOM Archive routine returned early",
+        call ESMF_LogWrite("HYCOM Archive_ESMF returned early",
      &       ESMF_LOGMSG_INFO, rc=rc)
 #else
-        call ESMF_LogWrite("HYCOM Archive routine returned early",
+        call ESMF_LogWrite("HYCOM Archive_ESMF returned early",
      &       ESMF_LOG_INFO, rc=rc)
 #endif
         call ESMF_LogFlush(rc=rc)
@@ -1481,14 +1538,14 @@ c
       endif !NaN
 c
 c ---   Report
-#if (USE_ESMF_5)
-        call ESMF_LogWrite("HYCOM Archive routine returned",
-     &       ESMF_LOGMSG_INFO, rc=rc)
-#else
-        call ESMF_LogWrite("HYCOM Archive routine returned",
-     &       ESMF_LOG_INFO, rc=rc)
-#endif
-        call ESMF_LogFlush(rc=rc)
+C#if (USE_ESMF_5)
+C        call ESMF_LogWrite("HYCOM Archive routine returned",
+C     &       ESMF_LOGMSG_INFO, rc=rc)
+C#else
+C        call ESMF_LogWrite("HYCOM Archive routine returned",
+C     &       ESMF_LOG_INFO, rc=rc)
+C#endif
+C        call ESMF_LogFlush(rc=rc)
 c
       end subroutine Archive_ESMF
 #endif /* USE_ESMF */
@@ -2086,7 +2143,7 @@ c ---   start from restart file
 c
 cKAL    flnmra = trim(flnmrsi)//'.a'
 cKAL    flnmrb = trim(flnmrsi)//'.b'
-        flnmra = restart_name(dtime0,yrflag,"in")
+        flnmra = restart_name(day1,yrflag,"in")
         flnmrb = trim(flnmra)//".b"
         flnmra = trim(flnmra)//".a"
         call restart_in(nstep0,dtime0, flnmra,flnmrb)
@@ -2554,17 +2611,18 @@ c
       m=mod(nstep0  ,2)+1
       n=mod(nstep0+1,2)+1
       call momtum_hs(n,m)
-      call Export_ESMF
+cKAL  Moved to phase 2 init
+cKAL  call Export_ESMF
 c
 c --- Report
-#if (USE_ESMF_5)
-      call ESMF_LogWrite("HYCOM initialize routine returned",
-     &     ESMF_LOGMSG_INFO, rc=rc)
-#else
-      call ESMF_LogWrite("HYCOM initialize routine returned",
-     &     ESMF_LOG_INFO, rc=rc)
-#endif
-      call ESMF_LogFlush(rc=rc)
+C#if (USE_ESMF_5)
+C      call ESMF_LogWrite("HYCOM initialize routine returned",
+C     &     ESMF_LOGMSG_INFO, rc=rc)
+C#else
+C      call ESMF_LogWrite("HYCOM initialize routine returned",
+C     &     ESMF_LOG_INFO, rc=rc)
+C#endif
+C      call ESMF_LogFlush(rc=rc)
 #else
 c
 c --- Only here for compatibility with coupled runs.
@@ -2585,6 +2643,119 @@ cKAL
 #endif
 cKAL
       end subroutine HYCOM_Init
+
+cKAL  Phase 2 init. Very simple for now
+      subroutine HYCOM_Init_2
+#if defined(USE_ESMF)
+     &           (gridComp, impState, expState, extClock, rc)
+c
+c --- Calling parameters
+      type(ESMF_GridComp)  :: gridComp
+      type(ESMF_State)     :: impState
+      type(ESMF_State)     :: expState
+      type(ESMF_Clock)     :: extClock
+      integer, intent(out) :: rc
+      character(len=ESMF_MAXSTR) msg
+      integer rc2
+#endif
+c
+c
+c --- Report
+#if defined(USE_ESMF)
+#if (USE_ESMF_5)
+      call ESMF_LogWrite("HYCOM initialize routine 2 called",
+     &     ESMF_LOGMSG_INFO, rc=rc)
+#else
+      call ESMF_LogWrite("HYCOM initialize routine 2 called",
+     &     ESMF_LOG_INFO, rc=rc)
+#endif
+      call ESMF_LogFlush(rc=rc)
+#endif
+c
+c --- Set what freezing point parameterization to use 
+#if defined(USE_ESMF)
+      call ESMF_AttributeGet(gridComp,
+     &   name="CICE_ktherm",value=CICE_ktherm,
+     &    rc=rc)
+#if (USE_ESMF_5)
+      if (ESMF_LogFoundError(rc,
+     &   msg="hycom_init_2: attributeget CICE_ktherm", rcToReturn=rc2))
+     &   call ESMF_Finalize(rc=rc)
+#else
+      if (ESMF_LogMsgFoundError(rc,
+     &   "hycom_init_2: attributeget CICE_ktherm", rcToReturn=rc2))
+     &   call ESMF_Finalize(rc=rc)
+#endif
+c --- Set what freezing point parameterization to use 
+      call ESMF_AttributeGet(gridComp,
+     &   name="CICE_tfrz_option",value=CICE_tfrz_option,
+     &    rc=rc)
+#if (USE_ESMF_5)
+      if (ESMF_LogFoundError(rc,
+     &   msg="hycom_init_2: attributeget CICE_tfrz_option", 
+     &   rcToReturn=rc2))
+     &   call ESMF_Finalize(rc=rc)
+#else
+      if (ESMF_LogMsgFoundError(rc,
+     &   "hycom_init_2: attributeget CICE_tfrz_option", rcToReturn=rc2))
+     &   call ESMF_Finalize(rc=rc)
+#endif
+
+      write(msg,'(a,i5,a)') "hycom_init_2: CICE_ktherm=",CICE_ktherm,
+     &   " CICE_tfrz_option="//trim(CICE_tfrz_option)
+#if (USE_ESMF_5)
+      call ESMF_LogWrite(trim(msg),ESMF_LOGMSG_INFO, rc=rc)
+#else
+      call ESMF_LogWrite(trim(msg),ESMF_LOG_INFO, rc=rc)
+#endif
+      call ESMF_LogFlush(rc=rc)
+
+c --- 
+      if (trim(CICE_tfrz_option)=="linear_salt") then
+         tfrz_opt = 1
+      elseif (trim(CICE_tfrz_option)=="mushy_layer" .or. 
+     &        trim(CICE_tfrz_option)=="mushy") then
+         tfrz_opt = 2
+      elseif (trim(CICE_tfrz_option)=="minus1p8") then
+         tfrz_opt = 3
+      else 
+#if (USE_ESMF_5)
+         call ESMF_LogWrite(
+     &       "hycom_init_2: Unknown CICE tfrz_option:"//
+     &        trim(CICE_tfrz_option),
+     &        ESMF_LOGMSG_ERROR, rc=rc)
+#else
+         call ESMF_LogWrite(
+     &       "hycom_init_2: Unknown CICE tfrz_option:"//
+     &        trim(CICE_tfrz_option),
+     &        ESMF_LOG_ERROR, rc=rc)
+#endif
+         call ESMF_LogFlush(rc=rc)
+         call ESMF_Finalize(rc=rc)
+      end if
+c --- Moved from phase 1 init
+      call Export_ESMF
+#endif
+      end subroutine HYCOM_Init_2
+
+c --- KAL: From CICE 
+      real*8 function CICE_tf(s,opt) 
+      implicit none
+      real*8, intent(in) :: s
+      integer,intent(in) :: opt
+      if (tfrz_opt == 1) then
+         CICE_tf = -0.054 * s
+      elseif (tfrz_opt==2) then
+         CICE_tf =  s / (-18.48d0 + ((18.48d0/1000.d0) * s))
+      elseif (tfrz_opt==3) then
+         CICE_tf = -1.8d0
+      else
+         !TODO: Not very elegant
+         stop '(mod_hycom CICE_tf: illegal value)'
+      endif
+      end function
+
+
 
       subroutine HYCOM_Run
 #if defined(USE_ESMF)
@@ -4402,7 +4573,7 @@ cKAL  Set calendar and reference time. Ref time from forday
          call ESMF_TimeSet(refTime,
      &      calendar=calendar,yy=1901,mm=1,dd=1,h=0,rc=rc)
       else
-         write(msg,'("Unknown year flag:",i4,a)') 
+         write(msg,'("Setup_esmf_kal: Unknown year flag:",i4,a)') 
      &   yrflag," (hycom_cice requires yrflag=3)"
 #if (USE_ESMF_5)
          call ESMF_LogWrite(msg, ESMF_LOGMSG_ERROR, rc=rc)
@@ -4413,11 +4584,12 @@ cKAL  Set calendar and reference time. Ref time from forday
       end if
 #if (USE_ESMF_5)
       if (ESMF_LogFoundError(rc,
-     &   msg="hycom_init: unable to create calender", rcToReturn=rc2))
+     &   msg="setup_esmf_kal: unable to create calender", 
+     &   rcToReturn=rc2))
      &   call ESMF_Finalize(rc=rc)
 #else
       if (ESMF_LogMsgFoundError(rc,
-     &   "hycom_init: unable to create calendar", rcToReturn=rc2))
+     &   "setup_esmf_kal: unable to create calendar", rcToReturn=rc2))
      &   call ESMF_Finalize(rc=rc)
 #endif
       call ESMF_TimeGet(refTime,timestring=msg)
@@ -4436,11 +4608,11 @@ cKAL  Set starttime
       startTime=refTime+tmpDt
 #if (USE_ESMF_5)
       if (ESMF_LogFoundError(rc,
-     &   msg="hycom_init: unable to set startTime", rcToReturn=rc2))
+     &   msg="setup_esmf_kal: unable to set startTime", rcToReturn=rc2))
      &   call ESMF_Finalize(rc=rc)
 #else
       if (ESMF_LogMsgFoundError(rc,
-     &   "hycom_init: unable to set startTime", rcToReturn=rc2))
+     &   "setup_esmf_kal: unable to set startTime", rcToReturn=rc2))
      &   call ESMF_Finalize(rc=rc)
 #endif
       call ESMF_TimeGet(startTime,timestring=msg)
@@ -4457,11 +4629,11 @@ cKAL  Set stoptime reftime is day 1, actually... 1901-01-01 Starts from 1
       endTime=refTime+tmpDt
 #if (USE_ESMF_5)
       if (ESMF_LogFoundError(rc,
-     &   msg="hycom_init: unable to set endTime", rcToReturn=rc2))
+     &   msg="setup_esmf_kal: unable to set endTime", rcToReturn=rc2))
      &   call ESMF_Finalize(rc=rc)
 #else
       if (ESMF_LogMsgFoundError(rc,
-     &   "hycom_init: unable to set endTime", rcToReturn=rc2))
+     &   "setup_esmf_kal: unable to set endTime", rcToReturn=rc2))
      &   call ESMF_Finalize(rc=rc)
 #endif
       call ESMF_TimeGet(endTime,timestring=msg)
@@ -4477,11 +4649,13 @@ cKAL  Set TimeInterval
       call ESMF_TimeIntervalSet(timeStep,s_r8=baclin)
 #if (USE_ESMF_5)
       if (ESMF_LogFoundError(rc,
-     &   msg="hycom_init: unable to set ESMF timeStep", rcToReturn=rc2))
+     &   msg="setup_esmf_kal: unable to set ESMF timeStep", 
+     &   rcToReturn=rc2))
      &   call ESMF_Finalize(rc=rc)
 #else
       if (ESMF_LogMsgFoundError(rc,
-     &   "hycom_init: unable to set ESMF timeStep", rcToReturn=rc2))
+     &   "setup_esmf_kal: unable to set ESMF timeStep",
+     &   rcToReturn=rc2))
      &   call ESMF_Finalize(rc=rc)
 #endif
 c
@@ -4494,11 +4668,11 @@ CKAL  Apply settings to clock
      &   rc=rc)
 #if (USE_ESMF_5)
       if (ESMF_LogFoundError(rc,
-     &   msg="hycom_init: unable to set extClock", rcToReturn=rc2))
+     &   msg="setup_esmf_kal: unable to set extClock", rcToReturn=rc2))
      &   call ESMF_Finalize(rc=rc)
 #else
       if (ESMF_LogMsgFoundError(rc,
-     &   "hycom_init: unable to set extClock", rcToReturn=rc2))
+     &   "setup_esmf_kal: unable to set extClock", rcToReturn=rc2))
      &   call ESMF_Finalize(rc=rc)
 #endif
 
@@ -4510,11 +4684,11 @@ cKAL Add nts_ice to gridComp as attribute nts_ice
      &      rc=rc)
 #if (USE_ESMF_5)
       if (ESMF_LogFoundError(rc,
-     &   msg="Setup_ESMF: attributeset nts_ice", rcToReturn=rc2))
+     &   msg="setup_esmf_kal: attributeset nts_ice", rcToReturn=rc2))
      &   call ESMF_Finalize(rc=rc)
 #else
       if (ESMF_LogMsgFoundError(rc,
-     &   "Setup_ESMF: attributeset nts_ice", rcToReturn=rc2))
+     &   "setup_esmf_kal: attributeset nts_ice", rcToReturn=rc2))
      &   call ESMF_Finalize(rc=rc)
 #endif
       end subroutine setup_esmf_kal
