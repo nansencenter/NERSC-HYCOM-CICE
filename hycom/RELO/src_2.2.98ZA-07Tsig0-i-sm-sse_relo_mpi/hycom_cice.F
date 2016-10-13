@@ -95,6 +95,8 @@ c --- KAL - Moved from module acces to state access
 !KAL  real    :: iceTimeStep_sr8
 !KAL  real    :: ocnTimeStep_sr8
       character(len=256) :: msg
+      integer :: ICE_ktherm
+      character(len=256) :: ICE_tfrz_option
 
 !KAL  integer,dimension(2) :: ocnLBound,ocnUBound
 !KAL  integer,dimension(2) :: iceLBound,iceUBound
@@ -457,6 +459,76 @@ c --- Initialize SEAICE gridded component
 
       if (.not.check_gridcomp_grids(ocngridcomp,icegridcomp,
      &   localPet,petCount)) goto 10
+c
+c --- Ice gridcomp carries information about thermodynamic model used.
+c --- Copy to ocean grid comp to make freezing point temp calculations
+#if (USE_ESMF_5)
+      call ESMF_AttributeGet(iceGridComp, name="CICE_ktherm",
+     &   value=ICE_ktherm, rc=rc)
+      if (ESMF_LogFoundError(rc, 
+     &   msg="cice_setup_esmf: attributeget ktherm", rcToReturn=rc2)) 
+     &   call ESMF_Finalize(rc=rc)
+#else
+      stop '(hycom_cice: ESMF5 only)'
+#endif
+#if (USE_ESMF_5)
+      call ESMF_AttributeSet(ocnGridComp, name="CICE_ktherm",
+     &   value=ICE_ktherm, rc=rc)
+      if (ESMF_LogFoundError(rc, 
+     &   msg="cice_setup_esmf: attributeset ktherm", rcToReturn=rc2)) 
+     &   call ESMF_Finalize(rc=rc)
+#else
+      stop '(hycom_cice: ESMF5 only)'
+#endif
+#if (USE_ESMF_5)
+      call ESMF_AttributeGet(iceGridComp, name="CICE_tfrz_option",
+     &   value=ICE_tfrz_option, rc=rc)
+      if (ESMF_LogFoundError(rc, 
+     &   msg="cice_setup_esmf: attributeget tfrz_option", 
+     &   rcToReturn=rc2)) 
+     &   call ESMF_Finalize(rc=rc)
+#else
+      stop '(hycom_cice: ESMF5 only)'
+#endif
+#if (USE_ESMF_5)
+      call ESMF_AttributeSet(ocnGridComp, name="CICE_tfrz_option",
+     &   value=ICE_tfrz_option, rc=rc)
+      if (ESMF_LogFoundError(rc, 
+     &   msg="cice_setup_esmf: attributeset tfrz_option", 
+     &   rcToReturn=rc2)) 
+     &   call ESMF_Finalize(rc=rc)
+#else
+      stop '(hycom_cice: ESMF5 only)'
+#endif
+
+
+c --- Initialize OCEAN  gridded component. Phase 2 after getting info
+C --- from CICE component
+#if (USE_ESMF_5)
+      call ESMF_GridCompInitialize(ocnGridComp,
+     &                              importState=ocnImpState,
+     &                              exportState=ocnExpState,
+     &                                    phase=2,
+     &                                 syncflag=ESMF_SYNC_NONBLOCKING,
+     &                                    clock=ocnClock,
+     &                                       rc=rc)
+#else
+      call ESMF_GridCompInitialize(    gridComp=ocnGridComp,
+     &                              importState=ocnImpState,
+     &                              exportState=ocnExpState,
+     &                                    phase=2,
+     &                             blockingflag=ESMF_NONBLOCKING,
+     &                                    clock=ocnClock,
+     &                                       rc=rc)
+#endif
+#if (USE_ESMF_5)
+      if (ESMF_LogFoundError(rc,
+     &    msg="OCEAN Initialize phase 2 failed", rcToReturn=rc2))
+#else
+      if (ESMF_LogMsgFoundError(rc,
+     &    "OCEAN Initialize phase 2 failed", rcToReturn=rc2))
+#endif
+     &   goto 10
 
 
 
@@ -615,7 +687,7 @@ c---    end of coupling interval
 #endif
 c
 c
-c ---   SEAICE
+c ---   SEAICE. TODO: use icflg 
         do its= 1,ice_nts_cpl !couple period, SEAICE
           if     ( localPet.eq.0) then !master
             write(6,'(a,3i4)') 
