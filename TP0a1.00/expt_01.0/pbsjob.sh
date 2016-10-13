@@ -56,16 +56,18 @@ source ../REGION.src  || { echo "Could not source ../REGION.src "; exit 1; }
 source ./EXPT.src  || { echo "Could not source EXPT.src"; exit 1; }
 echo "NMPI =$NMPI (Number of MPI tasks needed for running job) "
 
-START="2013-01-02T00:00:00"
-END="2013-01-10T00:00:00"
+START="2000-10-27T00:00:00"
+END="2002-01-01T00:00:00"
+#INITFLG="--init"
+INITFLG=""
 echo "Start time in pbsjob.sh: $START"
 echo "End   time in pbsjob.sh: $END"
 
 # Generate atmospheric forcing :
-../../bin/atmo_synoptic.sh erai-lw $START $END 
+../../bin/atmo_synoptic.sh erai-nolw $START $END 
 
 # Transfer data files to scratch - must be in "expt_XXX" dir for this script
-../../bin/expt_preprocess.sh $START $END --init        ||  { echo "Preprocess had fatal errors "; exit 1; }
+../../bin/expt_preprocess.sh $START $END $INITFLG        ||  { echo "Preprocess had fatal errors "; exit 1; }
 
 # Enter Scratch/run dir and Run model
 cd $S  ||  { echo "Could not go to dir $S  "; exit 1; }
@@ -73,8 +75,7 @@ aprun -n $NMPI -m 100M ./hycom_cice  > ../log/hycom.${PBS_JOBID}.out 2>&1
 
 # Cleanup and move data files to data directory - must be in "expt_XXX" dir for this script
 cd $P     ||  { echo "Could not go to dir $P  "; exit 1; }
-../bin/postprocess_expt.sh 
-
+../../bin/expt_postprocess.sh 
 
 exit $?
 
