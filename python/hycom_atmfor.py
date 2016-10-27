@@ -99,6 +99,10 @@ def atmfor(start,end,af,grid_file="regional.grid",blkdat_file="blkdat.input",plo
    lwflag  = blkd["lwflag"]
 
    # Main loop 
+   always_calculate_interpolator = False
+   always_calculate_rotator = False
+   field_interpolator={}
+   vector_rotator={}
    ffiles={}
    dt = start
    while dt <= end :
@@ -117,7 +121,6 @@ def atmfor(start,end,af,grid_file="regional.grid",blkdat_file="blkdat.input",plo
            af.calculate_windspeed()
            af.calculate_ustar()
 
-
        #  Forcing used by old NERSC-HYCOM
        if nersc_forcing :
           if "relhum" not in af.known_names_explicit : af.calculate_relhum()
@@ -133,35 +136,40 @@ def atmfor(start,end,af,grid_file="regional.grid",blkdat_file="blkdat.input",plo
        # Open output files. Dict uses "known name" when mapping to file object
        # TODO: HYCOM-specific
        if dt == start :
-           for k,v in forcingpropertyset.items() :
-               if k in af.known_names :
-                  ffiles[k]=abfile.ABFileForcing(
-                        "forcing.%s"%v.name,"w",idm=Nx, jdm=Ny, 
-                        cline1=af.name,
-                        cline2="%s (%s)"%(v.name,v.cfunit))
-
+          # Open files
+          for k,v in forcingpropertyset.items() :
+              if k in af.known_names :
+                 ffiles[k]=abfile.ABFileForcing(
+                       "forcing.%s"%v.name,"w",idm=Nx, jdm=Ny, 
+                       cline1=af.name,
+                       cline2="%s (%s)"%(v.name,v.cfunit))
 
        # Interpolation of all fields and unit conversion
        newfld={}
        for kn in [elem for elem in af.known_names if elem in ffiles.keys()] :
 
-           # Coordinates
-           lo,la=af[kn].coords
-
-           # Read and convert field to units used by HYCOM
+          # Read and convert field to units used by HYCOM
           # TODO: HYCOM-specific
-           fld=af[kn].data_to_unit(forcingpropertyset[kn].cfunit)
+          fld=af[kn].data_to_unit(forcingpropertyset[kn].cfunit)
 
-           #TODO: : Possible to choose interpolation here
-           fi=modeltools.tools.FieldInterpolatorBilinear(lo,la,fld,mlon,mlat)
-           newfld[kn]=fi.interpolate(fld)
+          # Calculate fieldintepolator object
+          if kn not in field_interpolator.keys() or always_calculate_interpolator:
+             lo,la=af[kn].coords
+             field_interpolator[kn]=modeltools.tools.FieldInterpolatorBilinear(lo,la,mlon,mlat)
+
+          #Actual interpolation
+          newfld[kn]=field_interpolator[kn].interpolate(fld)
 
        # Do rotation of u and v components if this the first component of a vector field
        for kn in af.known_names :
            if kn in modeltools.forcing.atmosphere.known_vectors.keys() and kn in ffiles.keys() :
                knu,knv = modeltools.forcing.atmosphere.known_vectors[kn]
                logger.info("Rotating %s,%s "%(knu,knv))
-               ur,vr=modeltools.tools.rotate_vector(newfld[knu],newfld[knv],mlon,mlat)
+
+               # Calculate rotateVector object
+               if kn not in vector_rotator.keys() or always_calculate_rotator:
+                  vector_rotator[kn] = modeltools.tools.rotateVector(mlon,mlat)
+               ur,vr=vector_rotator[kn].rotate(newfld[knu],newfld[knv])
                newfld[knu]=ur
                newfld[knv]=vr
 

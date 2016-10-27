@@ -24,7 +24,7 @@ logger.propagate=False
 
 
 def main(myfiles,fieldname,fieldlevel,idm=None,jdm=None,clim=None,filetype="archive",window=None,
-      cmap="jet",datetime1=None,datetime2=None) :
+      cmap="jet",datetime1=None,datetime2=None,vector="") :
 
 
    #cmap=matplotlib.pyplot.get_cmap("jet")
@@ -39,6 +39,10 @@ def main(myfiles,fieldname,fieldlevel,idm=None,jdm=None,clim=None,filetype="arch
    #      resolution='i',projection='stere',\
    #      lat_ts=70,lat_0=90,lon_0=-40.)
    #x,y=bm(plon,plat)
+
+   if vector :
+      logger.info("Vector component 1:%s"%fieldname)
+      logger.info("Vector component 2:%s"%vector) 
 
    figure = matplotlib.pyplot.figure(figsize=(8,8))
    ax=figure.add_subplot(111)
@@ -64,23 +68,21 @@ def main(myfiles,fieldname,fieldlevel,idm=None,jdm=None,clim=None,filetype="arch
          n_intloop=1
       elif filetype == "forcing" :
          ab = abfile.ABFileForcing(myfile,"r",idm=idm,jdm=jdm)
+         if vector :
+            file2=myfile.replace(fieldname,vector)
+            logger.info("Opening file %s for vector component nr 2"%file2)
+            ab2=abfile.ABFileForcing(file2,"r",idm=idm,jdm=jdm)
+
          if datetime1 is None or datetime2 is None :
             raise NameError,"datetime1 and datetime2 must be specified when plotting forcing files"
          else :
-            print datetime1
             iday1,ihour1,isec1 = modeltools.hycom.datetime_to_ordinal(datetime1,3)
-            print iday1,ihour1,isec1
-            print datetime1.year
             rdtime1 = modeltools.hycom.dayfor(datetime1.year,iday1,ihour1,3)
             #
             iday2,ihour2,isec2 = modeltools.hycom.datetime_to_ordinal(datetime2,3)
             rdtime2 = modeltools.hycom.dayfor(datetime2.year,iday2,ihour2,3)
-            #
-            #print ab.field_times
-            #print rdtime1,rdtime2
             rdtimes=sorted([elem for elem in ab.field_times if elem >rdtime1 and elem < rdtime2])
             n_intloop=len(rdtimes)
-            #print n_intloop
 
       else :
          raise NotImplementedError,"Filetype %s not implemented"%filetype
@@ -97,25 +99,30 @@ def main(myfiles,fieldname,fieldlevel,idm=None,jdm=None,clim=None,filetype="arch
 
          # Read ab file of different types
          if filetype == "archive" :
-            fld = ab.read_field(fieldname,fieldlevel)
+            fld1 = ab.read_field(fieldname,fieldlevel)
+            if vector :fld2=ab.read_field(vector,fieldlevel)
          elif filetype == "regional.depth" :
-            fld = ab.read_field(fieldname)
+            fld1 = ab.read_field(fieldname)
          elif filetype == "forcing" :
-            fld = ab.read_field(fieldname,rdtimes[i_intloop])
+            fld1 = ab.read_field(fieldname,rdtimes[i_intloop])
+            if vector :fld2=ab2.read_field(vector,rdtimes[i_intloop])
             logger.info("Processing time %.2f"%rdtimes[i_intloop])
          else :
             raise NotImplementedError,"Filetype %s not implemented"%filetype
 
          if not window :
-            J,I=numpy.meshgrid(numpy.arange(fld.shape[0]),numpy.arange(fld.shape[1]))
+            J,I=numpy.meshgrid(numpy.arange(fld1.shape[0]),numpy.arange(fld1.shape[1]))
          else :
             J,I=numpy.meshgrid( numpy.arange(window[1],window[3]),numpy.arange(window[0],window[2]))
-
-
 
          # Create simple figure
          #figure = matplotlib.pyplot.figure(figsize=(8,8))
          #ax=figure.add_subplot(111)
+         if vector : 
+            fld = numpy.sqrt(fld1**2+fld2**2)
+         else :
+            fld=numpy.copy(fld1)
+
          if bm is not None :
             P=bm.pcolormesh(x[J,I],y[J,I],fld[J,I],cmap=cmap)
             bm.drawcoastlines()
@@ -129,6 +136,13 @@ def main(myfiles,fieldname,fieldlevel,idm=None,jdm=None,clim=None,filetype="arch
          cb=ax.figure.colorbar(P)
          if clim is not None : P.set_clim(clim)
          ax.set_title("%s:%s(%d)"%(myfile0,fieldname,fieldlevel))
+
+         if vector: 
+            skip=10
+            I2=I[::skip,::skip]
+            J2=J[::skip,::skip]
+            ax.quiver(I2,J2,fld1[J2,I2],fld2[J2,I2])
+
 
          # Print figure.
          figure.canvas.print_figure("tst%03d.png"%counter,dpi=180)
@@ -164,8 +178,9 @@ if __name__ == "__main__" :
    parser.add_argument('--window',     action=WindowParseAction, help='firsti,firstj,lasti,lastj', default=None)
    parser.add_argument('--idm',        type=int, help='Grid dimension 1st index []', default=None)
    parser.add_argument('--jdm',        type=int, help='Grid dimension 2nd index []', default=None)
-   parser.add_argument('--datetime1',      action=DateTimeParseAction)
-   parser.add_argument('--datetime2',      action=DateTimeParseAction)
+   parser.add_argument('--datetime1',  action=DateTimeParseAction)
+   parser.add_argument('--datetime2',  action=DateTimeParseAction)
+   parser.add_argument('--vector',     type=str,default="")
    parser.add_argument('fieldname',  type=str)
    parser.add_argument('fieldlevel', type=int)
    parser.add_argument('filename',   help="",nargs="+")
@@ -174,6 +189,7 @@ if __name__ == "__main__" :
    main(args.filename,args.fieldname,args.fieldlevel,
          idm=args.idm,jdm=args.jdm,clim=args.clim,filetype=args.filetype,
          window=args.window,cmap=args.cmap,
-         datetime1=args.datetime1,datetime2=args.datetime2)
+         datetime1=args.datetime1,datetime2=args.datetime2,
+         vector=args.vector)
 
 

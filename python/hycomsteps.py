@@ -38,12 +38,12 @@ def micomsteps(blkdatfile,baclin_lo,baclin_hi) :
    bcdiv2 = int(numpy.ceil(sd/baclin_hi))
    for i in range(bcdiv2,bcdiv1) :
       baclin = sd/float(i)
-      logger.info("Allowed baroclinic time step %14.3f (%8d / %3d)"%(baclin,sd,i))
+      logger.info("Allowed baroclinic time step %14.6f (%8d / %3d)"%(baclin,sd,i))
 
       # baclin_lo, baclin_hi not used
       for i in range(10,32,2) :
          batrop=baclin/float(i)
-         logger.info("--->Allowed barotropic time step %14.3f (%8d / %3d)"%(batrop,baclin,i))
+         logger.info("--->Allowed barotropic time step %14.6f (%8d / %3d)"%(batrop,baclin,i))
 
 
 if __name__ == "__main__" :
