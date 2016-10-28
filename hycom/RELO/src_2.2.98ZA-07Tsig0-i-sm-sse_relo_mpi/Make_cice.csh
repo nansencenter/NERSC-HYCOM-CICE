@@ -76,5 +76,8 @@ cd ${HYCOM_DIR}
 # --- force a relink, because CICE is not in the dependencies
 /bin/rm hycom_cice
 make ARCH=$ARCH TYPE=$TYPE hycom_cice
+
 # --- some machines require gmake
 #gmake ARCH=$ARCH TYPE=$TYPE hycom_cice
+
+exit $?

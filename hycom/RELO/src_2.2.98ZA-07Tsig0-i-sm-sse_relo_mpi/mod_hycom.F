@@ -833,6 +833,7 @@ c
       do j= 1,jja
         do i= 1,ii
           if     (ishlf(i,j).eq.1) then
+C TODO: Use time averages?
 Cc ---       quantities for available freeze/melt heat flux
 Cc ---       relax to tfrz with e-folding time of icefrq time steps
 Cc ---       assuming the effective surface layer thickness is hfrz
@@ -967,7 +968,8 @@ c ---       Read Air temp and vapor mixing ratio
             endif
             airt=airt + tzero               ! in Kelvin
             expData(8)%p(i+i0,j+j0) = airt
-c ---       Read wind speed
+c
+c ---       Read wind speed. Wind in P-cell center
             if (wndflg.eq.2.and. .not. stroff) then
                if     (natm.eq.2) then
                  w_s = wndspd(i,j,l0)*w0+wndspd(i,j,l1)*w1
@@ -1010,7 +1012,9 @@ c
             expData(10)%p(i+i0,j+j0) = wndy  ! vair
             expData(11)%p(i+i0,j+j0) = 10.0 ! zair
             expData(12)%p(i+i0,j+j0) = airt ! Actually pot air temp, but should be the same at zlvl
-c ---       Sea surface slope in x- and y- direction. Centered diff
+c
+c ---       Sea surface slope in x- and y- direction. Centered diff in
+c ---       p-cell center
             ss_tltx = (srfhgt(i+1,j)-srfhgt(i-1,j))*0.5*ssh2m/scpx(i,j)
             ss_tlty = (srfhgt(i,j+1)-srfhgt(i,j-1))*0.5*ssh2m/scpy(i,j)
             expData(13)%p(i+i0,j+j0) = ss_tltx
@@ -1279,6 +1283,8 @@ C     &     ESMF_LOG_INFO, rc=rc)
 C#endif
 C      call ESMF_LogFlush(rc=rc)
 c
+C --- KAL: NB: si_u and si_v are on p-grid and are used like this in mod_momtum
+C --- KAL: si_tx and si_ty are not presently used...
       end subroutine Import_ESMF
 
       subroutine Archive_ESMF(iyear,jday,ihour)
@@ -2824,27 +2830,6 @@ c
 !     stop if cpl has sent the stop signal
 !--------------------------------------------------------
       end_of_run = stop_now == 1
-#if defined(USE_ESMF)
-cKAL
-cKAL
-cKAL Add end_of_run to gridComp as attribute
-      call ESMF_AttributeSet(gridComp,
-     &   name="end_of_run",value=end_of_run,
-     &    rc=rc)
-#if (USE_ESMF_5)
-      if (ESMF_LogFoundError(rc,
-     &   msg="hycom_run: attributeset end_of_run", rcToReturn=rc2))
-     &   call ESMF_Finalize(rc=rc)
-#else
-      if (ESMF_LogMsgFoundError(rc,
-     &   "hycom_run: attributeset end_of_run", rcToReturn=rc2))
-     &   call ESMF_Finalize(rc=rc)
-#endif
-cKAL
-cKAL
-cKAL
-#endif
-
       if (end_of_run) then
 c ---   output float restart file 
         if     (synflt) then
@@ -4691,6 +4676,22 @@ cKAL Add nts_ice to gridComp as attribute nts_ice
      &   "setup_esmf_kal: attributeset nts_ice", rcToReturn=rc2))
      &   call ESMF_Finalize(rc=rc)
 #endif
+C
+c --- Add iceflg to gridComp as attribute iceflg
+      call ESMF_AttributeSet(gridComp, 
+     &      name="OCN_iceflg",
+     &      value=iceflg,
+     &      rc=rc)
+#if (USE_ESMF_5)
+      if (ESMF_LogFoundError(rc,
+     &   msg="setup_esmf_kal: attributeset OCN_iceflg", rcToReturn=rc2))
+     &   call ESMF_Finalize(rc=rc)
+#else
+      if (ESMF_LogMsgFoundError(rc,
+     &   "setup_esmf_kal: attributeset OCN_iceflg", rcToReturn=rc2))
+     &   call ESMF_Finalize(rc=rc)
+#endif
+
       end subroutine setup_esmf_kal
 
 
