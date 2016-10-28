@@ -54,6 +54,9 @@ IMPLICIT NONE
 
    ! Used to keep accumulated fluxes 
    real (kind=dbl_kind), dimension (nx_block,ny_block,max_blocks), private :: &
+      ave_sic          , &
+      ave_uvel         , &
+      ave_vvel         , & 
       accum_fresh_ai   , & ! fresh water flux to ocean (kg/m^2/s)
       accum_fsalt_ai   , & ! salt flux to ocean (kg/m^2/s)
       accum_fhocn_ai   , & ! net heat flux to ocean (W/m^2)
@@ -1060,13 +1063,21 @@ subroutine cice_put_export(export_state)
    use ice_flux,        only : fhocn_ai, fsalt_ai, fresh_ai, fswthru_ai
    use ice_state,       only : aice, vice, trcr,  uvel, vvel
    use ice_constants,   only : Tffresh
-
+   use ice_grid,        only : u2tgrid_vector
    implicit none
    type(ESMF_State)       :: export_state
    integer rc
    type(block)            :: this_block
    integer i, j, ifld, iblk, ilo, ihi, jlo, jhi, ig, jg
 
+   real (kind=dbl_kind), dimension(nx_block,ny_block,max_blocks) :: uwork,vwork
+
+   ! Transfer ice velocities to grid cell centers
+   ! TODO: Use averaged ice conc and velocity to hycom?
+   uwork=uvel
+   vwork=vvel
+   call u2tgrid_vector(uwork)
+   call u2tgrid_vector(vwork)
 
    call ESMF_LogWrite("CICE Put Export routine called", ESMF_LOGMSG_INFO, rc=rc)
    call ESMF_LogFlush(rc=rc)
@@ -1183,7 +1194,10 @@ subroutine cice_put_export(export_state)
             do i=ilo,ihi
                ig  = this_block%i_glob(i)
                jg  = this_block%j_glob(j)
-               expData(ifld,iblk)%p(ig,jg) = uvel(i,j,iblk) ! NB: CICE U-point
+               !expData(ifld,iblk)%p(ig,jg) = uvel(i,j,iblk) ! NB: CICE U-point
+               ! CICE P-point
+               expData(ifld,iblk)%p(ig,jg) = uwork(i,j,iblk)
+                 
             end do
             end do
          ! Sea ice V-velocity
@@ -1192,7 +1206,10 @@ subroutine cice_put_export(export_state)
             do i=ilo,ihi
                ig  = this_block%i_glob(i)
                jg  = this_block%j_glob(j)
-               expData(ifld,iblk)%p(ig,jg) = vvel(i,j,iblk) ! NB: CICE U-point
+               !expData(ifld,iblk)%p(ig,jg) = vvel(i,j,iblk) ! NB: CICE U-point
+               ! CICE P-point
+               expData(ifld,iblk)%p(ig,jg) = vwork(i,j,iblk)
+                 
             end do
             end do
          else 
@@ -1214,6 +1231,7 @@ subroutine cice_get_import(import_state)
                                uatm, vatm, Tair, zlvl, potT, &
                                ss_tltx, ss_tlty, Qa, flw, swvdr, &
                                fsnow, frain
+   use ice_grid,        only : t2ugrid_vector
    implicit none
    type(ESMF_State)       :: import_state
    type(block)            :: this_block
@@ -1251,6 +1269,7 @@ subroutine cice_get_import(import_state)
             do i=ilo,ihi
                ig  = this_block%i_glob(i)
                jg  = this_block%j_glob(j)
+               !NB: Must be in T/P-point
                uocn(i,j,iblk) = impData(ifld,iblk)%p(ig,jg)
             end do
             end do
@@ -1259,6 +1278,7 @@ subroutine cice_get_import(import_state)
             do i=ilo,ihi
                ig  = this_block%i_glob(i)
                jg  = this_block%j_glob(j)
+               !NB: Must be in T/P-point
                vocn(i,j,iblk) = impData(ifld,iblk)%p(ig,jg)
             end do
             end do
@@ -1291,6 +1311,7 @@ subroutine cice_get_import(import_state)
             do i=ilo,ihi
                ig  = this_block%i_glob(i)
                jg  = this_block%j_glob(j)
+               !NB: Must be in T/P-point
                uatm(i,j,iblk) = impData(ifld,iblk)%p(ig,jg)
             end do
             end do
@@ -1299,6 +1320,7 @@ subroutine cice_get_import(import_state)
             do i=ilo,ihi
                ig  = this_block%i_glob(i)
                jg  = this_block%j_glob(j)
+               !NB: Must be in T/P-point
                vatm(i,j,iblk) = impData(ifld,iblk)%p(ig,jg)
             end do
             end do
@@ -1331,6 +1353,7 @@ subroutine cice_get_import(import_state)
             do i=ilo,ihi
                ig  = this_block%i_glob(i)
                jg  = this_block%j_glob(j)
+               !NB: Must be in T/P-point
                ss_tltx(i,j,iblk) = impData(ifld,iblk)%p(ig,jg)
             end do
             end do
@@ -1339,6 +1362,7 @@ subroutine cice_get_import(import_state)
             do i=ilo,ihi
                ig  = this_block%i_glob(i)
                jg  = this_block%j_glob(j)
+               !NB: Must be in T/P-point
                ss_tlty(i,j,iblk) = impData(ifld,iblk)%p(ig,jg)
             end do
             end do
@@ -1395,6 +1419,13 @@ subroutine cice_get_import(import_state)
       end do
    end do
    !stop '(cice_get_import)'
+
+   ! Go from p-points to CICE u-point for tilt and ocean current components
+   call t2ugrid_vector(ss_tltx)
+   call t2ugrid_vector(ss_tlty)
+   call t2ugrid_vector(uocn)
+   call t2ugrid_vector(vocn)
+
 end subroutine cice_get_import
 
 
@@ -1562,6 +1593,9 @@ subroutine init_accumulated_fields()
    accum_fsalt_ai   = c0 ! salt flux to ocean (kg/m^2/s)
    accum_fhocn_ai   = c0 ! net heat flux to ocean (W/m^2)
    accum_fswthru_ai = c0 ! shortwave penetrating to ocean (W/m^2)
+   ave_sic          = c0
+   ave_uvel         = c0
+   ave_vvel         = c0
    accum_time=0.
 end subroutine
 
@@ -1585,6 +1619,9 @@ subroutine reset_accumulated_fields()
          accum_fsalt_ai  (i,j,iblk) = c0
          accum_fhocn_ai  (i,j,iblk) = c0
          accum_fswthru_ai(i,j,iblk) = c0
+         ave_sic         (i,j,iblk) = c0
+         ave_uvel        (i,j,iblk) = c0
+         ave_vvel        (i,j,iblk) = c0
       end do
       end do
    end do
@@ -1596,6 +1633,7 @@ subroutine update_accumulated_fields()
    use ice_domain,      only : nblocks, blocks_ice
    use ice_flux,        only : fresh_ai, fsalt_ai, fswthru_ai, fhocn_ai
    use ice_calendar,    only : dt
+   use ice_state,       only : aice, uvel, vvel
    implicit none
    type(block)            :: this_block
    character(len=100) :: msg
@@ -1608,10 +1646,15 @@ subroutine update_accumulated_fields()
       jhi = this_block%jhi
       do j=jlo,jhi
       do i=ilo,ihi
+         ! Flux
          accum_fresh_ai  (i,j,iblk) = accum_fresh_ai  (i,j,iblk) + fresh_ai(i,j,iblk)   * dt
          accum_fsalt_ai  (i,j,iblk) = accum_fsalt_ai  (i,j,iblk) + fsalt_ai(i,j,iblk)   * dt
          accum_fhocn_ai  (i,j,iblk) = accum_fhocn_ai  (i,j,iblk) + fhocn_ai(i,j,iblk)   * dt
          accum_fswthru_ai(i,j,iblk) = accum_fswthru_ai(i,j,iblk) + fswthru_ai(i,j,iblk) * dt
+         ! Average
+         ave_sic         (i,j,iblk) = ave_sic         (i,j,iblk) + aice      (i,j,iblk) * dt
+         ave_uvel        (i,j,iblk) = ave_uvel        (i,j,iblk) + uvel      (i,j,iblk) * dt
+         ave_vvel        (i,j,iblk) = ave_vvel        (i,j,iblk) + vvel      (i,j,iblk) * dt
       end do
       end do
    end do
@@ -1636,10 +1679,15 @@ subroutine average_accumulated_fields()
       jhi = this_block%jhi
       do j=jlo,jhi
       do i=ilo,ihi
+         ! Flux
          accum_fresh_ai  (i,j,iblk) = accum_fresh_ai  (i,j,iblk) * i_accum_time
          accum_fsalt_ai  (i,j,iblk) = accum_fsalt_ai  (i,j,iblk) * i_accum_time
          accum_fhocn_ai  (i,j,iblk) = accum_fhocn_ai  (i,j,iblk) * i_accum_time
          accum_fswthru_ai(i,j,iblk) = accum_fswthru_ai(i,j,iblk) * i_accum_time
+         ! Average
+         ave_sic         (i,j,iblk) = ave_sic         (i,j,iblk) * i_accum_time
+         ave_uvel        (i,j,iblk) = ave_uvel        (i,j,iblk) * i_accum_time
+         ave_vvel        (i,j,iblk) = ave_vvel        (i,j,iblk) * i_accum_time
       end do
       end do
    end do
