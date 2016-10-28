@@ -182,10 +182,10 @@ if [ $ICEFLG -eq 2 ] ; then
    echo "Coupling time step=$dtcpl"
 
    # Check ice model dt against $dtcpl. dtcpl must be a multiple of icedt
-   test2=$(echo "scale=0;"$icedt"%"$dtcpl | bc -l)
+   test2=$(echo "scale=0;"$dtcpl"%"$icedt | bc -l)
    test2=$(echo ${test2}'=='0.0 | bc -l)
    if [ $test2 -eq 0 ] ; then
-      tellerror "ice model time step $icedt not an integer multiple of coupling time step $dtcpl"
+      tellerror "coupling time step $dtcpl not an integer multiple of ice model time step $icedt"
    fi
 fi
 
@@ -622,19 +622,12 @@ fi
 
 
 if [ $numerr -eq 0 ] ; then
-   echo "No fatal errors."
-#   echo "$logfile"  
-#   echo "$logfile.err"
+   echo "No fatal errors. Ok to start model set up in $S"
 else
    echo "Some fatal errors occured. See above"
-#   echo "$logfile"  
-#   echo "$logfile.err"
-#   echo
-#   echo "Model now set up to run in $S"
 fi
 
 # Tell where stuff ended up
-
 exit $numerr # Fails if any fatal errors occured
 
 

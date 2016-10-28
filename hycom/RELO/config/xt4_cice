@@ -21,8 +21,10 @@ INCLUDES      = -I$(MPI_HOME)/include  -I${ESMF_DIR}/mod/modO/Unicos.pgi.64.mpi.
 #FCFFLAGS      =	-fastsse -tp barcelona-64 -byteswapio -r8 $(INCLUDES)
 #FCFFLAGS      =	-fastsse -byteswapio -r8 $(INCLUDES)
 #F90FLAGS      =	-fastsse -byteswapio -r8 $(INCLUDES)
-FCFFLAGS      =	-g -byteswapio -r8 $(INCLUDES)
-F90FLAGS      =	-g -byteswapio -r8 $(INCLUDES)
+#FCFFLAGS      =	-g -byteswapio -r8 $(INCLUDES)
+#F90FLAGS      =	-g -byteswapio -r8 $(INCLUDES)
+FCFFLAGS      =	-byteswapio -r8 $(INCLUDES)
+F90FLAGS      =	-byteswapio -r8 $(INCLUDES)
 
 CC            =	cc
 CCFLAGS       =	-O 

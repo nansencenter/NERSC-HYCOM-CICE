@@ -16,8 +16,8 @@ else
 endif
 FIXEDFLAGS := -Mfixed 
 FREEFLAGS  := -Mfree 
-#FFLAGS     := -r8 -i4 -O2 -byteswapio -Mnodclchk -Mextend 
-FFLAGS     := -r8 -i4 -g -byteswapio -Mnodclchk -Mextend 
+FFLAGS     := -r8 -i4 -O2 -byteswapio -Mnodclchk -Mextend 
+#FFLAGS     := -r8 -i4 -g -byteswapio -Mnodclchk -Mextend 
 
 ifeq ($(THRD), yes)
    FFLAGS  :=  $(FFLAGS) -openmp
