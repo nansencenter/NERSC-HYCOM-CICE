@@ -899,8 +899,10 @@ c --------- average currents over top thkcdw meters
             do k= 1,kk
               dp1   = min( dp(i,j,k,1), max( 0.0, thksur-psur1 ) )
 #if defined(STOKES)
-      usur1=usur1+dp1*(u(i,j,k,1)+u(i+1,j,k,1)+usd(i,j,k)+usd(i+1,j,k))
-      vsur1=vsur1+dp1*(v(i,j,k,1)+v(i,j+1,k,1)+vsd(i,j,k)+vsd(i,j+1,k))
+              usur1=usur1+dp1*(
+     &           u(i,j,k,1)+u(i+1,j,k,1)+usd(i,j,k)+usd(i+1,j,k))
+              vsur1=vsur1+dp1*(
+     &           v(i,j,k,1)+v(i,j+1,k,1)+vsd(i,j,k)+vsd(i,j+1,k))
 #else
               usur1 = usur1 + dp1*(u(i,j,k,1)+u(i+1,j,k,1))
               vsur1 = vsur1 + dp1*(v(i,j,k,1)+v(i,j+1,k,1))
@@ -908,8 +910,10 @@ c --------- average currents over top thkcdw meters
               psur1 = psur1 + dp1
               dp2   = min( dp(i,j,k,2), max( 0.0, thksur-psur2 ) )
 #if defined(STOKES)
-      usur2=usur2+dp2*(u(i,j,k,1)+u(i+1,j,k,2)+usd(i,j,k)+usd(i+1,j,k))
-      vsur2=vsur2+dp2*(v(i,j,k,1)+v(i,j+1,k,2)+vsd(i,j,k)+vsd(i,j+1,k))
+              usur2=usur2+dp2*(
+     &           u(i,j,k,1)+u(i+1,j,k,2)+usd(i,j,k)+usd(i+1,j,k))
+              vsur2=vsur2+dp2*(
+     &           v(i,j,k,1)+v(i,j+1,k,2)+vsd(i,j,k)+vsd(i,j+1,k))
 #else
               usur2 = usur2 + dp2*(u(i,j,k,2)+u(i+1,j,k,2))
               vsur2 = vsur2 + dp2*(v(i,j,k,2)+v(i,j+1,k,2))
@@ -920,14 +924,14 @@ c --------- average currents over top thkcdw meters
               endif
             enddo
 #if defined(STOKES)
-       umxl  = 0.25*( usur1/psur1+ubavg(i,j,1) + usdbavg(i,j) +
+            umxl  = 0.25*( usur1/psur1+ubavg(i,j,1) + usdbavg(i,j) +
      &                         ubavg(i+1,j,1)  + usdbavg(i+1,j) +
-     &       usur2/psur2 + ubavg(i,  j,2) + usdbavg(i,j) +
-     &                     ubavg(i+1,j,2) + usdbavg(i+1,j) )
-       vmxl  = 0.25*( vsur1/psur1+vbavg(i,j,1) + vsdbavg(i,j) +
+     &           usur2/psur2 + ubavg(i,  j,2) + usdbavg(i,j) +
+     &                         ubavg(i+1,j,2) + usdbavg(i+1,j) )
+            vmxl  = 0.25*( vsur1/psur1+vbavg(i,j,1) + vsdbavg(i,j) +
      &                         vbavg(i,j+1,1) +  vsdbavg(i,j+1) +
-     &       vsur2/psur2 + vbavg(i,j,  2) + vsdbavg(i,j) +
-     &                     vbavg(i,j+1,2) + vadbavg(i,j+1) )
+     &           vsur2/psur2 + vbavg(i,j,  2) + vsdbavg(i,j) +
+     &                         vbavg(i,j+1,2) + vadbavg(i,j+1) )
 #else
             umxl  = 0.25*( usur1/psur1 + ubavg(i,  j,1) +
      &                                   ubavg(i+1,j,1) +
@@ -996,7 +1000,10 @@ c ---       Read wind speed. Wind in P-cell center
                call xchalt('Setup_ESMF: unhandled windflag')
                stop 'Setup_ESMF: unhandled windflag'
             end if
-c ---       SLP if present
+            expData( 9)%p(i+i0,j+j0) = wndx  ! uair
+            expData(10)%p(i+i0,j+j0) = wndy  ! vair
+c
+c --------- SLP if present
             if     (mslprf .or. flxflg.eq.6) then
                if     (natm.eq.2) then
                  pair= mslprs(i,j,l0)*w0+mslprs(i,j,l1)*w1
@@ -1008,25 +1015,25 @@ c ---       SLP if present
                pair = 1e5
             end if
 c
-            expData( 9)%p(i+i0,j+j0) = wndx  ! uair
-            expData(10)%p(i+i0,j+j0) = wndy  ! vair
             expData(11)%p(i+i0,j+j0) = 10.0 ! zair
             expData(12)%p(i+i0,j+j0) = airt ! Actually pot air temp, but should be the same at zlvl
 c
-c ---       Sea surface slope in x- and y- direction. Centered diff in
-c ---       p-cell center
+c --------- Sea surface slope in x- and y- direction. Centered diff in
+c --------- p-cell center
             ss_tltx = (srfhgt(i+1,j)-srfhgt(i-1,j))*0.5*ssh2m/scpx(i,j)
             ss_tlty = (srfhgt(i,j+1)-srfhgt(i,j-1))*0.5*ssh2m/scpy(i,j)
             expData(13)%p(i+i0,j+j0) = ss_tltx
             expData(14)%p(i+i0,j+j0) = ss_tlty
-c ---       vapour mixing ration ~ specific humidity
+c
+c --------- vapour mixing ration ~ specific humidity
             expData(15)%p(i+i0,j+j0) = vpmx
-c ---       Density of air at sea level pressure
+c
+c --------- Density of air at sea level pressure
             !expData(16)%p(i+i0,j+j0) = pair / ( rgas * tair )
             expData(16)%p(i+i0,j+j0) = pair / 
      &         ( rgas * airt * (1.0+0.608*vpmx) )
-c ---       SW down, visible, direct. diffuse and infrared components set to 0.
-C ---       radfl is downwelling sw
+c
+C --------- radflx is downwelling longwave when lwflag=-1
             if (lwflag.eq.-1) then
                if     (natm.eq.2) then
                  radfl =(radflx(i,j,l0)*w0+radflx(i,j,l1)*w1)
@@ -1035,9 +1042,15 @@ C ---       radfl is downwelling sw
      &                 +radflx(i,j,l2)*w2+radflx(i,j,l3)*w3)
                endif !natm
             else 
-               call xchalt('Setup_ESMF: unhandled lwflag')
-               stop 'Setup_ESMF: unhandled lwflag'
+               call xchalt('Setup_ESMF: unhandled lwflag<>-1')
+               stop 'Setup_ESMF: unhandled lwflag<>-1'
             end if
+C
+c --------- SW down, visible, direct. diffuse and infrared components set to 0.
+c --------- NB: HYCOM swflx input files are downwelling shortwave if albflg>0, but it
+c --------- is modified in forfun so that swflx is net shortwave at
+c --------- surface. swflxdwn is a array added to keep unmodified downwelling SW
+c --------- and pass it to CICE. 
             if (albflg.gt.0) then
                if     (natm.eq.2) then
                  qswdwn=(swflxdwn(i,j,l0)*w0+swflxdwn(i,j,l1)*w1)
@@ -1046,8 +1059,8 @@ C ---       radfl is downwelling sw
      &                  +swflxdwn(i,j,l2)*w2+swflxdwn(i,j,l3)*w3)
                endif !natm
             else 
-               call xchalt('Setup_ESMF: unhandled lwflag')
-               stop 'Setup_ESMF: unhandled lwflag'
+               call xchalt('Setup_ESMF: unhandled albflg<=0')
+               stop 'Setup_ESMF: unhandled albflg<=0'
             end if
             expData(21)%p(i+i0,j+j0) = radfl
             if (albflg.gt.0) then
@@ -1059,9 +1072,10 @@ C ---       radfl is downwelling sw
                call xchalt('Setup_ESMF: unhandled albflg=0')
                stop 'Setup_ESMF: unhandled albflg=0'
             end if
+c
+c --------- prcp = precipitation (m/sec; positive into ocean)
+c --------- note that if empflg==3, this is actually P-E
             if     (pcipf) then
-c ---         prcp = precipitation (m/sec; positive into ocean)
-c ---         note that if empflg==3, this is actually P-E
               if     (natm.eq.2) then
                 prcp=precip(i,j,l0)*w0+precip(i,j,l1)*w1
               else
@@ -1069,13 +1083,15 @@ c ---         note that if empflg==3, this is actually P-E
      &              +precip(i,j,l2)*w2+precip(i,j,l3)*w3
               endif !natm
             endif
+c
+c --------- We dont handle cases where input is E-P. 
             if (empflg.ne.3) then
-               flagtemp = 0.5*(1.+sign(1.,airt-tzero)) ! 1 if airt > 0, otherwise 0
+               flagtemp = 0.5*(1.+sign(1.,airt-tzero)) ! 1 if airt > tzero, otherwise 0
                expData(22)%p(i+i0,j+j0) =    flagtemp  * prcp * 1e3 ! Rain , conversion m/s -> kg m**-2 s**-1
                expData(23)%p(i+i0,j+j0) =(1.-flagtemp) * prcp * 1e3 ! Snow , conversion m/s -> kg m**-2 s**-1
             else 
-               call xchalt('Setup_ESMF: unhandled albflg=0')
-               stop 'Setup_ESMF: unhandled albflg=0'
+               call xchalt('Setup_ESMF: unhandled empflg=3')
+               stop 'Setup_ESMF: unhandled empflg=3'
             end if
           else
             util2(i,j)              = 0.0
@@ -1217,6 +1233,42 @@ c --- Arctic (tripole) domain, top row is replicated (ignore it)
           endif !ishlf
         enddo !i
       enddo !j
+C --- Added by KAL. Mainly needed for si_u and si_v, but lets do everything for now ...
+C --- NB: May need to set vland first...
+      call xctilr( sic_import,1,1,nbdy,nbdy,halo_ps)  !Sea Ice Concentration
+      call xctilr(sitx_import,1,1,nbdy,nbdy,halo_pv)  !Sea Ice X-Stress
+      call xctilr(sity_import,1,1,nbdy,nbdy,halo_pv)  !Sea Ice Y-Stress
+      call xctilr(siqs_import,1,1,nbdy,nbdy,halo_ps)  !Solar Heat Flux thru Ice to Ocean
+      call xctilr(sifh_import,1,1,nbdy,nbdy,halo_ps)  !Ice Freezing/Melting Heat Flux
+      call xctilr(sifs_import,1,1,nbdy,nbdy,halo_ps)  !Ice Freezing/Melting Salt Flux
+      call xctilr(sifw_import,1,1,nbdy,nbdy,halo_ps)  !Ice Net Water Flux
+      call xctilr( sit_import,1,1,nbdy,nbdy,halo_ps)  !Sea Ice Temperature
+      call xctilr( sih_import,1,1,nbdy,nbdy,halo_ps)  !Sea Ice Thickness
+      call xctilr( siu_import,1,1,nbdy,nbdy,halo_pv)  !Sea Ice X-Velocity
+      call xctilr( siv_import,1,1,nbdy,nbdy,halo_pv)  !Sea Ice Y-Velocity
+      if     (iceflg.ge.2 .and. icmflg.ne.3) then
+        call xctilr(covice,1,1,nbdy,nbdy,halo_ps)  !Sea Ice Concentration
+        call xctilr(  si_c,1,1,nbdy,nbdy,halo_ps)  !Sea Ice Concentration
+        call xctilr( si_tx,1,1,nbdy,nbdy,halo_pv)  !Sea Ice X-Stress into ocean
+        call xctilr( si_ty,1,1,nbdy,nbdy,halo_pv)  !Sea Ice Y-Stress into ocean
+        call xctilr(fswice,1,1,nbdy,nbdy,halo_ps)  !Solar Heat Flux thru Ice to Ocean
+        call xctilr(flxice,1,1,nbdy,nbdy,halo_ps)  !Ice Freezing/Melting Heat Flux
+        call xctilr(sflice,1,1,nbdy,nbdy,halo_ps)  !Ice Virtual Salt Flux
+        call xctilr(temice,1,1,nbdy,nbdy,halo_ps)  !Sea Ice Temperature
+        call xctilr(  si_t,1,1,nbdy,nbdy,halo_ps)  !Sea Ice Temperature
+        call xctilr(thkice,1,1,nbdy,nbdy,halo_ps)  !Sea Ice Thickness
+        call xctilr(  si_h,1,1,nbdy,nbdy,halo_ps)  !Sea Ice Thickness
+        call xctilr(  si_u,1,1,nbdy,nbdy,halo_pv)  !Sea Ice X-Velocity
+        call xctilr(  si_v,1,1,nbdy,nbdy,halo_pv)  !Sea Ice Y-Velocity
+      elseif (iceflg.ge.2 .and. icmflg.eq.3) then
+        call xctilr(  si_c,1,1,nbdy,nbdy,halo_ps)  !Sea Ice Concentration
+        call xctilr( si_tx,1,1,nbdy,nbdy,halo_pv)  !Sea Ice X-Stress into ocean
+        call xctilr( si_ty,1,1,nbdy,nbdy,halo_pv)  !Sea Ice Y-Stress into ocean
+        call xctilr(  si_h,1,1,nbdy,nbdy,halo_ps)  !Sea Ice Thickness
+        call xctilr(  si_t,1,1,nbdy,nbdy,halo_ps)  !Sea Ice Temperature
+        call xctilr(  si_u,1,1,nbdy,nbdy,halo_pv)  !Sea Ice X-Velocity
+        call xctilr(  si_v,1,1,nbdy,nbdy,halo_pv)  !Sea Ice Y-Velocity
+      endif
 #if defined(ARCTIC)
 c
 c --- update last active row of array
@@ -1254,11 +1306,15 @@ c --- update last active row of array
         call xctila(  si_u,1,1,halo_pv)  !Sea Ice X-Velocity
         call xctila(  si_v,1,1,halo_pv)  !Sea Ice Y-Velocity
       endif
+c
 #endif
 c
 c --- Smooth Sea Ice velocity fields
       call psmooth(si_u,0,0, ishlf, util1)
       call psmooth(si_v,0,0, ishlf, util1)
+C --- Added by KAL
+      call xctilr(si_u,1,1,nbdy,nbdy,halo_pv)
+      call xctilr(si_v,1,1,nbdy,nbdy,halo_pv)
 #if defined(ARCTIC)
       call xctila(si_u,1,1,halo_pv)
       call xctila(si_v,1,1,halo_pv)
@@ -1272,6 +1328,7 @@ c --- copy back from si_ to impData for Archive_ESMF
           endif !si_c
         enddo !i
       enddo !j
+C
 c
 c --- Report
 C#if (USE_ESMF_5)

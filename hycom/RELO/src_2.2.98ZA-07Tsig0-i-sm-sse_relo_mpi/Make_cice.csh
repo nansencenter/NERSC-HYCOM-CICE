@@ -62,6 +62,9 @@ endif
 #endif
 #setenv ESMF_DIR /home/nersc/knutali/opt/esmf_5_2_0rp3-nonetcdf/
 
+# --- KAL. Touch this file to make sure it exists. It may be empty, but the makefile will look for it
+touch ./hycom_feature_flags
+
 #
 # --- make CICE component
 #

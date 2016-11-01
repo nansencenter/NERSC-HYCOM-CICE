@@ -400,6 +400,10 @@ c
       endif !ip
       enddo !i
       do i=1,ii
+#if defined(NERSC_HYCOM_CICE)
+        si_u  (i,j) = 0.0
+        si_v  (i,j) = 0.0
+#endif
         do k= 1,3
           ubavg(i,j,k) = 0.0
           vbavg(i,j,k) = 0.0

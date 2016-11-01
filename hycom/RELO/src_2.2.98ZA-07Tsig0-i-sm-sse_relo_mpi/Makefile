@@ -17,6 +17,8 @@
 	@echo "Must have an explicit rule for" $*
 
 include ../config/$(ARCH)_$(TYPE)
+include ./hycom_feature_flags
+CPPFLAGS:=$(CPPFLAGS) $(HYCOM_FEATURE_FLAGS)
 
 MODS =   mod_dimensions.o mod_xc.o mod_za.o mod_cb_arrays.o mod_pipe.o \
          mod_incupd.o \
