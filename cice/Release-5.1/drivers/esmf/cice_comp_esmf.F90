@@ -1072,6 +1072,10 @@ subroutine cice_put_export(export_state)
 
    real (kind=dbl_kind), dimension(nx_block,ny_block,max_blocks) :: uwork,vwork
 
+   ! KAL: Note that all fluxes are grid cell averages. This is whats assumed by
+   ! HYCOM. For interation with CESM, for instance - it is assumed that fluxes
+   ! are ice area averages (!)
+
    ! Transfer ice velocities to grid cell centers
    ! TODO: Use averaged ice conc and velocity to hycom?
    uwork=uvel
@@ -1108,7 +1112,7 @@ subroutine cice_put_export(export_state)
             do i=ilo,ihi
                ig  = this_block%i_glob(i)
                jg  = this_block%j_glob(j)
-               expData(ifld,iblk)%p(ig,jg) = strocnxT(i,j,iblk) ! NB: Check T to U and sign
+               expData(ifld,iblk)%p(ig,jg) = strocnxT(i,j,iblk)*covice(i,j) ! NB: Check T to U and sign
             end do
             end do
          ! Ice-ocean stress
@@ -1117,7 +1121,7 @@ subroutine cice_put_export(export_state)
             do i=ilo,ihi
                ig  = this_block%i_glob(i)
                jg  = this_block%j_glob(j)
-               expData(ifld,iblk)%p(ig,jg) = strocnyT(i,j,iblk) ! NB: Check T to U and sign
+               expData(ifld,iblk)%p(ig,jg) = strocnyT(i,j,iblk)*covice(i,j) ! NB: Check T to U and sign
             end do
             end do
          ! Penetrating shortwave radiation
@@ -1229,8 +1233,8 @@ subroutine cice_get_import(import_state)
    use ice_domain,      only : nblocks, blocks_ice
    use ice_flux,        only : frzmlt, uocn, vocn, sss, sst, hmix, &
                                uatm, vatm, Tair, zlvl, potT, &
-                               ss_tltx, ss_tlty, Qa, flw, swvdr, &
-                               fsnow, frain
+                               ss_tltx, ss_tlty, Qa, flw, &
+                               fsnow, frain, swvdr, swvdf, swidr, swidf
    use ice_grid,        only : t2ugrid_vector
    implicit none
    type(ESMF_State)       :: import_state
@@ -1380,7 +1384,9 @@ subroutine cice_get_import(import_state)
                ig  = this_block%i_glob(i)
                jg  = this_block%j_glob(j)
                swvdr(i,j,iblk) = impData(ifld,iblk)%p(ig,jg)
-               !print *,"swvdr",ig,jg,swvdr(i,j,iblk)
+               swvdf(i,j,iblk) = 0._dbl_kind    ! shortwave radiation (W/m^2)
+               swidr(i,j,iblk) = 0._dbl_kind    ! shortwave radiation (W/m^2)
+               swidf(i,j,iblk) = 0._dbl_kind    ! shortwave radiation (W/m^2)
             end do
             end do
          elseif (trim(impFieldName(ifld)) == "flw") then
