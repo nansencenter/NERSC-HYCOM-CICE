@@ -121,7 +121,8 @@ def main(myfiles,fieldname,fieldlevel,idm=None,jdm=None,clim=None,filetype="arch
          if vector : 
             fld = numpy.sqrt(fld1**2+fld2**2)
          else :
-            fld=numpy.copy(fld1)
+            fld=fld1
+         #print fld.min(),fld.max()
 
          if bm is not None :
             P=bm.pcolormesh(x[J,I],y[J,I],fld[J,I],cmap=cmap)
