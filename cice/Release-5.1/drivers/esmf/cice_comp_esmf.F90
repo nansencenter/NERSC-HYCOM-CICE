@@ -1112,7 +1112,7 @@ subroutine cice_put_export(export_state)
             do i=ilo,ihi
                ig  = this_block%i_glob(i)
                jg  = this_block%j_glob(j)
-               expData(ifld,iblk)%p(ig,jg) = strocnxT(i,j,iblk)*covice(i,j) ! NB: Check T to U and sign
+               expData(ifld,iblk)%p(ig,jg) = strocnxT(i,j,iblk)*aice(i,j) ! NB: Check T to U and sign
             end do
             end do
          ! Ice-ocean stress
@@ -1121,7 +1121,7 @@ subroutine cice_put_export(export_state)
             do i=ilo,ihi
                ig  = this_block%i_glob(i)
                jg  = this_block%j_glob(j)
-               expData(ifld,iblk)%p(ig,jg) = strocnyT(i,j,iblk)*covice(i,j) ! NB: Check T to U and sign
+               expData(ifld,iblk)%p(ig,jg) = strocnyT(i,j,iblk)*aice(i,j) ! NB: Check T to U and sign
             end do
             end do
          ! Penetrating shortwave radiation
