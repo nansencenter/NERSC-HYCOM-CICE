@@ -6,9 +6,9 @@
 
 The following tools are necessary in many parts of the code.
 
-A Fortran compiler.
+A working fortran compiler.
 
-To run the HYCOM-CICE coupled code, you will need to have a working installation of the Eearth System Modelling Framework.
+To run the HYCOM-CICE coupled code, you will need to have a working installation of the Eearth System Modelling Framework: https://www.earthsystemcog.org/projects/esmf/download/. The code has been tested and verified to work with ESMF v 5.2.0.rp3.
 
 A working python 2.7 installation, with the following packages
 
@@ -85,10 +85,18 @@ In order to use these locally installed packages you will have to set PYTHONPATH
 
 Again, replace [location_of_my_python_modules] with the actual path
 
+# Retrieving and installing ESMF
 
+To run the HYCOM-CICE coupled code, you will need to have a working installation of the Eearth System Modelling Framework: https://www.earthsystemcog.org/projects/esmf/download/. The code has been tested and verified to work with ESMF v 5.2.0.rp3.
+
+You could try to install his yourself, instructions are available in the downloaded distribution. However, it is probably recommended that you let your local IT support to do it.
 
 
 # Site-specific details
+
+## Hexagon.bccs.uib.no
+
+On hexagon, you can find the necessary 
 
 
 # This and that...
