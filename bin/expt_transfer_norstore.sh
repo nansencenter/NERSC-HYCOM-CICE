@@ -30,6 +30,7 @@ source ./EXPT.src  || { echo "Could not source EXPT.src "; exit 1; }
 source $BINDIR/common_functions.sh  || { echo "Could not source common_functions.sh "; exit 1; }
 
 if [ $# -ne 1 ] ; then
+   echo "$msg"
    tellerror "Need target dir as input"
    exit 1
 fi

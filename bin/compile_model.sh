@@ -88,6 +88,9 @@ else
    fi
 fi
 
+# Copy feature flag in expt dir if present
+[ -f $EDIR/hycom_feature_flags  ] && cp $EDIR/hycom_feature_flags $targetdir
+
 # Create hycom executable. Set up correct eq of state
 cd $targetdir
 echo "Now setting up stmt_fns.h in $targetdir"

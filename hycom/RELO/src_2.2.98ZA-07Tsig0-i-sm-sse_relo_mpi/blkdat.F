@@ -2003,6 +2003,20 @@ c
         call xcstop('(blkdat)')
                stop '(blkdat)'
       endif
+#if defined(NERSC_HYCOM_CICE)
+c --- Strongly discouraged in the coupled model.
+c --- epmass removes mass from ocean, but ice on top of ocean is treated as
+c --- massless, so...
+      if (iceflg.eq.2 .and. epmass) then
+        if (mnproc.eq.1) then
+        write(lp,'(/ a /)') 
+     &    'error - epmass should be false when iceflg.eq.2'
+        call flush(lp)
+        endif !1st tile
+        call xcstop('(blkdat)')
+               stop '(blkdat)'
+      endif
+#endif
 c
       srelax = sssflg.eq.1 .or. sssflg.eq.-1
       trelax = sstflg.eq.1
@@ -2443,9 +2457,11 @@ c
 c --- Empty string, return default
       if (len_trim(svar) == 0) then
          svar=sdefault
-         if (mnproc==1) write(lp,'(a,a,a)') 
+         if (mnproc==1) then 
+            write(lp,'(a,a,a)') 
      &      "NB: Setting ",trim(cvar)," to default value "
-         write(lp,6000) cvarin,ivar,trim(svar)
+            write(lp,6000) cvarin,ivar,trim(svar)
+         end if
          return
       end if
 c

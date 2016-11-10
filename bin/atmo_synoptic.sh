@@ -40,12 +40,8 @@ cd       $S || { echo " Could not descend scratch dir $S" ; exit 1;}
 #
 # --- Sanity check on forcing option
 #
-if [ $forcing == "erai" ] ; then
+if [ ${forcing:0:4} == "erai" ] ; then
    xmlfile=$BASEDIR/../input/era-interim.xml
-   xmlident="era-interim+lw"
-elif [ $forcing == "erai-nolw" ] ; then
-   xmlfile=$BASEDIR/../input/era-interim.xml
-   xmlident="era-interim"
 else 
    tellerror "Forcing option is erai only..."
    exit 1
@@ -61,7 +57,7 @@ copy_setup_files $S
 
 
 
-cmd="$BASEDIR/../python/hycom_atmfor.py $start $stop $xmlfile $xmlident"
+cmd="$BASEDIR/../python/hycom_atmfor.py $start $stop $xmlfile $forcing"
 eval $cmd   ||  { echo "Error running $cmd " ; exit 1 ; }
 
 # The nersc era40 forcing is region-independent 
