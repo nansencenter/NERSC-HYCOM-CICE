@@ -101,7 +101,7 @@ On hexagon, most tools are installed already. Make sure these commands are run f
     module load python/2.7.9-dso
     export PYTHONPATH=$PYTHONPATH:/home/nersc/knutali/opt/python/lib/python2.7/site-packages/
 
-Apart from that, make sure you use the pgi compiler and libraries in the cray PrgEnv.
+Apart from that, make sure you use the pgi compiler and libraries in the cray PrgEnv. You will also have to be a member of the "nersc" group and you will need access to a cpu account.
 
 
 # This and that...
