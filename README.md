@@ -4,10 +4,9 @@
 
 # Prerequisites
 
-The following tools are necessary in many parts of the code
+The following tools are necessary in many parts of the code.
 
-# Prerequisites
-A Fortran compiler
+A Fortran compiler.
 
 To run the HYCOM-CICE coupled code, you will need to have a working installation of the Eearth System Modelling Framework.
 
@@ -40,12 +39,16 @@ Additional python packages may be required, but these are usually installed in m
 
 # Retrieval and compilation of code
 
+## Retrieving NERSC-HYCOM-CICE
 Clone code from main repository (TODO: Fix when moved/use markdown)
 `
 git clone https://bitbucket.org/knutal/nersc-hycom-cice
 `
 
 If you get errors about server certificates, see [here](../..//overview#markdown-header-server-certificates)
+
+
+## Retrieving and installing python modules
 
 Next you will need to install the python packages necessary to use the  python routines. With some luck, most of the necessary packages are already installed.  A quick way to check is to start ipython and write import <name_of_package>. Example:
 
@@ -74,7 +77,15 @@ The github packages are not yet available as installers, and can be installed as
     git clone https://github.com/knutalnersc/modelgrid
     git clone https://github.com/knutalnersc/modeltools
 
-If you get certificate issues, see 
+Replace [location_of_my_python_modules] with the actual path. If you get errors about server certificates, see [here](../..//overview#markdown-header-server-certificates). 
+
+In order to use these locally installed packages you will have to set PYTHONPATH in your shell setup file (.profile / .bash_profile ):
+
+    export PYTHONPATH=$PYTHONPATH:[location_of_my_python_modules]
+
+Again, replace [location_of_my_python_modules] with the actual path
+
+
 
 
 # Site-specific details
