@@ -23,6 +23,8 @@ if [ ! -d $HYCOM_ALL ] ; then
    fi
 fi
 
+export HYCOM_PYTHON_ROUTINES=$mydir/../python/
+
 
 # Point to the location of the MSC routines. TODO: Include in repo?
 export MSCPROGS=/home/nersc/knutali/Models/hycom/MSCPROGS/
