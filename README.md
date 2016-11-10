@@ -37,7 +37,7 @@ Additional python packages may be required, but these are usually installed in m
 
 * [modeltools](https://github.com/knutalnersc/modeltools), a collection of various tools .. 
 
-# Retrieval and compilation of code
+# Retrieval of code and tools
 
 ## Retrieving NERSC-HYCOM-CICE
 Clone code from main repository (TODO: Fix when moved/use markdown)
@@ -85,7 +85,7 @@ In order to use these locally installed packages you will have to set PYTHONPATH
 
 Again, replace [location_of_my_python_modules] with the actual path
 
-# Retrieving and installing ESMF
+## Retrieving and installing ESMF
 
 To run the HYCOM-CICE coupled code, you will need to have a working installation of the Eearth System Modelling Framework: https://www.earthsystemcog.org/projects/esmf/download/. The code has been tested and verified to work with ESMF v 5.2.0.rp3.
 
