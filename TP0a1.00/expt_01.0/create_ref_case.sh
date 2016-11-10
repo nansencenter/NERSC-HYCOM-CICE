@@ -1,4 +1,21 @@
 #!/bin/bash
+
+
+
+myclim="woa2013" # Climatology to use
+
+# What ARCH value to pass to hycom_all compilation script
+# NB: On some machines (cray/unicos) you may have to modify module settings as well
+
+
+#hycom_all_arch=gfortran   # Most linux machines have gnu fortran
+hycom_all_arch=amd64       # Uses pgi compiler
+hycom_arch=amd64
+
+
+
+
+
 # Must be in expt dir to run this script
 if [ -f EXPT.src ] ; then
    export BASEDIR=$(cd .. && pwd)
@@ -17,7 +34,6 @@ echo "Logs can be found in $EDIR/log"
 echo ".."
 
 #Various settings
-myclim="woa2013" # Climatology to use
 #Get statement function include file from SIGVER
 if [ $SIGVER -eq 1 ] ; then
    TERMS=7
