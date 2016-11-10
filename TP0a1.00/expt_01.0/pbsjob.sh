@@ -64,7 +64,7 @@ echo "Start time in pbsjob.sh: $START"
 echo "End   time in pbsjob.sh: $END"
 
 # Generate atmospheric forcing :
-../../bin/atmo_synoptic.sh erai-nolw $START $END 
+../../bin/atmo_synoptic.sh erai $START $END 
 
 # Transfer data files to scratch - must be in "expt_XXX" dir for this script
 ../../bin/expt_preprocess.sh $START $END $INITFLG        ||  { echo "Preprocess had fatal errors "; exit 1; }
