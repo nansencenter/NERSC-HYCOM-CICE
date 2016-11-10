@@ -96,7 +96,12 @@ You could try to install his yourself, instructions are available in the downloa
 
 ## Hexagon.bccs.uib.no
 
-On hexagon, you can find the necessary 
+On hexagon, most tools are installed already. Make sure these commands are run first:
+
+    module load python/2.7.9-dso
+    export PYTHONPATH=$PYTHONPATH:/home/nersc/knutali/opt/python/lib/python2.7/site-packages/
+
+Apart from that, make sure you use the pgi compiler and libraries in the cray PrgEnv.
 
 
 # This and that...
