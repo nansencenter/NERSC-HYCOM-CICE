@@ -92,9 +92,9 @@ To run the HYCOM-CICE coupled code, you will need to have a working installation
 You could try to install his yourself, instructions are available in the downloaded distribution. However, it is probably recommended that you let your local IT support to do it.
 
 
-# Site-specific details
+## Site-specific details
 
-## Hexagon.bccs.uib.no
+### Hexagon.bccs.uib.no
 
 On hexagon, most tools are installed already. Make sure these commands are run first:
 
