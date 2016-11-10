@@ -41,6 +41,7 @@ Additional python packages may be required, but these are usually installed in m
 
 ## Retrieving NERSC-HYCOM-CICE
 Clone code from main repository (TODO: Fix when moved/use markdown)
+
 `
 git clone https://bitbucket.org/knutal/nersc-hycom-cice
 `
@@ -99,9 +100,23 @@ You could try to install his yourself, instructions are available in the downloa
 On hexagon, most tools are installed already. Make sure these commands are run first:
 
     module load python/2.7.9-dso
+    module load udunits
     export PYTHONPATH=$PYTHONPATH:/home/nersc/knutali/opt/python/lib/python2.7/site-packages/
 
-Apart from that, make sure you use the pgi compiler and libraries in the cray PrgEnv. You will also have to be a member of the "nersc" group and you will need access to a cpu account.
+The last location contains the github modules, as well as basemap, cfunits and f90nml python modules
+
+Apart from that, make sure you use the pgi compiler and libraries in the cray PrgEnv. You will also have to be a member of the "nersc" group and you will need access to a cpu account. Here is a setup that is known to qwork (as of 2016-11-10):
+
+
+    module swap PrgEnv-cray PrgEnv-pgi
+    module load cmake
+    module load cray-libsci
+    module unload xtpe-interlagos # This is needed to compile on login nodes (istanbul cpu)
+    module load fftw
+    module load cray-netcdf
+    module load ncview
+    module load python/2.7.9-dso # NB: sets PYTHONHOME, which can cause problems for some scripts that uses the full path
+    module load subversion
 
 
 # This and that...
