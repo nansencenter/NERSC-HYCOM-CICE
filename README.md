@@ -1,3 +1,5 @@
+[TOC]
+
 # Description
 
 # Prerequisites
@@ -43,10 +45,7 @@ Clone code from main repository (TODO: Fix when moved/use markdown)
 git clone https://bitbucket.org/knutal/nersc-hycom-cice
 `
 
-If you get an error like "server certificate verification failed", you will need to install certificates on the machine where you want to run the model(or contact IT support). More [here...](https://en.wikipedia.org/wiki/Certificate_authority). If certificate installation fails, you can try this as a last resort:
-`
-GIT_SSL_NO_VERIFY=true git clone https://bitbucket.org/knutal/nersc-hycom-cice
-`
+If you get errors about server certificates, see [here](../..//overview#markdown-header-server-certificates)
 
 Next you will need to install the python packages necessary to use the  python routines. With some luck, most of the necessary packages are already installed.  A quick way to check is to start ipython and write import <name_of_package>. Example:
 
@@ -68,7 +67,23 @@ If you find some packages are missing, either install them yourself, or have you
 [netCDF4](https://pypi.python.org/pypi/netCDF4). It is also possible to install these packages outside the main python distribution tree, but the process is a bit more elaborate.
 
 The github packages are not yet available as installers, and can be installed as follows:
-    cd where_i_want_to_install_python_modules
+
+    cd [location_of_my_python_modules]
+    git clone https://github.com/knutalnersc/gridxsec
+    git clone https://github.com/knutalnersc/abfile
+    git clone https://github.com/knutalnersc/modelgrid
+    git clone https://github.com/knutalnersc/modeltools
+
+If you get certificate issues, see 
 
 
 # Site-specific details
+
+
+# This and that...
+
+## Server certificates
+If you get an error like "server certificate verification failed", you will need to install certificates on the machine where you want to run the model(or contact IT support). More [here...](https://en.wikipedia.org/wiki/Certificate_authority). If certificate installation fails, you can try this as a last resort before issuing the git clone commands:
+`
+export GIT_SSL_NO_VERIFY=true
+`
