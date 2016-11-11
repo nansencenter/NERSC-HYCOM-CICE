@@ -2,6 +2,8 @@
 
 # Description
 
+This repository contains the source code necessary to run the coupled HYCOM-CICE model developed at NERSC. In the repository you will find the HYCOM and CICE source codes, utility routines, and a directory containing a simple model setup (Directory TP0a1.00). Below is a short description of how to set up and compile the code
+
 # Prerequisites
 
 The following tools are necessary in many parts of the code.
