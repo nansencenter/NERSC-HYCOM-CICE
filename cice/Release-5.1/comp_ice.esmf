@@ -8,12 +8,8 @@ setenv SITE hexagon   # also works for mustang
 #setenv SITE LANL.bigsuze
 
 ### SYSTEM_USERDIR is predefined on ORNL machines
-#setenv SYSTEM_USERDIR /scratch/eclare/CICE.v5.1  # conejo
-#setenv SYSTEM_USERDIR /home/nersc/knutali/Models/Model_tests/cice/Release-5.1/
 setenv SYSTEM_USERDIR `dirname $0` 
 setenv SYSTEM_USERDIR `cd ${SYSTEM_USERDIR} && pwd` 
-echo $SYSTEM_USERDIR
-#setenv SYSTEM_USERDIR /Users/akt/Work/MPAS-CICE/Column_Package/cice_package/run_dirs
 
 ### Grid resolution
 #setenv RES col ; setenv GRID 5x5
@@ -21,7 +17,7 @@ echo $SYSTEM_USERDIR
 #setenv RES gx1 ; setenv GRID 320x384
 #setenv RES tx1 ; setenv GRID 360x240
 #setenv RES gx3 ; setenv GRID 100x110
-
+#KAL - set as env variable before running
 
 #KAL GRID variable must be set outside of script
 set NXGLOB = `echo $GRID | sed s/x.\*//`
@@ -85,17 +81,12 @@ setenv NUMIN 11           # minimum file unit number
 setenv NUMAX 99           # maximum file unit number
 
 ### Set SRCDIR and EXEDIR to your own paths!
-#setenv SRCDIR /usr/projects/climate/eclare/CICE.v5.1/cice  # conejo
-#setenv SRCDIR /Users/akt/Work/MPAS-CICE/Column_Package/cice_package/cice
-#setenv SRCDIR /home/nersc/knutali/Models/Model_tests/cice/Release-5.1
 setenv SRCDIR `dirname $0` 
 setenv SRCDIR `cd ${SRCDIR} && pwd` 
 setenv EXEDIR $SYSTEM_USERDIR/rundir
                                           if !(-d $EXEDIR) mkdir -p $EXEDIR
 setenv CBLD   $SRCDIR/bld
 setenv OBJDIR $EXEDIR/compile           ; if !(-d $OBJDIR) mkdir -p $OBJDIR
-setenv RSTDIR $EXEDIR/restart           ; if !(-d $RSTDIR) mkdir -p $RSTDIR
-setenv HSTDIR $EXEDIR/history           ; if !(-d $HSTDIR) mkdir -p $HSTDIR
 
 setenv ARCH `uname -s`
 if ( $ARCH == 'UNICOS/mp') setenv ARCH UNICOS
@@ -107,21 +98,7 @@ else
    cp -f $CBLD/Makefile.std $CBLD/Makefile
 endif
 setenv ARCH $ARCH.$SITE
-
-cd $SRCDIR/source
-cd $EXEDIR
-
-if !($RES == 'col') then
-if !(-e grid)    cp $SRCDIR/input_templates/$RES/global_$RES.grid grid
-if !(-e kmt)     cp $SRCDIR/input_templates/$RES/global_$RES.kmt kmt
-endif
-if !(-e ice_in)  cp $SRCDIR/input_templates/$RES/ice_in .
-if !(-e run_ice) cp $SRCDIR/input_templates/run_ice.$ARCH run_ice
-
-cd $RSTDIR
-
-cp $SRCDIR/input_templates/$RES/iced_$RES* .
-if !(-e ice.restart_file) cp $SRCDIR/input_templates/$RES/ice.restart_file .
+echo "comp_ice.esmf: Environment variable ARCH=$ARCH"
 
 cd $OBJDIR
 
@@ -131,8 +108,12 @@ setenv COMMDIR mpi
 #else
 #   setenv COMMDIR mpi 
 #endif
+echo "comp_ice.esmf: Environment variable COMMDIR=$COMMDIR"
 
 setenv DRVDIR esmf
+echo "comp_ice.esmf: Environment variable DRVDIR=$DRVDIR"
+
+
 if ($IO_TYPE == 'netcdf') then
   setenv IODIR io_netcdf
 else if ($IO_TYPE == 'pio') then

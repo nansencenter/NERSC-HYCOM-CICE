@@ -1,9 +1,5 @@
 #!/bin/csh
 #
-set echo
-setenv HYCOM_DIR $cwd
-cd ${HYCOM_DIR}
-#
 # --- Usage:  ./Make_cice.com >& Make_cice.log
 #
 # --- make cice (ESMF HYCOM component) with TYPE=cice.
@@ -25,10 +21,16 @@ cd ${HYCOM_DIR}
 #setenv ARCH t3e
 #setenv ARCH xt3
 #
-setenv ARCH xt4
+#setenv ARCH xt4
 #
+#KAL - ARCH must now be set before running Make_cice.csh script. It is of type
+#KAL - xt4.hexagon ...
 setenv TYPE cice
-#
+echo "Make_cice.csh: Environment variable TYPE=$TYPE"
+echo "Make_cice.csh: Environment variable ARCH=$ARCH"
+
+
+
 if     ($TYPE != "cice") then
   echo "TYPE must be cice to invoke cice make target"
   exit 1
@@ -66,19 +68,11 @@ endif
 touch ./hycom_feature_flags
 
 #
-# --- make CICE component
-#
-setenv CICE_DIR ./CICE
-cd ${CICE_DIR}
-/bin/rm -f comp_ice.log
-./comp_ice | tee comp_ice.log
-#
 # --- make HYCOM component, and update hycom_cice
 #
-cd ${HYCOM_DIR}
 # --- force a relink, because CICE is not in the dependencies
 /bin/rm hycom_cice
-make ARCH=$ARCH TYPE=$TYPE hycom_cice
+make ARCH=$ARCH TYPE=$TYPE CICE_DIR=./CICE/ hycom_cice
 
 # --- some machines require gmake
 #gmake ARCH=$ARCH TYPE=$TYPE hycom_cice

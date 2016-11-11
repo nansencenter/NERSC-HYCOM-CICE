@@ -53,9 +53,10 @@ ifeq ($(IO_TYPE), netcdf)
    SLIBS   := $(SLIBS) -L/$(NETCDF_DIR)/lib -pgcpplibs -lnetcdf_c++4 -lnetcdf -lnetcdff
 endif
 
-INCLDIR := $(INCLDIR) -I/$(ESMF_DIR)/include -I/$(ESMF_DIR)/mod/modO/Unicos.pgi.64.mpi.default/
-#SLIBS := $(SLIBS) -L$(ESMF_DIR)/lib/ -lesmf -llapack -lblas -lzceh   -pgcpplibs -lnetcdf  -lnetcdf_c++4 #-lnetcdf 
-SLIBS := -lesmf  $(SLIBS) -L$(ESMF_DIR)/lib/libO/Unicos.pgi.64.mpi.default/ -llapack -lblas -lzceh   -pgcpplibs 
+#INCLDIR := $(INCLDIR) -I/$(ESMF_DIR)/include -I/$(ESMF_DIR)/mod/modO/Unicos.pgi.64.mpi.default/
+#SLIBS := -lesmf  $(SLIBS) -L$(ESMF_DIR)/lib/libO/Unicos.pgi.64.mpi.default/ -llapack -lblas -lzceh   -pgcpplibs 
+INCLDIR := $(INCLDIR) -I/$(ESMF_DIR)/include -I/$(ESMF_MOD_DIR)/
+SLIBS := -lesmf  $(SLIBS) -L$(ESMF_LIB_DIR)/ -llapack -lblas -lzceh   -pgcpplibs 
 
 
 

@@ -1,7 +1,5 @@
 #!/bin/bash
-#
 # Script for quickly setting up model source code and compiling it. 
-update=$1
 
 
 # Must be in expt dir to run this script
@@ -16,7 +14,103 @@ export EDIR=$(pwd)
 source ${BINDIR}/common_functions.sh || { echo "Could not source ${BINDIR}/common_functions.sh" ; exit 1 ; }
 source ${BASEDIR}/REGION.src || { echo "Could not source ${BASEDIR}/REGION.src" ; exit 1 ; }
 source ./EXPT.src || { echo "Could not source ./EXPT.src" ; exit 1 ; }
+sourcedir=$BASEDIR/../hycom/RELO/src_${V}ZA-07Tsig0-i-sm-sse_relo_mpi/ # Yes, we always use this version
+sourceconfdir=$BASEDIR/../hycom/RELO/config/
 
+
+
+usage="
+
+   On first invocation this script will fetch hycom source from $sourcedir,
+   place it in the build directory, set up and compile the model.
+
+   The script will also set up the equation of state to use in hycom, depending on 
+   the setting of SIGVER in EXPT.src.
+
+
+
+
+   NB: On subsequent calls, this script will compile the model, but not update with code
+   from $sourcedir, unless update_flag = update ....
+
+   Why choose this behaviour? 
+   --------------------------
+   This behaviour makes it possible to modify and test code in the build dir without
+   affecting the code in other experiments, or the code in  $sourcedir .
+   When you are satisfied with the code changes in build, the code can be brought into the main
+   code in $sourcedir, then pushed to the code repository
+
+   
+
+
+   Example:
+      $(basename $0) ARCH [update_flag]
+
+   ARCH        : architecture to compile for. Currently supported:
+      xt4 (hexagon)
+   update_flag : if set to update, code will be synced from $sourcedir to the build dir
+
+
+   Examples:
+      $(basename $0) xt4 
+         will compile the model code inside the local build/ directory. If the build dir does not 
+         exist,it will be created and code synced from $sourcedir.
+
+      $(basename $0) xt4  update
+         will compile the model code inside the local build/ directory. If the build dir does not 
+         exist,it will be created.  Code will ALWAYS be synced from $sourcedir, so local changes will
+         be overwritten.
+
+"
+
+#Check arguments 
+if [ $# -gt 0 ] ; then
+   ARCH=$1
+   update=$2
+else 
+   echo "$usage"
+   exit 1
+fi
+
+# Check ARCH 
+if [ "$ARCH" == "xt4" ] ;then
+   echo ARCH=$ARCH
+else 
+   echo "$usage"
+   echo
+   echo
+   echo "Unsupported ARCH=$ARCH"
+   exit 2
+fi
+
+# SITE deduced from hostname
+unamen=$(uname -n)
+unames=$(uname -s)
+if [ "${unamen:0:7}" == "hexagon" ] ; then
+   SITE="hexagon"
+else
+   echo "Unknown SITE. uname -n gives $unamen"
+   exit 3
+fi
+
+echo "$(basename $0) : ARCH=$ARCH"
+echo "$(basename $0) : SITE=$SITE"
+
+
+# Deduce ESMF dir from SITE and possibly ARCH
+if [ ! -z "${ESMF_DIR}" ] ; then
+   echo "Using preset ESMF_DIR=$ESMF_DIR"
+elif [ "$SITE" == "hexagon" ] ; then
+   # KAL - Note that if you change compiler, you will need to change ESMF_MOD_DIR. The below is for pg compilers
+   module load craype-interlagos
+   export ESMF_DIR=/home/nersc/knutali/opt/esmf_5_2_0rp3-nonetcdf/
+   export ESMF_MOD_DIR=${ESMF_DIR}/mod/modO/Unicos.pgi.64.mpi.default/
+   export ESMF_LIB_DIR=${ESMF_DIR}/lib/libO/Unicos.pgi.64.mpi.default/
+else 
+   echo "Dont know where ESMF_DIR is located on this machine"
+   exit 4
+fi
+echo "$(basename $0) : ESMF_DIR=$ESMF_DIR"
 
 # Get some useful info from blkdat.input
 THFLAG=$(blkdat_get blkdat.input thflag)
@@ -42,9 +136,15 @@ elif [ $SIGVER -eq 5 ] ; then
 elif [ $SIGVER -eq 6 ] ; then
    TERMS=17
    MYTHFLAG=2
+elif [ $SIGVER -eq 7 ] ; then
+   TERMS=12
+   MYTHFLAG=0
+elif [ $SIGVER -eq 8 ] ; then
+   TERMS=12
+   MYTHFLAG=2
 else
    echo "SIGVER = $SIGVER"
-   echo "So far only 7 term eq of state is supported (SIGVER=1 or 2) is supported"
+   echo "only 7,9,12 and 17 term eq of state is supported (SIGVER=1 through 8) is supported"
    exit 1
 fi
 TERMS2=$(echo 0$TERMS | tail -c3)
@@ -56,23 +156,10 @@ if [ $THFLAG -ne $MYTHFLAG ] ; then
    exit 1
 fi
 
-# Set up rel path and statment function name fnc
-stmt=stmt_fns_SIGMA${MYTHFLAG}_${TERMS}term.h
+# Copy code to expt dir
 targetdir=$(source_dir $V $TERMS $THFLAG)
 targetdir=$EDIR/build/$targetdir
 targetconfdir=$EDIR/build/config/
-
-# Create hycom executable. Copy code to expt dir
-sourcedir=$BASEDIR/../hycom/RELO/src_${V}ZA-07Tsig0-i-sm-sse_relo_mpi/ # Yes, we always use this version
-sourceconfdir=$BASEDIR/../hycom/RELO/config/
-#if [ ! -d $EDIR/build/ ] ; then 
-#   mkdir $EDIR/build
-#   cp -r -L $sourcedir $targetdir
-#   cp -r -L $sourceconfdir $targetconfdir
-#   echo "build dir $EDIR/build not found. Setting it up with repo code from $sourcedir"
-#else 
-#   echo "build dir $EDIR/build found. Using code in that subdirectory"
-#fi
 if [ ! -d $EDIR/build/ ] ; then 
    mkdir $EDIR/build
    echo "build dir $EDIR/build not found. Setting it up with repo code from $sourcedir"
@@ -88,19 +175,22 @@ else
    fi
 fi
 
-# Copy feature flag in expt dir if present
+# Copy hycom feature flag in expt dir if present
 [ -f $EDIR/hycom_feature_flags  ] && cp $EDIR/hycom_feature_flags $targetdir
 
-# Create hycom executable. Set up correct eq of state
+# Set up correct eq of state for hycom
+stmt=stmt_fns_SIGMA${MYTHFLAG}_${TERMS}term.h
 cd $targetdir
 echo "Now setting up stmt_fns.h in $targetdir"
-source set_env.sh
 rm stmt_fns.h
 ln -s ALT_CODE/$stmt stmt_fns.h
 
-# Create hycom executable. Set up correct domain size in CICE code, and pass this through to the compile script
-# NB: hycom is domain-independent, CICE is not. So the grid size info needs to be there. It is passed on to the CICE
-# compilation script by hycoms makefile
+# 1) Compile CICE
+cd $targetdir/CICE/
+env RES=gx3 GRID=${IDM}x${JDM} SITE=hexagon comp_ice.esmf
+
+# Create hycom objects and final hycom_cice executable. 
+cd $targetdir
 echo "Now compiling hycom_cice in $targetdir." 
-env RES=gx3 GRID=${IDM}x${JDM} csh Make_cice.csh 
+env ARCH=$ARCH.$SITE csh Make_cice.csh 
 exit $?
