@@ -949,13 +949,14 @@ c
       end subroutine restart_zero3d
 c
 cKAL
-      function restart_name(dtimex, yrflag, dir)
+CKAL  function restart_name(dtimex, yrflag, dir)
+      function restart_name(dtimex, dir)
       use mod_xc
       use mod_cb_arrays
       implicit none
 
       real*8,   intent(in)    :: dtimex
-      integer,  intent(in)    :: yrflag
+CKAL  integer,  intent(in)    :: yrflag
       character(len=*),intent(in)    :: dir
 c
       character(len=80) :: restart_name

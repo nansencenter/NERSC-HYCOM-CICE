@@ -2206,7 +2206,8 @@ c ---   start from restart file
 c
 cKAL    flnmra = trim(flnmrsi)//'.a'
 cKAL    flnmrb = trim(flnmrsi)//'.b'
-        flnmra = restart_name(day1,yrflag,"in")
+CKAL    flnmra = restart_name(day1,yrflag,"in")
+        flnmra = restart_name(day1,"in")
         flnmrb = trim(flnmra)//".b"
         flnmra = trim(flnmra)//".a"
         call restart_in(nstep0,dtime0, flnmra,flnmrb)
@@ -4360,7 +4361,8 @@ c
 c
 cKAL    flnmra = flnmrso  !.a extension added by restart_out
 cKAL    flnmrb = flnmrso  !.b extension added by restart_out
-        flnmra = restart_name(dtime,yrflag,"out")
+CKAL    flnmra = restart_name(dtime,yrflag,"out")
+        flnmra = restart_name(dtime,"out")
 cKAL    Falls back to standard HYCOM behaviour
         if (trim(flnmra)=="restart_out") then
            flnmra = flnmrso  !.a extension added by restart_out

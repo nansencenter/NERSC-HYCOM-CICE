@@ -860,7 +860,7 @@ implicit none
          call ESMF_TimeGet(tmpTime,yy=tmp_year,mm=tmp_month, dd=tmp_mday,s=tmp_sec,rc=rc)
          if (localPet == 0 ) &
             print '(a,5i6)',"cice_setup_esmf: Ext  time + dt   :",tmp_year,tmp_month,tmp_mday,tmp_sec
-         if (tmp_year <> year_init+nyr-1 .or.  tmp_month <> month .or. tmp_mday <> mday .or.  sec <> tmp_sec) then
+         if (tmp_year /= year_init+nyr-1 .or.  tmp_month /= month .or. tmp_mday /= mday .or.  sec /= tmp_sec) then
             tmp1=start_year*10000+start_mday*100+start_mday + start_sec/86400.
             tmp2=(nyr+year_init-1)*10000+month*100+mday + sec/86400.
             write(msg,"('cice_setup_esmf: Time from restart do not match external clock',2f14.4)") tmp1,tmp2

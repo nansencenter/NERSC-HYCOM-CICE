@@ -1,19 +1,14 @@
 #!/bin/bash
 
-
-
 myclim="woa2013" # Climatology to use
-
-# What ARCH value to pass to hycom_all compilation script
-# NB: On some machines (cray/unicos) you may have to modify module settings as well
 
 
 #hycom_all_arch=gfortran   # Most linux machines have gnu fortran
 hycom_all_arch=amd64       # Uses pgi compiler
-hycom_arch=amd64
 
-
-
+# What ARCH value to pass to hycom and cice compilation scripts
+#hycom_compile_script_args="linux -c gfortran -m openmpi " # try this on generic linux box
+hycom_compile_script_args="xt4"                           # hexagon
 
 
 # Must be in expt dir to run this script
@@ -58,17 +53,19 @@ cd $EDIR
 dir="$HYCOM_ALL"
 cd $dir
 echo "compiling hycom_all in $dir"
-csh Make_all.com ARCH=amd64 > $EDIR/log/ref_hycom_all.out 2>&1
-res=$?
-[ $res -eq 0 ] && echo "Success"
-[ $res -ne 0 ] && echo "Failure..."
+echo "setenv ARCH $hycom_all_arch" > Make_all.src
+csh Make_all.com > $EDIR/log/ref_hycom_all.out 2>&1
+echo "Compile script exited - check result in  $EDIR/log/ref_hycom_all.out"
 echo ".."
 
+# Create hycom_cice model
 cd $EDIR
 echo "Compiling hycom_cice"
-$BINDIR/compile_model.sh > $EDIR/log/ref_hycom.out 2>&1
+#echo "$BINDIR/compile_model.sh ${hycom_compile_script_args}  > $EDIR/log/ref_hycom.out 2>&1"
+$BINDIR/compile_model.sh ${hycom_compile_script_args}  > $EDIR/log/ref_hycom.out 2>&1
+res=$?
 [ $res -eq 0 ] && echo "Success"
-[ $res -ne 0 ] && echo "Failure..."
+[ $res -ne 0 ] && echo "Failure...  Log in $EDIR/log/ref_hycom.out"
 echo ".."
 
 # Create z-level relaxation files
@@ -77,7 +74,7 @@ echo "z climatology"
 $BINDIR/z_generic.sh $myclim > $EDIR/log/ref_z_relax.out 2>&1
 res=$?
 [ $res -eq 0 ] && echo "Success"
-[ $res -ne 0 ] && echo "Failure..."
+[ $res -ne 0 ] && echo "Failure... Log in $EDIR/log/ref_z_relax.out"
 echo ".."
 
 # Create relaxation files on hybrid coordinates
@@ -86,7 +83,7 @@ echo "hybrid climatology"
 $BINDIR/relaxi.sh $myclim   > $EDIR/log/ref_hybrid_relax.out 2>&1
 res=$?
 [ $res -eq 0 ] && echo "Success"
-[ $res -ne 0 ] && echo "Failure..."
+[ $res -ne 0 ] && echo "Failure...  Log in  $EDIR/log/ref_hybrid_relax.out"
 echo ".."
 
 # Create relaxation mask
@@ -131,7 +128,7 @@ res=$?
 echo ".."
 
 echo "If things went fine, you can now generate test forcing like this: "
-echo "    $BINDIR/atmo_synoptic.sh erai 2015-01-02T00:00:00  2015-01-05T00:00:00"
+echo "    $BINDIR/atmo_synoptic.sh erai 2001-01-01T00:00:00  2001-01-05T00:00:00"
 echo "Then edit the job script pbsjob.sh to read and make sure expt_preprocess.sh is called like this"
 echo "    $BINDIR/expt_preprocess.sh 2015-01-02T00:00:00 2015-01-05T00:00:00 --init "
 echo

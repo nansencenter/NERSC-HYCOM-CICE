@@ -76,5 +76,4 @@ make ARCH=$ARCH TYPE=$TYPE CICE_DIR=./CICE/ hycom_cice
 
 # --- some machines require gmake
 #gmake ARCH=$ARCH TYPE=$TYPE hycom_cice
-
-exit $?
+exit $status

@@ -63,6 +63,34 @@ usage="
 
 "
 
+options=$(getopt -o c:m: -- "$@")
+[ $? -eq 0 ] || {
+    echo "$usage"
+    echo "Incorrect options provided"
+    exit 1
+}
+compiler=""
+mpilib=""
+eval set -- "$options"
+while true; do
+    case "$1" in
+    -c)
+       shift;
+       compiler=$1
+        ;;
+    -m)
+       shift;
+       mpilib=$1
+        ;;
+    --)
+        shift
+        break
+        ;;
+    esac
+    shift
+done
+
+
 #Check arguments 
 if [ $# -gt 0 ] ; then
    ARCH=$1
@@ -75,6 +103,9 @@ fi
 # Check ARCH 
 if [ "$ARCH" == "xt4" ] ;then
    echo ARCH=$ARCH
+# Generic linux
+elif [ "$ARCH" == "linux" ] ;then
+   echo ARCH=$ARCH
 else 
    echo "$usage"
    echo
@@ -86,8 +117,12 @@ fi
 # SITE deduced from hostname
 unamen=$(uname -n)
 unames=$(uname -s)
+# Cray systems
 if [ "${unamen:0:7}" == "hexagon" ] ; then
    SITE="hexagon"
+# Generic linux system
+elif [ "${unames:0:5}" == "Linux" ] ; then
+   SITE=""
 else
    echo "Unknown SITE. uname -n gives $unamen"
    exit 3
@@ -95,17 +130,46 @@ fi
 
 echo "$(basename $0) : ARCH=$ARCH"
 echo "$(basename $0) : SITE=$SITE"
+echo "$(basename $0) : compiler=$compiler"
+echo "$(basename $0) : mpilib=$mpilib"
 
 
 # Deduce ESMF dir from SITE and possibly ARCH
-if [ ! -z "${ESMF_DIR}" ] ; then
-   echo "Using preset ESMF_DIR=$ESMF_DIR"
+if [[ -n "${ESMF_DIR}" ]] &&  [[ -n "${ESMF_MOD_DIR}" ]] && [[ -n "${ESMF_LIB_DIR}" ]] ; then
+   echo "Using preset ESMF_DIR    =$ESMF_DIR"
+   echo "Using preset ESMF_MOD_DIR=$ESMF_DIR"
+   echo "Using preset ESMF_LIB_DIR=$ESMF_DIR"
+
+# If site is given, use hardcoded settings for this machine
 elif [ "$SITE" == "hexagon" ] ; then
    # KAL - Note that if you change compiler, you will need to change ESMF_MOD_DIR. The below is for pg compilers
    module load craype-interlagos
    export ESMF_DIR=/home/nersc/knutali/opt/esmf_5_2_0rp3-nonetcdf/
    export ESMF_MOD_DIR=${ESMF_DIR}/mod/modO/Unicos.pgi.64.mpi.default/
    export ESMF_LIB_DIR=${ESMF_DIR}/lib/libO/Unicos.pgi.64.mpi.default/
+
+
+# If site is not given, try to use a generic setup. MAcro names composed of compiler name and mpi lib name (openmpi, mpich, lam, etc etc(
+elif [ "${unames:0:5}" == "Linux" -a "$SITE" == "" ] ; then
+   if [ -z "${ESMF_DIR}" ] ; then
+      echo "ESMF_DIR must be set before calling script when running on generic linux machine"
+      exit 4
+   fi
+   if [ -z "${compiler}" ] ; then
+      echo "compiler must be set on input running on generic linux machine (-c option)"
+      exit 4
+   fi
+   if [ -z "${mpilib}" ] ; then
+      echo "mpilib must be set on input running on generic linux machine (-m option)"
+      exit 4
+   fi
+   export ESMF_MOD_DIR=${ESMF_DIR}/mod/modO/Linux.$compiler.64.$mpilib.default/
+   export ESMF_LIB_DIR=${ESMF_DIR}/lib/libO/Linux.$compiler.64.$mpilib.default/
+
+   # Set site to compiler/mpilib combo
+   SITE=$compiler.$mpilib
+
+
 else 
    echo "Dont know where ESMF_DIR is located on this machine"
    exit 4
@@ -187,10 +251,11 @@ ln -s ALT_CODE/$stmt stmt_fns.h
 
 # 1) Compile CICE
 cd $targetdir/CICE/
-env RES=gx3 GRID=${IDM}x${JDM} SITE=hexagon comp_ice.esmf
+env RES=gx3 GRID=${IDM}x${JDM} SITE=$SITE ./comp_ice.esmf
 
 # Create hycom objects and final hycom_cice executable. 
 cd $targetdir
 echo "Now compiling hycom_cice in $targetdir." 
 env ARCH=$ARCH.$SITE csh Make_cice.csh 
+echo $?
 exit $?
