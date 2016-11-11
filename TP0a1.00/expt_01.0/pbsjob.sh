@@ -56,7 +56,7 @@ source ../REGION.src  || { echo "Could not source ../REGION.src "; exit 1; }
 source ./EXPT.src  || { echo "Could not source EXPT.src"; exit 1; }
 echo "NMPI =$NMPI (Number of MPI tasks needed for running job) "
 
-START="2000-01-10T00:00:00"
+START="2000-01-01T00:00:00"
 END="2000-01-10T00:00:00"
 INITFLG="--init"
 #INITFLG=""
