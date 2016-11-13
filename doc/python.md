@@ -1,18 +1,8 @@
 [TOC]
 
-# Description
-
-This repository contains the source code necessary to run the coupled HYCOM-CICE model developed at NERSC. In the repository you will find the HYCOM and CICE source codes, utility routines, and a directory containing a simple model setup (Directory TP0a1.00). Below is a short description of how to set up and compile the code
-
 # Prerequisites
 
-The following tools are necessary in many parts of the code.
-
-A working fortran compiler.
-
-To run the HYCOM-CICE coupled code, you will need to have a working installation of the Eearth System Modelling Framework: https://www.earthsystemcog.org/projects/esmf/download/. The code has been tested and verified to work with ESMF v 5.2.0.rp3.
-
-A working python 2.7 installation, with the following packages
+You will need a  working python 2.7 installation, with the following packages
 
 * [numpy](https://pypi.python.org/pypi/numpy)
 
@@ -39,21 +29,10 @@ Additional python packages may be required, but these are usually installed in m
 
 * [modeltools](https://github.com/knutalnersc/modeltools), a collection of various tools .. 
 
-# Retrieval of code and tools
 
-## Retrieving NERSC-HYCOM-CICE
-Clone code from main repository (TODO: Fix when moved/use markdown)
+## Retrieving and installation of python modules
 
-`
-git clone https://bitbucket.org/knutal/nersc-hycom-cice
-`
-
-If you get errors about server certificates, see [here](../..//overview#markdown-header-server-certificates)
-
-
-## Retrieving and installing python modules
-
-Next you will need to install the python packages necessary to use the  python routines. With some luck, most of the necessary packages are already installed.  A quick way to check is to start ipython and write import <name_of_package>. Example:
+You will need to install the python packages necessary to use the  python routines. With some luck, most of the necessary packages are already installed.  A quick way to check is to start ipython and write import <name_of_package>. Example:
 
     import numpy
     ---------------------------------------------------------------------------
@@ -63,14 +42,26 @@ Next you will need to install the python packages necessary to use the  python r
     ImportError: No module named numpy
 
 If you find some packages are missing, either install them yourself, or have your friendly IT guy install them for you. The following packages can be installed by root in the python distribution, and are available in python installation tools (pip). Some of them are also available as binary packages in linux (RPM, debian package etc etc):
-[numpy](https://pypi.python.org/pypi/numpy)  
-[scipy](https://pypi.python.org/pypi/scipy) 
-[pyproj](https://pypi.python.org/pypi/pyproj) 
-[f90nml](https://pypi.python.org/pypi/f90nml) 
-[cfunits](https://pypi.python.org/pypi/cfunits) 
-[basemap](https://pypi.python.org/pypi/basemap) 
-[matplotlib](https://pypi.python.org/pypi/matplotlib) 
-[netCDF4](https://pypi.python.org/pypi/netCDF4). It is also possible to install these packages outside the main python distribution tree, but the process is a bit more elaborate.
+
+* [numpy](https://pypi.python.org/pypi/numpy)  
+
+* [scipy](https://pypi.python.org/pypi/scipy) 
+
+* [pyproj](https://pypi.python.org/pypi/pyproj) 
+
+* [basemap](https://pypi.python.org/pypi/basemap) 
+
+* [matplotlib](https://pypi.python.org/pypi/matplotlib) 
+
+* [netCDF4](https://pypi.python.org/pypi/netCDF4). 
+
+It is also possible to install these packages outside the main python distribution tree, but the process is a bit more elaborate.
+
+These packages are not that "main stream", and you may have to install them yourself
+
+* [f90nml](https://pypi.python.org/pypi/f90nml) 
+
+* [cfunits](https://pypi.python.org/pypi/cfunits) 
 
 The github packages are not yet available as installers, and can be installed as follows:
 
