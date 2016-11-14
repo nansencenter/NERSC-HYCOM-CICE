@@ -15,7 +15,7 @@ To run the HYCOM-CICE coupled code, you will need to have a working installation
 A working python 2.7 installation, [more info can be found here](doc/python.md)
 
 
-# Retrieving NERSC-HYCOM-CICE
+# Retrieving HYCOM-CICE
 Clone code from main repository (TODO: Fix when moved/use markdown)
 
 `
@@ -24,8 +24,10 @@ git clone https://bitbucket.org/knutal/nersc-hycom-cice
 
 If you get errors about server certificates, see [here](../..//overview#markdown-header-server-certificates)
 
-# Compiling support programs
+# Compiling HYCOM-CICE support programs
 
 * Compile MSCPROGS routine, following the instructions given in [hycom/MSCPROGS/](hycom/MSCPROGS)
 
 * Compile HYCOM_ALL programs, following the instructions given in [hycom/HYCOM_ALL/](hycom/HYCOM_ALL)
+
+# Compiling HYCOM-CICE
