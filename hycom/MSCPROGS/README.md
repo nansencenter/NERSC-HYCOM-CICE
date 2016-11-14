@@ -1,9 +1,10 @@
 # Procedure for compiling/installing MSCPROGS
------------------------------------
 
 * Go into the directory MSCPROGS/src/
 
 * Inside the Make.Inc directory, link the relevant make include file (ex make.fimm.ifort, make.hexagon.pgi etc etc) to make.inc in directory Make.Inc. If you dont have a suitable setup for your machine, go to "Procedure for porting".
+
+* Note that the make.linux.xxx is intented to be a generic macro set for linux machines, can be used as a starting point. on Cray systems with ftn compiler, use make.hexagon.xxx as a starting point
 
 * In the directory MSCPROGS/src, type gmake clean to clean out any old modules, object files and executables lying around.
 
@@ -21,7 +22,6 @@
 
 
 # Procedure for porting:
-----------------------
 
 * First copy everything (MSCProgs and subdirectories) to the new machine.
 
@@ -51,3 +51,27 @@ some CPP flags you need to define in the make include files:
 
 After the makefile is set up, link it to the make.inc file as
 described in the procedure for compiling/installing.
+
+
+# Site-specific comments
+
+
+hexagon (and other Cray XT systems) control environment variables through module systems. Using this, the make.inc file can have empty LIB and INCLUDE variables, as these are set mainly by the module system using environment variables.
+
+## hexagon.bccs.uib.no 
+
+The following module setup was used with luck on hexagon
+    module swap PrgEnv-cray PrgEnv-pgi
+    module load cmake
+    module load cray-libsci
+    module unload xtpe-interlagos # This is needed to compile on login nodes (istanbul cpu)
+    module load fftw
+    module load cray-netcdf
+    module load ncview
+    module load python/2.7.9-dso # NB: sets PYTHONHOME, which can cause problems for some scripts that uses the full path
+    module load subversion
+    module swap pgi pgi/14.1.0 
+    module swap cray-libsci cray-libsci/12.2.0 
+    module swap cray-mpich cray-mpich2 
+    module swap cray-netcdf cray-netcdf/4.3.2 
+
