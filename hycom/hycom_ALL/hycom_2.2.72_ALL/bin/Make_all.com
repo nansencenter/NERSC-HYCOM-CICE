@@ -8,6 +8,7 @@ setenv OS `uname`
 if ($OS == "Linux") then
   if (`/bin/uname -m` == "x86_64") then
 	setenv OS Linux64
+	#setenv OS Linux64gfortran
   endif
 # setenv OS LinuxIFC
 # setenv OS LinuxICE
@@ -31,6 +32,14 @@ case 'Linux64':
 	setenv FLIBS	""
 	setenv CC	"gcc"
 	setenv CFLAGS	"-O -march=k8 -m64 -mcmodel=medium"
+	breaksw
+case 'Linux64gfortran':
+#       compile for 64-bit AMD64
+	setenv FC	"gfortran"
+	setenv FFLAGS	"-fPIC -fno-second-underscore -fconvert=big-endian -O"
+	setenv FLIBS	""
+	setenv CC	"gcc"
+	setenv CFLAGS	"-O -m64 -mcmodel=medium"
 	breaksw
 case 'LinuxICE':
 #       compile for SGI Altix ICE, Intel compiler
