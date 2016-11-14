@@ -40,13 +40,15 @@
 * In addition you will need netcdf libraries.
 
 some CPP flags you need to define in the make include files:
+
 |CPP flag | meaning|
 |-------- | -------------|
 |LAPACK   | use Lapack libraries |
 |FFTW     | use FFTW  Fourier transform libraries |
 |ESSL     | use ESSL  libraries, typically available on AIX machines. If you set this, unset FFTW and LAPACK.|
-|IARGC    | defines the iargc() function as real*4, external in the code. |
+|IARGC    | defines the iargc function as real4, external in the code. |
 |-------|------|
+
 
 After the makefile is set up, link it to the make.inc file as
 described in the procedure for compiling/installing.
