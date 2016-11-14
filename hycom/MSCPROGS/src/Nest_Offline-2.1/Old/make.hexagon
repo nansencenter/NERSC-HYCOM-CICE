@@ -1,0 +1,19 @@
+CF90 = ftn
+CF77 = $(CF90)
+LD = $(CF90)
+DEBUG_FLAGS = -g  -traceback  
+F77FLG = -Mfixed   
+F90FLG = -Mfree 
+
+# Set -DMATLAB in CPPFLAGS if you find some working matlab lib setup ...
+MATLIBS=
+MATCPPINC=
+
+NCLIB = -L$(NETCDF_LIB) -lnetcdf
+NCINC = -I$(NETCDF_INC)
+
+FFLAGS = -O2  -byteswapio $(DEBUG_FLAGS) $(NCINC) 
+LINKFLAGS = $(FFLAGS)
+
+CPPFLAGS =  -P  -UMATLAB  -traditional-cpp  $(MATCPPINC)  -DEXTERNAL_IARGC
+CPP = /usr/bin/cpp

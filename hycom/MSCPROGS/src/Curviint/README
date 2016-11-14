@@ -1,0 +1,33 @@
+This directory contains routines for interpolating from an outer model to a
+regional model.
+
+
+curviint-2.1 : 
+   This routine interpolates from the outer model grid to the
+   regional model. It uses the "old" type of grid and depths 
+   file (newpos, depthsXXXxXXX.uf). You have to write the name
+   of the restart file to process, grid dimensions etc as the
+   program runs. More detailed instructions are available when 
+   running the program
+
+
+curviint-2.2 :
+   This routine interpolates from the outer model grid to the
+   regional model. It uses standard hycom grid and depths files,
+   where the outer model grid/depth is renamed to global.depth.[ab]
+   and global.grid.[ab]. Grid dimensions are automatically
+   retrieved from those two files. File name of hycom restart file
+   and ICE restart file are given as arguments to this routine
+   More detailed instructions are available when running the program
+   with no arguments.
+
+   NB: Despite the name this routine can be used on old hycom restart
+   files as long as you have regional.grid/depths files.
+
+
+NB: Run this program in a separate subdirectory to avoid unfortunate
+side-effects.
+
+
+
+Knut Lisæter, 23. November  2008

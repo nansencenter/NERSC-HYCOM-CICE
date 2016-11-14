@@ -1,0 +1,81 @@
+hyc2proj can do projection and vertical interpolation of hycom output files.
+The output of hyc2proj is netcdf files which are compliant with the CF standard.
+Below is a description of the input files needed, and how to run the program.
+
+
+
+Input files:
+------------
+
+proj.in
+------- 
+defines the projection to use. There are three projections supported
+at the moment: 
+
+native: Uses models own grid projection. In the proj.in file you specify 
+        "native" as projection, then you specify first and last indices and
+        stepping in each grid direction (first dimension first,last, and
+        stepping then last dimension first, last and stepping).
+
+polar_stereographic: Uses polar stereographic grid projection. In the proj.in
+        file you specify "polar_stereographic" as projection, then you specify 
+        first and last projection coordinates and stepping in each
+        grid direction.
+        Finally, you can also choose to rotate vectors so that they are aligned with the
+        polar stereographic grid. If this entry is set to false, vectors are
+        aligned with local East / North directions.
+
+mercator: Uses mercator grid projection. In the proj.in
+        file you specify "mercator" as projection, then you specify 
+        first and last projection coordinates and stepping in each
+        grid direction.
+        Vectors are aligned with east/north directions.
+
+
+extract files: 
+--------------
+Defines fields to extract from hycom (.a .b) files:
+
+Most of this file is legacy stuff, except for the names of the fields to
+extract. From line 6 and onwards, the names of the fields to extract are listed. 
+Of importance here is the name of the field to extract (first entry on line) and
+the boolean value (last entry on line). The field name must match an existing
+field listed in the .b file, and the boolean value indicates if the field should
+be processed or not.
+
+The hyc2proj routine is clever enough to figure out if the extracted variable is 2D or
+3D. 
+
+The name of the extract file is slightly different for different hycom files:
+daily   files : extract.daily
+weekly  files : extract.weekly
+archv   files : extract.archv
+restart files : extract.restart
+The reason for different file names, is that the names of the fields in the .b
+files are slightly different for the different hycom file types.
+
+
+deptlevels.in
+-------------
+This files simply lists the number of depth levels, then the different depth
+levels to process. Depths are positive from the surface and down.
+
+
+How to run:
+-----------
+Get the datafiles you want to process. You will also need the files
+regional.grid.[ab] and regional.depth.[ab], as well as the "grid.info" file.
+
+-Prepare the projection file (see above). Name it "proj.in"
+-Prepare the depthlevels.in file (see above)
+-Prepare the extract file. Make sure you have the correct extract file (and
+ name) for the filetype you are processing.
+
+Run hyc2proj. Run it with no arguments to get a brief description of its
+usage. Note that it is possible to specify several files at the same time.
+
+Example:
+hyc2proj TP4DAILY_2015_311_2015_311.a TP4DAILY_2015_311_2015_312.a
+
+
+

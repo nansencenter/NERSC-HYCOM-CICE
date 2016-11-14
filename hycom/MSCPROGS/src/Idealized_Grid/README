@@ -1,0 +1,12 @@
+Routines for generating idealized grid configurations. These routines are
+only meant as starting points. They will have to be hand-modified for your own
+idealized setup.
+
+igrid   : Creates regional.grid/depth.[ab] files describing periodic
+          flat bottom or seamount cases. Modify for more advanced setups
+
+irstrt  : Can be used to create an initial restart file. Two simple 
+          cases are in the file. Use them as starting points for your 
+          own setups
+
+iforce  : Idealized forcing - TODO

@@ -1,0 +1,325 @@
+! KAL -- This routine interpolates horizontal mercator fields to a NERSC model
+! KAL -- No vertical interpolation done by this routine.
+! KAL -- 
+! KAL -- Usable/Inital version: 31.01.2007 - Knut Lisæter
+
+
+
+      program mercator_horizontal_interpolation
+      use netcdf
+      use mod_xc
+      use mod_za
+      use mod_mercatorgrid
+      use m_spherdist
+      use mod_confmap
+      use m_initconfmap
+      use m_nearestpoint
+      implicit none
+
+
+       character(len=80) :: testfile, ctemp, csaln, bathyfile
+       integer :: ierr
+       integer :: k,ivar
+       integer :: ncid, ncid2
+       integer :: tempid,zvarid,lonid,latid, tmpid, salnid
+
+       real, allocatable :: temp2d(:,:),  &
+           hyclon(:,:), hyclat(:,:), tmpr(:,:),  &
+           hycbathy(:,:), tmprmask(:,:), temp2dold(:,:), tmprold(:,:), &
+           hycnearest(:,:)
+       integer, allocatable :: ip(:,:),ipiv(:,:),jpiv(:,:),maxk(:,:)
+       integer, dimension(nf90_max_var_dims) :: dimIDs
+       integer :: ipivtmp,jpivtmp,ipivh,jpivh
+       integer :: i2,j2,i,j
+       integer :: ndims
+       real :: zlev(1), amax, amin, dist, mindist
+       logical :: usefile,ass,ex
+       real :: a1,a2,a3,a4
+       real :: missing_value
+       character(len=8) :: chfld
+
+       integer, dimension(:,:,:),allocatable  :: i4, j4
+       real   , dimension(:,:,:),allocatable  :: dist4
+
+       real    :: tmpd4
+       integer :: k4
+
+       real :: reflength
+       logical :: maskok
+
+
+       ! This initializes the mercator grid size lengths
+       allocate(temp2d(1,1))
+       call mercgrid('',temp2d,0)
+       deallocate(temp2d)
+
+       ! Read Mercator netcdf file 
+       testfile='ext-NATL4-T17_y2005m01d01_gridT.nc'
+       ctemp='votemper'
+       csaln='vosaline'
+       ierr=NF90_OPEN(testfile,NF90_NOWRITE,ncid)
+
+       ! Get Mercator tlon, tlat
+       !allocate(merclon(dimlenx,dimleny))
+       !call mercgrid('nav_lon',merclon,0)
+
+       ! Get Mercator tlon, tlat
+       !allocate(merclat(dimlenx,dimleny))
+       !call mercgrid('nav_lat',merclat,0)
+
+       ! Get Mercator bathymetry (t)
+       !allocate(mercbathy(dimlenx,dimleny))
+       !call mercgrid('mbathy',mercbathy,0)
+
+       call mercgrid_init()
+
+
+       ! Get HYCOM lon lat and depths
+       ! Initialize Arrai IO
+       call xcspmd()
+       call zaiost()
+
+       allocate(hyclon(idm,jdm))
+       allocate(hyclat(idm,jdm))
+       allocate(hycbathy(idm,jdm))
+       allocate(ip    (idm,jdm))
+
+       inquire(exist=ex,file='regional.grid.a')
+       if (.not.ex) stop '(p_hint_mercator: regional.grid.a not present)'
+       inquire(exist=ex,file='regional.depth.a')
+       if (.not.ex) stop '(p_hint_mercator: regional.depth.a not present)'
+
+
+       call zaiopf('regional.grid.a','old',99)
+       call zaiord(hyclon,ip,.false.,amin,amax,99) !plon
+       call zaiord(hyclat,ip,.false.,amin,amax,99) !plat
+       call zaiocl(99)
+       call zaiopf('regional.depth.a','old',99)
+       call zaiord(hycbathy,ip,.false.,amin,amax,99) !plat
+       call zaiocl(99)
+       print *,'hyc lon:',minval(hyclon),maxval(hyclon)
+       print *,'hyc lat:',minval(hyclat),maxval(hyclat)
+
+       ! Init confmap
+       call initconfmap(idm,jdm)
+
+       allocate(ipiv(idm,jdm))
+       allocate(jpiv(idm,jdm))
+       allocate(i4(idm,jdm,4))
+       allocate(j4(idm,jdm,4))
+       allocate(dist4(idm,jdm,4))
+       usefile=.true.
+       call mercgrid_pivots(merclon,merclat,hyclon,hyclat,ipiv,jpiv, &
+                            i4,j4,dist4,idm,jdm,usefile)
+
+       print *,maxval(ipiv),minval(ipiv)
+       print *,maxval(jpiv),minval(jpiv)
+
+       reflength=maxval(dist4)
+       print *,'reflength is ', reflength
+
+
+
+
+
+       ! Get varid
+       ierr=nf90_inq_varid(ncid,'deptht',zvarid)
+       ierr=nf90_inq_varid(ncid,trim(ctemp),tempid)
+       ierr=nf90_inq_varid(ncid,trim(csaln),salnid)
+       ierr=nf90_inquire_variable(ncid,tempid,dimids=dimids,ndims=ndims)
+       if (ierr/=NF90_NOERR) stop '(error getting v temp)'
+
+
+       
+
+       ! Allocate 2D vars to hold data
+       allocate(tmpr   (idm,jdm))
+       allocate(tmprold(idm,jdm))
+       call zaiopf('merchint.a','replace',99)
+       open (98,file='merchint.b',status='replace')
+       tmpr=real(ipiv)
+       call zaiowr(tmpr,ip,.false.,amin,amax,99,.false.) !plon
+       write(98,104) 'ipiv    ',0,0.,amin,amax
+       tmpr=real(jpiv)
+       call zaiowr(tmpr,ip,.false.,amin,amax,99,.false.) !plon
+       write(98,104) 'jpiv    ',0,0.,amin,amax
+
+
+       allocate(temp2d(dimlenx,dimleny))
+       allocate(temp2dold(dimlenx,dimleny))
+       allocate(mercmask(dimlenx,dimleny))
+       allocate(tmprmask(idm,jdm))
+       allocate(hycnearest(idm,jdm))
+       allocate(maxk(idm,jdm))
+       maxk=0
+
+       ! Go through all Mercator depths 
+       do ivar=1,2
+       do k=1,dimlenz
+
+          ! z level of model
+          ierr=nf90_get_var(ncid,zvarid,zlev,start=(/k/),count=(/1/))
+
+          ! Use temperatures for testing
+          ! Get "undef" values
+          if (ivar==1) then
+             ierr=nf90_get_var(ncid,tempid,temp2d,start=(/1,1,k,1/),count=(/dimlenx,dimleny,1,1/))
+             ierr=nf90_get_att(ncid,tempid,'missing_value',missing_value)
+             chfld='temp    '
+          elseif (ivar==2) then
+             ierr=nf90_get_var(ncid,salnid,temp2d,start=(/1,1,k,1/),count=(/dimlenx,dimleny,1,1/))
+             ierr=nf90_get_att(ncid,salnid,'missing_value',missing_value)
+             chfld='saln    '
+          else
+             print *,'ivar range ...'
+             stop
+          end if
+
+          ! mask for t-cells (temperature)
+          !call mercgrid('tmask',mercmask,k)
+          mercmask=1
+          where(temp2d==missing_value)mercmask=0
+
+
+
+          print *,zlev,minval(temp2d),maxval(temp2d),temp2d(dimlenx/2,dimleny/2)
+
+          do j=1,jdm
+          do i=1,idm
+             i2=ipiv(i,j)
+             j2=jpiv(i,j)
+             tmpr(i,j)=temp2d(i2,j2)
+             tmprmask(i,j)=mercmask(i2,j2)
+
+             !! sum (fld*e^(-x/max(x))) / sum( e^(-x/max(x)))
+             tmpr(i,j) =  0.
+             maskok=.true.
+             do k4=1,4
+                i2=i4(i,j,k4)
+                j2=j4(i,j,k4)
+                tmpd4=dist4(i,j,k4)
+                tmpr(i,j)= tmpr(i,j) + temp2d(i2,j2) * exp( - tmpd4 / reflength )
+                maskok=maskok.and.mercmask(i2,j2)==1
+             end do
+
+             if (maskok) then
+                tmpr(i,j)=tmpr(i,j) / sum( exp( - dist4(i,j,:) / reflength ) ) 
+             else
+                tmpr(i,j)=temp2d(i2,j2)
+                tmprmask(i,j)=0
+             end if
+             !tmpr(i,j)=temp2d(i2,j2)
+
+
+
+
+          end do
+          end do
+
+          ! If Mercator unmasks a point for k=1, we should use a nearest neighbour
+          ! approach
+          if (k==1) then 
+              
+             hycnearest=0
+
+             do j=1,jdm
+             do i=1,idm
+
+                ! if  mercmask is unset and hycom bathy > 1.  , find nearest
+                ! neighbour with set mercmask. Set value to that point 
+                if (tmprmask(i,j)==0  .and. hycbathy(i,j)>1.) then 
+
+                   ! find nearest point ...
+                   ipivh=i
+                   jpivh=j
+                   call  nearestpoint(hyclon,hyclat,idm,jdm, &
+                         hyclon(i,j),hyclat(i,j),ipivh,jpivh,  &
+                         a1,a2,a3,a4,hycbathy>1. .and. tmprmask==1,ass,.false.)
+
+                   ! set tmpr to that value
+                   if (ass) then
+
+                      ! simply nearest point
+                      tmpr(i,j)=tmpr(ipivh,jpivh)
+
+
+
+                      hycnearest(i,j)=1
+                      maxk(i,j)=k
+                   else
+                      print *,'nearestpoint failed ! '
+                      stop '(nest_offline_mercator)'
+                   end if
+
+
+                elseif (tmprmask(i,j)/=0 .and.hycbathy(i,j)<1. ) then
+                   maxk(i,j)=0;
+                end if
+
+             end do
+             end do
+
+          else if (k>1) then
+
+             ! if  mercmask is unset and hycom bathy > zlev , use old value 
+             ! above this point from hycom grid
+             do j=1,jdm
+             do i=1,idm
+                !if (tmprmask(i,j)==0 .and. hycbathy(i,j)>zlev(1)) then
+                if (nint(tmprmask(i,j))==0) then
+                   tmpr(i,j)=tmprold(i,j)
+                else
+                   maxk(i,j)=k
+                end if
+             end do
+             end do
+
+          end if
+
+          ! The final thing which can happen is that mercator values are defined
+          ! at points deeper than hycombathy. For now we neglect this, it is
+          ! handled in the vremap routines
+
+          ! Write to temporary file
+          call zaiowr(tmpr    ,ip,.false.,amin,amax,99,.false.) !plon
+          write(98,104) chfld,k,zlev(1),amin,amax
+          !call zaiowr(tmprmask,ip,.false.,amin,amax,99,.false.) !plon
+
+          ! This keeps the old valid values
+          where (tmprmask==1.or.hycnearest==1) tmprold=tmpr
+
+       end do
+       end do
+
+       tmpr=maxk
+       !print *,tmpr
+       call zaiowr(tmpr    ,ip,.false.,amin,amax,99,.false.) !plon
+       write(98,104) 'maxk    ',0,0,amin,amax
+
+       ! Diag stuff
+       tmpr=hycnearest
+       !print *,tmpr
+       call zaiowr(tmpr    ,ip,.false.,amin,amax,99,.false.) !plon
+       write(98,104) 'nearest ',0,0,amin,amax
+
+       close(98)
+       call zaiocl(99)
+
+       ierr=nf90_close(ncid)
+       ierr=nf90_close(ncid2)
+
+
+
+   104 format(a8," k=",i3," level=",f10.2,"  "," min/max:",2e14.6)
+
+
+
+      end program mercator_horizontal_interpolation
+
+
+
+
+
+         
+
+

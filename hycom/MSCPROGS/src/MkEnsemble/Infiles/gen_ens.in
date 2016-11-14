@@ -1,0 +1,6 @@
+FR1restart2010_220_00.a
+30           # Total number of ensemble members
+F            # just set to false..
+0.05         # Std dev of log(d), no unit, 0.1 = 10%
+3            # Vertical correlation range   (layers)
+10           # Horizontal correlation range (grid cells)

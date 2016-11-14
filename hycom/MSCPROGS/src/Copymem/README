@@ -1,0 +1,24 @@
+copymem:
+   Copies an ensemble member from member mem1 
+   to member mem2. Modifies restart files for 
+   EVP, Random forcing and ICE. 
+   NB: Does not modify hycom restart  files 
+   Usage:
+      copymem rungen year day hour mem1 mem2
+        filename = name of file ...
+        rungen   = 3 letter run ID    
+        year     = year               
+        day      = julian day-of-year 
+        hour     = hour of day        
+        mem1     = member to copy from
+        mem2     = member to copy to
+   Example :
+      copymem FOR 1990 210 00 4 5
+   Will copy restart file info for member 4 to
+   location of member 5.
+
+   Requires regional.depth and regional.grid files. Also 
+   requires blkdat.input to be present.
+
+Knut Lisæter, 23. November 2008
+

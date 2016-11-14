@@ -1,0 +1,21 @@
+KHOME=/home/fimm/nersc/knutali
+
+CF90 = ifort
+CF77 = $(CF90)
+LD =  $(CF90)
+
+#DEBUG_FLAGS =  -g -Ktrap=inv,denorm,divz,ovf
+DEBUG_FLAGS =  -g
+
+FFLAGS= -real_size 32 -convert big_endian -O2  $(DEBUG_FLAGS)
+#FFLAGS= -real_size 32 -convert big_endian  $(DEBUG_FLAGS)
+LINKFLAGS= $(FFLAGS) 
+
+F90FLG= -free
+F77FLG = -nofree
+
+CPPFLAGS = -P -DIA32 -traditional 
+CPP = /usr/bin/cpp 
+
+LIBS=  -L/local/netcdf/lib -lnetcdf -lnetcdff
+INCLUDE= -I/local/netcdf/include

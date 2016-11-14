@@ -1,0 +1,11 @@
+#!/bin/bash
+#set -ex
+
+# This assumes that the m2t routine is in the same dir as m2nc
+prog="${0%m2t}m2nc"
+
+# This flag allows for tecplot output from m2nc
+args="-t $*"
+
+$prog $args
+

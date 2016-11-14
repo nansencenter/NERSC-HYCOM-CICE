@@ -1,0 +1,15 @@
+dprofile:
+   Program extracts a profile at a given position.
+   You must specify a longitude, latitude pair and
+   at least one filename
+
+   Usage: dprofile lon lat files...
+
+   Fields to extract are set in extract files 
+   ( extract.daily, extract.weekly etc etc)
+
+   Required files:
+   regional.grid.[ab]
+   regional.depth.[ab]
+   + input files of daily, restart or weekly type
+

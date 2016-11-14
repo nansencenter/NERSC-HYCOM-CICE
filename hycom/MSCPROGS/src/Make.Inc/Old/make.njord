@@ -1,0 +1,31 @@
+LD = xlf90
+CF90 = xlf90
+CF77 = xlf90
+CC = xlc
+
+
+
+FFLAGS = -b64 -q64 -qrealsize=8 -qarch=auto -qtune=auto -qcache=auto -O3 
+CFLAGS = -q64 
+
+#DEBUG_FLAGS=
+DEBUG_FLAGS = -g
+#DEBUG_FLAGS = -C -qflttrap=overflow:zerodivide:invalid:enable  \
+#              -qextchk -qinitauto=FF  -g -qfullpath -qsigtrap
+
+
+#F90FLG = -qsuffix=f=f90 -qfree=f90
+#F77FLG = -qfixed
+
+
+
+CPPARCH = -DIBM -DAIX
+CPPFLAGS =  -P $(CPPARCH) 
+LIBS= -lessl -L /usr/local/netcdf/netcdf-3.6.1/lib -lnetcdf
+INCLUDE= -I/usr/local/netcdf/netcdf-3.6.1/include
+
+
+F90FLG = -qsuffix=f=f90 -qfree=f90 $(DEBUG_FLAGS) $(INCLUDE)
+F77FLG = -qfixed  $(DEBUG_FLAGS) $(INCLUDE)
+LINKFLAGS =  -q64 -b64 -qrealsize=8 
+CPP = /usr/lib/cpp

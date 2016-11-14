@@ -1,0 +1,21 @@
+Routines for converting to and from "julian days". Uses
+the Gregorian calendar.
+
+datetojul:
+   Calculates the julian day of a given date relative to a 
+   reference date, and prints it.
+   Input is year, month, day-of-month, and reference year,
+   reference month and reference day-of-month.
+
+   NB: starts at 0, so
+      datetojul 2008 1 1 2008 1 1 
+   returns  000000
+
+jultodate:
+   Calculates the date corresponding to a julian day relative
+   to a given reference date.
+
+   Input is julian day, reference year, reference month and reference
+   day-of-month.
+
+Knut Lisæter, 23. Nov 2008

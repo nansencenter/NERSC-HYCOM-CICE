@@ -1,0 +1,28 @@
+This directory contains routines for generating ice drift  from 
+a) A collection of DAILY files - uses icedrift.in file in Infiles
+b) A CERSAT ice drift file - for use in data assimilation
+
+icedrift2 : When called with no arguments it reads icedrift.in to get
+            a initial position, number of DAILY files to read, and actual
+            daily files.  It reads model ice drift from the DAILY files and
+            calculates ice particle drift. 
+            If you Compare the drift with IABP drift this can be used for validation
+            purposes.
+
+            When called with (5) arguments it takes as input the positions of 
+            ice drift in a CERSAT ice drift file, and calculates corresponding
+            ice drift from the model. This approach is usually followed for 
+            assimilation purposes, but should also be useful as a validation tool.
+
+            When called with no arguments it uses a input file (icedrift.in), 
+            an example can be found in the "Input" directory
+
+            Call routine with "-help" for some info
+
+gen_icedrift_ens.sh : Wrapper around icedrift2 to calculate icedrift for a model
+            ensemble. Uses the CERSAT approach
+
+Drift is calculated using a Runge-kutta 2nd order approach
+TODO: A clean-up would be nice
+
+NB: Some matlab diag scripts are available in Diag_Tools directory

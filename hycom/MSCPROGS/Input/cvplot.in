@@ -1,0 +1,23 @@
+######################    Infile        ######################7_3
+IDDDAILY_1991_217_1992_132.a  
+saln                # Field to retrieve from data file
+utot                # 1st vector comp to retrieve from data file
+vtot                # 2nd vector comp to retrieve from data file
+1                   # Level to retrieve from data file
+###################### Projection/mask  #######################
+ST                  # Mercator projection(ME)
+AN                  # Use Corner values to det region
+ 60.   -45. 0.      # ??? - 
+ 25. 20.   25. 20.  # Corners of region
+20.                 # Longitude grid lines increment
+10.                 # Lattude grid lines increment
+-1                  # GSHHS level (0 fine - 3 coarse . <0 = no gshhs)
+######################     Contour      #######################
+33   36.4    30     # Contour levels: min, max, number of levels
+5                   # Skip for line contours
+sstpal              # Color scale (gaudy,sstpal)
+######################    Vector        #######################
+2                   # 1st comp Vector skip factor
+2                   # 2nd comp Vector skip factor
+.5                  # Vector scaling factor
+###############################################################

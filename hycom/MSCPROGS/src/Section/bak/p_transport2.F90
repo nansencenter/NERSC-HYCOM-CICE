@@ -1,0 +1,59 @@
+program transport_calc2
+   use mod_xc
+   use mod_za
+   use mod_grid
+   use mod_sections
+   use mod_transport
+   use mod_hycomfile_io
+   implicit none
+   integer*4, external :: iargc
+   character(len=80) :: fnamein, tmparg
+   character(len=20) :: ftype
+   type(hycomfile) :: hfile
+   integer :: kdm,i
+   logical :: append
+
+   append=.false.
+   if (iargc()>=1) then
+      call getarg(1,fnamein) ! Always filename
+      do i=2,iargc()
+         call getarg(i,tmparg)
+         if (trim(tmparg)=='-append') append=.true.
+      end do
+   else
+      print *,'No input given '
+      print *,'(section_transport)'
+      call exit(1)
+   end if
+
+
+   ! What file is this? (daily? weekly? restart? pak?)
+   ftype=getfiletype(trim(fnamein))
+
+   ! Initialize hycom file
+   call initHF(hfile,fnamein,trim(ftype))
+
+   ! For safety
+   kdm=vDim(hfile)
+   if (kdm <1 .or. kdm > 100 )  then
+      print *,'kdm is ',kdm
+      print *,'This is probably a bug ...'
+      call exit(1)
+   end if
+
+   ! Initialize IO for .ab files
+   CALL XCSPMD()  ! -- Requires "regional.grid.b" to be present
+   CALL ZAIOST()
+
+   ! Get model grid & Depths 
+   call get_grid()
+
+   ! Read nodes along section -- this assumes "section_intersect" is already run
+   call read_section_nodes()
+
+   ! This initializes transport variable/range mask and direction masks
+   call transport_specification()
+
+   ! Calculate transport -- dump to files
+   call transport2(hfile)
+end program transport_calc2

@@ -1,0 +1,37 @@
+This directory contains routines for converting from various types of 
+atmospheric forcing datasets to a format that is understood by HYCOM. 
+It has been tested mainly with the NERSC version of HYCOM. Available
+data sets are
+
+Synoptic forcing:
+option era40 - ERA40 datasets
+Option ncepr - NCEP reanalysis
+Option ecmwf  
+Option metno  
+Option ecnc  - These are various ecmwf operational datasets
+
+Climatology :
+option era40 - Climatology based on ERA40 forcing
+Option old   - Old climatology based on COADS, Legates & Vilmott ++ 
+
+For running this, you need to have a infile.in for the NERSC version
+of HYCOM (it contains forcing information). You also need to set up
+paths locally to the atmospheric forcing data sets. Run the routine 
+where you run your model, and forcing.* - files will be created.
+You will also need bathymetry and model grid:
+regional.grid.[ab]
+regional.depth.[ab]
+
+
+Call the routine like this:
+   synoptic_forcing-2.1 [synoptic option] [climatology option]
+Example:
+   synoptic_forcing-2.1 era40 era40
+The forcing will then be created for the time period specified
+in infile.in
+
+
+
+This version is meant for NERSC HYCOM version 2.1 - For newer versions
+you should use the version in Synoptic_Forcing-2.2
+

@@ -1,0 +1,53 @@
+
+At met.no there are two types of FELTfiles, a DIRECT ACCESS type which are used for graphics and
+processing, and a SEQUENTIAL type which is the first (last) step after (before) model output (input).
+
+The most convenient format for you should be the SEQUENTIAL type. In short, on this type of files
+the information is stored as 16 bit INTEGER words. By this procedure the actual values must be in
+the range: -32767 <= value < +32767. Thus, to achive the wanted accuracy, the values must be
+scaled. Example; a value of 34.67 for salinity will have the value 3467 in the SEQUENTIAL FELTfile,
+and is thereby scaled by 100.
+
+On the SEQUENTIAL FELTfiles the information is stored as:
+
+Field identification (20 words)
+Field values (nx * ny words, where nx,ny are the field dimensions)
+Field identification (20 words)
+Field values (nx * ny words, where nx,ny are the field dimensions)
+Field identification (20 words)
+Field values (nx * ny words, where nx,ny are the field dimensions)
+.
+.
+.
+etc
+
+(In special cases there might also be some words of field identification AFTER the field values).
+
+The 20 words of field identification is ( ident(20) ):
+
+1: Producer (met.no=88, ECMEF=98, UK Met.Off.=74, etc.)
+2: Grid number (to be chosen. Here = 948)
+3: Datatype (Parameterfields = 4, analysis = 1, prognoses = 2)
+4: Hours from analysis time (positive or negative)
+5: Vertical coordinate type (surface = 8, sigma = 7, z-coordinates = 5, isopycnal = ?)
+6: Parameter (bottom topography = 351, u-current = 302, v-current = 303, salt = 307, temp = 308, etc.)
+7: Value of vertical coordinate (if ident(5)=5, then ident(7)=100 means 100m depth)
+8: Reference value of vertical coordinate (usually = 0)
+9: Type of grid (Polarstereographic = 1, Spherical = 2, etc.)
+10:Numbers of grid points along x-axis
+11:Numbers of grid points along y-axis
+12:Reference year (format:yyyy, i.e. four digits)
+13:Month*100 + Day (e.g. November 24. = 1124)
+14:Hour*100
+15:x-coordinate of the North Pole (NB only if Polarstereographic grid)  
+16:y-coordinate of the North Pole (NB only if Polarstereographic grid)  
+17:Grid size in km*10 (NB only if Polarstereographic grid, may also be negative)  
+18:Longitude parallel to the y-axis (NB only if Polarstereographic grid)  
+19:Flag (= 0)
+20:Exponential scaling factor (E). True value = Stored value * 10.**E
+
+NB If Polarstereographic grid, sometimes the parameter *AN* is requested. It is computed
+   as: AN = (79.*150)/(ABS(ident(17)*0.1)). For a 4km grid with ident(17)=-40, then
+   AN = 11850/4 = 2962.5
+
+

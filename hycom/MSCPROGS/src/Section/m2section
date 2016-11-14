@@ -1,0 +1,103 @@
+#!/bin/bash
+#set -ex
+
+if [ ! $1 ]  ; then
+   echo "Nothing specified ..." 
+   echo "Usage $(basename $0) [-rotnormal] [-rotll] [-append] [-skipinit] <files> "
+   echo "where optional arguments "
+   echo "   -normalvelocities computes velocities tangent and normal to section"
+   echo "   -append           appends data to existing section files"
+   echo "   -skipinit         skips the section initialization stuff if you have it from before"
+   exit 1
+fi
+
+# check for optional arguments
+domore=1
+rotnormal=""
+rotll=""
+useappend=""
+useskip=0
+while [ $domore -eq 1 ]  ;
+do
+   if [ "$1" == "-rotnormal" ] ; then
+	  rotnormal="-rotnormal"
+	  shift 
+   elif [ "$1" == "-rotll" ] ; then
+	  rotll="-rotll"
+	  shift 
+   elif [ "$1" == "-append" ] ; then
+	  useappend="-append"
+	  shift 
+   elif [ "$1" == "-skipinit" ] ; then
+	  useskip=1
+	  shift 
+   elif echo $1 | grep "^-.*" ; then
+	  echo "Unknown argument $1"
+	  exit 1
+   else
+	  domore=0
+   fi
+done
+echo "normal rotate : $rotnormal"
+echo "lonlat rotate : $rotll"
+echo "skip          : $useskip"
+echo "append        : $useappend"
+
+
+# Check for extract.sec
+[ ! -r extract.sec ] && echo "No file extract.sec present!" &&  exit 1
+[ -r extract.sec ]   && cp extract.sec extract1
+
+
+# This assumes that the work routine is in the same dir as m2nc
+prog="${0%m2section}section_plot"
+secprog="${0%m2section}section_intersect"
+if [ ! -x $prog  ]    ;then echo "Can't run/find program $prog ..."    ; exit 1; fi
+if [ ! -x $secprog  ] ;then echo "Can't run/find program $secprog ..." ; exit 1; fi
+
+# Prepare sections
+#Clean up first ...
+for i in section[0-9][0-9][0-9].dat transport[0-9][0-9][0-9].dat section[0-9][0-9][0-9].nc  ; do
+   [ -r $i ] && rm $i
+done
+
+#Check for "sections.in + other essential files
+[ ! -r sections.in ] && echo "Cant find file sections.in" && exit 1
+#[ ! -r ./depths[0-9][0-9][0-9]x[0-9][0-9][0-9].uf ] && echo "Cant find depths file " && exit 1
+[ $useskip -eq 0 ] && $secprog
+
+# Exit if section program failes 
+secres=$?
+[ $secres -ne 0 ] && { echo "Section program failed " ; exit $secres ;  }
+
+
+      
+first=1
+while [ $1 ] ;
+do
+   echo "Processing $1 - $# files remaining"
+   [ $first -eq 1 ] && $prog $1 $useappend $rotnormal $rotll
+   [ $first -ne 1 ] && $prog $1 -append    $rotnormal $rotll
+
+   # Exit if program failes
+   progres=$?
+   #[ $progres -ne 0 ] && { echo "plotting program failed " ; exit $progres ; }
+
+   if [ $first -eq 1 ] ; then
+      first=0
+   fi
+   shift
+done
+
+cat head.txt outfile > tmp1.tec
+#preplot tmp1
+echo
+echo
+echo
+echo "New files generated:"
+for i in section[0-9][0-9][0-9].dat transport[0-9][0-9][0-9].dat section[0-9][0-9][0-9].nc tmp1.plt tmp1 ; do
+   echo "  $i"
+done
+
+
+

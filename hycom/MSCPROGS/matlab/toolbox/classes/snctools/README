@@ -1,0 +1,91 @@
+SNCTOOLS 2.4.0 RELEASE
+=======================================================================
+Check the ChangeLog for details on what's changed, but the user should 
+be aware that some user code will probably break with this release.
+If you get bitten by this, let me know and I'll try to work with you
+to resolve the issue.
+
+SNCTOOLS OVERVIEW
+=======================================================================
+All of SNCTOOLS will currently run on Matlab release R13 or higher,
+but requires R14 if one wishes to use java as the backend.  See below
+for more notes about that.  Don't bother trying with R12, you'll get
+nowhere.
+
+Of all the routines in this m-file collection, the most useful (in my
+humble opinion) are as follows
+	
+	1. nc_varget    - reads a netcdf variable
+	2. nc_varput    - writes to a netcdf variable
+	3. nc_attget    - reads a netcdf attribute
+	4. nc_attput    - writes a netcdf attribute
+	5. nc_padheader - pads header section of large netCDF files
+	6. nc_dump      - prints netcdf metadata
+
+There is a subdirectory called "tests" which has routines that test
+the m-files of SNCTOOLS.  You really don't need to worry about this
+unless you are convinced that there is something wrong with one of
+the m-files.  In that case, you can run the test suite by changing
+directories into "tests" and running "test_snctools" from the matlab
+command line.  You MUST have the mex-file on hand if you wish to run
+the test suite.
+
+
+SNCTOOLS and OPeNDAP
+=======================================================================
+As of version 2.3.0, SNCTOOLS can use either of java or opendap-enabled
+mexnc to read OPeNDAP URLs.  If you despise java as much as I despise it,
+or if you like using the mexnc mex-file just fine, or if you just don't
+care about opendap, then don't bother reading this section.
+
+So how does one go about choosing which opendap engine to use?  If you 
+want to use 
+
+	1.  
+		... java,  first you have to have R14 or higher.  Then 
+		download toolsUI-2.2.16.jar from
+		ftp://ftp.unidata.ucar.edu/pub/netcdf-java/v2.2.16 Make
+		sure that you DO NOT start matlab with the -nojvm option.
+		Then add this jar file to your dynamic java path from
+		within matlab using javaaddpath, i.e.
+
+		>> javaaddpath ( '/path/to/toolsUI-2.2.16.jar' );
+
+		From the command line, you can then turn on the java backend
+		with 
+
+		>> setpref ( 'SNCTOOLS', 'USE_JAVA', true );
+
+		IMPORTANT!!!  You still need the mexnc distribution,
+		as there are m-files therein that SNCTOOLS requires.
+		You just don't need to have the mex-file itself.  Also,
+		if you choose not to use the mex-file, you lose the
+		ability to write netCDF files.
+
+
+	2.
+		... opendap-enabled mexnc, assuming that you already
+		have an opendap-enabled mexnc mex-file in place (see
+		http://mexcdf.sourceforge.net/opendap/ for details),
+		you don't have to do anything, you are already set to go.
+
+
+KNOWN ISSUES
+=======================================================================
+
+The test suite will fail when used with opendap builds of mexnc.  I 
+believe the problem is that a netcdf file is not being properly closed
+somewhere in the test suite, but I haven't tracked it down yet.
+
+There will be varying degrees of difficulty in transitioning SNCTOOLS
+to work with upcoming builds of mexnc/netcdf-4 (I won't even attempt
+it with the netcdf toolbox).  Some m-files, like nc_varget, nc_varput,
+nc_attget, nc_attput, and nc_dump will be getting a lot more attention
+from me than others in this matter.
+
+
+Any questions?  Email me.
+
+=======================================================================
+John Evans
+john.g.evans.ne@gmail.com

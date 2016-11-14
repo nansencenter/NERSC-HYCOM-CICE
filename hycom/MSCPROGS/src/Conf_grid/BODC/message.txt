@@ -1,0 +1,49 @@
+Dear Professor Evensen,
+
+Meirion has asked me to email you with the details for accessing the
+AMMP gridded bathymetry data via ftp. The details are as follows:
+
+ftp to '  ftp.pol.ac.uk '
+
+login as anonymous  and use your email id as a password
+
+once logged in cd to /pub/bodc/requests/paw/ammp
+
+the command "  ls " will show you the files available.
+
+The directory contains the following files:
+
+1. ASCII version of the gridded bathymetry file:   ammp_bathy.dat
+
+2. Word for Windows format documentation file including a description
+of the data file format:  ammp.doc 
+
+The directory also contains 3 Postscript format files which contain
+the images for the annexes refered to in the documentation file.
+
+bathy_tr.ps  -  shows the trackline control coverage
+bathy_ctr.ps - 100m interval contours derived from the bathymetric
+grid
+bathy_limits - the geographic limits of the various data sets used to
+produce the gridded data set.
+
+Please let me know if you have any problems accessing the files.
+
+Yours sincerely,
+
+Pauline Weatherall
+
+*****************************************************************************
+
+Ms. Pauline Weatherall
+British Oceanographic Data Centre
+CCMS Proudman Oceanographic Laboratory
+Bidston Observatory
+Birkenhead
+Merseyside
+CH43 7RA
+UK
+
+Email: paw@ccm.ac.uk 
+Tel: +44 (0)151 653 8633
+*****************************************************************************

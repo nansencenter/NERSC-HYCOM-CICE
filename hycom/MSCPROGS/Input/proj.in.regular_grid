@@ -1,0 +1,7 @@
+regular             # "regular" grid, give East/West and North/South limits below
+-38.0               # Longitude of SW corner
+ 20.0               # Longitude of NE corner
+0.125               # Longitude grid spacing
+ 65.0               # Latitude of SW corner
+ 88.0               # Latitude of NE corner
+0.125               # Latitude grid spacing

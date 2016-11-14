@@ -1,0 +1,16 @@
+mkensemble:
+   This routine will create perturbations of the  hycom layer
+   thickness using spatial fields with prescribed correlation
+   in the horizontal and vertical. Correlation lengths are in
+   layers (vertical) and grid cells (horizontal).
+
+   Start file  (member 1), correlation scales and standard 
+   deviation of perturbations are specified in the input file
+   mkensemble.in. An example of this file is found in the 
+   Input directory.
+
+   If a ICE file is found, this will be perturbed as well, but 
+   this time by perturbing the ice thickness fields. (In the 
+   same way, if a field "hicem" is found in the hycom restart file,
+   then this field will be perturbed)
+

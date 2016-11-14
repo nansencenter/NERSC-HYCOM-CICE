@@ -1,0 +1,20 @@
+KHOME=/home/fimm/nersc/knutali
+
+CF90 = pgf90
+CF77 = $(CF90)
+LD =  $(CF90)
+
+DEBUG_FLAGS =  -g -Ktrap=inv,denorm,divz,ovf
+DEBUG_FLAGS =  
+
+FFLAGS= -r8 -fast -byteswapio  $(DEBUG_FLAGS)
+LINKFLAGS= $(FFLAGS) 
+
+F90FLG= -Mfree
+F77FLG = -Mnofree
+
+CPPFLAGS = -P -DIA32 -traditional 
+CPP = /usr/bin/cpp 
+
+LIBS=  -L$(KHOME)/opt/netcdf-pg60/lib -lnetcdf
+INCLUDE= -I$(KHOME)/opt/netcdf-pg60/include/ 

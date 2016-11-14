@@ -1,0 +1,23 @@
+Rutines for converting runoff data into river data used by e.g hycom.
+
+Environment variables:
+ERA40_PATH : points to location of ERA40 data with runoff fields
+TRIP_PATH  : points to location of TRIP data (can be found under Data in this dir)
+
+Routines:
+These three routines depend only on runoff and trip data :
+----------------------------------------------------------
+trip_paths   - mostly diagnostic routine to calculate largest river catchment basins 
+               and grid cells with largest river flux
+trip_weights - Calculates the mapping from a runoff grid (here ERA40) to TRIP grid. Must be run
+               before trip_flow
+trip_flow    - Calculates the transport of runoff water from its initial appearance through rivers
+               and towards the sea. Uses ERA40 runoff data. Calculated on TRIP grid. Produces netcdf
+               files with runoff, volume of water on land surface and river discharge
+
+
+HYCOM specific routine 
+----------------------------------------------------------
+trip_tohycom - Uses output from trip_flow to calculate a hycom climatology 
+               of river discharge in coastal grid cells.
+               

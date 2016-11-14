@@ -1,0 +1,34 @@
+Directory contains routines for converting from .[ab] files
+to netcdf file (tmp1.nc) and tecplot file (tmp1).
+
+m2nc :
+   m2nc will extract data from hycom .[ab] files
+   and put these into netcdf file tmp1.nc.
+   The fields to extract are specified in extract
+   files which corresponds to the file type you 
+   want to extract from (for example extract.daily, 
+   extract.restart ...). Sample extract files can 
+   be found in Input directory under MSCProgs directory
+
+   
+   Several files can be specified which results in 
+   several time records in the netcdf file.  Vectors 
+   can be rotated, depending on the flags in extract-files 
+
+   usage:  m2nc  file(s)
+
+   NB: files contains isopycnal layer values, no vertical 
+   interpolation.
+
+m2t :
+   same as m2nc but also creates a tecplot file tmp1. 
+   This routine basically calls m2nc with a "tecplot-flag".
+   Somewhat slower than m2nc.
+
+tec_nc_conv:
+   The routine doing all the heavy lifting, called from
+   the m2nc routine. Reads .ab files, extract files and 
+   dumps the fields into netcdf and tecplot files.
+
+Knut Liseter, 23. November 2008
+Based on routines initially created by Geir Evensen.

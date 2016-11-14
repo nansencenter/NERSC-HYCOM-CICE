@@ -1,0 +1,27 @@
+GEBCO One Minute Grid - Data Format
+
+
+The GEBCO grid is one minute of latitude by one minute of
+longitude, stored in grid line registration format. The data are
+stored in NetCDF as a one dimensional array of 2-byte signed
+integers that represent integer elevations in metres with the
+convention that bathymetric depths have negative values and
+topographic heights have positive values. Information concerning
+NetCDF can be found at the URL:
+http://www.unidata.ucar.edu/packages/netcdf/.
+
+The NetCDF file is compatible with the GMT (Generic Mapping Tools)
+system (http://gmt.soest.hawaii.edu/).
+
+The data cover the area 90°N - 90°S; 180°W - 180°E
+
+There are 21601 x 10801 data values, one for each one minute of
+latitude and longitude for 233312401 points.
+
+The data start at position 90°N, 180°W and are arranged in bands of
+360 degrees x 60 points/degrees + 1 = 21601 values. The data range
+eastward from 180°W longitude to 180°E longitude, i.e the 180° value
+is repeated.
+
+The data can be exported through the GDA software interface in
+this format and also as simple ASCII files.

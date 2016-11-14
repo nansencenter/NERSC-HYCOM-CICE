@@ -1,0 +1,63 @@
+List of executables from src directory
+#######
+fes2mod
+#######
+       process the file FESobs_elev.dat
+       FESobc_elev.dat is needed to run your model with FES tidal boundary conditions
+       to run fes2mod, you need:
+                                depths???x???.uf
+                                newpos.uf
+       see fes2mod.c for more info
+      
+#########
+fes8const
+#########
+        used for diagnostic of fesCore8const.c used in fes2mod.c 
+       
+        process the file testlatlon.dat
+        testlatlon.dat is needed to run $HOME/Prog/Tide_FES/hycom_diag_tides/p_tide_hgt
+        testlatlon.dat contains amplitude and phase of 8 consts interpolated at lat lon pos specified in the runing time
+        see fes8consc.c for more info
+
+        $HOME/Prog/Tide_FES/hycom_diag_tides/p_tide_hgt compute tide_hgt.dat
+        tide_hgt.dat contains tidal height at a specific pos(latlon.dat) and specific period
+        tidal height is computed the same way as in hycom mod_tides.F90(only with 8 constituents) routine
+        se $HOME/Prog/Tide_FES/hycom_diag_tides/p_extract_tide_hgt.F90 for more info
+
+#########
+testfes
+#########
+         process the file test_fes.dat
+         test_fes.dat contains the tidal height from FES atlas with all the constituents
+         see testfes.c and ../FES_Readme.txt and ../doc/Readme.htm for more info
+
+
+
+########
+ascii2bin
+########
+        convert to binary files tidal data atlas.
+        see ascii2bin.c and  ../FES_Readme.txt and ../doc/Readme.htm for more info
+
+############################################################################
+
+old notes
+
+what we extract is the tidal  amplitude and phase the ascii files of 8 const 
+We will use 8 files with pure harmonic tide
+
+FES code structure:
+Grid.c: contains all the functions relative to fes grid, independant of time
+	==>Interp: 
+                   define wave(i).cplx=harmonic coefficients billinearly interpolated
+                   from the input harmonic coefficients  atlas map 
+
+Prediction.c: 
+
+        ==> initCorrection:update astro arg with the nodal correction to the the day we want to performe the analyse  
+                           nodal correction depends only on altimeter time     
+
+	==>initadmittance:define each wave frequency in RAD/hour !!!!!! 
+
+	==>admittance: useful only for long period waves (not for us !!!)
+

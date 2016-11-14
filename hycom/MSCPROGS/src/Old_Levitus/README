@@ -1,0 +1,13 @@
+This routine can be used to create the "old" climatology
+used to force hycom with. It creates SST and SSS 12-monthly
+climatologies. 
+
+Data files are found under Data.
+
+This version has been modified to read grid sizes from input
+files (regional files and if not present old depths and 
+newpos/latlon.dat files)
+
+
+
+The use of this is discouraged, the data sets used are from 1992 or thereabout.

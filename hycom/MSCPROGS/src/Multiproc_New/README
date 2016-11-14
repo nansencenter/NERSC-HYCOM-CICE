@@ -1,0 +1,19 @@
+multiproc_new:
+   multiproc converts a set of weekly average files to
+   means, and dumps the data in the old "pak" format. It also
+   dumps the meanssh.uf files which are used by many data
+   assimilation routines.  List the files to process (one per line)
+   in the file "multiproc.in".
+
+   Pak-files have low precision, and in addition the
+   other routines in the src directory do not accept pak-files
+   any longer.  For snapshots other than restart files you are
+   better off with the archv format.
+   (However, if you insist on using pak-files, look at the routines
+   under Old, which where used before teh current setup)
+
+   If you want mean ssh there are better 
+   ways of calculating it (use for instance the "Average" routine 
+   in the src directory
+
+   The use of multiproc is discouraged.

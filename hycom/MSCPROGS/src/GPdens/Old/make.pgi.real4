@@ -1,0 +1,65 @@
+# Knuts home directory (contains some libs/includes)
+KHOME = /home/fimm/nersc/knutali
+
+#Compiler -- F90
+CF90 = pgf90
+
+#Compiler -- F77
+CF77 = $(CF90)
+
+# Compiler -- C
+CC=gcc
+
+#Linker 
+LD =  $(CF90)
+
+
+#Paralellization opts
+#PARO = -openmp 
+PARO =
+
+#Size defaults
+SIZEO = -r4
+#SIZEO = 
+
+#Arch opts
+ARCHO= #-tpp7
+
+#Optimalization opts
+OPTO= -fast
+#OPTO=
+
+#Inlining opts
+#INLO= -ip
+INLO=
+
+# Diverse options
+DIVO= -byteswapio -Mcache_align
+
+# Flags for debugging. Remove optimization (OPTO above) to use debugging properly
+#
+DEBUG_FLAGS = 
+
+
+
+
+CFLAGS = -O
+F77FLG = -Mnofree
+F90FLG = -Mfree
+
+
+CPPARCH = -DIA32 -traditional  -DREAL4  -DNOMPIR8 
+#LIBS =  -L/local/acml/pgi64/lib/ -lscalapack -lacml -Bstatic
+LIBS =  -L/local/acml/pgi64/lib/ -lscalapack /local/acml/pgi64/lib/libacml.a 
+
+
+INCLUDEDIR=
+
+CPP = /usr/bin/cpp
+CPPFLAGS = -traditional -DIA32
+
+
+FFLAGS    = $(SIZEO) $(OPTO) $(ARCHO) $(PARO)    $(INLO) $(DIVO) $(DEBUG_FLAGS)
+FFLAGS_NODEBUG    = $(SIZEO) $(OPTO) $(ARCHO) $(PARO)    $(INLO) $(DIVO)
+LINKFLAGS = $(SIZEO) $(OPTO) $(PARO) $(INLO) $(DIVO) $(DEBUG_FLAGS)  
+

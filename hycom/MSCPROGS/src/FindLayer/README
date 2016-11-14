@@ -1,0 +1,21 @@
+findlayer:
+   Produces data for layers above and below the variable tresholds. 
+   Top interface of this layer and thickness of layer is dumped in 
+   a netcdf file named LAYERTHK.nc.      
+   Note that only the first layer from the surface which matches the
+   criterion is dumped in the netcdf file.
+
+   Usage: findlayer VARIABLE minimumvalue maximumvalue file 
+     where "VARIABLE" is 3D var in  file (eg saln)
+     where minimumval is minimum of variable range
+     where maximumval is maximum of variable range
+     where VALUE is treshold value            
+   NB: specifying th3d as variable will use density as variable
+
+   Example: 
+      findlayer saln 35 35.2 FORDAILY_2008_302_2008_318.a
+
+   Outputs netcdf file with layer thickness and top surface of layer 
+   with salinity > 35  and salinity < 35.2
+
+Knut Liseter, 23. November 2008

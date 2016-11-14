@@ -1,0 +1,30 @@
+This routine contains routines for producing tidal forcing of
+the hycom model, and for visualizing fes data (mainly fes2nc).
+
+Make sure the environment variable "FES_PATH" is set when you 
+run the routines. It points to the directory containing the FES 
+data. (Relative to this dir it is ../FES2004/data).
+
+The main routines are:
+
+fes2mod : Produces input files for forcing hycom
+fes2nc  : Puts FES data into a netcdf file for visualization
+
+See ../Inti_README.txt for more info on running fes2mod
+
+Also, see Inti_notes.doc in this directory for more info, altough
+some of that isnt 100% correct in this setup (some refer to routines
+in ../FES2004/src)
+
+
+for fes2nc:
+Make sure that netcdf libraries and compilers are consistent. 
+Use gnu compilers and libraries if present
+
+If it doen not compile, it may be that libfes.a is not yet compiled, try this:
+cd hycom/MSCPROGS/src_others/FES2004/src/
+make clean
+make install
+cd ~/hycom/MSCPROGS/src/Tides_FES/nersc_src
+make clean
+make install

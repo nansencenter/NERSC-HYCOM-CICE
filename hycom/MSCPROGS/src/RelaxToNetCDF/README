@@ -1,0 +1,40 @@
+This directory contains routines for interpolating from a hycom-type climatology
+to netcdf format similar to Hyc2proj. It relies on input routines found in the "ALL"
+directory of the standard hycom distribution - These are set in the main script 
+"GDEMtomodel.sh". This script can easily be converted to other hycom climatology 
+input files (change location of ZINT  and location of data files (.d)
+
+Routines:
+PHCtomodel.sh  : Main script that ties everything together - links in 
+                 climatology files, does the horizontal interpolation of
+                 the z-level climatology to the hycom grid. Intermediate output is on 
+                 the hycom model grid, in files of type saln_sig0_monthXX.[ab].
+                 These files are then processed in the script by using  two routines 
+                 below (hclimlevels and hclimtonc).
+
+GDEMtomodel.sh  : Same as the above, but for the GDEM climatology (needs a tune-up)
+
+
+hclimlevels    : Reads the hycom climatology files, and retrieves the available
+                 depth levels in those files. No input, but assumes file t_m01.d
+                 is present
+
+hclimtonc      : Routine reads horizontally interpolated z-level climatology
+                 produced by hycom "ALL" routines. The climatology is interpolated
+                 to grid specified by proj.in - similar to "hyc2proj" routines
+                 input is month and depthlevel(s)
+
+NB: Run this in a seperate directory to avoid clutter/mishaps
+
+You should have this ready:
+grid.info
+regional.grid.[ab]
+regional.depth.[ab]
+proj.in (specifies projection for mod_toproj)
+blkdat.input
+environment variable HYCOMCLIM_PATH must point to the climatology (.d - files). Note that
+this is path different for PHC and GDEM climatologies
+
+
+Good Luck 
+-- Knut

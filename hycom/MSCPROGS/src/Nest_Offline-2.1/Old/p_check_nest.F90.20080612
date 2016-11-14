@@ -1,0 +1,588 @@
+      program check_nest
+      use m_get_nest_record
+      use m_get_nest_info
+      implicit none
+
+      character(len= *),parameter :: fnestloc='nestloc.uf'
+      character(len=80)           :: fndepths,nestingfile,matfile
+      character(len= 7)           :: tag7
+      character(len=20)           :: ctitle
+
+      ! Dimensions of inner grid
+      integer :: idm, jdm, inest, &
+         iidm, jjdm
+
+      ! Arrays holding data on inner grid (where we need nesting
+      ! conditions)
+      real*8, allocatable, dimension(:,:) :: &
+         inner_ior8 ,mat_iofld
+      real*4, allocatable, dimension(:,:) :: inner_ior4
+      real, allocatable, dimension(:,:) :: tmpfld
+      real, allocatable, dimension(:,:) :: &
+         inner_lon, inner_lat, inner_depths
+      integer, allocatable, dimension(:,:) :: &
+         inner_ipiv, inner_jpiv
+
+      real, parameter  :: onem=9806.
+
+
+
+      integer :: ixx,ix,jx
+         
+
+      integer :: irec,klevel, inum_offset,ivar, &
+         kdm, intvar, nrec_offset, num_offset, firstrec, lastrec
+      logical :: ex, isvelocity,ass
+
+      integer :: i1dim,i2dim,j1dim,j2dim
+      integer :: i1,i2,j1,j2,indbnd,imax,iday,iyear,i,j,k,l,k2
+      character(len=2) :: cbnd
+      character(len=4) :: cll
+      character(len=3) :: cvar
+
+#if defined(MATLAB)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! KAL -- For dumping to matlab file
+!#include </export/fimm/local/Matlab-R14sp3/extern/include/fintrf.h>
+#include "fintrf.h"
+      integer :: iret
+      MWPOINTER :: mxCreateNumericMatrix, mxGetPr, mxClassIDFromClassName, matopen,  &
+         mxCreateDoubleMatrix, matPutVariableAsGlobal, mp, pa1, pa2
+      integer matputvariable, matclose
+      integer,parameter :: IKIND=8 ! Matlab libs uses 8 bytes on x86_64
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+#endif /*MATLAB*/
+
+
+      inquire(file=fnestloc,exist=ex)
+      if (.not.ex) then 
+         print *,fnestloc//' does not exist!'
+         stop '(nest_offline)'
+      end if
+
+
+      ! Read nesting positions for the internal grid
+      open(10,file=fnestloc,form='unformatted',status='old')
+
+      ! Read grid dimensions
+      read(10)idm,jdm,inest
+      iidm=idm-inest+1
+      jjdm=jdm-inest+1
+
+      write(6,'(a,5i5)') &
+         fnestloc//'  has dimensions: ', idm,jdm,&
+         iidm,jjdm,inest
+
+      ! Allocate grid for inner model
+      allocate(inner_lon(idm,jdm))
+      allocate(inner_lat(idm,jdm))
+      allocate(inner_ior8(idm,jdm))
+      allocate(inner_ior4(idm,jdm))
+      allocate(tmpfld    (idm,jdm))
+
+      ! Read grid
+      read(10) inner_ior8 ; inner_lon=inner_ior8
+      read(10) inner_ior8 ; inner_lat=inner_ior8
+      close(10)
+
+      write(6,'(a)')   fnestloc//'  is read'
+
+      ! Allocate temporary arrays for interpolating to inner grid
+      ! + depth matrix
+      allocate(inner_depths(idm,jdm))
+
+
+      ! Read the depth matrix of the local grid 
+! --- tag7 has 11 chars to accomodate for huge grids in future
+      if (idm>999 .or. jdm > 999) then
+         write(tag7,'(i5.5,a,i5.5)')idm,'x',jdm
+      else
+         write(tag7,'(i3.3,a,i3.3)')idm,'x',jdm
+      end if
+
+      fndepths='ndepths'//trim(tag7)//'.uf'
+
+      inquire(file=trim(fndepths),  exist=ex)
+      if (.not.ex) then
+          write(6,'(a)') &
+         'nesting depths file for local grid does not exist:', &
+                 'ndepths'//trim(tag7)//'.uf'
+         stop '(nest_offline)'
+      else
+         open(10,file=trim(fndepths),form='unformatted',status='old')
+         read(10) inner_ior8
+         close(10)
+         inner_depths=inner_ior8
+      endif
+         
+      ! Extend local grid to boundary
+      where (inner_depths(2,:)>0.)  &
+         inner_depths(1,:)=inner_depths(2,:)
+      where (inner_depths(idm-1,:)>0.)  &
+         inner_depths(idm,:)=inner_depths(idm-1,:)
+      where (inner_depths(:,2)>0.)  &
+         inner_depths(:,1)=inner_depths(:,2)
+      where (inner_depths(:,jdm-1)>0.) &
+         inner_depths(:,jdm)=inner_depths(:,jdm-1)
+
+
+      ! Get date to process
+      print *,'Input year and julian day: '
+      read (*,*) iyear, iday
+
+      print *,'Input which boundary (i1,ii,j1 or jj):'
+      read (*,*) cbnd
+
+      if (cbnd(1:1)=='i') then
+         if (cbnd(2:2)=='i') then
+            i1dim=iidm     ; i2dim=idm
+         elseif (cbnd(2:2)=='1') then
+            i1dim=1     ; i2dim=inest
+         else
+            print *,'Boundary is i1 or ii'
+            stop '(check_nest)'
+         end if
+         j1dim=1     ; j2dim=jdm
+      else if (cbnd(1:1)=='j') then
+         if (cbnd(2:2)=='j') then
+            j1dim=jjdm       ; j2dim=jdm 
+         elseif (cbnd(2:2)=='1') then
+            j1dim=1       ; j2dim=inest 
+         else
+            print *,'Boundary is j1 or jj'
+            stop '(check_nest)'
+         end if
+         i1dim=1       ; i2dim=idm
+      else
+         print *,'Unknown boundary '//cbnd
+         stop '(check_nest)'
+      end if
+
+      write(nestingfile,'(a,i4.4,a,i3.3)') 'nest_',iyear,'_',iday
+
+      ! Get kdm and offsets from header file
+      call get_nest_info(trim(nestingfile),kdm,nrec_offset,num_offset)
+
+      print *,'From get_nest_info:'
+      print *,'kdm(number of layers)          :',kdm
+      print *,'nrec_offset(records per time  ):',nrec_offset
+      print *,'num_offset (time dumps in file):',num_offset
+
+      if (num_offset>1) then
+      !if (.true.) then
+         print *,'This file contains more than one "time record"'
+         print '(a,i2,a)','Which one would you like to test?  (1-',num_offset,')?'
+         read(*,*) inum_offset
+         if (inum_offset<1 .or. inum_offset>num_offset) then
+            print *,'Invalid time record specification'
+            stop '(check_nest)'
+         end if
+         firstrec=(inum_offset-1)*nrec_offset+1
+         lastrec =(inum_offset  )*nrec_offset
+      else
+         firstrec=1
+         lastrec =nrec_offset
+      end if
+
+      inquire(exist=ex,file=trim(nestingfile)//'_'//cbnd)
+      if (.not.ex) then
+         print *,'No file '//trim(nestingfile)//'_'//cbnd
+         stop '(checknest)'
+      end if
+
+      ! Open nesting file
+      write(6,'(a,a,a)') 'Reading records ',  &
+         ' from file=',trim(nestingfile)//'_'//cbnd
+      inquire(iolength=j)inner_ior4(i1dim:i2dim,j1dim:j2dim)
+      open(10,file=trim(nestingfile)//'_'//cbnd,form='unformatted', &
+           access='direct',recl=j,status='old')
+
+      !Matlab IO
+#if defined(MATLAB)
+      matfile=trim(nestingfile)//'_'//cbnd//'_test.mat'
+      mp=matopen(trim(matfile),'w')
+#endif
+
+
+
+      ! Tecplot IO
+      imax=max(i2-i1,j2-j1)+1
+      open(66,file=trim(nestingfile)//'_'//cbnd//'_test.tec',status='replace')
+      write(66,'(''TITLE= "Nested fields test"'')')
+      write(66,'(a)')'VARIABLES="i" "k" "lon" "lat" "depth" "saln" "temp"'// &
+                                '"u(baclin)" "v(baclin)" "u(total)" "v(total)"'
+
+      do l=1,inest
+
+
+         if (cbnd(1:1)=='i') then
+            i1=i1dim+(l-1)
+            i2=i1dim+(l-1)
+            j1=1
+            j2=jdm
+            imax=jdm
+            write(ctitle,'(a,i4.4)') 'nestbnd',i1
+            write(cll,'(i4.4)') i1
+         elseif (cbnd(1:1)=='j') then
+            j1=j1dim+(l-1)
+            j2=j1dim+(l-1)
+            i1=1
+            i2=idm
+            imax=idm
+            write(ctitle,'(a,i4.4)') 'nestbnd',j1
+            write(cll,'(i4.4)') j1
+         end if
+
+         if (l==1) then
+            WRITE(66,'(a,i6,a,i6)') 'ZONE T='//trim(ctitle)//' F=BLOCK  I=',imax,' J=',kdm
+            WRITE(66,'(30i6)')((i,i=1,imax),j=1,kdm)
+            WRITE(66,'(30i6)')((j,i=1,imax),j=1,kdm)
+            WRITE(66,'(10e15.6)')(((inner_lon(i,j),i=i1,i2),j=j1,j2),k2=1,kdm)
+            WRITE(66,'(10e15.6)')(((inner_lat(i,j),i=i1,i2),j=j1,j2),k2=1,kdm)
+         else if (l>1)  then
+            WRITE(66,'(a,i6,a,i6)') 'ZONE T='//trim(ctitle)//' F=BLOCK  I=',imax,' J=',kdm
+            WRITE(66,'(a)') 'D=(1,2,3,4)'
+         end if
+
+         print *,'processing '//trim(ctitle)
+
+
+
+#if defined(MATLAB)
+         if (.not. allocated (mat_iofld)) allocate(mat_iofld(imax,kdm))
+            ! Get lon -- matlab only
+            do k=1,kdm
+               do jx=j1,j2
+               do ix=i1,i2
+                  ixx=max(ix-i1,jx-j1)+1
+                  mat_iofld(ixx,k)=inner_lon(ix,jx)
+               end do
+               end do
+            end do
+            !print *,irec,maxval(inner_ior4(i1:i2,j1:j2)),i1dim,i2dim,j1dim,j2dim
+            pa1=mxCreateDoubleMatrix(int(imax,kind=IKIND),int(kdm,kind=IKIND),int(0,kind=IKIND))
+            call mxCopyReal8ToPtr(mat_iofld,mxGetPr(pa1),int(imax*kdm,kind=IKIND))
+            iret=matPutVariable(mp, 'longitude'//cll, pa1)
+
+            ! Get lat -- matlab only
+            do k=1,kdm
+               do jx=j1,j2
+               do ix=i1,i2
+                  ixx=max(ix-i1,jx-j1)+1
+                  mat_iofld(ixx,k)=inner_lat(ix,jx)
+               end do
+               end do
+            end do
+            !print *,irec,maxval(inner_ior4(i1:i2,j1:j2)),i1dim,i2dim,j1dim,j2dim
+            !pa1=mxCreateNumericMatrix(imax,kdm,mxClassIDFromClassName('double'),0)
+            call mxCopyReal8ToPtr(mat_iofld,mxGetPr(pa1),int(imax*kdm,kind=IKIND))
+            iret=matPutVariable(mp, 'latitude'//cll, pa1)
+
+         if (l==1) then
+            ! Get lat -- grid distance 
+            do k=1,kdm
+               do jx=j1,j2
+               do ix=i1,i2
+                  ixx=max(ix-i1,jx-j1)+1
+                  mat_iofld(ixx,k)=ixx
+               end do
+               end do
+            end do
+            !print *,irec,maxval(inner_ior4(i1:i2,j1:j2)),i1dim,i2dim,j1dim,j2dim
+            !pa1=mxCreateNumericMatrix(imax,kdm,mxClassIDFromClassName('double'),0)
+            call mxCopyReal8ToPtr(mat_iofld,mxGetPr(pa1),int(imax*kdm,kind=IKIND))
+            iret=matPutVariable(mp, 'grid_distance', pa1)
+         end if
+#endif /*MATLAB*/
+
+
+
+
+         ! Get depths
+         do k=1,kdm
+            call get_nest_record('INT',k,nestingfile,irec,firstrec,lastrec)
+            read(10,rec=irec) inner_ior4(i1dim:i2dim,j1dim:j2dim)
+            where(inner_depths<.1) inner_ior4=0.
+            WRITE(66,'(10e15.6)')((inner_ior4(i,j)/onem,i=i1,i2),j=j1,j2)
+
+            do jx=j1,j2
+            do ix=i1,i2
+               ixx=max(ix-i1,jx-j1)+1
+               mat_iofld(ixx,k)=inner_ior4(ix,jx)
+            end do
+            end do
+         end do
+#if defined(MATLAB)
+         !print *,irec,maxval(inner_ior4(i1:i2,j1:j2)),i1dim,i2dim,j1dim,j2dim
+         call mxCopyReal8ToPtr(mat_iofld,mxGetPr(pa1),int(imax*kdm,kind=IKIND))
+         iret=matPutVariable(mp, 'interface'//cll, pa1)
+#endif /*MATLAB*/
+
+
+         ! Get variable
+         do k=1,kdm
+            call get_nest_record('SAL',k,nestingfile,irec,firstrec,lastrec)
+            read(10,rec=irec) inner_ior4(i1dim:i2dim,j1dim:j2dim)
+            WRITE(66,'(10e15.6)')((inner_ior4(i,j),i=i1,i2),j=j1,j2)
+            !print *,irec,maxval(inner_ior4(i1dim:i2dim,j1dim:j2dim)),i1dim,i2dim,j1dim,j2dim
+
+            do jx=j1,j2
+            do ix=i1,i2
+               ixx=max(ix-i1,jx-j1)+1
+               mat_iofld(ixx,k)=inner_ior4(ix,jx)
+            end do
+            end do
+         end do
+#if defined(MATLAB)
+         call mxCopyReal8ToPtr(mat_iofld,mxGetPr(pa1),int(imax*kdm,kind=IKIND))
+         iret=matPutVariable(mp, 'saln'//cll, pa1)
+#endif /*MATLAB*/
+
+         ! Get variable
+         do k=1,kdm
+            call get_nest_record('TEM',k,nestingfile,irec,firstrec,lastrec)
+            read(10,rec=irec) inner_ior4(i1dim:i2dim,j1dim:j2dim)
+            WRITE(66,'(10e15.6)')((inner_ior4(i,j),i=i1,i2),j=j1,j2)
+            !print *,irec,maxval(inner_ior4(i1dim:i2dim,j1dim:j2dim)),i1dim,i2dim,j1dim,j2dim
+            do jx=j1,j2
+            do ix=i1,i2
+               ixx=max(ix-i1,jx-j1)+1
+               mat_iofld(ixx,k)=inner_ior4(ix,jx)
+            end do
+            end do
+         end do
+#if defined(MATLAB)
+         call mxCopyReal8ToPtr(mat_iofld,mxGetPr(pa1),int(imax*kdm,IKIND))
+         iret=matPutVariable(mp, 'temp'//cll, pa1)
+#endif /*MATLAB*/
+
+         ! Get variable
+         do k=1,kdm
+            call get_nest_record('UT ',k,nestingfile,irec,firstrec,lastrec)
+            read(10,rec=irec) inner_ior4(i1dim:i2dim,j1dim:j2dim)
+            WRITE(66,'(10e15.6)')((inner_ior4(i,j),i=i1,i2),j=j1,j2)
+            !!print *,irec,maxval(inner_ior4(i1dim:i2dim,j1dim:j2dim)),i1dim,i2dim,j1dim,j2dim
+            do jx=j1,j2
+            do ix=i1,i2
+               ixx=max(ix-i1,jx-j1)+1
+               mat_iofld(ixx,k)=inner_ior4(ix,jx)
+            end do
+            end do
+         end do
+#if defined(MATLAB)
+         call mxCopyReal8ToPtr(mat_iofld,mxGetPr(pa1),int(imax*kdm,kind=IKIND))
+         iret=matPutVariable(mp, 'ubaclin'//cll, pa1)
+#endif /*MATLAB*/
+
+         ! Get variable
+         do k=1,kdm
+            call get_nest_record('VT ',k,nestingfile,irec,firstrec,lastrec)
+            read(10,rec=irec) inner_ior4(i1dim:i2dim,j1dim:j2dim)
+            WRITE(66,'(14e15.6)')((inner_ior4(i,j),i=i1,i2),j=j1,j2)
+            !print *,irec,maxval(inner_ior4(i1dim:i2dim,j1dim:j2dim)),i1dim,i2dim,j1dim,j2dim
+            do jx=j1,j2
+            do ix=i1,i2
+               ixx=max(ix-i1,jx-j1)+1
+               mat_iofld(ixx,k)=inner_ior4(ix,jx)
+            end do
+            end do
+         end do
+#if defined(MATLAB)
+         call mxCopyReal8ToPtr(mat_iofld,mxGetPr(pa1),int(imax*kdm,kind=IKIND))
+         iret=matPutVariable(mp, 'vbaclin'//cll, pa1)
+#endif /*MATLAB*/
+
+         ! Get variable
+         do k=1,kdm
+            call get_nest_record('UT ',k,nestingfile,irec,firstrec,lastrec)
+            read(10,rec=irec) inner_ior4(i1dim:i2dim,j1dim:j2dim)
+            tmpfld=inner_ior4
+            call get_nest_record('UB ',0,nestingfile,irec,firstrec,lastrec)
+            read(10,rec=irec) inner_ior4(i1dim:i2dim,j1dim:j2dim)
+            tmpfld=tmpfld+inner_ior4
+            WRITE(66,'(10e15.6)')((tmpfld(i,j),i=i1,i2),j=j1,j2)
+            !print *,irec,maxval(inner_ior4(i1dim:i2dim,j1dim:j2dim)),i1dim,i2dim,j1dim,j2dim
+            do jx=j1,j2
+            do ix=i1,i2
+               ixx=max(ix-i1,jx-j1)+1
+               mat_iofld(ixx,k)=tmpfld(ix,jx)
+            end do
+            end do
+         end do
+#if defined(MATLAB)
+         call mxCopyReal8ToPtr(mat_iofld,mxGetPr(pa1),int(imax*kdm,kind=IKIND))
+         iret=matPutVariable(mp, 'utot'//cll, pa1)
+#endif /*MATLAB*/
+
+         ! Get variable
+         do k=1,kdm
+            call get_nest_record('VT ',k,nestingfile,irec,firstrec,lastrec)
+            read(10,rec=irec) inner_ior4(i1dim:i2dim,j1dim:j2dim)
+            tmpfld=inner_ior4
+            call get_nest_record('VB ',0,nestingfile,irec,firstrec,lastrec)
+            read(10,rec=irec) inner_ior4(i1dim:i2dim,j1dim:j2dim)
+            tmpfld=tmpfld+inner_ior4
+            WRITE(66,'(10e15.6)')((tmpfld(i,j),i=i1,i2),j=j1,j2)
+            !print *,irec,maxval(inner_ior4(i1dim:i2dim,j1dim:j2dim)),i1dim,i2dim,j1dim,j2dim
+            do jx=j1,j2
+            do ix=i1,i2
+               ixx=max(ix-i1,jx-j1)+1
+               mat_iofld(ixx,k)=tmpfld(ix,jx)
+            end do
+            end do
+         end do
+#if defined(MATLAB)
+         call mxCopyReal8ToPtr(mat_iofld,mxGetPr(pa1),int(imax*kdm,kind=IKIND))
+         iret=matPutVariable(mp, 'vtot'//cll, pa1)
+#endif /*MATLAB*/
+
+
+         ! Ice, only matlab for now
+         call get_nest_record('HI ',0,nestingfile,irec,firstrec,lastrec)
+         read(10,rec=irec) inner_ior4(i1dim:i2dim,j1dim:j2dim)
+         tmpfld=inner_ior4
+         do jx=j1,j2
+         do ix=i1,i2
+            ixx=max(ix-i1,jx-j1)+1
+            mat_iofld(ixx,1)=tmpfld(ix,jx)
+         end do
+         end do
+#if defined(MATLAB)
+         pa2=mxCreateDoubleMatrix(int(imax,kind=IKIND),int(1,kind=IKIND),int(0,kind=IKIND))
+         call mxCopyReal8ToPtr(mat_iofld(:,1),mxGetPr(pa2),int(imax,kind=IKIND))
+         iret=matPutVariable(mp, 'hice'//cll, pa2)
+#endif /*MATLAB*/
+
+         ! Ice, only matlab for now
+         call get_nest_record('FI ',0,nestingfile,irec,firstrec,lastrec)
+         read(10,rec=irec) inner_ior4(i1dim:i2dim,j1dim:j2dim)
+         tmpfld=inner_ior4
+         do jx=j1,j2
+         do ix=i1,i2
+            ixx=max(ix-i1,jx-j1)+1
+            mat_iofld(ixx,1)=tmpfld(ix,jx)
+         end do
+         end do
+#if defined(MATLAB)
+         call mxCopyReal8ToPtr(mat_iofld(:,1),mxGetPr(pa2),int(imax,kind=IKIND))
+         iret=matPutVariable(mp, 'fice'//cll, pa2)
+#endif /*MATLAB*/
+
+
+      end do
+
+
+      close(66)
+      close(10)
+
+      print *,' Data dumped to tecplot file '//trim(nestingfile)//'_'//cbnd//'_test.tec'
+
+#if defined(MATLAB)
+      print *,' Data dumped to matlab  file '//trim(nestingfile)//'_'//cbnd//'_test.mat'
+#endif
+
+
+
+
+
+!      contains
+!
+!      subroutine get_nest_record(cvar,klevel,nestingfile,irec,frec,lrec)
+!      implicit none
+!         character(len=3), intent(in) :: cvar
+!         character(len=*), intent(in) :: nestingfile
+!         integer, intent(out) :: irec
+!         integer, intent(in ) :: klevel,frec,lrec
+!
+!         character(len=3) :: cin
+!         integer ::kin,recin,offsin,yrin,dayin,hrin,kdmin,ios,ir
+!         real    :: maxin,minin
+!         logical :: found
+!
+!         found=.false.
+!
+!         inquire(file=trim(nestingfile)//'.hdr',exist=ex)
+!         if (.not.ex) then
+!            print *,'Could not find nest header file '//trim(nestingfile)//'.hdr'
+!            stop '(get_nest_record)'
+!         end if
+!         open(16,file=trim(nestingfile)//'.hdr',form='formatted', &
+!                 access='direct',recl=100,status='old')
+!
+!         ir=frec
+!         ios=0
+!         do while (.not. found .and. ios==0 .and. ir<=lrec) 
+!            !print *,ir
+!            read(16,103,rec=ir) cin,kin,recin,offsin,yrin,dayin,hrin,kdmin, &
+!                         maxin,minin
+!
+!            found = cin==cvar .and. kin==klevel
+!            irec=recin
+!            ir=ir+1
+!         end do
+!         close(16)
+!
+!         if (ios/=0) then
+!            print *,'Input error '
+!            stop '(get_nest_record)'
+!         end if
+!
+!         if (.not. found) then
+!            print '(a,a,i2,a)','Could not find variable ',cvar,' at level ',k
+!            stop '(get_nest_record)'
+!         end if
+!
+!
+!  103 format(a3,7x,i4,8x,i5,8x,i5,6x,i4, &
+!             1x,i3,1x,i2,5x,i3,9x,2e12.2)
+!
+!      end subroutine
+!
+!      subroutine get_nest_info(nestingfile,kdm2,offset,num_offset)
+!      implicit none
+!         character(len=*), intent(in) :: nestingfile
+!         integer, intent(out) :: offset,kdm2,num_offset
+!
+!         character(len=3) :: cin
+!         integer ::kin,recin,offsin,yrin,dayin,hrin,kdmin,ios,ir,maxrec
+!         real    :: maxin,minin
+!
+!         if (.not.ex) then
+!            print *,'Could not find nest header file '//trim(nestingfile)//'.hdr'
+!            stop '(get_nest_info)'
+!         end if
+!
+!         open(16,file=trim(nestingfile)//'.hdr',form='formatted', &
+!                 access='direct',recl=100,status='old')
+!
+!         ir=1
+!         ios=0
+!         maxrec=0
+!         do while(ios==0)
+!            read(16,103,rec=ir,iostat=ios) cin,kin,recin,offsin,yrin,dayin,hrin,kdmin, &
+!                                           maxin,minin
+!            if (ios==0) then
+!               ir=ir+1
+!               maxrec=max(maxrec,recin)
+!               kdm2=kdmin
+!            end if
+!         end do
+!         ir=ir-1
+!         close(16)
+!         if (ios/=0.and.ir==0) then
+!            print *,'Input error '
+!            stop '(get_nest_record_offset)'
+!         end if
+!
+!         offset=maxrec ! number of records per time record
+!         kdm2=kdmin
+!         num_offset=ir/maxrec ! Number of time records in file
+!
+!
+!
+!  103 format(a3,7x,i4,8x,i5,8x,i5,6x,i4, &
+!             1x,i3,1x,i2,5x,i3,9x,2e12.2)
+!      end subroutine
+
+
+      end program check_nest

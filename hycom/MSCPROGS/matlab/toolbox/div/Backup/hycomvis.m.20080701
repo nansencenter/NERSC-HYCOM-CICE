@@ -1,0 +1,801 @@
+function hycomvis(infile,ftype)
+
+if (~exist('abfile'))
+	disp('This program needs the abfile class - install it')
+	return 
+end
+
+if (nargin==2)
+  if (~strcmp(ftype,'nersc_daily') & ~strcmp(ftype,'nersc_weekly') & ~strcmp(ftype,'restart') )
+     disp('filetype must be one of nersc_daily , nersc_weekly or restart ');
+     return;
+  end
+else
+  disp('Usage - hycomvis(file, filetype)');
+  return;
+end
+
+% Convert infiles to cell strings
+if (ischar(infile) & min(min(size(infile)))>1 )
+	infile=cellstr(infile);
+elseif (ischar(infile) & (size(infile,2)==1 | size(infile,1)==1 ))
+	% Hmm - this could be output from "ls" or something else 
+	% - we parse it with strread and ' ' as delimiter - this returns cellstr
+	infile=strread(infile,'%s');
+	infile=sort(infile);
+elseif (~iscellstr(infile))
+	disp('input must be char array or cellstring array')
+	return
+end 
+
+% Initialize GUI - at end of this file
+initGUI(infile,ftype);
+% These functions / tags are set by initgui 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Function handles:
+% wButtonUp         - Activated when mouse button released within axes - handles button states
+% wButtonDown       - Activated when mouse button pushed down within axes
+% nextFile          - Next file Button, chooses next file in file list
+% changeFile        - triggered when a new file is chosen
+% buttonsCallback   - Handles button states when plot type is changed
+% changeLev         - Handles level list when variable is changed
+% plotFieldButton   - Handles actions when plot field button is clicked
+% plotSectionButton - Handles actions when plot section button is clicked
+% plotStationButton - Handles actions when plot station button is clicked
+%
+% Tags :
+% nextButton    - "Next File" button
+% FilePopup     - file list
+% sectionSwitch - Tag for "section" plot type state
+% variablePopup - Tag for variable selection menu 
+% LevelPopup    - Tag for variable selection menu 
+% fieldButton   - Tag for plot Field button
+% stationButton   - Tag for plot Station button
+% sectionButton   - Tag for plot Section button
+% textXUp         - Tag for probe info - x position for last click release
+% textYUp         - Tag for probe info - y position for last click release
+% textXDown       - Tag for probe info - x position for last click push
+% textYDown       - Tag for probe info - y position for last click push
+% selectAxes      - Tag for depth / line / point / patch draw axes 
+%
+%In addition - the GUI figure carries the following info in a structuire in  "userdata"
+%xlastdwn - last x pos of mouse push
+%ylastdwn - last y pos of mouse push
+%xlastup  - last x pos of mouse release
+%ylastup  - last y pos of mouse release
+%fig      - points to plot figure
+%idm      - 1st data dim
+%jdm      - 2nd data dim
+%lastvar  - last variable plotted
+%ftype    - file type
+%
+%
+%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%% Button and popup menu selection %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%% Handler detects when mous button is released  %%%%%%%%%%%%%%%%%5
+% Sets figure info for point, then draws points/patches/lines
+function wButtonUp(source,eventdata,depths,lon,lat)
+	[obj, fig] = gcbo; 
+	updatePosition(fig,'buttonup',depths) ; % Update last position in userdata
+
+
+	% Probe if down and up points are the same - plot point if they are. Only active 
+	% if section plot type is selected
+   if (get(findobj(fig,'Tag','sectionSwitch'),'Value')==1)
+		if (drawpoint(fig,depths,lon,lat))
+			% Enaple "plot station button" if drawpoint succeeded
+			if (strcmp( get(findobj(fig,'Tag','stationButton'),'Enable'), 'off'))
+			  set(findobj(fig,'Tag','stationButton'),'Enable','on');
+			end
+		end
+	end
+
+   % These actions are started by dragging. First is if section type plot 
+	% is selected
+   if (get(findobj(fig,'Tag','sectionSwitch'),'Value')==1)
+
+		  %Mark selection with line if down and up points differ and are non-empty
+		  if (drawline(fig))
+			  % Update section and station buttin if line draw succeeded
+			  if (strcmp( get(findobj(fig,'Tag','sectionButton'),'Enable'), 'off'))
+				 set(findobj(fig,'Tag','sectionButton'),'Enable','on');
+			  end
+			  if (strcmp( get(findobj(fig,'Tag','stationButton'),'Enable'), 'off'))
+				 set(findobj(fig,'Tag','stationButton'),'Enable','on');
+			  end
+		  end
+
+   % These actions are started by dragging. This section action is if field type plot 
+	% is selected
+   else 
+			if (drawpatch(fig))
+				%Enable plot field button
+				if (strcmp(get(findobj(fig,'Tag','fieldButton'),'Enable'),'off'))
+					set(findobj(fig,'Tag','fieldButton'),'Enable','on');
+				end
+			else
+				% Disable field button if we failed, also delete selectedPatch
+				if (strcmp(get(findobj(fig,'Tag','fieldButton'),'Enable'),'on'))
+					set(findobj(fig,'Tag','fieldButton'),'Enable','off');
+				end
+				P=findobj(fig,'Tag','selectedPatch'); 
+				if (~isempty(P))
+					delete(P)
+				end
+			end
+   end
+
+
+
+
+%%%%%%%%%%%%%%%%%% Handler detects when mouse button is pushed down %%%%%%%%%%%%%%%%%5
+% Sets figure info for point
+function wButtonDown(source,eventdata,depths,lon,lat)
+   [obj, fig] = gcbo; 
+	updatePosition(fig,'buttondown',depths) ; % Update first position in userdata
+
+
+
+
+
+%%%%%%%%%%%%%%%%%% Handler detects when plot field button is clicked %%%%%%%%%%%%%5
+% Retrieves data and plots field using pcolor
+function  plotFieldButton(source,eventdata,depths);
+   [obj, fig] = gcbo; 
+ 	info = get(fig,'UserData');
+	filename = getActiveFile();
+	fldname  = getActiveVar();
+   level    = getActiveLevel();
+
+   % Get data and plot it
+   fld = getfld(filename,info.ftype,fldname,level,info.idm,info.jdm);
+   plotfig = plotField(info,depths,fld,fldname) ;
+
+	% Update figure info
+	info.lastvar=fldname; info.fig = plotfig;
+ 	set(info.fig,'Tag','HVFieldPlot');
+ 	set(fig,'UserData',info);
+	figure(fig);
+
+
+%%%%%%%%%%%%%%%%%% Handler detects when plot section button is clicked %%%%%%%%%%%%%5
+% Retrieves data and plots section using pcolor or line plot
+function  plotSectionButton(source,eventdata,lon,lat);
+   [obj, fig] = gcbo; 
+ 	info = get(fig,'UserData');
+	[x,y,ind]=getsection(info.xlastdwn,info.ylastdwn, ...
+	                     info.xlastup ,info.ylastup , ...
+                        info.idm,info.jdm);
+	filename = getActiveFile();
+	fldname = getActiveVar();
+   [fld,prs] = getsectiondata(x,y,filename,info.ftype,fldname,info.idm,info.jdm);
+   plotfig=plotSection(info,x,y,ind,lon,lat,fld,prs,fldname);
+
+	if (~isempty(plotfig))
+		info.fig=plotfig;
+		info.lastvar=fldname;
+		set(info.fig,'Tag','HVSectionPlot');
+	end 
+	set(fig,'UserData',info); 
+	figure(fig); 
+
+
+%%%%%%%%%%%%%%%%%% Handler detects when plot station button is clicked %%%%%%%%%%%%%5
+% Retrieves data and plots station(s) using line plot
+   function  plotStationButton(source,eventdata,lon,lat);
+   [obj, fig] = gcbo; 
+ 	info = get(fig,'UserData');
+	[x,y,ind]=getsection(info.xlastdwn,info.ylastdwn, ...
+	                     info.xlastup ,info.ylastup , ...
+                        info.idm,info.jdm);
+	filename = getActiveFile();
+   fldname = getActiveVar();
+   [fld,prs] = getsectiondata(x,y,filename,info.ftype,fldname,info.idm,info.jdm);
+	plotStations(x,y,lon,lat,ind,fld,prs);
+
+
+%%%%%% Handler detects when Mode is switched from field to section plot  %%%%%%%%%%%%
+% Resets levels list (enabled or not) and clears anything that was selected
+function buttonsCallback(source,eventdata)
+   [obj, fig] = gcbo; 
+   levlist=findobj(fig,'Tag','LevelPopup');
+   if (get(findobj(fig,'Tag','sectionSwitch'),'Value')==1)
+      set(levlist,'Enable','off');
+   else
+      set(levlist,'Enable','on');
+   end
+   clearselected(fig);
+
+
+
+%%%%%% Handler forces file change                         %%%%%%%%%%%%%%%%%%%%%%%%%%%
+function nextFile(source,eventdata,lon,lat,depths)
+   disp('nextFile pushed')
+	[obj, fig] = gcbo; 
+   filelist=findobj(fig,'Tag','FilePopup');
+	fldind=get(filelist,'Value');
+	filenames=get(filelist,'String');
+	fldind=mod(fldind,prod(size(filenames)))+1;
+	set(filelist,'Value',fldind);
+
+	% Trigger changeFile
+	changeFile(source,eventdata,lon,lat,depths);
+
+
+
+
+%%%%%% Handler resets menus     when file     is changed %%%%%%%%%%%%%%%%%%%%%%%%%%%
+function changeFile(source,eventdata,lon,lat,depths)
+	[obj, fig] = gcbo; 
+   info=get(fig,'UserData');
+	filename = getActiveFile()  ; 
+	fldname  = getActiveVar()    ;
+	level    = getActiveLevel()  ;
+   disp(['File name changed ' filename])
+
+	%Make sure the variable is present in new file
+	obj = getFileObj(info.ftype,info.idm,info.jdm,fig);
+	fldnames=getfieldnames(obj);
+	hasvar=max(max(strcmp(fldnames,fldname)))==1;
+
+	%Make sure the level of this variable is present in new file
+	haslev=0==1;
+	if (hasvar)
+      flevels=getlevels(obj,fldname);
+		haslev=max(max(level==flevels));
+	end
+
+	% Set reasonable values if variable didnt exist
+	if ( ~hasvar )
+		varlist=findobj(fig,'Tag','VariablePopup')
+		set(varlist,'String',fldnames);
+		set(varlist,'Value',1);
+		fldname = getActiveVar(fig);
+      flevels=getlevels(obj,fldname);
+		if ( ~haslev )
+			varlist=findobj(fig,'Tag','LevelPopup')
+			set(varlist,'String',flevels);
+			set(varlist,'Value',1);
+		end
+	end
+
+   % Initiate a replot when new file is selected - this enables simple "cycling"
+	% of data
+	if (checkFigureTag(info.fig,'HVFieldPlot') & hasvar)
+		plotFieldButton(source,eventdata,depths);
+	elseif (checkFigureTag(info.fig,'HVSectionPlot') & hasvar)
+		plotSectionButton(source,eventdata,lon,lat);
+	else
+		info.fig=[];
+	end
+	set(fig,'UserData',info);
+
+
+
+%%%%%% Handler resets level menu when variable is changed %%%%%%%%%%%%%%%%%%%%%%%%%%%
+function changelev(source,eventdata)
+   [obj, fig] = gcbo; 
+   info=get(fig,'UserData');
+	filename = getActiveFile();
+	fldname  = getActiveVar();
+   if (max(strcmp(info.ftype,{'nersc_daily' 'nersc_weekly' 'restart'}))==1)
+      obj=abfile(filename,info.ftype);
+   end 
+   flevels=getlevels(obj,fldname);
+   levlist=findobj(fig,'Tag','LevelPopup');
+   set(levlist,'String',num2str(flevels'));
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%% Auxillary functions             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function updatePosition(fig,direction,depths)
+	info = get(fig,'UserData');
+   [axx,axy]=  fig2axes(fig,depths) ; % Get point on axes
+   if ~isempty(axx) 
+		if (strcmp(direction,'buttondown'))
+			set(findobj(fig,'Tag','textXDown'),'String',num2str(axx));
+			set(findobj(fig,'Tag','textYDown'),'String',num2str(axy));
+			info.xlastdwn=axx;
+			info.ylastdwn=axy;
+		elseif (strcmp(direction,'buttonup'))
+			set(findobj(fig,'Tag','textXUp'),'String',num2str(axx));
+			set(findobj(fig,'Tag','textYUp'),'String',num2str(axy));
+			info.xlastup=axx;
+			info.ylastup=axy;
+		else
+			disp(['Unknown direction '  direction])
+		end 
+   end 
+   set(fig,'Userdata',info);
+	newfig=fig;
+
+
+%%%%%% Maps figure point to depth matrix point  - uses currentpoint fig prop %%%%%%%%
+function [axx,axy]=  fig2axes(fig,depths)
+	%Transform to axis coordinates
+	currpt=get(fig,'Currentpoint');
+	info = get(fig,'UserData');
+	pos=get(fig,'Position');
+
+   ax=findobj(fig,'Tag','selectAxes');
+	tmpunits=get(ax,'Units');
+	set(ax,'Units','normalized');
+	axpos=get(ax,'Position');
+	XLim=get(ax,'XLim');
+	YLim=get(ax,'YLim');
+	set(ax,'Units',tmpunits);
+
+	a=(XLim(2)-XLim(1))/(axpos(3)*pos(3)) ;
+	b=XLim(1)-a*axpos(1)*pos(3);
+	axx=a*currpt(1)+b;
+
+	a=(YLim(2)-YLim(1))/(axpos(4)*pos(4)) ;
+	b=YLim(1)-a*axpos(2)*pos(4);
+	axy=a*currpt(2)+b;
+
+	size(depths);
+	axx=max(1,min(floor(axx),size(depths,1)));
+	axy=max(1,min(floor(axy),size(depths,2)));
+
+	% Test should be changed
+	try 
+	   depths(floor(axx),floor(axy));
+	catch
+	   axx=[];
+	   axy=[];
+	   disp('Outside of domain')
+	   %axx=max([ min(axx,prod(size(depths,1))) 1 ])
+	   %axy=max([ min(axy,prod(size(depths,2))) 1 ])
+	end
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Draws a patch which is kept in the info field of figure (switch to tag?)
+% Also modifies enabled status of buttons
+function success=drawpatch(fig)
+   info=get(fig,'UserData');
+	success=false;
+	if (info.xlastdwn ~= info.xlastup & info.ylastdwn ~= info.ylastup & ~isempty(info.xlastup)  & ~isempty( info.xlastdwn) )
+	   clearselected(fig);
+	   minx=min([info.xlastdwn info.xlastup]);
+	   maxx=max([info.xlastdwn info.xlastup]);
+	   miny=min([info.ylastdwn info.ylastup]);
+	   maxy=max([info.ylastdwn info.ylastup]);
+	   P=patch([minx minx maxx+1 maxx+1],[maxy+1 miny miny maxy+1],[ .5 .5 .5],'Tag','selectedPatch');
+	   set(P,'FaceAlpha',.5);
+		success=true;
+	end
+   set(fig,'UserData',info);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Draws a line which is kept in the info field of figure (switch to tag?)
+% Also modifies enabled status of buttons
+function success=drawline(fig)
+   info=get(fig,'UserData');
+	success=false;
+   if (info.xlastdwn ~= info.xlastup & info.ylastdwn ~= info.ylastup & ~isempty(info.xlastup)  & ~isempty( info.xlastdwn) )
+	  minx=info.xlastdwn;
+	  maxx=info.xlastup;
+	  miny=info.ylastdwn;
+	  maxy=info.ylastup;
+	  clearselected(fig);
+	  L=line([info.xlastdwn info.xlastup],[info.ylastdwn info.ylastup],'Color','m','LineWidth',2,'Tag','selectedLine');
+	  success=true;
+   end
+   set(fig,'UserData',info);
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Draws a point which is kept in the info field of figure (switch to tag?)
+% Also updates the "probing" values
+% Also modifies enabled status of buttons
+function success=drawpoint(fig,depths,lon,lat)
+   success=false;
+   info=get(fig,'UserData');
+	% Probe if down and up points are the same:
+	if (info.xlastdwn == info.xlastup & info.ylastdwn == info.ylastup & ~isempty(info.xlastup) )
+	   set(findobj(fig,'Tag','depthProbe'),'String',num2str(depths(info.xlastup,info.ylastup),'%5.1f'));
+	   set(findobj(fig,'Tag','lonProbe'),'String',num2str(lon(info.xlastup,info.ylastup)));
+	   set(findobj(fig,'Tag','latProbe'),'String',num2str(lat(info.xlastup,info.ylastup)));
+	   clearselected(fig);
+	   P=plot(info.xlastup,info.ylastup,'m+','Tag','selectedPoint');
+	   set(P,'MarkerSize',20);
+	   set(P,'LineWidth',2);
+		success=true;
+	end
+   set(fig,'UserData',info);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Function clears all selected objects kept in the userdata part of the figure and
+% removes them from the map. Also disables buttons, since we no longer have a selection
+ function clearselected(fig);
+   selectpatch=findobj(fig,'Tag','selectedPatch');
+   if(~isempty(selectpatch)) 
+      delete(selectpatch);
+   end
+	if (~strcmp( get(findobj(fig,'Tag','fieldButton'),'Enable'), 'off'))
+      set(findobj(fig,'Tag','fieldButton'),'Enable','off');
+	end
+
+   selectpoint=findobj(fig,'Tag','selectedPoint');
+	if (~isempty(selectpoint) )
+	   delete(selectpoint)
+	end
+   if (~strcmp( get(findobj(fig,'Tag','stationButton'),'Enable'), 'off'))
+     set(findobj(fig,'Tag','stationButton'),'Enable','off');
+   end
+
+   selectline=findobj(fig,'Tag','selectedLine');
+	if (~isempty(selectline) )
+	   delete(selectline)
+	end
+   if (~strcmp( get(findobj(fig,'Tag','sectionButton'),'Enable'), 'off'))
+     set(findobj(fig,'Tag','sectionButton'),'Enable','off');
+   end
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Function returns data  points along a section - simple line
+function [x,y,ind]=getsection(x1,y1,x2,y2,idm,jdm);
+   maxdiff=max(abs(x1-x2),abs(y1-y2))+1;
+	x=round(linspace(x1,x2,maxdiff));
+	y=round(linspace(y1,y2,maxdiff));
+   ind = sub2ind([idm jdm],x,y) ;
+	[x,y]=ind2sub([idm jdm],ind);
+	if (nargout==1)
+	   x=ind;
+	end
+	   
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Function returns data values using data matrix points along a section (x,y)
+function [fld,prs] = getsectiondata(x,y,infile,ftype,fldname,idm,jdm);
+   % Retrieve fields from infile
+   if (strcmp(ftype,'nersc_daily'))
+      obj=abfile(infile,ftype);
+      prs=getpoint(obj,x,y,'pres',[],[]);
+      fld=getpoint(obj,x,y,fldname,[],[]); 
+   elseif (strcmp(ftype,'nersc_weekly'))
+      obj=abfile(infile,ftype);
+      prs=getpoint(obj,x,y,'pres',[],[]);
+      for k=2:size(prs,1)
+         prs(k,:)=prs(k,:)+prs(k-1,:);
+      end
+      fld=getpoint(obj,x,y,fldname,[],[]);
+   elseif (strcmp(ftype,'restart'))
+      obj=abfile(infile,ftype);
+      prs=getpoint(obj,x,y,'dp',[],1);
+      for k=2:size(prs,1)
+         prs(k,:)=prs(k,:)+prs(k-1,:);
+      end
+      fld=getpoint(obj,x,y,fldname,[],1); 
+   end
+
+   % Add a layer on top
+   if (size(prs)==size(fld))
+      prs=[zeros(1,size(prs,2));  prs];
+      fld=[fld(1,:);  fld];
+   end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Function returns fields for chosen field and level
+function fld = getfld(infile,ftype,fldname,vlevel,idm,jdm);
+   % Retrieve fields from infile
+   if (max(strcmp(ftype,{'nersc_daily' 'nersc_weekly' 'restart'}))==1)
+      obj=abfile(infile,ftype);
+      fld=getfield(obj,fldname,vlevel,1);
+   end
+
+
+% Returns active file in file menu
+function filename = getActiveFile(fig);
+   % Get selected field from popupmenu
+   if (nargin==0)
+		[obj, fig] = gcbo; 
+	end
+   filelist=findobj(fig,'Tag','FilePopup');
+	%get(filelist);
+	fldind=get(filelist,'Value');
+	filenames=get(filelist,'String');
+   filename=filenames{fldind};
+
+
+
+% Returns active var in var menu
+function varname = getActiveVar(fig);
+   % Get selected field from popupmenus
+   if (nargin==0)
+		[obj, fig] = gcbo; 
+	end
+   varlist=findobj(fig,'Tag','VariablePopup');
+	varind=get(varlist,'Value');
+	varnames=get(varlist,'String');
+   varname=char(varnames{varind});
+
+
+% Returns active level in level menu
+function level = getActiveLevel();
+   [obj, fig] = gcbo; 
+   levlist=findobj(fig,'Tag','LevelPopup');
+	levind=get(levlist,'Value');
+	levels=get(levlist,'String');
+   level=str2num(levels(levind,:));
+
+
+% Returns file object corr to current file selected
+function obj = getFileObj(ftype,idm,jdm,fig);
+   if (nargin==3)
+		[obj, fig] = gcbo; 
+	end
+	filename = getActiveFile(fig);
+	if (max(strcmp(ftype,{'restart' 'nersc_daily' 'nersc_weekly'}))==1)
+		obj=abfile(filename,ftype);
+	else 
+		disp(['Unknown file type ' ftype ]);
+	end 
+
+% Boolean - true if figure has tag
+function checktag = checkFigureTag(fig,tagname);
+	checktag=0==1;
+	if (ishandle(fig))
+		if (findobj(fig,'Tag',tagname))
+			checktag=0==0;
+		end
+	end
+
+% Checks if last var is this var
+function checklastvar = checkLastVar(info,var);
+	checklastvar=strcmp(info.lastvar,var);
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function  plotStations(x,y,lon,lat,ind,fld,prs);
+% plots Stations - no sideeffects
+   x2=repmat(1:prod(size(x)),size(prs,1),1);
+   if (max(max(prs))>10.*9806)
+	  dfac=9806;
+   else
+	  dfac=1;
+   end
+   if (size(fld)==size(prs)) ; 
+      for k=1:size(prs,2)
+         %prs(k,:)
+         I=find(max(prs(:,k))-prs(:,k)<dfac);
+         fld(I,k)=nan;
+      end
+      figure; clf; plot(fld,-prs,'.-'); shading flat;
+      set(gca,'FontSize',14);
+      set(gca,'FontWeight','bold');
+      ylabel('Depth[m]'); 
+   else
+      figure; clf; plot(x2,fld,'LineWidth',2); 
+      set(gca,'FontSize',14);
+      set(gca,'FontWeight','bold');
+      XT=get(gca,'XTick');
+      for i=1:prod(size(XT))
+         if XT(i) < 1 | XT(i) > prod(size(ind));
+            XTL{i}='';
+         else
+            XTL{i}=num2str(lon(ind(XT(i))),'%7.2f'  );
+         end
+      end
+      set(gca,'XTickLabel',XTL); 
+      xlabel('Longitude[degrees east]'); 
+      grid on;
+   end
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function newfig=plotSection(info,x,y,ind,lon,lat,fld,prs,fldname);
+% Plots section - tags figure window containing plot and puts the figure handler
+%into  info struct. 
+   newfig=[];
+	x2=repmat(1:prod(size(x)),size(prs,1),1);
+   if (size(fld)==size(prs)) ; 
+      dfac=1;
+      if (max(max(prs))>10.*9806)
+         dfac=1/9806;
+      end
+		disp('info.fig:');
+		[cax, edgecolor, facecolor ] = getOldFig(info,'HVSectionPlot',fldname);
+      %pcolor(x2,-prs*dfac,fld); shading flat;
+      P=pcolor(flipud(x2),-flipud(prs)*dfac,flipud(fld)); shading flat;
+		if (~isempty(cax))
+			caxis(cax);
+		%else
+		%	vals=reshape(fld,1,prod(size(fld)));
+		%	I=find(~isnan(vals)); vals=vals(I);
+		%	vals=sort(vals); nval=prod(size(vals));
+		%	cax(1)=vals(round( 5*nval/100));
+		%	cax(2)=vals(round(95*nval/100));
+		%	cax
+		end
+		if (~isempty(edgecolor))
+			set(P,'EdgeColor',edgecolor);
+		end
+		if (~isempty(facecolor))
+			set(P,'FaceColor',facecolor);
+		end
+		disp(['Caxis is ' num2str(caxis) ])
+		newfig=gcf;
+   else
+      figure; clf; plot(x2,fld,'LineWidth',2);
+      grid on;
+   end
+   %Labels (longitude for now)
+   set(gca,'FontSize',14);
+   set(gca,'FontWeight','bold');
+   XT=get(gca,'XTick');
+   for i=1:prod(size(XT))
+      if XT(i) <= 0 | XT(i) > prod(size(ind));
+         XTL{i}='';
+      else
+         XTL{i}=num2str(lon(ind(XT(i))),'%7.2f'  );
+      end
+   end
+   set(gca,'XTickLabel',XTL); 
+   xlabel('Longitude[degrees east]'); 
+   if (size(fld)==size(prs)) ; 
+      ylabel('Depth[m]'); 
+   end
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function newfig = plotField(info,depths,fld,fldname) ;
+% Plots field - tags figure window containing plot and puts the figure handler
+%into  info struct. 
+   minx=min([info.xlastdwn info.xlastup]);
+   maxx=max([info.xlastdwn info.xlastup]);
+   miny=min([info.ylastdwn info.ylastup]);
+   maxy=max([info.ylastdwn info.ylastup]);
+   I=find(depths<.1 | depths > 1e20 | isnan(depths)); fld(I)=nan;
+	[cax, edgecolor, facecolor ]=getOldFig(info,'HVFieldPlot',fldname);
+	%whos
+   P=pcolor(minx:maxx,miny:maxy,fld(minx:maxx,miny:maxy)'); shading flat;
+	if (~isempty(cax))
+		caxis(cax);
+	end
+	if (~isempty(edgecolor))
+		set(P,'EdgeColor',edgecolor);
+	end
+	if (~isempty(facecolor))
+		set(P,'FaceColor',facecolor);
+	end
+	disp(['Caxis is ' num2str(caxis) ])
+	newfig=gcf;
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function [cax, edgecolor, facecolor ] = getOldFig(info,tag,fldname)
+   cax=[]; edgecolor=[]; facecolor =[];
+	if (checkFigureTag(info.fig,tag) & checkLastVar(info,fldname));
+		figure(info.fig);
+		cax=caxis;
+		facecolor=get(findobj(gcf,'-property','FaceColor'),'FaceColor');
+		edgecolor=get(findobj(gcf,'-property','EdgeColor'),'EdgeColor');
+	else
+		figure;
+	end
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function initGUI(infile,ftype);
+	disp('Initializing GUI')
+
+	% Get lon and lat
+	rg=abfile('regional.grid.a','regional_grid');
+	lon=getfield(rg,'plon',[],[]);
+	lat=getfield(rg,'plat',[],[]);
+	idm=size(lon,1);
+	jdm=size(lon,2);
+	rd=abfile('regional.depth.a','raw');
+	depths=getfield(rd,[],1,[]);
+	if (isempty(depths))
+		disp('depths is empty - you are probably missing the regional.depth.a file')
+	end
+	if (isempty(lon) | isempty(lat))
+		disp('lon or lat is empty - you are probably missing the regional.grid.a file')
+	end
+
+	fig = figure('WindowButtonUpFcn'  ,{@wButtonUp  ,depths,lon,lat}, ...
+					 'WindowButtonDownFcn',{@wButtonDown,depths,lon,lat}, ...
+					 'ToolBar','figure') ; 
+
+
+	% Create a list box with files
+	p1=uipanel('Title','Files','Position',[.01 .71 .30 .15 ]);
+	uicontrol('Parent',p1,'Style','pushbutton', 'Units','normalized','Position',[ .05 .05 .9 .5],'String','Next File', ...
+				 'Callback', {@nextFile,lon,lat,depths}, ...
+				 'Enable','on','Tag','nextButton');
+	uicontrol('Parent',p1,'Style','popupmenu', 'Units','normalized',...
+								 'Position',[.05 .55 .9 .5 ],'String',infile, ...
+								 'Enable','on','Tag','FilePopup',  ...
+								 'Callback', {@changeFile,lon,lat,depths} );
+
+
+	% Create the section/field  button group.
+	p2=uipanel('Title','Plot Type','Position',[.01 .90 .30 .10 ]);
+	h = uibuttongroup('visible','off','Units','normalized','Position',[0 0 1 1],'Tag','buttonGroup','Parent',p2, ...
+							'BorderType','none');
+	b0 = uicontrol('Style','Radio','String','Section/Station','Units','Normalized',...
+						'pos',[.01 .01 .5 .9],'parent',h,'HandleVisibility','on','Tag','sectionSwitch');
+	b1 = uicontrol('Style','Radio','String','Horizontal','Units','Normalized',...
+						'pos',[.51 .01  .5 .9],'parent',h,'HandleVisibility','on');
+	set(h,'SelectedObject',b0);  % No selection
+	set(h,'SelectionChangeFcn',@buttonsCallback);
+	set(h,'Visible','on');
+
+	% Create a list box with variables
+	p3=uipanel('Title','Variable and Level Selection','Position',[.01 .51 .30 .15 ]);
+	obj = getFileObj(ftype,idm,jdm,fig);
+	fldnames=getfieldnames(obj);
+	varlist    =uicontrol('Style','popupmenu','Units','Normalized','Position',[0.05 .55 .9 .45],'String',fldnames, ...
+								 'Enable','on','Callback',{@changelev},  ...
+								 'Tag','VariablePopup','Parent',p3);  
+	%Get variable name of initial entry of the uicontrol varlist "VariablePopup"
+	fldname = getActiveVar(fig);
+	flevels=getlevels(obj,fldname);
+	uicontrol('Style','popupmenu','Units','Normalized','Position',[0.05 .05 .9 .45],'String',flevels, ...
+							'Enable','off','Tag','LevelPopup','Parent',p3);
+
+
+	% Section/Station/Field plot buttons
+	p4=uipanel('Title','Plot Actions','Position',[.01 .27 .30 .20 ]);
+	uicontrol('Style','pushbutton', 'Units','Normalized','Position',[0.05 0.66 .90 .33],'String','Plot Field  ', ...
+				 'Callback',{@plotFieldButton,depths}, 'Enable','off','Tag','fieldButton','Parent',p4);
+	uicontrol('Style','pushbutton','Units','Normalized','Position',[ 0.05 0.33 .90 .33 ],'String','Plot Section', ...
+				 'Callback',{@plotSectionButton,lon,lat},'Enable','off','Tag','sectionButton','Parent',p4);
+	uicontrol('Style','pushbutton','Units','Normalized','Position',[0.05 0.00 .90 .33],'String','Plot Station(s)', ...
+				 'Callback', {@plotStationButton,lon,lat}, 'Enable','off','Tag','stationButton', 'Parent',p4);
+
+	% Text edit areas
+	p5=uipanel('Title','Location','Position',[.01 .01 .30 .20 ]);
+	uicontrol('Style','text','Units','Normalized','Position',[.01 .2 .4 .2],'HorizontalAlignment','right','String','Point 1:','Parent',p5);
+	uicontrol('Style','text','Units','Normalized','Position',[.01 .0 .4 .2],'HorizontalAlignment','right','String','Point 2:','Parent',p5);
+	uicontrol('Style','text','Units','Normalized','Position',[.01 .8 .4 .2],'HorizontalAlignment','right','String','Depth:','Parent',p5);
+	uicontrol('Style','text','Units','Normalized','Position',[.01 .6 .4 .2],'HorizontalAlignment','right','String','Longitude:','Parent',p5);
+	uicontrol('Style','text','Units','Normalized','Position',[.01 .4 .4 .2],'HorizontalAlignment','right','String','Latitude:','Parent',p5);
+	uicontrol('Style','text','Units','Normalized','Position',[.41 .0 .3 .2 ],'Tag','textXUp'   ,'Parent',p5);
+	uicontrol('Style','text','Units','Normalized','Position',[.71 .0 .3 .2 ],'Tag','textYUp'   ,'Parent',p5);
+	uicontrol('Style','text','Units','Normalized','Position',[.41 .2 .3 .2 ],'Tag','textXDown' ,'Parent',p5);
+	uicontrol('Style','text','Units','Normalized','Position',[.71 .2 .3 .2 ],'Tag','textYDown' ,'Parent',p5);
+	uicontrol('Style','text','Units','Normalized','Position',[.41 .8 .6 .2 ],'Tag','depthProbe','Parent',p5);
+	uicontrol('Style','text','Units','Normalized','Position',[.41 .6 .6 .2 ],'Tag','lonProbe'  ,'Parent',p5);
+	uicontrol('Style','text','Units','Normalized','Position',[.41 .4 .6 .2 ],'Tag','latProbe'  ,'Parent',p5);
+
+
+
+	% Init info on last button up/down 
+	info.xlastdwn=[];
+	info.ylastdwn=[];
+	info.xlastup=[];
+	info.ylastup=[];
+	info.fig    =[];
+	info.idm    =idm;
+	info.jdm    =jdm;
+	info.lastvar='';
+	info.ftype=ftype;
+
+	% Plot depths map
+	ax=axes('Position',[.35 .05 .6  .85],'Tag','selectAxes'); hold on;
+	I=find(depths==0); depths(I)=nan;
+	pcolor(ax,depths');
+	shading(ax,'flat'); 
+	set(fig,'UserData',info);
+	set(fig,'HandleVisibility','callback');
+	 

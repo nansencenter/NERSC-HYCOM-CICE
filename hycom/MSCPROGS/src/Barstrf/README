@@ -1,0 +1,15 @@
+hyc2bastrf:
+   Routine calculates barotropic stream function from 
+   the barotropic velocity components. If you supply 
+   More than one file, the average barotropic 
+   streamfunction is calculated 
+
+   If several files are given, the average stream function is calculated
+   Usage: hyc2bastrf [file(s)]
+
+   Requires the regional.grid + regional.depth files to be present
+   (can also read other older topo/grid)
+
+   Uses the library routines in libhycnersc.a
+
+Knut Liseter, 23. November 2008

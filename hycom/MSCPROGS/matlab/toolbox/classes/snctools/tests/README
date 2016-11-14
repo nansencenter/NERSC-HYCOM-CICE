@@ -1,0 +1,8 @@
+Please run "test_snctools.m".  If you get the message
+
+	"All SNCTOOLS tests succeeded."
+
+then all tests really did succeed.  Don't be fooled by all the verbose
+output.
+
+These routines do not test OPeNDAP I/O.

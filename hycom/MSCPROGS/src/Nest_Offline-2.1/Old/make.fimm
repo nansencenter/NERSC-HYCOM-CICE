@@ -1,0 +1,35 @@
+KHOME = /home/fimm/nersc/knutali/
+
+#Compiler -- F90
+CF90 = ifort
+
+#Compiler -- F77
+CF77 = $(CF90)
+
+#Linker 
+LD = $(CF90)
+
+#DEBUG_FLAGS = -g  -check all -fpstkchk -traceback -fpe0  -CA -CB -CS -CU -CV 
+DEBUG_FLAGS = -g  -traceback  
+#DEBUG_FLAGS = 
+
+F77FLG = -fixed   
+F90FLG = -free 
+
+
+MATLIBS=-L/local/Matlab-2007a/bin/glnxa64/  -lmx -leng -lut -lmat -licudata -licui18n \
+        -licuuc -licuio  -lz -lhdf5
+
+
+MATCPPINC= -I/local/Matlab-2007a/extern/include/
+NCLIB = -L/local/netcdf/lib/ -lnetcdf
+NCINC = -I/local/netcdf/include/
+
+FFLAGS = -O2  -real_size 32 -double_size 64 -convert big_endian $(DEBUG_FLAGS) $(NCINC) 
+LINKFLAGS = $(FFLAGS)
+
+
+CPPARCH = -DIA32 
+CPPFLAGS =  -P $(CPPARCH) -DMATLAB  -traditional  $(MATCPPINC)
+
+CPP = /usr/bin/cpp

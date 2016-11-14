@@ -1,0 +1,32 @@
+In this directory are routines for calculating correlation between model fields.
+
+ensstat_field :
+   Takes as input two model variables (field1 and field2), along with
+   two layer indexes (k1 and k2), and calculates the correlation between
+   these two for every point on the model grid for a set of hycom 
+   input files. Run without arguments for more info
+
+ensstat_point :
+   Similar to the above, but also takes a grid location (x,y) as input. 
+   It then correlates variable at(field1,k1) at all grid locations
+   with variable at (field2,k2) at grid location (x,y).
+   Run without arguments for more info
+
+ensstat_field3D.sh : 
+   Wrapper around ensstat_field, input field1 is now treated as
+   a 3D variable. The script goes through all layers for this variable, 
+   creating a 3D file with correlation against (field2,k2) for all
+   layers of field1.
+   Run without arguments for more info
+
+ensstat_point3D.sh :
+   Wrapper around ensstat_point, input field1 is now treated as
+   a 3D variable. The script goes through all layers for this variable, 
+   creating a 3D file with correlation against (field2,k2) at (x,y) 
+   for all layers of field1.
+   Run without arguments for more info
+
+NB: the scripts require the nco tools to work.
+TODO: blank out empty layers(?)
+
+Knut Liseter, 23. November 2008

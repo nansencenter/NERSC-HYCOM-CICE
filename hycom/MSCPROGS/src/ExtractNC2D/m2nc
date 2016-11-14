@@ -1,0 +1,82 @@
+#!/bin/bash
+#set -ex
+if [  $# -eq 0 ]; then
+   echo 
+   echo "program $(basename $0):"
+   echo "m2nc will extract data from hycom .[ab] files"
+   echo "and put these into netcdf file tmp1.nc       "
+   echo "The fields to extract are specified in extract"
+   echo "files which corresponds to the file type you "
+   echo "want to extract from (for example extract.daily, "
+   echo "extract.restart ...). Sample extract files can "
+   echo "be found in Input directory under MSCProgs directory"
+   echo ""
+   echo "Several files can be specified which results in "
+   echo "several time records in the netcdf file"
+   echo
+   echo "Vectors can be rotated, depending on the flags in"
+   echo "extract-files"
+   echo
+   echo "usage:  $(basename $0) file(s)"
+   exit
+fi
+
+# This assumes that the work routine is in the same dir as m2nc
+prog="${0%m2nc}tec_nc_conv"
+
+
+# Now parse optional arguments
+arg=""
+tec=0
+while getopts "f:ts" options; do
+     case $options in
+        f ) arg="$arg -$OPTARG" ;;
+        t ) arg="$arg -tec" ; tec=1;;
+        s ) arg="$arg -skipheader" ;;
+        * ) echo -e "$usage"
+        exit 1;;
+     esac
+done
+shift $(($OPTIND - 1))
+#echo $arg
+#echo $@
+#exit
+
+
+
+# Add data from eventual additional files
+first=1
+while [ $1 ] ; do
+
+   [ $first -eq 1 ] && echo "ZONE=1" > .zoneinfo
+   [ $first -ne 1 ] && echo "ZONE>1" > .zoneinfo
+
+   suff=$(echo $1 | sed "s/.*\.//")
+   base=$(echo $1 | sed "s/\.${suff}$//")
+   echo Basename and suffix $base $suff
+
+   # No suffix found...
+   [ "$suff" == "$1" ] && suff=""
+
+
+   skip=0
+   if [ "$suff" == "a" -o "$suff" == "b"  ] ; then
+      [ ! -f "$base.a" -o ! -f "$base.b" ] && { echo "missing .a or .b file " ; exit 1; }
+   else
+      echo "Unknown suffix $suff" ; exit 1; 
+   fi
+
+   $prog $arg  $1
+   if [ $tec == 1 ] ; then
+      [ $first -eq 1 ] && cat head.txt > tmp1
+      cat outfile >> tmp1
+   fi
+
+   first=0
+   echo 
+   echo 
+   shift
+done
+
+echo "Netcdf  data in tmp1.nc"
+[ $tec == 1 ] && echo "Tecplot data in tmp1"

@@ -1,0 +1,23 @@
+CF90 = ftn
+CF77 = $(CF90)
+CC = cc
+LD = $(CF90)
+
+FFLAGS = -r8 -byteswapio -fast -fastsse -g
+CFLAGS    = 
+LINKFLAGS = $(FFLAGS)
+
+F77FLG = -Mfixed                   
+F90FLG = -Mfree
+
+INCLUDE = $(NETCDF_INC)
+LIBS = $(NETCDF_POST_LINK_OPTS)
+
+
+
+CPP = /usr/bin/cpp -P --traditional-cpp
+CPPFLAGS = -DREAL8
+
+
+
+

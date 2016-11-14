@@ -1,0 +1,59 @@
+Offline nesting routines for HYCOM 2.1
+
+NB: Some of these may/may not work. Offline nesting wasn't that much used in 
+    2.1, so I will focus on streamlining  these features for the 2.2 version.
+
+
+MERCATOR routines
+-----------------
+Intermediate procedure to create  restart files from
+Mercator fields:
+
+1) You need a restart file from the hycom run (any restart file will do,
+   since the time-independent fields "psikk" and "thkk" are needed)
+
+2) Create horizontal interpolation of Mercator fields to hycom grid. 
+   This is done with the routine "hint_mercator" (you obviously need
+   MERCATOR files for this)
+
+3) Do vertical remapping of the Mercator fields, this is done with
+   the routine "vremap_mercator".
+
+You now have a restart file interpolated from the mercator grid. This can be used
+to extract fields to nesting variables. (Can also restart from it)
+PS:For step 2-3, the routine mercator_to_hycom.sh may be used
+
+
+
+
+Procedure to create NERSC nesting files from hycom files (2.1 for now)
+-----------------------------------------------------------------------
+Procedure to create nesting files from Mercator (or ordinary hycom restart)  files:
+1) Produce hycom restart files from the Mercator files (if thats what you have!)
+   This step does all the v/h interpolation needed to create "sane" 
+   restart files. Make sure that the model to be nested to was run with the
+   "NEST_INNER" CPP flag set, otherwise the bathymetry used in the interpolation 
+   may be wrong.
+
+2) List the restart files you want to create nesting conditions for in "nestoffline.in". 
+   Only list the ".a" files
+
+3) Run the program "nestoffline", works on restart files and weekly average files.
+
+4) The subdirectory "Nest" will now be populated with nesting files.
+
+
+
+
+Procedure to USE these nesting files in hycom. So far the HYCOM code to do this is not in the CVS. 
+##################################################################################################
+
+1) Make sure NEST_INNER and NEST_OFFLINE  is set in MODEL.CPP, compile the model.
+
+2) In the Nest catalogue where the model is running, create the file "nest.files". 
+   This files lists all the nesting files (and times) which will be used by the model.
+   Only list the ".hdr" files in this file.
+
+3) Run the model, and replace the line with lnesti/nestdti with "T OFFLINE".
+
+

@@ -1,0 +1,31 @@
+gpdens:
+   Routine extracts data from a gp-file for velocity 
+   and computes various statistics for a specified depth
+   depth level.
+
+   The statistics are dumped to a netcdf file called 
+   gpdens.nc. This file has vertical dimension as unlimited
+   dimension, meaning that you can add more depth levels 
+   to this file by running gpdens repeatedly. 
+
+   Originally this routine was used for comparing model
+   with observations, currently it only computes model
+   Statistics. (there are pointers in the code on what
+   needs to be changed). A lot of the statistics are useful
+   on their own however. 
+
+   ****************************************************
+   Usage: gpdens rungen infile depthlevel
+          rungen    : 3-letter ID of model run
+          infile    : name of gp-file
+          depthlevel: which depth to extract data from
+
+
+   Output netcdf file contains statistics for observations (CM) and 
+   model data (GP). In it current form these two are the same. For 
+   variables dumped to the file, there should be a short comment 
+   (ncdump -h gpdens.nc). 
+
+   Based on code by Geir Evensen
+
+

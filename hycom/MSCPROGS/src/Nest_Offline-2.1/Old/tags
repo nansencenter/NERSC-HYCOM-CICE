@@ -1,0 +1,200 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.4	//
+1000	mod_za.F	/^ 1000 format('FOR',i3.3,'A')$/;"	l	subroutine:zaiopn	file:
+101	m_nestcondsave.F	/^  101 format(30i5)      $/;"	l	subroutine:nestcondsave	file:
+101	p_nest_offline.F	/^  101 format(30i5)      $/;"	l	program:nest_offline	file:
+102	m_nestcondsave.F	/^  102 format(10e14.3)$/;"	l	subroutine:nestcondsave	file:
+102	p_nest_offline.F	/^  102 format(10e14.3)$/;"	l	program:nest_offline	file:
+103	m_get_nest_info.F90	/^  103 format(a3,7x,i4,8x,i5,8x,i5,6x,i4, &$/;"	l	subroutine:get_nest_info	file:
+103	m_get_nest_record.F90	/^  103 format(a3,7x,i4,8x,i5,8x,i5,6x,i4, &$/;"	l	subroutine:get_nest_record	file:
+103	m_nestcondsave.F	/^  103 format(a3," level=",i4," record=",i5," offset=",i5," date=",i4,$/;"	l	subroutine:nestcondsave	file:
+103	p_check_nest.F90	/^  103 format(a3,7x,i4,8x,i5,8x,i5,6x,i4, &$/;"	l	subroutine:get_nest_info	file:
+103	p_check_nest.F90	/^  103 format(a3,7x,i4,8x,i5,8x,i5,6x,i4, &$/;"	l	subroutine:get_nest_record	file:
+103	p_nest_offline.F	/^  103 format(a3," level=",i4," record=",i5," offset=",i5," date=",i4,$/;"	l	program:nest_offline	file:
+110	mod_xc.F	/^  110 continue$/;"	l	subroutine:xctmri	file:
+1100	mod_za.F	/^ 1100 format('fort.',i3.3,'a')$/;"	l	subroutine:zaiopn	file:
+116	mod_read_dailyab.F90	/^116  format (a80\/a80\/a80\/a80\/ &$/;"	l	subroutine:daily_average_read_header	file:
+117	mod_read_dailyab.F90	/^ 117  format (a8,' = ',i11,f11.2,i3,f7.3,1p2e16.7)$/;"	l	subroutine:read_field2d	file:
+117	mod_read_weekab.F90	/^ 117  format (a8,' = ',i11,f11.2,i3,f7.3,1p2e16.7)$/;"	l	subroutine:read_weekfield2d	file:
+117	mod_read_weekab.F90	/^ 117  format (a8,' = ',i11,f11.2,i3,f7.3,1p2e16.7)$/;"	l	subroutine:week_read_header	file:
+118	mod_read_dailyab.F90	/^ 118  format ('member ',i5.5,' = ',i1,' Ensemble member flag')$/;"	l	subroutine:read_field2d	file:
+130	m_dp0kini.F90	/^ 130  format('ds0k(',i2,') =',f7.2,' m', &$/;"	l	subroutine:dp0kini	file:
+135	m_dp0kini.F90	/^ 135  format('dp0k(',i2,') =',f7.2,' m',  &$/;"	l	subroutine:dp0kini	file:
+6000	m_parse_blkdat.F90	/^ 6000 format(a6,' =',i6)$/;"	l	subroutine:blkini	file:
+6000	mod_xc.F	/^ 6000 format(\/ \/$/;"	l	subroutine:xctmrp	file:
+6100	mod_xc.F	/^ 6100 format(5x,a6,$/;"	l	subroutine:xctmrp	file:
+6150	mod_xc.F	/^ 6150 format(5x,'   #',i2,$/;"	l	subroutine:xctmrp	file:
+6200	mod_xc.F	/^ 6200 format(\/ \/)$/;"	l	subroutine:xctmrp	file:
+9000	mod_za.F	/^ 9000 format(\/ \/10x,'error in zaiocl -  array I\/O unit ',$/;"	l	subroutine:zaiocl	file:
+9000	mod_za.F	/^ 9000 format(\/ \/10x,'error in zaiofl -  array I\/O unit ',$/;"	l	subroutine:zaiofl	file:
+9000	mod_za.F	/^ 9000 format(\/ \/10x,'error in zaiope -  array I\/O unit ',$/;"	l	subroutine:zaiope	file:
+9000	mod_za.F	/^ 9000 format(\/ \/10x,'error in zaiopf -  array I\/O unit ',$/;"	l	subroutine:zaiopf	file:
+9000	mod_za.F	/^ 9000 format(\/ \/10x,'error in zaiopn -  array I\/O unit ',$/;"	l	subroutine:zaiopn	file:
+9000	mod_za.F	/^ 9000 format(\/ \/10x,'error in zaiord -  array I\/O unit ',$/;"	l	subroutine:zaiord	file:
+9000	mod_za.F	/^ 9000 format(\/ \/10x,'error in zaiorw -  array I\/O unit ',$/;"	l	subroutine:zaiorw	file:
+9000	mod_za.F	/^ 9000 format(\/ \/10x,'error in zaiosk -  array I\/O unit ',$/;"	l	subroutine:zaiosk	file:
+9000	mod_za.F	/^ 9000 format(\/ \/10x,'error in zaiowr -  array I\/O unit ',$/;"	l	subroutine:zaiowr	file:
+9050	mod_za.F	/^ 9050 format(\/ \/10x,'error in zaiope -  can''t asnunit ',i3,$/;"	l	subroutine:zaiope	file:
+9050	mod_za.F	/^ 9050 format(\/ \/10x,'error in zaiopf -  can''t asnunit ',i3,$/;"	l	subroutine:zaiopf	file:
+9050	mod_za.F	/^ 9050 format(\/ \/10x,'error in zaiopn -  can''t asnunit ',i3,$/;"	l	subroutine:zaiopn	file:
+9100	mod_za.F	/^ 9100 format(\/ \/10x,'error in zaiope -  can''t open unit ',i3,$/;"	l	subroutine:zaiope	file:
+9100	mod_za.F	/^ 9100 format(\/ \/10x,'error in zaiopf -  can''t open unit ',i3,$/;"	l	subroutine:zaiopf	file:
+9100	mod_za.F	/^ 9100 format(\/ \/10x,'error in zaiopn -  can''t open unit ',i3,$/;"	l	subroutine:zaiopn	file:
+9100	mod_za.F	/^ 9100 format(\/ \/10x,'error in zaiord -  can''t read record',$/;"	l	subroutine:zaiord	file:
+9100	mod_za.F	/^ 9100 format(\/ \/10x,'error in zaiowr -  can''t write record',$/;"	l	subroutine:zaiowr	file:
+9200	mod_za.F	/^ 9200 format(\/ \/10x,'error in zaiord -  record',$/;"	l	subroutine:zaiord	file:
+9300	mod_za.F	/^ 9300 format(\/ \/10x,'error in zaiope -  environment variable ',a,$/;"	l	subroutine:zaiope	file:
+999	m_nestcondsave.F	/^  999 nrgrids=m-1$/;"	l	subroutine:nestcondsave	file:
+WTIME	wtime.F	/^      REAL*8 FUNCTION WTIME(/;"	f
+WTIME_DUMMY	wtime.F	/^      REAL*8 FUNCTION WTIME_DUMMY(/;"	f
+ac	mod_confmap.F90	/^   complex ac$/;"	v	module:mod_confmap
+bc	mod_confmap.F90	/^   complex bc$/;"	v	module:mod_confmap
+bilincoeff	m_bilincoeff.F90	/^subroutine bilincoeff(/;"	s	module:m_bilincoeff
+blkini	m_parse_blkdat.F90	/^      subroutine blkini(/;"	s	module:m_parse_blkdat
+blkinr	m_parse_blkdat.F90	/^      subroutine blkinr(/;"	s	module:m_parse_blkdat
+blkinvoid	m_parse_blkdat.F90	/^      logical function blkinvoid(/;"	f	module:m_parse_blkdat
+cc	mod_xc.F	/^      character*6, private, dimension(97), save :: cc$/;"	v	module:mod_xc
+cdd	mod_year_info.F90	/^      character(len=3) cdd /;"	k	type:year_info
+cdm	mod_year_info.F90	/^      character(len=2) cdm /;"	k	type:year_info
+check_nest	p_check_nest.F90	/^      program check_nest$/;"	p
+chh	mod_year_info.F90	/^      character(len=2) chh /;"	k	type:year_info
+cmm	mod_year_info.F90	/^      character(len=2) cmm /;"	k	type:year_info
+cmna	mod_confmap.F90	/^   complex cmna$/;"	v	module:mod_confmap
+cmnb	mod_confmap.F90	/^   complex cmnb$/;"	v	module:mod_confmap
+css	mod_year_info.F90	/^      character(len=4) css /;"	k	type:year_info
+cyy	mod_year_info.F90	/^      character(len=4) cyy /;"	k	type:year_info
+daily_average_read_header	mod_read_dailyab.F90	/^   subroutine daily_average_read_header(/;"	s	module:mod_read_dailyab
+daysinyear	mod_year_info.F90	/^      integer daysinyear /;"	k	type:year_info
+deg	mod_confmap.F90	/^   real deg$/;"	v	module:mod_confmap
+di	mod_confmap.F90	/^   real di$/;"	v	module:mod_confmap
+dj	mod_confmap.F90	/^   real dj$/;"	v	module:mod_confmap
+dp0kini	m_dp0kini.F90	/^subroutine dp0kini(/;"	s	module:m_dp0kini
+elim	mod_confmap.F90	/^   real wlim,elim$/;"	v	module:mod_confmap
+epsil	mod_confmap.F90	/^   real epsil$/;"	v	module:mod_confmap
+filenesting	m_filenesting.F90	/^function filenesting(/;"	f	module:m_filenesting
+flush_lp	mod_xc.F	/^      logical, public, parameter :: flush_lp=/;"	v	module:mod_xc
+get_field_wrapper	m_get_field_wrapper.F90	/^  subroutine get_field_wrapper(/;"	s	module:m_get_field_wrapper
+get_global_grid	m_get_global_grid.F90	/^subroutine get_global_grid(/;"	s	module:m_get_global_grid
+get_nest_info	m_get_nest_info.F90	/^      subroutine get_nest_info(/;"	s	module:m_get_nest_info
+get_nest_info	p_check_nest.F90	/^      subroutine get_nest_info(/;"	s	program:check_nest
+get_nest_record	m_get_nest_record.F90	/^      subroutine get_nest_record(/;"	s	module:m_get_nest_record
+get_nest_record	p_check_nest.F90	/^      subroutine get_nest_record(/;"	s	program:check_nest
+iarec	mod_za.F	/^      integer, save, private              :: iarec(/;"	v	module:mod_za
+idd	mod_year_info.F90	/^      integer idd /;"	k	type:year_info
+idm	mod_xc.F	/^      integer, public, save :: idm,/;"	v	module:mod_xc
+idm	mod_year_info.F90	/^      integer idm /;"	k	type:year_info
+ihh	mod_year_info.F90	/^      integer ihh /;"	k	type:year_info
+imag	mod_confmap.F90	/^   complex imag$/;"	v	module:mod_confmap
+imm	mod_year_info.F90	/^      integer imm /;"	k	type:year_info
+initconfmap	m_initconfmap.F90	/^subroutine initconfmap(/;"	s	module:m_initconfmap
+ires	mod_confmap.F90	/^   integer ires,/;"	v	module:mod_confmap
+iss	mod_year_info.F90	/^      integer iss /;"	k	type:year_info
+iyy	mod_year_info.F90	/^      integer iyy /;"	k	type:year_info
+jdm	mod_xc.F	/^      integer, public, save :: idm,jdm$/;"	v	module:mod_xc
+jres	mod_confmap.F90	/^   integer ires,jres$/;"	v	module:mod_confmap
+lat_a	mod_confmap.F90	/^   real lat_a,/;"	v	module:mod_confmap
+lat_b	mod_confmap.F90	/^   real lat_b,/;"	v	module:mod_confmap
+layer_remapV1	m_layer_remapV1.F	/^      subroutine layer_remapV1(/;"	s	module:m_layer_remapV1
+linepr	mod_xc.F	16;"	c	module:mod_xc
+lon_a	mod_confmap.F90	/^   real lat_a,lon_a$/;"	v	module:mod_confmap
+lon_b	mod_confmap.F90	/^   real lat_b,lon_b$/;"	v	module:mod_confmap
+lp	mod_xc.F	/^      integer        lp$/;"	v	module:mod_xc
+m_bilincoeff	m_bilincoeff.F90	/^module m_bilincoeff$/;"	m
+m_dp0kini	m_dp0kini.F90	/^module m_dp0kini$/;"	m
+m_filenesting	m_filenesting.F90	/^module m_filenesting$/;"	m
+m_get_field_wrapper	m_get_field_wrapper.F90	/^module m_get_field_wrapper$/;"	m
+m_get_global_grid	m_get_global_grid.F90	/^module m_get_global_grid$/;"	m
+m_get_nest_info	m_get_nest_info.F90	/^module m_get_nest_info$/;"	m
+m_get_nest_record	m_get_nest_record.F90	/^module m_get_nest_record$/;"	m
+m_initconfmap	m_initconfmap.F90	/^module m_initconfmap$/;"	m
+m_layer_remapV1	m_layer_remapV1.F	/^      module m_layer_remapV1$/;"	m
+m_nearestpoint	m_nearestpoint.F90	/^module m_nearestpoint$/;"	m
+m_nestcondsave	m_nestcondsave.F	/^      module m_nestcondsave$/;"	m
+m_oldtonew	m_oldtonew.F90	/^module m_oldtonew$/;"	m
+m_parse_blkdat	m_parse_blkdat.F90	/^module m_parse_blkdat$/;"	m
+m_pivotp	m_pivotp.F90	/^module m_pivotp$/;"	m
+m_read_header_wrapper	m_read_header_wrapper.F90	/^module m_read_header_wrapper$/;"	m
+m_rotate	m_rotate.F90	/^module m_rotate$/;"	m
+m_spherdist	m_spherdist.F90	/^module m_spherdist$/;"	m
+m_year_day	m_year_day.F90	/^module m_year_day$/;"	m
+mercator	mod_confmap.F90	/^   logical mercator$/;"	v	module:mod_confmap
+mercfac	mod_confmap.F90	/^   real mercfac$/;"	v	module:mod_confmap
+mnproc	mod_xc.F	/^      integer, public, save :: mnproc$/;"	v	module:mod_xc
+mod_confmap	mod_confmap.F90	/^module mod_confmap$/;"	m
+mod_read_dailyab	mod_read_dailyab.F90	/^module mod_read_dailyab$/;"	m
+mod_read_rstab	mod_read_rstab.F90	/^module mod_read_rstab$/;"	m
+mod_read_weekab	mod_read_weekab.F90	/^module mod_read_weekab$/;"	m
+mod_xc	mod_xc.F	/^      module mod_xc$/;"	m
+mod_year_info	mod_year_info.F90	/^module mod_year_info$/;"	m
+mod_za	mod_za.F	/^      module mod_za$/;"	m
+month	mod_year_info.F90	/^      character(len=3) month /;"	k	type:year_info
+mu_s	mod_confmap.F90	/^   real mu_s$/;"	v	module:mod_confmap
+n2drec	mod_za.F	/^      integer, save, private              :: n2drec$/;"	v	module:mod_za
+nbdy	mod_xc.F	/^      integer    nbdy$/;"	v	module:mod_xc
+nc	mod_xc.F	/^      integer,     private, dimension(97), save :: nc$/;"	v	module:mod_xc
+nearestpoint	m_nearestpoint.F90	/^subroutine nearestpoint(/;"	s	module:m_nearestpoint
+nest_layer_remap	p_nest_layer_remap.F90	/^      program nest_layer_remap$/;"	p
+nest_offline	p_nest_offline.F	/^      program nest_offline$/;"	p
+nestcondsave	m_nestcondsave.F	/^      subroutine nestcondsave(/;"	s	module:m_nestcondsave
+nlim	mod_confmap.F90	/^   real slim,nlim$/;"	v	module:mod_confmap
+no_flush	mod_xc.F	/^     &                              no_flush=/;"	v	module:mod_xc
+oldtonew	m_oldtonew.F90	/^subroutine oldtonew(/;"	s	module:m_oldtonew
+parse_blkdat	m_parse_blkdat.F90	/^      subroutine parse_blkdat(/;"	s	module:m_parse_blkdat
+phi_a	mod_confmap.F90	/^   real phi_a$/;"	v	module:mod_confmap
+phi_b	mod_confmap.F90	/^   real phi_b$/;"	v	module:mod_confmap
+pi_1	mod_confmap.F90	/^   real pi_1$/;"	v	module:mod_confmap
+pi_2	mod_confmap.F90	/^   real pi_2$/;"	v	module:mod_confmap
+pivotp	m_pivotp.F90	/^subroutine pivotp(/;"	s	module:m_pivotp
+psi_s	mod_confmap.F90	/^   real psi_s$/;"	v	module:mod_confmap
+rad	mod_confmap.F90	/^   real rad$/;"	v	module:mod_confmap
+read_field2d	mod_read_dailyab.F90	/^   subroutine read_field2d(/;"	s	module:mod_read_dailyab
+read_field3d	mod_read_dailyab.F90	/^   subroutine read_field3d(/;"	s	module:mod_read_dailyab
+read_header_wrapper	m_read_header_wrapper.F90	/^   subroutine read_header_wrapper(/;"	s	module:m_read_header_wrapper
+read_rstfield2d	mod_read_rstab.F90	/^   subroutine read_rstfield2d(/;"	s	module:mod_read_rstab
+read_rstfield3d	mod_read_rstab.F90	/^   subroutine read_rstfield3d(/;"	s	module:mod_read_rstab
+read_weekfield2d	mod_read_weekab.F90	/^   subroutine read_weekfield2d(/;"	s	module:mod_read_weekab
+read_weekfield3d	mod_read_weekab.F90	/^   subroutine read_weekfield3d(/;"	s	module:mod_read_weekab
+rotate	m_rotate.F90	/^SUBROUTINE rotate(/;"	s	module:m_rotate
+rst_read_header	mod_read_rstab.F90	/^   subroutine rst_read_header(/;"	s	module:mod_read_rstab
+slim	mod_confmap.F90	/^   real slim,/;"	v	module:mod_confmap
+spherdist	m_spherdist.F90	/^real function spherdist(/;"	f	module:m_spherdist
+spval	mod_za.F	/^      real*4,        private, parameter   :: spval=/;"	v	module:mod_za
+t0	mod_xc.F	/^      real*8,      private, dimension(97), save :: tc,t0$/;"	v	module:mod_xc
+tc	mod_xc.F	/^      real*8,      private, dimension(97), save :: tc,/;"	v	module:mod_xc
+theta_a	mod_confmap.F90	/^   real theta_a$/;"	v	module:mod_confmap
+theta_b	mod_confmap.F90	/^   real theta_b$/;"	v	module:mod_confmap
+totdim	mod_year_info.F90	/^      integer totdim(/;"	k	type:year_info
+w	mod_za.F	/^      real*4,  save, private, allocatable :: w(/;"	v	module:mod_za
+week_read_header	mod_read_weekab.F90	/^   subroutine week_read_header(/;"	s	module:mod_read_weekab
+wlim	mod_confmap.F90	/^   real wlim,/;"	v	module:mod_confmap
+xcspmd	mod_xc.F	/^      subroutine xcspmd$/;"	s	module:mod_xc
+xcstop	mod_xc.F	/^      subroutine xcstop(/;"	s	module:mod_xc
+xcsync	mod_xc.F	/^      subroutine xcsync(/;"	s	module:mod_xc
+xctmr0	mod_xc.F	/^      subroutine xctmr0(/;"	s	module:mod_xc
+xctmr1	mod_xc.F	/^      subroutine xctmr1(/;"	s	module:mod_xc
+xctmri	mod_xc.F	/^      subroutine xctmri$/;"	s	module:mod_xc
+xctmrn	mod_xc.F	/^      subroutine xctmrn(/;"	s	module:mod_xc
+xctmrp	mod_xc.F	/^      subroutine xctmrp$/;"	s	module:mod_xc
+year_day	m_year_day.F90	/^subroutine year_day(/;"	s	module:m_year_day
+year_info	mod_year_info.F90	/^   type year_info$/;"	t	module:mod_year_info
+zaio_endian	mod_za.F	/^      subroutine zaio_endian(/;"	s	module:mod_za
+zaiocl	mod_za.F	/^      subroutine zaiocl(/;"	s	module:mod_za
+zaioempty	mod_za.F	/^      subroutine zaioempty$/;"	s	module:mod_za
+zaiofl	mod_za.F	/^      subroutine zaiofl(/;"	s	module:mod_za
+zaiope	mod_za.F	/^      subroutine zaiope(/;"	s	module:mod_za
+zaiopf	mod_za.F	/^      subroutine zaiopf(/;"	s	module:mod_za
+zaiopi	mod_za.F	/^      subroutine zaiopi(/;"	s	module:mod_za
+zaiopn	mod_za.F	/^      subroutine zaiopn(/;"	s	module:mod_za
+zaiord	mod_za.F	/^      subroutine zaiord(/;"	s	module:mod_za
+zaiord3	mod_za.F	/^      subroutine zaiord3(/;"	s	module:mod_za
+zaiordd	mod_za.F	/^      subroutine zaiordd(/;"	s	module:mod_za
+zaiorw	mod_za.F	/^      subroutine zaiorw(/;"	s	module:mod_za
+zaiosk	mod_za.F	/^      subroutine zaiosk(/;"	s	module:mod_za
+zaiost	mod_za.F	/^      subroutine zaiost$/;"	s	module:mod_za
+zaiowr	mod_za.F	/^      subroutine zaiowr(/;"	s	module:mod_za
+zaiowr3	mod_za.F	/^      subroutine zaiowr3(/;"	s	module:mod_za
+zaiowrd	mod_za.F	/^      subroutine zaiowrd(/;"	s	module:mod_za

@@ -1,0 +1,43 @@
+# makefile includes for njord, xl* compilers
+# Standard compilers and linkers
+CF90= xlf90
+CF77= xlf90
+CC= xlc
+LD= xlf90
+
+# CPP, used internally by compilers - note that some compilers
+# need special options for this, consult compiler manual if in trouble
+CPP= /usr/linux/bin/cpp -P -traditional
+
+#NCAR graphics compiler wrappers
+NCARGCF90=ncargf90
+NCARGCF77=ncargf77
+NCARGCC=ncargcc
+NCARGLD=ncargf90
+
+# Flags for fixed/free format
+F90FLG= -qsuffix=f=f90:cpp=F90 
+F77FLG= -qfixed 
+
+# Compiler flags, real8 version
+FFLAGS= -d -b64 -q64 -qrealsize=8 -qarch=auto -qtune=auto -qcache=auto -O3 -qstrict -qsuppress=1501-245
+CFLAGS= -q64 -O2 
+
+# Compiler flags, real4 version (needed for NCARG routines)
+FFLAGSR4= -b64 -q64 -qrealsize=4 -qarch=auto -qtune=auto -qcache=auto -O3 -qstrict -qsuppress=1501-245
+CFLAGSR4= -q64 -O2
+
+# Linker flags + dtime routine
+LINKFLAGS= $(FFLAGS)  
+
+# Libraries, Lapack, FFTW 
+#LIBS= -L/usr/local/netcdf/netcdf-3.6.2/lib -lnetcdf \
+# -L/usr/local/fftw/fftw-3.1.2/lib/ -lfftw3
+#INCLUDE=-I/usr/local/netcdf/netcdf-3.6.2/include -I/usr/local/fftw/fftw-3.1.2/include/
+#CPPFLAGS=-DIARGC -DAIX -DFFTW -DLAPACK
+
+# Another option on AIX, ESSL library in stead of  FFTW and lapack
+LIBS= -L/usr/local/netcdf/netcdf-3.6.2/lib -lnetcdf -lessl
+INCLUDE=-I/usr/local/netcdf/netcdf-3.6.2/include 
+CPPFLAGS=-DIARGC -DAIX -DESSL
+

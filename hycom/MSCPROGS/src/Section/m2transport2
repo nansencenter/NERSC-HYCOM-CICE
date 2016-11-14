@@ -1,0 +1,49 @@
+#!/bin/bash
+#set -ex
+
+usage="Routine calculates transport across a section.
+Sections must be specified in the file sections.in
+Transport definitions must be specified in transport.in
+Usage: $(basename $0) [-nosec] file1 file2 ... " 
+
+
+[ ! $1 ] && { echo " $usage" ;  exit 1 ;}
+
+#Assume programs are in the same dir as this routine
+secprog=${0%m2transport2}/section_intersect
+transprog=${0%m2transport2}/section_transport2
+
+
+# Check for programs
+[ ! -x $transprog  ]  && echo "Cant run/find program $transprog ..."    && exit
+[ ! -x $secprog    ]  && echo "Cant run/find program $secprog   ..." && exit
+
+# Check vital infiles
+[ ! -s sections.in ] && echo "Cant find file sections.in" && exit
+[ ! -s transport.in ] && echo "Cant find file transport.in" && exit
+
+
+# -nosec argument specifies that we dont have to 
+# calculate section positions again. Convenient on multiple passes
+if [ "$1" == "-nosec" ] ; then
+   shift
+else
+   for i in section[0-9][0-9][0-9].dat transport[0-9][0-9][0-9].dat ; do
+      [ -r $i ] && rm $i
+   done
+   $secprog
+   secres=$?
+   [ $secres -ne 0 ] && { echo "Section program failed " ; exit $secres ;  }
+fi
+[ ! $1 ] && echo " Usage: $0 [-nosec] <files> " && exit
+
+
+
+append=""
+while [ $1 ] ; do
+   $transprog $1 $append
+   transres=$?
+   [ $transres -ne 0 ] && { echo "Section program failed " ; exit $transres ;  }
+   append="-append"
+   shift
+done

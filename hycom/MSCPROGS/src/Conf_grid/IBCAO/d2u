@@ -1,0 +1,17 @@
+if [ $# = 0 ]
+then
+    echo "Convert ascii text from dos to unix format"
+    echo "Usage: d2u <filelist>"
+else
+    for i in $*
+    do
+       if test -f $i
+       then 
+           mv $i .tmp
+           tr -d '\015' < .tmp > $i
+           rm .tmp
+       else
+           echo "Can't find $i"
+       fi
+    done
+fi

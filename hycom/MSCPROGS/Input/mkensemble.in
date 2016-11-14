@@ -1,0 +1,7 @@
+TP4restart2011_249_00_mem
+TP4restart2011_249_00ICE.uf
+1              # Ensemble member we are reading from
+2              # Ensemble member we are dumping in
+0.05         # Std dev of log(d), no unit, 0.1 = 10%
+3            # Vertical correlation range   (layers)
+10           # Horizontal correlation range (grid cells)

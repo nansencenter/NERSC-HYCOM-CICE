@@ -1,0 +1,83 @@
+This directory contains routines for comparing model data with observations. The
+routines are:
+
+argocmp          : Reads a argo profile netcdf file and interpolates hycom data
+                   to argo positions.  Data is dumped to text files in directory
+                   ArgoCmp.  Can also feed the hycom data into the argo profile file. 
+
+argo_extract_profiles_new.sh  : Automates the processing of argo profiles with
+                   argocmp. Input is a hycom file (DAILY or WEEKLY), and the script
+                   will look for argo profiles for a matching date locally (on disk)
+                   or remotely (ifremer ftp site). Upon successful download, the 
+                   argocmp routine is run.
+
+argo_extract_profiles.sh  :  Same as the above, but only for DAILY files.
+
+argoreduce       : Uses output data from argocmp (or the two shell scripts
+                   above) and calculates RMS and bias for temperature and salinity
+                   for a given region.  Depth intervals and time interval(s) are 
+                   given as arguments to the program, whereas the region definitions 
+                   are specidief by the file "regiondefs.in". Output is files named 
+                   "argoreduce.XX.locations" and "argoreduce.XX.timeseries" where 
+                   "XX" are the names. see more info on regiondefs.in below
+
+mldcmp           : Compares mixed layer climatology to model fields. The
+                   climatology is the de Boyer Munteguet climatology. The path to 
+                   this dataset must be specified in environment variable "MLD_PATH". 
+                   This routine also  uses the regiondefs.in file to create
+                   regional statistics
+
+slacmp           : Compares observed sla fields to model fields. The sla fields
+                   are those given by the Aviso/DUACS merged msla data sets. The
+                   routine can use opendap access if enabled in netcdf
+                   libraries, in this case only a hycom file is specified. it
+                   can also use netcdf files from DUACS ftp, in this case 
+                   the hycom file and duacs msla file is given as input.
+
+slacmp_ftp.sh    : Automates the process of retrieving sla files from duacs.
+                   Input is a hycom daily file. uses slacmp above
+
+Other routines:
+argo_mersea      : used to process a argocmp-processed argo profile (with
+                   -ncdump). Sets some parameters needed by MERSEA file standards.
+
+gmaps_update.sh  : Used to create plots/thumbnails of salinity/temp from argocmp
+                   output. transfers them to NERSC webserver where they are
+                   presented using google maps.
+
+plotargocmp.py   : Used by the above script. Needs the scipy python package.
+                   Converts files in ArgoCmp directory (created by argocmp) to
+                   plots of salinity/temperature.
+
+
+###############################################################################
+Most of these routines require (in addition to hycom/obs files):
+grid.info
+regional.depth.[ab]
+regional.grid.[ab]
+
+
+
+FORMAT of regiondefs.in files - these files should contain the following: 
+2 # Number of regions in file 
+4 TEST1                       # Number of points and name of 1st region (name=TEST1) 
+-30 40                        # lon/lat pair - 1st point 
+30 40                         # lon/lat pair - 2nd point 30
+60                            # lon/lat pair - 3rd point 
+-30 60                        # lon/lat pair - 4th point 
+4 TEST2                       # Number of points and name of 2nd region (name=TEST2) 
+-30 20                        # etc etc ...  
+30 20 
+30 60 
+-30 60 
+... 
+... 
+...
+
+Note that the regions must be traversed clockwise or anticlockwise. They can
+consist of as many points as you want, but the region defined by the corners
+must be Convex - see http://en.wikipedia.org/wiki/Convex_set . 
+
+(Or, to be pedantic, it must be geodesic Convex on the sphere :
+http://en.wikipedia.org/wiki/Geodesic_convexity) 
+

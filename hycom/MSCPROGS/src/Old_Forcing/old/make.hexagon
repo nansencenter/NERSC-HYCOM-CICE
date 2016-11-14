@@ -1,0 +1,3 @@
+CF =      pgf90
+FFLAGS =  -O2 -Mnofree -byteswapio
+LINKFLAGS = -O2  -byteswapio

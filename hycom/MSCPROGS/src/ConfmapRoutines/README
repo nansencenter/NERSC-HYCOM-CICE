@@ -1,0 +1,11 @@
+confmap_ll2ij:
+   Routine converts from longitude/latitude to
+   grid indexes. Grid index printed to stdout 
+   if on model grid, printed to stderr if not 
+   Usage : confmap_ll2ij longitude latitude
+
+   Uses library routines in libconfmap.a
+
+   Requires grid.info to be present
+
+Knut Liseter, 23. November 2008

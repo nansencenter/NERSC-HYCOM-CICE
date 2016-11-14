@@ -1,0 +1,13 @@
+1                      # Version of tecconv program
+   DP                  # Field used to determine layer interfaces
+2 F T F                # 2-D, sphere, rotate, index velocities                       
+ 1  40  35 35       108 108 1 280  1 280 136 136    1 280 153 153 
+1 1   XX XX   X        # extracted layers for 3-d fields (not used for 2-d)
+   DP  1  6   T
+  TEM  1  6   T
+  SAL  1  6   T
+ TH3D  1  6   F
+   UT  1  6   T
+   VT  1  6   T
+  MKE  1  6   F
+  EKE  1  6   F

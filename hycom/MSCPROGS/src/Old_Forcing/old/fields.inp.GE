@@ -1,0 +1,90 @@
+  2  0  2  0  0  1  1  1  1  0  0  0  0  0  0  0  0  0
+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 
+  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  +-iw(18)Not in use yet
+  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  +----iw(17)Not in use yet
+  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  +-------iw(16)Not in use yet
+  |  |  |  |  |  |  |  |  |  |  |  |  |  |  +----------iw(15)Not in use yet
+  |  |  |  |  |  |  |  |  |  |  |  |  |  +-------------iw(14)Not in use yet
+  |  |  |  |  |  |  |  |  |  |  |  |  +----------------iw(13)Not in use yet
+  |  |  |  |  |  |  |  |  |  |  |  +-------------------iw(12)Not in use yet
+  |  |  |  |  |  |  |  |  |  |  +----------------------iw(11)Ice concentration
+  |  |  |  |  |  |  |  |  |  +-------------------------iw(10)Modification of bottom bathymetry
+  |  |  |  |  |  |  |  |  +iw(9):Grid
+  |  |  |  |  |  |  |  +-->iw(8):Precipitation           (LEGATES)
+  |  |  |  |  |  |  +----->iw(7):Relative humidity|      (WETNESS)
+  |  |  |  |  |  +-------->iw(6):Cloud cover             (COVER,2)
+  |  |  |  |  +----------->iw(5):Sea surface temperature (SSTGLOB,AMICLIM)
+  |  |  |  +-------------->iw(4):Airt temperatur         (AIRGLOB,TSC,3)
+  |  |  +----------------->iw(3):Wind speed              (UVABS,USC,3-6)
+  |  +-------------------->iw(2):Wind speed st. dev.     (UVDEV,STDV_USC)
+  +----------------------->iw(1):Wind field              (UVGLOB,TAUXY)
+
+
+iw(x)=0:        This field is not generated.
+                                                        
+iw(1):
+  1:   UVGLOB   Hellerman and Rosenstein wind field (vector)
+  2:   TAUXY    ECMWF wind field (vector)
+
+iw(2):
+  1:   UVDEV    COADS Wind speed st. dev.   (If <>0 this is added to 
+  2:   STDV_USC ECMWF Wind speed st. dev.    the abs. wind field.)
+
+iw(3):
+  1:   UVABS    COADS abs wind field
+  2:   USC      ECMWF abs wind field
+  3:            COADS abs wind field + st. dev. field in iw(2)
+  4:            ECMWF abs wind field + st. dev. field in iw(2)   
+  5:            COADS abs wind field + sqrt(u*u + v*v) if no data
+  6:            ECMWF abs wind field + sqrt(u*u + v*v) if no data
+
+iw(4): 
+  1:   AIRGLOB  COADS air temp.
+  2:   TSC      ECMWF air temp
+  3:   AIRGLOB,TSC,tmpmean.dat.  Air temp. generated in Simonsen and Haugan, 1996.
+
+iw(5):
+  1:   SSTGLOB  COADS sst
+  2:   AMICLIM  AMIP  sst
+
+iw(6): 
+  1:   COVER    COADS cloud cover
+  2:            Like (1)+ add values (Holland, 1993) in Arctic.
+  
+iw(7):
+  1:   WETNESS  COADS relative humidity
+
+iw(8):
+  1:   LEGATES  Legates & Willmott precipitation
+
+iw(9):           
+  1:  latlon.dat Positions of the grid are loaded from file
+  2:            Positions of the grid are generated. Only rotated 
+                Mercator is supported    
+
+iw(10):         
+  0:            Depth=0 and mask=1 
+  1: bath.dat   Load depth and mask from files. Excludes flag=2 areas.  
+     flags.dat  Fill in missing values. No smoothing.  
+  2: bath.dat   Load depth and mask from files. Includes flag=2 areas.  
+     flags.dat  Fill in missing values. No smoothing.  
+  3: bath.dat   Load depth and mask from files. Excludes flag=2 areas.  
+     flags.dat  Fill in missing values. Smoothing.  
+  4: bath.dat   Load depth and mask from files. Includes flag=2 areas.  
+     flags.dat  Fill in missing values. Smoothing.  
+  5: bath.dat   Load depth and mask from files. Includes flag=2 areas.  
+     flags.dat  Fill in missing values. Smoothing. Special treatment in the
+                Greenland Strait and the Faroe Bank Channel 
+  9: bath.dat   Load depth from file, generate mask file and dump it to
+     fort.10    file and stop the program
+
+iw(11):
+  1: ice_5190.dat Average for 1951--90
+  1: ice_0190.dat Average for 1951--90
+
+-----------------
+
+NOTE: Data files are located on 'Fram:/usr/local/lib/OPYC/data'. Copy
+      requested data-files to 'Data' sub-directory, unpakk the files,
+      and execute 'newf'.

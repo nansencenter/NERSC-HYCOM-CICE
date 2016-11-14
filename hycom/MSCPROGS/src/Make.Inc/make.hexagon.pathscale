@@ -1,0 +1,39 @@
+# makefile includes for hexagon, pathscale compilers
+# Standard compilers and linkers
+CF90= ftn
+CF77= ftn
+CC= cc
+LD= ftn
+
+# CPP, used internally by compilers - note that some compilers
+# need special options for this, consult compiler manual if in trouble
+CPP= /usr/bin/cpp -P -traditional
+
+#NCAR graphics compiler wrappers
+NCARGCF90=ncargf90
+NCARGCF77=ncargf77
+NCARGCC=ncargcc
+NCARGLD=ncargf90
+
+# Flags for fixed/free format
+F90FLG= 
+F77FLG= -fixedform
+
+# Compiler flags, real8 version
+FFLAGS= -O2 -convert big_endian -g -r8
+CFLAGS= -O2
+
+# Compiler flags, real4 version (needed for NCARG routines)
+FFLAGSR4= -O2 -convert big_endian -g -r4
+CFLAGSR4= -O2
+
+# Linker flags
+LINKFLAGS= $(FFLAGS)  
+
+#Netcdf, FFTW and lapack Libraries
+INCLUDE= -I$(NETCDF_INC) $(FFTW_INCLUDE_OPTS)
+LIBS =  $(NETCDF_POST_LINK_OPTS) $(FFTW_POST_LINK_OPTS) $(LIB_LAPACK)
+
+# Some fortran compilers have iargc as built in, 
+# others as library routine
+CPPFLAGS=-DIARGC -DFFTW -DLAPACK

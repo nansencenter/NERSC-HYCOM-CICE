@@ -1,0 +1,35 @@
+
+
+NERSCLIB=\
+Nersclib \
+
+SUBDIRS=\
+Conf_grid/Code/
+
+
+.PHONY: subdirs $(SUBDIRS)
+
+
+lib:
+		$(MAKE) -C Nersclib/ install 
+
+     
+subdirs: $(SUBDIRS) 
+     
+$(SUBDIRS): lib
+		 $(MAKE) -C $@ all
+
+
+all: lib subdirs 
+
+clean:
+		 for dir in $(SUBDIRS) $(NERSCLIB) ; do \
+			$(MAKE) -C $$dir clean;\
+		 done
+		 rm -f ../bin/* ../bin_setup/* ../include/*.mod ../lib/*.a
+
+install: all lib
+		 for dir in $(SUBDIRS); do \
+			$(MAKE) -C $$dir install;\
+		 done
+

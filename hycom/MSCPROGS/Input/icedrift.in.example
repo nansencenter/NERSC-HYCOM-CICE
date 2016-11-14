@@ -1,0 +1,10 @@
+POSITION               # Mode
+0. 86.                 # Lon/lat position
+1                      # Dont modify this
+DAILY                  # File type, only daily accepted for now
+5                      Number of files, they follow on the next lines
+FORDAILY_2008_210_2008_210.a
+FORDAILY_2008_210_2008_211.a
+FORDAILY_2008_210_2008_212.a
+FORDAILY_2008_210_2008_213.a
+FORDAILY_2008_210_2008_214.a

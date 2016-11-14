@@ -1,0 +1,58 @@
+#!/bin/bash
+#set -ex
+
+[ ! $1 ] && { echo " Usage: $(basename $0) [-nosec] <files> " ; exit  1;}
+
+#Assume programs are in the same dir as this routine
+secprog=${0%m2transport}section_intersect
+transprog=${0%m2transport}section_transport
+
+[ ! -x $transprog  ]  && echo "Cant run/find program $transprog ..."    && exit
+[ ! -x $secprog    ]  && echo "Cant run/find program $secprog ..." && exit
+
+# Prepare sections
+#Clean up first ...
+[ ! -r sections.in ] && echo "Cant find file sections.in" && exit
+
+echo $1
+if [ "$1" == "-nosec" ] ; then
+   shift
+else
+   for i in section[0-9][0-9][0-9].dat transport[0-9][0-9][0-9].dat \
+      transport_net[0-9][0-9][0-9].dat transport_net_ice[0-9][0-9][0-9].dat transport_vs_depth_[0-9][0-9][0-9].dat ; do
+      [ -r $i ] && rm $i
+   done
+   $secprog
+   secres=$?
+   [ $secres -ne 0 ] && { echo "Section program failed " ; exit $secres ;  }
+fi
+[ ! $1 ] && echo " Usage: $0 [-nosec] <files> " && exit
+
+
+      
+first=1
+append=""
+while [ $1 ] ;
+do
+   [ $first -eq 1 ] && echo "ZONE=1" > .zoneinfo
+   [ $first -ne 1 ] && echo "ZONE>1" > .zoneinfo
+   first=0
+   echo Input file name $1
+
+   [ ! -f $1 ] && echo " No file named $1, skipping.. " 
+   [ -f $1 ]   && $transprog $1 $append
+
+   transres=$?
+   [ $transres -ne 0 ] && { echo "Transport program failed " ; exit $transres ;  }
+   append="-append"
+   echo
+   shift
+done
+echo "Finito"
+#echo "New files generated:"
+#for i in section[0-9][0-9][0-9].dat transport[0-9][0-9][0-9].dat \
+#   transport_net[0-9][0-9][0-9].dat transport_net_ice[0-9][0-9][0-9].dat transport_vs_depth_[0-9][0-9][0-9].dat ; do
+#   echo "  $i"
+#done
+
+

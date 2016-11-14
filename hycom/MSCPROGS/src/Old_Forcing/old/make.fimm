@@ -1,0 +1,3 @@
+CF =      ifort
+FFLAGS =  -O2 -nofree -convert big_endian
+LINKFLAGS = -O2  -convert big_endian

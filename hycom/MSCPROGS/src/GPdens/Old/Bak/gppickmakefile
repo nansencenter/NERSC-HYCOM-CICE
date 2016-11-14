@@ -1,0 +1,168 @@
+VPATH = .:RCS:TMP
+
+.SUFFIXES:
+.SUFFIXES: .o .F90 .f90 .F .f .H .h  
+
+# Test for ARCH
+#ARCH=$(shell uname -s)
+
+# Test for machine name
+#MACHINE=$(shell uname -n)
+MACHINE=fimm
+
+# MPI/OMP ...
+PAR_TYPE=MPI
+
+# Tests dont work with unix make ? (works with gmake ...)
+include make.ifc.real4
+#include make.$(MACHINE).$(PAR_TYPE).ifc.real4.sys.intelmpich2 
+
+#Compiler Options -- serial hands-off version
+#LD = xlf90_r -qspillsize=2152 
+#CF90 = xlf90_r  -qsuffix=f=f90 -qspillsize=2152 -qfree=f90
+#CF77 = xlf90_r -qfixed -qspillsize=2152
+#
+
+
+
+
+#Compiler -- F90
+#CF90 = /home/fimm/nersc/knutali/opt/lam-7.1.1-ifort/bin/mpif77
+
+#Compiler -- F77
+#CF77 = $(CF90)
+
+#Linker 
+#LD = $(CF90) 
+
+
+
+# Flags for debugging -- slow, gives location of SIGTRAP
+# -g        -- turns on debugging ...
+# -qfloat   -- options for floating point operations
+# -qflttrap -- Floating point operation traps
+# -qextchk  -- Checks if subroutine args are consistent + common block checks
+# -C        -- Checks array bounds 
+# qinitauto=FF initializes all vars to NaN -- So that uninitialized vars can be detected
+#
+#DEBUG_FLAGS = 
+#DEBUG_FLAGS = -C -g
+#DEBUG_FLAGS = -C -qflttrap=underflow:overflow:zerodivide:invalid:enable  \
+#              -qextchk -qinitauto=FF -qfloat=nofold:nohssngl:nans  -g
+
+#
+#
+#
+# Flags for debugging -- quicker, but only specifies routine with SIGTRAP
+#
+#DEBUG_FLAGS = -C -qflttrap=underflow:overflow:zerodivide:invalid:imprecise:enable  \
+#              -qfloat=nofold:nohssngl:nans -qextchk -qinitauto=FF -g
+
+
+
+#F77FLG = -qfixed                   $(DEBUG_FLAGS)
+#F90FLG = -qsuffix=f=f90 -qfree=f90 $(DEBUG_FLAGS)
+
+
+# IPA can be slow ...
+# -q64       -- 64 bit objects created
+# -qrealsize -- Size of default real
+# -qarch     -- Architecture to compile for
+# -qcache    -- Cache properties for optimizing
+# -qtune     -- Architecture for optimizing
+# -O         -- Default "agressivity" of optimization
+# -Q         -- Turn on inlining
+# -qipa      -- Inlining across routines (requires several passes)
+# -qsmp      -- The parallelization to use
+#
+#FFLAGS    = -q64 -O3 -qrealsize=8  -qextname -qarch=auto -qtune=auto -qcache=auto -Q -qipa -qsmp=omp
+#LINKFLAGS = -q64 -O3 -qrealsize=8  -qextname -qarch=auto -qtune=auto -qcache=auto -Q -qipa -qsmp=omp
+
+#FFLAGS    = -q64 -O2 -qrealsize=8  -qextname -qarch=auto -qtune=auto -qcache=auto \
+#            -qsmp=omp -bmaxdata:5000000000 -qmaxmem=-1
+#LINKFLAGS = -q64 -O2 -qrealsize=8  -qextname -qarch=auto -qtune=auto -qcache=auto \
+#            -qsmp=omp -bmaxdata:5000000000 -qmaxmem=-1
+
+#FFLAGS    = -q64 -O2 -qrealsize=8  -qextname -qarch=auto -qtune=auto -qcache=auto \
+#            -bmaxdata:5000000000 -qmaxmem=-1
+#LINKFLAGS = -q64 -O2 -qrealsize=8  -qextname -qarch=auto -qtune=auto -qcache=auto \
+#            -bmaxdata:5000000000 -qmaxmem=-1
+
+#FFLAGS    = -q64 -O2 -qrealsize=8  -qextname -qarch=auto -qtune=auto -qcache=auto \
+#            -qmaxmem=-1 -qsmp=omp -qnosave
+#LINKFLAGS = -q64 -O2 -qrealsize=8  -qextname -qarch=auto -qtune=auto -qcache=auto \
+#            -qmaxmem=-1 -qsmp=omp -qnosave
+
+
+#FFLAGS    = -q64  -qrealsize=8 -qsmp=omp -qextname
+#LINKFLAGS = -q64  -qrealsize=8 -qsmp=omp -qextname
+#FFLAGS    = -q64  -qrealsize=8 -qextname
+#LINKFLAGS = -q64  -qrealsize=8 -qextname
+
+
+#CPPARCH = -DIBM_PWR3
+CPPMODEL  =  -DNWAGH
+CPPFLAGS =  -P $(CPPARCH) $(CPPMODEL)
+#LIBS =  -lcomplib.sgimath
+#LIBS = 
+
+
+#CPP = /usr/lib/cpp
+
+
+# Rules for running cpp and updating files in TMP directory
+.H.h:
+	rm -f ./TMP/$*.h
+	cat MODEL.CPP $*.H | $(CPP) $(CPPFLAGS)  > ./TMP/$*.h
+
+
+.F90.o:
+	rm -f ./TMP/$*.f90
+	cat MODEL.CPP $*.F90 | $(CPP) $(CPPFLAGS)   > ./TMP/$*.f90
+	cd ./TMP ; $(CF90) -c $(FFLAGS) $(F90FLG) -o $*.o $*.f90  
+
+.F.o:
+	rm -f ./TMP/$*.f
+	cat MODEL.CPP $*.F | $(CPP) $(CPPFLAGS)  > ./TMP/$*.f
+	cd ./TMP ; $(CF77) -c $(FFLAGS) $(F77FLG) -o $*.o $*.f  
+
+
+#TARGET = gppicknwtest
+TARGET = gppicknwag
+
+
+#include source.files
+
+#INC2 =$(INC1:.H=.h)
+#FILES =$(F90FILES) $(F77FILES) $(MODULES)
+#FFILES =$(F90FILES:.F90=.f90) $(F77FILES:.F=.f) $(MODULES:.F90=.f90)
+#OBJECTS = $(F90FILES:.F90=.o) $(F77FILES:.F=.o) 
+#OMOD = $(MODULES:.F90=.o) $(MODULES77:.F=.o)
+
+OBJECTS=m_spherdist.o gppick.o
+
+
+
+
+all: $(TARGET)
+
+
+$(TARGET): $(OBJECTS) 
+	cd ./TMP ; $(LD) $(LINKFLAGS) -o ../$(TARGET)  $(OBJECTS) $(LIBS) 
+
+
+clean:
+	cd ./TMP ; rm *.f  *.o *.f90 *.h *.mod
+
+install: $(TARGET)
+	cp $(TARGET) ~/bin
+
+#new: source depend
+#
+#source:
+#	./mksource.sh > source.files
+#
+#depend:
+#	./mkdepend.sh | sort -u > depends.file
+#
+#include depends.file

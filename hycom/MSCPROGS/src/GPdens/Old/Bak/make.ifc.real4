@@ -1,0 +1,67 @@
+# Knuts home directory (contains some libs/includes)
+KHOME = /home/fimm/nersc/knutali
+
+#Compiler -- F90
+CF90 = ifort
+
+#Compiler -- F77
+CF77 = $(CF90)
+
+# Compiler -- C
+CC=gcc
+
+#Linker 
+LD =  $(CF90)
+
+
+#Paralellization opts
+#PARO = -openmp 
+PARO =
+
+#Size defaults
+SIZEO = -real_size 32 -double_size 64
+#SIZEO = 
+
+#Arch opts
+ARCHO= #-tpp7
+
+#Optimalization opts
+OPTO= -O2
+#OPTO=
+
+#Inlining opts
+#INLO= -ip
+INLO=
+
+# Diverse options
+DIVO= -convert big_endian -mcmodel=medium
+
+# Flags for debugging. Remove optimization (OPTO above) to use debugging properly
+#
+DEBUG_FLAGS = -g -fp -check bounds -fpstkchk -traceback -fpe0 
+DEBUG_FLAGS = 
+
+
+
+
+CFLAGS = -O
+F77FLG = -fixed
+F90FLG = -free
+
+
+CPPARCH = -DIA32 -traditional  -DREAL4  -DNOMPIR8 
+
+#LIBS =  -L$(KHOME)/opt/netcdf-ifc/lib/ -lnetcdf  -L/local/fftw/lib/ -lfftw3  \
+#-L$(KHOME)/opt/lam-7.1.1-ifort/lib -llam  /opt/intel_fce_80/lib/libifcoremt.so
+LIBS=
+
+#INCLUDEDIR= -I$(KHOME)/opt/netcdf-ifc/include -I/local/fftw/include -I$(KHOME)/opt/lam-7.1.1-ifort/include 
+INCLUDEDIR=
+
+CPP = /usr/bin/cpp
+
+
+FFLAGS    = $(SIZEO) $(OPTO) $(ARCHO) $(PARO)    $(INLO) $(DIVO) $(DEBUG_FLAGS)
+FFLAGS_NODEBUG    = $(SIZEO) $(OPTO) $(ARCHO) $(PARO)    $(INLO) $(DIVO)
+LINKFLAGS = $(SIZEO) $(OPTO) $(PARO) $(INLO) $(DIVO) $(DEBUG_FLAGS)  
+

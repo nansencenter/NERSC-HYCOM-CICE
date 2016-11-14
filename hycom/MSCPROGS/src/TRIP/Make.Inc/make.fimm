@@ -1,0 +1,63 @@
+KHOME=/home/fimm/nersc/knutali
+
+
+#Compiler -- F90
+CF90 = ifort
+
+#Compiler -- F77
+CF77 = $(CF90)
+
+#Compiler -- C
+CC = gcc
+
+#Linker 
+LD = $(CF90)
+
+#Paralellization opts
+PARO =
+
+#Size defaults
+SIZEO = -real_size 32
+
+#Arch opts
+ARCHO= 
+
+#Optimalization opts
+OPTO= -O2
+
+#Inlining opts
+INLO=
+
+# Diverse options
+DIVO= -convert big_endian 
+
+
+
+
+# Flags for debugging -- Note linker halt occurs when using qextchk flag and 
+# passing types as arrays ...
+#DEBUG_FLAGS=-g -qsigtrap
+DEBUG_FLAGS= -g -traceback
+
+F77FLG = -nofree                   
+F90FLG = -free
+
+
+CFLAGS    = 
+FFLAGS    = $(SIZEO) $(OPTO) $(ARCHO) $(PARO)    $(INLO) $(DIVO) 
+FFLAGS    = $(SIZEO) $(OPTO) $(ARCHO) $(PARO)    $(INLO) $(DIVO) $(DEBUG_FLAGS) \
+-I/local/netcdf/include/ 
+ 
+FFLAGSD   = $(SIZEO) $(ARCHO) $(PARO)    $(INLO) $(DIVO) $(DEBUG_FLAGS) 
+
+LINKFLAGS= $(SIZEO) $(OPTO) $(PARO) $(INLO) $(DIVO)   -Bstatic
+
+
+CPPARCH =  -DIA32 -DREAL4 
+CPPFLAGS =  -P $(CPPARCH) $(CPPMODEL) -traditional
+LIBS =  -L/local/netcdf/lib -lnetcdf 
+
+
+CPP = /usr/bin/cpp
+
+

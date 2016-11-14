@@ -1,0 +1,20 @@
+hyc2ave : 
+   Routine creates a file containing mean values of the variables contained 
+   in the input files. All input files must be of the same type.  Note that 
+   the means of layer (3D ocean) variables are weighted by layer thickness.
+   Usage:
+      hycave filetype file1 file2 file3 ....
+
+   filetype argument is either restart, nersc_daily, nersc_weekly, or archv
+   Example:
+      hycave nersc_daily TP3DAILY_1990_240_1990_313.a TP3DAILY_1990_240_1990_314.a 
+
+   Files are dumped to files where year=9999, day=999, hour=99. For weekly average 
+   week=99 and day of week=9.
+
+   Routine requires the regional.grid and regional.depth files to be present.
+   Routine supports restart, nersc_weekly, nersc_daily and archv file types.
+
+   Routine uses the library routines in libhycnersc.a
+
+Knut Liseter, 23. November 2008

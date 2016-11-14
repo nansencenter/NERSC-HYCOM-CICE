@@ -1,0 +1,10 @@
+1.2 F               # File version and verbosity flag
+#####
+##### Sections:  lon,lat pairs for start and end point.
+FRAM_STRAIT
+-20. 79.
+15.  79.
+#
+DENMARK_STRAIT
+-37.  66.1
+-22.68 66.

@@ -1,0 +1,31 @@
+Directory contains routines for converting from .[ab] files
+to netcdf file (tmp1.nc). An evolution of the ExtractNC2D 
+routines
+
+h2nc :
+   m2nc will extract data from hycom .[ab] files
+   and put these into netcdf file tmp1.nc.
+   The fields to extract are specified in extract
+   files which corresponds to the file type you 
+   want to extract from (for example extract.daily, 
+   extract.restart ...). Sample extract files can 
+   be found in Input directory under MSCProgs directory
+   
+   Several files can be specified which results in 
+   several time records in the netcdf file
+
+   Vectors can be rotated, depending on the flags in
+   extract-files (TODO!)
+
+   usage:  h2nc  file(s)
+
+   NB: files contains isopycnal layer values, no vertical 
+   interpolation.
+
+   The main difference between this and m2nc is that relevant fields are 
+   dumped into 3D netcdf variables. m2nc will dump everything into
+   2D variables.
+
+
+Knut Liseter, 23. November 2008
+Based on routines initially created by Geir Evensem.

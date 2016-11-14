@@ -1,0 +1,114 @@
+#!/bin/bash
+# Routine processes argo profiles, and poroduces some plots, no stats yet
+
+export PYTHONPATH=/home/nersc/knutali/opt/python2.5/lib/python:/home/nersc/knutali/opt/python2.5//lib/python2.5/site-packages
+DATADIR=/work/laurentb/RT_TOPAZ3/BusStop/Diagnostics/
+DATADIR2=/work/laurentb/RT_TOPAZ3/Forecast07/
+WORKDIR=/work/laurentb/TMP_TOPAZ3/
+RDIR="$(dirname $0)/" # Assumes subprogs are in same dir as  this routine
+
+if [ "$(xthostname)" == "hexagon" ] ; then
+   export ARGO_PATH=/work/shared/nersc/msc/Argo/ 
+fi
+
+# Trick for hexagon - if in queue and on hexagon, set absolute paths 
+echo $(xthostname)
+if [ "$(xthostname)" == "hexagon" -a   -n "$PBS_O_WORKDIR" ] ; then
+   RDIR=/home/nersc/knutali/Progs/MSCProgs/src/ObsCompare/
+fi
+echo RDIR=$RDIR
+
+TARGETDIR=/Network/Servers/sverdrup-e3.nersc.no/Data/topaz/Knut/html/Test/
+TARGETUSER=topaz
+TARGETHOST=nansen.nersc.no
+
+# Scripting key for transmitting files
+SSH="ssh -i /home/nersc/knutali/.ssh/scriptkey_dsa"
+SCP="scp -i /home/nersc/knutali/.ssh/scriptkey_dsa"
+
+# Useful functions
+unique_bulletin_daily() {
+   uni=$(ls -1 $@ | sed "s/_[0-9]\{4\}_[0-9]\{3\}.[ab]//g" | sed "s/.*...DAILY_//g" | uniq )
+   echo $uni
+}  
+last_bulletin_daily() {
+   tmp=$(unique_bulletin_daily $@)
+   lastbulletin=$( echo $tmp | tr ' ' '\n' | tail -n1 )
+   echo $lastbulletin
+}  
+
+#############################################################################################
+
+# Go to work dir
+mkdir -p $WORKDIR
+cd $WORKDIR
+
+
+
+
+# List of vital datafiles
+datafilelist="regional.grid.a regional.grid.b regional.depth.a regional.depth.b grid.info depths800x880.uf Data/latlon.dat" 
+
+# Copy vital files here
+for i in $datafilelist ; do
+   [ ! -f $i ] && cp $DATADIR2/$i $i
+done
+
+# Clean up argocmp dir 
+[ -d ArgoCmp ] && rm -rf ArgoCmp/*
+
+# Get last bulletin date
+lastbulletin=$( last_bulletin_daily $DATADIR/DAILY_F07/*DAILY* )
+year=$(echo $lastbulletin | cut -f1 -d "_")  
+jday=$(echo $lastbulletin | cut -f2 -d "_") 
+bdate=$(jultodate $jday $year 1 1)
+#echo $lastbulletin $year $jday $bdate
+
+# Test for existing bulletindate file - if it exists exit script
+echo "Last bulletin was at $bdate "
+[ -f lastbulletin.gmaps ] && [ "$(cat lastbulletin.gmaps)" == "$bdate" ] && \
+   { echo "This bulletin has already been processed (delete lastbulletin.gmaps if you disagree)" ; exit 1 ; }
+
+
+
+
+# Copy Forecast07 files here & process them
+dailyfiles=$DATADIR/DAILY_F07/*DAILY_${lastbulletin}*.a
+for i in $dailyfiles ; do
+   echo  $i
+   newname=$(echo $i | sed "s/\.a//")
+   cp $newname.a .
+   cp $newname.b .
+
+   # processing one hycom file - this also retrieves relevant argo profiles from 
+   # ifremer. The original argo profiles and the hycom-interpolated values will
+   # be dumped to subdirectories of  "ArgoCmp"
+   $RDIR/argo_extract_profiles_new.sh  $(basename $i)
+done
+
+## copy argomp files to ArgoCmp/tmp
+mkdir ArgoCmp/tmp
+find ArgoCmp/[0-9]* -type f -exec cp {} ArgoCmp/tmp/ \;
+
+# Descend into that dir and produce line plots - needs SciPy to be installed
+cd ArgoCmp/tmp/
+python2.5 $RDIR/plotargocmp.py -dAgg
+
+# Convert all those pngs to thumbnails - uses imagemagick
+for i in *N.png ; do
+   convert -geometry 200x150 $i $(echo $i | sed "s/\.png/\_thumb.png/")
+done
+
+# Now copy to topaz@nansen :-)
+# NB - The website on nansen uses the google maps API and  PHP. PHP will look for new directories
+# and present them as selectable radio buttons. All we need is to make sure that they are accessible
+# by the web server
+basedir=TOPAZ3_${bdate}
+echo base dir is  $basedir
+$SSH $TARGETUSER@$TARGETHOST "mkdir $TARGETDIR/$basedir ; chmod 755 $TARGETDIR/$basedir"
+$SCP *.png $TARGETUSER@$TARGETHOST:$TARGETDIR/$basedir
+$SSH $TARGETUSER@$TARGETHOST "find $TARGETDIR/$basedir/ -type f -exec chmod 644 {} \;"
+
+
+cd $WORKDIR
+#echo $bdate > lastbulletin.gmaps

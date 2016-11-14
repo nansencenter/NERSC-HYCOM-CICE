@@ -1,0 +1,23 @@
+Routines for setting up NERSC nesting in hycom 2.2
+
+nestport : Sets up a ports.input file which can be understood by 
+           standard hycom nesting routines. It only treats ports
+           along boundaries of the model grid. If the 2nd grid cell from the
+           boundary is ocean, a port can be placed there. Requires grid/depth
+           files to be present in running directory.
+
+nestini  : Sets up nesting relaxation mask which can be understood 
+           by standard hycom. Again, only treats points along boundary.
+           If the 2nd grid cell from the boundary is ocean, a port can be
+           placed there.  Requires grid/depth files to be present in running directory.
+
+
+checknest: Diagnostic routine to analyze nesting files dumped by NERSC
+           hycom
+
+nestpivot: used to prepare a outer model for nesting to an inner model.
+           It sets up pivot points and interpolation details for the 
+           outer model. (which it needs when dumping nesting files).
+
+TODO: Make sure nestini calculates boundary distance better 
+      (see nestbat 2.2)

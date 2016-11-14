@@ -1,0 +1,96 @@
+Routines described in this README:
+forfun_nersc-2.2 - generate synoptic/climate forcing for hycom
+force_perturb    - perturb existing forcing fields  with random forcing
+ncep_clim        - Create a climatology based on NCEP reanalysed fields
+get_ncep_ftp.sh  - Retrieves NCEP reanalysed data  files (netcdf)
+
+
+forfun_nersc-2.2
+----------------
+This directory contains routines for converting from various types of 
+atmospheric forcing datasets to a format that is understood by HYCOM. 
+It has been tested mainly with the NERSC version of HYCOM. Available
+data sets are
+
+Synoptic forcing:
+option era40 - ERA40 datasets
+Option ncepr - NCEP reanalysis
+Option ecmwf  
+Option metno  
+Option ecnc  - These are various ecmwf operational datasets
+
+Climatology :
+option ncepr - Climatology based on NCEP forcing (NEW!)
+option era40 - Climatology based on ERA40 forcing
+Option old   - Old climatology based on COADS, Legates & Vilmott ++  (avoid)
+
+For running this, you need to have a infile.in for the NERSC version
+of HYCOM (it contains forcing information). You also need to set up
+paths locally to the atmospheric forcing data sets. Run the routine 
+where you run your model, and forcing.* - files will be created.
+You will also need bathymetry and model grid:
+regional.grid.[ab]
+regional.depth.[ab]
+
+In addition you will need to link in atmospheric data sets, OR, you can use
+environment variables to point to them. These environment variables are used 
+for the synoptic forcing:
+ECMWF_PATH   : location of ecmwf operational data -2003
+METNO_PATH   : location of ecmwf operational data 2004-
+ECNC_PATH    : location of ecmwf operational data 2006-
+NCEP_PATH    : location of ncep reanalysed data   1948-2003
+ERA40_PATH   : location of era40 reanalysed data  1958-2002
+WOA2005_PATH : location of World Ocean Atlas 2005 edition
+and for the climatology forcing:
+ERA40_CLIM_PATH : location of climatology based on era40
+NCEP_CLIM_PATH  : location of climatology based on ncep 
+                : old ?
+
+
+
+Call the routine like this:
+   synoptic_forcing-2.2 [synoptic option] [climatology option]
+Example:
+   synoptic_forcing-2.2 era40 era40
+The forcing will then be created for the time period specified
+in infile.in. You can also call the routine with arguments "--help" for 
+some more info
+
+
+This version is meant for NERSC HYCOM version 2.2 - For older versions
+you may be better off using the version in Synoptic_Forcing-2.1 (Although 
+this verson SHOULD work)
+
+
+
+force_perturb-2.2:
+------------------
+Also in this directory is the routine force_perturb. This routine simply 
+adds time-dependent perturbations on existing forcing files. it reads
+infile2.in to get variances  of  random forcing ++, and applies them to
+existing forcing fields. Results are put in files with names a la 
+tst.forcing.airtmp.[ab]
+The call method is similar to forfun_nersc
+
+ncep_clim:
+----------
+A Routine which can be used to create climatology from NCEP files. Should be 
+fairly easy to use - The cycle over years in the NCEP dataset is hardcoded in the
+routine (look for do loop over "iyear")
+
+get_ncep_ftp.sh:
+----------------
+Convenient script for retrieving relevant forcing files for a given year from 
+NCEP. Data is retrieved from ftp.cdc.noaa.gov.
+
+
+other:
+------
+Directory Matlab/ contains routines for creating climatologies from the ERA40 
+files
+
+
+TODO:
+bicubic interpolation ?
+era40   wind pole bug (sphere rotation?)
+Should be cleaned up a bit - more comments

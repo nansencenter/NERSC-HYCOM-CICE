@@ -1,0 +1,8 @@
+mercator
+-100.0              # Longitude W edge
+  20.0              # Longitude E edge
+   800              # number of points in E-W dir
+ -20.0              # Latitude of S edge
+  70.0              # Latitude of N edge
+   400              # Number of points in S-N dir
+    0.              #Central longitude

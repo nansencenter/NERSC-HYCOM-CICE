@@ -1,0 +1,60 @@
+hyc2proj:
+   This routine will read data from a hycom file and first 
+   do a horizontal interpolation onto a given projection. If 
+   applicable it will then proceed to interpolate the model fields 
+   vertically onto specified depth levels. Four input files 
+   are needed:
+
+   1) proj.in - gives the projection to interpolate to
+   2) depthlevels.in Gives the depth levels to interpolate to
+   3) extract.XXX Gives the fields to extract from the
+      hycom files. This is the same file as used by
+      m2nc/h2nc. Rotation flags in extract files are ignores.
+   
+   Examples of these files are found in the input directory
+   In addition to this you will need the regional.grid/depth files (++).
+
+   Output is a netcdf file containing the interpolated fields
+   
+hyc2station:
+   This routine will read data from a hycom file and first 
+   do a horizontal interpolation onto stations specified
+   via input files. If applicable it will then proceed to 
+   interpolate the model fields vertically onto specified 
+   depth levels. Four input files are needed:
+   
+   1) depthlevels.in Gives the depth levels to interpolate to
+   2) extract.XXX Gives the fields to extract from the
+      hycom files. This is the same file as used by
+      m2nc/h2nc. Rotation flags in extract files are ignores.
+   3) stations.in - this file lists a set of stations, 
+      where each station is given by a lon/lat pair. stations are
+      divided into groups, where each group begins with a line 
+      containing a "#" followed by a group name. This is convenient 
+      for creating sections.
+   
+   Examples of these files are found in the input directory
+   In addition to this you will need the regional.grid/depth files.
+
+   Output is in the form of netcdf files, one for each group.
+   NEW: Routine ca also be modified to give one file containing all groups.
+   
+setupstations.py:
+   Short script to generate list of stations for stations.in. Input
+   is a start and end point along with number of stations. Each station
+   will be placed at regular intervals along the line between the 
+   two points. 
+
+   NB: Follows rhumb lines, not great circles.
+
+conv_threddsname.sh
+   Script for changing the name of the netcdf files from hyc2station.
+   Mainly for creating new file names for the MERSEA project.
+   (files are renamed following group NUMBERS rather than group NAMES)
+
+
+TODO: SLA and mixed layer
+TODO: add example for polar_stereographic
+levitus for hyc2proj
+NB: check splines after changing to library mod_spline_calc
+Check longitude input for native grid
