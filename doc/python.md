@@ -20,6 +20,7 @@ You will need a  working python 2.7 installation, with the following packages.
 
 * [netCDF4](https://pypi.python.org/pypi/netCDF4)
 
+These depend on other non-python packages being installed, such as udunits and netcdf4. Most of these packages are usually installed on a linux system. If they are missing, you can ask an IT guy to install them on the system. If you want to install them by yourself, there are some pointers below.
 
 In addition, these packages are required (developed by Knut and available on github):
 
@@ -32,14 +33,29 @@ In addition, these packages are required (developed by Knut and available on git
 * [modeltools](https://github.com/knutalnersc/modeltools), a collection of various tools .. 
 
 
+# Installing the python modules on github
 
 
-Most of these packages are usually installed on a linux system. If they are missing, you can ask an IT guy to install them on the system. If you want to install them by yourself, there are some pointers below.
+The github packages are not yet available as installers, and can be installed as follows:
+
+    cd [location_of_my_python_modules]
+    git clone https://github.com/knutalnersc/gridxsec
+    git clone https://github.com/knutalnersc/abfile
+    git clone https://github.com/knutalnersc/modelgrid
+    git clone https://github.com/knutalnersc/modeltools
+
+Replace [location_of_my_python_modules] with the location where you want to install them on your account.
+
+In order to use these locally installed packages you will have to set PYTHONPATH in your shell setup file (.profile / .bash_profile ):
+
+    export PYTHONPATH=$PYTHONPATH:[location_of_my_python_modules]
+
+Again, replace [location_of_my_python_modules] with the actual path
 
 
 # Checking for missing python modules
 
-When running the HYCOM-CICE python routines you will usually get an error message if a module is missing. But you can also check more directly 
+When running the HYCOM-CICE python routines you will usually get an error message if a module is missing. But you can also check more directly.
 
 A quick way to check is to start python (or ipython) and write import <name_of_module>. The following shows the error message if a module is missing
 
@@ -52,7 +68,7 @@ A quick way to check is to start python (or ipython) and write import <name_of_m
 
 If you find some packages are missing have an IT guy install them on the system you are working on, or install them yourself (some tips below). 
 
-# Installation of packages
+# Installation of missing packages
 
 There are many ways of installing python packages, you can install binary packages (.rpm, .deb etc) for your distribution, you can download source code and compile and install locally, or use python installation tool "pip". The latter is perhaps the easiest
 
@@ -70,23 +86,8 @@ If you need to install a package locally, try to use pip, as it is usually the e
     Cleaning up...
     knutal@debian:~$ ls -altr
 
+These files will be installed in your home directory under $HOME/.local/lib/python2.7/site-packages/, where python will automatically find them.
 
 
 
-
-The github packages are not yet available as installers, and can be installed as follows:
-
-    cd [location_of_my_python_modules]
-    git clone https://github.com/knutalnersc/gridxsec
-    git clone https://github.com/knutalnersc/abfile
-    git clone https://github.com/knutalnersc/modelgrid
-    git clone https://github.com/knutalnersc/modeltools
-
-Replace [location_of_my_python_modules] with the actual path. If you get errors about server certificates, see [here](../..//overview#markdown-header-server-certificates). 
-
-In order to use these locally installed packages you will have to set PYTHONPATH in your shell setup file (.profile / .bash_profile ):
-
-    export PYTHONPATH=$PYTHONPATH:[location_of_my_python_modules]
-
-Again, replace [location_of_my_python_modules] with the actual path
 
