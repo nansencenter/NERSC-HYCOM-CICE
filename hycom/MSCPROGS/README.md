@@ -61,6 +61,7 @@ hexagon (and other Cray XT systems) control environment variables through module
 ## hexagon.bccs.uib.no 
 
 The following module setup was used with luck on hexagon
+
     module swap PrgEnv-cray PrgEnv-pgi
     module load cmake
     module load cray-libsci
