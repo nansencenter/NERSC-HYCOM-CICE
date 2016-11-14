@@ -46,8 +46,7 @@ some CPP flags you need to define in the make include files:
 |LAPACK   | use Lapack libraries |
 |FFTW     | use FFTW  Fourier transform libraries |
 |ESSL     | use ESSL  libraries, typically available on AIX machines. If you set this, unset FFTW and LAPACK.|
-|IARGC    | defines the iargc function as real4, external in the code. |
-|-------|------|
+|IARGC    | defines the iargc function as real4, external in the code. Some compilers need this |
 
 
 After the makefile is set up, link it to the make.inc file as
