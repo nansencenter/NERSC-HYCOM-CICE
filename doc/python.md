@@ -2,7 +2,7 @@
 
 # Prerequisites
 
-You will need a  working python 2.7 installation, with the following packages
+You will need a  working python 2.7 installation, with the following packages.
 
 * [numpy](https://pypi.python.org/pypi/numpy)
 
@@ -17,9 +17,11 @@ You will need a  working python 2.7 installation, with the following packages
 * [basemap](https://pypi.python.org/pypi/basemap)
 
 * [matplotlib](https://pypi.python.org/pypi/matplotlib)
+
 * [netCDF4](https://pypi.python.org/pypi/netCDF4)
 
-Additional python packages may be required, but these are usually installed in most python distributions. In addition, these packages are required (developed by Knut and available on github):
+
+In addition, these packages are required (developed by Knut and available on github):
 
 * [gridxsec](https://github.com/knutalnersc/gridxsec), a tool for creating cross-sections on 2D grids 
 
@@ -30,9 +32,16 @@ Additional python packages may be required, but these are usually installed in m
 * [modeltools](https://github.com/knutalnersc/modeltools), a collection of various tools .. 
 
 
-## Retrieving and installation of python modules
 
-You will need to install the python packages necessary to use the  python routines. With some luck, most of the necessary packages are already installed.  A quick way to check is to start ipython and write import <name_of_package>. Example:
+
+Most of these packages are usually installed on a linux system. If they are missing, you can ask an IT guy to install them on the system. If you want to install them by yourself, there are some pointers below.
+
+
+# Checking for missing python modules
+
+When running the HYCOM-CICE python routines you will usually get an error message if a module is missing. But you can also check more directly 
+
+A quick way to check is to start python (or ipython) and write import <name_of_module>. The following shows the error message if a module is missing
 
     import numpy
     ---------------------------------------------------------------------------
@@ -41,27 +50,29 @@ You will need to install the python packages necessary to use the  python routin
     ----> 1 import numpy
     ImportError: No module named numpy
 
-If you find some packages are missing, either install them yourself, or have your friendly IT guy install them for you. The following packages can be installed by root in the python distribution, and are available in python installation tools (pip). Some of them are also available as binary packages in linux (RPM, debian package etc etc):
+If you find some packages are missing have an IT guy install them on the system you are working on, or install them yourself (some tips below). 
 
-* [numpy](https://pypi.python.org/pypi/numpy)  
+# Installation of packages
 
-* [scipy](https://pypi.python.org/pypi/scipy) 
+There are many ways of installing python packages, you can install binary packages (.rpm, .deb etc) for your distribution, you can download source code and compile and install locally, or use python installation tool "pip". The latter is perhaps the easiest
 
-* [pyproj](https://pypi.python.org/pypi/pyproj) 
+If you need to install a package locally, try to use pip, as it is usually the easiest. The following will install f90nml under your local user account:
 
-* [basemap](https://pypi.python.org/pypi/basemap) 
+    knutal@debian:~$ pip install --user f90nml
+    Downloading/unpacking f90nml
+      Downloading f90nml-0.19.tar.gz
+      Running setup.py (path:/tmp/pip-build-2D2rgF/f90nml/setup.py) egg_info for package f90nml
+    
+    Installing collected packages: f90nml
+      Running setup.py install for f90nml
+    
+    Successfully installed f90nml
+    Cleaning up...
+    knutal@debian:~$ ls -altr
 
-* [matplotlib](https://pypi.python.org/pypi/matplotlib) 
 
-* [netCDF4](https://pypi.python.org/pypi/netCDF4). 
 
-It is also possible to install these packages outside the main python distribution tree, but the process is a bit more elaborate.
 
-These packages are not that "main stream", and you may have to install them yourself
-
-* [f90nml](https://pypi.python.org/pypi/f90nml) 
-
-* [cfunits](https://pypi.python.org/pypi/cfunits) 
 
 The github packages are not yet available as installers, and can be installed as follows:
 
@@ -79,43 +90,3 @@ In order to use these locally installed packages you will have to set PYTHONPATH
 
 Again, replace [location_of_my_python_modules] with the actual path
 
-## Retrieving and installing ESMF
-
-To run the HYCOM-CICE coupled code, you will need to have a working installation of the Eearth System Modelling Framework: https://www.earthsystemcog.org/projects/esmf/download/. The code has been tested and verified to work with ESMF v 5.2.0.rp3.
-
-You could try to install his yourself, instructions are available in the downloaded distribution. However, it is probably recommended that you let your local IT support to do it.
-
-
-## Site-specific details
-
-### Hexagon.bccs.uib.no
-
-On hexagon, most tools are installed already. Make sure these commands are run first:
-
-    module load python/2.7.9-dso
-    module load udunits
-    export PYTHONPATH=$PYTHONPATH:/home/nersc/knutali/opt/python/lib/python2.7/site-packages/
-
-The last location contains the github modules, as well as basemap, cfunits and f90nml python modules
-
-Apart from that, make sure you use the pgi compiler and libraries in the cray PrgEnv. You will also have to be a member of the "nersc" group and you will need access to a cpu account. Here is a setup that is known to qwork (as of 2016-11-10):
-
-
-    module swap PrgEnv-cray PrgEnv-pgi
-    module load cmake
-    module load cray-libsci
-    module unload xtpe-interlagos # This is needed to compile on login nodes (istanbul cpu)
-    module load fftw
-    module load cray-netcdf
-    module load ncview
-    module load python/2.7.9-dso # NB: sets PYTHONHOME, which can cause problems for some scripts that uses the full path
-    module load subversion
-
-
-# This and that...
-
-## Server certificates
-If you get an error like "server certificate verification failed", you will need to install certificates on the machine where you want to run the model(or contact IT support). More [here...](https://en.wikipedia.org/wiki/Certificate_authority). If certificate installation fails, you can try this as a last resort before issuing the git clone commands:
-`
-export GIT_SSL_NO_VERIFY=true
-`
