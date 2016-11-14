@@ -6,7 +6,9 @@ program transport_calc
    use mod_transport
    use mod_hycomfile_io
    implicit none
+#if defined(IARGC)
    integer*4, external :: iargc
+#endif
    character(len=80) :: fnamein, tmparg
    character(len=20) :: ftype
    type(hycomfile) :: hfile

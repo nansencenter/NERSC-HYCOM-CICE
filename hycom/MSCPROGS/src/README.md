@@ -1,5 +1,6 @@
-Procedure for compiling/installing:
+# Procedure for compiling/installing:
 -----------------------------------
+
    Link the relevant make include file (ex make.fimm.ifort, 
    make.hexagon.pgi etc etc) to make.inc in directory Make.Inc. If you
    dont have a suitable setup for your machine, go to "Procedure for porting".
@@ -38,8 +39,9 @@ Procedure for compiling/installing:
    to set up everything with ifort for "smooth compiling.."
 
 
-Procedure for porting:
+# Procedure for porting:
 ----------------------
+
    First copy everything (MSCProgs and subdirectories) to the new machine.
 
    Set up a new make include file in Make.Inc. 
@@ -86,17 +88,3 @@ Procedure for porting:
 
    After the makefile is set up, link it to the make.inc file as
    described in the procedure for compiling/installing.
-
-
-
-Notes to self...
-Some routines can be moved to lib/include
-m_nearespoint, stmt_funcs, m_handle_er
-mod_toproj(a bit tricky)
-
-Move datafile, input examples to Input
-Rotate flags in ExtractNC*D and others -- double check this
-Rotate flag in "Section"
-
-
-Added READMEs until GPdens

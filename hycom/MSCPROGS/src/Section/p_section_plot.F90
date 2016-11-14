@@ -202,7 +202,9 @@ program section_plot
       implicit none
       integer :: iarg
       character(len=80) :: tmpc
+#if defined(IARGC)
       integer*4, external :: iargc
+#endif
 
       appendfile         =.false.
       velrot=0

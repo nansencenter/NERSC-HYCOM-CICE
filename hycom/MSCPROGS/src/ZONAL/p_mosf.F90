@@ -16,8 +16,9 @@ program p_mosf
    character(len=8)   :: dateinfo
 
 
-
+#if defined(IARGC)
    integer*4, external :: iargc
+#endif
    integer :: n2d,n3d,ii1,jj1,j,i, kdm, l, k
    integer :: iday,iyear,ihour,imonth,iweek,layer,n
    real    :: rtime

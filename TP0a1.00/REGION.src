@@ -13,8 +13,11 @@ if [ "$tmp" != "${R}" ] ;then
 fi
 
 # Point to the location of the ALL routines from hycom. Assumed to be in repo location
+# Point to the location of the MSC routines. TODO: Include in repo?
 export HYCOM_ALL=$mydir/../hycom/hycom_ALL/hycom_2.2.72_ALL/
+export HYCOM_PYTHON_ROUTINES=$mydir/../python/
 export INPUTDIR=$mydir/../input/
+export MSCPROGS=$mydir/../hycom/MSCPROGS/
 if [ ! -d $HYCOM_ALL ] ; then
    echo "Error: Can not find HYCOM_ALL location: $HYCOM_ALL"
    if [[ $- != *i* ]] ; then
@@ -23,11 +26,8 @@ if [ ! -d $HYCOM_ALL ] ; then
    fi
 fi
 
-export HYCOM_PYTHON_ROUTINES=$mydir/../python/
 
 
-# Point to the location of the MSC routines. TODO: Include in repo?
-export MSCPROGS=/home/nersc/knutali/Models/hycom/MSCPROGS/
 
 
 # PATHS to hycom-supplied ocean climatologies, on specially formatted input files

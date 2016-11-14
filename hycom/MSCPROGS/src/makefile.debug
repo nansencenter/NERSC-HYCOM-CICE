@@ -1,4 +1,5 @@
-
+# Use this makefile to compile and debug selected programs. Add the code you want to 
+# compile in the SUBDIRS variable
 
 NERSCLIB=\
 Nersclib \

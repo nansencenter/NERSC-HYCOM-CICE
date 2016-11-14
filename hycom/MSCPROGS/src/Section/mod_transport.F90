@@ -114,7 +114,8 @@ implicit none
                      print *,'No direction specification corresponding to '//trim(directionid)
                      call exit(1)
                   end if
-               elseif ((trim(sectionid).ne.trim(secname(transport_secnum(ntrans))).or.trim(transport_directionid(ntrans)).ne.trim(directionid))) then
+               elseif ((trim(sectionid).ne.trim(secname(transport_secnum(ntrans))).or.&
+                        trim(transport_directionid(ntrans)).ne.trim(directionid))) then
                      print *,'When MULTIPLE criteria initiated, it should be a  &
                      END before moving to a different SECTIONID or change &
                      transport direction'
@@ -664,11 +665,11 @@ end subroutine
             open(33,file=trim(fname),status="replace",form="formatted",position="rewind")
             write (33,'(a)') trim(transport_name(itrans)) 
             do icrit=1,transport_nbcrit(itrans)
-               write (33,'a,a14,2f10.2') &
+               write (33,'(a,a14,2f10.2)') &
                ' with range type and limits ',transport_rangeid(itrans,icrit), &
                transport_lowrange(itrans,icrit), transport_uprange(itrans,icrit)           
             enddo
-            write (33,'a,a1,a,a20)') &
+            write (33,'(a,a1,a,a20)') &
                ' with direction ',transport_directionid(itrans), &
                ' across section ',trim(secname(sec))
 #if defined (SCALAR_TRANS) 

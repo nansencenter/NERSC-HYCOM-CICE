@@ -16,8 +16,6 @@ Ensstat \
 ExtractNC2D \
 ExtractNC3D \
 FindLayer \
-GP \
-GPdens \
 GridToLL \
 Hyc2proj \
 IceDrift \
@@ -31,10 +29,6 @@ RelaxToNetCDF \
 River_Forcing \
 SSHFromState \
 Section \
-Synoptic_Forcing-2.1.07 \
-Synoptic_Forcing-2.2.12 \
-Synoptic_Forcing-2.2.37 \
-Synoptic_Forcing-2.2.98 \
 TRIP \
 Tides_CSR \
 ZONAL  \
