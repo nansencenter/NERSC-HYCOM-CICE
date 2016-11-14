@@ -3,13 +3,9 @@
 myclim="woa2013" # Climatology to use
 
 
-#hycom_all_arch=gfortran   # Most linux machines have gnu fortran
-hycom_all_arch=amd64       # Uses pgi compiler
-
 # What ARCH value to pass to hycom and cice compilation scripts
 #hycom_compile_script_args="linux -c gfortran -m openmpi " # try this on generic linux box
 hycom_compile_script_args="xt4"                           # hexagon
-
 
 # Must be in expt dir to run this script
 if [ -f EXPT.src ] ; then
@@ -47,16 +43,6 @@ echo "climatology = $myclim"
 THFLAG=$(blkdat_get blkdat.input thflag)
 IDM=$(blkdat_get blkdat.input idm)
 JDM=$(blkdat_get blkdat.input jdm)
-
-# Create hycom_all executables
-cd $EDIR
-dir="$HYCOM_ALL"
-cd $dir
-echo "compiling hycom_all in $dir"
-echo "setenv ARCH $hycom_all_arch" > Make_all.src
-csh Make_all.com > $EDIR/log/ref_hycom_all.out 2>&1
-echo "Compile script exited - check result in  $EDIR/log/ref_hycom_all.out"
-echo ".."
 
 # Create hycom_cice model
 cd $EDIR
