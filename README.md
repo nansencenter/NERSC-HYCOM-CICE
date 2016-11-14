@@ -8,11 +8,11 @@ This repository contains the source code necessary to run the coupled HYCOM-CICE
 
 The following tools are necessary 
 
-A working fortran compiler.
+* A working fortran compiler.
 
-To run the HYCOM-CICE coupled code, you will need to have a working installation of the Eearth System Modelling Framework: https://www.earthsystemcog.org/projects/esmf/download/. The code has been tested and verified to work with ESMF v 5.2.0.rp3.
+* To run the HYCOM-CICE coupled code, you will need to have a working installation of the Eearth System Modelling Framework: https://www.earthsystemcog.org/projects/esmf/download/. The code has been tested and verified to work with ESMF v 5.2.0.rp3.
 
-A working python 2.7 installation, [more info can be found here](doc/python.md)
+* A working python 2.7 installation, [more info can be found here](doc/python.md)
 
 
 # Retrieving HYCOM-CICE
