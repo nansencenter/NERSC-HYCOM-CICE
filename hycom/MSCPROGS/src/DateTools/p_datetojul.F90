@@ -2,8 +2,9 @@ program datetojul
 use mod_year_info
 implicit none 
 
-
+#if defined(IARGC)
    integer*4, external :: iargc
+#endif
    integer :: year, month,day,julday
    integer :: ryear, rmonth,rday
    character(len=10) :: tmpchar
@@ -13,14 +14,14 @@ implicit none
    if (iargc()==6) then ! 
 
       ! Actual days
-      call getarg(1,tmpchar) ; read(tmpchar,'(i)') year 
-      call getarg(2,tmpchar) ; read(tmpchar,'(i)') month
-      call getarg(3,tmpchar) ; read(tmpchar,'(i)') day
+      call getarg(1,tmpchar) ; read(tmpchar,'(i4)') year 
+      call getarg(2,tmpchar) ; read(tmpchar,'(i2)') month
+      call getarg(3,tmpchar) ; read(tmpchar,'(i3)') day
 
       ! Reference days
-      call getarg(4,tmpchar) ; read(tmpchar,'(i)') ryear 
-      call getarg(5,tmpchar) ; read(tmpchar,'(i)') rmonth
-      call getarg(6,tmpchar) ; read(tmpchar,'(i)') rday
+      call getarg(4,tmpchar) ; read(tmpchar,'(i4)') ryear 
+      call getarg(5,tmpchar) ; read(tmpchar,'(i2)') rmonth
+      call getarg(6,tmpchar) ; read(tmpchar,'(i3)') rday
 
    else
       print '(a)','*****************************************************************'

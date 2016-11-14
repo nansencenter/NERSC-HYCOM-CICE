@@ -20,8 +20,9 @@
       character(len=1)  :: answer
       integer :: i,mem1,mem2,year,day,hour,nmem
       type(year_info) :: rt
-
+#if defined(IARGC)
       integer*4,external :: iargc
+#endif
       logical,  external :: LSAMEN
       real*8 :: juld_offset, dtime, juld1, time
       integer :: hrefyear, yrflag,kdm, nstep, ivar
@@ -36,11 +37,11 @@
          end do
          
          read(arg(1),'(a3)') rungen   ; print *,'rungen=',rungen
-         read(arg(2),'(i)') year     ; print *,'year  =',year
-         read(arg(3),'(i)') day      ; print *,'day   =',day 
-         read(arg(4),'(i)') hour     ; print *,'hour  =',hour
-         read(arg(5),'(i)') mem1     ; print *,'mem1  =',mem1
-         read(arg(6),'(i)') mem2     ; print *,'mem2  =',mem2
+         read(arg(2),'(i4)') year     ; print *,'year  =',year
+         read(arg(3),'(i3)') day      ; print *,'day   =',day 
+         read(arg(4),'(i2)') hour     ; print *,'hour  =',hour
+         read(arg(5),'(i3)') mem1     ; print *,'mem1  =',mem1
+         read(arg(6),'(i3)') mem2     ; print *,'mem2  =',mem2
       else
          print *,'Copies an ensemble member from member mem1 '
          print *,'to member mem2. Modifies restart files for '

@@ -19,7 +19,9 @@ program tecconv
    logical sphere,rotate,normal,ex
    character(len=8) dpfield,dptype
    integer :: rdimid,jdimid,idimid,ncid,nrec
+#if defined(IARGC)
    integer*4, external :: iargc
+#endif
    character(len=20) :: tmparg
    character(len=24) :: plot_time
 

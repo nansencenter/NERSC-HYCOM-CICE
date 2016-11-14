@@ -25,12 +25,7 @@ Idealized_Grid \
 MkEnsemble \
 Multiproc_New \
 NORSEXClim \
-Nest_Offline-2.1 \
-Nestbat \
-Nesting-2.2 \
 ObsCompare \
-Old_Forcing \
-Old_Levitus \
 Relax \
 RelaxToNetCDF \
 River_Forcing \

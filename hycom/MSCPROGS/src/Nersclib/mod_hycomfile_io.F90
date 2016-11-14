@@ -1380,17 +1380,17 @@ contains
       case ('npp_euph')
          vname='npp_euph'
          units='g m-2 day-1'
-         limits=(/0.,20/)
+         limits=(/0.,20./)
          stdname='net_primary_productivity_of_carbon_euphotic_depth'
       case ('chl_opti')
          vname='chl_opti'
          units='mg m-2'
-         limits=(/0.,200/)
+         limits=(/0.,200./)
          stdname='depth_integrated_chlorophyll_one_optical_depth'
       case ('chlo_eco')
          vname='chl_opti'
          units='mg m-2'
-         limits=(/0.,200/)
+         limits=(/0.,200./)
          stdname='depth_integrated_chlorophyll_one_optical_depth'
 !AS06092011
       case ('albedo')

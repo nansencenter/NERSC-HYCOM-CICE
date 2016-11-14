@@ -9,8 +9,10 @@ subroutine ncfld(fname,nx,ny,lon,lat,deep,ires,weight)
    real, intent(in) :: lat(nx,ny)
    real, intent(in) :: deep(nx,ny)
    real, intent(in), optional :: weight(nx,ny)
-   real,slon((nx/ires)+1,(ny/ires)+1),slat((nx/ires)+1,(ny/ires)+1)
-   real,sdeep((nx/ires)+1,(ny/ires)+1),sweight((nx/ires)+1,(ny/ires)+1)
+   !real,slon((nx/ires)+1,(ny/ires)+1),slat((nx/ires)+1,(ny/ires)+1)
+   !real,sdeep((nx/ires)+1,(ny/ires)+1),sweight((nx/ires)+1,(ny/ires)+1)
+   real :: slon((nx/ires)+1,(ny/ires)+1),slat((nx/ires)+1,(ny/ires)+1)
+   real :: sdeep((nx/ires)+1,(ny/ires)+1),sweight((nx/ires)+1,(ny/ires)+1)
    integer i,j,ii,jj,nsx,nsy
    integer :: nxid, nyid, var_id, ncid, ierr
    character(len=80) :: ncfile

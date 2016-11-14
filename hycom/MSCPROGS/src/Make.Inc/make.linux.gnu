@@ -1,9 +1,9 @@
 # makefile includes for hexagon, gnu compilers
 # Standard compilers and linkers
-CF90= ftn
-CF77= ftn
-CC= cc
-LD= ftn
+CF90= gfortran
+CF77= gfortran
+CC= gcc
+LD= gfortran
 
 # CPP, used internally by compilers - note that some compilers
 # need special options for this, consult compiler manual if in trouble
@@ -31,10 +31,13 @@ CFLAGSR4= -O2
 LINKFLAGS= $(FFLAGS)  
 
 #Netcdf, FFTW and lapack Libraries
-INCLUDE= -I$(NETCDF_INC) $(FFTW_INCLUDE_OPTS)
-LIBS =  $(NETCDF_POST_LINK_OPTS) $(FFTW_POST_LINK_OPTS) $(LIB_LAPACK)
+NETCDF_INC=/usr/include
+NETCDF_LIB=/usr/lib
+INCLUDE= -I$(NETCDF_INC) 
+LIBS =  -L/usr/lib -L/usr/lib/x86_64-linux-gnu/ -lnetcdf -lnetcdff -llapack -lfftw3
 
 # Some fortran compilers have iargc as built in, 
 # others as library routine
-CPPFLAGS=-DIARGC -DFFTW -DLAPACK
+#CPPFLAGS=-DIARGC -DFFTW -DLAPACK
+CPPFLAGS=-DFFTW -DLAPACK
 

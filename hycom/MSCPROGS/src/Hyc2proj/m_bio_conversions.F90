@@ -262,7 +262,7 @@ module m_bio_conversions
           parbot=1.0
           reached_bot=.false.
           k=1
-          do while (reached_bot==.false.)
+          do while (reached_bot .eqv..false.)
             partop=parbot
             parbot=partop*exp(-dplayer(i,j,k)*kpar(i,j,k))
 !if(i>100.and.j>100) then
@@ -320,7 +320,7 @@ module m_bio_conversions
           parbot=1.0
           reached_bot=.false.
           k=1
-          do while (reached_bot==.false.)
+          do while (reached_bot .eqv. .false.)
             partop=parbot
             parbot=partop*exp(-dplayer(i,j,k)*kpar(i,j,k))
             if (parbot>0.37) then
@@ -371,7 +371,7 @@ module m_bio_conversions
           parbot=1.0
           reached_bot=.false.
           k=1
-          do while (reached_bot==.false.)
+          do while (reached_bot .eqv. .false.)
             partop=parbot
             parbot=partop*exp(-dplayer(i,j,k)*kpar(i,j,k))
             if (parbot>0.37) then

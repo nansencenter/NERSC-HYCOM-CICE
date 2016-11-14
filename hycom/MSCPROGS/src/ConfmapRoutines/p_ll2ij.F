@@ -1,7 +1,9 @@
       program ll2ij
       use mod_confmap
       implicit none
+#if defined(IARGC) 
       integer*4, external :: iargc
+#endif
       real    :: lon, lat
       real    :: lon_n, lat_n
       integer :: ipiv, jpiv

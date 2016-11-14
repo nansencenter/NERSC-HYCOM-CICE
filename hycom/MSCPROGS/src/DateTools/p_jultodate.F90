@@ -4,7 +4,9 @@ implicit none
 
 !Which day was xxx, knowing that 1.1.1950 was a sunday.
 
+#if defined(IARGC)
    integer*4, external :: iargc
+#endif
    integer :: year, month,day,julday
    integer :: ryear, rmonth,rday
    character(len=10) :: tmpchar
@@ -15,12 +17,12 @@ implicit none
    if (iargc()==4) then ! 
 
       ! Actual days
-      call getarg(1,tmpchar) ; read(tmpchar,'(i)') julday
+      call getarg(1,tmpchar) ; read(tmpchar,'(i6)') julday
 
       ! Reference days
-      call getarg(2,tmpchar) ; read(tmpchar,'(i)') ryear
-      call getarg(3,tmpchar) ; read(tmpchar,'(i)') rmonth
-      call getarg(4,tmpchar) ; read(tmpchar,'(i)') rday
+      call getarg(2,tmpchar) ; read(tmpchar,'(i4)') ryear
+      call getarg(3,tmpchar) ; read(tmpchar,'(i2)') rmonth
+      call getarg(4,tmpchar) ; read(tmpchar,'(i3)') rday
 
    else
       print '(a)','*****************************************************************'

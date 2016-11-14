@@ -21,7 +21,9 @@ program tecconv
    integer nfld
    logical sphere,rotatell,normal,ex
    integer :: rdimid,jdimid,idimid,ncid,nrec
+#if defined(IARGC)
    integer*4, external :: iargc
+#endif
    character(len=80) :: filename, ftype
    integer :: kdm
    real    :: rtime

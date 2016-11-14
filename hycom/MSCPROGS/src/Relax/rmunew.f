@@ -81,7 +81,8 @@ C*
 C**********
 C
       INTEGER I,ISF,ISL,ISEC,J,K
-      REAL*4  RVAL,RVMIN,rvmax,rvscale
+CKAL  REAL*4  RVAL,RVMIN,rvmax,rvscale
+      REAL    RVAL,RVMIN,rvmax,rvscale
 C
       CHARACTER*1 C(-1:9)
       DATA C / '*', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' /

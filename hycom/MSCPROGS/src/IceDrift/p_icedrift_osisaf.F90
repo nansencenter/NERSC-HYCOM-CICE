@@ -78,7 +78,9 @@ program p_icedrift_osisaf
       integer,intent(out):: fyear,fjulday
       character(len=80) :: tmparg
       integer :: pl,fmonth,fdm
+#if defined(IARGC)
       integer*4, external :: iargc
+#endif
 
       if (iargc()==5) then
           ! Rungen for model id (TP4)

@@ -28,7 +28,9 @@
        character(len=3)  :: rungen,cmem
        character(len=6)  :: cvarin
        character(len=11) :: tag11
+#if defined(IARGC)
        integer*4, external :: iargc
+#endif
     
        integer :: i, j, k, reclA, ios, reclSSH, ios2
        logical :: ex
