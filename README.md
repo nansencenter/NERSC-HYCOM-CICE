@@ -31,3 +31,5 @@ If you get errors about server certificates, see [here](../..//overview#markdown
 * Compile HYCOM_ALL programs, following the instructions given in [hycom/HYCOM_ALL/](hycom/HYCOM_ALL)
 
 # Compiling HYCOM-CICE
+
+Before yout attempt this, make sure that the HYCOM-CICE support programs are compiled, and that the MSCPROGS programs are compiled.
