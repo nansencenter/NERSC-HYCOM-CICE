@@ -16,7 +16,7 @@ The following tools are necessary
 
 
 # Retrieving HYCOM-CICE
-Clone code from main repository (TODO: Fix when moved/use markdown)
+Clone code from main repository 
 
 `
 git clone https://bitbucket.org/knutal/nersc-hycom-cice
