@@ -32,4 +32,4 @@ If you get errors about server certificates, see [here](../..//overview#markdown
 
 # Compiling HYCOM-CICE
 
-Before yout attempt this, make sure that the HYCOM-CICE support programs are compiled, and that the MSCPROGS programs are compiled.
+Before yout attempt this, make sure that the HYCOM-CICE support programs are compiled, that the MSCPROGS programs are compiled, and that you have the other prerequisites ndescribed above.
