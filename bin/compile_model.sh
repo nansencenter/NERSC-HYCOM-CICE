@@ -20,15 +20,11 @@ sourceconfdir=$BASEDIR/../hycom/RELO/config/
 
 
 usage="
-
    On first invocation this script will fetch hycom source from $sourcedir,
    place it in the build directory, set up and compile the model.
 
    The script will also set up the equation of state to use in hycom, depending on 
    the setting of SIGVER in EXPT.src.
-
-
-
 
    NB: On subsequent calls, this script will compile the model, but not update with code
    from $sourcedir, unless update_flag = update ....
@@ -40,14 +36,12 @@ usage="
    When you are satisfied with the code changes in build, the code can be brought into the main
    code in $sourcedir, then pushed to the code repository
 
-   
-
-
    Example:
-      $(basename $0) ARCH [update_flag]
+      $(basename $0) 
 
    ARCH        : architecture to compile for. Currently supported:
-      xt4 (hexagon)
+      xt4 
+      linux
    update_flag : if set to update, code will be synced from $sourcedir to the build dir
 
 
@@ -63,7 +57,7 @@ usage="
 
 "
 
-options=$(getopt -o c:m: -- "$@")
+options=$(getopt -o c:m:u -- "$@")
 [ $? -eq 0 ] || {
     echo "$usage"
     echo "Incorrect options provided"
@@ -74,13 +68,12 @@ mpilib=""
 eval set -- "$options"
 while true; do
     case "$1" in
-    -c)
-       shift;
-       compiler=$1
-        ;;
     -m)
        shift;
        mpilib=$1
+        ;;
+    -u)
+       update="update"
         ;;
     --)
         shift
@@ -93,19 +86,21 @@ done
 
 #Check arguments 
 if [ $# -gt 0 ] ; then
-   ARCH=$1
-   update=$2
+   compiler=$1
 else 
    echo "$usage"
+   echo "Need to provide compiler to script, options: gfortran pgi ifort "
    exit 1
 fi
+echo "$(basename $0) : compiler=$compiler"
+echo "$(basename $0) : mpilib=$mpilib"
+
 
 # Check ARCH 
-if [ "$ARCH" == "xt4" ] ;then
-   echo ARCH=$ARCH
-# Generic linux
-elif [ "$ARCH" == "linux" ] ;then
-   echo ARCH=$ARCH
+ARCH=$(uname -s)
+ARCHLOWER=$(echo $ARCH | tr '[:upper:]' '[:lower:]' )
+if [[ "$ARCH" == "Linux" ]] ;then
+   true
 else 
    echo "$usage"
    echo
@@ -113,25 +108,31 @@ else
    echo "Unsupported ARCH=$ARCH"
    exit 2
 fi
+echo "$(basename $0) : ARCH=$ARCH"
 
-# SITE deduced from hostname
-unamen=$(uname -n)
+# SITE deduced from hostname. 
 unames=$(uname -s)
-# Cray systems
+# Hardcoded cases - hexagon
 if [ "${unamen:0:7}" == "hexagon" ] ; then
    SITE="hexagon"
-# Generic linux system
+   MACROID=$ARCH.$SITE.$compiler
+
+# Generic case. SITE is empty
 elif [ "${unames:0:5}" == "Linux" ] ; then
    SITE=""
+   if [ -z "${mpilib}" ] ; then
+      echo "mpilib must be set on input running on generic linux machine (-m option)"
+      exit 4
+   fi
+   MACROID=$ARCH.$compiler.$mpilib
+
 else
    echo "Unknown SITE. uname -n gives $unamen"
    exit 3
 fi
-
-echo "$(basename $0) : ARCH=$ARCH"
 echo "$(basename $0) : SITE=$SITE"
-echo "$(basename $0) : compiler=$compiler"
-echo "$(basename $0) : mpilib=$mpilib"
+
+
 
 
 # Deduce ESMF dir from SITE and possibly ARCH
@@ -142,11 +143,10 @@ if [[ -n "${ESMF_DIR}" ]] &&  [[ -n "${ESMF_MOD_DIR}" ]] && [[ -n "${ESMF_LIB_DI
 
 # If site is given, use hardcoded settings for this machine
 elif [ "$SITE" == "hexagon" ] ; then
-   # KAL - Note that if you change compiler, you will need to change ESMF_MOD_DIR. The below is for pg compilers
    module load craype-interlagos
    export ESMF_DIR=/home/nersc/knutali/opt/esmf_5_2_0rp3-nonetcdf/
-   export ESMF_MOD_DIR=${ESMF_DIR}/mod/modO/Unicos.pgi.64.mpi.default/
-   export ESMF_LIB_DIR=${ESMF_DIR}/lib/libO/Unicos.pgi.64.mpi.default/
+   export ESMF_MOD_DIR=${ESMF_DIR}/mod/modO/Unicos.$compiler.64.mpi.default/
+   export ESMF_LIB_DIR=${ESMF_DIR}/lib/libO/Unicos.$compiler.64.mpi.default/
 
 
 # If site is not given, try to use a generic setup. MAcro names composed of compiler name and mpi lib name (openmpi, mpich, lam, etc etc(
@@ -155,26 +155,16 @@ elif [ "${unames:0:5}" == "Linux" -a "$SITE" == "" ] ; then
       echo "ESMF_DIR must be set before calling script when running on generic linux machine"
       exit 4
    fi
-   if [ -z "${compiler}" ] ; then
-      echo "compiler must be set on input running on generic linux machine (-c option)"
-      exit 4
-   fi
-   if [ -z "${mpilib}" ] ; then
-      echo "mpilib must be set on input running on generic linux machine (-m option)"
-      exit 4
-   fi
    export ESMF_MOD_DIR=${ESMF_DIR}/mod/modO/Linux.$compiler.64.$mpilib.default/
    export ESMF_LIB_DIR=${ESMF_DIR}/lib/libO/Linux.$compiler.64.$mpilib.default/
-
-   # Set site to compiler/mpilib combo
-   SITE=$compiler.$mpilib
-
 
 else 
    echo "Dont know where ESMF_DIR is located on this machine"
    exit 4
 fi
 echo "$(basename $0) : ESMF_DIR=$ESMF_DIR"
+echo "$(basename $0) : ESMF_MOD_DIR=$ESMF_MOD_DIR"
+echo "$(basename $0) : ESMF_LIB_DIR=$ESMF_LIB_DIR"
 
 # Get some useful info from blkdat.input
 THFLAG=$(blkdat_get blkdat.input thflag)
@@ -251,11 +241,22 @@ ln -s ALT_CODE/$stmt stmt_fns.h
 
 # 1) Compile CICE
 cd $targetdir/CICE/
-env RES=gx3 GRID=${IDM}x${JDM} SITE=$SITE ./comp_ice.esmf
+env RES=gx3 GRID=${IDM}x${JDM} SITE=$SITE MACROID=$MACROID ./comp_ice.esmf
+res=$?
+if [ $res -ne 0 ] ; then 
+   echo
+   echo "Error when compiling CICE, see above "
+   exit $res
+fi
 
 # Create hycom objects and final hycom_cice executable. 
 cd $targetdir
 echo "Now compiling hycom_cice in $targetdir." 
-env ARCH=$ARCH.$SITE csh Make_cice.csh 
-echo $?
-exit $?
+env ARCH=$MACROID csh Make_cice.csh 
+res=$?
+if [ $res -ne 0 ] ; then 
+   echo
+   echo "Error when compiling HYCOM, see above "
+   exit $res
+fi
+echo "Success"

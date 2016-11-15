@@ -20,9 +20,13 @@ Note that by sourcing the REGION.src file (in the top-level region directory)
 and the EXPT.src file (in the experiment directory), the shell wil set the
 variables S and D which point to the scratch and data directories respectively.
 type 
-  cd $S  
+
+    cd $S  
+
 or
-  cd $D
+
+    cd $D
+
 to go to the respective directories.
 
 Most of the scripts in ../../bin/ source the REGION.src and EXPT.src files before 
@@ -38,6 +42,10 @@ tasks to use. These are set by setting these variables in EXPT.src:
 
 The SIGVER variable is used by the compile script to get the correct equation of state (it basically modifies stmt_fns.h in the
 hycom build directory).
+
+# Compiling HYCOM-CICE
+
+HYCOM-CICE compilation is complicated, since we have to compile two models, find the correct configuration files, etc etc. A script exists that is meant to take care of all this, it is called "compile_model.sh
 
 
 # expt_preprocess.sh

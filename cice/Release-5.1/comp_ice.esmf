@@ -3,24 +3,15 @@
 ### Change these to your own site and user directory! 
 ### You will need to create a Makefile Macro in bld/ and a run_ice script 
 ### in input_templates/.
-#setenv SITE hexagon   # also works for mustang
-#setenv SITE LANL.conejo   # also works for mustang
-#setenv SITE LANL.bigsuze
 #KAL - SITE set as env variable before running
 
-### SYSTEM_USERDIR is predefined on ORNL machines
+### SYSTEM_USERDIR set to CICE dir
 setenv SYSTEM_USERDIR `dirname $0` 
 setenv SYSTEM_USERDIR `cd ${SYSTEM_USERDIR} && pwd` 
 
 ### Grid resolution
-#setenv RES col ; setenv GRID 5x5
-#setenv RES gx3 ; setenv GRID 100x116
-#setenv RES gx1 ; setenv GRID 320x384
-#setenv RES tx1 ; setenv GRID 360x240
 #setenv RES gx3 ; setenv GRID 100x110
-#KAL - RES set as env variable before running
-
-#KAL - GRID set as env variable before running
+#KAL - RES and GRID set as env variable before running
 set NXGLOB = `echo $GRID | sed s/x.\*//`
 set NYGLOB = `echo $GRID | sed s/.\*x//`
 
@@ -85,7 +76,6 @@ setenv NUMAX 99           # maximum file unit number
 setenv SRCDIR `dirname $0` 
 setenv SRCDIR `cd ${SRCDIR} && pwd` 
 setenv EXEDIR $SYSTEM_USERDIR/rundir
-                                          if !(-d $EXEDIR) mkdir -p $EXEDIR
 setenv CBLD   $SRCDIR/bld
 setenv OBJDIR $EXEDIR/compile           ; if !(-d $OBJDIR) mkdir -p $OBJDIR
 
@@ -132,9 +122,12 @@ $SRCDIR/$IODIR
 $SRCDIR/$SHRDIR
 EOF
 
-echo "CICE macro file: $CBLD/Macros.$ARCH"
-if ( ! -f $CBLD/Macros.$ARCH ) then
-   echo "Error: Could not find CICE macro file   $CBLD/Macros.$ARCH"
+# MACROID set through environment variable
+echo "comp_ice.esmf: Environment variable MACROID=$MACROID"
+setenv MACROFILE $CBLD/Macros.$MACROID
+echo "comp_ice.esmf: CICE macro file: $MACROFILE"
+if ( ! -f $MACROFILE ) then
+   echo "Error: Could not find CICE macro file   $MACROFILE"
    exit 2
 endif
 
@@ -146,7 +139,7 @@ setenv MAKECMD make
 $MAKECMD VPFILE=Filepath EXEC=$EXEDIR/cice \
            NXGLOB=$NXGLOB NYGLOB=$NYGLOB \
            BLCKX=$BLCKX BLCKY=$BLCKY MXBLCKS=$MXBLCKS \
-      -f  $CBLD/Makefile MACFILE=$CBLD/Macros.$ARCH || exit 2
+      -f  $CBLD/Makefile MACFILE=$MACROFILE || exit 2
 setenv result $status
 cd ..
 echo NTASK = $NTASK

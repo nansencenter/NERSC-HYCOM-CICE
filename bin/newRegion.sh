@@ -57,9 +57,9 @@ fi
 mkdir -p $TARGETDIR/$regname
 
 # Copy files in top-level directory (only files)
-cp $BASEDIR/REGION.src $TARGETDIR/$regname/
+cp $BASEDIR/* $TARGETDIR/$regname/
 
-# Copy all experiment dirs, nut not their data subdirectory
+# Copy all experiment dirs, but not their data subdirectory
 for i in $BASEDIR/expt_* ; do
    #echo "test2: $i"
    newdir=$TARGETDIR/$regname/$(basename $i)/
@@ -79,5 +79,5 @@ done
 cat  $TARGETDIR/$regname/REGION.src | sed "s/R=.*/R=$regname/" >  $TARGETDIR/$regname/REGION.src.new
 mv $TARGETDIR/$regname/REGION.src.new $TARGETDIR/$regname/REGION.src
 
-
+echo "Base structure set up, note that topo subdir is empty, so you may want to start with that ..."
 
