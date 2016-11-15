@@ -24,6 +24,21 @@ git clone https://bitbucket.org/knutal/nersc-hycom-cice
 
 If you get errors about server certificates, see [here](../..//overview#markdown-header-server-certificates)
 
+# HYCOM-CICE directory structure
+The following structure is relative to the checked out code.
+
+    ├── bin                 # Location of binaries
+    ├── cice                # Location of CICE code
+    ├── doc                 # Documentation in markdown format
+    ├── hycom               # Location of hycom code and utilities
+    │   ├── hycom_ALL       # Location of setup/diag routines 
+    │   ├── MSCPROGS        # Location of setup/diag routines  developed at NERSC
+    │   └── RELO            # Location of hycom source code
+    ├── input               # Location of some input files 
+    ├── python              # Location of python routines (may be moved ...)
+    └── TP0a1.00            # Location of "Reference experiment"
+
+
 # Compiling HYCOM-CICE support programs
 
 * Compile MSCPROGS routine, following the instructions given in [./hycom/MSCPROGS/](./hycom/MSCPROGS/)
@@ -32,4 +47,4 @@ If you get errors about server certificates, see [here](../..//overview#markdown
 
 # Compiling HYCOM-CICE
 
-Before yout attempt this, make sure that the HYCOM-CICE support programs are compiled, that the MSCPROGS programs are compiled, and that you have the other prerequisites ndescribed above.
+Before you attempt this, make sure that the HYCOM-CICE support programs are compiled, that the MSCPROGS programs are compiled, and that you have the other prerequisites described above.
