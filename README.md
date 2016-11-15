@@ -26,9 +26,9 @@ If you get errors about server certificates, see [here](../..//overview#markdown
 
 # Compiling HYCOM-CICE support programs
 
-* Compile MSCPROGS routine, following the instructions given in [hycom/MSCPROGS/](hycom/MSCPROGS)
+* Compile MSCPROGS routine, following the instructions given in [hycom/MSCPROGS/](hycom/MSCPROGS/)
 
-* Compile HYCOM_ALL programs, following the instructions given in [hycom/HYCOM_ALL/](hycom/HYCOM_ALL)
+* Compile HYCOM_ALL programs, following the instructions given in [hycom/HYCOM_ALL/](hycom/HYCOM_ALL/)
 
 # Compiling HYCOM-CICE
 
