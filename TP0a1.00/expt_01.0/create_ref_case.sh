@@ -44,15 +44,15 @@ THFLAG=$(blkdat_get blkdat.input thflag)
 IDM=$(blkdat_get blkdat.input idm)
 JDM=$(blkdat_get blkdat.input jdm)
 
-# Create hycom_cice model
-cd $EDIR
-echo "Compiling hycom_cice"
-#echo "$BINDIR/compile_model.sh ${hycom_compile_script_args}  > $EDIR/log/ref_hycom.out 2>&1"
-$BINDIR/compile_model.sh ${hycom_compile_script_args}  > $EDIR/log/ref_hycom.out 2>&1
-res=$?
-[ $res -eq 0 ] && echo "Success"
-[ $res -ne 0 ] && echo "Failure...  Log in $EDIR/log/ref_hycom.out"
-echo ".."
+## Create hycom_cice model
+#cd $EDIR
+#echo "Compiling hycom_cice"
+##echo "$BINDIR/compile_model.sh ${hycom_compile_script_args}  > $EDIR/log/ref_hycom.out 2>&1"
+#$BINDIR/compile_model.sh ${hycom_compile_script_args}  > $EDIR/log/ref_hycom.out 2>&1
+#res=$?
+#[ $res -eq 0 ] && echo "Success"
+#[ $res -ne 0 ] && echo "Failure...  Log in $EDIR/log/ref_hycom.out"
+#echo ".."
 
 # Create z-level relaxation files
 cd $EDIR
