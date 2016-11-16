@@ -69,7 +69,7 @@ c --- KAL - Moved from module acces to state access
       logical :: ICE_get_import, ICE_put_export
       integer :: ICE_nts_cpl
       logical :: ICE_restart, OCN_restart
-      character(len=256) :: msg
+      character(len=256) :: msg,tstr
       integer :: ICE_ktherm
       character(len=256) :: ICE_tfrz_option
 c
@@ -219,7 +219,7 @@ c --- Initialize OCEAN  gridded component
      &                              importState=ocnImpState,
      &                              exportState=ocnExpState,
      &                                    phase=1,
-     &                                 syncflag=ESMF_SYNC_NONBLOCKING,
+     &                                 syncflag=ESMF_SYNC_BLOCKING,
      &                                    clock=ocnClock,
      &                                       rc=rc)
       if (ESMF_LogFoundError(rc,
@@ -237,14 +237,15 @@ c
 c --- Get HYCOM clock properties 
       call ESMF_ClockGet(ocnClock,startTime=startTime,
      &  stopTime=stopTime,rc=rc)
-      call ESMF_TimeGet(startTime,timestring=msg)
-      write(msg,'("hycom_cice startTime from ocnClock:",a)') trim(msg)
+      call ESMF_TimeGet(startTime,timestring=tstr)
+      write(msg,'("hycom_cice startTime from ocnClock:",a)') trim(tstr)
       call ESMF_LogWrite(msg, ESMF_LOGMSG_INFO, rc=rc)
-      if (localPet .eq. 0 ) print '(a)',msg
-      call ESMF_TimeGet(stopTime,timestring=msg)
-      write(msg,'("hycom_cice stopTime from ocnClock :",a)') trim(msg)
+      if (localPet .eq. 0 ) print '(a)',trim(msg)
+C
+      call ESMF_TimeGet(stopTime,timestring=tstr)
+      write(msg,'("hycom_cice stopTime from ocnClock :",a)') trim(tstr)
       call ESMF_LogWrite(msg, ESMF_LOGMSG_INFO, rc=rc)
-      if (localPet .eq. 0 ) print '(a)',msg
+      if (localPet .eq. 0 ) print '(a)',trim(msg)
 c
 c --- HYCOM determines the clock - here we copy HYCOMS ocnClock to CICEs iceClock
       iceClock = ESMF_ClockCreate(ocnClock)
@@ -254,7 +255,7 @@ c --- Initialize SEAICE gridded component
      &                              importState=iceImpState,
      &                              exportState=iceExpState,
      &                                    phase=1,
-     &                                 syncflag=ESMF_SYNC_NONBLOCKING,
+     &                                 syncflag=ESMF_SYNC_BLOCKING,
      &                                    clock=iceClock,
      &                                       rc=rc)
       if (ESMF_LogFoundError(rc,
@@ -301,7 +302,7 @@ C --- from CICE component
      &                              importState=ocnImpState,
      &                              exportState=ocnExpState,
      &                                    phase=2,
-     &                                 syncflag=ESMF_SYNC_NONBLOCKING,
+     &                                 syncflag=ESMF_SYNC_BLOCKING,
      &                                    clock=ocnClock,
      &                                       rc=rc)
       if (ESMF_LogFoundError(rc,
@@ -354,7 +355,7 @@ c ----- OCEAN
         do its= 1,OCN_nts_cpl !couple period, OCEAN
           if     (localPet.eq.0) then !master
             write(6,'(a,3i8)') 
-     &         'OCEAN run - icpl,its,ocn_nts_cpl = ',
+     &         'OCEAN  run - icpl,its,ocn_nts_cpl = ',
      &         icpl,its,ocn_nts_cpl
           endif
           OCN_get_import = its.eq.1           !import at start of period
@@ -379,7 +380,7 @@ c -------- Run HYCOM model for one step
      &                           importState=ocnImpState,
      &                           exportState=ocnExpState,
      &                                 phase=1,
-     &                              syncflag=ESMF_SYNC_NONBLOCKING,
+     &                              syncflag=ESMF_SYNC_BLOCKING,
      &                                 clock=ocnClock,
      &                                    rc=rc)
           if (ESMF_LogFoundError(rc,
@@ -403,7 +404,7 @@ c ----- SEAICE. Only run if esmf set in HYCOM blkdat.input
         if (OCN_iceflg .eq. 2) then
         do its= 1,ice_nts_cpl !couple period, SEAICE
           if     ( localPet.eq.0) then !master
-            write(6,'(a,3i4)') 
+            write(6,'(a,3i8)') 
      &         'SEAICE run - icpl,its,ice_nts_cpl = ',
      &         icpl,its,ice_nts_cpl
           endif
@@ -438,7 +439,7 @@ c ------- Run CICE model one step
      &                           importState=iceImpState,
      &                           exportState=iceExpState,
      &                                 phase=1,
-     &                              syncflag=ESMF_SYNC_NONBLOCKING,
+     &                              syncflag=ESMF_SYNC_BLOCKING,
      &                                 clock=iceClock,
      &                                    rc=rc)
           if (ESMF_LogFoundError(rc,
@@ -491,28 +492,28 @@ c ----- Check that the clock times match. Only if actual coupled model run
 c
            write(msg,'("hycom_cice clock mismatch")')
            call ESMF_LogWrite(msg, ESMF_LOGMSG_ERROR, rc=rc)
-           if (localPet.eq.0) print '(a)',msg
+           if (localPet.eq.0) print '(a)',trim(msg)
 c
 c -------- Get HYCOM clock properties 
-           call ESMF_TimeGet(ocnTime,timestring=msg)
-           write(msg,'("ocnClock:",a)') trim(msg)
+           call ESMF_TimeGet(ocnTime,timestring=tstr)
+           write(msg,'("ocnClock:",a)') trim(tstr)
            call ESMF_LogWrite(msg, ESMF_LOGMSG_ERROR, rc=rc)
-           if (localPet.eq.0) print '(a)',msg
+           if (localPet.eq.0) print '(a)',trim(msg)
 c
 c -------- Get CICE clock properties 
-           call ESMF_TimeGet(iceTime,timestring=msg)
-           write(msg,'("iceClock:",a)') trim(msg)
+           call ESMF_TimeGet(iceTime,timestring=tstr)
+           write(msg,'("iceClock:",a)') trim(tstr)
            call ESMF_LogWrite(msg, ESMF_LOGMSG_ERROR, rc=rc)
-           if (localPet.eq.0) print '(a)',msg
+           if (localPet.eq.0) print '(a)',trim(msg)
 c
            goto 10
         end if
 c
 c ----- Print ocnClock (same as ice clock)
-        call ESMF_TimeGet(ocnTime,timestring=msg)
-        write(msg,'("ocnClock and iceClock:",a)') trim(msg)
+        call ESMF_TimeGet(ocnTime,timestring=tstr)
+        write(msg,'("ocnClock and iceClock:",a)') trim(tstr)
         call ESMF_LogWrite(msg, ESMF_LOGMSG_INFO, rc=rc)
-        if (localPet.eq.0) print '(a)',msg
+        if (localPet.eq.0) print '(a)',trim(msg)
       enddo !icpl
       call ESMF_VMBarrier(worldVM)
 c
@@ -525,7 +526,7 @@ c --- Finalize OCEAN gridded component
      &                            importState=ocnImpState,
      &                            exportState=ocnExpState,
      &                                  phase=1,
-     &                               syncflag=ESMF_SYNC_NONBLOCKING,
+     &                               syncflag=ESMF_SYNC_BLOCKING,
      &                                     rc=rc)
       if (ESMF_LogFoundError(rc,
      &    msg="OCEAN  Finalize failed", rcToReturn=rc2))
@@ -536,7 +537,7 @@ c --- Finalize SEAICE gridded component
      &                            importState=iceImpState,
      &                            exportState=iceExpState,
      &                                  phase=1,
-     &                               syncflag=ESMF_SYNC_NONBLOCKING,
+     &                               syncflag=ESMF_SYNC_BLOCKING,
      &                                     rc=rc)
       if (ESMF_LogFoundError(rc,
      &    msg="SEAICE Finalize failed", rcToReturn=rc2))
