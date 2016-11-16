@@ -241,9 +241,12 @@ cp relax_sal_m01.b relax_sal.b
 cp relax_tem_m01.b relax_tem.b
 #
 for  MM  in  02 03 04 05 06 07 08 09 10 11 12 ; do
-  tail +6 relax_int_m${MM}.b >> relax_int.b
-  tail +6 relax_sal_m${MM}.b >> relax_sal.b
-  tail +6 relax_tem_m${MM}.b >> relax_tem.b
+  #tail +6 relax_int_m${MM}.b >> relax_int.b
+  #tail +6 relax_sal_m${MM}.b >> relax_sal.b
+  #tail +6 relax_tem_m${MM}.b >> relax_tem.b
+  tail -n +6 relax_int_m${MM}.b >> relax_int.b
+  tail -n +6 relax_sal_m${MM}.b >> relax_sal.b
+  tail -n +6 relax_tem_m${MM}.b >> relax_tem.b
 done
 #
 cp relax_int_m01.a relax_int.a
@@ -254,6 +257,7 @@ for MM in  02 03 04 05 06 07 08 09 10 11 12 ; do
   cat relax_int_m${MM}.a >> relax_int.a
   cat relax_sal_m${MM}.a >> relax_sal.a
   cat relax_tem_m${MM}.a >> relax_tem.a
+  #ls -al relax_int.a
 done
 ${pput} relax_int.b ${D}/relax_int.b
 ${pput} relax_int.a ${D}/relax_int.a
