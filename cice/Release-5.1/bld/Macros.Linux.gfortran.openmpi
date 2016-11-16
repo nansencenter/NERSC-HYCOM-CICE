@@ -19,7 +19,7 @@ FIXEDFLAGS := -132
 FREEFLAGS  := 
 # work-around for gcc to ensure that denormailzed numbers are 
 # flushed to zero: -march=pentium4 -msse2 -mfpmath=sse
-FFLAGS     := -O2 -w -fconvert=big-endian
+FFLAGS     := -O2 -w -fconvert=big-endian -fdefault-real-8
 MOD_SUFFIX := mod
 LD         := $(FC)
 LDFLAGS    := $(FFLAGS) -v

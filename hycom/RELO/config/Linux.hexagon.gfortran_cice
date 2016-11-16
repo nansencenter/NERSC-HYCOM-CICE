@@ -19,8 +19,8 @@ FC            = ftn
 INCLUDES      = -I$(MPI_HOME)/include  -I${ESMF_MOD_DIR} -I${ESMF_DIR}/include -I./CICE/rundir/compile
 
 # KAL optimization options not really explored
-FCFFLAGS      =	-fconvert=big-endian -r8 -O2 $(INCLUDES)
-F90FLAGS      =	-fconvert=big-endian -r8 -O2 $(INCLUDES)
+FCFFLAGS      =	-fconvert=big-endian -fdefault-real-8 -O2 $(INCLUDES)
+F90FLAGS      =	-fconvert=big-endian -fdefault-real-8 -O2 $(INCLUDES)
 
 CC            =	cc
 CCFLAGS       =	-O 
