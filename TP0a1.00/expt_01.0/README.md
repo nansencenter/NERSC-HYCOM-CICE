@@ -1,13 +1,29 @@
-This is the experiment directory. It will contain the necessary input files as well 
-as the hycom source and executable, and the output files. There are directories for logs, 
-scratch (where the model runs) and data (where output data is placed).
+This is the experiment directory. It will contain necessary input files as well 
+as the hycom source and executable, and the output files. Below is a description of the
+subdirectories
 
-# Environment
+    ├── build     # where the model is compiled
+    ├── data      # where model output is stored
+    ├── log       # logs ...
+    └── SCRATCH   # where the model runs
+
+# HYCOM and CICE input files
+
+The HYCOM input file is 
+
+    blkdat.input
+
+The CICE input file is
+ 
+    ice_in
+
+
+# Environment setup (EXPT.src)
 
 Scratch/data directories are set in EXPT.src. Scratch directories are where the
-models run, the expt_preprocess.sh script will copy necessary files to that location
+models run, the expt_preprocess.sh script (see below) will copy necessary files to that location
 before running the model. Data directories are where model output is stored. The
-expt_postprocess.sh script will move data files from the scratch directory to the
+expt_postprocess.sh (see below) script will move data files from the scratch directory to the
 data directory. It is possible to modify these by setting these environment variables
 in EXPT.src:
 
@@ -16,7 +32,7 @@ in EXPT.src:
 
 by default these are set relative to the experiment directory, given by environment variable $P.
 
-Note that by sourcing the REGION.src file (in the top-level region directory)
+Note that by sourcing the REGION.src file (in the region directory, above this one)
 and the EXPT.src file (in the experiment directory), the shell wil set the
 variables S and D which point to the scratch and data directories respectively.
 type 
@@ -29,68 +45,81 @@ or
 
 to go to the respective directories.
 
-Most of the scripts in ../../bin/ source the REGION.src and EXPT.src files before 
+Most of the shell scripts in $NHCROOT/bin/ source the REGION.src and EXPT.src files before 
 proceeding.
 
-# HYCOM environment settings
+# HYCOM environment settings in EXPT.src
 
-Some HYCOM environment settings are controlled by EXPT.src. This is the setting for equation of state, and the number of MPI
-tasks to use. These are set by setting these variables in EXPT.src:
+Some HYCOM environment settings are controlled by EXPT.src. Below is a list
 
-    export SIGVER=2   # Version of equation of state (this is 7-term sigma 2). Must not cause conflict with thflag in blkdat.input
-    export NMPI=4     # Number of MPI threads to use
+    export SIGVER=2      # Version of equation of state (this is 7-term sigma 2). Must not cause conflict with thflag in blkdat.input
+    export NMPI=4        # Number of MPI threads to use
+    X="01.0"             # Experiment number, it should match experiment directory name (expt_01.0)
+    E="010"              # E is X without "."
+    T="01"               # Topography version
+    export V=2.2.98      # hycom version              
 
 The SIGVER variable is used by the compile script to get the correct equation of state (it basically modifies stmt_fns.h in the
-hycom build directory).
+hycom build directory). The $T variable is used to choose the bathymetries to use (you can have different bathymetries for different experiments).
 
 # Compiling HYCOM-CICE
 
-HYCOM-CICE compilation is complicated, since we have to compile two models, find the correct configuration files, etc etc. A script exists that is meant to take care of all this, it is called "compile_model.sh
+HYCOM-CICE compilation is complicated, since we have to compile two models, find the correct configuration files, etc etc. A script exists that is meant to take care of all this, and can be found in $NHCROOT/bin/compile_model.sh. It can be run without arguments, to get a brief explanation of its arguments. Here is some typical use cases
 
+    #compile for hexagon using portland compilers (NB: module PrgEnv-pgi must be loaded!)
+    $NHCROOT/bin/compile_model.sh pgi
+    
+    #compile for generic linux with gnu fortran and openmpi mpi  libraries.
+    $NHCROOT/bin/compile_model.sh -m openmpi pgi
 
-# expt_preprocess.sh
+To configure for other architectures you will need to create macro files suitable for your system. For a more
+in-depth description of the compile script, see  [TODO](TODO)
+    
+
+# Preprocessing (script $NHCROOT/bin/expt_preprocess.sh)
 
 This script will fetch the files needed to run the model and place them in the 
 SCRATCH directory. * This script can be run interactively, this is useful as you can catch
 most errors before starting a job *
 
 In most cases you will be alerted if there is a missing files
-or if there are inconcistencies, but it will not catch every error. The expt_preprocess.sh is called like this:
+or if there are inconcistencies, but it will not catch every error. The expt_preprocess.sh is called like this from the
+experimend directory:
 
-   ../../bin/expt_preprocess.sh 2015-01-01T00:00:00 2015-01-10T00:00:00 
+   $NHCROOT/bin/expt_preprocess.sh 2015-01-01T00:00:00 2015-01-10T00:00:00 
 
 or 
 
-   ../../bin/expt_preprocess.sh 2015-01-01T00:00:00 2015-01-10T00:00:00  --init
+   $NHCROOT/bin/expt_preprocess.sh 2015-01-01T00:00:00 2015-01-10T00:00:00  --init
 
-The optional init flag tells that the script is to set up hycom from a initial state.
+The optional init flag tells that the script is to set up hycom from a initial state using climatology.
 *NB: In new hycom versions, model initialization works even if hycom yrflag==3.*
 
 You will have to set the iniflg in blkdat.input appropriately if you wish to initialize
-the model. Depending on the value of iniflg, you may also have to create relaxation 
+the hycom model. Depending on the value of iniflg, you may also have to create relaxation 
 fields first.
 
 
 # Running jobs
 
-Before jobs are run the scripts expt_preprocess.sh must be run, this can be set in
-the job queue script. You can also run this script from the experiment
+Before jobs are run the script $NHCROOT/bin/expt_preprocess.sh must be run, this can be set in
+the job queue script. You can also run this script interactively from the experiment
 directory, to make sure you have all data files you need. It should cover most
 of the data files we use, and handle most (but not all) inconsistencies. If there
 is a inconsistency not caught by the script, it will eventually be caught by hycom.
 
-If you add new data files for the model, you will have to modify preprocess.sh
+If you add new data files for the model, you will have to modify expt_preprocess.sh
 so that the script copies them to the scratch directory. Otherwise you must copy
 them by hand to the scratch directory.
 
-postprocess.sh copies files from the scratch directory to your data directory.
+$NHCROOT/bin/expt_postprocess.sh copies files from the scratch directory to your data directory.
 If you find some files are not copied from the  scratch directory you will have
-to modify postprocess.sh. Also, if a job runs out of time, expt_postprocess.sh will
-not be run. In that case you can run the postprocess.sh script interactively to
+to modify expt_postprocess.sh. Also, if a job runs out of time, expt_postprocess.sh will
+not be run. In that case you can run the expt_postprocess.sh script interactively to
 retrieve the files to the data directory.
 
 Job scripts will have to be modified from machine to machine, but the
-expt_preprocess.sh /expt_postprocess.sh scripts should be able to run on all machines.
+expt_preprocess.sh and expt_postprocess.sh scripts should be able to run on all machines.
 
 # create_ref_case.sh
 
@@ -100,4 +129,49 @@ This script sets up basic input files .... TODO
 
 A example job script for the pbs system is given in pbsjob.sh. It is set up for hexagon,
 but with some modifications it should work on most cray XT systems.
+
+# Example EXPT.src file 
+
+
+    # Example EXPT.src file
+    #!/bin/bash
+    #
+    # Sets environment for this experiment, also makes the scratch (S) and
+    # data (D) directories if not already present
+
+    #
+    #
+    # --- R is region name.
+    # --- V is source code version number.
+    # --- T is topography number.
+    # --- K is number of layers.
+    # --- E is expt number.
+    # --- P is primary path.
+    # --- D is permanent directory.
+    # --- S is scratch   directory, must not be the permanent directory.
+    #
+    # hycom executable will be retrieved from Build_V${V}_X${X}. ex: Build_V2.2.12_X01.0
+    #
+    mydir=$(cd $(dirname ${BASH_SOURCE}) && pwd)
+    unset -v X E T V K P D S
+    X="01.0"                # X based on dir name (expt_03.1)
+    E="010"                 # E is X without "."
+    T="01"                                                           # Topography version
+    export V=2.2.98                                                  # hycom version              
+    #export K=`grep "'kdm   ' =" blk* | awk '{printf("%03d", $1)}'`   # get kdm from blkdat
+    export K=`grep "'kdm   ' =" $mydir/blkdat.input | awk '{printf("%03d", $1)}'`   # get kdm from blkdat
+    export P=$mydir                                                  #  ---""---
+    export D=$P/data                                                 # Where data ends up
+    export S=$P/SCRATCH                  # Scratch area 
+
+    export SIGVER=2   # Version of equation of state (this is 7-term sigma 2). Must not cause conflict with thflag in blkdat.input
+    export NMPI=4
+
+    # Consistency check. Ensures expt dir ends in expt_X
+    #echo $tmp
+    tmp=$(basename $P)
+    if [ "$tmp" != "expt_${X}" ] ;then
+       echo "Error: Mismatch between path of experiment $P and assumed name expt_${X}"
+       exit 1
+    fi
 
