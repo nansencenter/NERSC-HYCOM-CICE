@@ -114,11 +114,11 @@ fi
 #
 # --- Set up time limits
 #
-cmd="$BASEDIR/../python/hycom_limits.py $starttime $endtime $initstr"
+cmd="$BINDIR/hycom_limits.py $starttime $endtime $initstr"
 echo "*Setting up HYCOM time limits : $cmd "
 eval $cmd ||  tellerror "$cmd failed"
 if [ $ICEFLG -eq 2 ] ; then
-   cmd="$BASEDIR/../python/cice_limits.py $initstr $starttime $endtime $NMPI $P/ice_in"
+   cmd="$BINDIR/cice_limits.py $initstr $starttime $endtime $NMPI $P/ice_in"
    echo "*Setting up CICE  time limits : $cmd "
    eval $cmd ||  tellerror "$cmd failed"
 fi

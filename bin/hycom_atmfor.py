@@ -216,8 +216,9 @@ if __name__ == "__main__" :
           tmp = datetime.datetime.strptime( values, "%Y-%m-%dT%H:%M:%S")
           setattr(args, self.dest, tmp)
    parser = argparse.ArgumentParser(description='Prepare HYCOM forcing files from a set of input files')
-   parser.add_argument('--plot_diag', action="store_true")
+   parser.add_argument('--plot_diag', action="store_true",help="Plot diagnostics")
    parser.add_argument('--nersc_forcing', action="store_true")
+   parser.add_argument('--rootpath',   type=str, help='overrides rootpath set in xml file',default="")
    parser.add_argument('start_time', action=DateTimeParseAction, help='Start time in UTC zone. Format = YYYY-mm-ddTHH:MM:SS')
    parser.add_argument('end_time',   action=DateTimeParseAction, help='Stop  time in UTC zone. Format = YYYY-mm-ddTHH:MM:SS')
    parser.add_argument('xml_file',   type=str, help='xml file containing definition of forcing dataset(s)')
@@ -227,5 +228,5 @@ if __name__ == "__main__" :
 
 
    # Set up AtmosphericForcing object, which keeps track of data to be read
-   af=modeltools.forcing.atmosphere.AtmosphericForcing(args.xml_file,args.xml_id)
+   af=modeltools.forcing.atmosphere.AtmosphericForcing(args.xml_file,args.xml_id,rootpath=args.rootpath)
    atmfor(args.start_time,args.end_time,af,plot_diag=args.plot_diag,nersc_forcing=args.nersc_forcing)#,gridfile="regional.grid",blkdat_file="blkdat.input")

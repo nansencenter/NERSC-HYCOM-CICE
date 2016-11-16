@@ -20,6 +20,8 @@ sourceconfdir=$BASEDIR/../hycom/RELO/config/
 
 
 usage="
+   This script must be run in an experiment directory as it needs to read EXPT.src
+
    On first invocation this script will fetch hycom source from $sourcedir,
    place it in the build directory, set up and compile the model.
 
@@ -27,7 +29,7 @@ usage="
    the setting of SIGVER in EXPT.src.
 
    NB: On subsequent calls, this script will compile the model, but not update with code
-   from $sourcedir, unless update_flag = update ....
+   from $sourcedir, unless you provide the -u flag
 
    Why choose this behaviour? 
    --------------------------
@@ -37,33 +39,32 @@ usage="
    code in $sourcedir, then pushed to the code repository
 
    Example:
-      $(basename $0) 
+      $(basename $0) [ -u ]  [ -m mpi_library ]  compiler
 
-   ARCH        : architecture to compile for. Currently supported:
-      xt4 
-      linux
-   update_flag : if set to update, code will be synced from $sourcedir to the build dir
+   arguments   :
+      compiler : compiler to use for. Currently supported: ifort gfortran pgi
+
+   optional arguments :
+      -u              : update code in build dir from NHCROOT/hycom/RELO/
+      -m mpi_library  : on some machines you need to specify what mpi library to use
 
 
    Examples:
-      $(basename $0) xt4 
-         will compile the model code inside the local build/ directory. If the build dir does not 
-         exist,it will be created and code synced from $sourcedir.
+      $(basename $0) pgi
+         will compile the model code inside the local build/ directory. Portland compilers are used.
+         If the build dir does not exist,it will be created and code synced from $sourcedir. 
 
-      $(basename $0) xt4  update
-         will compile the model code inside the local build/ directory. If the build dir does not 
-         exist,it will be created.  Code will ALWAYS be synced from $sourcedir, so local changes will
-         be overwritten.
-
+      $(basename $0) -u  pgi
+         will compile the model code inside the local build/ directory. Portland compilers are used.
+         Code will ALWAYS be synced from $sourcedir, so local changes will be overwritten.
 "
 
-options=$(getopt -o c:m:u -- "$@")
+options=$(getopt -o m:u -- "$@")
 [ $? -eq 0 ] || {
     echo "$usage"
     echo "Incorrect options provided"
     exit 1
 }
-compiler=""
 mpilib=""
 eval set -- "$options"
 while true; do
@@ -144,7 +145,10 @@ if [[ -n "${ESMF_DIR}" ]] &&  [[ -n "${ESMF_MOD_DIR}" ]] && [[ -n "${ESMF_LIB_DI
 # If site is given, use hardcoded settings for this machine
 elif [ "$SITE" == "hexagon" ] ; then
    module load craype-interlagos
-   export ESMF_DIR=/home/nersc/knutali/opt/esmf_5_2_0rp3-nonetcdf/
+   if [[ -z "${ESMF_DIR}" ]] ; then
+      # use as default
+      export ESMF_DIR=/home/nersc/knutali/opt/esmf_5_2_0rp3-nonetcdf/
+   fi
    export ESMF_MOD_DIR=${ESMF_DIR}/mod/modO/Unicos.$compiler.64.mpi.default/
    export ESMF_LIB_DIR=${ESMF_DIR}/lib/libO/Unicos.$compiler.64.mpi.default/
 
