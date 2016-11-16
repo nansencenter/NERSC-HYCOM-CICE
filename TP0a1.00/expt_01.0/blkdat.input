@@ -21,7 +21,7 @@ S-Z(15-11): dp00/f/x/i=3m/1.125/12m/1m; ds=1m/1.125/4m; src_2.2.12;
    6.0	  'isotop' = shallowest depth for isopycnal layers     (m, <0 from file)
   35.0	  'saln0 ' = initial salinity value (psu), only used for iniflg<2
    1	  'locsig' = locally-referenced pot. density for stability (0=F,1=T)
-   2	  'kapref' = thermobaric ref. state (-1=input,0=none,1,2,3=constant)
+   0	  'kapref' = thermobaric ref. state (-1=input,0=none,1,2,3=constant)
    2	  'thflag' = reference pressure flag (0=Sigma-0, 2=Sigma-2)
   34.0	  'thbase' = reference density (sigma units)
    0	  'vsigma' = spacially varying isopycnal target densities (0=F,1=T)
@@ -196,3 +196,8 @@ S-Z(15-11): dp00/f/x/i=3m/1.125/12m/1m; ds=1m/1.125/4m; src_2.2.12;
    0	  'trcrlx' = activate lat. bound. tracer nudging  (0=F,1=T)
    1	  'priver' = rivers as a precipitation bogas      (0=F,1=T)
    0     'epmass' = treat evap-precip as a mass exchange (0=F,1=T)
+   0     'nmrsti' = 'restart'  Restart filename. Dot and date appended. Empty: use old hycom name.
+   0     'nmrsto' = 'restart'  Restart filename. Dot and date appended. Empty: use old hycom name.
+   0     'nmarcs' = '' Surface archive filename. Dot and date appended. Empty: use old hycom name.
+   0     'nmarcv' = '' Full    archive filename. Dot and date appended. Empty: use old hycom name.
+   0     'nmarcm' = '' Mean    archive filename. Dot and date appended. Empty: use old hycom name.
