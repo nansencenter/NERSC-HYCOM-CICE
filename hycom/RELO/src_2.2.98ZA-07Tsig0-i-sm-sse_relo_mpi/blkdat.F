@@ -2423,18 +2423,18 @@ c
 c
 c --- read in one string
       read(uoff+99,'(a)',iostat=itmp) tmp
-c
-c --- End of input reached
-      if (itmp<0) then
-         svar=trim(sdefault)
-         return
-      end if
+      if (itmp /= 0) then
+         tmp=""
+      endif
 c
 c --- NB: ivar is ignored for now, but can be used to indicate type of datestring, etc
       itmp = index(tmp,"=")
       svar=""
-      read(tmp(1:itmp),*) ivar,cvarin
-      read(tmp(itmp+1:len_trim(tmp)),*) svar
+      cvarin=""
+      if (itmp > 0 ) then
+         read(tmp(1:itmp),*) ivar,cvarin
+         read(tmp(itmp+1:len_trim(tmp)),*) svar
+      endif
 c     if (mnproc.eq.1) then
 c        print *,itmp
 c        print *,tmp(1:itmp)
