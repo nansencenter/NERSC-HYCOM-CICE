@@ -8,9 +8,9 @@ This is a bref explanation of some of the names used throughout the documentatio
 
 The following illustrates how these directories are usually organized
 
-└── nersc-hycom-cice     # $NHCROOT
-    └── TP0a1.00         # Region directory
-        ├── expt_01.0    # Experiment directory
+    └── nersc-hycom-cice     # $NHCROOT
+        └── TP0a1.00         # Region directory
+            ├── expt_01.0    # Experiment directory
 
 
 
