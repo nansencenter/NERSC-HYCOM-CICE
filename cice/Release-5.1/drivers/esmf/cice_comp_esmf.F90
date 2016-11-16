@@ -448,7 +448,7 @@ end subroutine
       call ESMF_Finalize(rc=rc)
 
    ! Assing mask values
-   mask_ptr(:,:) = 0  !all land, outside active tile
+   !KAL - ups, not pointing enywhere yet ... mask_ptr(:,:) = 0  !all land, outside active tile
    !$OMP PARALLEL DO PRIVATE(iblk,i,j,ilo,ihi,jlo,jhi,ig,jg,this_block, &
    !$OMP                     lbnd,ubnd,mask_ptr)
    do iblk=1,nblocks
