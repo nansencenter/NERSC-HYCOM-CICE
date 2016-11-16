@@ -156,7 +156,8 @@
   , fyear_init      = 1958
   , ycycle          = 52
   , atm_data_format = 'bin'
-  , atm_data_type   = 'LYq'
+!KAL , atm_data_type   = 'LYq'
+  , atm_data_type   = 'None'
   , atm_data_dir    = '/usr/projects/climate/eclare/DATA/gx1v3/LargeYeager/v2_updated/'
   , calc_strair     = .true.
   , highfreq        = .false.
