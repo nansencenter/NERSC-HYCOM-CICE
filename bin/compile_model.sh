@@ -112,14 +112,14 @@ fi
 echo "$(basename $0) : ARCH=$ARCH"
 
 # SITE deduced from hostname. 
-unames=$(uname -s)
+unamen=$(uname -n)
 # Hardcoded cases - hexagon
 if [ "${unamen:0:7}" == "hexagon" ] ; then
    SITE="hexagon"
    MACROID=$ARCH.$SITE.$compiler
 
 # Generic case. SITE is empty
-elif [ "${unames:0:5}" == "Linux" ] ; then
+elif [ "${ARCH}" == "Linux" ] ; then
    SITE=""
    if [ -z "${mpilib}" ] ; then
       echo "mpilib must be set on input running on generic linux machine (-m option)"

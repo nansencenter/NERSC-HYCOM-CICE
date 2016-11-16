@@ -1,1 +1,1 @@
-make.linux.gnu
+make.hexagon.pgi
