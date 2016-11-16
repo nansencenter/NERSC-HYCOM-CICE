@@ -94,7 +94,7 @@ echo "river forcing"
 $BINDIR/river_nersc.sh 100 300 ../../input/rivers.dat > $EDIR/log/ref_river_nersc.out 2>&1
 res=$?
 [ $res -eq 0 ] && echo "Success"
-[ $res -ne 0 ] && echo "Failure..."
+[ $res -ne 0 ] && echo "Failure...  Log in  $EDIR/log/ref_river_nersc.out"
 echo ".."
 
 # Create kpar file
@@ -102,7 +102,7 @@ echo "kpar forcing"
 $BINDIR/seawifs_mon_kpar.sh > $EDIR/log/ref_seawifs.out 2>&1
 res=$?
 [ $res -eq 0 ] && echo "Success"
-[ $res -ne 0 ] && echo "Failure..."
+[ $res -ne 0 ] && echo "Failure...  Log in  $EDIR/log/ref_seawifs.out"
 echo ".."
 
 # Create tiling. 
@@ -110,7 +110,7 @@ echo "grid tiling"
 $BINDIR/tile_grid.sh -2 -2 9.5 ${T} > $EDIR/log/ref_tiling.out 2>&1
 res=$?
 [ $res -eq 0 ] && echo "Success"
-[ $res -ne 0 ] && echo "Failure..."
+[ $res -ne 0 ] && echo "Failure...  Log in  $EDIR/log/ref_tiling.out" 
 echo ".."
 
 echo "If things went fine, you can now generate test forcing like this: "
