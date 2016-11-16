@@ -74,6 +74,8 @@ HYCOM-CICE compilation is complicated, since we have to compile two models, find
 
 To configure for other architectures you will need to create macro files suitable for your system. For a more
 in-depth description of the compile script, see  [TODO](TODO)
+
+The compiled executable will be placed inside the build/src... directory as hycom_cice
     
 
 # Preprocessing (script $NHCROOT/bin/expt_preprocess.sh)
