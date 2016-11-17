@@ -397,7 +397,7 @@ end subroutine
         enddo
       enddo
    enddo
-   !$OMP PARALLEL END DO
+   !$OMP END PARALLEL DO
    call ESMF_VMBarrier(vm, rc=rc)
    call ESMF_LogFlush(rc=rc)
 
@@ -435,7 +435,7 @@ end subroutine
         enddo
       enddo
    enddo
-   !$OMP PARALLEL END DO
+   !$OMP END PARALLEL DO
    call ESMF_VMBarrier(vm, rc=rc)
 
    ! Set up grid2D mask
@@ -489,7 +489,7 @@ end subroutine
         enddo
       enddo
    enddo
-   !$OMP PARALLEL END DO
+   !$OMP END PARALLEL DO
    call ESMF_VMBarrier(vm, rc=rc)
    call ESMF_LogFlush(rc=rc)
 
@@ -518,7 +518,7 @@ end subroutine
          ! The rest (xc,yc) is not set
       enddo
 
-      !$OMP PARALLEL END DO
+      !$OMP END PARALLEL DO
    end if
    call ESMF_VMBarrier(vm, rc=rc)
    call ESMF_LogFlush(rc=rc)

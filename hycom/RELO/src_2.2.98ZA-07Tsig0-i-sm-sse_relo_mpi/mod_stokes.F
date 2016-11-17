@@ -578,8 +578,8 @@ c
 
 !$OMP END PARALLEL DO
 
-!$OMP PARALLEL DO PRIVATE(j,i,k)
-!$OMP&         SCHEDULE(STATIC,jblk)
+c!$OMP PARALLEL DO PRIVATE(j,i,k)
+c!$OMP&         SCHEDULE(STATIC,jblk)
 c
 c                              Calculation of dzdx,dzdy needed in momtum
 c                              -----------------------------------------
@@ -632,9 +632,7 @@ c              endif !iv
 c           enddo  !i
 c         enddo  !j
 c       enddo  !k
-
-
-!$OMP END PARALLEL DO
+c!$OMP END PARALLEL DO
 
 
 
