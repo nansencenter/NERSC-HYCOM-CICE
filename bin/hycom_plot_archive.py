@@ -10,6 +10,10 @@ from mpl_toolkits.basemap import Basemap
 import logging
 import datetime
 import re
+import scipy.interpolate
+import os.path
+import modelgrid
+import simplekml
 
 # Set up logger
 _loglevel=logging.DEBUG
@@ -23,12 +27,138 @@ logger.addHandler(ch)
 logger.propagate=False
 
 
+def gearth_fig(llcrnrlon, llcrnrlat, urcrnrlon, urcrnrlat, pixels=1024):
+    """Return a Matplotlib `fig` and `ax` handles for a Google-Earth Image."""
+    # https://ocefpaf.github.io/python4oceanographers/blog/2014/03/10/gearth/
+    aspect = numpy.cos(numpy.mean([llcrnrlat, urcrnrlat]) * numpy.pi/180.0)
+    xsize = numpy.ptp([urcrnrlon, llcrnrlon]) * aspect
+    ysize = numpy.ptp([urcrnrlat, llcrnrlat])
+    aspect = ysize / xsize
+
+    if aspect > 1.0:
+        figsize = (10.0 / aspect, 10.0)
+    else:
+        figsize = (10.0, 10.0 * aspect)
+
+    if False:
+        plt.ioff()  # Make `True` to prevent the KML components from poping-up.
+    fig = matplotlib.pyplot.figure(figsize=figsize,
+                     frameon=False,
+                     dpi=pixels//10)
+    # KML friendly image.  If using basemap try: `fix_aspect=False`.
+    ax = fig.add_axes([0, 0, 1, 1])
+    ax.set_xlim(llcrnrlon, urcrnrlon)
+    ax.set_ylim(llcrnrlat, urcrnrlat)
+    return fig, ax
+
+
+# Simple routine to create a kml file from field
+
+def to_kml(lon,lat,data,res=0.1) :
+
+   lon2 = numpy.mod(lon+360.,360.)
+
+
+   # New grid
+   minlon=numpy.floor((numpy.min(lon2)/res))*res
+   minlat=numpy.floor((numpy.min(lat)/res))*res
+   maxlon=numpy.floor((numpy.max(lon2)/res))*res
+   maxlat=numpy.floor((numpy.max(lat)/res))*res
+   lo1d = numpy.arange(minlon,maxlon,res)
+   la1d = numpy.arange(minlat,maxlat,res)
+   lo2d,la2d=numpy.meshgrid(lo1d,la1d)
+   print minlon,maxlon,minlat,maxlat
+
+   if os.path.exists("grid.info") :
+
+      grid=modelgrid.ConformalGrid.init_from_file("grid.info")
+      map=grid.mapping
+
+      # Index into model data, using grid info
+      I,J=map.ll2gind(la2d,lo2d)
+      print J.min()
+      print J.max()
+      print I.min()
+      print I.max()
+
+      # Mask out points not on grid
+      K=J<data.shape[0]-1
+      K=numpy.logical_and(K,I<data.shape[1]-1)
+      K=numpy.logical_and(K,J>=0)
+      K=numpy.logical_and(K,I>=0)
+
+      # Pivot point 
+      Ii=I.astype('i')
+      Ji=J.astype('i')
+
+      # Takes into account data mask
+      tmp =numpy.logical_and(K[K],~data.mask[Ji[K],Ii[K]])
+      K[K]=tmp
+      
+      tmp=data[Ji[K],Ii[K]]
+      a,b=numpy.where(K) 
+      z=numpy.zeros(K.shape)
+      z[a,b] = tmp
+      z=numpy.ma.masked_where(~K,z)
+
+   # Brute force ...
+   else  :
+      K=numpy.where(~data.mask)
+      z=scipy.interpolate.griddata( (lon2[K],lat[K]),data[K],(lo2d,la2d),'cubic')
+      z=numpy.ma.masked_invalid(z)
+      z2=scipy.interpolate.griddata( (lon2.flatten(),lat.flatten()),data.mask.flatten(),(lo2d,la2d),'nearest')
+      z2=z2>.1
+      z=numpy.ma.masked_where(z2,z)
+
+   
+   urcrnrlon = lo1d[-1]
+   urcrnrlat = la1d[-1]
+   llcrnrlon = lo1d[0]
+   llcrnrlat = la1d[0]
+
+
+   fig,ax= gearth_fig(llcrnrlon, llcrnrlat, urcrnrlon, urcrnrlat, pixels=1024)
+   figname="overlay.png"
+   ax.pcolormesh(lo2d,la2d,z)
+   fig.canvas.print_figure(figname,Transparent=True)
+
+   kml=simplekml.Kml()
+   kw={}
+
+   draworder = 0
+   draworder += 1
+   ground = kml.newgroundoverlay(name='GroundOverlay')
+   ground.draworder = draworder
+   ground.visibility = kw.pop('visibility', 1)
+   ground.name = kw.pop('name', 'overlay')
+   ground.color = kw.pop('color', '9effffff')
+   ground.atomauthor = kw.pop('author', 'ocefpaf')
+   ground.latlonbox.rotation = kw.pop('rotation', 0)
+   ground.description = kw.pop('description', 'Matplotlib figure')
+   ground.gxaltitudemode = kw.pop('gxaltitudemode',
+                                 'clampToSeaFloor')
+   ground.icon.href = figname
+   ground.latlonbox.east = llcrnrlon
+   ground.latlonbox.south = llcrnrlat
+   ground.latlonbox.north = urcrnrlat
+   ground.latlonbox.west = urcrnrlon
+
+   kmzfile="overlay.kmz"
+   kml.savekmz(kmzfile)
+
+
 def main(myfiles,fieldname,fieldlevel,idm=None,jdm=None,clim=None,filetype="archive",window=None,
-      cmap="jet",datetime1=None,datetime2=None,vector="") :
+      cmap="jet",datetime1=None,datetime2=None,vector="",tokml=False) :
 
 
    #cmap=matplotlib.pyplot.get_cmap("jet")
    cmap=matplotlib.pyplot.get_cmap(cmap)
+
+   if tokml :
+      ab = abfile.ABFileGrid("regional.grid","r")
+      plon=ab.read_field("plon")
+      plat=ab.read_field("plat")
+      ab.close()
 
    # Prelim support for projections
    bm=None
@@ -124,32 +254,32 @@ def main(myfiles,fieldname,fieldlevel,idm=None,jdm=None,clim=None,filetype="arch
             fld=fld1
          #print fld.min(),fld.max()
 
-         if bm is not None :
-            P=bm.pcolormesh(x[J,I],y[J,I],fld[J,I],cmap=cmap)
-            bm.drawcoastlines()
-            bm.fillcontinents(color='.5',lake_color='aqua')
-            # draw parallels and meridians.
-            bm.drawparallels(numpy.arange(-80.,81.,20.))
-            bm.drawmeridians(numpy.arange(-180.,181.,20.))
-            bm.drawmapboundary() #fill_color='aqua')
+         if tokml :
+            to_kml(plon,plat,fld)
          else :
-            P=ax.pcolormesh(I,J,fld[J,I],cmap=cmap)
-         cb=ax.figure.colorbar(P)
-         if clim is not None : P.set_clim(clim)
-         ax.set_title("%s:%s(%d)"%(myfile0,fieldname,fieldlevel))
+            if bm is not None :
+               P=bm.pcolormesh(x[J,I],y[J,I],fld[J,I],cmap=cmap)
+               bm.drawcoastlines()
+               bm.fillcontinents(color='.5',lake_color='aqua')
+               # draw parallels and meridians.
+               bm.drawparallels(numpy.arange(-80.,81.,20.))
+               bm.drawmeridians(numpy.arange(-180.,181.,20.))
+               bm.drawmapboundary() #fill_color='aqua')
+            else :
+               P=ax.pcolormesh(I,J,fld[J,I],cmap=cmap)
+            cb=ax.figure.colorbar(P)
+            if clim is not None : P.set_clim(clim)
+            ax.set_title("%s:%s(%d)"%(myfile0,fieldname,fieldlevel))
+            if vector: 
+               skip=10
+               I2=I[::skip,::skip]
+               J2=J[::skip,::skip]
+               ax.quiver(I2,J2,fld1[J2,I2],fld2[J2,I2])
+            # Print figure.
+            figure.canvas.print_figure("tst%03d.png"%counter,dpi=180)
+            ax.clear()
+            cb.remove()
 
-         if vector: 
-            skip=10
-            I2=I[::skip,::skip]
-            J2=J[::skip,::skip]
-            ax.quiver(I2,J2,fld1[J2,I2],fld2[J2,I2])
-
-
-         # Print figure.
-         figure.canvas.print_figure("tst%03d.png"%counter,dpi=180)
-
-         ax.clear()
-         cb.remove()
          counter=counter+1
 
       # End i_intloop
@@ -182,6 +312,7 @@ if __name__ == "__main__" :
    parser.add_argument('--datetime1',  action=DateTimeParseAction)
    parser.add_argument('--datetime2',  action=DateTimeParseAction)
    parser.add_argument('--vector',     type=str,default="")
+   parser.add_argument('--tokml',      action="store_true", default=False)
    parser.add_argument('fieldname',  type=str)
    parser.add_argument('fieldlevel', type=int)
    parser.add_argument('filename',   help="",nargs="+")
@@ -191,6 +322,7 @@ if __name__ == "__main__" :
          idm=args.idm,jdm=args.jdm,clim=args.clim,filetype=args.filetype,
          window=args.window,cmap=args.cmap,
          datetime1=args.datetime1,datetime2=args.datetime2,
-         vector=args.vector)
+         vector=args.vector,
+         tokml=args.tokml)
 
 
