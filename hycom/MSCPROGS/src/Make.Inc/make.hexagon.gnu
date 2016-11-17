@@ -30,11 +30,11 @@ CFLAGSR4= -O2
 # Linker flags
 LINKFLAGS= $(FFLAGS)  
 
-#Netcdf, FFTW and lapack Libraries
-INCLUDE= -I$(NETCDF_INC) $(FFTW_INCLUDE_OPTS)
-LIBS =  $(NETCDF_POST_LINK_OPTS) $(FFTW_POST_LINK_OPTS) $(LIB_LAPACK)
+#Netcdf, FFTW and lapack Libraries. Not needed on hexagon
+INCLUDE= 
+LIBS = 
 
 # Some fortran compilers have iargc as built in, 
 # others as library routine
-CPPFLAGS=-DIARGC -DFFTW -DLAPACK
+CPPFLAGS=-UIARGC -DFFTW -DLAPACK
 

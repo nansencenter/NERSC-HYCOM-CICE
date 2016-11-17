@@ -31,11 +31,12 @@ F77FLG= -Mfixed
 #  INC_FFTW = -I/opt/fftw/3.2.2/include
 #  LIB_FFTW = /opt/fftw/3.2.2/lib/libfftw3.a
 #
-# Compiler flags, real8 version
+# Compiler flags, real8 version, optimized
 #FLAGS= -fast -fastsse -byteswapio -g -r8 -Minform=inform
 FFLAGS= -fast -fastsse -byteswapio -g -r8
 CFLAGS= -fast -fastsse
-#FFLAGS= -byteswapio -g -r8 -Minform=inform
+# Compiler flags, real8 version, unoptimized
+#FFLAGS= -byteswapio -g -r8
 #CFLAGS= 
 
 # Compiler flags, real4 version (needed for NCARG routines)
@@ -48,9 +49,9 @@ LINKFLAGS= $(FFLAGS)
 #Netcdf, FFTW and lapack Libraries
 NETCDF_INC =
 
-
-INCLUDE= $(NETCDF_INC) $(FFTW_INCLUDE)
-LIBS =  $(NETCDF_POST_LINK_OPTS) $(FFTW_POST_LINK_OPTS) $(LIB_LAPACK)
+# Not needed on cray machines
+INCLUDE= 
+LIBS =  
 
 # Some fortran compilers have iargc as built in, 
 # others as library routine. NB: CPP flags and libs mustr be consistent
