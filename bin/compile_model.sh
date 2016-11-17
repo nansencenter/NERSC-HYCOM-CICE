@@ -144,6 +144,8 @@ if [[ -n "${ESMF_DIR}" ]] &&  [[ -n "${ESMF_MOD_DIR}" ]] && [[ -n "${ESMF_LIB_DI
 
 # If site is given, use hardcoded settings for this machine
 elif [ "$SITE" == "hexagon" ] ; then
+   module unload craype-barcelona
+   module unload craype-istanbul
    module load craype-interlagos
    if [[ -z "${ESMF_DIR}" ]] ; then
       # use as default
