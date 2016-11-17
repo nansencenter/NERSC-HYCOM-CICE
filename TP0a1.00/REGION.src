@@ -33,8 +33,8 @@ fi
 # PATHS to hycom-supplied ocean climatologies, on specially formatted input files
 export LEVITUS_PATH=/work/shared/nersc/msc/ModelInput/clim/levitus/   
 export PHC_PATH=/work/shared/nersc/msc/ModelInput/clim/PHC/
-#export WOA2013_PATH=/work/shared/nersc/msc/ModelInput/clim/WOA2013/hycom_0.25
-export WOA2013_PATH=$mydir/../input/data/WOA2013/sigma-0/
+export WOA2013_PATH=/work/shared/nersc/msc/ModelInput/clim/WOA2013/hycom_0.25
+#export WOA2013_PATH=$mydir/../input/data/WOA2013/sigma-0/
 
 export SEAWIFS=/work/shared/nersc/msc/ModelInput/clim/seawifs/
 export COADSWIND=/work/shared/nersc/msc/ModelInput/force/wind_ieee/coads/
