@@ -14,12 +14,12 @@ ifeq ($(COMMDIR), mpi)
 else
    FC         :=  ftn
 endif
-FIXEDFLAGS := -ffixed-form 
-FREEFLAGS  := -ffree-form 
-FFLAGS     := -O2 -w -fconvert=big-endian -mcmodel=medium
+FIXEDFLAGS := -f fixed 
+FREEFLAGS  := -f free 
+FFLAGS     := -O2 -h byteswapio -s real64 -s integer32
 
 ifeq ($(THRD), yes)
-   FFLAGS  :=  $(FFLAGS) -openmp
+   FFLAGS  :=  $(FFLAGS) -O omp
 #cesm   CPPDEFS :=  $(CPPDEFS) -DTHREADED_OMP
 endif
 
@@ -45,16 +45,11 @@ endif
 
 ifeq ($(IO_TYPE), netcdf)
    CPPDEFS :=  $(CPPDEFS) -Dncdf
-# No need to set these on Cray syste,
-#   INCLDIR := $(INCLDIR) $(NETCDF)/include
-#   SLIBS   := $(SLIBS) $(NETCDF)/lib -lnetcdf
-#   SLIBS   := $(SLIBS) -L/$(NETCDF_DIR)/lib -pgcpplibs -lnetcdf_c++4 -lnetcdf -lnetcdff
+   SLIBS   := $(SLIBS) -L/$(NETCDF_DIR)/lib -lnetcdf_c++4 -lnetcdf -lnetcdff
 endif
 
-#INCLDIR := $(INCLDIR) -I/$(ESMF_DIR)/include -I/$(ESMF_DIR)/mod/modO/Unicos.pgi.64.mpi.default/
-#SLIBS := -lesmf  $(SLIBS) -L$(ESMF_DIR)/lib/libO/Unicos.pgi.64.mpi.default/ -llapack -lblas -lzceh   -pgcpplibs 
-INCLDIR := $(INCLDIR) -I$(ESMF_DIR)/include -I$(ESMF_MOD_DIR)/
-SLIBS := -lesmf  $(SLIBS) -L$(ESMF_LIB_DIR)/ -llapack -lblas -lzceh   -pgcpplibs 
+INCLDIR := $(INCLDIR) -I/$(ESMF_DIR)/include -I/$(ESMF_MOD_DIR)/
+SLIBS := -lesmf  $(SLIBS) -L$(ESMF_LIB_DIR)/ 
 
 
 

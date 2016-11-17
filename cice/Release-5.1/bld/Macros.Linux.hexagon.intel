@@ -14,9 +14,9 @@ ifeq ($(COMMDIR), mpi)
 else
    FC         :=  ftn
 endif
-FIXEDFLAGS := -ffixed-form 
-FREEFLAGS  := -ffree-form 
-FFLAGS     := -O2 -w -fconvert=big-endian -mcmodel=medium
+FIXEDFLAGS := -132
+FREEFLAGS  := -FR
+FFLAGS     := -O2 -fp-model precise -convert big_endian -assume byterecl -ftz -traceback   -xHost
 
 ifeq ($(THRD), yes)
    FFLAGS  :=  $(FFLAGS) -openmp
@@ -43,18 +43,18 @@ ifeq ($(DITTO), yes)
    CPPDEFS :=  $(CPPDEFS) -DREPRODUCIBLE
 endif
 
-ifeq ($(IO_TYPE), netcdf)
-   CPPDEFS :=  $(CPPDEFS) -Dncdf
-# No need to set these on Cray syste,
-#   INCLDIR := $(INCLDIR) $(NETCDF)/include
-#   SLIBS   := $(SLIBS) $(NETCDF)/lib -lnetcdf
-#   SLIBS   := $(SLIBS) -L/$(NETCDF_DIR)/lib -pgcpplibs -lnetcdf_c++4 -lnetcdf -lnetcdff
+ifeq ($(BARRIERS), yes)
+   CPPDEFS :=  $(CPPDEFS) -Dgather_scatter_barrier
 endif
 
-#INCLDIR := $(INCLDIR) -I/$(ESMF_DIR)/include -I/$(ESMF_DIR)/mod/modO/Unicos.pgi.64.mpi.default/
-#SLIBS := -lesmf  $(SLIBS) -L$(ESMF_DIR)/lib/libO/Unicos.pgi.64.mpi.default/ -llapack -lblas -lzceh   -pgcpplibs 
-INCLDIR := $(INCLDIR) -I$(ESMF_DIR)/include -I$(ESMF_MOD_DIR)/
-SLIBS := -lesmf  $(SLIBS) -L$(ESMF_LIB_DIR)/ -llapack -lblas -lzceh   -pgcpplibs 
+ifeq ($(IO_TYPE), netcdf)
+   CPPDEFS :=  $(CPPDEFS) -Dncdf
+#   INCLDIR :=
+   SLIBS   := $(SLIBS) -L/$(NETCDF_DIR)/lib  -lnetcdf -lnetcdff #-lnetcdf_c++4
+endif
+
+INCLDIR := $(INCLDIR) -I/$(ESMF_DIR)/include -I/$(ESMF_MOD_DIR)/
+SLIBS := -lesmf  $(SLIBS) -L$(ESMF_LIB_DIR)/ 
 
 
 
