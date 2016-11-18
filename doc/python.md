@@ -20,7 +20,7 @@ You will need a  working python 2.7 installation, with the following packages.
 
 * [netCDF4](https://pypi.python.org/pypi/netCDF4)
 
-These depend on other non-python packages being installed, such as udunits and netcdf4. Most of these packages are usually installed on a linux system. If they are missing, you can ask an IT guy to install them on the system. If you want to install them by yourself, there are some pointers below.
+These depend on other non-python packages being installed, such as udunits and netcdf4. Most of these packages are usually installed on a linux system. If they are missing, you can ask an IT guy to install them on the system.
 
 In addition, these packages are required (developed by Knut and available on github):
 
@@ -32,25 +32,6 @@ In addition, these packages are required (developed by Knut and available on git
 
 * [modeltools](https://github.com/knutalnersc/modeltools), a collection of various tools .. 
 
-
-# Installing the python modules on github
-
-
-The github packages are not yet available as installers, and can be installed as follows:
-
-    cd [location_of_my_python_modules]
-    git clone https://github.com/knutalnersc/gridxsec
-    git clone https://github.com/knutalnersc/abfile
-    git clone https://github.com/knutalnersc/modelgrid
-    git clone https://github.com/knutalnersc/modeltools
-
-Replace [location_of_my_python_modules] with the location where you want to install them on your account.
-
-In order to use these locally installed packages you will have to set PYTHONPATH in your shell setup file (.profile / .bash_profile ):
-
-    export PYTHONPATH=$PYTHONPATH:[location_of_my_python_modules]
-
-Again, replace [location_of_my_python_modules] with the actual path
 
 
 # Checking for missing python modules
@@ -70,8 +51,7 @@ If you find some packages are missing have an IT guy install them on the system 
 
 # Installation of missing packages
 
-There are many ways of installing python packages, you can install binary packages (.rpm, .deb etc) for your distribution, you can download source code and compile and install locally, or use python installation tool "pip". The latter is perhaps the easiest
-
+There are many ways of installing python packages, you can install binary packages (.rpm, .deb etc) for your distribution, you can download source code and compile and install locally, or use python installation tool "pip".
 If you need to install a package locally, try to use pip, as it is usually the easiest. The following will install f90nml under your local user account:
 
     knutal@debian:~$ pip install --user f90nml
@@ -86,8 +66,23 @@ If you need to install a package locally, try to use pip, as it is usually the e
     Cleaning up...
     knutal@debian:~$ ls -altr
 
+Note that some machines (ex hexagon) have issues  with SSL certificates. If you get errors when running the command above (or if "pip search f90nml" returns errors about SSL certificates), you can try this command in stead:
+
+    pip install --user  --index-url=http://pypi.python.org/simple/ --trusted-host pypi.python.org f90nml
+
 These files will be installed in your home directory under $HOME/.local/lib/python2.7/site-packages/, where python will automatically find them.
 
 
 
 
+
+# Installing the python modules from github
+
+The github packages can also be installed using the pip tool.  Use the following command to install them:
+
+    pip install --user git+http://github.com/knutalnersc/abfile
+    pip install --user git+http://github.com/knutalnersc/modeltools
+    pip install --user git+http://github.com/knutalnersc/modelgrid
+    pip install --user git+http://github.com/knutalnersc/gridxsec
+
+These files will be installed in your home directory under $HOME/.local/lib/python2.7/site-packages/, where python will automatically find them.
