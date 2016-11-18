@@ -12,8 +12,6 @@ import datetime
 import re
 import scipy.interpolate
 import os.path
-import modelgrid
-import simplekml
 
 # Set up logger
 _loglevel=logging.DEBUG
@@ -49,37 +47,35 @@ def gearth_fig(llcrnrlon, llcrnrlat, urcrnrlon, urcrnrlat, pixels=1024):
     ax = fig.add_axes([0, 0, 1, 1])
     ax.set_xlim(llcrnrlon, urcrnrlon)
     ax.set_ylim(llcrnrlat, urcrnrlat)
+    ax.set_axis_off()
     return fig, ax
 
 
-# Simple routine to create a kml file from field
-
-def to_kml(lon,lat,data,res=0.1) :
-
+def interpolate_to_latlon(lon,lat,data,res=0.1) :
    lon2 = numpy.mod(lon+360.,360.)
-
-
    # New grid
    minlon=numpy.floor((numpy.min(lon2)/res))*res
-   minlat=numpy.floor((numpy.min(lat)/res))*res
-   maxlon=numpy.floor((numpy.max(lon2)/res))*res
-   maxlat=numpy.floor((numpy.max(lat)/res))*res
-   lo1d = numpy.arange(minlon,maxlon,res)
+   minlat=max(-90.,numpy.floor((numpy.min(lat)/res))*res)
+   maxlon=numpy.ceil((numpy.max(lon2)/res))*res
+   maxlat=min(90.,numpy.ceil((numpy.max(lat)/res))*res)
+   #maxlat=90.
+   lo1d = numpy.arange(minlon,maxlon+res,res)
    la1d = numpy.arange(minlat,maxlat,res)
    lo2d,la2d=numpy.meshgrid(lo1d,la1d)
    print minlon,maxlon,minlat,maxlat
 
    if os.path.exists("grid.info") :
+      import modelgrid
 
       grid=modelgrid.ConformalGrid.init_from_file("grid.info")
       map=grid.mapping
 
       # Index into model data, using grid info
       I,J=map.ll2gind(la2d,lo2d)
-      print J.min()
-      print J.max()
-      print I.min()
-      print I.max()
+
+      # Location of model p-cell corner 
+      I=I-0.5
+      J=J-0.5
 
       # Mask out points not on grid
       K=J<data.shape[0]-1
@@ -110,45 +106,96 @@ def to_kml(lon,lat,data,res=0.1) :
       z2=z2>.1
       z=numpy.ma.masked_where(z2,z)
 
-   
-   urcrnrlon = lo1d[-1]
-   urcrnrlat = la1d[-1]
-   llcrnrlon = lo1d[0]
-   llcrnrlat = la1d[0]
+   return lo2d,la2d,z
 
+
+# Simple routine to create a kml file from field
+
+def to_kml(lon,lat,data,fieldname,cmap,res=0.1,clim=None) :
+   import simplekml
+   
+   lo2d,la2d,z= interpolate_to_latlon(lon,lat,data,res=res)
+   urcrnrlon = lo2d[-1,-1]
+   urcrnrlat = la2d[-1,-1]
+   llcrnrlon = lo2d[0,0]
+   llcrnrlat = la2d[0,0]
 
    fig,ax= gearth_fig(llcrnrlon, llcrnrlat, urcrnrlon, urcrnrlat, pixels=1024)
    figname="overlay.png"
-   ax.pcolormesh(lo2d,la2d,z)
+   P=ax.pcolormesh(lo2d,la2d,z,cmap=cmap)
+   if clim is not None : P.set_clim(clim)
    fig.canvas.print_figure(figname,Transparent=True)
 
-   kml=simplekml.Kml()
    kw={}
-
+   kml=simplekml.Kml()
    draworder = 0
    draworder += 1
    ground = kml.newgroundoverlay(name='GroundOverlay')
    ground.draworder = draworder
    ground.visibility = kw.pop('visibility', 1)
-   ground.name = kw.pop('name', 'overlay')
-   ground.color = kw.pop('color', '9effffff')
-   ground.atomauthor = kw.pop('author', 'ocefpaf')
+   ground.name = kw.pop('name', fieldname)
+   ground.color = kw.pop('color', 'ddffffff') # First hex gives transparency
+   ground.atomauthor = kw.pop('author', 'NERSC')
    ground.latlonbox.rotation = kw.pop('rotation', 0)
    ground.description = kw.pop('description', 'Matplotlib figure')
-   ground.gxaltitudemode = kw.pop('gxaltitudemode',
-                                 'clampToSeaFloor')
+   ground.gxaltitudemode = kw.pop('gxaltitudemode', 'clampToGround')
    ground.icon.href = figname
    ground.latlonbox.east = llcrnrlon
    ground.latlonbox.south = llcrnrlat
    ground.latlonbox.north = urcrnrlat
    ground.latlonbox.west = urcrnrlon
-
    kmzfile="overlay.kmz"
    kml.savekmz(kmzfile)
 
 
+def open_file(myfile0,filetype,fieldname,fieldlevel,datetime1=None,datetime2=None,vector="") :
+
+   logger.info("Now processing  %s"%myfile0)
+   m=re.match("(.*)\.[ab]",myfile0)
+   if m :
+      myfile=m.group(1)
+   else :
+      myfile=myfile0
+
+   ab2=None
+   rdtimes=[]
+   if filetype == "archive" :
+      ab = abfile.ABFileArchv(myfile,"r")
+      n_intloop=1
+   #elif filetype == "restart" :
+   #   tmp = abfile.ABFileRestart(myfile,"r",idm=gfile.idm,jdm=gfile.jdm)
+   elif filetype == "regional.depth" :
+      ab = abfile.ABFileBathy(myfile,"r",idm=idm,jdm=jdm)
+      n_intloop=1
+   elif filetype == "forcing" :
+      ab = abfile.ABFileForcing(myfile,"r",idm=idm,jdm=jdm)
+      if vector :
+         file2=myfile.replace(fieldname,vector)
+         logger.info("Opening file %s for vector component nr 2"%file2)
+         ab2=abfile.ABFileForcing(file2,"r",idm=idm,jdm=jdm)
+      if datetime1 is None or datetime2 is None :
+         raise NameError,"datetime1 and datetime2 must be specified when plotting forcing files"
+      else :
+         iday1,ihour1,isec1 = modeltools.hycom.datetime_to_ordinal(datetime1,3)
+         rdtime1 = modeltools.hycom.dayfor(datetime1.year,iday1,ihour1,3)
+         #
+         iday2,ihour2,isec2 = modeltools.hycom.datetime_to_ordinal(datetime2,3)
+         rdtime2 = modeltools.hycom.dayfor(datetime2.year,iday2,ihour2,3)
+         rdtimes=sorted([elem for elem in ab.field_times if elem >rdtime1 and elem < rdtime2])
+         n_intloop=len(rdtimes)
+   else :
+      raise NotImplementedError,"Filetype %s not implemented"%filetype
+   # Check that fieldname is actually in file
+   if fieldname not in  ab.fieldnames :
+      logger.error("Unknown field %s at level %d"%(fieldname,fieldlevel))
+      logger.error("Available fields : %s"%(" ".join(ab.fieldnames)))
+      raise ValueError,"Unknown field %s at level %d"%(fieldname,fieldlevel)
+
+   return n_intloop,ab,ab2,rdtimes
+
+
 def main(myfiles,fieldname,fieldlevel,idm=None,jdm=None,clim=None,filetype="archive",window=None,
-      cmap="jet",datetime1=None,datetime2=None,vector="",tokml=False) :
+      cmap="jet",datetime1=None,datetime2=None,vector="",tokml=False,masklim=None) :
 
 
    #cmap=matplotlib.pyplot.get_cmap("jet")
@@ -180,52 +227,14 @@ def main(myfiles,fieldname,fieldlevel,idm=None,jdm=None,clim=None,filetype="arch
    counter=0
    for myfile0 in myfiles :
 
+      # Open files, and return some useful stuff.
+      # ab2 i used in case of vector
+      # rdtimes is used for plotting forcing fields
+      n_intloop,ab,ab2,rdtimes = open_file(myfile0,filetype,fieldname,fieldlevel,datetime1=datetime1,datetime2=datetime2,vector=vector)
 
-      logger.info("Now processing  %s"%myfile0)
-      m=re.match("(.*)\.[ab]",myfile0)
-      if m :
-         myfile=m.group(1)
-      else :
-         myfile=myfile0
-
-      if filetype == "archive" :
-         ab = abfile.ABFileArchv(myfile,"r")
-         n_intloop=1
-      #elif filetype == "restart" :
-      #   tmp = abfile.ABFileRestart(myfile,"r",idm=gfile.idm,jdm=gfile.jdm)
-      elif filetype == "regional.depth" :
-         ab = abfile.ABFileBathy(myfile,"r",idm=idm,jdm=jdm)
-         n_intloop=1
-      elif filetype == "forcing" :
-         ab = abfile.ABFileForcing(myfile,"r",idm=idm,jdm=jdm)
-         if vector :
-            file2=myfile.replace(fieldname,vector)
-            logger.info("Opening file %s for vector component nr 2"%file2)
-            ab2=abfile.ABFileForcing(file2,"r",idm=idm,jdm=jdm)
-
-         if datetime1 is None or datetime2 is None :
-            raise NameError,"datetime1 and datetime2 must be specified when plotting forcing files"
-         else :
-            iday1,ihour1,isec1 = modeltools.hycom.datetime_to_ordinal(datetime1,3)
-            rdtime1 = modeltools.hycom.dayfor(datetime1.year,iday1,ihour1,3)
-            #
-            iday2,ihour2,isec2 = modeltools.hycom.datetime_to_ordinal(datetime2,3)
-            rdtime2 = modeltools.hycom.dayfor(datetime2.year,iday2,ihour2,3)
-            rdtimes=sorted([elem for elem in ab.field_times if elem >rdtime1 and elem < rdtime2])
-            n_intloop=len(rdtimes)
-
-      else :
-         raise NotImplementedError,"Filetype %s not implemented"%filetype
-
-      # Check that fieldname is actually in file
-      if fieldname not in  ab.fieldnames :
-         logger.error("Unknown field %s at level %d"%(fieldname,fieldlevel))
-         logger.error("Available fields : %s"%(" ".join(ab.fieldnames)))
-         raise ValueError,"Unknown field %s at level %d"%(fieldname,fieldlevel)
 
       # Intloop used to read more fields in one file. Only for forcing for now
       for i_intloop in range(n_intloop) :
-
 
          # Read ab file of different types
          if filetype == "archive" :
@@ -245,18 +254,24 @@ def main(myfiles,fieldname,fieldlevel,idm=None,jdm=None,clim=None,filetype="arch
          else :
             J,I=numpy.meshgrid( numpy.arange(window[1],window[3]),numpy.arange(window[0],window[2]))
 
-         # Create simple figure
-         #figure = matplotlib.pyplot.figure(figsize=(8,8))
-         #ax=figure.add_subplot(111)
+         # Create scalar field for vectors
          if vector : 
             fld = numpy.sqrt(fld1**2+fld2**2)
          else :
             fld=fld1
-         #print fld.min(),fld.max()
+
+         # Apply mask if requested
+         if masklim :
+            fld = numpy.ma.masked_where(fld<=masklim[0],fld)
+            fld = numpy.ma.masked_where(fld>=masklim[1],fld)
 
          if tokml :
-            to_kml(plon,plat,fld)
+            #NB: Window not used
+            if vector :
+               logger.warning("Vector plots in kml not implemented, only plottign vector speed")
+            to_kml(plon,plat,fld,fieldname,cmap)
          else :
+
             if bm is not None :
                P=bm.pcolormesh(x[J,I],y[J,I],fld[J,I],cmap=cmap)
                bm.drawcoastlines()
@@ -303,15 +318,16 @@ if __name__ == "__main__" :
           setattr(args, self.dest, tmp)
 
    parser = argparse.ArgumentParser(description='')
-   parser.add_argument('--clim',       action=ClimParseAction,default=None)
-   parser.add_argument('--cmap',       type=str,default="jet")
-   parser.add_argument('--filetype',   type=str, help='',default="archive")
+   parser.add_argument('--clim',       action=ClimParseAction,default=None,help="range of colormap")
+   parser.add_argument('--masklim',    action=ClimParseAction,default=None,help="mask limits")
+   parser.add_argument('--cmap',       type=str,default="jet",help="matplotlib colormap to use")
+   parser.add_argument('--filetype',   type=str, default="archive",help="filetype to plot (archive by default)")
    parser.add_argument('--window',     action=WindowParseAction, help='firsti,firstj,lasti,lastj', default=None)
    parser.add_argument('--idm',        type=int, help='Grid dimension 1st index []', default=None)
    parser.add_argument('--jdm',        type=int, help='Grid dimension 2nd index []', default=None)
    parser.add_argument('--datetime1',  action=DateTimeParseAction)
    parser.add_argument('--datetime2',  action=DateTimeParseAction)
-   parser.add_argument('--vector',     type=str,default="")
+   parser.add_argument('--vector',     type=str,default="",help="Denotes second vector component")
    parser.add_argument('--tokml',      action="store_true", default=False)
    parser.add_argument('fieldname',  type=str)
    parser.add_argument('fieldlevel', type=int)
@@ -323,6 +339,7 @@ if __name__ == "__main__" :
          window=args.window,cmap=args.cmap,
          datetime1=args.datetime1,datetime2=args.datetime2,
          vector=args.vector,
-         tokml=args.tokml)
+         tokml=args.tokml,
+         masklim=args.masklim)
 
 
