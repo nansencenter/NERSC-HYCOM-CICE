@@ -1,13 +1,29 @@
 #!/bin/bash
 
 msg="
-Usage: $(basename $0) path_to_storage
+Usage: $(basename $0) [-n] path_to_storage
  
 Example: $(basename $0) $HOME/ModelInput/TOPAZ5/TP5a0.06/
  
 Purpose: Copies config files for a region (Any files in region dir + topo files) to a backup location
 "
 
+
+options=$(getopt -o n -- "$@")
+norstore=0
+eval set -- "$options"
+while true; do
+    case "$1" in
+    -n)
+       norstore=1
+        ;;
+    --)
+        shift
+        break
+        ;;
+    esac
+    shift
+done
 
 
 set -e
@@ -29,20 +45,33 @@ if [ $# -ne 1 ] ; then
    tellerror "Need target dir as input"
    exit 1
 fi
-
 targetdir=$1
-if [ ! -d $targetdir ] ; then
-   echo -e $msg
-   tellerror "target dir must be an existing directory"
-   exit 1
+
+
+if [[ $norstore -eq 0 ]] ; then 
+   if [ ! -d $targetdir ] ; then
+      echo -e $msg
+      tellerror "target dir must be an existing directory"
+      exit 1
+   fi
+   [ ! -d $targetdir/topo ] && mkdir $targetdir/topo
+   echo "Copying topo files in $BASEDIR/topo to  $targetdir/topo"
+   cp -r $BASEDIR/topo/* $targetdir/topo
+   echo "Copying files in $BASEDIR/ to  $targetdir/"
+   cp $BASEDIR/* $targetdir/
+else
+
+   # Else do a transfer to norstore: /projects/NS2993K/HYCOM-CICE/Setup/$USER
+   NORSTORE=norstore.uio.no
+   NSUSER=$USER
+   NSBASEDIR=/projects/NS2993K/HYCOM-CICE/Setup/$NSUSER/
+   if [[ $norstore -eq 1 ]] ; then
+      echo "Transferring to backup on $NORSTORE  $USER@$NORSTORE:$NSBASEDIR/$R/topo/"
+      echo "ssh $NSUSER@$NORSTORE mkdir -p $NSBASEDIR/$R/topo/ "
+      ssh $NSUSER@$NORSTORE mkdir -p $NSBASEDIR/$R/topo/ 
+      scp * $NSUSER@$NORSTORE:$NSBASEDIR/$R/topo/ 
+   fi
 fi
-
-[ ! -d $targetdir/topo ] && mkdir $targetdir/topo
-
-echo "Copying topo files in $BASEDIR/topo to  $targetdir/topo"
-cp -r $BASEDIR/topo/* $targetdir/topo
-echo "Copying files in $BASEDIR/ to  $targetdir/"
-cp $BASEDIR/* $targetdir/
 
 echo "Normal exit"
 echo "PS1 :Dont forget to backup config files as well (expt_backup_config.sh)"

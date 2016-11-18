@@ -10,7 +10,7 @@ Usage: $(basename $0) relative_path_to_storage
  
 Example: $(basename $0) 
  
-Purpose: Copies expt config and data files to norstore, placement is relative to $NSBASEDIR
+Purpose: Copies expt config and data files to scratch on norstore, placement is relative to $NSBASEDIR
 
 
 Example:  
