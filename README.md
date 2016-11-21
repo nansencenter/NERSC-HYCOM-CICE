@@ -17,6 +17,7 @@ The following tools are necessary
 
 * A working python 2.7 installation and several python modules, [installation info can be found here](doc/python.md)
 
+* Input data for the model [TODO](TODO)
 
 # Retrieving HYCOM-CICE
 Clone code from main repository 
