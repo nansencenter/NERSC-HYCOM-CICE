@@ -302,8 +302,8 @@ for i in radflx shwflx vapmix \
    # Check range of file against start and stop times
    if [ -f  $DIR/$i.a -a  -f $DIR/$i.b ] 
    then
-      [ ! -s  $DIR/${i}.a  ] || tellerror "$DIR/$i.a: File is empty"
-      [ ! -s  $DIR/${i}.b  ] || tellerror "$DIR/$i.b: File is empty"
+      [ ! -s  $DIR/${i}.a  ] && tellerror "$DIR/$i.a: File is empty"
+      [ ! -s  $DIR/${i}.b  ] && tellerror "$DIR/$i.b: File is empty"
       ln -sf $DIR/${i}.a forcing.${i}.a ||  tellerror "Could not fetch $DIR/$i.a"
       ln -sf $DIR/${i}.b forcing.${i}.b ||  tellerror "Could not fetch $DIR/$i.b"
 
