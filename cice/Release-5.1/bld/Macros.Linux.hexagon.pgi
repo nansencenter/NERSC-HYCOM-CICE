@@ -16,8 +16,11 @@ else
 endif
 FIXEDFLAGS := -Mfixed 
 FREEFLAGS  := -Mfree 
-FFLAGS     := -r8 -i4 -O2 -byteswapio -Mnodclchk -Mextend 
+FFLAGS     := -r8 -i4 -O2 -byteswapio -Mnodclchk -Mextend -fastsse
 #FFLAGS     := -r8 -i4 -g -byteswapio -Mnodclchk -Mextend 
+#FFLAGS     := -r8 -i4 -g  -O0 -byteswapio -Mextend  -Mbounds -Minfo=all -traceback -Mchkfpstk -Mchkstk -Mdalign -Mdclchk -Mdepchk -Miomutex -Mrecursive -Msave -Ktrap=fp 
+#FFLAGS     := -r8 -i4 -g  -O0 -byteswapio -Mextend  -traceback -Ktrap=fp 
+
 
 ifeq ($(THRD), yes)
    FFLAGS  :=  $(FFLAGS) -openmp
