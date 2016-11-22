@@ -1460,6 +1460,12 @@ implicit none
     call cice_setup_esmf(comp,import_state,export_state,EClock,rc)
     !call ESMF_LogWrite("CICE init routine ended",ESMF_LOGMSG_INFO, rc=rc)
 
+    ! Export on init
+    call reset_accumulated_fields()
+    call update_accumulated_fields()
+    call average_accumulated_fields()
+    call cice_put_export(export_state)
+
 end subroutine
 
 
