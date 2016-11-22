@@ -99,7 +99,6 @@ echo "$(basename $0) : mpilib=$mpilib"
 
 # Check ARCH 
 ARCH=$(uname -s)
-ARCHLOWER=$(echo $ARCH | tr '[:upper:]' '[:lower:]' )
 if [[ "$ARCH" == "Linux" ]] ;then
    true
 else 
@@ -112,6 +111,7 @@ fi
 echo "$(basename $0) : ARCH=$ARCH"
 
 # SITE deduced from hostname. 
+unames=$(uname -s)
 unamen=$(uname -n)
 # Hardcoded cases - hexagon
 if [ "${unamen:0:7}" == "hexagon" ] ; then
@@ -119,7 +119,7 @@ if [ "${unamen:0:7}" == "hexagon" ] ; then
    MACROID=$ARCH.$SITE.$compiler
 
 # Generic case. SITE is empty
-elif [ "${ARCH}" == "Linux" ] ; then
+elif [[ "${ARCH}" == "Linux" ]] ; then
    SITE=""
    if [ -z "${mpilib}" ] ; then
       echo "mpilib must be set on input running on generic linux machine (-m option)"
@@ -144,19 +144,29 @@ if [[ -n "${ESMF_DIR}" ]] &&  [[ -n "${ESMF_MOD_DIR}" ]] && [[ -n "${ESMF_LIB_DI
 
 # If site is given, use hardcoded settings for this machine
 elif [ "$SITE" == "hexagon" ] ; then
+
    module unload craype-barcelona
    module unload craype-istanbul
    module load craype-interlagos
+
    if [[ -z "${ESMF_DIR}" ]] ; then
       # use as default
       export ESMF_DIR=/home/nersc/knutali/opt/esmf_5_2_0rp3-nonetcdf/
+      #export ESMF_DIR=/home/nersc/knutali/opt/esmf_6_3_0rp1/
+      #export ESMF_DIR=/home/nersc/knutali/opt/esmf_7_0_0/
    fi
    export ESMF_MOD_DIR=${ESMF_DIR}/mod/modO/Unicos.$compiler.64.mpi.default/
    export ESMF_LIB_DIR=${ESMF_DIR}/lib/libO/Unicos.$compiler.64.mpi.default/
 
+   ## system-wide module, only for pgi
+   ## TODO: Let admins set up INCLUDE opts 
+   #export ESMF_MOD_DIR=${ESMF_DIR}/mod
+   #export ESMF_LIB_DIR=${ESMF_DIR}/lib
+   
+
 
 # If site is not given, try to use a generic setup. MAcro names composed of compiler name and mpi lib name (openmpi, mpich, lam, etc etc(
-elif [ "${unames:0:5}" == "Linux" -a "$SITE" == "" ] ; then
+elif [[ "${unames:0:5}" == "Linux" ]] && [[ "$SITE" == "" ]] ; then
    if [ -z "${ESMF_DIR}" ] ; then
       echo "ESMF_DIR must be set before calling script when running on generic linux machine"
       exit 4
