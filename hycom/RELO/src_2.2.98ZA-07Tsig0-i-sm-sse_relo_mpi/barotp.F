@@ -73,6 +73,8 @@ C
             end do
             draft_u_thk(i,j)=psur1/onem
             draft_u    (i,j)=usur1/max(onemm,psur1)
+CKAL  if (mnproc==1) print '(a,2i5,2f12.3)',"draft u:",i,j,
+CKAL &   draft_u_thk(i,j),draft_u(i,j)
          end if
 C
          if (SEA_V) then
@@ -90,6 +92,8 @@ C
             end do
             draft_v_thk(i,j)=psur1/onem
             draft_v    (i,j)=vsur1/max(onemm,psur1)
+CKAL  if (mnproc==1) print '(a,2i5,2f12.3)',"draft v:",i,j,
+CKAL &   draft_v_thk(i,j),draft_v(i,j)
          end if
 C
       end do
@@ -119,6 +123,17 @@ C --- Subtract Total velocity over draft
      &  + (draft_u(i+1,j)+ubavg(i+1,j,n))*scuy(i+1,j)*draft_u_thk(i+1,j)
      &  - (draft_u(i  ,j)+ubavg(i  ,j,n))*scuy(i  ,j)*draft_u_thk(i  ,j)
      &   )
+CKAL
+CKAL  if (mnproc==1) print '(a,2i5,3i5)',"pbudel_si 0",i,j,
+CKAL &   ip(i-1,j),ip(i,j),ip(i+1,j)
+CKAL  if (mnproc==1) print '(a,2i5,3f12.3)',"pbudel_si 1",i,j,
+CKAL &   si_u(i-1,j),si_u(i,j),si_u(i+1,j)
+CKAL  if (mnproc==1) print '(a,2i5,2f12.3)',"pbudel_si 2",i,j,
+CKAL &   scuy(i+1,j),scuy(i,j)
+CKAL  if (mnproc==1) print '(a,2i5,2f12.3)',"pbudel_si 3",i,j,
+CKAL &   draft_u_thk(i+1,j),draft_u_thk(i,j)
+CKAL  if (mnproc==1) print '(a,2i5,f12.3)', "pbudel_si 4",i,j,
+CKAL &   pbudel_seaice
       end function
 c
 c
@@ -352,12 +367,12 @@ c
 c --------- Include effect of moving ice.
             pbudel=pbudel+pbudel_seaice(i,j,ml)
             pbvdel=pbvdel+pbvdel_seaice(i,j,ml)
-C     if (mnproc==1) print '(i5,a3,i5,4f12.3)' ,i,"-1 ",j,
-C    &   pbudel_seaice(i-1,j),covice(i-1,j),thkice(i-1,j),si_u(i-1,j)
-C     if (mnproc==1) print '(i5,a3,i5,4f12.3)' ,i,"   ",j,
-C    &   pbudel_seaice(i,j),covice(i,j),thkice(i,j),si_u(i,j)
-C     if (mnproc==1) print '(i5,a3,i5,4f12.3)' ,i,"+1 ",j,
-C    &   pbudel_seaice(i+1,j),covice(i+1,j),thkice(i+1,j),si_u(i+1,j)
+CKAL  if (mnproc==1) print '(i5,a3,i5,4f12.3)' ,i,"-1 ",j,
+CKAL &   pbudel_seaice(i-1,j,ml),covice(i-1,j),thkice(i-1,j),si_u(i-1,j)
+CKAL  if (mnproc==1) print '(i5,a3,i5,4f12.3)' ,i,"   ",j,
+CKAL &   pbudel_seaice(i,j,ml),covice(i,j),thkice(i,j),si_u(i,j)
+CKAL  if (mnproc==1) print '(i5,a3,i5,4f12.3)' ,i,"+1 ",j,
+CKAL &   pbudel_seaice(i+1,j,ml),covice(i+1,j),thkice(i+1,j),si_u(i+1,j)
 #endif
 c
             pbavg(i,j,nl)=

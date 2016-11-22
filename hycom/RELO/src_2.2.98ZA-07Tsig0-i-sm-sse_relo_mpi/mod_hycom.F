@@ -2211,6 +2211,12 @@ CKAL    flnmra = restart_name(day1,yrflag,"in")
         flnmrb = trim(flnmra)//".b"
         flnmra = trim(flnmra)//".a"
         call restart_in(nstep0,dtime0, flnmra,flnmrb)
+#if defined(NERSC_HYCOM_CICE)
+        si_u=0.
+        si_v=0.
+        covice=0.
+        thkice=0.
+#endif
         surflx(:,:) = 0.0
         salflx(:,:) = 0.0
         nstep0=nint(dtime0*(86400.0d0/baclin))
