@@ -13,6 +13,8 @@ code into subroutines for initializing, running and finalizing the model.
 
 * Initialize the ESMF Framework
 
+* Create gridded components (models), coupler components, and import/export states for these.
+
 * Register the run, initialize and finalize methods with the ESMF framework.
 
 * Running the ESMF init routines
@@ -32,24 +34,24 @@ are described.
 # Structure code to fit in the ESMF framework
 
 In order to  set up your model code to fit with the ESMF framework, you need to split
-it between a Init phase, a run phase and a finalize stage. Each of these stages
+it between a Init phase, a run phase and a finalize routine. Each of these routines
 can have multiple phases, making it possible to have more fine-grained control
-of the code execution. The stages do the following
+of the code execution. The routines do the following
 
-# # Initialize  stage
+# # Initialize  routine
  
-The initialize stage will take care of initialization of the model, such as
+The initialize routine will take care of initialization of the model, such as
 setting up model grids, set up a initial state, time variables,  etc etc. All the stuff that
 needs to be done before actually running the model.  In addition, the initialize
-stage usually takes care of setting up many of the structures needed by ESMF
+routine usually takes care of setting up many of the structures needed by ESMF
 itself. This involves setting up the description of the grid in a way that
 ESMF can understand (ESMF_Grid), setting up and Export State, and an Import
 State. The two latter will be needed to exhange fields between different models.
 
-In HYCOM, this stage is done by the subroutine HYCOM_Init inside mod_hycom.F , while in CICE,
+In HYCOM, this routine is done by the subroutine HYCOM_Init inside mod_hycom.F , while in CICE,
 it is done by the subroutine ice_init_esmf in esmf/drivers/cice_comp_esmf.F90
 
-# # Run  stage
+# # Run  routine
 
 This step takes care of the actual time integration of the model. In addition it
 will  take care of importing variables from other models from the "Import
@@ -60,7 +62,7 @@ limited number of time steps
 In HYCOM, this is done by the subroutine HYCOM_Run in mod_hycom.F. While in  in CICE,
 it is done by the subroutine ice_run_esmf in esmf/drivers/cice_comp_esmf.F90
 
-# # Finalize stage
+# # Finalize routine
 
 This routine is responsible for making sure the model exits cleanly, as well as
 making sure that ESMF also is closed down in a clean way.
@@ -82,22 +84,28 @@ called like this
         &                                  vm=worldVM,
         &                                  rc=rc)
 
-It is possible to inquire the virtual machine object (here, worldVM), to get
+It is possible to inquire the virtual machine object returned by ESMF_Initialize (here, worldVM), to get
 information at runtime. The following gets the number of MPI tasks (petcount), and
 the rank of this MPI task (localPet)
+
 
          call ESMF_VMGet(worldVM, petCount=petCount, localPET=localPet,
         &                rc=rc)
 
-Once the ESMF f
 
-# Register Start, Run and Finalize stages in ESMF
+# Create gridded components (models), coupler components, and import/export states for these.
 
-This need 
 
-All calls of a models Initialize, Run and Finalize stages will be done through
-the ESMF framework, so ESMF needs to know what routines to call. This is done
-with the setservices call. The following shows the setservices call in HYCOM 
+
+# Register Start, Run and Finalize routines in ESMF
+
+
+All calls of a models Initialize, Run and Finalize routines will be done through
+the ESMF framework, using the ESMF_GridCompInitialize, 
+ESMF_GridCompRun and ESMF_GridCompFinalize routines; so ESMF needs to know what routines do what.
+This is done
+with the setservices call which tells ESMF what routines to run when a model components ESMF_GridCompInitialize, 
+ESMF_GridCompRun and ESMF_GridCompFinalize routines are called. The following shows the setservices call in HYCOM 
 
 
          call ESMF_GridCompSetEntryPoint(
@@ -106,14 +114,12 @@ with the setservices call. The following shows the setservices call in HYCOM
         &     HYCOM_Init,
         &     phase=1,
         &     rc=rc)
-   cKAL  NEW
          call ESMF_GridCompSetEntryPoint(
         &     gridComp,
         &     ESMF_METHOD_INITIALIZE,
         &     HYCOM_Init_2,
         &     phase=2,
         &     rc=rc)
-   cKAL  NEW
          call ESMF_GridCompSetEntryPoint(
         &     gridComp,
         &     ESMF_METHOD_RUN,
@@ -127,7 +133,8 @@ with the setservices call. The following shows the setservices call in HYCOM
         &     phase=1,
         &     rc=rc)
 
-and CICE:
+
+These routines are located in mod_hycom.F. For CICE, the following routines are called
 
 
     call ESMF_GridCompSetEntryPoint(comp, ESMF_METHOD_INITIALIZE, &
@@ -142,6 +149,7 @@ and CICE:
       ice_final_esmf, phase=1, rc=rc)
     if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
 
+these routines are located in drivers/esmf/cice_comp_esmf.F90.
 
 
-# ESMF ts
+# Running the ESMF init routines
