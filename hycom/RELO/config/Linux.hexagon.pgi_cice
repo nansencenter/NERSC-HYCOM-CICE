@@ -23,8 +23,8 @@ INCLUDES      = -I$(MPI_HOME)/include  -I${ESMF_MOD_DIR} -I${ESMF_DIR}/include -
 #F90FLAGS      =	-fastsse -byteswapio -r8 $(INCLUDES)
 #FCFFLAGS      =	-g -byteswapio -r8 $(INCLUDES)
 #F90FLAGS      =	-g -byteswapio -r8 $(INCLUDES)
-FCFFLAGS      =	-byteswapio -r8 $(INCLUDES)
-F90FLAGS      =	-byteswapio -r8 $(INCLUDES)
+FCFFLAGS      = -fastsse -byteswapio -r8 $(INCLUDES)
+F90FLAGS      = -fastsse -byteswapio -r8 $(INCLUDES)
 
 CC            =	cc
 CCFLAGS       =	-O 
@@ -37,7 +37,6 @@ CPPFLAGS      = -DIA32 -DREAL8 -DMPI -DSERIAL_IO -DNAN2003 -DTIMER -DRELO -DUSE_
 
 LD            =	$(FC)
 LDFLAGS       =	$(FCFFLAGS) 
-#EXTRALIBS     = -L${ESMF_LIB_DIR}/ -lesmf -llapack -lblas -lzceh   -pgcpplibs -lnetcdf 
 EXTRALIBS     = -L${ESMF_LIB_DIR}/ -lesmf -pgcpplibs -lnetcdf 
 
 #
