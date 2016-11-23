@@ -1,5 +1,5 @@
 #==============================================================================
-# Makefile macros for "conejo," Linux cluster at LANL
+# Cray compilers on hexagon (not tested)
 #==============================================================================
 
 INCLDIR    := -I. 
@@ -17,7 +17,7 @@ endif
 FIXEDFLAGS := -f fixed 
 FREEFLAGS  := -f free 
 #FFLAGS     := -O2 -h byteswapio -s real64 -s integer32
-FFLAGS     := -O2 -h byteswapio -s real32 -s integer32
+FFLAGS     := -O2 -h byteswapio -s real64 -s integer32
 
 ifeq ($(THRD), yes)
    FFLAGS  :=  $(FFLAGS) -O omp

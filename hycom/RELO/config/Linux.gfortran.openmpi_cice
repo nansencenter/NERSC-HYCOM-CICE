@@ -1,6 +1,5 @@
-#
 # ---------------------------------------------------------------------
-# common definitions for quad-core Cray XT4 MPI real*8
+# common definitions for Linux with openmpi and gfortran compiler
 # ---------------------------------------------------------------------
 #
 # MACROS      DESCRIPTIONS:
@@ -17,14 +16,9 @@
 #
 #FC            = gfortran
 FC            = mpif90
-#INCLUDES      = -I$(MPI_HOME)/include  -I${ESMF_DIR}/mod/modO/Linux.gfortran.64.mpiuni.default/ -I${ESMF_DIR}/include -I./CICE/rundir/compile
 INCLUDES      = -I${ESMF_MOD_DIR} -I${ESMF_DIR}/include -I./CICE/rundir/compile
-
-#FCFFLAGS      =	-fastsse -tp barcelona-64 -byteswapio -r8 $(INCLUDES)
-#FCFFLAGS      =	-fastsse -byteswapio -r8 $(INCLUDES)
-#F90FLAGS      =	-fastsse -byteswapio -r8 $(INCLUDES)
-FCFFLAGS      =	-g -fconvert=big-endian -fdefault-real-8 $(INCLUDES)
-F90FLAGS      =	-g -fconvert=big-endian -fdefault-real-8  $(INCLUDES)
+FCFFLAGS      =	-g -fconvert=big-endian -fdefault-real-8 -fdefault-double-8
+FCFFLAGS      :=	$(FCFFLAGS) $(INCLUDES)
 
 CC            =	mpicc
 CCFLAGS       =	-O 
@@ -36,8 +30,6 @@ CPPFLAGS      = -DIA32 -DREAL8 -DMPI -DSERIAL_IO -UNAN2003 -DTIMER -DRELO -DUSE_
 
 LD            =	$(FC)
 LDFLAGS       =	$(FCFFLAGS) 
-#EXTRALIBS     = -L${ESMF_DIR}/lib/libO/Unicos.pgi.64.mpi.default/ -lesmf -llapack -lblas -lzceh   -pgcpplibs -lnetcdf_c++ -lnetcdf 
-#EXTRALIBS     = -L${ESMF_DIR}/lib/libO/Linux.gfortran.64.mpiuni.default/ -lesmf -llapack -lblas -lzceh   -pgcpplibs -lnetcdf  
 EXTRALIBS     = -L${ESMF_LIB_DIR}  -lnetcdf  -lnetcdff -lrt -lesmf
 
 #
@@ -49,7 +41,6 @@ RM            = \rm -f
 #
 # rules.
 #
-
 .c.o:
 	$(CC) $(CPPFLAGS) $(CCFLAGS)  -c $*.c
 

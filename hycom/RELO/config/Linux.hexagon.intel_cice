@@ -1,6 +1,6 @@
 #
 # ---------------------------------------------------------------------
-# common definitions for quad-core Cray XT4 MPI real*8
+# intel compiler on hexagon
 # ---------------------------------------------------------------------
 #
 # MACROS      DESCRIPTIONS:
@@ -17,7 +17,8 @@
 #
 INCLUDES      = -I$(MPI_HOME)/include  -I${ESMF_MOD_DIR} -I${ESMF_DIR}/include -I./CICE/rundir/compile
 FC            = ftn
-FCFFLAGS      =	-traceback -g -O3 -fp-model source -warn nogeneral -convert big_endian -assume byterecl -real-size 64 -integer-size 32  $(INCLUDES)
+FCFFLAGS      =	-traceback -g -O3 -fp-model source -warn nogeneral -convert big_endian -assume byterecl -real-size 64 -integer-size 32 
+FCFFLAGS      :=	$(FCFFLAGS) $(INCLUDES)
 CC            =	cc
 CCFLAGS       =	-O 
 CPP           =	cpp -P

@@ -1,6 +1,6 @@
 #
 # ---------------------------------------------------------------------
-# common definitions for quad-core Cray XT4 MPI real*8
+# gfortran on hexagon (not tested)
 # ---------------------------------------------------------------------
 #
 # MACROS      DESCRIPTIONS:
@@ -19,9 +19,8 @@ FC            = ftn
 INCLUDES      = -I${ESMF_MOD_DIR} -I${ESMF_DIR}/include -I./CICE/rundir/compile
 
 # KAL optimization options not really explored
-FCFFLAGS      =	-fconvert=big-endian -fdefault-real-8 -O2 $(INCLUDES)
-F90FLAGS      =	-fconvert=big-endian -fdefault-real-8 -O2 $(INCLUDES)
-
+FCFFLAGS      =	-O2 -fconvert=big-endian -fdefault-real-8 -fdefault-double-8
+FCFFLAGS      :=	$(FCFFLAGS) $(INCLUDES)
 CC            =	cc
 CCFLAGS       =	-O 
 CPP           =	cpp -P

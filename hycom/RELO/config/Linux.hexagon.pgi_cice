@@ -1,6 +1,6 @@
 #
 # ---------------------------------------------------------------------
-# common definitions for quad-core Cray XT4 MPI real*8
+# Portland compilers on hexagon
 # ---------------------------------------------------------------------
 #
 # MACROS      DESCRIPTIONS:
@@ -20,11 +20,9 @@ INCLUDES      = -I$(MPI_HOME)/include  -I${ESMF_MOD_DIR} -I${ESMF_DIR}/include -
 
 #FCFFLAGS      =	-fastsse -tp barcelona-64 -byteswapio -r8 $(INCLUDES)
 #FCFFLAGS      =	-fastsse -byteswapio -r8 $(INCLUDES)
-#F90FLAGS      =	-fastsse -byteswapio -r8 $(INCLUDES)
 #FCFFLAGS      =	-g -byteswapio -r8 $(INCLUDES)
-#F90FLAGS      =	-g -byteswapio -r8 $(INCLUDES)
-FCFFLAGS      = -fastsse -byteswapio -r8 $(INCLUDES)
-F90FLAGS      = -fastsse -byteswapio -r8 $(INCLUDES)
+FCFFLAGS      = -fastsse -byteswapio -r8
+FCFFLAGS      := $(FCFFLAGS) $(INCLUDES)
 
 CC            =	cc
 CCFLAGS       =	-O 

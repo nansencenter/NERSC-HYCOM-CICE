@@ -1,5 +1,5 @@
 #==============================================================================
-# Makefile macros for "conejo," Linux cluster at LANL
+# gfortran compilers on hexagon
 #==============================================================================
 
 INCLDIR    := -I. 
@@ -16,7 +16,7 @@ else
 endif
 FIXEDFLAGS := -ffixed-form 
 FREEFLAGS  := -ffree-form 
-FFLAGS     := -O2 -w -fconvert=big-endian -mcmodel=medium
+FFLAGS     := -O2 -w -fconvert=big-endian -mcmodel=medium -fdefault-real-8 -fdefault-double-8
 
 ifeq ($(THRD), yes)
    FFLAGS  :=  $(FFLAGS) -openmp

@@ -1,6 +1,5 @@
 #==============================================================================
-# Makefile macros for Ubuntu 10.04 Linux w/ repository OpenMPI and libnetcdf-dev
-# Geophysical Institute, University of Alaska Fairbanks
+# Linux with openmpi and gfortran
 #==============================================================================
 
 INCLDIR    :=
@@ -19,7 +18,7 @@ FIXEDFLAGS := -132
 FREEFLAGS  := 
 # work-around for gcc to ensure that denormailzed numbers are 
 # flushed to zero: -march=pentium4 -msse2 -mfpmath=sse
-FFLAGS     := -O2 -w -fconvert=big-endian   # -fdefault-real-8
+FFLAGS     := -O2 -w -fconvert=big-endian    -fdefault-real-8 -fdefault-double-8
 MOD_SUFFIX := mod
 LD         := $(FC)
 LDFLAGS    := $(FFLAGS) -v
