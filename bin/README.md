@@ -9,10 +9,13 @@ the hycom setup files (grid and bathymetry) to be present.
 
 # Common functions 
 
-common_functions.sh
+
+
 |source file     | purpose|
 |-------- | -------------|
 |common_functions.sh  | functions used by many of the experiment processing scripts|
+
+
 
 # Experiment setup, configuration, maintenance, backup 
 
