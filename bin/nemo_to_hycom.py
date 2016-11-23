@@ -17,6 +17,7 @@ import os.path
 import time
 import cfunits
 import nemo_mesh_to_hycom
+import sys
 
 # Set up logger
 _loglevel=logging.INFO
@@ -136,11 +137,17 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=False) :
       # time from gridT file. 
       time = ncidt.variables["time_counter"][0]
       tunit = ncidt.variables["time_counter"].units
+      #print tunit,time
       tmp=cfunits.Units(tunit)
       refy, refm, refd=(1958,1,1)
-      tmp2=cfunits.Units("seconds since %d-%d-%d 00:00:00"%(refy,refm,refd))            # Units from CF convention
-      tmp3=cfunits.Units.conform(time,tmp,tmp2)                                         # Transform to new new unit 
-      mydt = datetime.datetime(refy,refm,refd,0,0,0) + datetime.timedelta(seconds=tmp3) # Then calculate dt. Phew!
+      tmp2=cfunits.Units("hours since %d-%d-%d 00:00:00"%(refy,refm,refd))            # Units from CF convention
+      tmp3=cfunits.Units.conform(time,tmp,tmp2)                                       # Transform to new new unit 
+      #print tmp3,type(tmp3)
+      tmp3=int(numpy.round(tmp3))
+      #print tmp3
+      #print datetime.timedelta(hours=tmp3) # Then calculate dt. Phew!
+      mydt = datetime.datetime(refy,refm,refd,0,0,0) + datetime.timedelta(hours=tmp3) # Then calculate dt. Phew!
+      logger.info("Valid time from gridT file:%s"%str(mydt))
 
 
       # Read and calculculate U in hycom U-points. 
@@ -266,11 +273,19 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=False) :
 
 if __name__ == "__main__" :
 
-   parser = argparse.ArgumentParser(description='')
-   parser.add_argument('--first_j',   type=int,default=0)
-   parser.add_argument('--mean',   action="store_true",default=False)
-   parser.add_argument('meshfile',   type=str)
-   parser.add_argument('grid2dfile', type=str, nargs="+")
+   parser = argparse.ArgumentParser(
+         description='This tool will convert NEMO netcdf files to hycom archive files. It will also create grid and topo files for hycom.'
+#         epilog="""Example:
+#   %s GLORYS2V3_mesh_mask.nc GLORYS2V4_1dAV_20130101_20130102_grid2D_R20130102.nc 
+#   
+#   %s GLORYS2V3_mesh_mask.nc --first_j=100  GLORYS2V4_1dAV_20130101_20130102_grid2D_R20130102.nc 
+#   """ %(os.path.basename(sys.argv[0]),os.path.basename(sys.argv[0]))
+         )
+   parser.add_argument('--first_j',   type=int,default=0,help="first j-index to process. Defaults to 0")
+   parser.add_argument('--mean',   action="store_true",default=False,help="if mean flag is set, a mean archive will be created")
+   parser.add_argument('meshfile',   type=str,help="NEMO mesh file in netcdf format")
+   parser.add_argument('grid2dfile', type=str, nargs="+",help="NEMO 2D data file in netcdf format")
+
    args = parser.parse_args()
    main(args.meshfile,args.grid2dfile,first_j=args.first_j,mean_file=args.mean)
 

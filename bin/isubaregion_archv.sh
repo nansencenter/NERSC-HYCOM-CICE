@@ -9,11 +9,11 @@ usage="
    dir with the correct name  (run_isuba_gmapi.sh aims to do this for you).
 
    Usage:
-      $(basename $0) [-s iscan]  new_region_path new_region_expt archive1 archive2 ....
+      $(basename $0) [-s iscan]  new_experiment_path archive1 archive2 ....
 
    Example:
-      $(basename $0) /work/$USER/hycom/TP4a0.12/ 03.1 archv.2013_003_12.a archv.2013_004.a
-      $(basename $0) -s $iscan /work/$USER/hycom/TP4a0.12/ 03.1 archv.2013_003_12.a
+      $(basename $0) /work/$USER/hycom/TP4a0.12/expt_03.1 archv.2013_003_12.a archv.2013_004.a
+      $(basename $0) -s $iscan /work/$USER/hycom/TP4a0.12/expt_03.1 archv.2013_003_12.a
 
    Optional argument 'iscan' has default value of 15. This is the distance that will be scanned on
    this region grid to find  a sea point for the new region grid points.
@@ -38,7 +38,7 @@ while true; do
     shift
 done
 
-if [ $# -lt 3 ] ; then
+if [ $# -lt 2 ] ; then
    echo -e "$usage"
    exit
 fi
@@ -55,16 +55,17 @@ export STARTDIR=$(pwd)
 source ${BASEDIR}/REGION.src || { echo "Could not source ${BASEDIR}/REGION.src" ; exit 1 ; }
 source ./EXPT.src || { echo "Could not source ./EXPT.src" ; exit 1 ; }
 source ${BINDIR}/common_functions.sh || { echo "Could not source ${BINDIR}/common_functions.sh" ; exit 1 ; }
-export SCRATCH=$BASEDIR/subregion/SCRATCH
-[ ! -d $SCRATCH ] && mkdir $SCRATCH
 
 # Explore provided input path to get target region 
 thisexpt=$X
-newregionpath=$1
-newregionexpt=$2
-shift 2
+newexptpath=$1
+newregionpath=$(dirname $newexptpath)
+echo "new experiment path $newexptpath"
+echo "new region path $newregionpath"
 source ${newregionpath}/REGION.src || { echo "Could not source ${newregionpath}/REGION.src" ; exit 1 ; }
-source ${newregionpath}/expt_${newregionexpt}/EXPT.src || { echo "Could not source ${newregionpath}/expt_${newregionexpt}/EXPT.src" ; exit 1 ; }
+source ${newexptpath}//EXPT.src || { echo "Could not source ${newexptpath}/EXPT.src" ; exit 1 ; }
+shift 1
+
 NR=$R
 NX=$X
 NE=$E
@@ -77,6 +78,14 @@ echo "This experiment topo:$T"
 echo "New  region name    :$NR"
 echo "New  experiment     :$NX"
 echo "New  experiment topo:$NT"
+
+
+target_dir=$BASEDIR/subregion/${E}/${NR}_${NE}/
+mkdir -p $target_dir || { echo "Could not create ${target_dir}" ; exit 1 ; }
+target_dir=$(cd ${target_dir} && pwd)/
+echo "Target dir = ${target_dir}"
+export SCRATCH=${target_dir}/SCRATCH
+[ ! -d $SCRATCH ] && mkdir -p $SCRATCH
 
 # Get regional.grid of target region
 target_grid=$NR.regional.grid
@@ -116,12 +125,9 @@ target_idm=$(blkdat_get ${target_grid}.b idm)
 target_jdm=$(blkdat_get ${target_grid}.b jdm)
 
 
-
-#target_dir=../${R}_${E}/${NR}_${NE}/
-target_dir=$BASEDIR/subregion/${E}/${NR}_${NE}/
-mkdir -p $target_dir || { echo "Could not create ${target_dir}" ; exit 1 ; }
-target_dir=$(cd ${target_dir} && pwd)/
-echo "Target dir = ${target_dir}"
+echo
+echo
+echo "Now processing archive files and interpolating to target grid"
 
 logfile=$SCRATCH/isubaregion.log
 touch $logfile && rm $logfile
@@ -151,8 +157,9 @@ for source_archv in $@ ; do
 #c --- 'jdm   ' = latitudinal  array size
 #c --- 'smooth' = smooth interface depths (0=F,1=T)
 #c --- 'iscan ' = How many grid points to search for landfill process
-echo "Running isubaregion. Log can be found in $logfile"
 prog=${HYCOM_ALL}/subregion/src/isubaregion
+echo "Running $prog."
+echo "Log can be found in $logfile"
 #cat << EOF # For diag
 ${prog} >> $logfile <<EOF
 ${target_grid}.a
@@ -175,7 +182,7 @@ EOF
       echo "This is probably due to errors during extrapolation. Check log file $logfile"
       exit 1
    else 
-      echo "Moving ${target_archv}.[ab] to $BASEDIR/subregion/${target_dir}"
+      echo "Moving ${target_archv}.[ab] to ${target_dir}"
       mv ${target_archv}.* ${target_dir}
    fi
    

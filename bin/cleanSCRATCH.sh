@@ -1,5 +1,4 @@
 #!/bin/bash
-
 # Must be in expt dir to run this script
 if [ -f REGION.src ] ; then
    export BASEDIR=$(pwd)
@@ -12,8 +11,14 @@ fi
 export BASEDIR=$BASEDIR/
 echo BASEDIR=$BASEDIR
 
+doit=$1
 scratchdirs=$(find $BASEDIR -type d -name SCRATCH)
 for SCRATCH in $scratchdirs ; do
-   echo "Removing in $SCRATCH"
-   find $SCRATCH -type f -exec rm {} \;
+
+   if [[ ! "$1" == "doit" ]] ; then
+      echo "Candidate for removal $SCRATCH (not removed until 'doit' is  provided as argument to this routine)"
+   else 
+      echo "Removing files in $SCRATCH "
+      find $SCRATCH -type f -exec rm {} \;
+   fi
 done

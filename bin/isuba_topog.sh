@@ -1,16 +1,17 @@
 #!/bin/bash
-export STARTDIR=$(pwd)
-export BASEDIR=$(cd $(dirname $0)/.. && pwd)
-source $BASEDIR/bin/common_functions.sh
-export SCRATCH=$BASEDIR/subregion/SCRATCH
-[ ! -d $SCRATCH ] && mkdir $SCRATCH
 
 usage="
-   Example:
-      $(basename $0) expt  new_region_path new_region_expt 
+
+   This routine must run in a experiment directory.
+
+   The script uses an existing mapping to map bathymetry used by this experiment to the 
+   bathymetry used by the experiment in the directory specified
+
+   Usage:
+      $(basename $0) new_expt
 
    Example:
-      $(basename $0) 90.9 /work/$USER/hycom/TP4a0.12/ 03.1
+      $(basename $0) /work/$USER/hycom/TP4a0.12/expt_03.1
 "
 options=$(getopt -o m:  -- "$@")
 [ $? -lt 4 ] || {
@@ -34,30 +35,49 @@ while true; do
 done
 
 
+export EDIR=$(pwd)
+export BINDIR=$(cd $(dirname $0) && pwd)
+export BASEDIR=$(cd .. && pwd)
+source $BINDIR/common_functions.sh
+
 # Experiment  needs experiment number
-if [ $# -ne 3 ] ; then
+if [ $# -ne 1 ] ; then
    echo -e "$usage"
    exit
 fi
 
 # Explore provided input path to get target region 
+newexptpath=$1
+newregionpath=$(dirname $newexptpath)
 thisexpt=$1
-newregionpath=$2
-newregionexpt=$3
+
 source ${newregionpath}/REGION.src || { echo "Could not source ${newregionpath}/REGION.src" ; exit 1 ; }
-source ${newregionpath}/expt_${newregionexpt}/EXPT.src || { echo "Could not source ${newregionpath}/expt_${newregionexpt}/EXPT.src" ; exit 1 ; }
+source ${newexptpath}/EXPT.src || { echo "Could not source ${newexptpath}/EXPT.src" ; exit 1 ; }
 NR=$R
 NX=$X
 NE=$E
 NT=$T
-source ${BASEDIR}/REGION.src || { echo "Could not source ${BASEDIR}/REGION.src" ; exit 1 ; }
-source ${BASEDIR}/expt_$thisexpt/EXPT.src || { echo "Could not source ${BASEDIR}/expt_$thisexpt/EXPT.src" ; exit 1 ; }
-echo "This region name    :$R"
-echo "This experiment     :$X"
-echo "This experiment topo:$T"
 echo "New  region name    :$NR"
 echo "New  experiment     :$NX"
 echo "New  experiment topo:$NT"
+source ${BASEDIR}/REGION.src || { echo "Could not source ${BASEDIR}/REGION.src" ; exit 1 ; }
+source ${EDIR}/EXPT.src || { echo "Could not source ${EDIR}/EXPT.src" ; exit 1 ; }
+echo "This region name    :$R"
+echo "This experiment     :$X"
+echo "This experiment topo:$T"
+
+target_dir=$BASEDIR/subregion/${E}/${NR}_${NE}/
+[[ ! -d ${target_dir} ]] && mkdir -p ${target_dir}
+export SCRATCH=${target_dir}/SCRATCH
+[ ! -d $SCRATCH ] && mkdir -p $SCRATCH
+
+
+# Get regional.grid of expt region
+source_grid=regional.grid
+tmp=$BASEDIR/topo/regional.grid
+cp ${tmp}.a $SCRATCH/${source_grid}.a || { echo "Could not get ${tmp}.a file " ; exit 1 ; }
+cp ${tmp}.b $SCRATCH/${source_grid}.b || { echo "Could not get ${tmp}.b file " ; exit 1 ; }
+
 
 # Get regional.grid of target region
 target_grid=$NR.regional.grid
@@ -65,11 +85,7 @@ tmp=$newregionpath/topo/regional.grid
 cp ${tmp}.a $SCRATCH/${target_grid}.a || { echo "Could not get ${tmp}.a file " ; exit 1 ; }
 cp ${tmp}.b $SCRATCH/${target_grid}.b || { echo "Could not get ${tmp}.b file " ; exit 1 ; }
 
-# Get topo file of target
-#target_topo=$(topo_file $NR $NT)
-#tmp=$newregionpath/topo/$target_topo
-#cp $tmp.a $SCRATCH/${target_topo}.a || { echo "Could not get $tmp.a " ; exit 1 ; }
-#cp $tmp.b $SCRATCH/${target_topo}.b || { echo "Could not get $tmp.b " ; exit 1 ; }
+# Clear topo file of target
 target_topo=tmp
 touch $SCRATCH/${target_topo}.a && rm $SCRATCH/${target_topo}.a 
 touch $SCRATCH/${target_topo}.b && rm $SCRATCH/${target_topo}.b
@@ -79,8 +95,6 @@ source_topo=$(topo_file $R $T)
 tmp=$BASEDIR/topo/$source_topo
 cp $tmp.a $SCRATCH/${source_topo}.a || { echo "Could not get $tmp.a " ; exit 1 ; }
 cp $tmp.b $SCRATCH/${source_topo}.b || { echo "Could not get $tmp.b " ; exit 1 ; }
-
-
 
 # Get gmap file
 target_gmap=$NR.gmap
@@ -101,11 +115,25 @@ target_jdm=$(blkdat_get ${target_grid}.b jdm)
 
 
 
+prog=${HYCOM_ALL}/subregion/src/isuba_topog 
 logfile=$SCRATCH/isuba_topog.log
 touch $logfile && rm $logfile
-echo "Running isuba_topog. Log can be found in $logfile"
 
-cat <<EOF
+#cat <<EOF
+#${target_gmap}.a
+#${source_topo}.a
+#${target_topo}.a
+#test
+#  ${target_idm}    'idm   '                                                               
+#  ${target_jdm}    'jdm   '    
+#EOF
+
+
+echo
+echo
+echo "Runing bathymetry interpolation routine $prog in directory $SCRATCH"
+echo "Log can be found in $logfile"
+$prog >> $logfile <<EOF
 ${target_gmap}.a
 ${source_topo}.a
 ${target_topo}.a
@@ -114,15 +142,11 @@ test
   ${target_jdm}    'jdm   '    
 EOF
 
-/home/nersc/knutali/Models/hycom/HYCOM_ALL_2.2.72/ALL/subregion/src/isuba_topog >> $logfile <<EOF
-${target_gmap}.a
-${source_topo}.a
-${target_topo}.a
-test
-  ${target_idm}    'idm   '                                                               
-  ${target_jdm}    'jdm   '    
-EOF
+cp ${target_topo}.a  ${target_dir}/${source_topo}.a
+cp ${target_topo}.b  ${target_dir}/${source_topo}.b
 
+echo "New topography file for region in $NR in ${target_dir}/${source_topo}.[ab]"
+echo "Note that topo filename still uses 'old' region and topo version but is interpolated to the new region $NR"
 
 echo "Normal exit"
 exit 0
