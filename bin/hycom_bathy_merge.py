@@ -6,6 +6,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot
 import modeltools.forcing.bathy
+import modeltools.tools
 #import modeltools.hycom.io
 import abfile
 import modeltools.cice.io
@@ -13,6 +14,7 @@ import numpy
 from mpl_toolkits.basemap import Basemap
 import netCDF4
 import logging
+import re
 
 # Set up logger
 _loglevel=logging.DEBUG
@@ -26,9 +28,14 @@ logger.addHandler(ch)
 logger.propagate=False
 
 
-def main(infile_coarse,infile_fine,ncells_linear=20,ncells_exact=3) :
+def main(infile_coarse,infile_fine,
+      ncells_linear=20,
+      ncells_exact=3,
+      check_consistency=False,
+      bathy_threshold=0.) :
 
-   bathy_threshold=0. # TODO
+   #bathy_threshold=0. # TODO
+   logger.info("Bathy threshold is %12.4f"%bathy_threshold)
 
    # Read plon,plat
    gfile=abfile.ABFileGrid("regional.grid","r")
@@ -37,6 +44,8 @@ def main(infile_coarse,infile_fine,ncells_linear=20,ncells_exact=3) :
    gfile.close()
 
    # Read input bathymetry - fine version
+   m=re.match( "^(.*)(\.[ab])", infile_fine)
+   if m : infile_fine=m.group(1)
    bfile=abfile.ABFileBathy(infile_fine,"r",idm=gfile.idm,jdm=gfile.jdm)
    fine_depth_m=bfile.read_field("depth")
    fine_depth_m=numpy.ma.masked_where(fine_depth_m<=bathy_threshold,fine_depth_m)
@@ -44,6 +53,8 @@ def main(infile_coarse,infile_fine,ncells_linear=20,ncells_exact=3) :
    bfile.close()
 
    # Read input bathymetry - coarse version
+   m=re.match( "^(.*)(\.[ab])", infile_coarse)
+   if m : infile_coarse=m.group(1)
    bfile=abfile.ABFileBathy(infile_coarse,"r",idm=gfile.idm,jdm=gfile.jdm)
    coarse_depth_m=bfile.read_field("depth")
    coarse_depth_m=numpy.ma.masked_where(coarse_depth_m<=bathy_threshold,coarse_depth_m)
@@ -84,9 +95,23 @@ def main(infile_coarse,infile_fine,ncells_linear=20,ncells_exact=3) :
    newbathy[-1,:]=bathy_threshold
    #print newbathy.min(),newbathy.max()
 
+
+
+   # Make call to consistency routine
+   if check_consistency :
+      logger.info("Passing merged bathymetry to consistency check ")
+      import hycom_bathy_consistency # Normally in same dir as this python routine, so ok
+      newbathy=hycom_bathy_consistency.main("",[],[],
+            remove_isolated_basins=True,
+            remove_one_neighbour_cells=True,
+            remove_islets=True,
+            remove_inconsistent_nesting_zone=True,
+            inbathy=numpy.ma.masked_where(newbathy<=bathy_threshold,newbathy),
+            write_to_file=False)
+
+
    # Mask data where depth below threshold
    newbathy_m=numpy.ma.masked_where(newbathy<=bathy_threshold,newbathy)
-
 
    # Create netcdf file with all  stages for analysis
    logger.info("Writing bathymetry to diagnostic file bathy_merged.nc")
@@ -125,9 +150,10 @@ def main(infile_coarse,infile_fine,ncells_linear=20,ncells_exact=3) :
    ax.scatter(J,I,20,"r")
    figure.canvas.print_figure("newbathy.png")
 
+
+
    # Print to HYCOM
    abfile.write_bathymetry("MERGED",0,newbathy,bathy_threshold)
-
 
 
 
@@ -136,10 +162,23 @@ if __name__ == "__main__" :
 
 
    parser = argparse.ArgumentParser(description='Ensure consistenct of HYCOM bathy files')
-   parser.add_argument('--ncells_linear', type=int,default=20)
-   parser.add_argument('--ncells_exact', type=int,default=3)
-   parser.add_argument('infile_coarse', type=str)
-   parser.add_argument('infile_fine', type=str)
+   parser.add_argument('--check_consistency', action="store_true",default=False,
+         help="Will pass bathymetry to consistency check before finishing")
+   parser.add_argument('--ncells_linear', type=int,default=20,
+         help="Number of cells in transition zone when going from coarse to fine grid")
+   parser.add_argument('--ncells_exact', type=int,default=3,  
+         help="Number of grid cells in transition zone having same value  as coarse grid")
+   parser.add_argument('--bathy_threshold', type=float,default=0.,
+         help="depths shallower than this are marked as land. input >0 !")
+   parser.add_argument('infile_coarse', type=str,
+         help="bathymetry values  use near edge of domain (normally from a coarse model ...)")
+   parser.add_argument('infile_fine', type=str,
+         help="bathymetry values  use in the interior  of domain (normally from a higher resolution model ...)")
    args = parser.parse_args()
 
-   main(args.infile_coarse,args.infile_fine,ncells_linear=args.ncells_linear,ncells_exact=args.ncells_exact)
+   main(args.infile_coarse,args.infile_fine,
+         ncells_linear=args.ncells_linear,
+         ncells_exact=args.ncells_exact,
+         check_consistency=args.check_consistency,
+         bathy_threshold = args.bathy_threshold,
+         )

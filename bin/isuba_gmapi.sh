@@ -108,7 +108,14 @@ touch ${newmap}.a && rm ${newmap}.a
 touch ${newmap}.b && rm ${newmap}.b
 prog=${HYCOM_ALL}/subregion/src_2.2.12/isuba_gmapi
 logfile=$SCRATCH/gmapi.log
-echo "Running $prog - log in $logfile"
+
+
+
+echo
+echo
+echo "Calculating mapping from region $R to region $NR"
+echo "Running $prog"
+echo "log in $logfile"
 $prog<<EOF > $logfile
 ${newgrid}.a
 ${newmap}.a

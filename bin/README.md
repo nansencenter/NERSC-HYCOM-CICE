@@ -19,17 +19,22 @@ the hycom setup files (grid and bathymetry) to be present.
 
 # Experiment setup, configuration, maintenance, backup 
 
+
 |executable     | purpose|
 |-------- | -------------|
 |region_new.sh  | Sets up a skeleton directory of a region directory, based on another region directory |
 |region_backup.sh | Backs up files for a region (grid and topo), either to local path or to norstore |
 |expt_new.sh  | Creates a new experiment directory , based on an existing experiment directory |
-|expt_postprocess.sh  | Transfers data from the experiment scratch directory to its data directory, for safe(r) keeping |
-|expt_preprocess.sh  | Trransfers necessary input files to scratch in preparation of a model simulation |
 |expt_config_backup.sh  | Backs up a experiment configuration (basic input files, blkdat, ice-in etc) to a local path or to norstore |
 |expt_transfer_norstore_scratch.sh | Transfers data from an experiment directory to scratch on norstore (actual storage on norstore must be done after this |
 |cleanSCRATCH.sh | removes files in every directory named SCRATCH in the experiment or region directory (run wo args will not delete anything, just describe what is going to be deleted)|
 |tar_in_chunks.py | Create tarfiles from files. The tarfiles have a fixed size (specified on input). Meant for use on norstore |
+|hycom_limits.py | Calculates HYCOM time limits from actual input dates. mainly used by expt_preprocess.sh when setting up model |
+|expt_postprocess.sh  | Transfers data from the experiment scratch directory to its data directory, for safe(r) keeping |
+|expt_preprocess.sh  | Trransfers necessary input files to scratch in preparation of a model simulation |
+|compile_model.sh | Script for compiling the HYCOM-CICE model. |
+|tile_grid.sh | Sets up the MPI partitioning of the hycom model. |
+
 
 # Plotting
 
@@ -42,17 +47,33 @@ the hycom setup files (grid and bathymetry) to be present.
 
 
 
-# Generation of input data
+# Generation of relaxation fields
 
+|executable     | purpose|
+|-------- | -------------|
+|z_generic.sh  | Generates a climatology on fixed z levels for the current experiment |
+|relaxi.sh  | Generates a climatology in hybrid coordinates forr the current experiment. Needs z_generic to be run first |
+|relax_rmu.sh  | Generates sidewall relaxation weights |
 
-# Tools
+# Generation of 
 
 
 # Nesting/interpolation tools
+
+|executable     | purpose|
+|-------- | -------------|
 |isuba_gmapi.sh        | Create a horizontal mapping from one region to another |
 |isuba_topog.sh        | Use mapping (see above) to interpolate topo file from one region to another |
 |isubaregion_archv.sh  | Use mapping (see above) to interpolate archive from one region to another |
 |remap_archv.sh        | Do vertical remapping of archive files |
+
+
+# Diagnostic tools 
+
+
+|executable     | purpose|
+|-------- | -------------|
+|hycom_vcoord_plot.py        | Create plots showing the layout of the vertical coordinate specified by blkdat.input|
 
 
 Notebooks
@@ -65,7 +86,6 @@ cice_kmt.py
 cice_kmt.sh
 cice_limits.py
 cleanEXP.sh
-compile_model.sh
 hycom_atmfor.py
 hycom_bathy.py
 hycom_bathy_consistency.py
@@ -73,12 +93,10 @@ hycom_bathy_modify.py
 hycom_date.py
 hycom_grid.py
 hycom_kapref.py
-hycom_limits.py
 hycom_sigma_compare.py
 hycom_sigma_setup.py
 hycom_topo_merge.py
 hycom_topo_ports.py
-hycom_vcoord_plot.py
 hycom_vsigma.py
 hycom_woa13.py
 hycom_woa13_zfiles.py
@@ -89,8 +107,6 @@ nemo_to_hycom.py
 nest_check_ports.sh
 nest_setup_ports.sh
 old
-relax_rmu.sh
-relaxi.sh
 river_nersc.sh
 river_nersc_bio.sh
 river_trip.sh
@@ -98,7 +114,5 @@ scripts_specific
 seawifs_mon_kpar.sh
 setlimits.py
 soda_to_hycom.py
-tile_grid.sh
 woa2013_density_distribution.py
 woa2013_sigma_profile.py
-z_generic.sh

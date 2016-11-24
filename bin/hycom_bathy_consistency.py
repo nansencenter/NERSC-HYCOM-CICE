@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import modeltools.hycom
+import modeltools.tools
 import argparse
 import datetime
 import matplotlib
@@ -24,9 +25,16 @@ logger.addHandler(ch)
 logger.propagate=False
 
 
-def main(infile,blo,bla,remove_isolated_basins=True,remove_one_neighbour_cells=True,remove_islets=True) :
+def main(infile,blo,bla,
+      remove_isolated_basins=True,
+      remove_one_neighbour_cells=True,
+      remove_islets=True,
+      remove_inconsistent_nesting_zone=True,
+      inbathy=None,
+      write_to_file=True,
+      bathy_threshold=0.) :
 
-   bathy_threshold=0. # TODO
+   logger.info("Bathy threshold is %12.4f"%bathy_threshold)
 
    # Read plon,plat
    gfile=abfile.ABFileGrid("regional.grid","r")
@@ -35,17 +43,20 @@ def main(infile,blo,bla,remove_isolated_basins=True,remove_one_neighbour_cells=T
    gfile.close()
 
    # Read input bathymetri
-   bfile=abfile.ABFileBathy(infile,"r",idm=gfile.idm,jdm=gfile.jdm,mask=True)
-   in_depth_m=bfile.read_field("depth")
-   print "in_depth_m type, min, max:",type(in_depth_m),in_depth_m.min(),in_depth_m.max()
-   bfile.close()
+   if inbathy is not None :
+      in_depth_m = inbathy
+   else :
+      bfile=abfile.ABFileBathy(infile,"r",idm=gfile.idm,jdm=gfile.jdm,mask=True)
+      in_depth_m=bfile.read_field("depth")
+      #print "in_depth_m type, min, max:",type(in_depth_m),in_depth_m.min(),in_depth_m.max()
+      bfile.close()
 
 
 
    # Modify basin 
    in_depth=numpy.ma.filled(in_depth_m,bathy_threshold)
    depth=numpy.copy(in_depth)
-   print "depth min max",depth.min(),depth.max()
+   logger.info("depth min max: %f8.0 %f8.0"%(depth.min(),depth.max()))
    it=1
    while it==1 or numpy.count_nonzero(numpy.abs(depth-depth_old)) > 0 :
       depth_old = numpy.copy(depth)
@@ -53,8 +64,10 @@ def main(infile,blo,bla,remove_isolated_basins=True,remove_one_neighbour_cells=T
       if remove_isolated_basins     : depth=modeltools.tools.remove_isolated_basins(plon,plat,depth,blo,bla,threshold=bathy_threshold)
       if remove_islets              : depth=modeltools.tools.remove_islets(depth,threshold=bathy_threshold)
       if remove_one_neighbour_cells : depth=modeltools.tools.remove_one_neighbour_cells(depth,threshold=bathy_threshold)
+      if remove_inconsistent_nesting_zone : depth=modeltools.tools.remove_inconsistent_nesting_zone(depth,threshold=bathy_threshold)
       logger.info("Modified %d points "%numpy.count_nonzero(depth-depth_old) )
       it+=1
+   logger.info("Modifications finished after %d iterations "%(it-1))
    w5=numpy.copy(depth)
 
 
@@ -62,7 +75,7 @@ def main(infile,blo,bla,remove_isolated_basins=True,remove_one_neighbour_cells=T
    w5[:,-1]=bathy_threshold
    w5[0,:]=bathy_threshold
    w5[-1,:]=bathy_threshold
-   print "w5 type min max",type(w5),w5.min(),w5.max()
+   #print "w5 type min max",type(w5),w5.min(),w5.max()
 
    # Mask data where depth below threshold
    w5_m=numpy.ma.masked_where(w5<=bathy_threshold,w5)
@@ -100,7 +113,10 @@ def main(infile,blo,bla,remove_isolated_basins=True,remove_one_neighbour_cells=T
 
 
    # Print to HYCOM and CICE bathymetry files
-   abfile.write_bathymetry("CONSISTENT",0,w5,bathy_threshold)
+   if write_to_file :
+      abfile.write_bathymetry("CONSISTENT",0,w5,bathy_threshold)
+
+   return w5
 
 
 if __name__ == "__main__" :
@@ -113,9 +129,16 @@ if __name__ == "__main__" :
        setattr(args, self.dest, tmp1)
 
    parser = argparse.ArgumentParser(description='Ensure consistenct of HYCOM bathy files')
-   parser.add_argument('--no_remove_isolated_basins'    , action="store_true", default=False)
-   parser.add_argument('--no_remove_islets'             , action="store_true", default=False)
-   parser.add_argument('--no_remove_one_neighbour_cells', action="store_true", default=False)
+   parser.add_argument('--no_remove_isolated_basins'    , 
+         action="store_true", default=False)
+   parser.add_argument('--no_remove_islets'             , 
+         action="store_true", default=False)
+   parser.add_argument('--no_remove_one_neighbour_cells', 
+         action="store_true", default=False)
+   parser.add_argument('--bathy_threshold', type=float,default=0.,
+         help="depths shallower than this are marked as land. input >0 !")
+   parser.add_argument('--no_remove_inconsistent_nesting_zone', action="store_true", default=False,
+         help="points along boundary that dows not allow nesting ste as land")
    parser.add_argument('--basin_point', nargs="*", action=PointParseAction,default=[])
    parser.add_argument('infile', type=str)
    args = parser.parse_args()
@@ -136,4 +159,6 @@ if __name__ == "__main__" :
          remove_isolated_basins    =not args.no_remove_isolated_basins,
          remove_islets             =not args.no_remove_islets        ,
          remove_one_neighbour_cells=not args.no_remove_one_neighbour_cells,
+         remove_inconsistent_nesting_zone=not args.no_remove_inconsistent_nesting_zone,
+         bathy_threshold = args.bathy_threshold,
          )

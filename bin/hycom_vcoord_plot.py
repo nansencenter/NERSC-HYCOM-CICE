@@ -128,10 +128,10 @@ def main(blkdat_file):
 
 
 if __name__ == "__main__" :
-   parser = argparse.ArgumentParser(description='')
-   parser.add_argument('file' , help="blkdat file")
+   parser = argparse.ArgumentParser(description='Creates an illustration of the setting of the hybrid coordinates, as specified in blkdat.input')
+   parser.add_argument('blkdat_file' , help="blkdat file")
    args = parser.parse_args()
-   main(args.file)
+   main(args.blkdat_file)
 
 
 
