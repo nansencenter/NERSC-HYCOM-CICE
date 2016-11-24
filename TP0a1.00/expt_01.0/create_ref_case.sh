@@ -2,11 +2,6 @@
 
 myclim="woa2013" # Climatology to use
 
-
-# What ARCH value to pass to hycom and cice compilation scripts
-#hycom_compile_script_args="linux -c gfortran -m openmpi " # try this on generic linux box
-hycom_compile_script_args="xt4"                           # hexagon
-
 # Must be in expt dir to run this script
 if [ -f EXPT.src ] ; then
    export BASEDIR=$(cd .. && pwd)
@@ -14,45 +9,11 @@ else
    echo "Could not find EXPT.src. This script must be run in expt dir"
    exit 1
 fi
-BINDIR="../../bin"
+#BINDIR="../../bin"
 EDIR=$(pwd)/                           # Location of this script
 BASEDIR=$(cd $(dirname $0)/.. && pwd)/ # Location of basedir
 source $BASEDIR/REGION.src
 source $EDIR/EXPT.src
-source ../../bin//common_functions.sh
-echo "Logs can be found in $EDIR/log"
-[ ! -d $EDIR/log ] && mkdir $EDIR/log/
-echo ".."
-
-#Various settings
-#Get statement function include file from SIGVER
-if [ $SIGVER -eq 1 ] ; then
-   TERMS=7
-   MYTHFLAG=0
-elif [ $SIGVER -eq 2 ] ; then
-   TERMS=7
-   MYTHFLAG=2
-else
-   echo "SIGVER = $SIGVER"
-   echo "So far only 7 term eq of state is supported (SIGVER=1 or 2) is supported"
-   exit 1
-fi
-TERMS2=$(echo 0$TERMS | tail -c3)
-echo "SIGVER      = $SIGVER .There are $TERMS terms in equation of state"
-echo "climatology = $myclim"
-THFLAG=$(blkdat_get blkdat.input thflag)
-IDM=$(blkdat_get blkdat.input idm)
-JDM=$(blkdat_get blkdat.input jdm)
-
-## Create hycom_cice model
-#cd $EDIR
-#echo "Compiling hycom_cice"
-##echo "$BINDIR/compile_model.sh ${hycom_compile_script_args}  > $EDIR/log/ref_hycom.out 2>&1"
-#$BINDIR/compile_model.sh ${hycom_compile_script_args}  > $EDIR/log/ref_hycom.out 2>&1
-#res=$?
-#[ $res -eq 0 ] && echo "Success"
-#[ $res -ne 0 ] && echo "Failure...  Log in $EDIR/log/ref_hycom.out"
-#echo ".."
 
 # Create z-level relaxation files
 cd $EDIR
@@ -107,7 +68,7 @@ echo ".."
 
 # Create tiling. 
 echo "grid tiling"
-$BINDIR/tile_grid.sh -2 -2 9.5 ${T} > $EDIR/log/ref_tiling.out 2>&1
+$BINDIR/tile_grid.sh -2 -2 ${T} > $EDIR/log/ref_tiling.out 2>&1
 res=$?
 [ $res -eq 0 ] && echo "Success"
 [ $res -ne 0 ] && echo "Failure...  Log in  $EDIR/log/ref_tiling.out" 
