@@ -13,22 +13,29 @@ if [ "$tmp" != "${R}" ] ;then
 fi
 
 # Point to the location of the ALL routines from hycom. Assumed to be in repo location
-# Point to the location of the MSC routines. TODO: Include in repo?
-export HYCOM_ALL=$mydir/../hycom/hycom_ALL/hycom_2.2.72_ALL/
-export HYCOM_PYTHON_ROUTINES=$mydir/../bin/
-export INPUTDIR=$mydir/../input/
-export MSCPROGS=$mydir/../hycom/MSCPROGS/
-if [ ! -d $HYCOM_ALL ] ; then
-   echo "Error: Can not find HYCOM_ALL location: $HYCOM_ALL"
-   if [[ $- != *i* ]] ; then
-      #echo not interactive
-      exit 1
+export NHCROOT=$(cd $mydir/../ && pwd)                         # Set this to a different location if necessary (eg out of work)
+export HYCOM_ALL=$NHCROOT/hycom/hycom_ALL/hycom_2.2.72_ALL/    # follows NHCROOT, but can be set differently
+export INPUTDIR=$NHCROOT/input/                                # follows NHCROOT, but can be set differently
+export BINDIR=$NHCROOT/bin/                                    # follows NHCROOT, but can be set differently
+export HYCOM_PYTHON_ROUTINES=$BINDIR                           # follows NHCROOT, but can be set differently
+export MSCPROGS=$NHCROOT/hycom/MSCPROGS/
+
+# Check that the paths are set and are ok 
+for var in "NHCROOT" "HYCOM_ALL" "INPUTDIR" "BINDIR" "MSCPROGS" "HYCOM_PYTHON_ROUTINES" ; do
+   dirname=$(eval "echo \$$var")
+   if [ ! -d $dirname ] ; then
+      echo "Error: Can not find $var location: $dirname"
+      if [[ $- != *i* ]] ; then
+         #echo not interactive
+         exit 1
+      fi
    fi
-fi
+done
 
 
 
-
+# Update path
+export PATH=$BINDIR/:$PATH
 
 # PATHS to hycom-supplied ocean climatologies, on specially formatted input files
 export LEVITUS_PATH=/work/shared/nersc/msc/ModelInput/clim/levitus/   
