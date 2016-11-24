@@ -46,6 +46,23 @@ the hycom setup files (grid and bathymetry) to be present.
 
 
 
+# Generation of grids
+
+
+|executable     | purpose|
+|-------- | -------------|
+|hycom_grid.py       | Create bathymetry based on conformal mapping or on proj4 projection |
+
+
+
+# Generation of bathymetries
+
+|executable     | purpose|
+|-------- | -------------|
+|hycom_bathy_merge.py       | Merges two bathymetries on the same grid. |
+|hycom_bathy_consistency.py | Does a consistency check of a hycom bathymetri (removes isolated basins, single cell islands, etc)|
+|hycom_bathy.py             | Generate hycom bathymetry for a predefined hycom grid |
+
 
 # Generation of relaxation fields
 
@@ -55,9 +72,6 @@ the hycom setup files (grid and bathymetry) to be present.
 |relaxi.sh  | Generates a climatology in hybrid coordinates forr the current experiment. Needs z_generic to be run first |
 |relax_rmu.sh  | Generates sidewall relaxation weights |
 
-# Generation of 
-
-
 # Nesting/interpolation tools
 
 |executable     | purpose|
@@ -66,6 +80,7 @@ the hycom setup files (grid and bathymetry) to be present.
 |isuba_topog.sh        | Use mapping (see above) to interpolate topo file from one region to another |
 |isubaregion_archv.sh  | Use mapping (see above) to interpolate archive from one region to another |
 |remap_archv.sh        | Do vertical remapping of archive files |
+|hycom_topo_ports.py   | Generate a ports.input file suitable for use when nesting |
 
 
 # Diagnostic tools 
@@ -87,16 +102,11 @@ cice_kmt.sh
 cice_limits.py
 cleanEXP.sh
 hycom_atmfor.py
-hycom_bathy.py
-hycom_bathy_consistency.py
 hycom_bathy_modify.py
 hycom_date.py
-hycom_grid.py
 hycom_kapref.py
 hycom_sigma_compare.py
 hycom_sigma_setup.py
-hycom_topo_merge.py
-hycom_topo_ports.py
 hycom_vsigma.py
 hycom_woa13.py
 hycom_woa13_zfiles.py
