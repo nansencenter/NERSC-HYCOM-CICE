@@ -4,9 +4,23 @@ import modeltools.hycom
 import argparse
 import datetime
 import os
+import logging
+
+# Set up logger
+_loglevel=logging.DEBUG
+logger = logging.getLogger(__name__)
+logger.setLevel(_loglevel)
+formatter = logging.Formatter("%(asctime)s - %(name)10s - %(levelname)7s: %(message)s")
+ch = logging.StreamHandler()
+ch.setLevel(_loglevel)
+ch.setFormatter(formatter)
+logger.addHandler(ch)
+logger.propagate=False
 
 
 def main(input,output,value) :
+
+   logger.info("Converting %s from %s to %s"%(input,output,str(value)))
 
    if input == output :
       logger.warning("input format == output format ")
@@ -26,6 +40,7 @@ def main(input,output,value) :
       ih = int(value[2])
       value=modeltools.hycom.dayfor(iy,id,ih,3)
    else :
+      logger.error("input must be either dtime, datetime or ordinal")
       raise NotImplementedError,input
 
    if output == "dtime" :
@@ -36,6 +51,7 @@ def main(input,output,value) :
    elif output == "ordinal" :
       return modeltools.hycom.forday(value,3)
    else :
+      logger.error("output must be either dtime, datetime or ordinal")
       raise NotImplementedError,output
 
 
@@ -49,13 +65,12 @@ if __name__ == "__main__" :
           setattr(args, self.dest, tmp)
 
    parser = argparse.ArgumentParser(description='')
-   parser.add_argument('input',       type=str)
-   parser.add_argument('output',     type=str)
+   parser.add_argument('input',       type=str, 
+      help="Input format; dtime (hycom), datetime (actual date), ordinal (year month day)")
+   parser.add_argument('output',     type=str,
+      help="Output format; dtime (hycom), datetime (actual date), ordinal (year month day)")
    parser.add_argument('value',nargs="+")
    args = parser.parse_args()
 
    value = main(args.input,args.output,args.value)
    print value
-
-
-

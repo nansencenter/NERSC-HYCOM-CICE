@@ -1,5 +1,9 @@
 # Remapping of archive file to new vertical grid
 usage="
+This routine must be run in an experiment dir.
+Echo Remapping of an archive file to vertical configuration specified by blkdat.input 
+in this experiment directory.
+
    Example:
       $(basename $0) archive1 archive2 ....
 
@@ -72,18 +76,21 @@ cd $SCRATCH || { echo "Could not cd to $SCRATCH" ; exit 1 ; }
 echo blkdat_get ${target_grid}.b 
 target_idm=$(blkdat_get regional.grid.b idm)
 target_jdm=$(blkdat_get regional.grid.b jdm)
-echo "New idm          :$target_idm"
-echo "New jdm          :$target_jdm"
+dp00=$(blkdat_get blkdat.input dp00)
+kdmnew=$(blkdat_get blkdat.input kdm)
 
+echo
+echo
 
 for source_archv in $@ ; do
+
+   echo "***"
 
    my_source_archv=$(echo $STARTDIR/$source_archv |  sed "s/\.[ab]$//")
    echo "Processing $my_source_archv"
 
-   #kdm old from archive file (largest "k")
    kdmold=$(archv_property ${my_source_archv}.b kdm)
-   echo "Old kdm          :$kdmold"
+   echo "Old kdm from archv: $kdmold"
 
    target_archv=$(basename ${my_source_archv})
    [ -f ${target_archv}.a ] && rm ${target_archv}.a
@@ -106,8 +113,6 @@ for source_archv in $@ ; do
 #skmap=$(blkdat_get blkdat.input skmap)
 #sigma=$(blkdat_get blkdat.input sigma)
 
-   dp00=$(blkdat_get blkdat.input dp00)
-   kdmnew=$(blkdat_get blkdat.input kdm)
 
 
 
@@ -115,7 +120,9 @@ for source_archv in $@ ; do
 
 prog=${HYCOM_ALL}/archive/src/remap_archv
 logfile="$SCRATCH/remap_archv_${target_archv}.log"
-echo "Running $prog - logfile is $logfile"
+echo "Running : $prog"
+echo "SCRATCH : $SCRATCH"
+echo "Logfile : $logfile"
 if [ -n "$dp00" ] ; then
 #c --- 'flnm_i' = name of original archive file
 #c --- 'flnm_o' = name of target   archive file

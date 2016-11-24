@@ -129,17 +129,17 @@ if __name__ == "__main__" :
        setattr(args, self.dest, tmp1)
 
    parser = argparse.ArgumentParser(description='Ensure consistenct of HYCOM bathy files')
-   parser.add_argument('--no_remove_isolated_basins'    , 
+   parser.add_argument('--no-remove-isolated-basins'    , 
          action="store_true", default=False)
-   parser.add_argument('--no_remove_islets'             , 
+   parser.add_argument('--no-remove-islets'             , 
          action="store_true", default=False)
-   parser.add_argument('--no_remove_one_neighbour_cells', 
+   parser.add_argument('--no-remove-one-neighbour-cells', 
          action="store_true", default=False)
-   parser.add_argument('--bathy_threshold', type=float,default=0.,
+   parser.add_argument('--bathy-threshold', type=float,default=0.,
          help="depths shallower than this are marked as land. input >0 !")
-   parser.add_argument('--no_remove_inconsistent_nesting_zone', action="store_true", default=False,
+   parser.add_argument('--no-remove-inconsistent-nesting-zone', action="store_true", default=False,
          help="points along boundary that dows not allow nesting ste as land")
-   parser.add_argument('--basin_point', nargs="*", action=PointParseAction,default=[])
+   parser.add_argument('--basin-point', nargs="*", action=PointParseAction,default=[])
    parser.add_argument('infile', type=str)
    args = parser.parse_args()
    

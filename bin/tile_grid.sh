@@ -1,30 +1,39 @@
 #!/bin/bash
 # Set up 2d tiling for region
+sfudge="9.5"
+usage="This script will set up the partition files needed when running HYCOM with
+MPI parallelization. The input is the number of partitions along the 1st
+and 2nd dimensions, and the topography version to apply the partitioning to
+
+The fudge factor can be specified as optional argument, default value is $sfudge 
+See also text about sfudge below
+
+Usage:
+   $(basename $0) [-s sfudge] 1st_tile_dimension 2nd_tile_dimension topo_version
+Example:
+   $(basename $0) -2 -2 01 
+  tip  - two negative tile dimensions gives a uniform grid
+from partit routine: 
+ c ---   sfudge:  size fudge factor (0.5 to 9.9, larger for more variation)
+ c ---              < 1.0 to keep all  constant-sized tiles
+ c ---              > 9.0 to shift     constant-sized tiles
+ c ---              > 9.8 to double-up constant-sized tiles "
+
+if [ "$1" == "-s" ]   ; then
+   sfudge=$2
+   shift 2
+fi
+echo "size fudge factor: $sfudge"
+
 
 # Input args
-if [ $# -ne 4 ]  ; then
-    echo "This script will set up the partition files needed when running HYCOM with"
-    echo "MPI parallelization. The input is the number of partitions along the 1st"
-    echo "and 2nd dimensions, and the topography version to apply the partitioning to"
-    echo
-    echo "Usage:" 
-    echo "   $(basename $0) [1st tile dimension] [2nd tile dimension] [sfudge] [topo version]" 
-    echo "Example:" 
-    echo "   $(basename $0) -2 -2 01 " 
-    echo "  tip  - two negative tile dimensions gives a uniform grid "
-    echo "sfudge : "
-    echo " c ---   sfudge:  size fudge factor (0.5 to 9.9, larger for more variation)"
-    echo " c ---              < 1.0 to keep all  constant-sized tiles"
-    echo " c ---              > 9.0 to shift     constant-sized tiles"
-    echo " c ---              > 9.8 to double-up constant-sized tiles"
+if [ $# -ne 3 ]  ; then
+    echo "$usage"
     exit 1
 fi
 iqr=$1
 jqr=$2
-sfudge=$3
-T=$4
-
-
+T=$3
 
 # Set basedir based on relative paths of script
 # Can be troublesome, but should be less prone to errors

@@ -162,13 +162,13 @@ if __name__ == "__main__" :
 
 
    parser = argparse.ArgumentParser(description='Ensure consistenct of HYCOM bathy files')
-   parser.add_argument('--check_consistency', action="store_true",default=False,
+   parser.add_argument('--check-consistency', action="store_true",default=False,
          help="Will pass bathymetry to consistency check before finishing")
-   parser.add_argument('--ncells_linear', type=int,default=20,
+   parser.add_argument('--ncells-linear', type=int,default=20,
          help="Number of cells in transition zone when going from coarse to fine grid")
-   parser.add_argument('--ncells_exact', type=int,default=3,  
+   parser.add_argument('--ncells-exact', type=int,default=3,  
          help="Number of grid cells in transition zone having same value  as coarse grid")
-   parser.add_argument('--bathy_threshold', type=float,default=0.,
+   parser.add_argument('--bathy-threshold', type=float,default=0.,
          help="depths shallower than this are marked as land. input >0 !")
    parser.add_argument('infile_coarse', type=str,
          help="bathymetry values  use near edge of domain (normally from a coarse model ...)")
