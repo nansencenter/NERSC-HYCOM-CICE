@@ -4,6 +4,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import modeltools.hycom
+import modeltools.tools
 import gridxsec
 import logging
 import argparse
@@ -150,124 +151,7 @@ def main(blkdatfile,saltfile,lon,lat,lon2=None,lat2=None,sectionid=None,dpi=180)
    # values to find an approximate vertical coordinate setup. 
    newintf,intsig=modeltools.tools.isopycnal_coordinate_layers(dprofi,sigprof,dp0,numpy.array(sigma),isotop)
 
-
-   # TODO: move into function
-#   # Loop over output layers
-#   newintf=numpy.zeros(intf.shape)
-#   intsig=numpy.zeros(dp0.shape)
-#   for k in range(kdm) :
-#
-#      # Target layer upper interface
-#      upint=newintf[:,k]
-#      #print upint
-#
-#      # Mix water over integration range
-#      dpsum=numpy.zeros(upint.shape)
-#      sgsum=numpy.zeros(upint.shape)
-#      sg   =numpy.zeros(upint.shape)
-#      for k2 in range(nz) :
-#
-#
-#         # Range of this layer
-#         upint2=dprofi[k2]
-#         lwint2=dprofi[k2+1]
-#
-#         # Part of this layer in target layer
-#         u = numpy.maximum(upint2,upint)
-#         l = lwint2
-#         dp=numpy.maximum(0.,l-u)
-#
-#         #Mask where dpsum > 0  
-#         Imask = dpsum > 0.
-#
-#         ####################  dpsum > 0  and summed layer density < target density ###########
-#
-#         # Integrated value of sigma up to this point
-#         sg[Imask]=sgsum[Imask]/dpsum[Imask]
-#
-#         # Mask where target layer heavier than integrated value => Ok to add more layers
-#         Jmask = numpy.logical_and(Imask,sigma[k] > sg)
-#         Jmask = numpy.logical_and(Jmask,~salprof.mask[k2,:])
-#
-#         # Fraction of layer to be added
-#         dpfrac = (dpsum[Jmask]*sg[Jmask] - dpsum[Jmask]*sigma[k]) / (sigma[k] - sigprof[k2,Jmask])
-#
-#         # Can not add more than dp!
-#         dpfrac = numpy.minimum(dpfrac,dp[Jmask]) #
-#
-#         # Dpfrac can be negative if sigprof[k2,Jmask] < sigma[k] ( must mix "negatively"). 
-#         # In that case add entire layer. Perhaps next heavy layer can tip the scale ...
-#         dpfrac=numpy.where(dpfrac < 0.,dp[Jmask],dpfrac)
-#
-#         # Update values 
-#         dpsum[Jmask]=dpsum[Jmask]+dpfrac
-#         sgsum[Jmask]=sgsum[Jmask]+sigprof[k2,Jmask]*dpfrac
-#
-#         # NB: No need to treat summed layer density > target density, since mixing wont 
-#         # enable us to reach target density. (sg can only increase as we sum deeper)
-#
-#
-#         ####################  dpsum == 0  and sigma[k] > sigprof[k2,:] ######################
-#
-#         #sg = sigprof[k2,k2]
-#
-#         # target layer heavier than layer value. Ok to add more layers to mix downward
-#         Jmask = numpy.logical_and(~Imask,sigma[k] >  sigprof[k2,:])
-#         Jmask = numpy.logical_and(Jmask,~salprof.mask[k2,:])
-#         dpsum[Jmask]=dpsum[Jmask]+dp[Jmask]
-#         sgsum[Jmask]=sgsum[Jmask]+sigprof[k2,Jmask]*dp[Jmask]
-#
-#         # No need to treat new layer density > target layer density, since mixing wont enable 
-#         # us to reach target density
-#
-#         #################### ######################################### ######################
-#
-#
-#
-#
-#      # end k2 loop
-#      #print dpsum
-#
-#      # Make sure dpsum adheres to minimum layer thickness
-#      dpsum=numpy.maximum(dpsum,dp0[:,k])
-#      
-#      # Adjust layer interface
-#      newintf[:,k+1] = newintf[:,k] + dpsum
-#
-#      # MAke sure lowest interface is above sea floor
-#      newintf[:,k+1] = numpy.minimum(newintf[:,k+1],maxd)
-#      
-#      # Effective layer thickness
-#      dpsum = newintf[:,k+1] - newintf[:,k]
-#
-#      # Estimated sigma
-#      msk=dpsum>0.
-#      intsig[msk,k]=sgsum[msk]/dpsum[msk]
-#
-#      # TODO: Keep track of final layer density for all layers (not just isopycnals)
-#   # End k loop
-#
-#   # Make sure bottom layer reaches sea floor
-#   newintf[:,kdm] = numpy.maximum(newintf[:,kdm],maxd)
-#   newintfmid=(newintf[:,1:]+newintf[:,:-1])*.5
-
-
-
-#   # Smooth eine bitchen...
-#   if maxd.size > 5 :
-#      w=numpy.ones(5)
-#      for k in range(kdm+1) :
-#         newintf[:,k]=numpy.convolve(w/w.sum(),newintf[:,k],mode="same")
-#         # But make sure we adhere to minimum layer thicknesses and max depth
-#         if k>0 :
-#            newintf[:,k]=numpy.maximum( newintf[:,k-1]+dp0[:,k-1], newintf[:,k])
-#         newintf[:,k]=numpy.minimum( newintf[:,k],maxd[:])
-
-
    # TODO: Integrate over temp and sal profiles for plotting these
-
-
-
 
 
    # Find segments where its ok to place layer legend
@@ -393,6 +277,9 @@ def main(blkdatfile,saltfile,lon,lat,lon2=None,lat2=None,sectionid=None,dpi=180)
    # Plot density of original data
    f,ax = plt.subplots(1,figsize=(10,5))
    P=ax.pcolormesh(x,-dprof,sigprof,cmap="Paired")
+   print x.shape,x
+   print dprof.shape
+   print sigprof.shape
    CS=ax.contour(x,-dprof,sigprof,sigma)
    ax.clabel(CS, inline=1, fontsize=4)
    f.colorbar(P,ax=ax)
