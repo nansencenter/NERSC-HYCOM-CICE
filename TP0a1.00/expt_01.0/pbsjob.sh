@@ -17,8 +17,8 @@
 ##PBS -l walltime=00:40:00,mppwidth=4
 #PBS -l walltime=00:15:00,mppwidth=4
 #
-#  The job needs 100mb  memory per cpu:
-#PBS -l mppmem=100mb
+#  The job needs 500mb  memory per cpu:
+#PBS -l mppmem=500mb
 #
 #  Send me an email on  a=abort, b=begin, e=end
 #
@@ -71,7 +71,7 @@ echo "End   time in pbsjob.sh: $END"
 
 # Enter Scratch/run dir and Run model
 cd $S  ||  { echo "Could not go to dir $S  "; exit 1; }
-aprun -n $NMPI -m 100M ./hycom_cice  > ../log/hycom.${PBS_JOBID}.out 2>&1
+aprun -n $NMPI -m 500M ./hycom_cice  > ../log/hycom.${PBS_JOBID}.out 2>&1
 
 # Cleanup and move data files to data directory - must be in "expt_XXX" dir for this script
 cd $P     ||  { echo "Could not go to dir $P  "; exit 1; }
