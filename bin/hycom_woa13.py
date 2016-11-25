@@ -26,97 +26,6 @@ logger.addHandler(ch)
 logger.propagate=False
 
 
-#class Sigma(object) :
-#
-#   DTHIRD=1.0/3.0
-#
-#
-#   def __init__(self,flag) :
-## --- coefficients for sigma-0 (based on Brydon & Sun fit)
-#      self._sigma=flag
-#      if flag == 0 :
-#         self.C1=-1.36471E-01
-#         self.C2= 4.68181E-02
-#         self.C3= 8.07004E-01
-#         self.C4=-7.45353E-03
-#         self.C5=-2.94418E-03
-#         self.C6= 3.43570E-05
-#         self.C7= 3.48658E-05
-#      elif flag == 2 :
-#         self.C1=-1.36471E-01
-#         self.C2= 4.68181E-02
-#         self.C3= 8.07004E-01
-#         self.C4=-7.45353E-03
-#         self.C5=-2.94418E-03,
-#         self.C6= 3.43570E-05
-#         self.C7= 3.48658E-05
-#      else :
-#         raise ValueError,"flag<>0 not implemented"
-#
-#   def A0(self,S) :
-#      return (self.C1+self.C3*S)/self.C6
-#
-#   def A1(self,S) :
-#      return (self.C2+self.C5*S)/self.C6
-#
-#   def A2(self,S) : 
-#      return (self.C4+self.C7*S)/self.C6
-#
-#   def CUBQ(self,S) :
-#      return self.DTHIRD*A1(S)-(self.DTHIRD*A2(S))**2
-#
-#   def CUBR(self,R,S) :
-#      return self.DTHIRD*(0.50*A1(S)*A2(S)-1.50*(A0(S)-R/self.C6)) -(self.DTHIRD*A2(S))**3
-#
-#   def CUBAN(self,R,S) :
-#      return self.DTHIRD*ATAN2(SQRT(MAX(DZERO,-(self.CUBQ(S)**3+CUBR(R,S)**2))),CUBR(R,S))
-#
-#   def CUBRL(self,R,S) :
-#      return SQRT(-self.CUBQ(S))*COS(self.CUBAN(R,S))
-#
-#   def CUBIM(self,R,S) :
-#      return SQRT(-self.CUBQ(S))*SIN(self.CUBAN(R,S))
-#
-## --- temp (deg c) as a function of sigma and salinity (mil)
-#   def TOFSIG(self,R,S) :
-#      return -self.CUBRL(R,S)+SQRT(3.)*self.CUBIM(R,S)-self.DTHIRD*self.A2(S)
-#
-## --- salinity (mil) as a function of sigma and temperature (deg c)
-#   def SOFSIG(self,R,T) :
-#      return (R-self.C1-T*(self.C2+T*(self.C4+self.C6*T)))/(self.C3+T*(self.C5+self.C7*T))
-#
-## --- sigma-theta as a function of temp (deg c) and salinity (mil)
-## --- (friedrich-levitus 3rd degree polynomial fit)
-#   def SIG(self,T,S) :
-#      return (self.C1+self.C3*S+T*(self.C2+self.C5*S+T*(self.C4+self.C7*S+self.C6*T)))
-#
-## --- auxiliary statements for finding root of 3rd degree polynomial
-##     A0(S)=(C1+C3*S)/C6
-##     A1(S)=(C2+C5*S)/C6
-##     A2(S)=(C4+C7*S)/C6
-##     CUBQ(S)=DTHIRD*A1(S)-(DTHIRD*A2(S))**2
-##     CUBR(R,S)=DTHIRD*(0.5D0*A1(S)*A2(S)-1.5D0*(A0(S)-R/C6))
-##    .   -(DTHIRD*A2(S))**3
-## --- if q**3+r**2>0, water is too dense to yield real root at given
-## --- salinitiy. setting q**3+r**2=0 in that case is equivalent to
-## --- lowering sigma until a double real root is obtained.
-##     CUBAN(R,S)=DTHIRD*ATAN2(SQRT(MAX(DZERO,
-##    .   -(CUBQ(S)**3+CUBR(R,S)**2))),CUBR(R,S))
-##     CUBRL(R,S)=SQRT(-CUBQ(S))*COS(CUBAN(R,S))
-##     CUBIM(R,S)=SQRT(-CUBQ(S))*SIN(CUBAN(R,S))
-##
-## --- temp (deg c) as a function of sigma and salinity (mil)
-##     TOFSIG(R,S)=-CUBRL(R,S)+SQRT(3.)*CUBIM(R,S)-DTHIRD*A2(S)
-##
-## --- salinity (mil) as a function of sigma and temperature (deg c)
-##     SOFSIG(R,T)=(R-C1-T*(C2+T*(C4+C6*T)))/(C3+T*(C5+C7*T))
-##
-## --- sigma-theta as a function of temp (deg c) and salinity (mil)
-## --- (friedrich-levitus 3rd degree polynomial fit)
-##     SIG(T,S)=(C1+C3*S+T*(C2+C5*S+T*(C4+C7*S+C6*T)))
-#
-#   @property
-#   def sigma(self) : return self._sigma
 
 def plot_test(fld,filename) :
    figure = matplotlib.pyplot.figure(figsize=(8,8))
@@ -129,98 +38,19 @@ def plot_test(fld,filename) :
 
 
 
-#def unmask_nearest(infld) :
-#
-#   outfld=numpy.ma.MaskedArray.copy(infld)
-#
-#   mask=numpy.copy(outfld.mask)
-#
-#   # Find points that are defined, and has undefined neighbours
-#   tmp=numpy.zeros(outfld.shape)
-#   tmp[1:-1,1:-1] = tmp[1:-1,1:-1] + mask[1:-1,0:-2]
-#   tmp[1:-1,1:-1] = tmp[1:-1,1:-1] + mask[1:-1,2:]
-#   tmp[1:-1,1:-1] = tmp[1:-1,1:-1] + mask[0:-2,1:-1]
-#   tmp[1:-1,1:-1] = tmp[1:-1,1:-1] + mask[2:,1:-1]
-#   tmp1=numpy.where(tmp>=1,True,False)              # More than one undefined neighbour
-#   tmp2=numpy.where(mask,False,True)                # Ocean point (mask=True is land)
-#   I,J=numpy.where(numpy.logical_and(tmp1,tmp2))    # Combination
-#
-#   # Found no points , return unmodified field
-#   #print len(I)
-#   if len(I) == 0  :
-#
-#      pass
-#
-#   else :
-#      gd=outfld[I,J]                                   # Points input to griddata
-#
-#      # diag
-#      #tmp=numpy.zeros(outfld.shape)
-#      #tmp[I,J]=gd
-#      #plot_test(tmp,"s_coast.png")
-#
-#      # Interpolate using griddata
-#      grid_x,grid_y=numpy.meshgrid(range(tmp1.shape[0]),range(tmp1.shape[1]))
-#      new = scipy.interpolate.griddata((I,J,),gd,(grid_x.transpose(),grid_y.transpose()),'nearest')
-#      outfld[outfld.mask] = new[outfld.mask]
-#
-#      #rbfi=scipy.interpolate.Rbf(I,J,gd)
-#      #new =rbfi(grid_x,grid_y)
-#
-#      #plot_test(infld,"s_out.png")
-#      #plot_test(new,"s_griddata.png")
-#      #plot_test(outfld,"s_final.png")
-#
-#   return outfld
-
-#def unmask_data(infld,method) :
-#   outfld=numpy.ma.MaskedArray.copy(infld)
-#   mask=numpy.copy(outfld.mask)
-#   # Find points that are defined, and has undefined neighbours
-#   #logger.info("1")
-#   tmp=numpy.zeros(outfld.shape)
-#   tmp[1:-1,1:-1] = tmp[1:-1,1:-1] + mask[1:-1,0:-2]
-#   tmp[1:-1,1:-1] = tmp[1:-1,1:-1] + mask[1:-1,2:]
-#   tmp[1:-1,1:-1] = tmp[1:-1,1:-1] + mask[0:-2,1:-1]
-#   tmp[1:-1,1:-1] = tmp[1:-1,1:-1] + mask[2:,1:-1]
-#   #logger.debug("unmask_data 2")
-#   tmp1=numpy.where(tmp>=1,True,False)              # More than one undefined neighbour
-#   tmp2=numpy.where(mask,False,True)                # Ocean point (mask=True is land)
-#   I,J=numpy.where(numpy.logical_and(tmp1,tmp2))    # Combination
-#   #logger.debug("unmask_data 3")
-#   # Found no points , return unmodified field
-#   #print len(I)
-#   if len(I) == 0  :
-#      pass
-#   else :
-#      gd=outfld[I,J]                                   # Points input to griddata
-#      # diag
-#      #tmp=numpy.zeros(outfld.shape)
-#      #tmp[I,J]=gd
-#      #plot_test(tmp,"s_coast.png")
-#      # Interpolate using griddata
-#      #logger.debug("unmask_data 3.1")
-#      grid_x,grid_y=numpy.meshgrid(range(tmp1.shape[0]),range(tmp1.shape[1]))
-#      #logger.debug("unmask_data 3.2")
-#      new = scipy.interpolate.griddata((I,J,),gd,(grid_x.transpose(),grid_y.transpose()),method)
-#      #logger.debug("unmask_data 3.3")
-#      outfld[outfld.mask] = new[outfld.mask]
-#      #plot_test(infld,"s_out.png")
-#      #plot_test(new,"s_griddata.png")
-#      #plot_test(outfld,"s_final.png")
-#   #logger.debug("unmask_data 4")
-#   outfld=numpy.ma.masked_invalid(outfld)
-#   return outfld
 
 
-def main(path) :
-   print path
+def main(path,resolution=0.25,write_netcdf=False) :
 
-
-   fnametemplate="woa13_decav_%s%02d_04v2.nc" # 0.25 degrees
-   #fnametemplate="woa13_decav_%s%02d_01v2.nc" # 1.00 degrees
+   if resolution == 0.25 :
+      fnametemplate="woa13_decav_%s%02d_04v2.nc" # 0.25 degrees
+   elif resolution == 1.00 :
+      fnametemplate="woa13_decav_%s%02d_01v2.nc" # 1.00 degrees
+   else :
+      msg="Resolution must be 0.25 or 1.00"
+      logger.error(msg)
+      raise ValueError(msg)
  
-   dump_netcdf=True
 
    # Open seasonal files
    ncid={}
@@ -347,7 +177,7 @@ def main(path) :
       # season index and weights. Hardcoded, but possible to estimate from clim_bnds - file 1 is Jan, Feb, March, File 2 is April, MAy, June, etc...
       i0,i1,w0,w1 = month_weights(month+1) 
 
-      if  dump_netcdf :
+      if  write_netcdf :
          fname_out_nc = "extrapolated_WOA2013_modelgrid_m%02d.nc"%(month+1)
          ds_out       = netCDF4.Dataset(fname_out_nc, "w", format="NETCDF4")
          ds_out.createDimension("depth", kkseason)
@@ -410,7 +240,7 @@ def main(path) :
          t_out = numpy.maximum(-0.055*s_out,t_out)
 
          # write nc file
-         if  dump_netcdf :
+         if  write_netcdf :
             logger.info("Writing to netcdf file %s"%fname_out_nc)
             ds_out.variables["salinity"]   [k,:,:] = s_out
             ds_out.variables["temperature"][k,:,:] = t_out
@@ -421,10 +251,14 @@ def main(path) :
             method="nearest"
          else :
             method="linear"
-         logger.debug("Unmasking salinity using %s"%method)
-         s_out = modeltools.tools.extrapolate_data(s_out,method)
-         logger.debug("Unmasking temperature using %s"%method)
-         t_out = modeltools.tools.extrapolate_data(t_out,method)
+
+         # KAL - for low number of points this crashes with qhull error- figure out why
+         # For now this should be relatively safe ... May catch exception in stead or may use other hull method...
+         if numpy.count_nonzero(~s_out.mask) > 20 :
+            logger.debug("Unmasking salinity using %s"%method)
+            s_out = modeltools.tools.extrapolate_data(s_out,method)
+            logger.debug("Unmasking temperature using %s"%method)
+            t_out = modeltools.tools.extrapolate_data(t_out,method)
 
          # This will fill the remainder with values from above. This will happen if 
          # we move to climatology layers deeper than we have in the region
@@ -435,7 +269,7 @@ def main(path) :
             t_out[t_out.mask] = t_over[t_out.mask]
 
 
-         d_out = sig.SIG(t_out,s_out)
+         d_out = sig.sig(t_out,s_out)
 
 
 
@@ -463,7 +297,7 @@ def main(path) :
          d_abfile.write_field(d_out,d_out,"sigma-%d"%sig.sigma   ,depth)
 
          # write nc file
-         if  dump_netcdf :
+         if  write_netcdf :
             logger.info("Writing to netcdf file %s"%fname_out_nc)
             ds_out.variables["salinity_e"]   [k,:,:] = s_out
             ds_out.variables["temperature_e"][k,:,:] = t_out
@@ -482,7 +316,7 @@ def main(path) :
       t_abfile.close()
 
 
-      if  dump_netcdf : ds_out.close()
+      if  write_netcdf : ds_out.close()
 
 
 
@@ -495,10 +329,14 @@ def main(path) :
 
 
 if __name__ == "__main__" :
-   parser = argparse.ArgumentParser(description='')
+   parser = argparse.ArgumentParser(description='Create a z-level climatology interpolated to a model region from WOA2013')
    parser.add_argument('path')
    parser.add_argument('sigma',type=int)
+   parser.add_argument('--resolution',type=float,default=0.25,help = "Resolution of data to use (0.25 or 1.00). Default is 0.25")
+   parser.add_argument('--write-netcdf',action="store_true",default=False,help = "write to netcdf files as well as hycom .ab files")
    args = parser.parse_args()
 
    # Set up AtmosphericForcing object, which keeps track of data to be read
-   main(args.path)
+   main(args.path,
+         resolution=args.resolution,
+         write_netcdf=args.write_netcdf)

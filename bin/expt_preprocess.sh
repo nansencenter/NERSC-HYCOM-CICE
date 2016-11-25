@@ -437,7 +437,9 @@ if [ $tmp -eq 1 -o $tmp2 -eq 1 ] ; then
 fi
 
 # Need ports.input file in these cases
-if [ $tmp -eq 1 -a $LBFLAG -eq 1 ] ; then
+if [ $tmp -eq 1 -a $LBFLAG -ne 2 -a $LBFLAG -ne 4 ] ; then
+      tellerror "Must have lbflag = 2 or 4 when bnstfq <> 0.0 "
+elif [ $tmp -eq 1 -a $LBFLAG -eq 1 ] ; then
    # Port flow - file must be present in experiment dir
    cp $P/ports.input . || tellerror "Could not get port file ${P}/ports.input for port flow"
 elif [ $tmp -eq 1 -a $LBFLAG -eq 2 ] ; then
@@ -449,23 +451,25 @@ elif [ $tmp -eq 1 -a $LBFLAG -eq 2 ] ; then
       echo "Using file $nestdir/ports.nest for nesting: $P/ports.nest -> ./ports.input"
       cp $nestdir/ports.nest ports.input || tellerror "Could not get port file ${nestdir}/ports.nest for nest flow"
    else 
-      tellerror "Could not get port file port.nest in $P or  ${nestdir} for nest flow"
+      tellerror "Could not get port file ports.nest in $P or  ${nestdir} for nest flow"
    fi
 fi
 
 # Need nest rmu in this case:
 if [ $tmp2 -eq 1  ] ; then
    # Nest relaxation - use file in  experiment dir if present. Otherwise look in nest dir
-   if [ -f $P/rmu_nest.a -a -f $P/rmu_nest.a ] ; then
-      echo "Using file $P/rmu_nest.[ab] for nesting relaxation: $P/rmu_nest.[ab] -> ./rmu.[ab]"
-      cp $P/rmu_nest.a rmu.a       || tellerror "Could not get port file ${P}/rmu_nest.a for nest relax"
-      cp $P/rmu_nest.b rmu.b       || tellerror "Could not get port file ${P}/rmu_nest.b for nest relax"
-   elif [ -f $nestdir/rmu_nest.a -a -f $nestdir/rmu_nest.a ] ; then
-      echo "Using file $nestdir/rmu_nest.[ab] for nesting: $nestdir/rmu_nest.[ab] -> ./rmu.[ab]"
-      cp $nestdir/rmu_nest.a rmu.a       || tellerror "Could not get port file ${nestdir}/rmu_nest.a for nest relax"
-      cp $nestdir/rmu_nest.b rmu.b       || tellerror "Could not get port file ${nestdir}/rmu_nest.b for nest relax"
+#   if [ -f $P/rmu_nest.a -a -f $P/rmu_nest.a ] ; then
+#      echo "Using file $P/rmu_nest.[ab] for nesting relaxation: $P/rmu_nest.[ab] -> ./rmu.[ab]"
+#      cp $P/rmu_nest.a rmu.a       || tellerror "Could not get port file ${P}/rmu_nest.a for nest relax"
+#      cp $P/rmu_nest.b rmu.b       || tellerror "Could not get port file ${P}/rmu_nest.b for nest relax"
+#   elif [ -f $nestdir/rmu_nest.a -a -f $nestdir/rmu_nest.a ] ; then
+#      echo "Using file $nestdir/rmu_nest.[ab] for nesting: $nestdir/rmu_nest.[ab] -> ./rmu.[ab]"
+#      cp $nestdir/rmu_nest.a rmu.a       || tellerror "Could not get port file ${nestdir}/rmu_nest.a for nest relax"
+#      cp $nestdir/rmu_nest.b rmu.b       || tellerror "Could not get port file ${nestdir}/rmu_nest.b for nest relax"
+   if [ -f $nestdir/rmu.a -a -f $nestdir/rmu.b ] ; then
+      echo "Using file $nestdir/rmu.[ab] for nesting"
    else 
-      tellerror "Could not get file rmu.[ab] in $P or ${nestdir} for nest relaxation"
+      tellerror "Could not find files $nestdir/rmu.[ab] for nest relaxation"
    fi
 fi
 

@@ -15,6 +15,8 @@ import netCDF4
 import re
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.figure import Figure
+from matplotlib.ticker import FormatStrFormatter
+
 
 # Set up logger
 _loglevel=logging.DEBUG
@@ -225,7 +227,8 @@ def main(blkdatfile,saltfile,lon,lat,lon2=None,lat2=None,sectionid=None,dpi=180)
          else :
             xp = numpy.sum(xlim)/2.
             yp = -0.5*(newintf[0,k] + newintf[0,k+1])
-            ax.text(xp,yp,"layer %d: %4.2f"%(k+1,sigma[k]),verticalalignment="center",horizontalalignment="left",fontsize=6)
+            #ax.text(xp,yp,"layer %d: %4.2f"%(k+1,sigma[k]),verticalalignment="center",horizontalalignment="left",fontsize=6)
+            ax.text(xp,yp,"%d"%(k+1),verticalalignment="center",horizontalalignment="left",fontsize=6)
 
          isopyc = numpy.abs(intsig[:,k]-sigma[k])<1e-3
          ax.fill_between(x,-newintf[:,k+1]*ymult,-newintf[:,k]*ymult,color="g",alpha=".5",where=isopyc*ymult)
@@ -234,20 +237,19 @@ def main(blkdatfile,saltfile,lon,lat,lon2=None,lat2=None,sectionid=None,dpi=180)
          #ax.plot(x,-newintf[:,k]*ymult,lw=2,color="k",label="Sea floor")
          ax.fill_between(x,-newintf[:,k]*ymult,-10*numpy.ones(x.shape)*maxd.max(),color=".5")
 
-   # Some dummy plots for the legend
-   ax.plot([-100,100],[1e5,1e5],lw=.1,color=".5",label="Layer interface")
-#   ax.fill_between([-100,100],[1e5,1e5],[2e5,2e5],color="g",alpha=".5",label="Isopycnal layer") #NB: Label doesnt work
+#   # Some dummy plots for the legend
+#   ax.plot([-100,100],[1e5,1e5],lw=.1,color=".5",label="Layer interface")
 
 
-
+   # Set up final grid
    ax.grid(False)
    ax.set_xlim(xlim)
    ax.set_ylim(ylim)
-   ax.set_ylabel("Depth")
+   ax.set_ylabel("Depth[m]")
    if section : 
       ax.set_xlabel("Distance along section[km]")
    else :
-      ax.set_xlabel("Density[sigma-%d]"%thflag,color=cold)
+      ax.set_xlabel("Sigma-%d [$kg / m^3$]"%thflag,color=cold)
    for t in ax.get_xticklabels() :
       if not section : t.set_color(cold)
       t.set_size(8)
@@ -256,9 +258,7 @@ def main(blkdatfile,saltfile,lon,lat,lon2=None,lat2=None,sectionid=None,dpi=180)
    leg=ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.,labelspacing=-.5)
    ltext=leg.get_texts()
    plt.setp(ltext,fontsize=4)
-
-
-   
+   #
    fname="layers_%s.png"%sinfo
    logger.info("Layers in %s"%fname)
    plt.gcf().savefig(fname,dpi=dpi)
@@ -276,22 +276,47 @@ def main(blkdatfile,saltfile,lon,lat,lon2=None,lat2=None,sectionid=None,dpi=180)
 
    # Plot density of original data
    f,ax = plt.subplots(1,figsize=(10,5))
-   P=ax.pcolormesh(x,-dprof,sigprof,cmap="Paired")
-   print x.shape,x
-   print dprof.shape
-   print sigprof.shape
-   CS=ax.contour(x,-dprof,sigprof,sigma)
-   ax.clabel(CS, inline=1, fontsize=4)
-   f.colorbar(P,ax=ax)
+   if section :
+      P=ax.pcolormesh(x,-dprof,sigprof,cmap="Paired")
+      CS=ax.contour(x,-dprof,sigprof,sigma)
+      ax.clabel(CS, inline=1, fontsize=4)
+      ax.set_xlabel("x[m]")
+      ax.set_ylabel("Depth [m]")
+      ax.set_title("Sigma-%d along section [$kg / m^3$]"%(thflag))
+      f.colorbar(P,ax=ax)
+   else :
+      ax.plot(sigprof,-dprof,lw=2,color=cold,label="Sigma-%d"%thflag)
+      ax.set_ylabel("Depth[m]")
+      ax.set_xlabel("Sigma-%d Density [$kg / m^3$]"%thflag,color=cold)
+      ax.set_title("Sigma-%d density profile at %6.2fE,%6.2fN"%(thflag,lon,lat))
+      for t in ax.get_xticklabels() :
+         t.set_color(cold)
+         #t.set_size(8)
+         #t.set_rotation(-45)
+      ax.grid(True)
    f.savefig("dens_data_%s.png"%sinfo,dpi=dpi)
 
    # Plot density of original data
    if kapref > 0 :
       f,ax = plt.subplots(1,figsize=(10,5))
-      P=ax.pcolormesh(x,-dprof,sigprof_tbar,cmap="Paired")
-      CS=ax.contour(x,-dprof,sigprof_tbar,sigma)
-      ax.clabel(CS, inline=1, fontsize=4)
-      f.colorbar(P,ax=ax)
+      if section :
+         P=ax.pcolormesh(x,-dprof,sigprof_tbar,cmap="Paired")
+         CS=ax.contour(x,-dprof,sigprof_tbar,sigma)
+         ax.clabel(CS, inline=1, fontsize=4)
+         ax.set_xlabel("x[m]")
+         ax.set_ylabel("Depth [m]")
+         ax.set_title("In-situ Sigma-%d along section [$kg / m^3$]"%(thflag))
+         f.colorbar(P,ax=ax)
+      else :
+         ax.plot(sigprof_tbar,-dprof,lw=2,color=cold,label="Sigma-%d"%thflag)
+         ax.set_ylabel("Depth[m]")
+         ax.set_xlabel("Sigma-%d Density [$kg / m^3$]"%thflag,color=cold)
+         ax.set_title("In-situ Sigma-%d density profile at %6.2fE,%6.2fN"%(thflag,lon,lat))
+         for t in ax.get_xticklabels() :
+            t.set_color(cold)
+            #t.set_size(8)
+            #t.set_rotation(-45)
+         ax.grid(True)
       f.savefig("dens_data_kappa%d_%s.png"%(kapref,sinfo),dpi=dpi)
 
    # Plot vertical density gradient of original data
@@ -306,25 +331,54 @@ def main(blkdatfile,saltfile,lon,lat,lon2=None,lat2=None,sectionid=None,dpi=180)
    dsigprof = numpy.ma.masked_where(numpy.abs(dsigprof)>1e10,dsigprof)
    dsigprof=dsigprof * 100 # DS per 100 meters
    f,ax = plt.subplots(1,figsize=(10,5))
-   P=ax.pcolormesh(x,-dprof,dsigprof,
-         norm=matplotlib.colors.LogNorm(vmin=0.001,vmax=10),
-         cmap="Paired")
-   CS=ax.contour(x,-dprof,sigprof,sigma)
-   ax.clabel(CS, inline=1, fontsize=4)
-   ax.set_title("Delta rho per 100 meter in the vertical")
-   f.colorbar(P,ax=ax)
+   if section :
+      P=ax.pcolormesh(x,-dprof,dsigprof,
+            norm=matplotlib.colors.LogNorm(vmin=0.001,vmax=10),
+            cmap="Paired")
+      CS=ax.contour(x,-dprof,sigprof,sigma)
+      ax.clabel(CS, inline=1, fontsize=4)
+      ax.set_title("Delta rho [$kg / m^3$] per 100 meter in the vertical")
+      ax.set_ylabel("Depth[m]")
+      ax.set_xlabel("Distance along section")
+      f.colorbar(P,ax=ax)
+   else :
+      ax.plot(dsigprof,-dprof,lw=2,color=cold,label="Sigma-%d"%thflag)
+      ax.set_ylabel("Depth[m]")
+      ax.set_xlabel("Density Difference [$kg / m^3$]",color=cold)
+      ax.set_title("Delta rho per 100 meter in the vertical at %8.2fE , %8.2fN"%(lon,lat))
+      for t in ax.get_xticklabels() :
+         t.set_color(cold)
+         #t.set_size(8)
+         #t.set_rotation(-45)
+      ax.grid(True)
    f.savefig("densgrad_data_%s.png"%sinfo,dpi=dpi)
 
    # Plot Buoyancy frequency
    Nsq=dsigprof/100. * 9.81/1000.
    f,ax = plt.subplots(1,figsize=(10,5))
-   P=ax.pcolormesh(x,-dprof,Nsq,
-         norm=matplotlib.colors.LogNorm(vmin=1e-9,vmax=1e-4),
-         cmap="Paired")
-   #CS=ax.contour(x,-dprof,Nsq,sigma)
-   ax.clabel(CS, inline=1, fontsize=4)
-   f.colorbar(P,ax=ax)
-   ax.set_title("N^2")
+   if section : 
+      P=ax.pcolormesh(x,-dprof,Nsq,
+            norm=matplotlib.colors.LogNorm(vmin=1e-9,vmax=1e-4),
+            cmap="Paired")
+      #CS=ax.contour(x,-dprof,Nsq,sigma)
+      ax.clabel(CS, inline=1, fontsize=4)
+      f.colorbar(P,ax=ax)
+      ax.set_title("$N^2$ along section")
+      ax.set_ylabel("Depth[m]")
+      ax.set_xlabel("Distance along section")
+   else :
+      ax.plot(Nsq,-dprof,lw=2,color=cold,label="Sigma-%d"%thflag)
+      ax.set_ylabel("Depth[m]")
+      ax.set_xlabel("$N^2$[I always forget the units]",color=cold)
+      ax.set_title("$N^2$ at %6.2fE,%6.2fN"%(lon,lat))
+      ax.xaxis.set_major_formatter(FormatStrFormatter('%.2g'))
+
+      for t in ax.get_xticklabels() :
+         t.set_color(cold)
+         #t.set_size(8)
+         #t.set_rotation(-45)
+      ax.grid(True)
+
    f.savefig("Nsq_data_%s.png"%sinfo,dpi=dpi)
 
 
@@ -338,19 +392,24 @@ def main(blkdatfile,saltfile,lon,lat,lon2=None,lat2=None,sectionid=None,dpi=180)
 
 if __name__ == "__main__" :
    parser = argparse.ArgumentParser(description='')
-   parser.add_argument('blkdatfile' , help="")
-   parser.add_argument('saltfile' , help="")
-   parser.add_argument('lon'      , type=float) 
-   parser.add_argument('lat'      , type=float) 
-   parser.add_argument('--lon2'      , type=float) 
-   parser.add_argument('--lat2'      , type=float) 
-   parser.add_argument('--sectionid'      , type=str,default="") 
+   parser.add_argument('blkdatfile' , help="blkdat.input to read hycom configuration from")
+   parser.add_argument('saltfile' , help="salinity file (WOA2013 netcdf format)")
+   parser.add_argument('lon'      , type=float,help="longitude of point") 
+   parser.add_argument('lat'      , type=float,help="latitude of point") 
+   parser.add_argument('--lon2'      , type=float,help="longitude of end of section (lon of point taken as start of section)") 
+   parser.add_argument('--lat2'      , type=float,help="latitude  of end of section (lat of point taken as start of section)") 
+   parser.add_argument('--sectionid'      , type=str,default="",help="ID of section, used in filenames") 
+   parser.add_argument('--dpi'      , type=int,default=180,help="resolution of plots") 
 
 
 
    args = parser.parse_args()
    #print args
-   main(args.blkdatfile,args.saltfile,args.lon,args.lat,lon2=args.lon2,lat2=args.lat2,sectionid=args.sectionid)
+   main(args.blkdatfile,args.saltfile,args.lon,args.lat,
+         lon2=args.lon2,
+         lat2=args.lat2,
+         sectionid=args.sectionid,
+         dpi=args.dpi)
 
 
 

@@ -67,11 +67,11 @@ if __name__ == "__main__" :
        def __call__(self, parser, args, values, option_string=None):
           tmp = datetime.datetime.strptime( values, "%Y-%m-%dT%H:%M:%S")
           setattr(args, self.dest, tmp)
-   parser = argparse.ArgumentParser(description='')
+   parser = argparse.ArgumentParser(description='Sets up a new fortran namelist from CICE infile based on provided arguments')
    parser.add_argument('--init',       action="store_true", default=False)
    parser.add_argument('start_time', action=DateTimeParseAction, help='Start time in UTC zone. Format = YYYY-mm-ddTHH:MM:SS')
    parser.add_argument('end_time',   action=DateTimeParseAction, help='Stop  time in UTC zone. Format = YYYY-mm-ddTHH:MM:SS')
-   parser.add_argument('nmpi',       type=int)
+   parser.add_argument('nmpi',       type=int,help="Number of mpi tasks to use")
    parser.add_argument('infile',     help='CICE namelist')
    args = parser.parse_args()
    main(args.start_time,args.end_time,args.init,args.nmpi,args.infile)

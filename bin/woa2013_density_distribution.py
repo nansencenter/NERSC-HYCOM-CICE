@@ -26,7 +26,17 @@ logger.addHandler(ch)
 logger.propagate=False
 
 
-def main(saltfile,lon1,lon2,lat1,lat2,layerskip=1,minlayer=0,maxlayer=None,blkdatfile=""):
+def main(saltfile,lon1,lon2,lat1,lat2,
+      layerskip=1,
+      minlayer=0,
+      maxlayer=None,
+      blkdatfile="",
+      dpi=180,
+      showminmax=False,
+      extreme_percentile=2):
+
+   if blkdatfile :
+      bp=modeltools.hycom.BlkdatParser(blkdatfile)
 
    #TODO: Allow mupltiple salinity files ?
 
@@ -105,8 +115,8 @@ def main(saltfile,lon1,lon2,lat1,lat2,layerskip=1,minlayer=0,maxlayer=None,blkda
    dprofs= numpy.zeros(nzs)
    #print maxlayer,nzs,nz
 
-   plo=1
-   phi=99
+   plo=extreme_percentile
+   phi=100-plo
 
 
    s0_min_map=numpy.ones(I.shape)*1e8
@@ -201,19 +211,23 @@ def main(saltfile,lon1,lon2,lat1,lat2,layerskip=1,minlayer=0,maxlayer=None,blkda
    plt.clabel(cs0, fontsize=6, inline=1,fmt="%1.1f")
    cs2=ax1.contour(S_BINS,T_BINS,sig2.sig(T_BINS,S_BINS),20,colors="b",lw=.005,label="Sigma-2")
    plt.clabel(cs2, fontsize=6, inline=1,fmt="%1.1f")
+   #
+
+   if blkdatfile and bp["thflag"]== 0 :
+      cs3=ax1.contour(S_BINS,T_BINS,sig0.sig(T_BINS,S_BINS),bp["sigma"],colors="k",lw=.010,label="Sigma-2")
+   else :
+      cs3=ax1.contour(S_BINS,T_BINS,sig2.sig(T_BINS,S_BINS),bp["sigma"],colors="k",lw=.010,label="Sigma-2")
+   #
    ax1.set_xlabel("Salinity")
    ax1.set_ylabel("Temperature")
    ax1.legend(loc="lower left")
-   ax1.set_title("Densities from %d to %d m"%(dprof[minlayer],dprof[maxlayer-1]))
-   f1.savefig("density_dist_bin.png",dpi=180)
-
-   if blkdatfile :
-      bp=modeltools.hycom.BlkdatParser(blkdatfile)
+   ax1.set_title("Binned T,S,Sigma-0, and Sigma-2 from %d to %d m [$kg/m^3$]"%(dprof[minlayer],dprof[maxlayer-1]))
+   f1.canvas.print_figure("density_dist_bin.png",dpi=dpi)
 
 
    # Plot density distribution
    f1,ax1 = plt.subplots(1)
-   if blkdatfile and bp["thflag"]== 2 :
+   if blkdatfile and bp["thflag"]== 0 :
       for k in range(bp["kdm"]) :
          if k==0 :
             label="blkdat"
@@ -221,8 +235,8 @@ def main(saltfile,lon1,lon2,lat1,lat2,layerskip=1,minlayer=0,maxlayer=None,blkda
             label=None
          ax1.plot(bp["sigma"][k]*numpy.ones(2),[dprofs[0],dprofs[-1]],color="m",label=label,lw=.5)
    ax1.fill_betweenx(dprofs,s0_p10,s0_p90,color="g",alpha=".5")
-   ax1.plot(s0_min,dprofs,"k+",linewidth=2,label="min/max")
-   ax1.plot(s0_max,dprofs,"k+",linewidth=2)
+   if showminmax :ax1.plot(s0_min,dprofs,"k+",linewidth=2,label="min/max")
+   if showminmax :ax1.plot(s0_max,dprofs,"k+",linewidth=2)
    ax1.plot(s0_plo,dprofs,linewidth=2,color="r",label="p%02d/p%02d"%(plo,phi))
    ax1.plot(s0_phi,dprofs,linewidth=2,color="r")
    ax1.plot(s0_p10,dprofs,linewidth=2,color="b",label="p10/p90")
@@ -245,7 +259,7 @@ def main(saltfile,lon1,lon2,lat1,lat2,layerskip=1,minlayer=0,maxlayer=None,blkda
       line.set_linewidth(.1)
       line.set_linestyle("-")
       line.set_color(".5")
-   f1.savefig("sigma0_vdist.png",dpi=180)
+   f1.canvas.print_figure("sigma0_vdist.png",dpi=dpi)
 
    #
    f1,ax1 = plt.subplots(1)
@@ -257,8 +271,8 @@ def main(saltfile,lon1,lon2,lat1,lat2,layerskip=1,minlayer=0,maxlayer=None,blkda
             label=None
          ax1.plot(bp["sigma"][k]*numpy.ones(2),[dprofs[0],dprofs[-1]],color="m",label=label,lw=.5)
    ax1.fill_betweenx(dprofs,s2_p10,s2_p90,color="g",alpha=".5")
-   ax1.plot(s2_min,dprofs,"k+",linewidth=2,label="min/max")
-   ax1.plot(s2_max,dprofs,"k+",linewidth=2)
+   if showminmax :ax1.plot(s2_min,dprofs,"k+",linewidth=2,label="min/max")
+   if showminmax :ax1.plot(s2_max,dprofs,"k+",linewidth=2)
    ax1.plot(s2_plo,dprofs,linewidth=2,color="r",label="p%02d/p%02d"%(plo,phi))
    ax1.plot(s2_phi,dprofs,linewidth=2,color="r")
    ax1.plot(s2_p10,dprofs,linewidth=2,color="b",label="p10/p90")
@@ -283,7 +297,7 @@ def main(saltfile,lon1,lon2,lat1,lat2,layerskip=1,minlayer=0,maxlayer=None,blkda
       line.set_linewidth(.1)
       line.set_linestyle("-")
       line.set_color(".5")
-   f1.savefig("sigma2_vdist.png",dpi=180)
+   f1.canvas.print_figure("sigma2_vdist.png",dpi=dpi)
 
 
    #Plot of maps
@@ -297,7 +311,10 @@ def main(saltfile,lon1,lon2,lat1,lat2,layerskip=1,minlayer=0,maxlayer=None,blkda
          vmin=vmin,vmax=vmax,
          cmap=cmap)
    f1.colorbar(P,ax=ax1,extend="both")
-   f1.savefig("sigma0_min.png",dpi=180)
+   ax1.set_xlabel("Longitude")
+   ax1.set_ylabel("Latitude")
+   ax1.set_title("Minimum sigma-0 density in water column")
+   f1.canvas.print_figure("sigma0_min.png",dpi=dpi)
    #
    f1,ax1 = plt.subplots(1)
    vmin=s0_max_map.min()
@@ -308,7 +325,10 @@ def main(saltfile,lon1,lon2,lat1,lat2,layerskip=1,minlayer=0,maxlayer=None,blkda
          vmin=vmin,vmax=vmax,
          cmap=cmap)
    f1.colorbar(P,ax=ax1,extend="both")
-   f1.savefig("sigma0_max.png",dpi=180)
+   ax1.set_xlabel("Longitude")
+   ax1.set_ylabel("Latitude")
+   ax1.set_title("Maximum sigma-0 density in water column")
+   f1.canvas.print_figure("sigma0_max.png",dpi=dpi)
 
 
 
@@ -323,7 +343,10 @@ def main(saltfile,lon1,lon2,lat1,lat2,layerskip=1,minlayer=0,maxlayer=None,blkda
          vmin=vmin,vmax=vmax,
          cmap=cmap)
    f1.colorbar(P,ax=ax1,extend="both")
-   f1.savefig("sigma2_min.png",dpi=180)
+   ax1.set_xlabel("Longitude")
+   ax1.set_ylabel("Latitude")
+   ax1.set_title("Minimum sigma-2 density in water column")
+   f1.canvas.print_figure("sigma2_min.png",dpi=dpi)
    #
    f1,ax1 = plt.subplots(1)
    vmin=s2_max_map.min()
@@ -334,24 +357,32 @@ def main(saltfile,lon1,lon2,lat1,lat2,layerskip=1,minlayer=0,maxlayer=None,blkda
          vmin=vmin,vmax=vmax,
          cmap=cmap)
    f1.colorbar(P,ax=ax1,extend="both")
-   f1.savefig("sigma2_max.png",dpi=180)
+   ax1.set_xlabel("Longitude")
+   ax1.set_ylabel("Latitude")
+   ax1.set_title("Maximum sigma-2 density in water column")
+   f1.canvas.print_figure("sigma2_max.png",dpi=dpi)
 
 
 if __name__ == "__main__" :
    parser = argparse.ArgumentParser(description='')
-   parser.add_argument('--layerskip'     , type=int,default=1) 
-   parser.add_argument('--maxlayer'      , type=int,default=None) 
-   parser.add_argument('--minlayer'      , type=int,default=0) 
-   parser.add_argument('--blkdatfile'      , type=str,default="") 
-   parser.add_argument('lon1'      , type=float) 
-   parser.add_argument('lat1'      , type=float) 
-   parser.add_argument('lon2'      , type=float) 
-   parser.add_argument('lat2'      , type=float) 
-   parser.add_argument('saltfile' , help="")
+   parser.add_argument('--dpi'     , type=int,default=180,help="dpi of output plots") 
+   parser.add_argument('--layerskip'     , type=int,default=1,help="number of layers to jump when reading data to be analyzed") 
+   parser.add_argument('--maxlayer'      , type=int,default=None,help="max layer to extract data for") 
+   parser.add_argument('--minlayer'      , type=int,default=0,help="min layer to extract data for") 
+   parser.add_argument('--blkdatfile'      , type=str,default="",help="If specified, some plots will be populated by data from blkdat.input") 
+   parser.add_argument('lon1'      , type=float,help="Lower left longitude of region") 
+   parser.add_argument('lat1'      , type=float,help="Lower left latitude  of region") 
+   parser.add_argument('lon2'      , type=float,help="Upper left longitude of region") 
+   parser.add_argument('lat2'      , type=float,help="Upper left latitude  of region") 
+   parser.add_argument('saltfile' , help="WOA2013 salinity file")
 
    args = parser.parse_args()
-   main(args.saltfile,args.lon1,args.lon2,args.lat1,args.lat2,layerskip=args.layerskip,maxlayer=args.maxlayer,minlayer=args.minlayer,
-         blkdatfile=args.blkdatfile)
+   main(args.saltfile,args.lon1,args.lon2,args.lat1,args.lat2,
+         layerskip=args.layerskip,
+         maxlayer=args.maxlayer,
+         minlayer=args.minlayer,
+         blkdatfile=args.blkdatfile,
+         dpi=args.dpi)
 
 
 

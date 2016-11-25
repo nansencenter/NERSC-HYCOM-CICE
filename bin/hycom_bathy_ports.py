@@ -14,6 +14,7 @@ from mpl_toolkits.basemap import Basemap
 import netCDF4
 import logging
 import scipy.ndimage.measurements
+import re
 
 # Set up logger
 _loglevel=logging.DEBUG
@@ -190,7 +191,7 @@ def check_consistency(ifport,ilport,jfport,jlport,kdport,iu,iv,port_number) :
    return fatal
 
 
-def main(infile,rmu_width,rmu_efold):
+def main(infile,rmu_width,rmu_efold,dpi=180):
 
    bathy_threshold=0. # TODO
 
@@ -201,13 +202,12 @@ def main(infile,rmu_width,rmu_efold):
    gfile.close()
 
    # Read input bathymetri
+   m=re.match( "^(.*)(\.[ab])", infile)
+   if m : infile=m.group(1)
    bfile=abfile.ABFileBathy(infile,"r",idm=gfile.idm,jdm=gfile.jdm,mask=True)
    in_depth_m=bfile.read_field("depth")
    bfile.close()
    in_depth=numpy.ma.filled(in_depth_m,bathy_threshold)
-
-
-
 
    #print in_depth.min(),in_depth.max()
    ip=~in_depth_m.mask
@@ -290,7 +290,7 @@ def main(infile,rmu_width,rmu_efold):
    P=ax.pcolormesh(in_depth_m,cmap=cmap)
    P=ax.pcolormesh(rmumask_m,cmap=cmap2)
    CB=ax.figure.colorbar(P)
-   figure.canvas.print_figure("rmu.png")
+   figure.canvas.print_figure("rmu.png",dpi=dpi)
 
 
    # Plot ports with pcolormesh
@@ -306,7 +306,7 @@ def main(infile,rmu_width,rmu_efold):
    ax.set_ylim(0,in_depth.shape[0])
    CB.ax.set_title("Port number")
    logger.info("Writing to ports_all.png")
-   figure.canvas.print_figure("ports_all.png")
+   figure.canvas.print_figure("ports_all.png",dpi=dpi)
 
 
 
@@ -357,12 +357,12 @@ def main(infile,rmu_width,rmu_efold):
 
       fname="port_%03d.png"%(i+1)
       logger.info("Writing Diagnostics to %s"%fname)
-      figure.canvas.print_figure(fname,bbox_inches='tight',dpi=200)
+      figure.canvas.print_figure(fname,bbox_inches='tight',dpi=dpi)
 
    fname="ports_all_2.png"
    logger.info("Writing Diagnostics to %s"%fname)
    ax2.legend(Ps,Ls)
-   figure2.canvas.print_figure(fname,bbox_inches='tight',dpi=200)
+   figure2.canvas.print_figure(fname,bbox_inches='tight',dpi=dpi)
 
 
    if fatal :
@@ -373,11 +373,13 @@ def main(infile,rmu_width,rmu_efold):
 
 
 if __name__ == "__main__" :
-   parser = argparse.ArgumentParser(description='Find ports')
-   parser.add_argument('infile',    type=str)
-   parser.add_argument('rmu_width', type=int)
-   parser.add_argument('rmu_efold', type=int)
+   parser = argparse.ArgumentParser(description='Find nesting port locations along edge, set up relaxation mask')
+   parser.add_argument('--dpi',    type=int,help="dpi of output plots")
+   parser.add_argument('depthfile',    type=str,help="hycom bathymetri file")
+   parser.add_argument('rmu_width', type=int,help="width of relaxation zone")
+   parser.add_argument('rmu_efold', type=int,help="relaxation zone weights ")
 
    args = parser.parse_args()
 
-   main(args.infile,args.rmu_width,args.rmu_efold)
+   main(args.depthfile,args.rmu_width,args.rmu_efold,
+         dpi=args.dpi)

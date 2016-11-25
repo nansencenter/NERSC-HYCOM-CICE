@@ -34,6 +34,7 @@ the hycom setup files (grid and bathymetry) to be present.
 |expt_preprocess.sh  | Trransfers necessary input files to scratch in preparation of a model simulation |
 |compile_model.sh | Script for compiling the HYCOM-CICE model. |
 |tile_grid.sh | Sets up the MPI partitioning of the hycom model. |
+|cice_limits.py | Create a CICE input file based on existing file and some arguments. Used to set up correct time steps etc |
 
 
 # Plotting
@@ -62,15 +63,19 @@ the hycom setup files (grid and bathymetry) to be present.
 |hycom_bathy_merge.py       | Merges two bathymetries on the same grid. |
 |hycom_bathy_consistency.py | Does a consistency check of a hycom bathymetri (removes isolated basins, single cell islands, etc)|
 |hycom_bathy.py             | Generate hycom bathymetry for a predefined hycom grid |
+|cice_kmt.py | Simple script for creating CICE land mask from hycom bathymetry |
+| cice_kmt.sh | Basically a wrapper around coce_kmt.py |
 
 
 # Generation of relaxation fields
 
 |executable     | purpose|
 |-------- | -------------|
-|z_generic.sh  | Generates a climatology on fixed z levels for the current experiment |
+|z_generic.sh  | Generates a climatology on fixed z levels for the current experiment domain |
 |relaxi.sh  | Generates a climatology in hybrid coordinates forr the current experiment. Needs z_generic to be run first |
 |relax_rmu.sh  | Generates sidewall relaxation weights |
+|hycom_woa13_zfiles.py  | Generates .d files from WOA2013 data. These can be used by routine z_generic.sh |
+|hycom_woa13.py  | Generates gridded z-level  files from WOA2013 data in ab format. Output similar to z_generic.sh (this routine can replace z_generic.sh) |
 
 # Nesting/interpolation tools
 
@@ -88,8 +93,12 @@ the hycom setup files (grid and bathymetry) to be present.
 
 |executable     | purpose|
 |-------- | -------------|
-|hycom_vcoord_plot.py        | Create plots showing the layout of the vertical coordinate specified by blkdat.input|
+|hycom_vcoord_plot.py          | Create plots showing the layout of the vertical coordinate specified by blkdat.input|
+|woa2013_sigma_profile.py      | Creates a sigma profile from woa2013 data. Tries to set up a vertical coordinate matching a blkdat.input setup |
+|woa2013_density_distribution.py | Calculates density distribution ++ for a specified region. Based on WOA2013 data |
 
+
+# Other tools
 
 Notebooks
 atmo_nersc_clim.sh
@@ -97,9 +106,6 @@ atmo_nersc_synoptic_oldversions.sh
 atmo_synoptic.sh
 calc_thkdf4.sh
 cice_icevolume.py
-cice_kmt.py
-cice_kmt.sh
-cice_limits.py
 cleanEXP.sh
 hycom_atmfor.py
 hycom_bathy_modify.py
@@ -108,8 +114,6 @@ hycom_kapref.py
 hycom_sigma_compare.py
 hycom_sigma_setup.py
 hycom_vsigma.py
-hycom_woa13.py
-hycom_woa13_zfiles.py
 hycomsteps.py
 namelist_extract.py
 nemo_mesh_to_hycom.py
@@ -122,7 +126,4 @@ river_nersc_bio.sh
 river_trip.sh
 scripts_specific
 seawifs_mon_kpar.sh
-setlimits.py
 soda_to_hycom.py
-woa2013_density_distribution.py
-woa2013_sigma_profile.py

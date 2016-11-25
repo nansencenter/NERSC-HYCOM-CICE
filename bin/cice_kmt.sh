@@ -3,6 +3,7 @@
 
 # Input args
 if [ $# -ne 1 ]  ; then
+   echo "Create cice mask file from hycom bathymetry file"
     echo
     echo "Usage:" 
     echo "   $(basename $0) topo_version"
@@ -39,7 +40,9 @@ cp ${BASEDIR}/topo/$infile.b $S  || { echo "Could not get $infile.b file " ; exi
 cp ${BASEDIR}/topo/regional.grid.b $S  || { echo "Could not get regional.grid.b file " ; exit 1 ; }
 cp ${BASEDIR}/topo/regional.grid.a $S  || { echo "Could not get regional.grid.a file " ; exit 1 ; }
 
+echo "Running routine cice_kmt.py in directory $S"
 [ -f cice_kmt.nc ] && rm cice_kmt.nc
-$BASEDIR/../python/cice_kmt.py $infile
+#$BASEDIR/../python/cice_kmt.py $infile
+cice_kmt.py $infile
 cp cice_kmt.nc $D/$kmtfile  || { echo "Could not get cice_kmt.nc file " ; exit 1 ; }
 echo "Normal exit. created kmt file $D/$kmtfile"

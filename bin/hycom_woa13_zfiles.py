@@ -268,7 +268,7 @@ def main(path,sigma,months,resolution) :
 
  
          # Density
-         d_out = sig.SIG(t_out,s_out)
+         d_out = sig.sig(t_out,s_out)
 
 
          I=numpy.where(d_out<d_over)
@@ -325,10 +325,10 @@ def main(path,sigma,months,resolution) :
 
 
 if __name__ == "__main__" :
-   parser = argparse.ArgumentParser(description='')
+   parser = argparse.ArgumentParser(description='Routine prepares .d files, suitable to use as input to hycom relaxation setup')
    parser.add_argument('--resolution',type=float,help="Resolution of netcdf files",default=0.25)
    parser.add_argument('path',help="Directory where WOA13 netcdf files are present")
-   parser.add_argument('sigma',type=int, help="Value of sigma...")
+   parser.add_argument('sigma',type=int, help="Value of sigma to use (hycom thflag)")
    parser.add_argument('months',type=int,nargs="*",help="months to process for (1 to 12), all months processed if not present")
    args = parser.parse_args()
 
