@@ -6,7 +6,6 @@ matplotlib.use('Agg')
 import matplotlib.pyplot
 import abfile
 import numpy
-from mpl_toolkits.basemap import Basemap
 import logging
 import datetime
 import re
@@ -194,8 +193,19 @@ def open_file(myfile0,filetype,fieldname,fieldlevel,datetime1=None,datetime2=Non
    return n_intloop,ab,ab2,rdtimes
 
 
-def main(myfiles,fieldname,fieldlevel,idm=None,jdm=None,clim=None,filetype="archive",window=None,
-      cmap="jet",datetime1=None,datetime2=None,vector="",tokml=False,masklim=None) :
+def main(myfiles,fieldname,fieldlevel,
+      idm=None,
+      jdm=None,
+      clim=None,
+      filetype="archive",
+      window=None,
+      cmap="jet",
+      datetime1=None,
+      datetime2=None,
+      vector="",
+      tokml=False,
+      masklim=None,
+      dpi=180) :
 
 
    #cmap=matplotlib.pyplot.get_cmap("jet")
@@ -207,8 +217,10 @@ def main(myfiles,fieldname,fieldlevel,idm=None,jdm=None,clim=None,filetype="arch
       plat=ab.read_field("plat")
       ab.close()
 
-   # Prelim support for projections
+   # Prelim support for projections. import basemap only if needed since its usually not needed
+   # aaaand installation can sometimes be a bit painful .... bmn is None now, define it if needed
    bm=None
+   #from mpl_toolkits.basemap import Basemap
    #ab = abfile.ABFileGrid("regional.grid","r")
    #plon=ab.read_field("plon")
    #plat=ab.read_field("plat")
@@ -290,8 +302,13 @@ def main(myfiles,fieldname,fieldlevel,idm=None,jdm=None,clim=None,filetype="arch
                I2=I[::skip,::skip]
                J2=J[::skip,::skip]
                ax.quiver(I2,J2,fld1[J2,I2],fld2[J2,I2])
+
+
             # Print figure.
-            figure.canvas.print_figure("tst%03d.png"%counter,dpi=180)
+            fnamepng_template="%s_%d_%03d.png"
+            fnamepng=fnamepng_template%(fieldname,fieldlevel,counter)
+            logger.info("output in  %s"%fnamepng)
+            figure.canvas.print_figure(fnamepng,dpi=dpi)
             ax.clear()
             cb.remove()
 
@@ -318,6 +335,7 @@ if __name__ == "__main__" :
           setattr(args, self.dest, tmp)
 
    parser = argparse.ArgumentParser(description='')
+   parser.add_argument('--dpi',        type=int, default=180)
    parser.add_argument('--clim',       action=ClimParseAction,default=None,help="range of colormap")
    parser.add_argument('--masklim',    action=ClimParseAction,default=None,help="mask limits")
    parser.add_argument('--cmap',       type=str,default="jet",help="matplotlib colormap to use")
@@ -340,6 +358,7 @@ if __name__ == "__main__" :
          datetime1=args.datetime1,datetime2=args.datetime2,
          vector=args.vector,
          tokml=args.tokml,
-         masklim=args.masklim)
+         masklim=args.masklim,
+         dpi=args.dpi)
 
 
