@@ -63,6 +63,8 @@ def main(myglobs) :
 
       for file in files :
 
+         print file
+
          nc = netCDF4.Dataset(file,"r") 
          aice=nc.variables["aice"][0,:,:]
          hice=nc.variables["hi"][0,:,:]

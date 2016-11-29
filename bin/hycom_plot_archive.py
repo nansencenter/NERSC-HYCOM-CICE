@@ -147,7 +147,9 @@ def to_kml(lon,lat,data,fieldname,cmap,res=0.1,clim=None) :
    kml.savekmz(kmzfile)
 
 
-def open_file(myfile0,filetype,fieldname,fieldlevel,datetime1=None,datetime2=None,vector="") :
+def open_file(myfile0,filetype,fieldname,fieldlevel,datetime1=None,datetime2=None,vector="",
+      idm=None,
+      jdm=None) :
 
    logger.info("Now processing  %s"%myfile0)
    m=re.match("(.*)\.[ab]",myfile0)
@@ -242,7 +244,7 @@ def main(myfiles,fieldname,fieldlevel,
       # Open files, and return some useful stuff.
       # ab2 i used in case of vector
       # rdtimes is used for plotting forcing fields
-      n_intloop,ab,ab2,rdtimes = open_file(myfile0,filetype,fieldname,fieldlevel,datetime1=datetime1,datetime2=datetime2,vector=vector)
+      n_intloop,ab,ab2,rdtimes = open_file(myfile0,filetype,fieldname,fieldlevel,datetime1=datetime1,datetime2=datetime2,vector=vector,idm=idm,jdm=jdm)
 
 
       # Intloop used to read more fields in one file. Only for forcing for now

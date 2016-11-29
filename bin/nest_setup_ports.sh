@@ -3,21 +3,7 @@
 
 # Input args
 if [ $# -ne 2 ]  ; then
-   echo " Script calculates ports and relaxation zones for usw ehen nesting"
-#    echo "This script will set up the partition files needed when running HYCOM with"
-#    echo "MPI parallelization. The input is the number of partitions along the 1st"
-#    echo "and 2nd dimensions, and the topography version to apply the partitioning to"
-#    echo
-#    echo "Usage:" 
-#    echo "   $(basename $0) [1st tile dimension] [2nd tile dimension] [sfudge] [topo version]" 
-#    echo "Example:" 
-#    echo "   $(basename $0) -2 -2 01 " 
-#    echo "  tip  - two negative tile dimensions gives a uniform grid "
-#    echo "sfudge : "
-#    echo " c ---   sfudge:  size fudge factor (0.5 to 9.9, larger for more variation)"
-#    echo " c ---              < 1.0 to keep all  constant-sized tiles"
-#    echo " c ---              > 9.0 to shift     constant-sized tiles"
-#    echo " c ---              > 9.8 to double-up constant-sized tiles"
+   echo " Script calculates ports and relaxation zones for use when nesting"
     echo "Need  width of relax zone, efold time in days"
     exit 1
 fi
@@ -58,10 +44,11 @@ fi
 
 # Pointers to programs
 #export TOPO_FIND=/home/nersc/knutali/Models/hycom/HYCOM_ALL_2.2.72/ALL/topo/src/topo_ports_find
-export PORT_ROUTINE=$BASEDIR/../python/hycom_topo_ports.py
+export PORT_ROUTINE=hycom_bathy_ports.py
 
 # Create work dir, and copy files to it
-echo "running routine in $SCRATCH"
+echo "running routine $PORT_ROUTINE"
+echo "working in  directory $SCRATCH"
 cd $SCRATCH || { echo "Could not descend dir  $SCRATCH" ; exit 1 ;}
 touch regional.grid.a regional.grid.b regional.depth.a regional.depth.b fort.21 fort.31
 rm    regional.grid.a regional.grid.b regional.depth.a regional.depth.b fort.21 fort.31

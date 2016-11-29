@@ -77,6 +77,19 @@ the hycom setup files (grid and bathymetry) to be present.
 |hycom_woa13_zfiles.py  | Generates .d files from WOA2013 data. These can be used by routine z_generic.sh |
 |hycom_woa13.py  | Generates gridded z-level  files from WOA2013 data in ab format. Output similar to z_generic.sh (this routine can replace z_generic.sh) |
 
+# Generation of atmospheric forcing
+
+|executable     | purpose|
+|-------- | -------------|
+|hycom_atmfor.py | generates atmospheric forcing, based on xml file |
+|atmo_synoptic.sh | Wrapper around hycom_atmfor.py |
+
+# Generation of river forcing
+
+|executable     | purpose|
+|-------- | -------------|
+| river_nersc.sh | Use simple nersc river routine |
+
 # Nesting/interpolation tools
 
 |executable     | purpose|
@@ -85,7 +98,9 @@ the hycom setup files (grid and bathymetry) to be present.
 |isuba_topog.sh        | Use mapping (see above) to interpolate topo file from one region to another |
 |isubaregion_archv.sh  | Use mapping (see above) to interpolate archive from one region to another |
 |remap_archv.sh        | Do vertical remapping of archive files |
-|hycom_topo_ports.py   | Generate a ports.input file suitable for use when nesting |
+|hycom_topo_ports.py   | Generate a ports.input file  and rmu file suitable for use when nesting |
+| nest_setup_ports.sh  | Generates a ports.input file and rmu file suitable for nesting for an experiment (wrapper around hycom_topo_ports.py)|
+| nest_check_ports.sh  |Checks a port setup for errors |
 
 
 # Diagnostic tools 
@@ -103,11 +118,9 @@ the hycom setup files (grid and bathymetry) to be present.
 Notebooks
 atmo_nersc_clim.sh
 atmo_nersc_synoptic_oldversions.sh
-atmo_synoptic.sh
 calc_thkdf4.sh
 cice_icevolume.py
 cleanEXP.sh
-hycom_atmfor.py
 hycom_bathy_modify.py
 hycom_date.py
 hycom_kapref.py
@@ -118,12 +131,10 @@ hycomsteps.py
 namelist_extract.py
 nemo_mesh_to_hycom.py
 nemo_to_hycom.py
-nest_check_ports.sh
-nest_setup_ports.sh
 old
-river_nersc.sh
 river_nersc_bio.sh
 river_trip.sh
 scripts_specific
 seawifs_mon_kpar.sh
 soda_to_hycom.py
+hycom_montg1.py

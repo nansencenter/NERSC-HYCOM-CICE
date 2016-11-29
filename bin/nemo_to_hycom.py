@@ -211,11 +211,13 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=False) :
       ncid2d=netCDF4.Dataset(file2d,"r")
       ssh          = nemo_mesh.sliced(ncid2d.variables["sossheig"][0,:,:])
       ssh = numpy.where(ssh==ncid2d.variables["sossheig"]._FillValue,0.,ssh)
-      ssh = numpy.where(ssh>1e30,0.,ssh) # Hmmmmm
+      ssh = numpy.where(ssh>1e30,0.,ssh*9.81) # NB: HYCOM srfhgt is in geopotential ...
       #bar_height   = nemo_mesh.sliced(ncid2d.variables["sobarhei"][0,:,:] )
       #dyn_height   = nemo_mesh.sliced(ncid2d.variables["sodynhei"][0,:,:] 
-      montg1       = ssh * 9.81  #* 1e-3  # Approx
-      logger.warning("TODO:montg pot calculation must be checked...")
+      #montg1       = ssh * 9.81  #* 1e-3  # Approx
+      montg1=numpy.zeros(ssh.shape)
+      logger.warning("montg1 set to zero")
+      logger.warning("srfhgt set to sossheigh*9.81 (Geopotential height)")
 
       # Write to abfile
       outfile = abfile.ABFileArchv(mydt.strftime(fnametemplate),"w",iexpt=10,iversn=22,yrflag=3,)
