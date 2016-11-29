@@ -9,7 +9,6 @@ else
    echo "Could not find EXPT.src. This script must be run in expt dir"
    exit 1
 fi
-#BINDIR="../../bin"
 EDIR=$(pwd)/                           # Location of this script
 BASEDIR=$(cd $(dirname $0)/.. && pwd)/ # Location of basedir
 source $BASEDIR/REGION.src
@@ -18,7 +17,7 @@ source $EDIR/EXPT.src
 # Create z-level relaxation files
 cd $EDIR
 echo "z climatology"
-$BINDIR/z_generic.sh $myclim > $EDIR/log/ref_z_relax.out 2>&1
+z_generic.sh $myclim > $EDIR/log/ref_z_relax.out 2>&1
 res=$?
 [ $res -eq 0 ] && echo "Success"
 [ $res -ne 0 ] && echo "Failure... Log in $EDIR/log/ref_z_relax.out"
@@ -27,7 +26,7 @@ echo ".."
 # Create relaxation files on hybrid coordinates
 cd $EDIR
 echo "hybrid climatology"
-$BINDIR/relaxi.sh $myclim   > $EDIR/log/ref_hybrid_relax.out 2>&1
+relaxi.sh $myclim   > $EDIR/log/ref_hybrid_relax.out 2>&1
 res=$?
 [ $res -eq 0 ] && echo "Success"
 [ $res -ne 0 ] && echo "Failure...  Log in  $EDIR/log/ref_hybrid_relax.out"
@@ -35,7 +34,7 @@ echo ".."
 
 # Create relaxation mask
 echo "relaxation mask"
-cat <<EOF | $BINDIR/relax_rmu.sh ${X}  > $EDIR/log/ref_rmu_mask.out 2>&1
+cat <<EOF | relax_rmu.sh ${X}  > $EDIR/log/ref_rmu_mask.out 2>&1
 F
 F
 F
@@ -52,7 +51,7 @@ echo ".."
 # Create simple river forcing
 cd $EDIR
 echo "river forcing"
-$BINDIR/river_nersc.sh 100 300 ../../input/rivers.dat > $EDIR/log/ref_river_nersc.out 2>&1
+river_nersc.sh 100 300 ../../input/rivers.dat > $EDIR/log/ref_river_nersc.out 2>&1
 res=$?
 [ $res -eq 0 ] && echo "Success"
 [ $res -ne 0 ] && echo "Failure...  Log in  $EDIR/log/ref_river_nersc.out"
@@ -60,7 +59,7 @@ echo ".."
 
 # Create kpar file
 echo "kpar forcing"
-$BINDIR/seawifs_mon_kpar.sh > $EDIR/log/ref_seawifs.out 2>&1
+seawifs_mon_kpar.sh > $EDIR/log/ref_seawifs.out 2>&1
 res=$?
 [ $res -eq 0 ] && echo "Success"
 [ $res -ne 0 ] && echo "Failure...  Log in  $EDIR/log/ref_seawifs.out"
@@ -68,7 +67,7 @@ echo ".."
 
 # Create tiling. 
 echo "grid tiling"
-$BINDIR/tile_grid.sh -2 -2 ${T} > $EDIR/log/ref_tiling.out 2>&1
+tile_grid.sh -2 -2 ${T} > $EDIR/log/ref_tiling.out 2>&1
 res=$?
 [ $res -eq 0 ] && echo "Success"
 [ $res -ne 0 ] && echo "Failure...  Log in  $EDIR/log/ref_tiling.out" 
