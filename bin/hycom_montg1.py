@@ -13,7 +13,7 @@ import os
 import os.path
 
 # Set up logger
-_loglevel=logging.DEBUG
+_loglevel=logging.INFO
 logger = logging.getLogger(__name__)
 logger.setLevel(_loglevel)
 formatter = logging.Formatter("%(asctime)s - %(name)10s - %(levelname)7s: %(message)s")
@@ -31,8 +31,16 @@ northern_limit_latitudes  = [67.5, 65,  62.,  57.7, 51.0, 49.4, 51.5, 57., 66.7,
    65.,    64.,  64., 66.6, 67.81,  73.7, 81.9, 80.5]
 
 
-def main(restart_file,archv_files,sigver) :
+def main(psikk_file,archv_files, psikk_file_type="restart",month=1) :
 
+   logger.info("psikk file type is %s"%psikk_file_type)
+   from_relax_archv = psikk_file_type=="relax_archv"
+   from_relax       = psikk_file_type=="relax"
+   from_restart     = psikk_file_type=="restart"
+   if not from_relax_archv and not from_relax and not from_restart :
+      msg="psikk_file_type must be either restart relax or relax_archv"
+      logger.error(msg)
+      raise ValueError,msg
 
    # Open blkdat files. Get some properties
    bp=modeltools.hycom.BlkdatParser("blkdat.input")
@@ -68,26 +76,116 @@ def main(restart_file,archv_files,sigver) :
       raise NameError,msg
          
 
-   # Initialize relevant sigma class
-
-
-
-   ## Read input bathymetry
-   #bfile=abfile.ABFileBathy("regional.depth","r",idm=gfile.idm,jdm=gfile.jdm,mask=True)
-   #in_depth_m=bfile.read_field("depth")
-   #bfile.close()
-
-   # Read input variables from lowest layer
-   m=re.match( "^(.*)(\.[ab])", restart_file)
-   if m : restart_file=m.group(1)
-   rfile=abfile.ABFileRestart(restart_file,"r",idm=idm,jdm=jdm)
-   psikk=rfile.read_field("psikk",0)
-   thkk=rfile.read_field("thkk",0)
-   rfile.close()
-
-   # hycom sigma and kappa, written in python
+   # hycom sigma and kappa, written in python. NB: sigver is not used here.
+   # Modify to use other equations of state. For now we assume sigver is:
+   #    1 (7-term eqs referenced to    0 bar)
+   #    2 (7-term eqs referenced to 2000 bar)
+   if thflag == 0 :
+      sigver=1
+   else :
+      sigver=2
    sig  = modeltools.hycom.Sigma(thflag)
    if kapref > 0  : kappa = modeltools.hycom.Kappa(kapref,thflag*1000.0e4) # 
+
+   # Option 1: Get psikk and thkk directly from a restart file
+   if from_restart :
+
+      # Read input variables from lowest layer of a restart file
+      m=re.match( "^(.*)(\.[ab])", psikk_file)
+      if m : psikk_file=m.group(1)
+      rfile=abfile.ABFileRestart(psikk_file,"r",idm=idm,jdm=jdm)
+      psikk=rfile.read_field("psikk",0)
+      thkk=rfile.read_field("thkk",0)
+      rfile.close()
+
+   # Option 2: Get temp, salinity and dp from relaxaiton fields. Estimate thkk and psikk
+   elif from_relax :
+      pattern="^(.*)_(tem|int_sal)"
+      psikk_file = abfile.ABFile.strip_ab_ending(psikk_file)
+      m=re.match("^(.*)_(tem|int_sal)",psikk_file)
+      if m :  
+         relaxtem=abfile.ABFileRelax(m.group(1)+"_tem","r")
+         relaxsal=abfile.ABFileRelax(m.group(1)+"_sal","r")
+         relaxint=abfile.ABFileRelax(m.group(1)+"_int","r")
+      else :
+         msg="""Input hycom relaxation file %s does not match pattern
+         %s"""%(psikk_file,pattern)
+         logger.error(msg)
+         raise ValueError,msg
+
+   # Option 3: Get temp, salinity and dp from relaxation fields (archive files generated during relaxation setup). Estimate thkk and psikk
+   elif from_relax_archv :
+      arcfile0=abfile.ABFileArchv(psikk_file,"r")
+
+   else :
+      msg="No way of estimating psikk and thkk. Aborting ..."
+      logger(msg)
+      raise ValueError, msg
+
+   # Estimate psikk, thkk from climatology. (Option 1 or option 2)
+   if from_relax or from_relax_archv :
+      logger.info("Estimating psikk and thkk from climatology")
+      p    =numpy.ma.zeros((jdm,idm))
+      pup  =numpy.ma.zeros((jdm,idm))
+      montg=numpy.ma.zeros((jdm,idm))
+      for k in range(kdm) :
+         logger.debug("Reading layer %d from climatology"%k)
+         if k>0 : thstarup   =numpy.ma.copy(thstar)
+
+         if from_relax :
+            saln       =relaxsal.read_field("sal",k+1,month)
+            temp       =relaxtem.read_field("tem",k+1,month)
+            plo        =relaxint.read_field("int",k+1,month) # lowest interface of layer
+            dp         = plo - pup
+            pup        = numpy.copy(plo)              # Next loop, pup = plo of this loop
+         elif from_relax_archv :
+            saln       =arcfile0.read_field("salin",k+1)
+            temp       =arcfile0.read_field("temp",k+1)
+            dp         =arcfile0.read_field("thknss",k+1)
+         else :
+            msg="No way of estimating sal, tem and dp. Aborting ..."
+            logger(msg)
+            raise ValueError, msg
+
+         th3d       =sig.sig(temp,saln) - thbase
+         thstar     =numpy.ma.copy(th3d)
+         if kapref > 0 :
+            thstar=thstar + kappa.kappaf(temp[:,:],
+                                         saln[:,:], 
+                                         th3d[:,:]+thbase,
+                                         p[:,:])
+         elif kapref < 0 :
+            msg="Only kapref>=0 is implemented for now"
+            logger.error(msg)
+            raise ValueError,msg
+         # From hycom inicon.f
+         #        montg(i,j,1,kkap)=0.0
+         #        do k=1,kk-1
+         #          montg(i,j,k+1,kkap)=montg(i,j,k,kkap)-
+         #     &    p(i,j,k+1)*(thstar(i,j,k+1,kkap)-thstar(i,j,k,kkap))*thref**2
+         #        enddo
+         #c
+         #        thkk( i,j,kkap)=thstar(i,j,kk,kkap)
+         #        psikk(i,j,kkap)=montg( i,j,kk,kkap)
+         if k > 0 : 
+            #print (thstar - thstarup).min(), (thstar - thstarup).min()
+            montg = montg - p * (thstar - thstarup) * thref**2
+         p   = p +dp
+      thkk = thstar
+      psikk = montg
+      logger.info("Min max of estimated  thkk: %12.6g %12.6g"%(thkk.min(),thkk.max()))
+      logger.info("Min max of estimated psikk: %12.6g %12.6g"%(psikk.min(),psikk.max()))
+      if from_relax :
+         relaxtem.close()
+         relaxsal.close()
+         relaxint.close()
+      elif from_relax_archv :
+         arcfile0.close()
+   else :
+      pass
+
+
+
 
 
 
@@ -107,6 +205,7 @@ def main(restart_file,archv_files,sigver) :
       dp    =numpy.ma.zeros((kdm,jdm,idm))
       p     =numpy.ma.zeros((kdm+1,jdm,idm))
       for k in range(kdm) :
+         logger.debug("Reading layer %d from %s"%(k,archv_file))
          temp  =arcfile.read_field("temp",k+1)
          saln  =arcfile.read_field("salin",k+1)
          dp    [k  ,:,:]=arcfile.read_field("thknss",k+1)
@@ -223,13 +322,22 @@ def main(restart_file,archv_files,sigver) :
       arcfile_out.close()
       arcfile.close()
 
+   logger.warning("Sigver assumed to be those of 7 term eqs")
+   logger.warning("    1 for sigma-0/thflag=0, 2 for sigma-2/thflag=2")
+   logger.warning("For other eqs, you need to modify the code so that sigver is set correctly in the archv file""") 
+   logger.warning("psikk and thkk from relaxation fields is beta. Preferred method is restart")
+
    logger.info("Finito")
 
 if __name__ == "__main__" :
 
    parser = argparse.ArgumentParser(description='Calculate montgomery potential in 1st layer (used in archv files)')
-   parser.add_argument('sigver',           type=int, help='Version of equation of state')
-   parser.add_argument('restart_file',     type=str, help='Restart file to get thkk and psikk from ')
+   parser.add_argument('--month',          type=int, help="Month to process if psikkfile is relaxation fields. Defaults to 1",default=1)
+   parser.add_argument('--psikk-file-type',       type=str, help="""File to get psikk and
+         thkk from. Accepted values are restart (a restart file containing psikk
+         and thkk, relax_archv (archive files created when running reanalysis),
+         relax (relaxation files)""", default="restart") 
+   parser.add_argument('psikk_file',       type=str, help='file to get thkk and psikk from ')
    parser.add_argument('archive_file',     type=str, help='Files to add montg1 to',nargs="+")
    args = parser.parse_args()
-   main(args.restart_file,args.archive_file,args.sigver)
+   main(args.psikk_file,args.archive_file,month=args.month,psikk_file_type=args.psikk_file_type)

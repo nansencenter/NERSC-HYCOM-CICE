@@ -19,6 +19,16 @@ import cfunits
 import nemo_mesh_to_hycom
 import sys
 
+
+# Hycom-ified NMO files. Approach:
+# 1) Create hycom archv files and topo/region files using this routine
+# 2) Interpolate NEMO topo file to target region
+# 3) Merge target region topography and new region. Set up experiment to use new topo
+# 4) Interpolate archive file to new region / experiment
+# 5) Remap archive files vertically
+# 6) Add montgomery potential in 1st layer to file
+
+
 # Set up logger
 _loglevel=logging.INFO
 logger = logging.getLogger(__name__)
@@ -55,6 +65,9 @@ logger.propagate=False
 #   field2  = numpy.roll(field,istep,axis=1)
 #   return field2
 
+
+#TODO: Uses a lot of memory. Can be made more meory efficient by going through variables in smaller chunks
+#NB temp and sal is processed layer by layer. u v is not 
    
 
 def main(filemesh,grid2dfiles,first_j=0,mean_file=False) :
@@ -122,33 +135,18 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=False) :
       logger.info("gridS  file: %s"%files)
       logger.info("gridT  file: %s"%filet)
       ncids=netCDF4.Dataset(files,"r")
-      s=numpy.zeros((nlev,mbathy.shape[0],mbathy.shape[1]))
-      for k in range(nlev) : # Dont include lowest layer
-         s[k,:,:] = nemo_mesh.sliced(ncids.variables["vosaline"][0,k,:,:])
-      s = numpy.where(s<1e30,s,0.)
-      s = numpy.where(s==ncids.variables["vosaline"]._FillValue,0.,s)
       ncidt=netCDF4.Dataset(filet,"r")
-      t=numpy.zeros((nlev,mbathy.shape[0],mbathy.shape[1]))
-      for k in range(nlev) : # Dont include lowest layer
-         t[k,:,:] = nemo_mesh.sliced(ncidt.variables["votemper"][0,k,:,:])
-      t = numpy.where(t==ncidt.variables["votemper"]._FillValue,0.,t)
-      t = numpy.where(t<1e30,t,0.)
 
       # time from gridT file. 
       time = ncidt.variables["time_counter"][0]
       tunit = ncidt.variables["time_counter"].units
-      #print tunit,time
       tmp=cfunits.Units(tunit)
       refy, refm, refd=(1958,1,1)
       tmp2=cfunits.Units("hours since %d-%d-%d 00:00:00"%(refy,refm,refd))            # Units from CF convention
       tmp3=cfunits.Units.conform(time,tmp,tmp2)                                       # Transform to new new unit 
-      #print tmp3,type(tmp3)
       tmp3=int(numpy.round(tmp3))
-      #print tmp3
-      #print datetime.timedelta(hours=tmp3) # Then calculate dt. Phew!
       mydt = datetime.datetime(refy,refm,refd,0,0,0) + datetime.timedelta(hours=tmp3) # Then calculate dt. Phew!
       logger.info("Valid time from gridT file:%s"%str(mydt))
-
 
       # Read and calculculate U in hycom U-points. 
       logger.info("gridU  file: %s"%fileu)
@@ -235,8 +233,16 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=False) :
          if k%10==0 : logger.info("Writing 3D variables, level %d of %d"%(k+1,u.shape[0]))
          ul = numpy.squeeze(u[k,:,:]) - ubaro # Baroclinic velocity
          vl = numpy.squeeze(v[k,:,:]) - vbaro # Baroclinic velocity
-         sl = numpy.squeeze(s[k,:,:])
-         tl = numpy.squeeze(t[k,:,:])
+         #sl = numpy.squeeze(s[k,:,:])
+         #tl = numpy.squeeze(t[k,:,:])
+
+         sl = nemo_mesh.sliced(ncids.variables["vosaline"][0,k,:,:])
+         sl = numpy.where(sl<1e30,sl,0.)
+         sl = numpy.where(sl==ncids.variables["vosaline"]._FillValue,0.,sl)
+
+         tl = nemo_mesh.sliced(ncidt.variables["votemper"][0,k,:,:])
+         tl = numpy.where(tl==ncidt.variables["votemper"]._FillValue,0.,tl)
+         tl = numpy.where(tl<1e30,tl,0.)
 
 
          # Layer thickness
@@ -260,11 +266,11 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=False) :
 
       # TODO: Process ice data
       ncid2d.close()
-      ncids.close()
+      outfile.close()
       ncidt.close()
+      ncids.close()
       ncidu.close()
       ncidv.close()
-      outfile.close()
 
       logger.info("Finished writing %s.[ab] "% mydt.strftime(fnametemplate))
    nemo_mesh = []
@@ -283,7 +289,7 @@ if __name__ == "__main__" :
 #   %s GLORYS2V3_mesh_mask.nc --first_j=100  GLORYS2V4_1dAV_20130101_20130102_grid2D_R20130102.nc 
 #   """ %(os.path.basename(sys.argv[0]),os.path.basename(sys.argv[0]))
          )
-   parser.add_argument('--first_j',   type=int,default=0,help="first j-index to process. Defaults to 0")
+   parser.add_argument('--first-j',   type=int,default=0,help="first j-index to process. Defaults to 0")
    parser.add_argument('--mean',   action="store_true",default=False,help="if mean flag is set, a mean archive will be created")
    parser.add_argument('meshfile',   type=str,help="NEMO mesh file in netcdf format")
    parser.add_argument('grid2dfile', type=str, nargs="+",help="NEMO 2D data file in netcdf format")
