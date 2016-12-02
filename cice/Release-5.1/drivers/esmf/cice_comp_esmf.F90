@@ -353,8 +353,6 @@ end subroutine
 
    ! Assing coordinate values ( x-coordinate )
    call ESMF_LogWrite("Setting up ESMF grid x-coords for CICE",ESMF_LOGMSG_INFO, rc=rc)
-   !$OMP PARALLEL DO PRIVATE(iblk,i,j,ilo,ihi,jlo,jhi,ig,jg,this_block, &
-   !$OMP                     lbnd,ubnd,Xcoord)
    do iblk=1,nblocks
 
       ! Set grid coordinates from CICE coordinates. 
@@ -397,14 +395,11 @@ end subroutine
         enddo
       enddo
    enddo
-   !$OMP END PARALLEL DO
    call ESMF_VMBarrier(vm, rc=rc)
    call ESMF_LogFlush(rc=rc)
 
    ! Assing coordinate values ( y-coordinate )
    call ESMF_LogWrite("Setting up ESMF grid y-coords for CICE",ESMF_LOGMSG_INFO, rc=rc)
-   !$OMP PARALLEL DO PRIVATE(iblk,i,j,ilo,ihi,jlo,jhi,ig,jg,this_block, &
-   !$OMP                     lbnd,ubnd,Ycoord)
    do iblk=1,nblocks
       call ESMF_GridGetCoord(grid=grid2D,                       &
                              CoordDim=2,                        &
@@ -435,7 +430,6 @@ end subroutine
         enddo
       enddo
    enddo
-   !$OMP END PARALLEL DO
    call ESMF_VMBarrier(vm, rc=rc)
 
    ! Set up grid2D mask
@@ -449,8 +443,6 @@ end subroutine
 
    ! Assing mask values
    !KAL - ups, not pointing enywhere yet ... mask_ptr(:,:) = 0  !all land, outside active tile
-   !$OMP PARALLEL DO PRIVATE(iblk,i,j,ilo,ihi,jlo,jhi,ig,jg,this_block, &
-   !$OMP                     lbnd,ubnd,mask_ptr)
    do iblk=1,nblocks
       CALL ESMF_GridGetItem(grid2D,                             &
                             ESMF_GRIDITEM_MASK,                 &
@@ -489,7 +481,6 @@ end subroutine
         enddo
       enddo
    enddo
-   !$OMP END PARALLEL DO
    call ESMF_VMBarrier(vm, rc=rc)
    call ESMF_LogFlush(rc=rc)
 
@@ -497,8 +488,6 @@ end subroutine
    ! Set up grid2D mask on land-only blocks. These are only defined in ESMF
    ! Array, and only set on first Pet
    if (localPet==0) then
-      !$OMP PARALLEL DO PRIVATE(iblk,i,j,ilo,ihi,jlo,jhi,ig,jg,this_block, &
-      !$OMP                     lbnd,ubnd,mask_ptr)
       do iblk=nblocks+1,nblocks+count_landblocks
          CALL ESMF_GridGetItem(grid2D,                             &
                                ESMF_GRIDITEM_MASK,                 &
@@ -518,7 +507,6 @@ end subroutine
          ! The rest (xc,yc) is not set
       enddo
 
-      !$OMP END PARALLEL DO
    end if
    call ESMF_VMBarrier(vm, rc=rc)
    call ESMF_LogFlush(rc=rc)
@@ -958,7 +946,6 @@ implicit none
                                   name=trim(expFieldName(i)),        &
                                   rc=rc)
 
-     !TODO: OpenMP?
      ! Initialize here, using ESMF de info. In actual transfers we will use CICE
      ! block info
      do deCount = 0, localDeCount-1
@@ -1010,7 +997,6 @@ implicit none
 !    if (ESMF_LogFoundError(rc, msg="cice_setup_Esmf: Fieldget localDeCount import", rcToReturn=rc2)) &
 !       call ESMF_Finalize(rc=rc)
 
-     !TODO: OpenMP?
      ! Initialize here, using ESMF de info. In actual transfers we will use CICE
      ! block info
      do deCount = 0, localDeCount-1
@@ -1087,7 +1073,6 @@ subroutine cice_put_export(export_state)
    call ESMF_LogFlush(rc=rc)
 
    ! Get import fields - Import fields must match export fields of "the other" model
-   ! TODO: OMP
    do ifld=1,numExpFields
       !print *,ifld,trim(impFieldName(ifld))
       do iblk=1,nblocks
@@ -1247,7 +1232,6 @@ subroutine cice_get_import(import_state)
    call ESMF_LogFlush(rc=rc)
 
    ! Get import fields - Import fields must match export fields of "the other" model
-   ! TODO: OMP
    do ifld=1,numImpFields
       !KAL !print *,ifld,trim(impFieldName(ifld))
       !KAL if (my_task==master_task .and. iblk==1) print '(a)',"CICE:importing "//trim(impFieldName(ifld))
@@ -1458,13 +1442,13 @@ implicit none
     call ESMF_LogWrite("CICE init routine started",ESMF_LOGMSG_INFO, rc=rc)
     call CICE_Init() 
     call cice_setup_esmf(comp,import_state,export_state,EClock,rc)
-    !call ESMF_LogWrite("CICE init routine ended",ESMF_LOGMSG_INFO, rc=rc)
 
     ! Export on init
     call reset_accumulated_fields()
     call update_accumulated_fields()
     call average_accumulated_fields()
     call cice_put_export(export_state)
+    !call ESMF_LogWrite("CICE init routine ended",ESMF_LOGMSG_INFO, rc=rc)
 
 end subroutine
 

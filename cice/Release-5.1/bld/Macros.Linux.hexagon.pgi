@@ -16,8 +16,23 @@ else
 endif
 FIXEDFLAGS := -Mfixed 
 FREEFLAGS  := -Mfree 
-FFLAGS     := -r8 -i4 -O2 -byteswapio -Mnodclchk -Mextend -fastsse
+
+
+# Works!
 #FFLAGS     := -r8 -i4 -g -byteswapio -Mnodclchk -Mextend 
+
+# Works!
+#FFLAGS     := -r8 -i4 -O2 -byteswapio -Mnodclchk -Mextend 
+
+# Works not!
+#FFLAGS     := -r8 -i4 -O2 -byteswapio -Mnodclchk -Mextend -fastsse
+
+# To summarize. fastsse with pgi compilers does not work. (implies -O2 -Munroll=c:1 -Mnoframe -Mlre -Mautoinline == -Mvect=sse -Mcache_align -Mflushz -Mpre)
+# Avoid using aggressive vectorization with the CICE code before you have investigated further. cice_comp_esmf is a good point to start ...
+FFLAGS     := -r8 -i4 -O2 -byteswapio -Mnodclchk -Mextend 
+
+
+
 #FFLAGS     := -r8 -i4 -g  -O0 -byteswapio -Mextend  -Mbounds -Minfo=all -traceback -Mchkfpstk -Mchkstk -Mdalign -Mdclchk -Mdepchk -Miomutex -Mrecursive -Msave -Ktrap=fp 
 #FFLAGS     := -r8 -i4 -g  -O0 -byteswapio -Mextend  -traceback -Ktrap=fp 
 
