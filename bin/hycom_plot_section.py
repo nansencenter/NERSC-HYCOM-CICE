@@ -28,7 +28,7 @@ logger.propagate=False
 
 
 def main(lon1,lat1,lon2,lat2,variable,files,filetype="archive",clim=None,sectionid="",
-      ijspace=False,xaxis="distance",section_map=False) :
+      ijspace=False,xaxis="distance",section_map=False,dpi=180) :
 
    logger.info("Filetype is %s"% filetype)
    gfile = abfile.ABFileGrid("regional.grid","r")
@@ -84,9 +84,9 @@ def main(lon1,lat1,lon2,lat2,variable,files,filetype="archive",clim=None,section
       h=asp*w
       figure.set_figheight(h)
       if sectionid :
-         figure.canvas.print_figure("map_%s.png"%sectionid)
+         figure.canvas.print_figure("map_%s.png"%sectionid,dpi=dpi)
       else :
-         figure.canvas.print_figure("map.png")
+         figure.canvas.print_figure("map.png",dpi=dpi)
 
    # Get layer thickness variable used in hycom
    dpname = modeltools.hycom.layer_thickness_variable[filetype]
@@ -192,11 +192,11 @@ def main(lon1,lat1,lon2,lat2,variable,files,filetype="archive",clim=None,section
       # Print in different y-lims 
       suff=os.path.basename(myfile)
       if sectionid : suff=suff+"_"+sectionid
-      figure.canvas.print_figure("sec_%s_full_%s.png"%(variable,suff),dpi=180)
+      figure.canvas.print_figure("sec_%s_full_%s.png"%(variable,suff),dpi=dpi)
       ax.set_ylim(-1000,0)
-      figure.canvas.print_figure("sec_%s_1000m_%s.png"%(variable,suff),dpi=180)
+      figure.canvas.print_figure("sec_%s_1000m_%s.png"%(variable,suff),dpi=dpi)
       ax.set_ylim(-300,0)
-      figure.canvas.print_figure("sec_%s_300m_%s.png"%(variable,suff),dpi=180)
+      figure.canvas.print_figure("sec_%s_300m_%s.png"%(variable,suff),dpi=dpi)
 
       # Close input file
       i_abfile.close()
@@ -217,6 +217,7 @@ if __name__ == "__main__" :
 
 
    parser = argparse.ArgumentParser(description='')
+   parser.add_argument('--dpi',     type=int,default=180)
    parser.add_argument('--clim',     action=ClimParseAction,default=None)
    parser.add_argument('--filetype'    ,     type=str, help='',default="archive")
    parser.add_argument('--ij'      , action="store_true",default=False)
@@ -233,4 +234,5 @@ if __name__ == "__main__" :
    args = parser.parse_args()
 
    main(args.lon1,args.lat1,args.lon2,args.lat2,args.variable,args.files,filetype=args.filetype,clim=args.clim,sectionid=args.sectionid,ijspace=args.ij,
-         xaxis=args.xaxis,section_map=args.section_map) 
+         xaxis=args.xaxis,section_map=args.section_map,
+         dpi=args.dpi) 
