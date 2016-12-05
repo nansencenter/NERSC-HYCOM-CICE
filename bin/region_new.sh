@@ -76,7 +76,7 @@ for i in $BASEDIR/expt_* ; do
 done
 
 # Set up EXPT.src so that it is correct
-cat  $TARGETDIR/$regname/REGION.src | sed "s/R=.*/R=$regname/" >  $TARGETDIR/$regname/REGION.src.new
+cat  $TARGETDIR/$regname/REGION.src | sed "s/^[ ]*export[ ]\+R=.*/export R=$regname/" >  $TARGETDIR/$regname/REGION.src.new
 mv $TARGETDIR/$regname/REGION.src.new $TARGETDIR/$regname/REGION.src
 
 echo "Base structure set up, note that topo subdir is empty, so you may want to start with that ..."
