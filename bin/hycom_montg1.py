@@ -100,9 +100,9 @@ def main(psikk_file,archv_files, psikk_file_type="restart",month=1) :
 
    # Option 2: Get temp, salinity and dp from relaxaiton fields. Estimate thkk and psikk
    elif from_relax :
-      pattern="^(.*)_(tem|int_sal)"
+      pattern="^(.*)_(tem|int|sal)"
       psikk_file = abfile.ABFile.strip_ab_ending(psikk_file)
-      m=re.match("^(.*)_(tem|int_sal)",psikk_file)
+      m=re.match(pattern,psikk_file)
       if m :  
          relaxtem=abfile.ABFileRelax(m.group(1)+"_tem","r")
          relaxsal=abfile.ABFileRelax(m.group(1)+"_sal","r")
@@ -173,8 +173,6 @@ def main(psikk_file,archv_files, psikk_file_type="restart",month=1) :
          p   = p +dp
       thkk = thstar
       psikk = montg
-      logger.info("Min max of estimated  thkk: %12.6g %12.6g"%(thkk.min(),thkk.max()))
-      logger.info("Min max of estimated psikk: %12.6g %12.6g"%(psikk.min(),psikk.max()))
       if from_relax :
          relaxtem.close()
          relaxsal.close()
@@ -183,6 +181,8 @@ def main(psikk_file,archv_files, psikk_file_type="restart",month=1) :
          arcfile0.close()
    else :
       pass
+   logger.info("Min max of thkk: %12.6g %12.6g"%(thkk.min(),thkk.max()))
+   logger.info("Min max of psikk: %12.6g %12.6g"%(psikk.min(),psikk.max()))
 
 
 
@@ -192,7 +192,7 @@ def main(psikk_file,archv_files, psikk_file_type="restart",month=1) :
    # Loop through archive files
    for archv_file in archv_files :
 
-      logger.info("Processing %s"%(archv_file))
+      logger.debug("Processing %s"%(archv_file))
       arcfile=abfile.ABFileArchv(archv_file,"r")
 
       # Read all layers .. (TODO: If there is memory problems, read and estimate sequentially)
@@ -202,15 +202,16 @@ def main(psikk_file,archv_files, psikk_file_type="restart",month=1) :
       montgc  = numpy.ma.zeros((jdm,idm))    # Only need top layer
       th3d  =numpy.ma.zeros((kdm,jdm,idm))
       thstar=numpy.ma.zeros((kdm,jdm,idm))
-      dp    =numpy.ma.zeros((kdm,jdm,idm))
+      dp    =numpy.ma.zeros((jdm,idm))
       p     =numpy.ma.zeros((kdm+1,jdm,idm))
       for k in range(kdm) :
-         logger.debug("Reading layer %d from %s"%(k,archv_file))
+         logger.info("Reading layer %d from %s"%(k,archv_file))
          temp  =arcfile.read_field("temp",k+1)
          saln  =arcfile.read_field("salin",k+1)
-         dp    [k  ,:,:]=arcfile.read_field("thknss",k+1)
+         #dp    [k  ,:,:]=arcfile.read_field("thknss",k+1)
+         dp    [:,:]=arcfile.read_field("thknss",k+1)
          th3d  [k  ,:,:]=sig.sig(temp,saln) - thbase
-         p     [k+1,:,:]= p[k,:,:] + dp[k,:,:]
+         p     [k+1,:,:]= p[k,:,:] + dp[:,:]
          thstar[k  ,:,:]=numpy.ma.copy(th3d  [k  ,:,:])
          if kapref > 0 :
             thstar[k  ,:,:]=thstar  [k  ,:,:] + kappa.kappaf(temp[:,:],
@@ -221,6 +222,17 @@ def main(psikk_file,archv_files, psikk_file_type="restart",month=1) :
             msg="Only kapref>=0 is implemented for now"
             logger.error(msg)
             raise ValueError,msg
+
+         #print "saln min max:",saln[:,:].min(),saln[:,:].max()
+         #print "temp min max:",temp[:,:].min(),temp[:,:].max()
+         I =  numpy.argmin(temp)
+         #print I
+         #print dp.flatten()[I],temp.flatten()[I]
+         J=numpy.where(temp<-4.)
+         #print J
+         #if J[0].size > 0  : print numpy.max(dp[J[0],J[1]]),numpy.min(temp[J[0],J[1]])
+         #print "th3d min max:",th3d[:,:,k].min(),th3d[:,:,k].max()
+         #print
 
 
 #     Original fortran code (mod_momtum)
