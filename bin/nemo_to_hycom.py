@@ -233,17 +233,6 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=False) :
          if k%10==0 : logger.info("Writing 3D variables, level %d of %d"%(k+1,u.shape[0]))
          ul = numpy.squeeze(u[k,:,:]) - ubaro # Baroclinic velocity
          vl = numpy.squeeze(v[k,:,:]) - vbaro # Baroclinic velocity
-         #sl = numpy.squeeze(s[k,:,:])
-         #tl = numpy.squeeze(t[k,:,:])
-
-         sl = nemo_mesh.sliced(ncids.variables["vosaline"][0,k,:,:])
-         sl = numpy.where(sl<1e30,sl,0.)
-         sl = numpy.where(sl==ncids.variables["vosaline"]._FillValue,0.,sl)
-
-         tl = nemo_mesh.sliced(ncidt.variables["votemper"][0,k,:,:])
-         tl = numpy.where(tl==ncidt.variables["votemper"]._FillValue,0.,tl)
-         tl = numpy.where(tl<1e30,tl,0.)
-
 
          # Layer thickness
          dtl=numpy.zeros(ul.shape)
@@ -256,12 +245,31 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=False) :
             J,I = numpy.where(mbathy==k)
             dtl[J,I] = e3t_ps[J,I]
 
+         tmpfill=ncids.variables["vosaline"]._FillValue
+         sl = nemo_mesh.sliced(ncids.variables["vosaline"][0,k,:,:])
+         sl = numpy.where(numpy.abs(sl-tmpfill)<=1e-4*numpy.abs(tmpfill),35.,sl)
+
+         tmpfill=ncidt.variables["votemper"]._FillValue
+         tl = nemo_mesh.sliced(ncidt.variables["votemper"][0,k,:,:])
+         tl = numpy.where(numpy.abs(tl-tmpfill)<=1e-4*numpy.abs(tmpfill),15.,tl)
+
+
+         # Fill empty layers with values from above
+         if k > 0 :
+            K= numpy.where(dtl < 1e-4)
+            sl[K] = sl_above[K]
+            tl[K] = tl_above[K]
+
+
          onem=9806.
          outfile.write_field(ul      ,iu,"u-vel.",0,0,k+1,0) # u: nemo in cell i is hycom in cell i+1
          outfile.write_field(vl      ,iv,"v-vel.",0,0,k+1,0) # v: nemo in cell j is hycom in cell j+1
          outfile.write_field(dtl*onem,ip,"thknss",0,0,k+1,0)
          outfile.write_field(sl      ,ip,"salin" ,0,0,k+1,0)
          outfile.write_field(tl      ,ip,"temp"  ,0,0,k+1,0)
+
+         tl_above=numpy.copy(tl)
+         sl_above=numpy.copy(sl)
 
 
       # TODO: Process ice data
