@@ -64,10 +64,10 @@ echo "Start time in pbsjob.sh: $START"
 echo "End   time in pbsjob.sh: $END"
 
 # Generate atmospheric forcing :
-../../bin/atmo_synoptic.sh erai $START $END 
+atmo_synoptic.sh erai $START $END 
 
 # Transfer data files to scratch - must be in "expt_XXX" dir for this script
-../../bin/expt_preprocess.sh $START $END $INITFLG        ||  { echo "Preprocess had fatal errors "; exit 1; }
+expt_preprocess.sh $START $END $INITFLG        ||  { echo "Preprocess had fatal errors "; exit 1; }
 
 # Enter Scratch/run dir and Run model
 cd $S  ||  { echo "Could not go to dir $S  "; exit 1; }
@@ -75,7 +75,7 @@ aprun -n $NMPI -m 500M ./hycom_cice  > ../log/hycom.${PBS_JOBID}.out 2>&1
 
 # Cleanup and move data files to data directory - must be in "expt_XXX" dir for this script
 cd $P     ||  { echo "Could not go to dir $P  "; exit 1; }
-../../bin/expt_postprocess.sh 
+expt_postprocess.sh 
 
 exit $?
 
