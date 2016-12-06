@@ -42,7 +42,8 @@ cd       $S || { echo " Could not descend scratch dir $S" ; exit 1;}
 #
 ROOTPATH=""
 if [ ${forcing:0:4} == "erai" ] ; then
-   xmlfile=$BASEDIR/../input/era-interim.xml
+   #xmlfile=$BASEDIR/../input/era-interim.xml
+   xmlfile=$INPUTDIR/era-interim.xml
    # if ERAI_PATH is set, it will override rootPath in xml file
    if [[ -n $ERAI_PATH ]] ; then
       ROOTPATH=$ERAI_PATH
