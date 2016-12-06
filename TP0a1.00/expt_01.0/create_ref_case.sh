@@ -51,7 +51,8 @@ echo ".."
 # Create simple river forcing
 cd $EDIR
 echo "river forcing"
-river_nersc.sh 100 300 ../../input/rivers.dat > $EDIR/log/ref_river_nersc.out 2>&1
+#river_nersc.sh 100 300 ../../input/rivers.dat > $EDIR/log/ref_river_nersc.out 2>&1
+river_nersc.sh 100 300 $INPUTDIR/rivers.dat > $EDIR/log/ref_river_nersc.out 2>&1
 res=$?
 [ $res -eq 0 ] && echo "Success"
 [ $res -ne 0 ] && echo "Failure...  Log in  $EDIR/log/ref_river_nersc.out"
