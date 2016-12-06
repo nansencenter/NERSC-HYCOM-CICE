@@ -14,8 +14,10 @@ export EDIR=$(pwd)
 source ${BINDIR}/common_functions.sh || { echo "Could not source ${BINDIR}/common_functions.sh" ; exit 1 ; }
 source ${BASEDIR}/REGION.src || { echo "Could not source ${BASEDIR}/REGION.src" ; exit 1 ; }
 source ./EXPT.src || { echo "Could not source ./EXPT.src" ; exit 1 ; }
-sourcedir=$BASEDIR/../hycom/RELO/src_${V}ZA-07Tsig0-i-sm-sse_relo_mpi/ # Yes, we always use this version
-sourceconfdir=$BASEDIR/../hycom/RELO/config/
+#sourcedir=$BASEDIR/../hycom/RELO/src_${V}ZA-07Tsig0-i-sm-sse_relo_mpi/ # Yes, we always use this version
+#sourceconfdir=$BASEDIR/../hycom/RELO/config/
+sourcedir=$NHCROOT/hycom/RELO/src_${V}ZA-07Tsig0-i-sm-sse_relo_mpi/ # Yes, we always use this version
+sourceconfdir=$NHCROOT/hycom/RELO/config/
 
 
 
