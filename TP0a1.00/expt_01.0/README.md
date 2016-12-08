@@ -1,3 +1,5 @@
+[toc]
+
 This is the experiment directory. It will contain necessary input files as well 
 as the hycom source and executable, and the output files. Below is a description of the
 subdirectories
@@ -19,6 +21,10 @@ The CICE input file is
 
 
 # Environment setup (EXPT.src)
+
+First of all, for convenience,  source the region file in the parent directory ($REGION.src). This will set up a few
+variables, but most importantly, it will add NHCROOT/bin to your path. That way you dont have to
+type the full path to commands.
 
 Scratch/data directories are set in EXPT.src. Scratch directories are where the
 models run, the expt_preprocess.sh script (see below) will copy necessary files to that location
@@ -50,7 +56,7 @@ proceeding.
 
 # HYCOM environment settings in EXPT.src
 
-Some HYCOM environment settings are controlled by EXPT.src. Below is a list
+Some HYCOM settings are controlled by EXPT.src. Below is a list
 
     export SIGVER=2      # Version of equation of state (this is 7-term sigma 2). Must not cause conflict with thflag in blkdat.input
     export NMPI=4        # Number of MPI threads to use
@@ -78,7 +84,7 @@ in-depth description of the compile script, see  [TODO](TODO)
 The compiled executable will be placed inside the build/src... directory as hycom_cice
     
 
-# Preprocessing (script $NHCROOT/bin/expt_preprocess.sh)
+# Preprocessing (script expt_preprocess.sh in $NHCROOT/bin)
 
 This script will fetch the files needed to run the model and place them in the 
 SCRATCH directory. * This script can be run interactively, this is useful as you can catch
@@ -86,13 +92,13 @@ most errors before starting a job *
 
 In most cases you will be alerted if there is a missing files
 or if there are inconcistencies, but it will not catch every error. The expt_preprocess.sh is called like this from the
-experimend directory:
+experiment directory:
 
-   $NHCROOT/bin/expt_preprocess.sh 2015-01-01T00:00:00 2015-01-10T00:00:00 
+   expt_preprocess.sh 2015-01-01T00:00:00 2015-01-10T00:00:00 
 
 or 
 
-   $NHCROOT/bin/expt_preprocess.sh 2015-01-01T00:00:00 2015-01-10T00:00:00  --init
+   expt_preprocess.sh 2015-01-01T00:00:00 2015-01-10T00:00:00  --init
 
 The optional init flag tells that the script is to set up hycom from a initial state using climatology.
 *NB: In new hycom versions, model initialization works even if hycom yrflag==3.*
@@ -104,8 +110,8 @@ fields first.
 
 # Running jobs
 
-Before jobs are run the script $NHCROOT/bin/expt_preprocess.sh must be run, this can be set in
-the job queue script. You can also run this script interactively from the experiment
+Before jobs are run the script expt_preprocess.sh must be run, this can be set in
+the job script. You can also run this script interactively from the experiment
 directory, to make sure you have all data files you need. It should cover most
 of the data files we use, and handle most (but not all) inconsistencies. If there
 is a inconsistency not caught by the script, it will eventually be caught by hycom.
@@ -114,7 +120,7 @@ If you add new data files for the model, you will have to modify expt_preprocess
 so that the script copies them to the scratch directory. Otherwise you must copy
 them by hand to the scratch directory.
 
-$NHCROOT/bin/expt_postprocess.sh copies files from the scratch directory to your data directory.
+expt_postprocess.sh copies files from the scratch directory to your data directory.
 If you find some files are not copied from the  scratch directory you will have
 to modify expt_postprocess.sh. Also, if a job runs out of time, expt_postprocess.sh will
 not be run. In that case you can run the expt_postprocess.sh script interactively to
