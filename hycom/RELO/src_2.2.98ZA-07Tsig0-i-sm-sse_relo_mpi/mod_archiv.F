@@ -96,6 +96,9 @@ c
       end subroutine archiv_init
 
       subroutine archiv(n, kkout, iyear,iday,ihour, intvl)
+#if defined(NERSC_HYCOM_CICE) && defined(NETCDF_ARCHV)
+      use mod_netcdf_util
+#endif /* defined(NERSC_HYCOM_CICE) && defined(NETCDF_ARCHV)*/
 c
       integer   n, kkout, iyear,iday,ihour
       character intvl*3
@@ -166,6 +169,10 @@ c
      & i5,4x,'''jdm   '' = latitudinal  array size'/
      & 'field       time step  model day',
      & '  k  dens        min              max')
+c
+#if defined(NERSC_HYCOM_CICE) && defined(NETCDF_ARCHV)
+      call write_nc_archv(flnmarcvs(1:ldot)//".nc",kkout,n)
+#endif /* defined(NERSC_HYCOM_CICE) && defined(NETCDF_ARCHV)*/
 c
 c --- surface fields
 c

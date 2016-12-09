@@ -452,6 +452,11 @@ c
      & 'field       time step   mean day',
      & '  k  dens        min              max')
 c
+#if defined(NERSC_HYCOM_CICE) && defined(NETCDF_ARCHV)
+      call write_nc_mean_archv(flnmarcm(1:ldot)//".nc",kdm)
+#endif /* defined(NERSC_HYCOM_CICE) && defined(NETCDF_ARCHV)*/
+C 
+c
 c --- surface fields
 c
       coord=0.
@@ -779,6 +784,109 @@ c
       return
       end subroutine mean_archiv
 
+C
+#if defined(NERSC_HYCOM_CICE) && defined(NETCDF_ARCHV)
+C --- Can not move this into mod_netcdf_util due to circular
+C --- dependencies. TODO: suggest moving mean values out of module
+C --- so that  we can move this subroutine into mod_netcdf_util.
+      subroutine write_nc_mean_archv(filename,kkout)
+      use mod_netcdf_util
+      implicit none
+      character(len=*), intent(in) :: filename
+      integer,          intent(in) :: kkout
+C
+      integer, parameter          :: nfields_nc=28
+      character*6 :: c_arch_nc(nfields_nc)
+      logical     :: l_arch_nc(nfields_nc)
+      integer :: k,ktr, ncid
+C 
+      c_arch_nc( 1) = 'montg1'
+      c_arch_nc( 2) = 'srfhgt'
+      c_arch_nc( 3) = 'steric'
+      c_arch_nc( 4) = 'surflx'
+      c_arch_nc( 5) = 'salflx'
+      c_arch_nc( 6) = 'bldpth'
+      c_arch_nc( 7) = 'mldpth'
+      c_arch_nc( 8) = 'tmix'
+      c_arch_nc( 9) = 'smix'
+      c_arch_nc(10) = 'thmix'
+      c_arch_nc(11) = 'umix'
+      c_arch_nc(12) = 'vmix'
+      c_arch_nc(13) = 'kemix'
+      c_arch_nc(14) = 'covice'
+      c_arch_nc(15) = 'thkice'
+      c_arch_nc(16) = 'temice'
+      c_arch_nc(17) = 'si_u'
+      c_arch_nc(18) = 'si_v'  !output after salflx
+      c_arch_nc(19) = 'u_btrop'
+      c_arch_nc(20) = 'v_btrop'
+      c_arch_nc(21) = 'u-vel.'
+      c_arch_nc(22) = "v-vel."
+      c_arch_nc(23) = "ke"
+      c_arch_nc(24) = "thknss"
+      c_arch_nc(25) = "temp"
+      c_arch_nc(26) = "salin"
+      c_arch_nc(27) = "density"
+      c_arch_nc(28) = "tracer"
+      l_arch_nc=.true.
+      l_arch_nc(28) = ntracr>0
+      write(lp,'(a)') "Writing to "//trim(filename)
+      call open_nc(trim(filename), l_arch_nc, 
+     &      c_arch_nc, nfields_nc,kkout,ncid,
+     &      "Time averaged HYCOM 3D Archive file",
+     &      averaging=meanfq)
+      call write_current_time_nc(ncid,1) 
+C
+C --- 2D fields
+      call write_nc(montg_m ,ip,ncid,trim(c_arch_nc(1)),1,1,1)
+      call write_nc(srfht_m ,ip,ncid,trim(c_arch_nc(2)),1,1,1)
+      call write_nc(steric_m,ip,ncid,trim(c_arch_nc(3)),1,1,1)
+      call write_nc(surflx_m,ip,ncid,trim(c_arch_nc(4)),1,1,1)
+      call write_nc(salflx_m,ip,ncid,trim(c_arch_nc(5)),1,1,1)
+      call write_nc(dpbl_m  ,ip,ncid,trim(c_arch_nc(6)),1,1,1)
+      call write_nc(dpmixl_m,ip,ncid,trim(c_arch_nc(7)),1,1,1)
+      call write_nc(temp_m(1-nbdy,1-nbdy,1),ip,ncid,
+     &              trim(c_arch_nc(8)),1,1,1)
+      call write_nc(saln_m(1-nbdy,1-nbdy,1),ip,ncid,
+     &              trim(c_arch_nc(9)),1,1,1)
+      call write_nc(th3d_m(1-nbdy,1-nbdy,1),ip,ncid,
+     &              trim(c_arch_nc(10)),1,1,1)
+      call write_nc(u_m(1-nbdy,1-nbdy,1),iu,ncid,
+     &              trim(c_arch_nc(11)),1,1,1)
+      call write_nc(v_m(1-nbdy,1-nbdy,1),iv,ncid,
+     &              trim(c_arch_nc(12)),1,1,1)
+      call write_nc(ke_m(1-nbdy,1-nbdy,1),ip,ncid,
+     &              trim(c_arch_nc(13)),1,1,1)
+      call write_nc(covice_m,ip,ncid,trim(c_arch_nc(14)),1,1,1)
+      call write_nc(thkice_m,ip,ncid,trim(c_arch_nc(15)),1,1,1)
+      call write_nc(temice_m,ip,ncid,trim(c_arch_nc(16)),1,1,1)
+      call write_nc(si_u_m  ,ip,ncid,trim(c_arch_nc(17)),1,1,1)
+      call write_nc(si_v_m  ,ip,ncid,trim(c_arch_nc(18)),1,1,1)
+      call write_nc(ubaro_m ,iu,ncid,trim(c_arch_nc(19)),1,1,1)
+      call write_nc(vbaro_m ,iv,ncid,trim(c_arch_nc(20)),1,1,1)
+      do k=1,kkout
+         call write_nc(u_m(1-nbdy,1-nbdy,k),iu,ncid,
+     &                 trim(c_arch_nc(21)),k,1,1)
+         call write_nc(v_m(1-nbdy,1-nbdy,k),iv,ncid,
+     &                 trim(c_arch_nc(22)),k,1,1)
+         call write_nc(ke_m(1-nbdy,1-nbdy,k),ip,ncid,
+     &                 trim(c_arch_nc(23)),k,1,1)
+         call write_nc(dp_m(1-nbdy,1-nbdy,k),ip,ncid,
+     &                 trim(c_arch_nc(24)),k,1,1)
+         call write_nc(temp_m(1-nbdy,1-nbdy,k),ip,ncid,
+     &                 trim(c_arch_nc(25)),k,1,1)
+         call write_nc(saln_m(1-nbdy,1-nbdy,k),ip,ncid,
+     &                 trim(c_arch_nc(26)),k,1,1)
+         call write_nc(th3d_m(1-nbdy,1-nbdy,k),ip,ncid,
+     &                 trim(c_arch_nc(27)),k,1,1)
+         do ktr= 1,ntracr
+            call write_nc(tracer_m(1-nbdy,1-nbdy,k,ktr),ip,ncid,
+     &                    trim(c_arch_nc(28)),k,1,ktr)
+         end do
+      end do
+      call close_nc(ncid)
+      end subroutine
+#endif /* defined(NERSC_HYCOM_CICE) && defined(NETCDF_ARCHV)*/
       end module mod_mean
 c
 c
