@@ -101,6 +101,11 @@ fes2mod : fes2mod.o fesCore8Const.o
 #
 fes2nc : fes2nc.o  fesCore8Const.o
 	$(CC) -o $@ $(CFLAGS) fes2nc.o fesCore8Const.o $(LDFLAGS) -lfes -lm  $(NETCDF_LIB)
+#
+#  fes2nc_transposed
+#
+fes2nc_transposed : fes2nc_transposed.o  fesCore8Const.o
+	$(CC) -o $@ $(CFLAGS) fes2nc_transposed.o fesCore8Const.o $(LDFLAGS) -lfes -lm  $(NETCDF_LIB)
 
 
 #  fes8const

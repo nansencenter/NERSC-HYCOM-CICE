@@ -147,7 +147,7 @@ int main(void)
 
      
    float         lon4[nx*ny],lat4[nx*ny],dep4[nx*ny];
-   double        mlon[nx][ny],mlat[nx][ny],depths[nx][ny];
+   double        mlon[ny][nx],mlat[ny][nx],depths[ny][nx];
    double        ampha[2*(nx+ny)][2*nconst],dep[nx*ny],lat[nx*ny],lon[nx*ny];
    int           ti,offset, n2drec ;
    char* fespath;
@@ -203,12 +203,12 @@ int main(void)
           swapByte(&lon4[k],sizeof(float));
           //printf("swap after: %f \n",dep4[k]);
           if (dep4[k] < 0.5 * huge & dep4[k] > 0.) {
-             depths[i][j]=(double)dep4[k];
+             depths[j][i]=(double)dep4[k];
           } else {
-             depths[i][j]=(double) 0.;
+             depths[j][i]=(double) 0.;
           }
-          mlat[i][j]  =(double)lat4[k];
-          mlon[i][j]  =(double)lon4[k];
+          mlat[j][i]  =(double)lat4[k];
+          mlon[j][i]  =(double)lon4[k];
           k=k+1; 
         }
    }
@@ -269,16 +269,16 @@ int main(void)
              swapByte(&dep[k],sizeof(double));
              swapByte(&lat[k],sizeof(double));
              swapByte(&lon[k],sizeof(double));
-             depths[i][j]=dep[k];
-             mlat[i][j]=lat[k];
-             mlon[i][j]=lon[k];
+             depths[j][i]=dep[k];
+             mlat[j][i]=lat[k];
+             mlon[j][i]=lon[k];
              k=k+1; 
            }
       }
       //printf("TOTOTO depth   %f %g %g\n",depths[249][223],mlat[98][224],mlon[180][117]);
    } /* if false */
    j=520;  i=344;
-   printf("TOTOTO depth   %f %g %g\n",depths[i][j],mlat[i][j],mlon[i][j]);
+   printf("TOTOTO depth   %f %g %g\n",depths[j][i],mlat[j][i],mlon[j][i]);
 
 
 
@@ -302,16 +302,16 @@ int main(void)
   char wname[3];
   char vname[100];
   size_t start[2] = {0, 0};
-  size_t count[2] = {nx, ny};
+  size_t count[2] = {ny, nx};
   double    amphb[2*nconst];
-  double amplitude[nx][ny][nconst]; 
-  double phase[nx][ny][nconst]; 
-  double tmpamp[nx][ny]; 
-  double tmppha[nx][ny]; 
+  double amplitude[ny][nx][nconst]; 
+  double phase[ny][nx][nconst]; 
+  double tmpamp[ny][nx]; 
+  double tmppha[ny][nx]; 
   static double fillval[]= {-999.9};
   // add some correction for bathymetry mismatch between and FES 
   int    ip0,ip1,jp0,jp1;
-  int    Tinter[nx][ny];
+  int    Tinter[ny][nx];
   int    Ncorrect,Nout;
   int    max(int a, int b);
   int    min(int a, int b);
@@ -322,7 +322,7 @@ int main(void)
   Nout=0;
   for (i=0;i<nx;i++) {
      for (j=0;j<ny;j++) {
-        Tinter[i][j]=0;
+        Tinter[j][i]=0;
      }
   }
 
@@ -332,8 +332,7 @@ int main(void)
   handle_error(nc_create(netcdffile, NC_CLOBBER, &ncid));
   handle_error(nc_def_dim(ncid, "nx", (long) nx ,&xdimid ));
   handle_error(nc_def_dim(ncid, "ny", (long) ny ,&ydimid ));
-  //dimids[1]=xdimid; dimids[0]=ydimid; 
-  dimids[0]=xdimid; dimids[1]=ydimid; 
+  dimids[1]=xdimid; dimids[0]=ydimid; 
 
   handle_error(nc_def_var(ncid, "longitude" , NC_DOUBLE, 2, dimids , &varid) );
   handle_error(nc_enddef(ncid));
@@ -350,7 +349,7 @@ int main(void)
   handle_error(nc_put_vara_double(ncid, varid, start, count,  &depths[0][0]  ));
 
   printf("Putting constituents in %s\n",netcdffile);
-  printf("NB: somme errors usually occur ");
+  printf("NB: somme errors usually occur\n");
   for (iconst=0;iconst<nconst;iconst++) {
      handle_error(nc_redef(ncid));
      strcpy(wname,namewave[iconst]);
@@ -368,80 +367,84 @@ int main(void)
   for (i=0;i<nx;i++) {
      for (j=0;j<ny;j++) {
         //printf(" %d %d \n",i,j);
-        if (depths[i][j]>0.1) {
-           dlon=mlon[i][j];
-           dlat=mlat[i][j];
+        if (depths[j][i]>0.1) {
+           dlon=mlon[j][i];
+           dlat=mlat[j][i];
            rc = diag8Const(shortTide,dlat,dlon,nconst,&amphb);
            if ( rc != FES_SUCCESS ) {
               //goto onError;
               for (iconst=0;iconst<2*nconst;iconst++) amphb[iconst]=-999.9;
-              Tinter[i][j]=1;
+              Tinter[j][i]=1;
               Ncorrect++;
               printf("#ERROR :%d  %d  %s\n", i,j, fesErr2String(rc));
            } 
            else {
-              Tinter[i][j]=2;
+              Tinter[j][i]=2;
            }
         } else {
            for (iconst=0;iconst<2*nconst;iconst++) amphb[iconst]=-999.9;
         }
         for (iconst=0;iconst<nconst;iconst++){
-           amplitude[i][j][iconst]=amphb[2*iconst  ];
-           phase    [i][j][iconst]=amphb[2*iconst+1];
+           amplitude[j][i][iconst]=amphb[2*iconst  ];
+           phase    [j][i][iconst]=amphb[2*iconst+1];
         }
      }
   }
+
+
+
+
 
   // considering the correction by nearest value
   while (Ncorrect>0) {
     Nout++;
     for (i=0; i<nx; i++) {
       for (j=0; j<ny; j++) {
-        if (Tinter[i][j]==1) {
+        if (Tinter[j][i]==1) {
           ip0=max(i-1,0);
           ip1=min(i+1,nx-1);
           jp0=max(j-1,0);
           jp1=min(j+1,ny-1);
           tmp_n=0;  
           for (iconst=0; iconst<2*nconst; iconst++) tmp_b0[iconst]=0;
-          if (Tinter[ip0][jp0]==2) {
+          if (Tinter[jp0][ip0]==2) {
             tmp_n=tmp_n+1;
             for (iconst=0;iconst<nconst;iconst++){
-              tmp_a0[2*iconst]=amplitude[ip0][jp0][iconst];
-              tmp_a0[2*iconst+1]=phase[ip0][jp0][iconst];
+              tmp_a0[2*iconst]=amplitude[jp0][ip0][iconst];
+              tmp_a0[2*iconst+1]=phase[jp0][ip0][iconst];
             }
             for (iconst=0; iconst<2*nconst; iconst++) {
               tmp_b0[iconst]=(tmp_b0[iconst]*(tmp_n-1)+tmp_a0[iconst])/tmp_n;
             }
           //  printf(" %d %d %d %f %f\n",i,j,tmp_n,tmp_b0[1],tmp_a0[1]);
           }
-          if (Tinter[ip1][jp1]==2) {
+          if (Tinter[jp1][ip1]==2) {
             tmp_n=tmp_n+1;
             for (iconst=0;iconst<nconst;iconst++){
-              tmp_a0[2*iconst]=amplitude[ip1][jp1][iconst];
-              tmp_a0[2*iconst+1]=phase[ip1][jp1][iconst];
+              tmp_a0[2*iconst]=amplitude[jp1][ip1][iconst];
+              tmp_a0[2*iconst+1]=phase[jp1][ip1][iconst];
             }
             for (iconst=0; iconst<2*nconst; iconst++) {
               tmp_b0[iconst]=(tmp_b0[iconst]*(tmp_n-1)+tmp_a0[iconst])/tmp_n;
             }
           //  printf(" %d %d %d %f %f\n",i,j,tmp_n,tmp_b0[1],tmp_a0[1]);
           }
-          if (Tinter[ip0][jp1]==2) {
+          if (Tinter[jp0][ip1]==2) {
             tmp_n=tmp_n+1;
             for (iconst=0;iconst<nconst;iconst++){
-              tmp_a0[2*iconst]=amplitude[ip0][jp1][iconst];
-              tmp_a0[2*iconst+1]=phase[ip0][jp1][iconst];
+              tmp_a0[2*iconst]=amplitude[jp0][ip1][iconst];
+              tmp_a0[2*iconst+1]=phase[jp0][ip1][iconst];
             }
             for (iconst=0; iconst<2*nconst; iconst++) {
               tmp_b0[iconst]=(tmp_b0[iconst]*(tmp_n-1)+tmp_a0[iconst])/tmp_n;
             }
            // printf(" %d %d %d %f %f\n",i,j,tmp_n,tmp_b0[1],tmp_a0[1]);
           }
-          if (Tinter[ip1][jp0]==2) {
+          if (Tinter[jp1][ip0]==2) {
             tmp_n=tmp_n+1;
             for (iconst=0;iconst<nconst;iconst++){
-              tmp_a0[2*iconst]=amplitude[ip1][jp0][iconst];
-              tmp_a0[2*iconst+1]=phase[ip1][jp0][iconst];
+              tmp_a0[2*iconst]=amplitude[jp1][ip0][iconst];
+              tmp_a0[2*iconst+1]=phase[jp1][ip0][iconst];
             }
             for (iconst=0; iconst<2*nconst; iconst++) {
               tmp_b0[iconst]=(tmp_b0[iconst]*(tmp_n-1)+tmp_a0[iconst])/tmp_n;
@@ -451,10 +454,10 @@ int main(void)
           // return the search value into the grid (ip,jp)
           if (tmp_n) {
             for (iconst=0;iconst<nconst;iconst++){
-              amplitude[i][j][iconst]=tmp_b0[2*iconst  ];
-              phase    [i][j][iconst]=tmp_b0[2*iconst+1];
+              amplitude[j][i][iconst]=tmp_b0[2*iconst  ];
+              phase    [j][i][iconst]=tmp_b0[2*iconst+1];
             }
-            Tinter[i][j]=2; 
+            Tinter[j][i]=2; 
           }
 
         }
@@ -473,7 +476,7 @@ int main(void)
       Ncorrect=0;
       for (i=0; i<nx; i++) {
         for (j=0; j<ny; j++) {
-          if (Tinter[i][j]==1) {
+          if (Tinter[j][i]==1) {
             printf("%s %d %d\n","Don't know: ",i,j);
           }
         }
@@ -487,8 +490,8 @@ int main(void)
      for (i=0;i<nx;i++) {
         for (j=0;j<ny;j++) {
            //printf("%d %d\n",i,j);
-           tmpamp[i][j]=amplitude[i][j][iconst];
-           tmppha[i][j]=phase    [i][j][iconst];
+           tmpamp[j][i]=amplitude[j][i][iconst];
+           tmppha[j][i]=phase    [j][i][iconst];
         }
      }
      handle_error(nc_put_vara_double(ncid, varamp[iconst], start, count,  &tmpamp[0][0]));
