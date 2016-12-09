@@ -24,17 +24,14 @@ sourceconfdir=$NHCROOT/hycom/RELO/config/
 usage="
    This script must be run in an experiment directory as it needs to read EXPT.src
 
-   On first invocation this script will fetch hycom source from $sourcedir,
-   place it in the build directory, set up and compile the model.
+   On first invocation this script will fetch hycom source from 
+   $sourcedir, 
+   place it in the build directory, set up and compile the model.  The script 
+   will also set up the equation of state to use in hycom, depending on the 
+   setting of SIGVER in EXPT.src.
 
-   The script will also set up the equation of state to use in hycom, depending on 
-   the setting of SIGVER in EXPT.src.
-
-   NB: On subsequent calls, this script will compile the model, but not update with code
-   from $sourcedir, unless you provide the -u flag
-
-   Why choose this behaviour? 
-   --------------------------
+   On subsequent calls, this script will compile the model, but not update with code
+   from $sourcedir, unless you provide the -u flag. 
    This behaviour makes it possible to modify and test code in the build dir without
    affecting the code in other experiments, or the code in  $sourcedir .
    When you are satisfied with the code changes in build, the code can be brought into the main
@@ -47,7 +44,7 @@ usage="
       compiler : compiler to use for. Currently supported: ifort gfortran pgi
 
    optional arguments :
-      -u              : update code in build dir from NHCROOT/hycom/RELO/
+      -u              : update code in build dir from $sourcedir
       -m mpi_library  : on some machines you need to specify what mpi library to use
 
 
@@ -61,10 +58,11 @@ usage="
          Code will ALWAYS be synced from $sourcedir, so local changes will be overwritten.
 "
 
+# This will process optional arguments
 options=$(getopt -o m:u -- "$@")
 [ $? -eq 0 ] || {
     echo "$usage"
-    echo "Incorrect options provided"
+    echo "Error: Incorrect options provided"
     exit 1
 }
 mpilib=""
@@ -87,19 +85,18 @@ while true; do
 done
 
 
-#Check arguments 
+#Check remaining arguments after the optional ones are filtered out
 if [ $# -gt 0 ] ; then
    compiler=$1
 else 
    echo "$usage"
-   echo "Need to provide compiler to script, options: gfortran pgi ifort "
+   echo "Error: Need to provide compiler to script, options: gfortran pgi ifort "
    exit 1
 fi
 echo "$(basename $0) : compiler=$compiler"
 echo "$(basename $0) : mpilib=$mpilib"
 
-
-# Check ARCH 
+# Check ARCH based on uname. Only Linux accepted 
 ARCH=$(uname -s)
 if [[ "$ARCH" == "Linux" ]] ;then
    true
@@ -107,7 +104,7 @@ else
    echo "$usage"
    echo
    echo
-   echo "Unsupported ARCH=$ARCH"
+   echo "Error: Unsupported ARCH=$ARCH"
    exit 2
 fi
 echo "$(basename $0) : ARCH=$ARCH"
@@ -134,8 +131,6 @@ else
    exit 3
 fi
 echo "$(basename $0) : SITE=$SITE"
-
-
 
 
 # Deduce ESMF dir from SITE and possibly ARCH
@@ -167,7 +162,7 @@ elif [ "$SITE" == "hexagon" ] ; then
    
 
 
-# If site is not given, try to use a generic setup. MAcro names composed of compiler name and mpi lib name (openmpi, mpich, lam, etc etc(
+# If site is not given, try to use a generic setup. Macro names composed of compiler name and mpi lib name (openmpi, mpich, lam, etc etc(
 elif [[ "${unames:0:5}" == "Linux" ]] && [[ "$SITE" == "" ]] ; then
    if [ -z "${ESMF_DIR}" ] ; then
       echo "ESMF_DIR must be set before calling script when running on generic linux machine"
@@ -257,7 +252,7 @@ echo "Now setting up stmt_fns.h in $targetdir"
 rm stmt_fns.h
 ln -s ALT_CODE/$stmt stmt_fns.h
 
-# 1) Compile CICE
+# 1) Compile CICE. Environment variables need to be passe to script
 cd $targetdir/CICE/
 env RES=gx3 GRID=${IDM}x${JDM} SITE=$SITE MACROID=$MACROID ./comp_ice.esmf
 res=$?
