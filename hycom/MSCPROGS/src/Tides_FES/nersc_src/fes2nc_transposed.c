@@ -283,12 +283,12 @@ int main(void)
 
 
  /*--------- Initialize memory for FES algorithms ------------------*/
- /* KAL - added option to specify FES_PATH */
-  if ( getenv("FES_PATH") == NULL ) {
-     printf("\nError: Set enironment variable FES_PATH to the location of FES data \n");
+ /* KAL - added option to specify FES2004_PATH */
+  if ( getenv("FES2004_PATH") == NULL ) {
+     printf("\nError: Set enironment variable FES2004_PATH to the location of FES data \n");
      return -1;
   } else {
-     fespath=getenv("FES_PATH") ;
+     fespath=getenv("FES2004_PATH") ;
   }
   //rc = fesNew(&shortTide, FES_TIDE, FES_IO, "/home/fimm/nersc/intissar/Progs/Tide_FES/data");
   rc = fesNew(&shortTide, FES_TIDE, FES_IO, fespath);

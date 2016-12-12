@@ -77,7 +77,7 @@ LDFLAGS = -L$(LIB_DIR)
 	$(FC) -c $(FFLAGS) $(INCLUDE) $<
 
 
-BINARIES = icebfes fes2mod fes8const fes2nc
+BINARIES = icebfes fes2mod fes8const fes2nc fes2hycnc fes2nc_transposed
 
 #
 # all
@@ -106,6 +106,11 @@ fes2nc : fes2nc.o  fesCore8Const.o
 #
 fes2nc_transposed : fes2nc_transposed.o  fesCore8Const.o
 	$(CC) -o $@ $(CFLAGS) fes2nc_transposed.o fesCore8Const.o $(LDFLAGS) -lfes -lm  $(NETCDF_LIB)
+#
+#  fes2ncts
+#
+fes2hycnc : fes2hycnc.o  fesCore8Const.o
+	$(CC) -o $@ $(CFLAGS) fes2hycnc.o $(LDFLAGS) -lfes -lm  $(NETCDF_LIB)
 
 
 #  fes8const

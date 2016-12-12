@@ -36,6 +36,7 @@ int main(void)
 {
   fesData*	shortTide = NULL;
   fesData*	radialTide = NULL;
+  char* fespath;
   int		rc	= 0;
   double	tide;
   double	lp;
@@ -65,22 +66,29 @@ int main(void)
      }
  
   }
-
   else
   {
       printf("Could not open the file");
       goto onTerminate;
   }
 
+ /* KAL - added option to specify FES_PATH */
+  if ( getenv("FES2004_PATH") == NULL ) {
+     printf("\nError: Set enironment variable FES2004_PATH to the location of FES2004 data \n");
+     return -1;
+  } else {
+     fespath=getenv("FES2004_PATH") ;
+  }
+
   npos=k;
   printf("nb position %d,%f,%f\n",k,time[k],lat[k]);
   printf("\n\n");
   /* Initialize memory for FES algorithms */
-  rc = fesNew(&shortTide, FES_TIDE, FES_IO, "../data");
+  rc = fesNew(&shortTide, FES_TIDE, FES_IO, fespath);
   if ( rc != FES_SUCCESS )
       goto onError;
 
-  rc = fesNew(&radialTide, FES_RADIAL, FES_IO, "../data");
+  rc = fesNew(&radialTide, FES_RADIAL, FES_IO, fespath);
   if ( rc != FES_SUCCESS )
       goto onError;
 

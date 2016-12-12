@@ -46,6 +46,7 @@ static const int iwave[] =
 int main(void)
 { 
   fesData*	shortTide = NULL;
+  char* fespath;
   int		rc	= 0;
   FILE          *fout;
   int           i,k,iamp,ipha; 
@@ -70,8 +71,24 @@ int main(void)
      return -1;
   }
 
+
+
+ /* KAL - added option to specify FES_PATH */
+  if ( getenv("FES2004_PATH") == NULL ) {
+     printf("\nError: Set enironment variable FES2004_PATH to the location of FES2004 data \n");
+     return -1;
+  } else {
+     fespath=getenv("FES2004_PATH") ;
+  }
+
+
+  if ( rc != FES_SUCCESS )
+      goto onError;
+
+
  /*--------- Initialize memory for FES algorithms ------------------*/
-  rc = fesNew(&shortTide, FES_TIDE, FES_IO, "/home/fimm/nersc/intissar/Progs/Tide_FES/data");
+  //rc = fesNew(&shortTide, FES_TIDE, FES_IO, "/home/fimm/nersc/intissar/Progs/Tide_FES/data");
+  rc = fesNew(&shortTide, FES_TIDE, FES_IO, fespath);
   if ( rc != FES_SUCCESS )
       goto onError;
 
