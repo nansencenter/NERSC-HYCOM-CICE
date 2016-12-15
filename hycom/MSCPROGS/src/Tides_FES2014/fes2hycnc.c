@@ -117,14 +117,14 @@ int main(int argc, char **argv)
    printf("Retrieve grid dim from regional.grid.b \n");
    flatlon=fopen("regional.grid.b","r");
    if (flatlon==NULL) {
-      printf("fes2mod,fopen:Pb while opening regional.grid.b!!!\n");
+      printf("fes2hycnc,fopen:Pb while opening regional.grid.b!!!\n");
       return -1;
    }
    if ( fgets(line, 100, flatlon) != NULL ) {
       printf(line);
       sscanf(line,"%d",&nx);
    } else {
-      printf("fes2mod:Pb while parsing regional.grid.b for nx\n");
+      printf("fes2hycnc:Pb while parsing regional.grid.b for nx\n");
       return -1;
    }
 
@@ -132,7 +132,7 @@ int main(int argc, char **argv)
       printf(line);
       sscanf(line,"%d",&ny);
    } else {
-      printf("fes2mod:Pb while parsing regional.grid.b for ny\n");
+      printf("fes2hycnc:Pb while parsing regional.grid.b for ny\n");
       return -1;
    }
    fclose(flatlon);
@@ -142,9 +142,27 @@ int main(int argc, char **argv)
    float         lon4[nx*ny],lat4[nx*ny],dep4[nx*ny];
    double        mlon[ny][nx],mlat[ny][nx],depths[ny][nx];
    double        dep[nx*ny],lat[nx*ny],lon[nx*ny];
+/*
+   float  *dep4   = malloc(nx*ny * sizeof(float));
+   float  *lon4   = malloc(nx*ny * sizeof(float));
+   float  *lat4   = malloc(nx*ny * sizeof(float));
+   double *lon    = malloc(nx*ny * sizeof(double));
+   double *lat    = malloc(nx*ny * sizeof(double));
+   double *dep    = malloc(nx*ny * sizeof(double));
+   double **mlon  = malloc( sizeof(double *) * ny);
+   double **mlat  = malloc( sizeof(double *) * ny);
+   double **depths= malloc( sizeof(double *) * ny);
+   for (j=0;j<ny;j++){
+      printf("%d %d\n",j,ny);
+      mlon[j]   = malloc( sizeof(double) * nx);
+      mlat[j]   = malloc( sizeof(double) * nx);
+      depths[j] = malloc( sizeof(double) * nx);
+   }
+*/
    int           ti,offset, n2drec ;
    char* fespath;
    double huge;
+   printf("hei\n");
 
    // One record length in .a - files - we need to seek to these positions
    n2drec=((nx*ny+4095)/4096)*4096;
@@ -152,18 +170,20 @@ int main(int argc, char **argv)
 
    /* Get hycom model grid info: depth  using regional files  */
    fdepths=fopen("regional.depth.a","rb");
+   printf("hei2\n");
    if ((fdepths !=NULL) ) {
       fseek(fdepths,0,SEEK_SET); // Direct access fortran Starts at 0 
       ti=fread(&dep4,sizeof(float),nx*ny,fdepths);
       if(ti !=nx*ny) {
-        printf("fes2mod,fseek:Pb while accessing Depth file!!!\n");
+        printf("fes2hycnc,fseek:Pb while accessing Depth file!!!\n");
         return -1;
       }
       fclose(fdepths);
    } else {
-      printf("fes2mod,fopen:Pb while opening regional.depth.a!!!\n");
+      printf("fes2hycnc,fopen:Pb while opening regional.depth.a!!!\n");
         return -1;
    }
+   printf("hei3\n");
 
    /* Get hycom model grid info: latlon  using regional files  */
    flatlon=fopen("regional.grid.a","rb");
@@ -171,21 +191,21 @@ int main(int argc, char **argv)
       fseek(flatlon,0,SEEK_SET); // Direct access fortran Starts at 0 
       ti=fread(&lon4,sizeof(float),nx*ny,flatlon);
       if(ti !=nx*ny) {
-        printf("fes2mod,fseek:Pb while accessing grid file!!!\n");
+        printf("fes2hycnc,fseek:Pb while accessing grid file!!!\n");
         return -1;
       }
       fseek(flatlon,n2drec*4,SEEK_SET); // Direct access fortran Starts n2drec*4(bytes)
       ti=fread(&lat4,sizeof(float),nx*ny,flatlon);
       if(ti !=nx*ny) {
-        printf("fes2mod,fseek:Pb while accessing grid file!!!\n");
+        printf("fes2hycnc,fseek:Pb while accessing grid file!!!\n");
         return -1;
       }
       fclose(flatlon);
    } else {
-      printf("fes2mod,fopen:Pb while opening regional.grid.a!!!\n");
+      printf("fes2hycnc,fopen:Pb while opening regional.grid.a!!!\n");
         return -1;
    }
-   printf("fes2mod: Done reading regional.grid/depth.a\n");
+   printf("fes2hycnc: Done reading regional.grid/depth.a\n");
   k=0;
   for (j=0; j<ny;j++) {
      for (i=0; i<nx;i++) {
@@ -242,15 +262,15 @@ int main(int argc, char **argv)
   strcpy(inifile,fespath);
   strcat(inifile,tmp); // or strncat 
   printf("FES ini file is set to %s\n",inifile);
+
+  // Open fes dataset
   //setenv("FES_DATA","/work/shared/nersc/msc/ModelInput/tides/FES2014/",1) ;
   //rc = fes_new(&shortTide, FES_TIDE, FES_IO,"/work/shared/nersc/msc/ModelInput/tides/FES2014/ocean_tide.ini");
-  //
-  
-  size_t fes_access_mode=FES_IO;
-  //size_t fes_access_mode=FES_MEM;
+  //size_t fes_access_mode=FES_IO;
+  size_t fes_access_mode=FES_MEM;
   setenv("FES_DATA",fespath,1);
-  rc = fes_new(&shortTide, FES_TIDE, fes_access_mode,inifile);
-  if ( fes_errno(shortTide) != FES_SUCCESS ) {
+  if ( ! fes_new(&shortTide, FES_TIDE, fes_access_mode,inifile)) 
+  {
      printf("#FES ERROR : %s\n", fes_error(shortTide));
      fes_delete(shortTide);
      return 1;
@@ -262,8 +282,8 @@ int main(int argc, char **argv)
 
   // Set buffer size to 1024 MB if FES_IO is chosen
   if (fes_access_mode == FES_IO) {
-     rc = fes_set_buffer_size(shortTide,1024);
-     if ( fes_errno(shortTide) != FES_SUCCESS ) {
+     if ( ! fes_set_buffer_size(shortTide,1024))
+     {
         printf("#FES ERROR : %s\n", fes_error(shortTide));
         fes_delete(shortTide);
         return 1;
@@ -339,8 +359,8 @@ int main(int argc, char **argv)
         if (depths[j][i]>0.1) {
            dlon=mlon[j][i];
            dlat=mlat[j][i];
-           rc = fes_core(shortTide,dlat,dlon,jday,&h,&hlp);
-           if ( fes_errno(shortTide) != FES_SUCCESS )
+           if ( ! fes_core(shortTide,dlat,dlon,jday,&h,&hlp) ) 
+
            {
               printf("#FES ERROR  at i=%5d  j=%5d  lat=%10f lon=%10f %s\n", i,j,dlat,dlon, fes_error(shortTide)); 
               Tinter[j][i]=1;
@@ -453,8 +473,7 @@ int main(int argc, char **argv)
               j2=Tinterj[j][i];
               dlon=mlon[j2][i2];
               dlat=mlat[j2][i2];
-              rc = fes_core(shortTide,dlat,dlon,jday,&h,&hlp);
-              if ( fes_errno(shortTide) != FES_SUCCESS )
+              if ( ! fes_core(shortTide,dlat,dlon,jday,&h,&hlp) ) 
               {
                  printf("#ERROR :%d  %d  %s\n", i,j, fes_error(shortTide)); 
               } 
