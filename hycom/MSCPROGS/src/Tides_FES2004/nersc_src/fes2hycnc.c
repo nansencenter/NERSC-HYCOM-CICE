@@ -138,10 +138,29 @@ int main(int argc, char **argv)
    fclose(flatlon);
    printf("nx = %d , ny = %d\n",nx, ny);
 
-     
+   /*
    float         lon4[nx*ny],lat4[nx*ny],dep4[nx*ny];
    double        mlon[ny][nx],mlat[ny][nx],depths[ny][nx];
    double        dep[nx*ny],lat[nx*ny],lon[nx*ny];
+   double tmpamp[ny][nx]; 
+   int    Tinter[ny][nx];
+   int    Tinteri[ny][nx];
+   int    Tinterj[ny][nx];
+   */
+
+   // malloc on heap. 
+   float  *dep4     = malloc(nx*ny * sizeof(float));
+   float  *lon4     = malloc(nx*ny * sizeof(float));
+   float  *lat4     = malloc(nx*ny * sizeof(float));
+   // This construct declares a contigous memory region for 2D arrays, but may
+   // not be allowed on old compilers
+   double (*mlon)   [nx] = malloc( sizeof(*mlon   )* ny);
+   double (*mlat)   [nx] = malloc( sizeof(*mlat   )* ny);
+   double (*depths) [nx] = malloc( sizeof(*depths )* ny);
+   double (*tmpamp) [nx] = malloc( sizeof(*tmpamp )* ny);
+   int    (*Tinter) [nx] = malloc( sizeof(*Tinter )* ny);
+   int    (*Tinteri)[nx] = malloc( sizeof(*Tinteri)* ny);
+   int    (*Tinterj)[nx] = malloc( sizeof(*Tinterj)* ny);
    int           ti,offset, n2drec ;
    char* fespath;
    double huge;
@@ -154,7 +173,8 @@ int main(int argc, char **argv)
    fdepths=fopen("regional.depth.a","rb");
    if ((fdepths !=NULL) ) {
       fseek(fdepths,0,SEEK_SET); // Direct access fortran Starts at 0 
-      ti=fread(&dep4,sizeof(float),nx*ny,fdepths);
+      //ti=fread(&dep4,sizeof(float),nx*ny,fdepths);
+      ti=fread(dep4,sizeof(float),nx*ny,fdepths);
       if(ti !=nx*ny) {
         printf("fes2mod,fseek:Pb while accessing Depth file!!!\n");
         return -1;
@@ -169,13 +189,15 @@ int main(int argc, char **argv)
    flatlon=fopen("regional.grid.a","rb");
    if ((flatlon !=NULL) ) {
       fseek(flatlon,0,SEEK_SET); // Direct access fortran Starts at 0 
-      ti=fread(&lon4,sizeof(float),nx*ny,flatlon);
+      //ti=fread(&lon4,sizeof(float),nx*ny,flatlon);
+      ti=fread(lon4,sizeof(float),nx*ny,flatlon);
       if(ti !=nx*ny) {
         printf("fes2mod,fseek:Pb while accessing grid file!!!\n");
         return -1;
       }
       fseek(flatlon,n2drec*4,SEEK_SET); // Direct access fortran Starts n2drec*4(bytes)
-      ti=fread(&lat4,sizeof(float),nx*ny,flatlon);
+      //ti=fread(&lat4,sizeof(float),nx*ny,flatlon);
+      ti=fread(lat4,sizeof(float),nx*ny,flatlon);
       if(ti !=nx*ny) {
         printf("fes2mod,fseek:Pb while accessing grid file!!!\n");
         return -1;
@@ -253,13 +275,9 @@ int main(int argc, char **argv)
   char vname[100];
   size_t start[2] = {0, 0};
   size_t count[2] = {ny, nx};
-  double tmpamp[ny][nx]; 
   static double fillval[]= {-999.9};
   // add some correction for bathymetry mismatch between and FES 
   int    ip0,ip1,jp0,jp1;
-  int    Tinter[ny][nx];
-  int    Tinteri[ny][nx];
-  int    Tinterj[ny][nx];
   int    Ncorrect,Nout;
   int    max(int a, int b);
   int    min(int a, int b);
