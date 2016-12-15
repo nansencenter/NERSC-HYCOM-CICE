@@ -31,7 +31,8 @@
 # 
 #CFLAGS=-march=pentium4 -mfpmath=sse -msse2 -mmmx -O3 -pipe -fomit-frame-pointer -Wall -Wpointer-arith -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations -Werror
 #FFLAGS=-O
-CFLAGS=-g -O
+#CFLAGS=-g -O
+CFLAGS= -O2
 # FFLAGS=-g
 #
 #-- If operating system is Linux
@@ -49,9 +50,9 @@ FC		= ftn
 #  THIS PROG CAN ONLY BE COMPILE WITH GNU COMPILER
 #  ON HEXAGON type the following(Fanf):
 #  module swap PrgEnv-pgi PrgEnv-gnu
-NETCDF_LIB=-L/local/netcdf-3.6.2-gnu/lib -lnetcdf
-INCLUDE = -I../../../include -I/local/netcdf-3.6.2-gnu/include
-LIB_DIR = ../../../lib
+#NETCDF_LIB=-L/local/netcdf-3.6.2-gnu/lib -lnetcdf
+INCLUDE = -I../../../include #-I/local/netcdf-3.6.2-gnu/include
+LIB_DIR = ./
 LIB_FES = $(LIB_DIR)/libfes.a
 LDFLAGS = -L$(LIB_DIR)
 
@@ -228,5 +229,5 @@ $(DATA)/S1_fes2004.bin : $(DATA)/S1_fes2004.asc
 
 
 install : lib
-	cp *.h ../include/*.h ../../../include/
-	cp ../lib/*.a ../../../lib/
+	cp *.h ../include/
+	cp *.a ../lib/

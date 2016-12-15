@@ -48,20 +48,23 @@
 #CC 		= cc
 #FC		= f77
 #
-# End of TO BE MODIFIED IF NEEDED !!!
-# --------------------------------------------------------------------
-
-#INCLUDE = -I/home/fimm/nersc/intissar/Progs/Tide_FES/include
-#LIB_DIR =/home/fimm/nersc/intissar/Progs/Tide_FES/lib
 
 # Knut - use relative paths - Now to FES2004 in separate dir
 # NB: must use gnu-linked netcdf ( or change compilers, use Make.Inc?)
-NETCDF_LIB=-L/local/netcdf-3.6.2-gnu/lib -lnetcdf 
-INCLUDE = -I../../../include  -I/local/netcdf-3.6.2-gnu/include 
-LIB_DIR = ../../../lib
-LIB_FES = $(LIB_DIR)/libfes.a
-LDFLAGS = -L$(LIB_DIR)
+FES_DIR=../../../src_others/FES2004/
 
+
+#NETCDF_LIB=-L/local/netcdf-3.6.2-gnu/lib -lnetcdf 
+#INCLUDE = -I${FES_DIR}/include  -I/local/netcdf-3.6.2-gnu/include 
+
+
+NETCDF_LIB= -lnetcdf  # OK if you use cc on hexagon
+INCLUDE = -I$(FES_DIR)/include 
+LIBS = -L$(FES_DIR)/lib/ -lfes
+LDFLAGS = $(LIBS) 
+
+# End of TO BE MODIFIED IF NEEDED !!!
+# --------------------------------------------------------------------
 
 .SUFFIXES: .o .f .c
 
@@ -77,7 +80,8 @@ LDFLAGS = -L$(LIB_DIR)
 	$(FC) -c $(FFLAGS) $(INCLUDE) $<
 
 
-BINARIES = icebfes fes2mod fes8const fes2nc fes2hycnc fes2nc_transposed
+#BINARIES = icebfes fes2mod fes8const fes2nc fes2004hycom fes2nc_transposed
+BINARIES = fes2004hycom 
 
 #
 # all
@@ -109,8 +113,8 @@ fes2nc_transposed : fes2nc_transposed.o  fesCore8Const.o
 #
 #  fes2ncts
 #
-fes2hycnc : fes2hycnc.o  fesCore8Const.o
-	$(CC) -o $@ $(CFLAGS) fes2hycnc.o $(LDFLAGS) -lfes -lm  $(NETCDF_LIB)
+fes2004hycom : fes2004hycom.o  
+	$(CC) -o $@ $(CFLAGS) fes2004hycom.o $(LDFLAGS) -lfes -lm  $(NETCDF_LIB)
 
 
 #  fes8const
@@ -128,4 +132,4 @@ icebfes : icebfes.o
 
 install : all
 	mkdir -p ../../../bin_setup/
-	cp $(BINARIES) ../../../bin_setup/
+	cp fes2004hycom ../../../bin_setup/

@@ -1,16 +1,15 @@
-KAL 20161215
 
 
-The main routine here for nersc-hycom-cice is the fes2hycnc.c routine.
+The main routine here for nersc-hycom-cice is the fes2004hycom.c routine.
 This routine will read FES2004 data, calculate tides and write tidal elevation 
 to a netcdf file. so, output is tidal timeseries, not constituents....
 
 Run like this
-   fes2hycnc 1.0 1.25 1.5 1.75 ....
+   fes2004hycom 1.0 1.25 1.5 1.75 ....
 
 Input is time in days since 1950-01-01 00:00:00 UTC.
 
-fes2hycnc reads the time info, and it will also read  regional.grid and regional.depth 
+fes2004hycom reads the time info, and it will also read  regional.grid and regional.depth 
 files to get the locations where tidal input is needed (these need to be present in your
 working directory). 
 
@@ -19,7 +18,7 @@ as an environment variable, something like this:
 
     export FES2004_PATH=/path/to/FES2004/data
 
-fes2hycnc.c will in general give you some information of what went wrong if there are errors. 
+fes2004hycom.c will in general give you some information of what went wrong if there are errors. 
 
 
 # Other routines
@@ -35,7 +34,7 @@ that happens, try to run this command before running
 
 # FES memory use
 
-fes2hycnc.c is set up to  use FES_MEM as reading method when fesNew is called. This loads
+fes2004hycom.c is set up to  use FES_MEM as reading method when fesNew is called. This loads
 all tidal constituenbts into memory, which may be problematic if you have little memory on your machine. If 
 you run out of memory, try to call fes_new with FES_IO in stead of FES_MEM. This will take a long time for 
 a large grid, but uses less memory.
@@ -45,7 +44,7 @@ In practice, loading all tidal constituents uses around 500MB - 1 GB, which shou
 
 # Compilation
 
-Compile with gnu c compiler (gcc, or cc with PrgEnv-gnu on hexagon).
+Compile with pgi c compiler (cc with PrgEnv-pgi on hexagon).  gnu compilers should also work, but wil give lots of errors. It is possible to suppress these with compiler flags.
 
 
 

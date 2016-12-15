@@ -80,7 +80,7 @@ LDFLAGS = $(LIBS)
 	$(FC) -c $(FFLAGS) $(INCLUDE) $<
 
 
-BINARIES = icebfes fes2hycnc 
+BINARIES = icebfes fes2014hycom 
 
 #
 # all
@@ -91,12 +91,12 @@ all : $(BINARIES)
 # clean
 #
 clean :
-	$(RM) *.o $(BINARIES) fes2hycnc icebfes
+	$(RM) *.o $(BINARIES) 
 #
 # fes2hycnc
 #
-fes2hycnc : fes2hycnc.o 
-	$(CC) -o $@ $(CFLAGS) fes2hycnc.o $(LDFLAGS)
+fes2014hycom : fes2014hycom.o 
+	$(CC) -o $@ $(CFLAGS) fes2014hycom.o $(LDFLAGS)
 
 
 #
@@ -107,5 +107,5 @@ icebfes : icebfes.o
 
 
 install : all
-	mkdir -p ../../../bin_setup/
-	cp $(BINARIES) ../../../bin_setup/
+	mkdir -p ../../bin_setup/
+	cp fes2014hycom ../../bin_setup/
