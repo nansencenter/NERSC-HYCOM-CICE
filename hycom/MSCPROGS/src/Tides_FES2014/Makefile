@@ -29,42 +29,40 @@
 #   IK: version running on Fimm 
 #  KAL: Mild cleanup of Inti's version - moved fes routines and library 
 #       Out of this directory. This is cleaner when the database is updated
+#  KAL 201612. Modified for FES 2014. Needs external library, see  https://knutal@bitbucket.org/cnes_aviso/fes.git
+#              FES_DIR below must point to the root of the external library
+#              For now this program only works with the gcc compiler. Mainly because the 
+#              version of the fes library I used was compiled with gcc..
 # #####################################################################
 
 # --------------------------------------------------------------------
 # TO BE MODIFIED IF NEEDED !!!
 # 
-#CFLAGS=-march=pentium4 -mfpmath=sse -msse2 -mmmx -O3 -pipe -fomit-frame-pointer -Wall -Wpointer-arith -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations -Werror
-#FFLAGS=-O
-# CFLAGS=-g
-CFLAGS= -g   # -Wall -Wpointer-arith -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations -Werror
+# on hexagon, cc works when PrgEnv-gnu is loaded. Otherwise use gcc (but you may have to modify stoff below)
+# CC = gcc
+CC		= cc
 
-# FFLAGS=-g
-#
-#-- If operating system is Linux
-# CC		= gcc
-# FC		= pgf77
-#
-#-- If operating system is Sun Solaris
-#CC 		= cc
-#FC		= f77
-#
+#CFLAGS=-march=pentium4 -mfpmath=sse -msse2 -mmmx -O3 -pipe -fomit-frame-pointer -Wall -Wpointer-arith -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations -Werror
+# CFLAGS=-g
+CFLAGS= -g    -Wall #-Wpointer-arith -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations -Werror
+
+
+
+# Set these appropriately for your systemn (if needed)
+#NETCDF_LIB=-L/local/netcdf-3.6.2-gnu/lib -lnetcdf 
+#NETCDF_INC=-I/local/netcdf-3.6.2-gnu/include
+NETCDF_LIB=-lnetcdf 
+NETCDF_INC=
+
+# Location of fes 
+FES_DIR=/home/nersc/knutali/opt/fes-2.7.4/
+
 # End of TO BE MODIFIED IF NEEDED !!!
 # --------------------------------------------------------------------
 
-#INCLUDE = -I/home/fimm/nersc/intissar/Progs/Tide_FES/include
-#LIB_DIR =/home/fimm/nersc/intissar/Progs/Tide_FES/lib
-
-# Knut - use relative paths - Now to FES2004 in separate dir
-# NB: must use gnu-linked netcdf ( or change compilers, use Make.Inc?)
-#
-#NETCDF_DIR=-L/local/netcdf-3.6.2-gnu/lib -lnetcdf 
-FES_DIR=/home/nersc/knutali/opt/fes-2.7.4/
-
-INCLUDE = -I${FES_DIR}/include/
-#LIBS = -L${FES_DIR}/lib/
-LIBS = -L/home/nersc/knutali/src/fes/src/.libs/
-
+# Normally  need to modify these 
+INCLUDE = -I${FES_DIR}/include/ ${NETCDF_INC}
+LIBS = -L${FES_DIR}/lib/ -lfes ${NETCDF_LIB}
 LDFLAGS = $(LIBS) 
 
 
@@ -82,7 +80,6 @@ LDFLAGS = $(LIBS)
 	$(FC) -c $(FFLAGS) $(INCLUDE) $<
 
 
-#BINARIES = icebfes fes2mod fes8const fes2nc fes2hycnc fes2nc_transposed
 BINARIES = icebfes fes2hycnc 
 
 #
@@ -94,42 +91,19 @@ all : $(BINARIES)
 # clean
 #
 clean :
-	$(RM) *.o $(BINARIES) fes2mod fes2nc fes8const icebfes
-
+	$(RM) *.o $(BINARIES) fes2hycnc icebfes
 #
-#  fes2mod
-#
-#
-#fes2mod : fes2mod.o fesCore8Const.o
-#	$(CC) -o $@ $(CFLAGS) fes2mod.o fesCore8Const.o $(LDFLAGS) -lfes -lm  
-#
-#  fes2nc
-#
-#fes2nc : fes2nc.o  fesCore8Const.o
-#	$(CC) -o $@ $(CFLAGS) fes2nc.o fesCore8Const.o $(LDFLAGS) -lfes -lm  $(NETCDF_LIB)
-#
-#  fes2nc_transposed
-#
-#fes2nc_transposed : fes2nc_transposed.o  fesCore8Const.o
-#	$(CC) -o $@ $(CFLAGS) fes2nc_transposed.o fesCore8Const.o $(LDFLAGS) -lfes -lm  $(NETCDF_LIB)
-#
-#  fes2ncts
+# fes2hycnc
 #
 fes2hycnc : fes2hycnc.o 
-	$(CC) -o $@ $(CFLAGS) fes2hycnc.o $(LDFLAGS) -lfes   $(NETCDF_LIB)
+	$(CC) -o $@ $(CFLAGS) fes2hycnc.o $(LDFLAGS)
 
-
-#  fes8const
-#
-#fes8const : fes8const.o  fesCore8Const.o
-#	$(CC) -o $@ $(CFLAGS) fes8const.o  fesCore8Const.o  $(LDFLAGS) -lfes -lm	
 
 #
 # icebFes 
 #
 icebfes : icebfes.o 
-	$(CC) -o $@ $(CFLAGS) icebfes.o $(LDFLAGS) -lfes -lm	
-
+	$(CC) -o $@ $(CFLAGS) icebfes.o $(LDFLAGS)
 
 
 install : all

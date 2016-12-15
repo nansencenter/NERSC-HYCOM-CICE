@@ -29,6 +29,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "fes.h"
 
@@ -37,7 +38,6 @@ int main(void)
   FES	shortTide = NULL;
   FES	radialTide = NULL;
   char* fespath;
-  int		rc	= 0;
   double	tide;
   double	lp;
   double	load;
@@ -51,11 +51,13 @@ int main(void)
   int           k       = 0;
   FILE*        fdata = NULL;
   FILE*        fout = NULL;
+  static const char* filein="fes_ptt3106.txt";
+  static const char* fileout="height_ptt3106.txt";
+  int errtide, errload;
      
   /* Read the data file first */
-
-  fdata=fopen("fes_ptt3106.txt","r");
-  fout=fopen("height_ptt3106.txt","w");
+  fdata=fopen(filein,"r");
+  fout=fopen(fileout,"w");
   if (fdata != NULL)
   {  
      while (fscanf(fdata,"%f %f %f \n",&time[k],&lat[k],&lon[k]) != EOF)
@@ -68,9 +70,10 @@ int main(void)
   }
   else
   {
-      printf("Could not open the file");
-      goto onTerminate;
+      printf("Could not open the file %s\n",filein);
+      exit(1);
   }
+  fclose(fdata);
 
  /* KAL - added option to specify FES_PATH */
   if ( getenv("FES2014_PATH") == NULL ) {
@@ -79,18 +82,36 @@ int main(void)
   } else {
      fespath=getenv("FES2014_PATH") ;
   }
+  printf("FES2014_PATH set to %s\n",fespath);
+  setenv("FES_DATA",fespath,1);
+  char * tmp = "/ocean_tide.ini";
+  char * tmp2= "/load_tide.ini";
+  int newSize = strlen(fespath)  + strlen(tmp) + 1; 
+  char * inifile     = (char *)malloc(newSize);
+  newSize = strlen(fespath)  + strlen(tmp2) + 1; 
+  char * inifileload = (char *)malloc(newSize);
+
+
+  strcpy(inifile,fespath);
+  strcat(inifile,tmp); // or strncat 
+  printf("FES ini file is set to %s\n",inifile);
+  strcpy(inifileload,fespath);
+  strcat(inifileload,tmp2); // or strncat 
+  printf("FES radial ini file is set to %s\n",inifileload);
 
   npos=k;
-  printf("nb position %d,%f,%f\n",k,time[k],lat[k]);
-  printf("\n\n");
   /* Initialize memory for FES algorithms */
-  rc = fes_new(&shortTide, FES_TIDE, FES_IO, fespath);
-  if ( rc != FES_SUCCESS )
-      goto onError;
+  if (fes_new(&shortTide, FES_TIDE, FES_IO, inifile) )
+  {
+     printf("fes_new error : %s\n", fes_error(shortTide));
+     return 1;
+  }
 
-  rc = fes_new(&radialTide, FES_RADIAL, FES_IO, fespath);
-  if ( rc != FES_SUCCESS )
-      goto onError;
+  if ( fes_new(&radialTide, FES_RADIAL, FES_IO, inifileload))
+  {
+     printf("fes_new error : %s\n", fes_error(radialTide));
+     return 1;
+  }
 
  /* printf("%12s %5s %9s %9s %9s %9s %9s %9s %9s\n",
     "JulDay","Hour","Latitude","Longitude",
@@ -98,43 +119,40 @@ int main(void)
   //for(k = 1; k <npos ; k++)
   for(k = 0; k <npos ; k++)
   {
-    /* Compute tide */
-    rc = fes_core(shortTide, lat[k], lon[k], time[k], &tide, &lp);
-    if ( rc == FES_SUCCESS )
+
+    errtide=0;
+    errload=0;
+
+
+    if ((errtide=fes_core(shortTide, lat[k], lon[k], time[k], &tide, &lp)))
     {
-      /* Compute load tide */
-      rc = fes_core(radialTide, lat[k], lon[k], time[k], &load, &loadlp);
-      if(  rc != FES_NO_DATA && rc == FES_SUCCESS )
-      {
-         fprintf(fout,"%12.5f %9.3f %9.3f %9.3f %9.3f %9.3f %9.3f %9.3f\n",
-           time[k],
-           lat[k],
-           lon[k], 
-           tide,
-           lp,
-           tide+lp,
-           tide+lp+load,
-           load);
-      }
+       printf("fes_new error tide  : %s\n", fes_error(shortTide));
     }
-    else
+
+    if ((errload=fes_core(radialTide, lat[k], lon[k], time[k], &load, &loadlp)))
     {
-      goto onError;
+       printf("fes_new error load  : %s\n", fes_error(radialTide));
     }
-  }
 
-  goto onTerminate;
+    if (errtide==0 && errload==0) 
+    {
+       fprintf(fout,"%12.5f %9.3f %9.3f %9.3f %9.3f %9.3f %9.3f %9.3f\n",
+         time[k],
+         lat[k],
+         lon[k], 
+         tide,
+         lp,
+         tide+lp,
+         tide+lp+load,
+         load);
+   }
+   }
+   fclose(fout);
+   //fprintf("Results in %s\n",fileout);
 
-onError:
-  printf("#ERROR : %s\n", fes_error(shortTide)),
-  rc = 1;
 
-onTerminate:
-  /* Free memory for FES algorithms */
-  fes_delete(shortTide);
-  fes_delete(radialTide);
-  fclose(fdata);
-  fclose(fout);
-
-  return rc;
+   /* Free memory for FES algorithms */
+   fes_delete(shortTide);
+   fes_delete(radialTide);
+   return 0;
 }

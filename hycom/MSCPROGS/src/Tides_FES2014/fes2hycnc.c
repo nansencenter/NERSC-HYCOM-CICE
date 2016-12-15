@@ -80,18 +80,39 @@ int main(int argc, char **argv)
    FES shortTide;
   int		rc	= 0;
   int           nx,ny;
-  int           i,j,k,m,itec;
-  float         f0;
+  int           i,j,k;
   double        dlon,dlat;
   FILE*         flatlon=NULL;
   FILE*         fdepths=NULL;
-  char          fdepth_name[16];
-  char          var[]="VARIABLES='m'"; 
   char          line[100];
+
+  int  ncid,dimids[2],xdimid, ydimid;
+  static const char* netcdffile_timeseries="fes2014ts.nc";
+  size_t start[2]  ;//= {0, 0};
+  size_t count[2] ;// = {ny, nx};
+  static double fillval[]= {-999.9};
+  int    im1,jm1, ip1,jp1;
+  int    max(int a, int b);
+  int    min(int a, int b);
+  int    Nmissing, it;
+  int  dimids3[3],varid_lon, varid_lat, varid_depth, varid_elev, tdimid, varid_time, dimidst[1];
+  static char timeunit[] = "seconds since 1950-01-01 00:00:00";
+  size_t start3[3];
+  size_t count3[3];
+  double       h,hlp;
+  double  jday ;
+  double myfillv=fillval[0];
+  
+  int           ti,n2drec ;
+  char* fespath;
+  double huge;
+  int i2,j2, itime;
+  size_t countt[1], startt[1];
 
   int ntimes=argc-1;
   double        tidetimes[ntimes];
   int make_central_island=1;
+  int stripe;
 
   if (argc < 2) {
      printf("No tide times provided\n");
@@ -99,7 +120,7 @@ int main(int argc, char **argv)
   }
 
   //  Read command line args
-  for (int i = 1; i < argc; ++i)
+  for (i = 1; i < argc; ++i)
   {
       tidetimes[i-1]=strtod(argv[i],NULL);
 
@@ -138,31 +159,30 @@ int main(int argc, char **argv)
    fclose(flatlon);
    printf("nx = %d , ny = %d\n",nx, ny);
 
-     
-   float         lon4[nx*ny],lat4[nx*ny],dep4[nx*ny];
-   double        mlon[ny][nx],mlat[ny][nx],depths[ny][nx];
-   double        dep[nx*ny],lat[nx*ny],lon[nx*ny];
-/*
-   float  *dep4   = malloc(nx*ny * sizeof(float));
-   float  *lon4   = malloc(nx*ny * sizeof(float));
-   float  *lat4   = malloc(nx*ny * sizeof(float));
-   double *lon    = malloc(nx*ny * sizeof(double));
-   double *lat    = malloc(nx*ny * sizeof(double));
-   double *dep    = malloc(nx*ny * sizeof(double));
-   double **mlon  = malloc( sizeof(double *) * ny);
-   double **mlat  = malloc( sizeof(double *) * ny);
-   double **depths= malloc( sizeof(double *) * ny);
-   for (j=0;j<ny;j++){
-      printf("%d %d\n",j,ny);
-      mlon[j]   = malloc( sizeof(double) * nx);
-      mlat[j]   = malloc( sizeof(double) * nx);
-      depths[j] = malloc( sizeof(double) * nx);
-   }
-*/
-   int           ti,offset, n2drec ;
-   char* fespath;
-   double huge;
-   printf("hei\n");
+   // KAL: Declare on stack. Problematic due to stack size issues.
+   /*
+   //float         lon4[nx*ny],lat4[nx*ny],dep4[nx*ny];
+   //double        mlon[ny][nx],mlat[ny][nx],depths[ny][nx];
+   //double        dep[nx*ny],lat[nx*ny],lon[nx*ny];
+   //int           Tinter[ny][nx];
+   //int           Tinteri[ny][nx];
+   //int           Tinterj[ny][nx];
+   */
+
+   // malloc on heap. 
+   float  *dep4     = malloc(nx*ny * sizeof(float));
+   float  *lon4     = malloc(nx*ny * sizeof(float));
+   float  *lat4     = malloc(nx*ny * sizeof(float));
+   // This construct declares a contigous memory region for 2D arrays, but may
+   // not be allowed on old compilers
+   double (*mlon)   [nx] = malloc( sizeof(*mlon   )* ny);
+   double (*mlat)   [nx] = malloc( sizeof(*mlat   )* ny);
+   double (*depths) [nx] = malloc( sizeof(*depths )* ny);
+   double (*tmpfld) [nx] = malloc( sizeof(*tmpfld )* ny);
+   int    (*Tinter) [nx] = malloc( sizeof(*Tinter )* ny);
+   int    (*Tinteri)[nx] = malloc( sizeof(*Tinteri)* ny);
+   int    (*Tinterj)[nx] = malloc( sizeof(*Tinterj)* ny);
+
 
    // One record length in .a - files - we need to seek to these positions
    n2drec=((nx*ny+4095)/4096)*4096;
@@ -170,10 +190,9 @@ int main(int argc, char **argv)
 
    /* Get hycom model grid info: depth  using regional files  */
    fdepths=fopen("regional.depth.a","rb");
-   printf("hei2\n");
    if ((fdepths !=NULL) ) {
       fseek(fdepths,0,SEEK_SET); // Direct access fortran Starts at 0 
-      ti=fread(&dep4,sizeof(float),nx*ny,fdepths);
+      ti=fread(dep4,sizeof(float),nx*ny,fdepths);
       if(ti !=nx*ny) {
         printf("fes2hycnc,fseek:Pb while accessing Depth file!!!\n");
         return -1;
@@ -183,19 +202,18 @@ int main(int argc, char **argv)
       printf("fes2hycnc,fopen:Pb while opening regional.depth.a!!!\n");
         return -1;
    }
-   printf("hei3\n");
 
    /* Get hycom model grid info: latlon  using regional files  */
    flatlon=fopen("regional.grid.a","rb");
    if ((flatlon !=NULL) ) {
       fseek(flatlon,0,SEEK_SET); // Direct access fortran Starts at 0 
-      ti=fread(&lon4,sizeof(float),nx*ny,flatlon);
+      ti=fread(lon4,sizeof(float),nx*ny,flatlon);
       if(ti !=nx*ny) {
         printf("fes2hycnc,fseek:Pb while accessing grid file!!!\n");
         return -1;
       }
       fseek(flatlon,n2drec*4,SEEK_SET); // Direct access fortran Starts n2drec*4(bytes)
-      ti=fread(&lat4,sizeof(float),nx*ny,flatlon);
+      ti=fread(lat4,sizeof(float),nx*ny,flatlon);
       if(ti !=nx*ny) {
         printf("fes2hycnc,fseek:Pb while accessing grid file!!!\n");
         return -1;
@@ -214,7 +232,7 @@ int main(int argc, char **argv)
           swapByte(&lat4[k],sizeof(float));
           swapByte(&lon4[k],sizeof(float));
           //printf("swap after: %f \n",dep4[k]);
-          if (dep4[k] < 0.5 * huge & dep4[k] > 0.) {
+          if ((dep4[k] < 0.5 * huge) & (dep4[k] > 0.)) {
              depths[j][i]=(double)dep4[k];
           } else {
              depths[j][i]=(double) 0.;
@@ -222,6 +240,7 @@ int main(int argc, char **argv)
           mlat[j][i]  =(double)lat4[k];
           mlon[j][i]  =(double)lon4[k];
           //mlon[j][i]  =fmod(mlon[j][i]+360.,360.);
+          //printf("%d %d %f\n",j,i,depths[j][i]);
 
           k=k+1; 
         }
@@ -229,9 +248,10 @@ int main(int argc, char **argv)
    j=10;  i=nx/2;
    printf("Test depth i=%d d=%d   %f %g %g\n",i,j,depths[j][i],mlat[j][i],mlon[j][i]);
 
-  // Create an island inside domain. This way only a stripe along the boundary will contain tide data. Remove if you need 
+  // Create an island inside domain. This way only a stripe along the boundary will contain tide data. 
+  // //Remove if you need 
   // full output, but computations will take some time....
-  int stripe=50;
+  stripe=50;
   if (make_central_island==1) 
   {
      printf("Warning: setting depths=0. in center of domain\n");
@@ -269,9 +289,9 @@ int main(int argc, char **argv)
   //size_t fes_access_mode=FES_IO;
   size_t fes_access_mode=FES_MEM;
   setenv("FES_DATA",fespath,1);
-  if ( ! fes_new(&shortTide, FES_TIDE, fes_access_mode,inifile)) 
+  if (fes_new(&shortTide, FES_TIDE, fes_access_mode,inifile)) 
   {
-     printf("#FES ERROR : %s\n", fes_error(shortTide));
+     printf("fes_new error : %s\n", fes_error(shortTide));
      fes_delete(shortTide);
      return 1;
   }
@@ -282,9 +302,9 @@ int main(int argc, char **argv)
 
   // Set buffer size to 1024 MB if FES_IO is chosen
   if (fes_access_mode == FES_IO) {
-     if ( ! fes_set_buffer_size(shortTide,1024))
+     if (fes_set_buffer_size(shortTide,1024))
      {
-        printf("#FES ERROR : %s\n", fes_error(shortTide));
+        printf("fes_set_buffer_size error : %s\n", fes_error(shortTide));
         fes_delete(shortTide);
         return 1;
      }
@@ -293,36 +313,13 @@ int main(int argc, char **argv)
 
 
   // *************************   DUMP DATA IN netcdf file  *********************
-  int  ncid,dimids[2],varid, xdimid, ydimid, iconst;
-  static const char* netcdffile_timeseries="fes2014ts.nc";
-  char wname[3];
-  char vname[100];
-  size_t start[2] = {0, 0};
-  size_t count[2] = {ny, nx};
-  double tmpamp[ny][nx]; 
-  static double fillval[]= {-999.9};
-  // add some correction for bathymetry mismatch between and FES 
-  int    ip0,ip1,jp0,jp1;
-  int    Tinter[ny][nx];
-  int    Tinteri[ny][nx];
-  int    Tinterj[ny][nx];
-  int    Ncorrect,Nout;
-  int    max(int a, int b);
-  int    min(int a, int b);
-  int       tmp_n;
-  int    Nmissing, im1, jm1, it;
-
-
-  int  dimids3[3],varid_lon, varid_lat, varid_depth, varid_elev, tdimid, varid_time, dimidst[1];
-  static char timeunit[] = "seconds since 1950-01-01 00:00:00";
-  size_t start3[3];
-  size_t count3[3];
-  double       h,hlp;
-  double  jday ;
-  double myfillv=fillval[0];
 
 
   // Create netcf file wfile with time series
+  start[0]=0;
+  start[1]=0;
+  count[0] = ny;
+  count[1] = nx;
   handle_error(nc_create(netcdffile_timeseries, NC_CLOBBER, &ncid));
   handle_error(nc_def_dim(ncid, "nx", (long) nx ,&xdimid ));
   handle_error(nc_def_dim(ncid, "ny", (long) ny ,&ydimid ));
@@ -341,9 +338,9 @@ int main(int argc, char **argv)
   handle_error(nc_enddef(ncid));
   printf("Putting timeseries in %s\n",netcdffile_timeseries);
   //
-  handle_error(nc_put_vara_double(ncid, varid_lon, start, count,  &mlon[0][0]  ));
-  handle_error(nc_put_vara_double(ncid, varid_lat, start, count,  &mlat[0][0]  ));
-  handle_error(nc_put_vara_double(ncid, varid_depth, start, count,  &depths[0][0]  ));
+  handle_error(nc_put_vara_double(ncid, varid_lon, start, count,   &mlon[0][0]  ));
+  handle_error(nc_put_vara_double(ncid, varid_lat, start, count,   &mlat[0][0]  ));
+  handle_error(nc_put_vara_double(ncid, varid_depth, start, count, &depths[0][0]  ));
 
 
 
@@ -351,7 +348,6 @@ int main(int argc, char **argv)
   // First pass. Get Time series and set Tinter flag
   printf("Getting ocean points where FES returns data\n");
   Nmissing=0;
-  int Ncnt=1;
   jday=tidetimes[0];
   for (i=0;i<nx;i++) {
      for (j=0;j<ny;j++) {
@@ -359,13 +355,11 @@ int main(int argc, char **argv)
         if (depths[j][i]>0.1) {
            dlon=mlon[j][i];
            dlat=mlat[j][i];
-           if ( ! fes_core(shortTide,dlat,dlon,jday,&h,&hlp) ) 
+           if (fes_core(shortTide,dlat,dlon,jday,&h,&hlp) ) 
 
            {
               printf("#FES ERROR  at i=%5d  j=%5d  lat=%10f lon=%10f %s\n", i,j,dlat,dlon, fes_error(shortTide)); 
               Tinter[j][i]=1;
-
-
            } 
            else
            {
@@ -406,7 +400,6 @@ int main(int argc, char **argv)
 
               if (depths[j][ip1] > .1 && Tinter[j][ip1]==0) 
               {
-                 //tmpamp[j][i]=tmpamp[j][ip1];
                  Tinter[j][i]=0;
                  Tinteri[j][i]=Tinteri[j][ip1];
                  Tinterj[j][i]=Tinterj[j][ip1];
@@ -414,7 +407,6 @@ int main(int argc, char **argv)
               }
               else if (depths[j][im1] > .1 && Tinter[j][im1]==0) 
               {
-                 //tmpamp[j][i]=tmpamp[j][im1];
                  Tinter[j][i]=0;
                  Tinteri[j][i]=Tinteri[j][im1];
                  Tinterj[j][i]=Tinterj[j][im1];
@@ -422,7 +414,6 @@ int main(int argc, char **argv)
               }
               else if (depths[jm1][i] > .1 && Tinter[jm1][i]==0) 
               {
-                 //tmpamp[jm1][i]=tmpamp[jm1][i];
                  Tinter[j][i]=0;
                  Tinteri[j][i]=Tinteri[jm1][i];
                  Tinterj[j][i]=Tinterj[jm1][i];
@@ -430,7 +421,6 @@ int main(int argc, char **argv)
               }
               else if (depths[jp1][i] > .1 && Tinter[jp1][i]==0) 
               {
-                 //tmpamp[jp1][i]=tmpamp[jp1][i];
                  Tinter[j][i]=0;
                  Tinteri[j][i]=Tinteri[jp1][i];
                  Tinterj[j][i]=Tinterj[jp1][i];
@@ -455,10 +445,6 @@ int main(int argc, char **argv)
   {
      printf("Extrapolation successful\n");
   }
-  
-   int i2,j2, itime;
-   size_t countt[1], startt[1];
-   double tval ;
 
   // Calculate remaini pass. Get Time series and set Tinter flag
   for (itime=0;itime<ntimes;itime++) {
@@ -467,19 +453,20 @@ int main(int argc, char **argv)
      for (i=0;i<nx;i++) {
         //printf("i = %d\n",i);
         for (j=0;j<ny;j++) {
-           tmpamp[j][i]=myfillv;
+           tmpfld[j][i]=myfillv;
            if (depths[j][i]>0.1) {
               i2=Tinteri[j][i];
               j2=Tinterj[j][i];
               dlon=mlon[j2][i2];
               dlat=mlat[j2][i2];
-              if ( ! fes_core(shortTide,dlat,dlon,jday,&h,&hlp) ) 
+              //printf("%d %d %f %f\n",i2,j2,dlon,dlat);
+              if (fes_core(shortTide,dlat,dlon,jday,&h,&hlp) ) 
               {
                  printf("#ERROR :%d  %d  %s\n", i,j, fes_error(shortTide)); 
               } 
               else
               {
-                 tmpamp[j][i]=h;
+                 tmpfld[j][i]=h;
               }
            }
         }
@@ -489,8 +476,8 @@ int main(int argc, char **argv)
      startt[0]=itime;
      countt[0]=1; 
      jday=jday*86400.;
-     handle_error(nc_put_vara_double(ncid, varid_elev, start3, count3,  &tmpamp[0][0]  ));
      handle_error(nc_put_vara_double(ncid, varid_time, startt, countt,  &jday          ));
+     handle_error(nc_put_vara_double(ncid, varid_elev, start3, count3,  &tmpfld[0][0]  ));
   }
 
   handle_error(nc_close(ncid));
