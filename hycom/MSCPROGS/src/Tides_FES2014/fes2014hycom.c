@@ -87,7 +87,10 @@ int main(int argc, char **argv)
   char          line[100];
 
   int  ncid,dimids[2],xdimid, ydimid;
-  static const char* netcdffile_timeseries="fes2014ts.nc";
+  static const char* netcdffileu="fes2014ts_u.nc";
+  static const char* netcdffilev="fes2014ts_v.nc";
+  static const char* netcdffileh="fes2014ts_h.nc";
+  static const char* netcdffile;
   size_t start[2]  ;//= {0, 0};
   size_t count[2] ;// = {ny, nx};
   static double fillval[]= {-999.9};
@@ -109,18 +112,79 @@ int main(int argc, char **argv)
   int i2,j2, itime;
   size_t countt[1], startt[1];
 
-  int ntimes=argc-1;
+  int ntimes=argc-2;
   double        tidetimes[ntimes];
   int make_central_island=1;
   int stripe;
+  static const char * inifnameh = "/ocean_tide.ini";
+  static const char * inifnameu = "/eastward_velocity.ini";
+  static const char * inifnamev = "/northward_velocity.ini";
+  static const char * inifname;
+  static const char * varnameu = "u";
+  static const char * varnamev = "v";
+  static const char * varnameh = "h";
+  static const char * varname;
+  static const char * varunitu = "m s**-1";
+  static const char * varunitv = "m s**-1";
+  static const char * varunith = "m";
+  static const char * varunit;
+  static const char * varsnu = "eastward_sea_water_velocity";  // Well, not exactly, but cant find a suitable CF name
+  static const char * varsnv = "northward_sea_water_velocity"; // Well, not exactly, but cant find a suitable CF name
+  static const char * varsnh = "sea_surface_height";           // Well, not exactly, but cant find a suitable CF name
+  static const char * varsn;
 
-  if (argc < 2) {
-     printf("No tide times provided\n");
+  if (argc < 3) {
+     printf("Incorrect arguments tide times provided\n");
+     printf("Usage for tidal elevations: fes2hycom h time1 time2 time3 .... \n");
+     printf("Usage for tidal current(u): fes2hycom u time1 time2 time3 .... \n");
+     printf("Usage for tidal current(v): fes2hycom v time1 time2 time3 .... \n");
      exit(1);
   }
 
+  printf("%d\n",strcmp(argv[1],"h"));
+  if (! strcmp(argv[1],"h") )
+  {
+     printf("Computing tidal elevation(h)\n");
+     netcdffile=netcdffileh;
+     inifname=inifnameh;
+     varname=varnameh;
+     varunit=varunith;
+     varsn=varsnh;
+  }
+  else if (! strcmp(argv[1],"u") )
+  {
+     printf("Computing tidal current eastwards(u)\n");
+     netcdffile=netcdffileu;
+     inifname=inifnameu;
+     varname=varnameu;
+     varunit=varunitu;
+     varsn=varsnu;
+  }
+  else if (!strcmp(argv[1],"v") )
+  {
+     printf("Computing tidal current northwards(v)\n");
+     netcdffile=netcdffilev;
+     inifname=inifnamev;
+     varname=varnamev;
+     varunit=varunitv;
+     varsn=varsnv;
+  }
+  else
+  {
+     printf("dont know what tidal component to calculate. \n");
+     printf("Usage for tidal elevations: fes2hycom h time1 time2 time3 .... \n");
+     printf("Usage for tidal current(u): fes2hycom u time1 time2 time3 .... \n");
+     printf("Usage for tidal current(v): fes2hycom v time1 time2 time3 .... \n");
+     exit(0);
+  }
+
+
+
+  
+
+
   //  Read command line args
-  for (i = 1; i < argc; ++i)
+  for (i = 2; i < argc; ++i)
   {
       tidetimes[i-1]=strtod(argv[i],NULL);
 
@@ -212,7 +276,7 @@ int main(int argc, char **argv)
         printf("fes2hycnc,fseek:Pb while accessing grid file!!!\n");
         return -1;
       }
-      fseek(flatlon,n2drec*4,SEEK_SET); // Direct access fortran Starts n2drec*4(bytes)
+      fseek(flatlon,n2drec*sizeof(float),SEEK_SET); // Direct access fortran Starts n2drec*4(bytes)
       ti=fread(lat4,sizeof(float),nx*ny,flatlon);
       if(ti !=nx*ny) {
         printf("fes2hycnc,fseek:Pb while accessing grid file!!!\n");
@@ -276,11 +340,10 @@ int main(int argc, char **argv)
      fespath=getenv("FES2014_PATH") ;
   }
   printf("FES2014_PATH set to %s\n",fespath);
-  char * tmp = "/ocean_tide.ini";
-  int newSize = strlen(fespath)  + strlen(tmp) + 1; 
+  int newSize = strlen(fespath)  + strlen(inifname) + 1; 
   char * inifile = (char *)malloc(newSize);
   strcpy(inifile,fespath);
-  strcat(inifile,tmp); // or strncat 
+  strcat(inifile,inifname); // or strncat 
   printf("FES ini file is set to %s\n",inifile);
 
   // Open fes dataset
@@ -320,7 +383,7 @@ int main(int argc, char **argv)
   start[1]=0;
   count[0] = ny;
   count[1] = nx;
-  handle_error(nc_create(netcdffile_timeseries, NC_CLOBBER, &ncid));
+  handle_error(nc_create(netcdffile, NC_CLOBBER, &ncid));
   handle_error(nc_def_dim(ncid, "nx", (long) nx ,&xdimid ));
   handle_error(nc_def_dim(ncid, "ny", (long) ny ,&ydimid ));
   handle_error(nc_def_dim(ncid, "time", NC_UNLIMITED ,&tdimid ));
@@ -332,11 +395,13 @@ int main(int argc, char **argv)
   handle_error(nc_def_var(ncid, "latitude"  , NC_DOUBLE, 2, dimids  , &varid_lat) );
   handle_error(nc_def_var(ncid, "depth"     , NC_DOUBLE, 2, dimids  , &varid_depth) );
   handle_error(nc_def_var(ncid, "time"      , NC_DOUBLE, 1, dimidst  , &varid_time) );
-  handle_error(nc_def_var(ncid, "elev"      , NC_DOUBLE, 3, dimids3 , &varid_elev) );
+  handle_error(nc_def_var(ncid, varname      , NC_DOUBLE, 3, dimids3 , &varid_elev) );
   handle_error(nc_put_att_double (ncid, varid_elev, "_FillValue", NC_DOUBLE, 1, fillval));
+  handle_error(nc_put_att_text   (ncid, varid_elev, "units", strlen(varunit),  varunit));
+  handle_error(nc_put_att_text   (ncid, varid_elev, "standard_name", strlen(varsn),  varsn));
   handle_error(nc_put_att_text   (ncid, varid_time, "units", strlen(timeunit), timeunit));
   handle_error(nc_enddef(ncid));
-  printf("Putting timeseries in %s\n",netcdffile_timeseries);
+  printf("Putting timeseries in %s\n",netcdffile);
   //
   handle_error(nc_put_vara_double(ncid, varid_lon, start, count,   &mlon[0][0]  ));
   handle_error(nc_put_vara_double(ncid, varid_lat, start, count,   &mlat[0][0]  ));
@@ -466,7 +531,7 @@ int main(int argc, char **argv)
               } 
               else
               {
-                 tmpfld[j][i]=h;
+                 tmpfld[j][i]=h*.01; // Conversion cm ->m 
               }
            }
         }
@@ -481,7 +546,7 @@ int main(int argc, char **argv)
   }
 
   handle_error(nc_close(ncid));
-  printf("Time series in %s\n",netcdffile_timeseries);
+  printf("Time series in %s\n",netcdffile);
   printf("Warning: Only a %d wide strip along the domain has tides. This is ok for barotropic nesting, but may not be what you need\n",stripe);
   printf("Warning: To actually calculate tides for the entire domain, make sure first time is negative.. NB: This can be slow \n");
 
