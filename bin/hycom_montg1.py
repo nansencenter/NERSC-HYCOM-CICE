@@ -53,7 +53,7 @@ def main(psikk_file,archv_files, psikk_file_type="restart",month=1) :
    iversn = bp["iversn"]
    iexpt  = bp["iexpt"]
    yrflag = bp["yrflag"]
-   thref=1e-3
+   thref=modeltools.hycom.thref
    if kapref == -1 : 
       kapnum = 2
       msg="Only kapref>=0 is implemented for now"
@@ -70,11 +70,8 @@ def main(psikk_file,archv_files, psikk_file_type="restart",month=1) :
    path0=os.path.join(".","montg1")
    if os.path.exists(path0) and os.path.isdir(path0) :
       pass
-   else :
-      msg="This routine assumes there is a directory called %s in the current directory. Create that first"%path0
-      logger.error(msg)
-      raise NameError,msg
-         
+   else : 
+      os.mkdir(path0)
 
    # hycom sigma and kappa, written in python. NB: sigver is not used here.
    # Modify to use other equations of state. For now we assume sigver is:
@@ -198,8 +195,6 @@ def main(psikk_file,archv_files, psikk_file_type="restart",month=1) :
       # Read all layers .. (TODO: If there is memory problems, read and estimate sequentially)
       temp    = numpy.ma.zeros((jdm,idm))    # Only needed when calculating density
       saln    = numpy.ma.zeros((jdm,idm))    # Only needed when calculating density
-      montgpb = numpy.ma.zeros((jdm,idm))    # Only need top layer
-      montgc  = numpy.ma.zeros((jdm,idm))    # Only need top layer
       th3d  =numpy.ma.zeros((kdm,jdm,idm))
       thstar=numpy.ma.zeros((kdm,jdm,idm))
       dp    =numpy.ma.zeros((jdm,idm))
@@ -223,91 +218,31 @@ def main(psikk_file,archv_files, psikk_file_type="restart",month=1) :
             logger.error(msg)
             raise ValueError,msg
 
-         #print "saln min max:",saln[:,:].min(),saln[:,:].max()
-         #print "temp min max:",temp[:,:].min(),temp[:,:].max()
-         I =  numpy.argmin(temp)
-         #print I
-         #print dp.flatten()[I],temp.flatten()[I]
-         J=numpy.where(temp<-4.)
-         #print J
-         #if J[0].size > 0  : print numpy.max(dp[J[0],J[1]]),numpy.min(temp[J[0],J[1]])
-         #print "th3d min max:",th3d[:,:,k].min(),th3d[:,:,k].max()
-         #print
+      # This part of montg1 does nto depend on pbavg
+      montg1c  = modeltools.hycom.montg1_pb(thstar,p) 
 
+      # This part depends linearly on pbavg
+      montg1pb = modeltools.hycom.montg1_no_pb(psikk,thkk,thstar,p) 
+      print montg1c.min(),montg1c.max()
+      print montg1pb.min(),montg1pb.max()
 
-#     Original fortran code (mod_momtum)
-#     # m_prime in lowest layer
-#     montg(i,j,kk,1)=psikk(i,j,1)+
-#    &        ( p(i,j,kk+1)*(thkk(i,j,1)-thstar(i,j,kk,1))
-#    &          -pbavg(i,j,m)*thstar(i,j,kk,1) )*thref**2
-#     if     (kapref.eq.-1) then
-#             montg(i,j,kk,2)=psikk(i,j,2)+
-#    &          ( p(i,j,kk+1)*(thkk(i,j,2)-thstar(i,j,kk,2))
-#    &            -pbavg(i,j,m)*thstar(i,j,kk,2) )*thref**2
-#           endif !kapref.eq.-1
-      if kapref >= 0 :
-
-         # Part that depends on pbavg :
-         montgpb[:,:]=-thstar[kdm-1,:,:]*thref**2
-
-         # The rest
-         montgc[:,:]=psikk+(p[kdm,:,:]*(thkk-thstar[kdm-1,:,:]))*thref**2
-
-      else :
-         msg="Only kapref>=0 is implemented for now"
-         logger.error(msg)
-         raise ValueError,msg
-
-      #print "montgc:",montgc[itest,jtest],montgc[itest,jtest],thstar[kdm-1,itest,jtest],thkk[itest,jtest]
-      #print "montgpb:",montgpb[itest,jtest],montgpb[itest,jtest],thkk[itest,jtest],psikk[itest,jtest]
-      #raise ValueError,"test"
-
-
-#     Original fortran code (mod_momtum)
-#c ---       m_prime in remaining layers:
-#            do k=kk-1,1,-1
-#              montg(i,j,k,1)=montg(i,j,k+1,1)+p(i,j,k+1)*oneta(i,j)
-#     &            *(thstar(i,j,k+1,1)-thstar(i,j,k,1))*thref**2
-#              if     (kapref.eq.-1) then
-#                montg(i,j,k,2)=montg(i,j,k+1,2)+p(i,j,k+1)*oneta(i,j)
-#     &              *(thstar(i,j,k+1,2)-thstar(i,j,k,2))*thref**2
-#              endif !kapref.eq.-1
-#            enddo !k
-
-
-
-      if kapref >= 0 :
-         for k in reversed(range(kdm-1)) :
-            #print "montgc:",montgc[itest,jtest],montgc[itest,jtest],(thstar[k+1,itest,jtest]-thstar[k,itest,jtest])
-            #print "montgpb:",montgpb[itest,jtest],montgpb[itest,jtest]
-            #print k,kdm
-            # PArt that depends on pbavg (through oneta) 
-            montgpb[:,:]=montgpb[:,:]+ p[k+1,:,:]*(thstar[k+1,:,:]-thstar[k,:])*thref**2/p[kdm,:,:]
-
-            # The rest
-            montgc [:,:]=montgc [:,:]+ p[k+1,:,:]*(thstar[k+1,:,:]-thstar[k,:])*thref**2 
-      else :
-         msg="Only kapref>=0 is implemented for now"
-         logger.error(msg)
-         raise ValueError,msg
 
 # ... we have ...
 #     montg1 = montgc + montgpb * pbavg
-#     srfhgt = montg1 + thref*pbavg
-#  ... which gives ...
-#     pbavg  =(srfhgt - montgc) /(montgpb + thref)
-#     srfhgt = montg1 + thref*pbavg
+#     srfhgt = montg1 + thref*pbavg = montgc + montgpb * pbavg + thref*pbavg
+#  ... which gives new montg1n for srfhgtn
+#     pbavgn  = (srfhgtn-montgc) / (montgpb+thref)
+#     montg1n = montgc + montgpb*pbavgn
 # Systematic differences due to choice of sigma and or eq of state is not taken into account ...
 
 
       # Barotropic pressure. NB: srfhgt is in geopotential height : 
       srfhgt=arcfile.read_field("srfhgt",0)
-      pbavg  = (srfhgt - montgc[:,:]) / (montgpb[:,:]+thref)
-      montg1 = montgpb[:,:]*pbavg + montgc[:,:]
-      #print "srfhgt",srfhgt[itest,jtest]
-      #print "pbavg",pbavg[itest,jtest]
-      #print "montg1",montg1[itest,jtest]
+      pbavg  = (srfhgt - montg1c) / (montg1pb+thref)
+      print pbavg.min(),pbavg.max()
+      montg1 = montg1pb*pbavg + montg1c
       logger.info("Estimated montg1 ")
+      print montg1.min(),montg1.max()
 
       # Open new archive file, and write montg1 to it.
       fnameout = os.path.join(path0,os.path.basename(arcfile.basename))

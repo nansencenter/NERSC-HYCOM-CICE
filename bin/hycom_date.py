@@ -32,7 +32,8 @@ def main(input,output,value) :
       value=float(value[0])
    elif input == "datetime" :
       value=datetime.datetime.strptime( value[0], "%Y-%m-%dT%H:%M:%S")
-      iy,id,ih = modeltools.hycom.datetime_to_ordinal(value,3)
+      iy=value.year
+      id,ih,isec = modeltools.hycom.datetime_to_ordinal(value,3)
       value=modeltools.hycom.dayfor(iy,id,ih,3)
    elif input == "ordinal" :
       iy = int(value[0])
