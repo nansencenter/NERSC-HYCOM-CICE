@@ -1,8 +1,0 @@
-These tools are deprecated, but some old files may need them. Kept here
-just in case.
-
-Daily2regu_New is a really old version of hyc2proj
-LegacyTools contain tools to read old restart files and old average files
-Icestate contain tools to read old ICESTATE model restart files
-
-No further information on these - you are on your own

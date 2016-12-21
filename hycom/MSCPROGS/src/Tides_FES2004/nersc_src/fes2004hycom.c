@@ -270,7 +270,7 @@ int main(int argc, char **argv)
 
 /**************************   DUMP DATA IN netcdf file  *********************/
   int  ncid,dimids[2],varid, xdimid, ydimid, iconst;
-  static const char* netcdffile_timeseries="fes2004ts.nc";
+  static const char* netcdffile_timeseries="fes2004_h.nc";
   char wname[3];
   char vname[100];
   size_t start[2] = {0, 0};

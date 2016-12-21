@@ -1,3 +1,10 @@
+[toc]
+
+Most routines are set up following instructions in the section  'Procedure for
+compiling/installing MSCPROGS'. The routines using the FES2004 and FES2014 and C
+apis are compiled differently. See instructions for these below.
+
+
 # Procedure for compiling/installing MSCPROGS
 
 * Go into the directory MSCPROGS/src/
@@ -76,3 +83,11 @@ The following module setup was used with luck on hexagon
     module swap cray-mpich cray-mpich2 
     module swap cray-netcdf cray-netcdf/4.3.2 
 
+# Procedure for compiling/installing Tides_FES2004 and Tides_FES214
+
+These libraries depend on extarnal FES libraries that need to be compiled and
+installed. They usually also require you to use the gnu c compiler. You will
+find some description of how to compile these two in
+[src/Tides_FES2004](src/Tides_FES2004)
+and
+[src/Tides_FES2014](src/Tides_FES2014)

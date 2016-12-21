@@ -1,6 +1,0 @@
-CF =            xlf90_r
-FFLAGS =  -q64 -O2 -qrealsize=8  -qextname -qarch=auto -qtune=auto\
-		  -qcache=auto -qmaxmem=-1 -qnosave -qfixed
-
-LINKFLAGS = -q64 -O2 -qrealsize=8  -qextname -qarch=auto -qtune=auto -qcache=auto \
-			-qmaxmem=-1 -qnosave

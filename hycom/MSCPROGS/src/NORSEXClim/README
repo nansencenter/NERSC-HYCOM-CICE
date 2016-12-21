@@ -1,6 +1,0 @@
-norsexclim:
-   This routines calculates a monthly sea-ice concentration climatology on the 
-   SSMI polar stereographic grid, and then interpolates it to a projection specified
-   by proj.in - a similar approach as is used in Hyc2proj.
-
-   TODO: mod_toproj is based on old version of mod_toproj used in Hyc2proj - should be updated

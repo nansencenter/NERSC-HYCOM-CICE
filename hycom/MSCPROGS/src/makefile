@@ -8,7 +8,6 @@ Average \
 Barstrf \
 Conf_grid/Code/ \
 ConfmapRoutines \
-Copymem \
 Curviint \
 DProfile \
 DateTools \
@@ -21,20 +20,15 @@ Hyc2proj \
 IceDrift \
 Idealized_Grid \
 MkEnsemble \
-Multiproc_New \
-NORSEXClim \
-ObsCompare \
 Relax \
 RelaxToNetCDF \
 River_Forcing \
 SSHFromState \
 Section \
 TRIP \
-Tides_CSR \
 ZONAL  \
 Model_input-2.2.12 \
 Model_input-2.2.37
-#Tides_FES/nersc_src/ \
 
 
 .PHONY: subdirs $(SUBDIRS)

@@ -87,9 +87,9 @@ int main(int argc, char **argv)
   char          line[100];
 
   int  ncid,dimids[2],xdimid, ydimid;
-  static const char* netcdffileu="fes2014ts_u.nc";
-  static const char* netcdffilev="fes2014ts_v.nc";
-  static const char* netcdffileh="fes2014ts_h.nc";
+  static const char* netcdffileu="fes2014_u.nc";
+  static const char* netcdffilev="fes2014_v.nc";
+  static const char* netcdffileh="fes2014_h.nc";
   static const char* netcdffile;
   size_t start[2]  ;//= {0, 0};
   size_t count[2] ;// = {ny, nx};
@@ -186,14 +186,14 @@ int main(int argc, char **argv)
   //  Read command line args
   for (i = 2; i < argc; ++i)
   {
-      tidetimes[i-1]=strtod(argv[i],NULL);
+      tidetimes[i-2]=strtod(argv[i],NULL);
 
       // if first argument is negative, calculate tides for full domain
-      if (i==1 && tidetimes[i-1] < 0.) 
+      if (i==1 && tidetimes[i-2] < 0.) 
       {
          make_central_island=0;
       }
-      tidetimes[i-1]=fabs( tidetimes[i-1]);
+      tidetimes[i-2]=fabs( tidetimes[i-2]);
       //printf("%f\n",tidetimes[i-1]);
   }
 
