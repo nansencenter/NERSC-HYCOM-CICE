@@ -270,7 +270,21 @@ function source_dir {
    return 0
 }
 
-
+#function parse_isotime {
+#   if [[ $1 =~  ([0-9]){4}-([0-9]){2}-([0-9]){2}T([0-9]){2}:([0-9]){2}:([0-9]){2} ]] ; then
+#      yr=${BASH_REMATCH[1]}
+#      mo=${BASH_REMATCH[2]}
+#      dm=${BASH_REMATCH[3]}
+#      hr=${BASH_REMATCH[4]}
+#      min=${BASH_REMATCH[5]}
+#      sec=${BASH_REMATCH[6]}
+#      echo "$yr $mo $dm $hr $min $sec"
+#      return 0
+#   else 
+#      echo "end time not in righ format" ; 
+#      return 1
+#   fi
+#}
 
 
 tellerror () {

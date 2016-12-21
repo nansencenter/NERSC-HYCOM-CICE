@@ -16,7 +16,7 @@ import os
 import os.path
 
 # Set up logger
-_loglevel=logging.DEBUG
+_loglevel=logging.INFO
 logger = logging.getLogger(__name__)
 logger.setLevel(_loglevel)
 formatter = logging.Formatter("%(asctime)s - %(name)10s - %(levelname)7s: %(message)s")
@@ -68,6 +68,7 @@ def main(tide_file,archv_files,include_uv=False):
    # 1) If this routine is called without any archive files (empty list), then 
    # Files suitable for barotropic nesting only are created. The new archive files are then 
    # chosen to match times in tide file.
+
    # 2) If routines are called with archive files, then times matching the archive file times are
    # sought from the tide file. It they are found, srfhgt and montg1 are adjusted 
    # to match the new tidal data.
@@ -94,6 +95,7 @@ def main(tide_file,archv_files,include_uv=False):
    iv[1:,:] = numpy.logical_and(iv[1:,:],iv[0:-1,:])
 
    # Open netcdf file, get time variable and some basic stuff
+   print os.getcwd(),tide_file
    logger.info("Opening %s"%tide_file)
    nc_h = netCDF4.Dataset(tide_file,"r")
    plon_h=nc_h.variables["longitude"][:]
@@ -216,62 +218,34 @@ def main(tide_file,archv_files,include_uv=False):
    if kapref > 0  : kappa = modeltools.hycom.Kappa(kapref,thflag*1000.0e4) # 
 
 
-   # Create archive files for tidal input
-   if not archv_files :
-      new_archv_files=True
-      for i in mydt_h :
-         iy=i.year
-         id,ih,isec = modeltools.hycom.datetime_to_ordinal(i,yrflag)
-         archv_files.append("archv.%04d_%03d_%02d"%(iy,id,ih))
-         #print i,iy,id,ih,isec,archv_files[-1]
-   else :
-      new_archv_files=False
 
+   # Now loop through tide_times
+   for rec,tide_time in enumerate(mydt_h) :
 
-   # Now loop through archive files
-   for archv_file in archv_files :
+      # Construct archive file name to create
+      iy = tide_time.year
+      id,ih,isec = modeltools.hycom.datetime_to_ordinal(tide_time,yrflag)
+      archv_file_in_string = "archv.%04d_%03d_%02d"%(iy,id,ih)
 
-      fnameout = os.path.join(path0,os.path.basename(archv_file))
+      # Is there match for this file name in list of archive files?
+      I=[elem for elem in archv_files if os.path.basename(elem)[:17] == archv_file_in_string ]
+      state_from_archv=len(I)>0
+      if state_from_archv : archv_file_in =I[0]
+
+      # Output file name
+      fnameout = os.path.join(path0,os.path.basename(archv_file_in_string))
       arcfile_out=abfile.ABFileArchv(fnameout,"w",
             iversn=iversn,
             yrflag=yrflag,
             iexpt=iexpt,mask=False,
             cline1="TIDAL data has been added")
 
-      # Get time from archive file. Note that this is only available from
-      # filename ....
-      m=re.match("archv.([0-9]{4})_([0-9]{3})_([0-9]{2}).*",os.path.basename(archv_file))
-      if m :
-         year=int(m.group(1))
-         oday=int(m.group(2))
-         hour=int(m.group(3))
-         dtime = modeltools.hycom.dayfor(year,oday,hour,yrflag)
-         mydatetime=modeltools.hycom.forday_datetime(dtime,yrflag)
-         #print mydatetime
-      else  :
-         msg="Unable to extract time from archive file name %s"%archv_file
-         logger.error(msg)
-         raise ValueError,msg
-
-      # Now get matching time in tide_h file
-      tmp=[elem - mydatetime for elem in mydt_h]
-      I=numpy.argmin(numpy.abs(tmp))
-      if abs(diff_in_seconds(tmp[I])) < 2. :
-         #print I
-         pass
-      else :
-         msg="Found no tidal times close enough to hycom time: Closest %s (hycom) %s (tide). File %s"
-         msg = msg%(str(mydatetime),str(mydt_h[I]),archv_file)
-         logger.error(msg)
-         raise ValueError,msg
-         #logger.warning("PROCEEDING NONETHELESS !!!")
-
-      tide_h=numpy.copy(nc_h.variables["h"][I,:,:])
+      tide_h=numpy.copy(nc_h.variables["h"][rec,:,:])
       tide_h=numpy.where(tide_h==nc_h.variables["h"]._FillValue,0.,tide_h)
       #print tide_h.min(),tide_h.max()
       if include_uv :
-         tide_u=numpy.copy(nc_u.variables["u"][I,:,:])
-         tide_v=numpy.copy(nc_v.variables["v"][I,:,:])
+         tide_u=numpy.copy(nc_u.variables["u"][rec,:,:])
+         tide_v=numpy.copy(nc_v.variables["v"][rec,:,:])
          #print tide_u.min(),tide_u.max()
          #print tide_v.min(),tide_u.max()
 
@@ -292,14 +266,12 @@ def main(tide_file,archv_files,include_uv=False):
 
 
 
+      if state_from_archv :
 
-      if not new_archv_files  :
-
-
-         arcfile=abfile.ABFileArchv(archv_file,"r")
+         logger.info("Adding tidal values to existing state:%s"%arcfile_out.basename)
+         arcfile=abfile.ABFileArchv(archv_file_in,"r")
          if arcfile.idm <> plon.shape[1] or  arcfile.jdm <> plon.shape[0] :
-            msg="Grid size mismatch between %s and %s "%(tide_file,archv_file)
-
+            msg="Grid size mismatch between %s and %s "%(tide_file,archv_file_in)
 
          # Read all layers .. (TODO: If there are memory problems, read and estimate sequentially)
          temp    = numpy.ma.zeros((jdm,idm))    # Only needed when calculating density
@@ -310,7 +282,7 @@ def main(tide_file,archv_files,include_uv=False):
          p     =numpy.ma.zeros((kdm+1,jdm,idm))
          logger.info("Reading layers to get thstar and p")
          for k in range(kdm) :
-            logger.debug("Reading layer %d from %s"%(k,archv_file))
+            logger.debug("Reading layer %d from %s"%(k,archv_file_in))
             temp  =arcfile.read_field("temp",k+1)
             saln  =arcfile.read_field("salin",k+1)
             #dp    [k  ,:,:]=arcfile.read_field("thknss",k+1)
@@ -362,10 +334,10 @@ def main(tide_file,archv_files,include_uv=False):
             elif fieldname == "srfhgt" :
                logger.info("Writing field %10s at level %3d to %s (modified)"%(fieldname,k,fnameout))
                arcfile_out.write_field(srfhgt,None,fieldname,time_step,model_day,sigver,thbase) 
-            elif fieldname == "u_btrop" :
+            elif fieldname == "u_btrop" and include_uv :
                logger.info("Writing field %10s at level %3d to %s (modified)"%(fieldname,k,fnameout))
                arcfile_out.write_field(ubavg,None,fieldname,time_step,model_day,sigver,thbase) 
-            elif fieldname == "v_btrop" :
+            elif fieldname == "v_btrop" and include_uv :
                logger.info("Writing field %10s at level %3d to %s (modified)"%(fieldname,k,fnameout))
                arcfile_out.write_field(vbavg,None,fieldname,time_step,model_day,sigver,thbase) 
             else :
@@ -375,9 +347,8 @@ def main(tide_file,archv_files,include_uv=False):
          arcfile.close()
 
 
-      else :  # new_archv_files  
-
-         # Barotrpic velocities 
+      else : 
+         logger.info("Crating archv file with tidal data   :%s"%arcfile_out.basename)
 
          montg1=numpy.zeros((jdm,idm,))
          srfhgt=tide_h*modeltools.hycom.onem*thref
