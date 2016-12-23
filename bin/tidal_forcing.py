@@ -146,6 +146,7 @@ def main(dtlist,archv_files,include_uv=False,tidal_database="FES2014",archv_base
          newpath= os.path.join("..",file)
          os.rename(fullpath,newpath)
 
+   logger.info("Finished - files placed in location %s"%os.path.abspath(".."))
 
 
 
@@ -156,48 +157,6 @@ def main(dtlist,archv_files,include_uv=False,tidal_database="FES2014",archv_base
 
 if __name__ == "__main__" :
    basecmd=os.path.basename(sys.argv[0])
-   usage="""
-   This routine will use FES to calculate the didal forcing on the boundary of your
-   model domain. The tidal forcing will then be used to calculate hycom archive
-   files suitable for use as nesting files.
-
-   There are two ways to call this routine:
-
-   1)Input to this routine is a bunch of archive files. The script will extract the
-   times of the archive files, provide tidal forcing for those, and add to the
-   archive files.
-
-   2) Input to this routine is a start time, an end time, and a time step in days.
-   Tidal forcing will be generated from start time to end time with the provided
-   time step. Any archive files given on the command line will be modified to take
-   the tidal forcing into account IF the times match those of the tidal data
-
-
-
-   Usage 1:
-      {0} [--include-uv] 1 archive_file1 [archive_file2 ...]
-
-   Usage 2:
-      {0} [--include-uv] 2 start_time end_time delta_t [archive_file1 archive_file2 ..]
-
-
-   Arguments:
-      archive_file : a HYCOM archv file
-      tidal_dataset: FES2004 or FES2014
-      start_time   : (Only usage 2) Start of tide generation
-      end_time     : (Only usage 2) End of tide generation
-      delta_t      : (Only usage 2) Time step in hours
-
-   Optional arguments
-      --tidal-database dbase  : Tidal database to use; FES2004 or FES2014(default)
-      --include-uv            : Include tidal currents (only FES2014)
-
-
-   Examples:
-      {0} 1 2013-01-01T00:00:00 2013-01-10T00:00:00 1.0 
-      {0} 1 2013-01-01T00:00:00 2013-01-10T00:00:00 1.0  archv.2013_003_12.a archv.2013_004.a 
-      {0} 2 archv.2013_003_12.a archv.2013_004.a 
-   """.format(basecmd)
 
    class DateTimeParseAction(argparse.Action) :
        def __call__(self, parser, args, values, option_string=None):
@@ -221,6 +180,7 @@ if __name__ == "__main__" :
    parser_opt2 = subparsers.add_parser('2', help='')
    parser_opt2.set_defaults(subparser_name="2")
    parser_opt2.add_argument('archive_file', type=str, nargs="+")
+
    args = parser.parse_args()
 
 

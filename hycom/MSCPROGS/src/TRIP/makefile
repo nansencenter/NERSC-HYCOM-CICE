@@ -39,9 +39,10 @@ TARGET2 = trip_paths
 TARGET3 = trip_flow
 TARGET4 = trip_tohycom
 TARGET5 = trip_tobiorivGN
+TARGET6 = trip_tohycomrt
 
  
-all: $(TARGET)  $(TARGET2) $(TARGET3) $(TARGET4) $(TARGET5)
+all: $(TARGET)  $(TARGET2) $(TARGET3) $(TARGET4) $(TARGET5) $(TARGET6)
 
 
 ###############################################################################
@@ -87,6 +88,16 @@ OBJECTS5=m_handle_err.o \
 $(TARGET5): $(OBJECTS5) 
 	cd ./TMP ; $(LD) $(LINKFLAGS) -o ../$(TARGET5)  $(OBJECTS5) $(LIBS) 
 ###############################################################################
+OBJECTS6=m_handle_err.o \
+			m_nearestpoint.o \
+			mod_trip.o \
+			dayfor.o \
+			m_datetojulian.o \
+			p_trip_tohycomrt.o
+
+$(TARGET6): $(OBJECTS6) 
+	cd ./TMP ; $(LD) $(LINKFLAGS) -o ../$(TARGET6)  $(OBJECTS6) $(LIBS) 
+###############################################################################
 
 
 clean:
@@ -94,5 +105,5 @@ clean:
 
 install: all
 	mkdir -p ../../bin_setup/
-	cp $(TARGET) $(TARGET2)  $(TARGET3)  $(TARGET4)  ../../bin_setup/
+	cp $(TARGET) $(TARGET2)  $(TARGET3)  $(TARGET4) $(TARGET5) $(TARGET6)  ../../bin_setup/
 

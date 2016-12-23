@@ -17,15 +17,12 @@
 
 program trip_riverweights
    use netcdf
-#if defined (ERA40)
-   use m_read_runoff_era40, only : nrolon=>nlon, nrolat=>nlat, &
-                                   rolat => lat, rolon => lon, &
+   use m_read_runoff_era40, only : nrolon_era40=>nlon, nrolat_era40=>nlat, &
+                                   rolat_era40 => lat, rolon_era40 => lon, &
                                    init_runoff_era40
-#else
-   use m_read_runoff_erai, only : nrolon=>nlon, nrolat=>nlat, &
-                                   rolat => lat, rolon => lon, &
+   use m_read_runoff_erai, only : nrolon_erai=>nlon, nrolat_erai=>nlat, &
+                                   rolat_erai => lat, rolon_erai => lon, &
                                    init_runoff_erai
-#endif
    use mod_trip
    use m_handle_err
    implicit none
@@ -45,14 +42,44 @@ program trip_riverweights
    real   , allocatable, dimension(:,:,:) :: roweights     ! area of trip cells occ. ro cells
    real   , allocatable, dimension(:,:) :: tmp     ! area of trip cells occ. ro cells
    integer, allocatable, dimension(:,:)    :: nrocells      ! n ro cells per trip cell
+   character(len=80) :: runoff_source
 
+   integer  :: nrolon, nrolat
+   real, dimension(:), allocatable :: rolon, rolat
+#if defined(IARGC)
+   integer*4, external :: iargc
+#endif
+   if (iargc()>=1) then
+      call getarg(1,runoff_source)
+   else 
+      runoff_source="erai"
+   end if
 
    ! Set up erai path and lon/lat
-#if defined (ERA40)
-   call init_runoff_era40()
-#else
-   call init_runoff_erai()
-#endif
+   if (trim(runoff_source) == "era40") then 
+      call init_runoff_era40()
+      nrolon = nrolon_era40
+      nrolat = nrolat_era40
+      allocate(rolon(nrolon))
+      allocate(rolat(nrolat))
+      rolon  = rolon_era40
+      rolat  = rolat_era40
+   elseif (trim(runoff_source) == "erai") then 
+      call init_runoff_erai()
+      nrolon = nrolon_erai
+      nrolat = nrolat_erai
+      allocate(rolon(nrolon))
+      allocate(rolat(nrolat))
+      rolon  = rolon_erai
+      rolat  = rolat_erai
+   else 
+      print *,"Unknown runoff source "//trim(runoff_source)
+      call exit(1)
+   end if
+
+   print *,"Runoff source: "//trim(runoff_source)
+
+
 
    ! Set up TRIP path and lon/lat
    call init_trip()

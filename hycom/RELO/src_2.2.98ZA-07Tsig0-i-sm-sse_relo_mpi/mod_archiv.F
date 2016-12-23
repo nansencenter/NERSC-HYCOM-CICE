@@ -300,26 +300,6 @@ c
         call flush(nop)
         endif !1st tile
         endif !l_arch
-#if defined(NERSC_HYCOM_CICE)
-        if     (kkout.gt.1 .or. l_arch(20)) then
-        call zaiowr(si_u,ip,.true., xmin,xmax, nopa, .false.)
-        if     (mnproc.eq.1) then
-        write (nop,117) 'si_u    ',nstep,time,k,coord,xmin,xmax
-        k    =0
-        coord=0.0
-        call flush(nop)
-        endif !1st tile
-        endif !l_arch
-        if     (kkout.gt.1 .or. l_arch(21)) then
-        call zaiowr(si_v,ip,.true., xmin,xmax, nopa, .false.)
-        if     (mnproc.eq.1) then
-        write (nop,117) 'si_v    ',nstep,time,k,coord,xmin,xmax
-        k    =0
-        coord=0.0
-        call flush(nop)
-        endif !1st tile
-        endif !l_arch
-#endif
       endif  !write ice fields
 c
 c --- depth averaged fields
@@ -475,6 +455,30 @@ c
         enddo
       endif !diaflx
 c
+#if defined(NERSC_HYCOM_CICE)
+C --- Placed here not to interfere with reading of nest files etc etc
+      if     (iceflg.ne.0) then
+        if     (kkout.gt.1 .or. l_arch(20)) then
+        call zaiowr(si_u,ip,.true., xmin,xmax, nopa, .false.)
+        if     (mnproc.eq.1) then
+        write (nop,117) 'si_u    ',nstep,time,k,coord,xmin,xmax
+        k    =0
+        coord=0.0
+        call flush(nop)
+        endif !1st tile
+        endif !l_arch
+        if     (kkout.gt.1 .or. l_arch(21)) then
+        call zaiowr(si_v,ip,.true., xmin,xmax, nopa, .false.)
+        if     (mnproc.eq.1) then
+        write (nop,117) 'si_v    ',nstep,time,k,coord,xmin,xmax
+        k    =0
+        coord=0.0
+        call flush(nop)
+        endif !1st tile
+        endif !l_arch
+      endif
+C --- Placed here not to interfere with reading of nest files etc etc
+#endif
       close (unit=nop)
       call zaiocl(nopa)
 c

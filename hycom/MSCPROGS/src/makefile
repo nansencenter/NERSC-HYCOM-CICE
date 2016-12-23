@@ -56,4 +56,5 @@ install: all lib
 		 for dir in $(SUBDIRS); do \
 			$(MAKE) -C $$dir install;\
 		 done
+		 echo " Finito! Note that Tide_FES2004 and Tide_FES2014 need to be compiled separately"
 

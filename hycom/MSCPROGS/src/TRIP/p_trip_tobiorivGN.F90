@@ -84,6 +84,17 @@ program trip_tobioriv
     real :: rivdist(maxbioriver)=1.0e10, tmprivdist
     integer :: prindex(4,maxbioriver)
     real, parameter :: pi=3.141592653589
+
+   character(len=80) :: runoff_source
+#if defined(IARGC)
+   integer*4, external :: iargc
+#endif
+   if (iargc()>=1) then
+      call getarg(1,runoff_source)
+   else 
+      runoff_source="erai" !default
+   end if
+   print *,"Runoff source: "//trim(runoff_source)
  
    !if (iargc()/=2) then
    !   print *,'Routine will calculate river discharge from TRIP+ERAi-derived'
@@ -93,11 +104,14 @@ program trip_tobioriv
    call init_trip()
 
    ! Read climatology (pointwise)
-#if defined (ERA40)
-   call handle_err(nf90_open('trip_era40_clim.nc',NF90_CLOBBER,ncid))
-#else
-   call handle_err(nf90_open('trip_erai_clim.nc',NF90_CLOBBER,ncid))
-#endif
+   if (trim(runoff_source) == "era40") then 
+      call handle_err(nf90_open('trip_era40_clim.nc',NF90_CLOBBER,ncid))
+   elseif (trim(runoff_source) == "erai") then 
+      call handle_err(nf90_open('trip_erai_clim.nc',NF90_CLOBBER,ncid))
+   else 
+      print *,"Unknown runoff source "//trim(runoff_source)
+      call exit(1)
+   end if
    call handle_err(NF90_INQ_VARID(ncid,'river',varid))
    call handle_err(NF90_GET_VAR(ncid,varid,riv_flux))
    !Fanf: here we match the average total such that it fits Perry et al. estimate

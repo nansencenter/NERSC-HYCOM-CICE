@@ -35,26 +35,50 @@ program trip_tohycom
       unif_flux,topflx(11),buff,tmp
    real, external :: spherdist
 
-   real, parameter :: searchradius=300000. ! search radius
+   real, parameter :: d_searchradius=300000. ! search radius
    !We assume that the delta size is of 60 km 
-   real, parameter :: radius      =60000. ! river radius in meters
-   real, parameter :: landradius  =200000. ! river radius in meters (alongshore)
+   real, parameter :: d_radius      =60000. ! river radius in meters
+   real, parameter :: d_landradius  =200000. ! river radius in meters (alongshore)
+   character(len=80) :: tmparg
+   real radius,landradius,searchradius
+   character(len=80) :: runoff_source
 
-   !if (iargc()/=2) then
-   !   print *,'Routine will calculate river discharge from TRIP+ERAi-derived'
-   !   print *,'river fields. Input is to radius '
-   !end if
 
+#if defined(IARGC)
+   integer*4, external :: iargc
+#endif
+
+   print *,'Routine will calculate river discharge from TRIP+ERAi-derived'
+   print *,'river fields. Input is across-shore radius and alongshore-shore radius.  Both in km'
+   if (iargc()==3) then
+      call getarg(1,runoff_source) 
+      call getarg(2,tmparg) ; read(tmparg,*) radius
+      call getarg(3,tmparg) ; read(tmparg,*) landradius
+      radius=radius*1000.
+      landradius=landradius*1000.
+   else 
+      runoff_source="erai"
+      radius=d_radius
+      landradius=d_landradius
+   end if
+   searchradius=d_searchradius
+   print *,"Runoff source: "//trim(runoff_source)
+   print *,"Alongshore   radius is ",landradius
+   print *,"Across-shore radius is ",radius
 
 
    call init_trip()
 
    ! Read climatology (pointwise)
-#if defined (ERA40)
-   call handle_err(nf90_open('trip_era40_clim.nc',NF90_CLOBBER,ncid))
-#else
-   call handle_err(nf90_open('trip_erai_clim.nc',NF90_CLOBBER,ncid))
-#endif
+   if (trim(runoff_source) == "era40") then 
+      call handle_err(nf90_open('trip_era40_clim.nc',NF90_CLOBBER,ncid))
+   elseif (trim(runoff_source) == "erai") then 
+      call handle_err(nf90_open('trip_erai_clim.nc',NF90_CLOBBER,ncid))
+   else 
+      print *,"Unknown runoff source "//trim(runoff_source)
+      call exit(1)
+   end if
+
    call handle_err(NF90_INQ_VARID(ncid,'river',varid))
    call handle_err(NF90_GET_VAR(ncid,varid,riv_flux))
    !Fanf: here we match the average total such that it fits Perry et al. estimate

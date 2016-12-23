@@ -36,13 +36,18 @@ is based on the ERA40 runoff data set, coupled with the TRIP data base
 for directing the runoff towards the ocean. 
 
 Example:
-   $(basename $0) [ -t along_shore_discharge_radius ] [ -n across_shore_discharge_radius] [-r runoff_source ] [-c]
+   $(basename $0) [ -t along_shore_discharge_radius ] [ -n across_shore_discharge_radius] [-r runoff_source ] [-c] time1 time2 deltatime
 
 Optional arguments:
    -t along_shore_discharge_radius  : rivers will be spread along shore using this radius (default $along)
    -n across_shore_discharge_radius : rivers will be spread normal to the shore using this radius (default $across)
    -r runoff_source                 : specify runoff source, era or era40 (default $src)
    -c                               : Create TRIP weights and flow in local scratch dir. Otherwise use existing data. Defult: use existing
+
+Required arguments
+   time1 : date of first forcing time step. Format YYYY-MM-DDTHH-MM-SS
+   time2 : date of last  forcing time step. Format YYYY-MM-DDTHH-MM-SS
+   deltat: forcing time step in days
 
    
 NB:This script will overwrite any other river forcing files in force/rivers/E !!
@@ -139,8 +144,8 @@ fi
 # This uses trip_era40_clim.nc (from trip_flow) to interpolate to model grid. Uses conformal mapping
 echo
 echo "**Interpolating TRIP river flow to hycom"
-$MSCPROGS/bin_setup/trip_tohycom $src $along $across    || { echo "Error when running trip_tohycom  (see errors above)" ; exit 1 ; }
-#$MSCPROGS/bin_setup/trip_tohycomrt $src $along $across    || { echo "Error when running trip_tohycom  (see errors above)" ; exit 1 ; }
+#$MSCPROGS/bin_setup/trip_tohycom $src $along $across    || { echo "Error when running trip_tohycom  (see errors above)" ; exit 1 ; }
+$MSCPROGS/bin_setup/trip_tohycomrt $src $along $across    || { echo "Error when running trip_tohycom  (see errors above)" ; exit 1 ; }
 
 # TODO: Its possible to use the river flow data and create fake precipitation fields. This can be used as realtime river forcing 
 

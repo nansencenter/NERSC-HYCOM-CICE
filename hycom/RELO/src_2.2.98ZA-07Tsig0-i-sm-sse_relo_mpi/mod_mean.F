@@ -551,18 +551,6 @@ c
         write (nop,117) 'temice  ',nmean,time_ave,0,coord,xmin,xmax
         call flush(nop)
         endif !1st tile
-#if defined(NERSC_HYCOM_CICE)
-        call zaiowr(si_u_m,ip,.true., xmin,xmax, nopa, .false.)
-        if     (mnproc.eq.1) then
-        write (nop,117) 'si_u    ',nmean,time_ave,0,coord,xmin,xmax
-        call flush(nop)
-        endif !1st tile
-        call zaiowr(si_v_m,ip,.true., xmin,xmax, nopa, .false.)
-        if     (mnproc.eq.1) then
-        write (nop,117) 'si_v    ',nmean,time_ave,0,coord,xmin,xmax
-        call flush(nop)
-        endif !1st tile
-#endif
       endif  !write ice fields
 c
 c --- depth averaged fields
@@ -641,6 +629,22 @@ c
         endif !1st tile
       enddo !ktr
  75   continue
+#if defined(NERSC_HYCOM_CICE)
+C --- Moved here to not interfere with nesting etc
+      if     (iceflg.ne.0) then
+        call zaiowr(si_u_m,ip,.true., xmin,xmax, nopa, .false.)
+        if     (mnproc.eq.1) then
+        write (nop,117) 'si_u    ',nmean,time_ave,0,coord,xmin,xmax
+        call flush(nop)
+        endif !1st tile
+        call zaiowr(si_v_m,ip,.true., xmin,xmax, nopa, .false.)
+        if     (mnproc.eq.1) then
+        write (nop,117) 'si_v    ',nmean,time_ave,0,coord,xmin,xmax
+        call flush(nop)
+        endif !1st tile
+      endif  ! iceflg
+C --- Moved here to not interfere with nesting etc
+#endif
 c
  117  format (a8,' =',i11,f11.3,i3,f7.3,1p2e16.7)
 c

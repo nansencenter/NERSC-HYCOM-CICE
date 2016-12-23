@@ -32,7 +32,8 @@ module mod_trip
 #endif
    real, dimension(nx), save :: lon
    real, dimension(ny), save :: lat
-   character(len=200), save, private :: trip_path0
+   !character(len=200), save, private :: trip_path0
+   character(len=200), save, public :: trip_path0
    integer, dimension(nx,ny), save :: direction
    real   , dimension(nx,ny), save :: triparea
 

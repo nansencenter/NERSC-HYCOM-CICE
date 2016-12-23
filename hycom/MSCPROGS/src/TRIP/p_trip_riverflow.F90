@@ -27,16 +27,13 @@ program trip_flow
    use mod_year_info
    use netcdf
    use m_handle_err
-#if defined (ERA40)
    use m_era40_fix
-   use m_read_runoff_era40, only : nrolon=>nlon, nrolat=>nlat, &
-                                   rolat => lat, rolon => lon, &
+   use m_read_runoff_era40, only : nrolon_era40=>nlon, nrolat_era40=>nlat, &
+                                   rolat_era40 => lat, rolon_era40 => lon, &
                                    init_runoff_era40, read_runoff_era40
-#else
-   use m_read_runoff_erai, only : nrolon=>nlon, nrolat=>nlat, &
-                                   rolat => lat, rolon => lon, &
+   use m_read_runoff_erai, only : nrolon_erai=>nlon, nrolat_erai=>nlat, &
+                                   rolat_erai => lat, rolon_erai => lon, &
                                    init_runoff_erai, read_runoff_erai
-#endif
    use mod_trip
    implicit none
 !#if defined (TRIP05)
@@ -57,7 +54,7 @@ program trip_flow
    real, parameter :: radian=57.2957795
    real, parameter :: ueff  = 0.35
 
-   character(len=4) :: cyy
+   character(len=4) :: cyy,cstartyy
 
    integer, dimension(nx,ny) :: destinationx, destinationy,lmask
 !   real, dimension(nx) :: lon
@@ -89,7 +86,7 @@ program trip_flow
 
    integer :: ncid, varid, xdim, ydim, recdim, dims3D(3), irec, varidro, &
               varidriv, dims2D(2), varidrivcatch, rivdim, varidrec
-   logical :: ex, asc_info=.false., excatch,firstclim=.true.
+   logical :: ex, asc_info=.false., excatch,firstclim=.true.,first_after_spinup=.true.
    real :: rtime, spinupdays,intdays
    integer :: startyear
 
@@ -101,20 +98,47 @@ program trip_flow
     integer, allocatable, dimension(:) :: &
        river_outlets_i,river_outlets_j
 
-   integer :: iyear, imonth, idom
+   integer :: iyear, imonth, idom,num_year
 
    real, external :: spherdist
    logical, parameter  :: ncdump=.true. ! put to netcdf file for illustrations
-   integer, parameter  :: moddump=5       ! step between each netcdf dump
+   integer  :: moddump
 
-   ! First initialize era stuff - set up era path and lon/lat
-
-#if defined (ERA40)
-   call init_runoff_era40()
-#else
-   call init_runoff_erai()
+   integer  :: nrolon, nrolat
+   real, dimension(:), allocatable :: rolon, rolat
+   character(len=80) :: runoff_source,myfile
+#if defined(IARGC)
+   integer*4, external :: iargc
 #endif
+   if (iargc()>=1) then
+      call getarg(1,runoff_source)
+   else 
+      runoff_source="erai" !default
+   end if
+   print *,"Runoff source: "//trim(runoff_source)
 
+
+   ! Set up erai path and lon/lat
+   if (trim(runoff_source) == "era40") then 
+      call init_runoff_era40()
+      nrolon = nrolon_era40
+      nrolat = nrolat_era40
+      allocate(rolon(nrolon))
+      allocate(rolat(nrolat))
+      rolon  = rolon_era40
+      rolat  = rolat_era40
+   elseif (trim(runoff_source) == "erai") then 
+      call init_runoff_erai()
+      nrolon = nrolon_erai
+      nrolat = nrolat_erai
+      allocate(rolon(nrolon))
+      allocate(rolat(nrolat))
+      rolon  = rolon_erai
+      rolat  = rolat_erai
+   else 
+      print *,"Unknown runoff source "//trim(runoff_source)
+      call exit(1)
+   end if
 
    ! Initialize the trip dataset
    call init_trip()
@@ -243,15 +267,22 @@ program trip_flow
 ! Main loop starts here
 
 
-#if defined (ERA40)
-    spinupdays=3*365  ! 1 years
-    intdays  =40*365  ! 10 years
-    startyear=1958
-#else
-    spinupdays=1*365  ! 1 years
-    intdays  =19*365  ! 10 years
-    startyear=1989
-#endif
+    if (trim(runoff_source) == "era40") then 
+       spinupdays=3*365  ! 1 years
+       startyear=1958
+       num_year=40
+       intdays  =num_year*365  ! 40 years
+       dt=6*3600                  ! Time step (6 hours)
+    elseif (trim(runoff_source) == "erai") then 
+       spinupdays=3*365  ! 1 years
+       num_year=27
+       intdays  =num_year*365  ! Up to and including 2015
+       startyear=1989
+       dt=6*3600                  ! Time step (6 hours)
+    else 
+       print *,"Unknown runoff source "//trim(runoff_source)
+       call exit(1)
+    end if
 
     print *,'River integration starts '
     print '(a,f4.1)','Integration time in years: ',intdays/(365)
@@ -259,21 +290,16 @@ program trip_flow
     oldvol=0. 
     newvol=0. 
     riverflux=0.
-    dt=6*3600
-    !spinupdays=0. ! 3 years
+    moddump = nint(86400./dt)  ! Dump every day 
     riverflux_clim=0.
     vol_clim=0.
     ro_clim =0.
     numclim=0
     nc_lastyear=-1
+    write(cstartyy,'(i4.4)') startyear
 
     ! Time integration loop
     do itl = 1,floor(intdays*4)
-    !do itl = 1,73000 ! 50*365*4 , 50 yrs
-    !do itl = 1,200
-    !do itl = 1,5000
-
-
 
        ! convert itl*dt to time (in days)
        rtime=itl*dt/86400.
@@ -286,14 +312,18 @@ program trip_flow
 
 
        ! Read one record of the runoff field
-#if defined (ERA40)
-     call read_runoff_era40(startyear,rtime,ro,nxro,nyro)
-     !Fanf: Introduce a fix to the precipitation bias
-     call era40_fix('RO',ro,nxro,nyro,rolon(1),rolat(1),rolon(2)-rolon(1),rolat(2)-rolat(1))
-#else
-     call read_runoff_erai(startyear,rtime,ro,nxro,nyro)
-#endif
+        if (trim(runoff_source) == "era40") then 
+           call read_runoff_era40(startyear,rtime,ro,nxro,nyro)
+           !Fanf: Introduce a fix to the precipitation bias
+           call era40_fix('RO',ro,nxro,nyro,rolon(1),rolat(1),rolon(2)-rolon(1),rolat(2)-rolat(1))
+        elseif (trim(runoff_source) == "erai") then 
+           call read_runoff_erai(startyear,rtime,ro,nxro,nyro)
+        else 
+           print *,"Unknown runoff source "//trim(runoff_source)
+           call exit(1)
+        end if
        !   print *,' value out from era',nxro,nyro,startyear,rtime,ro(242,29)
+       !print *,"min runoff ",minval(ro)
 
 
 
@@ -358,15 +388,20 @@ program trip_flow
           ! Flow "limiter" - avoids negative volume but slows river flow. Only a
           ! problem in the Antarctic with the current value of "ueff". Could
           ! also reduce time step dt
-          F=min(oldvol(i,j)/dt,F)
+          !F=min(oldvol(i,j)/dt,F)
+          F=max(0.,min(newvol(i,j)/dt,F*9./10.))
 
           ! New mass in this cell
           newvol(i,j)=newvol(i,j)+(triprunoff(i,j)-F)*dt
 
           !if (triprunoff(i,j)>0.) print *,F,dt,triprunoff(i,j)
+          ! OK then, this seems to happen from time to time even though the
+          ! above should prevent it. Correct F again and reset newvol
           if (newvol(i,j)<0.) then
-             print '(a,2i5,2f8.2,4e12.4)','Warn: Negative river volume in ', &
-                i,j,lon(i),lat(j),F*dt,dist,oldvol(i,j),ueff*dt/dist
+             print '(a,2i5,2f8.2,6e12.4)','Warn: Negative river volume in ', &
+                i,j,lon(i),lat(j),F*dt,dist,oldvol(i,j),ueff*dt/dist,newvol(i,j),triprunoff(i,j)
+             F= F + newvol(i,j)/dt
+             newvol(i,j)=0.
           end if
 
           ! New mass in downstream cell (no runoff added here, see above)
@@ -427,7 +462,18 @@ program trip_flow
 
 
        ! Put in a netcdf file at regular intervals - 2D maps
+       if (rtime>spinupdays) then
        if (mod(itl,moddump)==0 .and. ncdump) then
+
+          write(cyy,'(i4.4)') iyear
+          if (trim(runoff_source) == "era40") then 
+             myfile = 'trip_era40_'//cyy//'.nc'
+          elseif (trim(runoff_source) == "erai") then 
+             myfile = 'trip_erai_'//cyy//'.nc'
+          else 
+             print *,"Unknown runoff source "//trim(runoff_source)
+             call exit(1)
+          end if
 
 
           !Replace file on first try
@@ -436,17 +482,15 @@ program trip_flow
           ! Also replace on year changeover
           ex=ex .or. nc_lastyear /= iyear
 
-          if (ex) then
-             write(cyy,'(i4.4)') iyear
-#if defined (ERA40)
-             call handle_err(nf90_create('trip_era40_'//cyy//'.nc',NF90_CLOBBER,ncid))
-#else
-             call handle_err(nf90_create('trip_erai_'//cyy//'.nc',NF90_CLOBBER,ncid))
-#endif
+          ! And replace if first time after spinup
+          ex = ex .or. first_after_spinup
+          first_after_spinup=.false.
 
+          if (ex) then
+             call handle_err(nf90_create(myfile,NF90_CLOBBER,ncid))
              call handle_err(nf90_def_dim(ncid,'lon'    ,nx,xdim))
              call handle_err(nf90_def_dim(ncid,'lat'    ,ny,ydim))
-             call handle_err(nf90_def_dim(ncid,'record',nf90_unlimited,recdim))
+             call handle_err(nf90_def_dim(ncid,'time',nf90_unlimited,recdim))
              if (excatch) call handle_err(nf90_def_dim(ncid,'river_catchment',nriver_catch,rivdim))
              dims3d=(/xdim,ydim,recdim/)
              dims2d=(/rivdim,recdim/)
@@ -488,35 +532,27 @@ program trip_flow
                 call handle_err(NF90_DEF_VAR(ncid,'riverbycatch',NF90_Float,dims2D,varidrivcatch))
                 call handle_err(NF90_PUT_ATT(ncid,varidrivcatch,'units','m3 s-1'))
              end if
-             call handle_err(NF90_DEF_VAR(ncid,'record',NF90_Float,recdim,varidrec))
+             call handle_err(NF90_DEF_VAR(ncid,'time',NF90_Float,recdim,varidrec))
+             call handle_err(NF90_PUT_ATT(ncid,varidrec,'units', &
+                'days since '//trim(cstartyy)//'-01-01 00:00:00'))
              call handle_err(NF90_ENDDEF(ncid))
              irec=1
           else
-             write(cyy,'(i4.4)') iyear
-#if defined (ERA40)
-             call handle_err(nf90_open('trip_era40_'//cyy//'.nc',NF90_WRITE,ncid))
-#else
-             call handle_err(nf90_open('trip_erai_'//cyy//'.nc',NF90_WRITE,ncid))
-#endif
-             !call handle_err(nf90_open('test.nc',NF90_WRITE,ncid))
-             call handle_err(nf90_inq_dimid(ncid, 'lon', xdim))
-             call handle_err(nf90_inq_dimid(ncid, 'lat', ydim))
-             call handle_err(nf90_inq_dimid(ncid, 'record', recdim))
+
+             call handle_err(nf90_open(myfile,NF90_WRITE,ncid))
+             call handle_err(nf90_inq_dimid(ncid, 'time', recdim))
              if (excatch) then 
-                call handle_err(nf90_inq_dimid(ncid, 'river_catchment', rivdim))
                 call handle_err(Nf90_inq_varid(ncid, 'riverbycatch', varidrivcatch))
              end if
              call handle_err(nf90_Inquire_Dimension(ncid, recdim, len=irec))
-             dims3d=(/xdim,ydim,recdim/)
-             dims2d=(/rivdim,recdim/)
-             call handle_err(Nf90_inq_varid(ncid, 'runoff', varidro))
-             call handle_err(Nf90_inq_varid(ncid, 'volume', varid))
-             call handle_err(Nf90_inq_varid(ncid, 'river', varidriv))
-             call handle_err(Nf90_inq_varid(ncid, 'record', varidrec))
+             call handle_err(Nf90_inq_varid(ncid, 'runoff', varidro ))
+             call handle_err(Nf90_inq_varid(ncid, 'volume', varid   ))
+             call handle_err(Nf90_inq_varid(ncid, 'river' , varidriv))
+             call handle_err(Nf90_inq_varid(ncid, 'time'  , varidrec))
 
              irec=irec+1
           end if
-          call handle_err(NF90_PUT_VAR(ncid,varidrec,startyear+rtime/365., &
+          call handle_err(NF90_PUT_VAR(ncid,varidrec,rtime, &
                                        start=(/irec/)))
           call handle_err(NF90_PUT_VAR(ncid,varid,newvol(1:nx,1:ny), &
                                        start=(/1,1,irec/)))
@@ -531,9 +567,8 @@ program trip_flow
              !if (i==1) then
              !   print *, river_outlets_flux (min(max(1,itl/moddump),maxtimes),i)
              !end if
-             call handle_err(NF90_PUT_VAR(ncid,varidrivcatch, &
-                             river_outlets_flux (min(max(1,itl/moddump),maxtimes),:), &
-                                          start=(/1,irec/)))
+             call handle_err(NF90_PUT_VAR(ncid,varidrivcatch,  &
+             river_outlets_flux(min(max(1,itl/moddump),maxtimes),:), start=(/1,irec/)))
           end do
           end if
 
@@ -543,6 +578,7 @@ program trip_flow
           
 
        end if
+       end if !if (rtime>spinupdays+ 366) then
     enddo ! main loop
     !call handle_err(nf90_close(ncid))
 
@@ -561,15 +597,20 @@ program trip_flow
           vol_clim(:,:,imonth)=vol_clim(:,:,imonth)/numclim(imonth)
        enddo
 
-#if defined (ERA40)
-       call handle_err(nf90_create('trip_era40_clim.nc',NF90_CLOBBER,ncid))
-#else
-       call handle_err(nf90_create('trip_erai_clim.nc',NF90_CLOBBER,ncid))
-#endif
+       if (trim(runoff_source) == "era40") then 
+          call handle_err(nf90_create('trip_era40_clim.nc',NF90_CLOBBER,ncid))
+       elseif (trim(runoff_source) == "erai") then 
+          call handle_err(nf90_create('trip_erai_clim.nc',NF90_CLOBBER,ncid))
+       else 
+          print *,"Unknown runoff source "//trim(runoff_source)
+          call exit(1)
+       end if
        call handle_err(nf90_def_dim(ncid,'lon'    ,nx,xdim))
        call handle_err(nf90_def_dim(ncid,'lat'    ,ny,ydim))
        call handle_err(nf90_def_dim(ncid,'record',12,recdim))
        dims3d=(/xdim,ydim,recdim/)
+       call handle_err(NF90_PUT_ATT(ncid,NF90_GLOBAL,"climatology_first_year",startyear))
+       call handle_err(NF90_PUT_ATT(ncid,NF90_GLOBAL,"climatology_last_year", startyear+num_year))
 
        call handle_err(NF90_DEF_VAR(ncid,'lon',NF90_Float,xdim,varid))
        call handle_err(NF90_ENDDEF(ncid))
@@ -592,12 +633,15 @@ program trip_flow
 
        call handle_err(NF90_REDEF(ncid))
        call handle_err(NF90_DEF_VAR(ncid,'volume',NF90_Float,dims3D,varid))
+       call handle_err(NF90_PUT_ATT(ncid,varid,'units','m3'))
        call handle_err(NF90_ENDDEF(ncid))
        call handle_err(NF90_PUT_VAR(ncid,varid ,vol_clim,start=(/1,1,1/)))
 
        call handle_err(NF90_REDEF(ncid))
        call handle_err(NF90_DEF_VAR(ncid,'runoff',NF90_Float,dims3D,varidro))
+       call handle_err(NF90_PUT_ATT(ncid,varidro,'units','m3 s-1'))
        call handle_err(NF90_DEF_VAR(ncid,'river',NF90_Float,dims3D,varidriv))
+       call handle_err(NF90_PUT_ATT(ncid,varidriv,'units','m3 s-1'))
        call handle_err(NF90_ENDDEF(ncid))
 
        do k=1,12 

@@ -354,11 +354,18 @@ def main(tide_file,archv_files,include_uv=False):
          srfhgt=tide_h*modeltools.hycom.onem*thref
          arcfile_out.write_field(montg1,None,"montg1",0,0.,sigver,thbase) 
          arcfile_out.write_field(srfhgt,None,"srfhgt",0,0.,0,0.0) 
+
+         # Write 9 empty surface fields so that forfun.F can understand these files .... TODO: Fix in hycom
+         arcfile_out.write_field(montg1,None,"surflx",0,0.,0,0.0) 
+         arcfile_out.write_field(montg1,None,"salflx",0,0.,0,0.0) 
+         arcfile_out.write_field(montg1,None,"bl_dpth",0,0.,0,0.0) 
+         arcfile_out.write_field(montg1,None,"mix_dpth",0,0.,0,0.0) 
+
          if include_uv :
             ubavg  = tide_u
             vbavg  = tide_v
-            arcfile_out.write_field(ubavg ,None,"ubavg" ,0,0.,0,0.0) 
-            arcfile_out.write_field(vbavg ,None,"vbavg" ,0,0.,0,0.0) 
+            arcfile_out.write_field(ubavg ,None,"u_btrop" ,0,0.,0,0.0) 
+            arcfile_out.write_field(vbavg ,None,"v_btrop" ,0,0.,0,0.0) 
 
 
 
