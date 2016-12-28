@@ -16,6 +16,14 @@ the hycom setup files (grid and bathymetry) to be present.
 |common_functions.sh  | functions used by many of the experiment processing scripts|
 
 
+# Tools in the "useful" category
+
+|source file     | purpose|
+|-------- | -------------|
+|hycom_date.py| Can be used to convert to/from actual date/time to time used by hycom and ordinal day used by hycom|
+
+
+
 
 # Experiment setup, configuration, maintenance, backup 
 
@@ -35,6 +43,8 @@ the hycom setup files (grid and bathymetry) to be present.
 |compile_model.sh | Script for compiling the HYCOM-CICE model. |
 |tile_grid.sh | Sets up the MPI partitioning of the hycom model. |
 |cice_limits.py | Create a CICE input file based on existing file and some arguments. Used to set up correct time steps etc |
+|hycom_sigma_setup.py| Can be used to set up sigma coordinates as a set of linear profiles stitched together|
+|hycomsteps.py| Can be used to calculate suitable time steps for hycom, based on some hycom restrictions|
 
 
 # Plotting
@@ -44,6 +54,7 @@ the hycom setup files (grid and bathymetry) to be present.
 |hycom_plot_archive.py  | 2D plot  of fields from archives. Has many options to fine-tune plots |
 |hycom_plot_field.py  | 2D plot  of fields from any .a file. Requires grid size as input |
 |hycom_plot_section.py | section plot  of fields from archives. Has many options to fine-tune plots |
+|cice_icevolume.py| Calculates ice volume from a set of CICE netcdf files. Input is actually file pattern strings interpreted by python glob module. If you dont know what this means, its probably a bit difficult to use ...|
 
 
 
@@ -52,7 +63,7 @@ the hycom setup files (grid and bathymetry) to be present.
 
 |executable     | purpose|
 |-------- | -------------|
-|hycom_grid.py       | Create bathymetry based on conformal mapping or on proj4 projection |
+|hycom_grid.py       | Create bathymetry based on conformal mapping or on proj4 projection. Can do  the same as old confmap routines in MSCPROGS |
 
 
 
@@ -65,6 +76,7 @@ the hycom setup files (grid and bathymetry) to be present.
 |hycom_bathy.py             | Generate hycom bathymetry for a predefined hycom grid |
 |cice_kmt.py | Simple script for creating CICE land mask from hycom bathymetry |
 | cice_kmt.sh | Basically a wrapper around coce_kmt.py |
+|hycom_bathy_modify.py| Can be used to modify bathymetry in points or in blocks based on input from stdin|
 
 
 # Generation of relaxation fields
@@ -76,12 +88,26 @@ the hycom setup files (grid and bathymetry) to be present.
 |relax_rmu.sh  | Generates sidewall relaxation weights |
 |hycom_woa13_zfiles.py  | Generates .d files from WOA2013 data. These can be used by routine z_generic.sh |
 |hycom_woa13.py  | Generates gridded z-level  files from WOA2013 data in ab format. Output similar to z_generic.sh (this routine can replace z_generic.sh) |
+| soda_to_hycom.py | Starting poinr for reading SODA data and interpolating them to hycom for nesting. Not finished!| 
+
+# Generation of various forcing input
+
+
+|executable     | purpose|
+|-------- | -------------|
+|calc_thkdf4.sh| Generates  hardcoded  diffusion fields for hycom   (needed if relevant flag in blkdat.input is -1). NB: hardcoded to increase  diffusiuon for Brazil/Gluf Stream. NOT generic ...|
+|hycom_kapref.py| Can be used to create spatially varying thermobaric reference density. The thermobaric parameterization tends to be unstable, so maybe you shouldnt use thios .... |
+|seawifs_mon_kpar.sh| Can be used to set up Jerlov water type based on a seawifs climatology provided for hycom.|
+|hycom_vsigma.py| Statring point for generating spatially varying target densities (vsigma in blkdat.input) NOT finished !|
+
+
+
 
 # Generation of atmospheric forcing
 
 |executable     | purpose|
 |-------- | -------------|
-|hycom_atmfor.py | generates atmospheric forcing, based on xml file |
+|hycom_atmfor.py | generates atmospheric forcing, based on xml file input |
 |atmo_synoptic.sh | Wrapper around hycom_atmfor.py |
 
 # Generation of river forcing
@@ -89,6 +115,10 @@ the hycom setup files (grid and bathymetry) to be present.
 |executable     | purpose|
 |-------- | -------------|
 | river_nersc.sh | Use simple nersc river routine |
+| river_trip.sh | River fluxes based on TRIP and ERAI or ERA40 climatology. Can now use pre-existing riverflow in TRIP_PATH |
+| river_trip_realtime.sh | River fluxes based on TRIP, can generate realtime river forcing based on ERA40 or ERAI as well as river climatology|
+
+
 
 # Nesting/interpolation tools
 
@@ -101,6 +131,17 @@ the hycom setup files (grid and bathymetry) to be present.
 |hycom_topo_ports.py   | Generate a ports.input file  and rmu file suitable for use when nesting |
 | nest_setup_ports.sh  | Generates a ports.input file and rmu file suitable for nesting for an experiment (wrapper around hycom_topo_ports.py)|
 | nest_check_ports.sh  |Checks a port setup for errors |
+| nemo_mesh_to_hycom.py | Converts NEMO grid to hycom file types (regional.grid and regional.depths)|
+| nemo_to_hycom.py  | Converts NEMO input files  to hycom archv files  (also calls nemo_mesh_to_hycom)|
+
+
+# Tide tools 
+
+|executable     | purpose|
+|-------- | -------------|
+|hycom_add_tides.py        | Used to tidal data to a existing hycom archv file or create archive files suitable for barotropic nesting only |
+|tidal_forcing.py       | Generates tidal data from FES2004 or FES2014, then runs hycom_add_tides.py to generate archive files with tidal data at boundaries |
+|tidal_forcing.sh       | Wrapper around tidal_forcing.py - this is usually the routine you want to run |
 
 
 # Diagnostic tools 
@@ -111,30 +152,21 @@ the hycom setup files (grid and bathymetry) to be present.
 |hycom_vcoord_plot.py          | Create plots showing the layout of the vertical coordinate specified by blkdat.input|
 |woa2013_sigma_profile.py      | Creates a sigma profile from woa2013 data. Tries to set up a vertical coordinate matching a blkdat.input setup |
 |woa2013_density_distribution.py | Calculates density distribution ++ for a specified region. Based on WOA2013 data |
+|hycom_sigma_compare.py| Can be used to show the difference in hybrid layers between setups. Input is different blkdat.input files |
 
 
 # Other tools
 
-Notebooks
-atmo_nersc_clim.sh
-atmo_nersc_synoptic_oldversions.sh
-calc_thkdf4.sh
-cice_icevolume.py
-cleanEXP.sh
-hycom_bathy_modify.py
-hycom_date.py
-hycom_kapref.py
-hycom_sigma_compare.py
-hycom_sigma_setup.py
-hycom_vsigma.py
-hycomsteps.py
-namelist_extract.py
-nemo_mesh_to_hycom.py
-nemo_to_hycom.py
-old
-river_nersc_bio.sh
-river_trip.sh
-scripts_specific
-seawifs_mon_kpar.sh
-soda_to_hycom.py
-hycom_montg1.py
+|executable     | purpose|
+|-------- | -------------|
+|hycom_montg1.py| Can be used to calculate montg1 for archive files, based on 3D profile in archive and other sources|
+|namelist_extract.py| Routine for extracting info from FORTRAN namelist. Mainly used to process CICE namelists|
+
+
+# The rest
+
+|path     | purpose|
+|-------- | -------------|
+|Notebooks| Contains some notebooks that can be used together with ipython|
+|scripts_specific| some scripts that are not generic ...|
+|not_implemented| Some scripts that are not fully implemented ...|
