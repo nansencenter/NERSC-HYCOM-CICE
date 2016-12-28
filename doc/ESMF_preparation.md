@@ -19,9 +19,9 @@ code into subroutines for initializing, running and finalizing the model.
 
 * Running the ESMF init routines
 
-* * Get numper of cpus, and mpi communicator object from from ESMF system
+  * Get numper of cpus, and mpi communicator object from from ESMF system
 
-* * Set up ESMF data structures. This includes import/export fields, the
+  * Set up ESMF data structures. This includes import/export fields, the
 description of how the model grid is split among CPUs for MPI runs. The
 coordinates and masks of the model grid. Also additional tools, such as clocks,
 are described.
