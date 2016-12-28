@@ -133,9 +133,14 @@ ESMF_GridCompRun and ESMF_GridCompFinalize routines are called. The following sh
         &     phase=1,
         &     rc=rc)
 
+In short; When the hycom model components initialize routine
+(signalled by argument ESMF_METHOD_INITIALIZE) is called, the
+HYCOM_Init routine will be called, when the hycom model components run routine
+(signaled by argument ESMF_METHOD_RUN) is called, the HYCOM_Run routine will be
+called, etc. etc ..
+These routines are located in mod_hycom.F.
 
-These routines are located in mod_hycom.F. For CICE, the following routines are called
-
+For CICE, the corresponding setup is as follows
 
     call ESMF_GridCompSetEntryPoint(comp, ESMF_METHOD_INITIALIZE, &
       ice_init_esmf, phase=1, rc=rc)
