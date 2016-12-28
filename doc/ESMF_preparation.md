@@ -38,7 +38,7 @@ it between a Init phase, a run phase and a finalize routine. Each of these routi
 can have multiple phases, making it possible to have more fine-grained control
 of the code execution. The routines do the following
 
-# # Initialize  routine
+## Initialize  routine
  
 The initialize routine will take care of initialization of the model, such as
 setting up model grids, set up a initial state, time variables,  etc etc. All the stuff that
@@ -51,7 +51,7 @@ State. The two latter will be needed to exhange fields between different models.
 In HYCOM, this routine is done by the subroutine HYCOM_Init inside mod_hycom.F , while in CICE,
 it is done by the subroutine ice_init_esmf in esmf/drivers/cice_comp_esmf.F90
 
-# # Run  routine
+## Run  routine
 
 This step takes care of the actual time integration of the model. In addition it
 will  take care of importing variables from other models from the "Import
@@ -62,7 +62,7 @@ limited number of time steps
 In HYCOM, this is done by the subroutine HYCOM_Run in mod_hycom.F. While in  in CICE,
 it is done by the subroutine ice_run_esmf in esmf/drivers/cice_comp_esmf.F90
 
-# # Finalize routine
+## Finalize routine
 
 This routine is responsible for making sure the model exits cleanly, as well as
 making sure that ESMF also is closed down in a clean way.
