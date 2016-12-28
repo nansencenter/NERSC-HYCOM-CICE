@@ -84,18 +84,48 @@ called like this
         &                                  vm=worldVM,
         &                                  rc=rc)
 
-It is possible to inquire the virtual machine object returned by ESMF_Initialize (here, worldVM), to get
-information at runtime. The following gets the number of MPI tasks (petcount), and
-the rank of this MPI task (localPet)
-
-
-         call ESMF_VMGet(worldVM, petCount=petCount, localPET=localPet,
-        &                rc=rc)
-
+Once initialized, it is possible to inquire the virtual machine object returned by ESMF_Initialize (here, worldVM), to get
+information at runtime. 
 
 # Create gridded components (models), coupler components, and import/export states for these.
 
+## Create gridded component
 
+The gridded components are created by the main program in hycom_cice.F. To begin with, the gridded components are empty, but they are populated with more information as the gridded components call their initialize routines (to be registered in the next section). In hycom_cice.F there are two gridcomponents, one for the ocean (HYCOM) and one for the sea-ice (CICE). The gridded component for the sea ice model is created like this in hycom_cice.F:
+
+
+    c --- Create the SEAICE gridded component
+          iceGridComp = ESMF_GridCompCreate(
+         &  name='SEAICE Component', rc=rc)
+
+
+## Create coupler components
+
+The coupler component takes care of the communication between the gridded components describing HYCOM and CICE. It is created in hycom_cice.F. As with the gridded components, the coupler component is initially empty, but will be filled up with information when initialized at a later stage. We will not say a lot about the coupler components in this document, since it is relatively simple in our case. Since the gridded components CICE and HYCOM use the same model grid, the coupled component is mainly responsible for transferring fields from one models import state to another models export state and vice versa. 
+
+If the model grids were different, some interpolation would be necessary, and it would be natural to do this inside the coupler component. The same applies to field processing that depends on more than one gridded component for instance.
+
+The coupler component is created like this in hycom_cice.F
+
+     c --- Create the OICPL coupler component
+           o2iCplComp = ESMF_CplCompCreate(
+          &     name="OICPL Coupler Component", rc=rc)
+
+
+## Create import and export states
+
+After the creation of the gridded components, the import and export states of the gridded components are created. The import and export states provide the gridded components with the necessary input and output fields it needs to communicate with the other gridcomponents. The communication between the gridded component is always done through the coupler object.
+
+The following shows the creation of the CICE import and export states in hycom_cice.F:
+
+     c --- Create empty SEAICE import/export states
+           iceImpState = ESMF_StateCreate(Name="SEAICE Import",
+          &      stateintent=ESMF_STATEINTENT_IMPORT, rc=rc)
+     c
+           iceExpState = ESMF_StateCreate(Name="SEAICE Export",
+          &      stateintent=ESMF_STATEINTENT_EXPORT, rc=rc)
+
+Note that these states are provided as input and output arguments to the initialize, run and finalize routines of the gridded model. For the coupler component, the states are added to the coupler component so that it is available for routine inside the coupled component object.
 
 # Register Start, Run and Finalize routines in ESMF
 
@@ -157,4 +187,32 @@ For CICE, the corresponding setup is as follows
 these routines are located in drivers/esmf/cice_comp_esmf.F90.
 
 
-# Running the ESMF init routines
+# Running the ESMF init routines for the gridded components
+
+These routines usually take care of setting up the ESMF gridded component attributes. Things such as the grid description (longitude, latitude and masks) are set her, as well as a description of which MPI takes care of which part of the domain. The ESMF init routines also set up the import and export states.
+
+In addition, the initialization of the model itself is usually done inside this routine. Below is a short description of the typical ESMF-related tasks done in this routine. This comes in addition to whatever initialization is needed for the model itself.
+
+## Get numper of cpus, and mpi communicator object from from ESMF system
+
+One of the first steps when initializing the model is to know how many CPUs are available for it. This is done through the ESMF framework. The framework provides the gridded components with a virtual machine(vm) object that has important information for the model.
+
+Once inside the gridded components initialize routine, the vm object can be retrieved like this (see HYCOM_Init):
+
+    c --- Get VM from gridComp
+          call ESMF_GridCompGet(gridComp, vm=vm, rc=rc)
+
+It is possible to inquire the virtual machine object , to get
+information at runtime. The following gets the number of MPI tasks (petcount), 
+the rank of this MPI task (localPet), as well as the MPI communicator object for this gridded component.
+
+         call ESMF_VMGet(vm, petCount=petCount, localPET=localPet,
+        &                rc=rc, mpiCommunicator=mpiCommunicator)
+
+## Set up the distributed grid
+
+
+
+### Set up a DELayout
+
+A DELayout is a mapping 
