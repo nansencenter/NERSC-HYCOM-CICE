@@ -20,7 +20,7 @@ logger.propagate=False
 
 def main(input,output,value) :
 
-   logger.info("Converting %s from %s to %s"%(input,output,str(value)))
+   logger.info("Converting %s from %s to %s"%(str(value),input,output))
 
    if input == output :
       logger.warning("input format == output format ")

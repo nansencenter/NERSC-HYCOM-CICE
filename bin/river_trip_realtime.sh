@@ -28,26 +28,34 @@ fi
 # Experiment  needs experiment number
 along=200
 across=60
-src="erai"
 create=0
 usage="
 This script will set up river forcing files used by HYCOM. The forcing
 is based on the ERA40 runoff data set, coupled with the TRIP data base 
 for directing the runoff towards the ocean. 
 
+In addition to create a river climatology (forcing.rivers.[ab], this routine
+will also create precipitation fields that represents realtime river flow as described
+bvy the TRIP routines.
+
+Note that the precip fields will have to be further manipulated if they are to be used by 
+hycom (they will need to include precipitation fields as well, and they need to 
+be copied in by the preprocessing script).
+
+
 Example:
-   $(basename $0) [ -t along_shore_discharge_radius ] [ -n across_shore_discharge_radius] [-r runoff_source ] [-c] time1 time2 deltatime
+   $(basename $0) [ -t along_shore_discharge_radius ] [ -n across_shore_discharge_radius] [-c] runoff_source time1 time2 deltatime
+
+Argument
+   runoff_source                     : specify runoff source, erai or era40 
+   time1                             : First time to process (format YYYY-mm-ddTHH:MM:ss)
+   time1                             : Last  time to process (format YYYY-mm-ddTHH:MM:ss)
+   deltat                            : Time step (in days)
 
 Optional arguments:
    -t along_shore_discharge_radius  : rivers will be spread along shore using this radius (default $along)
    -n across_shore_discharge_radius : rivers will be spread normal to the shore using this radius (default $across)
-   -r runoff_source                 : specify runoff source, era or era40 (default $src)
    -c                               : Create TRIP weights and flow in local scratch dir. Otherwise use existing data. Defult: use existing
-
-Required arguments
-   time1 : date of first forcing time step. Format YYYY-MM-DDTHH-MM-SS
-   time2 : date of last  forcing time step. Format YYYY-MM-DDTHH-MM-SS
-   deltat: forcing time step in days
 
    
 NB:This script will overwrite any other river forcing files in force/rivers/E !!
@@ -55,7 +63,7 @@ NB:This script will overwrite any other river forcing files in force/rivers/E !!
 
 
 # This will process optional arguments
-options=$(getopt -o ct:n:r: -- "$@")
+options=$(getopt -o ct:n: -- "$@")
 [ $? -eq 0 ] || {
     echo "$usage"
     echo "Error: Incorrect options provided"
@@ -72,10 +80,6 @@ while true; do
        shift;
        across=$1
         ;;
-    -r)
-       shift;
-       src=$1
-        ;;
     -c)
        create=1
         ;;
@@ -86,18 +90,50 @@ while true; do
     esac
     shift
 done
+
+if [ $# -ne 4 ] ; then
+   echo -e "$usage"
+   echo "No source specified!"
+   exit 1;
+fi
+src=$1
+starttime=$2
+endtime=$3
+deltat=$4
+
+
+# Convert times to hycom dtime
+dtime1=$(hycom_date.py datetime dtime $starttime)
+if [ $? -ne 0 ] ; then
+   echo "$usage"
+   echo "An error occured when converting from datetime=$starttime to hycom time"
+   exit 1
+fi
+
+dtime2=$(hycom_date.py datetime dtime $endtime)
+if [ $? -ne 0 ] ; then
+   echo "$usage"
+   echo "An error occured when converting from datetime=$endtime to hycom time"
+   exit 1
+fi
+echo $dtime1
+echo $dtime2
+
+
 flowpath="${TRIP_PATH}/$src"
 flowfile="trip_${src}_clim.nc"
 echo "Along-shore  radius               :$along"
 echo "Across-shore radius               :$across"
 echo "Runoff source                     :${src}"
 echo "Create riverweights and riverflow :${create} (0=False)"
-if [ $create -ne 0 ] ; then
+if [ $create -eq 0 ] ; then
    echo "Location of existing weight and flow data :${flowpath}"
    echo "Flow file                                 :${flowpath}/${flowfile}"
 fi
 rwcellinfo="rw_cellinfo.uf"
 rwmaxncell="rw_maxncells.asc"
+
+
 
 
 #
@@ -126,7 +162,7 @@ ${pget} ${BASEDIR}/topo/depth_${R}_${T}.b regional.depth.b  || { echo "Could not
 ${pget} ${BASEDIR}/topo/grid.info grid.info  || { echo "Could not get file rivers.dat " ; exit 1 ; }
 
 
-# Create new fils
+# Create new files
 if [ $create -ne 0 ] ; then
    echo
    echo "**Calculating TRIP weights"
@@ -145,7 +181,7 @@ fi
 echo
 echo "**Interpolating TRIP river flow to hycom"
 #$MSCPROGS/bin_setup/trip_tohycom $src $along $across    || { echo "Error when running trip_tohycom  (see errors above)" ; exit 1 ; }
-$MSCPROGS/bin_setup/trip_tohycomrt $src $along $across    || { echo "Error when running trip_tohycom  (see errors above)" ; exit 1 ; }
+$MSCPROGS/bin_setup/trip_tohycomrt $src $along $across $dtime1 $dtime2 $deltat   || { echo "Error when running trip_tohycomrt  (see errors above)" ; exit 1 ; }
 
 # TODO: Its possible to use the river flow data and create fake precipitation fields. This can be used as realtime river forcing 
 

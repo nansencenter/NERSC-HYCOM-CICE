@@ -57,9 +57,11 @@ program trip_tohycom
       radius=radius*1000.
       landradius=landradius*1000.
    else 
-      runoff_source="erai"
-      radius=d_radius
-      landradius=d_landradius
+   !   runoff_source="erai"
+   !   radius=d_radius
+   !   landradius=d_landradius
+      print *,"p_trip_tohycom.F90 Not correct number of arguments..."
+      call exit(1)
    end if
    searchradius=d_searchradius
    print *,"Runoff source: "//trim(runoff_source)

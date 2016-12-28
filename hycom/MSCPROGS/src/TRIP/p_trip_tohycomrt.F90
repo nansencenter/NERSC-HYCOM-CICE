@@ -191,19 +191,21 @@ program trip_tohycom
 
    print *,'Routine will calculate river discharge from TRIP+ERAi-derived'
    print *,'river fields. Input is across-shore radius and alongshore-shore radius.  Both in km'
-   if (iargc()==3) then
+   if (iargc()==6) then
       call getarg(1,runoff_source) 
       call getarg(2,tmparg) ; read(tmparg,*) radius
       call getarg(3,tmparg) ; read(tmparg,*) landradius
-      !call getarg(4,tmparg) ; read(tmparg,*) dtime1 ! start time in hycom dtime
-      !call getarg(5,tmparg) ; read(tmparg,*) dtime2 ! start time in hycom dtime
-      !call getarg(6,tmparg) ; read(tmparg,*) ddtime ! delta time in hycom dtime
+      call getarg(4,tmparg) ; read(tmparg,*) dtime1 ! start time in hycom dtime
+      call getarg(5,tmparg) ; read(tmparg,*) dtime2 ! start time in hycom dtime
+      call getarg(6,tmparg) ; read(tmparg,*) ddtime ! delta time in hycom dtime
       radius=radius*1000.
       landradius=landradius*1000.
    else 
-      runoff_source="erai"
-      radius=d_radius
-      landradius=d_landradius
+      !runoff_source="erai"
+      !radius=d_radius
+      !landradius=d_landradius
+      print *,"p_trip_tohycomrt.F90 Not correct number of arguments..."
+      call exit(1)
    end if
    searchradius=d_searchradius
    print *,"Runoff source: "//trim(runoff_source)
@@ -215,8 +217,10 @@ program trip_tohycom
 
    ! Read climatologies
    if (trim(runoff_source) == "era40") then 
+      print '(a)',"Opening river climatology file trip_era40_clim.nc"
       call handle_err(nf90_open('trip_era40_clim.nc',NF90_NOWRITE,ncid))
    elseif (trim(runoff_source) == "erai") then 
+      print '(a)',"Opening river climatology file trip_erai_clim.nc"
       call handle_err(nf90_open('trip_erai_clim.nc',NF90_NOWRITE,ncid))
    else 
       print *,"Unknown runoff source "//trim(runoff_source)
@@ -514,9 +518,9 @@ program trip_tohycom
 
    !KAL - now process synoptic time series. dtime1 to dtime2 in steps of ddtime
    ! calculate start and end time in years.
-   dtime1 = 40000
-   dtime2 = 40400
-   ddtime = 10. 
+   !dtime1 = 40000
+   !dtime2 = 40400
+   !ddtime = 10. 
    call forday(dtime1,3,year1,day1,hour1)
    call forday(dtime2,3,year2,day2,hour2)
    !print *,year1,day1,hour1
@@ -605,7 +609,7 @@ program trip_tohycom
 
    ! Create netcdf output for diagnostics
    if (diag_netcdf) then
-      call handle_err(nf90_create("test.nc",NF90_CLOBBER,ncid))
+      call handle_err(nf90_create("precip.nc",NF90_CLOBBER,ncid))
       call handle_err(nf90_def_dim(ncid,'idm'    ,idm,xdim))
       call handle_err(nf90_def_dim(ncid,'jdm'    ,jdm,ydim))
       call handle_err(nf90_def_dim(ncid,'time',nf90_unlimited,recdim))

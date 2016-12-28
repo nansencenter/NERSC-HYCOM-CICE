@@ -28,7 +28,6 @@ fi
 # Experiment  needs experiment number
 along=200
 across=60
-src="erai"
 create=0
 usage="
 This script will set up river forcing files used by HYCOM. The forcing
@@ -36,12 +35,14 @@ is based on the ERA40 runoff data set, coupled with the TRIP data base
 for directing the runoff towards the ocean. 
 
 Example:
-   $(basename $0) [ -t along_shore_discharge_radius ] [ -n across_shore_discharge_radius] [-r runoff_source ] [-c]
+   $(basename $0) [ -t along_shore_discharge_radius ] [ -n across_shore_discharge_radius] [-c] runoff_source
+
+Argument
+   runoff_source                     : specify runoff source, erai or era40 
 
 Optional arguments:
    -t along_shore_discharge_radius  : rivers will be spread along shore using this radius (default $along)
    -n across_shore_discharge_radius : rivers will be spread normal to the shore using this radius (default $across)
-   -r runoff_source                 : specify runoff source, era or era40 (default $src)
    -c                               : Create TRIP weights and flow in local scratch dir. Otherwise use existing data. Defult: use existing
 
    
@@ -50,7 +51,7 @@ NB:This script will overwrite any other river forcing files in force/rivers/E !!
 
 
 # This will process optional arguments
-options=$(getopt -o ct:n:r: -- "$@")
+options=$(getopt -o ct:n: -- "$@")
 [ $? -eq 0 ] || {
     echo "$usage"
     echo "Error: Incorrect options provided"
@@ -67,10 +68,6 @@ while true; do
        shift;
        across=$1
         ;;
-    -r)
-       shift;
-       src=$1
-        ;;
     -c)
        create=1
         ;;
@@ -81,18 +78,29 @@ while true; do
     esac
     shift
 done
+
+if [ $# -ne 1 ] ; then
+   echo -e "$usage"
+   echo "No source specified!"
+   exit 1;
+fi
+src=$1
+
+
 flowpath="${TRIP_PATH}/$src"
 flowfile="trip_${src}_clim.nc"
 echo "Along-shore  radius               :$along"
 echo "Across-shore radius               :$across"
 echo "Runoff source                     :${src}"
 echo "Create riverweights and riverflow :${create} (0=False)"
-if [ $create -ne 0 ] ; then
+if [ $create -eq 0 ] ; then
    echo "Location of existing weight and flow data :${flowpath}"
    echo "Flow file                                 :${flowpath}/${flowfile}"
 fi
 rwcellinfo="rw_cellinfo.uf"
 rwmaxncell="rw_maxncells.asc"
+
+
 
 
 #
@@ -140,9 +148,6 @@ fi
 echo
 echo "**Interpolating TRIP river flow to hycom"
 $MSCPROGS/bin_setup/trip_tohycom $src $along $across    || { echo "Error when running trip_tohycom  (see errors above)" ; exit 1 ; }
-#$MSCPROGS/bin_setup/trip_tohycomrt $src $along $across    || { echo "Error when running trip_tohycom  (see errors above)" ; exit 1 ; }
-
-# TODO: Its possible to use the river flow data and create fake precipitation fields. This can be used as realtime river forcing 
 
 
 for i in forcing.*.[ab] ; do
