@@ -40,7 +40,7 @@ module utilities
       subroutine spread_rivers( &
          river_i,river_j,river_ipiv,river_jpiv,river_darea,river_dweight,nriver, &
          riv_flux,nxd,nyd, &
-         ip,tmp3,landdist,idm,jdm, &
+         myip,tmp3,landdist,idm,jdm, &
          radius, landradius)
       use mod_grid
       implicit none
@@ -52,7 +52,7 @@ module utilities
       real   , intent(in)  :: river_darea(nriver)
       real   , intent(in)  :: river_dweight(nriver)
       real   , intent(in)  :: riv_flux  (nxd,nyd)
-      integer, intent(in)  :: ip        (idm,jdm)
+      integer, intent(in)  :: myip        (idm,jdm)
       real   , intent(in)  :: landdist      (idm,jdm)
       real   , intent(out) :: tmp3      (idm,jdm)
       real, intent(in) :: landradius, radius
@@ -87,15 +87,15 @@ module utilities
                ix2=min(idm,max(ix,1))
                dist=sqrt(real(ix2-i)**2 + real(jy-j)**2)
             end if
-            if (ip(ix2,jy)==1) then 
+            if (myip(ix2,jy)==1) then 
 
                !tmpflag=1 if point within the circle of size radius and wet, else 0
-               !tmpflag  =nint(ip(ix2,jy)*0.5*(1.+sign(1.,ncells-dist)))
+               !tmpflag  =nint(myip(ix2,jy)*0.5*(1.+sign(1.,ncells-dist)))
                !tmpweight=exp(- (landdist(ix2,jy)/landradius)**2) * tmpflag / river_dweight(iriver)
                rdist=spherdist(plon(i,j),plat(i,j),plon(ix2,jy),plat(ix2,jy))
 
                ! Flag
-               tmpflag=myflag(ip(ix2,jy),ncells,dist)
+               tmpflag=myflag(myip(ix2,jy),ncells,dist)
 
                ! Weights
                tmpweight=myweight(landdist(ix2,jy),rdist,radius,landradius,tmpflag)  / river_dweight(iriver)
@@ -504,7 +504,8 @@ program trip_tohycom
 
       ! Its big, its ugly, but at least its all in the same place
       call spread_rivers( &
-         river_i(1:nriver),river_j(1:nriver),river_ipiv(1:nriver),river_jpiv(1:nriver),river_darea(1:nriver),river_dweight(1:nriver),nriver, &
+         river_i(1:nriver),river_j(1:nriver),river_ipiv(1:nriver),river_jpiv(1:nriver), &
+         river_darea(1:nriver),river_dweight(1:nriver),nriver, &
          riv_flux(:,:,k),nxd,nyd, &
          ip,mod_riv_flux,landdist,idm,jdm, &
          radius, landradius)
@@ -717,7 +718,8 @@ program trip_tohycom
 
             ! Its big, its ugly, but at least its all in the same place
             call spread_rivers( &
-               river_i(1:nriver),river_j(1:nriver),river_ipiv(1:nriver),river_jpiv(1:nriver),river_darea(1:nriver),river_dweight(1:nriver),nriver, &
+               river_i(1:nriver),river_j(1:nriver),river_ipiv(1:nriver), &
+               river_jpiv(1:nriver),river_darea(1:nriver),river_dweight(1:nriver),nriver, &
                riv_flux(:,:,k),nxd,nyd, &
                ip,tmp3,landdist,idm,jdm, &
                radius, landradius)
