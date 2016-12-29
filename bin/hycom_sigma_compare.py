@@ -56,6 +56,7 @@ def main(blkdatfiles):
       nhybrd=bp["nhybrd"]
       nsigma=bp["nsigma"]
       thflag=bp["thflag"]
+      iexpt=bp["iexpt"]
       mysig   = modeltools.hycom.Sigma(thflag)
 
       intf,masks = bp.intf_min_profile(numpy.array([3000.]))
@@ -79,13 +80,14 @@ def main(blkdatfiles):
       intf,masks = bp.intf_min_profile(numpy.array(bottom))
 
       # Plot layers
-      first=False
+      first=True
       for k in range(intf.shape[1]) :
          if (k+1)%5 == 0 :
             ax9.plot(x,-intf[:,k],color=cols[i],linestyle="--",lw=.5)
          else:
             if first :
-               label=os.path.basename(blkdatfile)
+               #label=os.path.basename(blkdatfile)
+               label="%s(iexpt=%d)"%(blkdatfile,iexpt)
                first=False
             else :
                label=None
@@ -96,6 +98,8 @@ def main(blkdatfiles):
             texty = -0.5*(intf[xpos,k-1] + intf[xpos,k])
             #print k,textx,texty,intf[xpos,k-1],intf[xpos,k]
             ax9.text(textx,texty,str(k),verticalalignment="center",horizontalalignment="center",fontsize=6,color=cols[i])
+   #ax9.legend()
+   ax9.legend(bbox_to_anchor=(1.1, 1.05),fontsize=6)
    ax9.plot(x,-bottom,lw=4,color="k")
 
 

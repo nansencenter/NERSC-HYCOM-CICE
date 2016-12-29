@@ -45,7 +45,7 @@ def main(intopo) :
    depth=numpy.copy(in_depth)
 
    # Open stdin
-   logger.info("Reading input data")
+   logger.info("Reading input data. Format  ifirst  ilast  jfirst  jlast depth  . Stop Input with Ctrl-d")
    for line in sys.stdin.readlines() :
       logger.info(line.strip())
       ifirst,ilast,jfirst,jlast,d = line.split()
@@ -54,7 +54,7 @@ def main(intopo) :
       jfirst=int(jfirst)-1   # Fortran indexing -> C
       jlast =int(jlast)      # Fortran indexing -> C
       d =float(d)
-      logger.info("ifirst=%5d, ilast=%5d, jfirst=%5d, jlast=%5d : depth=%6.2f"%(ifirst,ilast,jfirst,jlast,d))
+      logger.info("ifirst=%5d, ilast=%5d, jfirst=%5d, jlast=%5d : depth=%6.2f"%(ifirst+1,ilast,jfirst+1,jlast,d))
       depth[jfirst:jlast,ifirst:ilast]=d
 
    # Mask data where depth below thresholddata = sys.stdin.readlines()

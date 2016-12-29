@@ -16,31 +16,6 @@ source ${BASEDIR}/REGION.src || { echo "Could not source ${BASEDIR}/REGION.src" 
 source ./EXPT.src            || { echo "Could not source ${BASEDIR}/expt_$X/EXPT.src" ; exit 1 ; }
 
 
-# Check that pointer to HYCOM_ALL is set (from EXPT.src)
-if [ -z ${HYCOM_ALL} ] ; then
-   echo "Environment not set "
-   exit
-else
-   if [ ! -d ${HYCOM_ALL} ] ; then
-      echo "HYCOM_ALL not properly set up"
-      echo "HYCOM_ALL not a directory at ${HYCOM_ALL}"
-      exit
-   fi
-fi
-
-# Check that pointer to MSCPROGS is set
-if [ -z ${MSCPROGS} ] ; then
-   echo "MSCPROGS Environment not set "
-   exit
-else
-   if [ ! -d ${MSCPROGS} ] ; then
-      echo "MSCPROGS not properly set up"
-      echo "MSCPROGS not a directory at ${MSCPROGS}"
-      exit
-   fi
-fi
-
-
 
 #set -x
 pget=cp

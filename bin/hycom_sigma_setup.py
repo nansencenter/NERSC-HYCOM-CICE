@@ -9,6 +9,7 @@ import datetime
 import numpy
 import os
 import re
+import sys
 
 # Set up logger
 _loglevel=logging.DEBUG
@@ -175,6 +176,7 @@ def main_blkdat(blkdatfile,s) :
          fid.write(line)
 
    fid.close()
+   logger.info("blkdat file with new levels in {0}".format(newfile))
 
 
    ## Output suitable for blkdat
@@ -204,44 +206,47 @@ if __name__ == "__main__" :
           tmp=zip(*tmp)
           setattr(args,self.dest,tmp)
 
-   parser = argparse.ArgumentParser(description='')
-   subparsers = parser.add_subparsers(help='sub-command help')
-
-   # Option 1 : 
-   parser_1 = subparsers.add_parser("lin+exp") 
-   parser_1.add_argument('s1', type=float)
-   parser_1.add_argument('s2', type=float)
-   parser_1.add_argument('s3', type=float)
-   parser_1.add_argument('Nlin', type=int,  help="Number of points in linear range[s1,s2]")
-   parser_1.add_argument('Nexp', type=int,  help="Number of points in exponential range(s2,s3]")
-   parser_1.set_defaults(subparser_name="lin+exp")
-
-   parser_2 = subparsers.add_parser("lin+expv2",description=
-         "Linear + exp profile. Assumption: (s2-s1)/Nlin = dfac*(s3-s2)/Nexp. Nlin and Nexp are estimated from input" ) 
-   parser_2.add_argument('--dfac', type=float, help="Ratio of (s2-s1)*Nlin  : (s3-s1)*Nexp",default=4.0)
-   parser_2.add_argument('--blkdatfile', default=None)
-   parser_2.add_argument('s1', type=float, help="Surface density")
-   parser_2.add_argument('s2', type=float, help="density (end of linear range)")
-   parser_2.add_argument('s3', type=float, help="Bottom density")
-   parser_2.add_argument('Ntot', type=int,  help="Number of points in total range")
-   parser_2.set_defaults(subparser_name="lin+expv2")
-
-   parser_3 = subparsers.add_parser("lin") 
-   parser_3.add_argument('--blkdatfile', default=None)
-   parser_3.add_argument('s0', type=float)
-   parser_3.add_argument('sNpair', action=sNParseAction,nargs="+")
-   parser_3.set_defaults(subparser_name="lin")
-
-   args = parser.parse_args()
-   if args.subparser_name == "lin+exp" :
-      s=main_1(args.s1,args.s2,args.s3,Nlin=args.Nlin,Nexp=args.Nexp)
-   elif args.subparser_name == "lin+expv2" :
-      s=main_1(args.s1,args.s2,args.s3,Ntot=args.Ntot,dfac=args.dfac)
-   elif args.subparser_name == "lin" :
-      s,N=args.sNpair
-      s=main_2(args.s0,s,N)
-   else :
-      raise ValueError,"Unknown parser "
+#   parser = argparse.ArgumentParser(description='')
+#   subparsers = parser.add_subparsers(help='sub-command help')
+#
+#   # Option 1 : 
+#   parser_1 = subparsers.add_parser("lin+exp",description="Linear + exponential profile") 
+#   parser_1.add_argument('s1', type=float)
+#   parser_1.add_argument('s2', type=float)
+#   parser_1.add_argument('s3', type=float)
+#   parser_1.add_argument('Nlin', type=int,  help="Number of points in linear range[s1,s2]")
+#   parser_1.add_argument('Nexp', type=int,  help="Number of points in exponential range(s2,s3]")
+#   parser_1.set_defaults(subparser_name="lin+exp")
+#
+#   parser_2 = subparsers.add_parser("lin+expv2",description=
+#         "Linear + exp profile. Assumption: (s2-s1)/Nlin = dfac*(s3-s2)/Nexp. Nlin and Nexp are estimated from input" ) 
+#   parser_2.add_argument('--dfac', type=float, help="Ratio of (s2-s1)*Nlin  : (s3-s1)*Nexp",default=4.0)
+#   parser_2.add_argument('--blkdatfile', default=None)
+#   parser_2.add_argument('s1', type=float, help="Surface density")
+#   parser_2.add_argument('s2', type=float, help="density (end of linear range)")
+#   parser_2.add_argument('s3', type=float, help="Bottom density")
+#   parser_2.add_argument('Ntot', type=int,  help="Number of points in total range")
+#   parser_2.set_defaults(subparser_name="lin+expv2")
+#
+#   parser_3 = subparsers.add_parser("lin",description="Several linear profiles stitched together") 
+#   parser_3.add_argument('--blkdatfile', default=None)
+#   parser_3.add_argument('s0', type=float,help="1st sigma value")
+#   parser_3.add_argument('sNpair', action=sNParseAction,nargs="+",help="sNpair is a pair of sigma and N  separated by , (for instance 23.5,10) it Specifies next sigma value and N=points between previous  and next sigma value")
+#   parser_3.set_defaults(subparser_name="lin")
+#
+#   args = parser.parse_args()
+#   if args.subparser_name == "lin+exp" :
+#      s=main_1(args.s1,args.s2,args.s3,Nlin=args.Nlin,Nexp=args.Nexp)
+#   elif args.subparser_name == "lin+expv2" :
+#      s=main_1(args.s1,args.s2,args.s3,Ntot=args.Ntot,dfac=args.dfac)
+#   elif args.subparser_name == "lin" :
+#      s,N=args.sNpair
+#      s=main_2(args.s0,s,N)
+#   else :
+#      raise ValueError,"Unknown parser "
+#   main_plot(s)
+#   if args.blkdatfile is not None :
+#      main_blkdat(args.blkdatfile,s)
 
    #import scipy.signal
    #N=7
@@ -255,6 +260,20 @@ if __name__ == "__main__" :
    #s[N/2:-N/2+1]=s2
    
 
+   parser = argparse.ArgumentParser(
+         formatter_class=argparse.RawDescriptionHelpFormatter,
+         description="Several linear profiles stitched together",
+         epilog='''
+Examples: 
+   {0} 23.5   26.0,10               # Linear profile w 10 points from 23.5 to 26 
+   {0} 23.5   26.0,10  27.0,10     # Linear profile w 10 points from 23.5 to 26 followed by linear profile w 10 points fro m26.0 t0 27.0
+   '''.format(os.path.basename(sys.argv[0])))
+   parser.add_argument('--blkdatfile', default=None,help="If specified, routine will create a new blkdat file  (blkdat.input.new)based on this one. file should be checked for inconsistencies...")
+   parser.add_argument('s0', type=float,help="1st sigma value")
+   parser.add_argument('sNpair', action=sNParseAction,nargs="+",help="sNpair is a pair of sigma and N  values separated by , (for instance 23.5,10) it Specifies next sigma value and N=points between previous  and next sigma value")
+   args = parser.parse_args()
+   s,N=args.sNpair
+   s=main_2(args.s0,s,N)
 
    main_plot(s)
    if args.blkdatfile is not None :

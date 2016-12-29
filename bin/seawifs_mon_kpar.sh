@@ -32,18 +32,6 @@ S=$D/SCRATCH
 mkdir -p $S
 cd       $S
 
-# Check that pointer to HYCOM_ALL is set
-if [ -z ${HYCOM_ALL} ] ; then
-   echo "HYCOM_ALL Environment not set "
-   exit
-else
-   if [ ! -d ${HYCOM_ALL} ] ; then
-      echo "HYCOM_ALL not properly set up"
-      echo "HYCOM_ALL not a directory at ${HYCOM_ALL}"
-      exit
-   fi
-fi
-
 
 #
 # --- Input.
