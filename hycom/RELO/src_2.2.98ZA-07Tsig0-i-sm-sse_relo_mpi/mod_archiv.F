@@ -461,7 +461,7 @@ C --- Placed here not to interfere with reading of nest files etc etc
         if     (kkout.gt.1 .or. l_arch(20)) then
         call zaiowr(si_u,ip,.true., xmin,xmax, nopa, .false.)
         if     (mnproc.eq.1) then
-        write (nop,117) 'si_u    ',nstep,time,k,coord,xmin,xmax
+        write (nop,117) 'si_u    ',nstep,time,0,0.0,xmin,xmax
         k    =0
         coord=0.0
         call flush(nop)
@@ -470,7 +470,7 @@ C --- Placed here not to interfere with reading of nest files etc etc
         if     (kkout.gt.1 .or. l_arch(21)) then
         call zaiowr(si_v,ip,.true., xmin,xmax, nopa, .false.)
         if     (mnproc.eq.1) then
-        write (nop,117) 'si_v    ',nstep,time,k,coord,xmin,xmax
+        write (nop,117) 'si_v    ',nstep,time,0,0.0,xmin,xmax
         k    =0
         coord=0.0
         call flush(nop)
