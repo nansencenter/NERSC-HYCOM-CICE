@@ -24,7 +24,7 @@ MODS =   mod_dimensions.o mod_xc.o mod_za.o mod_cb_arrays.o mod_pipe.o \
          mod_incupd.o \
          mod_floats.o mod_stokes.o mod_tides.o mod_mean.o mod_archiv.o \
          mod_tsadvc.o mod_momtum.o \
-         mod_hycom.o mod_esmf_utils.o mod_netcdf_util.o
+         mod_hycom.o mod_esmf_utils.o mod_netcdf_util.o mod_prgrad.o
 
 MODD =   mod_dimensions.o mod_xc.o mod_za.o mod_cb_arrays.o mod_pipe.o \
          mod_incupd.o \
@@ -125,7 +125,8 @@ mod_cb_arrays.o: \
 mod_momtum.o: \
 	mod_momtum.F mod_xc.o mod_cb_arrays.o stmt_fns.h          mod_pipe.o \
 	                                                          mod_tides.o \
-	                                                          mod_stokes.o
+	                                                          mod_stokes.o \
+																				 mod_prgrad.o
 mod_tsadvc.o: \
 	mod_tsadvc.F mod_xc.o mod_cb_arrays.o stmt_fns.h          mod_pipe.o
 mod_incupd.o: \
@@ -153,3 +154,6 @@ mod_OICPL.o: mod_OICPL.F
 
 mod_netcdf_util.o: \
 	mod_netcdf_util.F mod_xc.o mod_cb_arrays.o  
+
+mod_prgrad.o: \
+	mod_prgrad.F
