@@ -152,6 +152,9 @@ relaxv:          $(MODS) relaxv.o                 $(LIBS)
 relaxi:          $(MODS) relaxi.o                 $(LIBS)
 	$(LD) $(LDFLAGS) relaxi.o         $(MODS) $(LIBS) -o relaxi
 
+relaxi_archvz:          $(MODS) relaxi_archvz.o                 $(LIBS)
+	$(LD) $(LDFLAGS) relaxi_archvz.o         $(MODS) $(LIBS) -o relaxi_archvz
+
 zonal_field:     $(MODS) zonal_field.o            $(LIBS)
 	$(LD) $(LDFLAGS) zonal_field.o    $(MODS) $(LIBS) -o zonal_field
 
