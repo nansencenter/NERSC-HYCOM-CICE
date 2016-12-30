@@ -13,7 +13,16 @@ if [ $# -ne 1 ] ; then
    echo "   $0 archv_file"
    exit 1
 fi
-export archvfiles=$@
+archvfiles=$@
+
+tmp=""
+for i in $archvfiles ; do
+   tmp="$tmp $(readlink -e $i)"
+done
+archvfiles=$tmp
+   
+
+
 
 
 # Must be in expt dir to run this script
@@ -110,19 +119,38 @@ if [ ! -s  blkdat.subset ] ; then
 fi
 
 #get  thflag from blkdat.input
-touch   relaxi fort.51 fort.51A
-/bin/rm relaxi fort.51 fort.51A
+touch   fort.51 fort.51A
+/bin/rm fort.51 fort.51A
+
+touch fort.51 fort.51A
+rm fort.51 fort.51A
+if [ ! -s fort.51 ] ; then
+  ${pget} ${BASEDIR}/topo/depth_${R}_${T}.b fort.51 || { echo "Couldnt get depth_${R}_${T}.b " ; exit 1 ;}
+fi
+if [ ! -s  fort.51A ] ; then
+  ${pget} ${BASEDIR}/topo/depth_${R}_${T}.a fort.51A  || { echo "Couldnt get depth_${R}_${T}.a " ; exit 1 ;}
+fi
+
+touch regional.grid.a regional.grid.b
+rm regional.grid.a regional.grid.b
+if [ ! -s regional.grid.b ]; then
+  ${pget} ${BASEDIR}/topo/regional.grid.b regional.grid.b || { echo "Couldnt get regional.grid.b " ; exit 1 ;}
+fi
+if [ ! -s regional.grid.a ] ; then
+  ${pget} ${BASEDIR}/topo/regional.grid.a regional.grid.a || { echo "Couldnt get regional.grid.b " ; exit 1 ;}
+fi
 
 #
-# --- 12 months
+# --- Loop over archive files
 #
 for archvfile in $archvfiles ; do
    #
    # --- Input.
    #
-   archfilea=$(echo $archvfile | sed -s "s/\.[ab]$/")
-   echo archfilea
-   exit 1
+   archvfilea=$(echo $archvfile | sed -e "s/\.[ab]$//")
+   archvfileb=${archvfilea}.b
+   archvfilea=${archvfilea}.a
+   echo $archvfile $archvfilea $archvfileb
 
    touch      fort.71 fort.71A fort.72 fort.72A
    /bin/rm -f fort.71 fort.71A fort.72 fort.72A
@@ -131,35 +159,11 @@ for archvfile in $archvfiles ; do
    #${pget} ${BASEDIR}/relax/$CLIM/saln_sig${KSIGMA}_m${MM}.b fort.73  || { echo "Couldnt get z-climatology" ; exit 1 ;}
    #${pget} ${BASEDIR}/relax/$CLIM/saln_sig${KSIGMA}_m${MM}.a fort.73A || { echo "Couldnt get z-climatology" ; exit 1 ;}
 
-   ${pget} ${BASEDIR}/relax/$CLIM/temp_sig${KSIGMA}_m${MM}.b fort.72  || { echo "Couldnt get z-climatology" ; exit 1 ;}
-   ${pget} ${BASEDIR}/relax/$CLIM/temp_sig${KSIGMA}_m${MM}.a fort.72A || { echo "Couldnt get z-climatology" ; exit 1 ;}
+   ${pget} ${archvfileb} fort.72  || { echo "Couldnt get $archvfileb" ; exit 1 ;}
+   ${pget} ${archvfilea} fort.72A || { echo "Couldnt get $archvfilea" ; exit 1 ;}
 
-   touch fort.51 fort.51A
-   rm fort.51 fort.51A
-   if [ ! -s fort.51 ] ; then
-     ${pget} ${BASEDIR}/topo/depth_${R}_${T}.b fort.51 || { echo "Couldnt get depth_${R}_${T}.b " ; exit 1 ;}
-   fi
-   if [ ! -s  fort.51A ] ; then
-     ${pget} ${BASEDIR}/topo/depth_${R}_${T}.a fort.51A  || { echo "Couldnt get depth_${R}_${T}.a " ; exit 1 ;}
-   fi
-
-   touch regional.grid.a regional.grid.b
-   rm regional.grid.a regional.grid.b
-   if [ ! -s regional.grid.b ]; then
-     ${pget} ${BASEDIR}/topo/regional.grid.b regional.grid.b || { echo "Couldnt get regional.grid.b " ; exit 1 ;}
-   fi
-   if [ ! -s regional.grid.a ] ; then
-     ${pget} ${BASEDIR}/topo/regional.grid.a regional.grid.a || { echo "Couldnt get regional.grid.b " ; exit 1 ;}
-   fi
+   exit 1
  
-   touch relaxi
-   if [ ! -s  relaxi ] ; then
-    ${pget} ${HYCOM_ALL}/relax/src/relaxi .  || { echo "Couldnt get relaxi " ; exit 1 ;}
-
-   fi
-   wait
-   chmod a+rx relaxi
-
    # Create subset of blkdat.input
    sed -e "s/^[ 	0-9]*'month ' =/  ${MM}	  'month ' =/" blkdat.subset > fort.99
    
