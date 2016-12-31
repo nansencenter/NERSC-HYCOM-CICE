@@ -1,4 +1,4 @@
-      PROGRAM RELAXI
+      PROGRAM RELAXI_
       USE MOD_ZA  ! HYCOM array I/O interface
       IMPLICIT NONE
 C
@@ -99,9 +99,28 @@ C
      +        PINTEG,SIGMAA,SIGMAB,ZBOT,ZTOP
 C
       REAL*4  SIG_V,SOFSIG_V,TOFSIG_V
+      CHARACTER*512 archvfile 
+      CHARACTER*10 fldname 
+      real   :: rday, lrdens
+      INTEGER, EXTERNAL  :: IARGC
+      INTEGER IOS,ISTEP
 C
       CALL XCSPMD
 C
+     
+      if (IARGC() == 1)  THEN
+         call getarg(1,archvfile)
+         i = index(archvfile,".",back=.true.)
+
+         ! Strip .a or .v ending
+         if (i > 0 ) then
+            archvfile = archvfile(1:i-1)
+         end if
+         print '(a)',"Archive file:"//trim(archvfile)
+      else 
+         print *,"Need archive file on input"
+         call exit(1)
+      end if
 
 CKAL  CALL ZHOPEN(72, 'FORMATTED', 'OLD', 0)
 CKAL  READ(72,*) !5-line header
@@ -118,22 +137,31 @@ CKAL      write(6,*) 'kz = ',kz
 CKAL      CLOSE(72)
 
 CKAL  Get number of layers by reading levels from archv
-      CALL ZHOPEN(72, 'FORMATTED', 'OLD', 0)
+      CALL ZHOPNC(72, trim(archvfile)//".b", 'FORMATTED', 'OLD', 0)
       READ (72,'(A79)') PREAMBL
       WRITE(6, '(/(1X,A79))') PREAMBL
+      kz=-1
+      ! Skip rest of header
+      do i=1,7
+        READ (72,'(A)',end=123,err=123) CLINE
+      end do
+      ! Read fields
       do
-        READ (72,'(A)',err=123) CLINE
-       WRITE(6, '(/(1X,A79))') CLINE
+        READ (72,'(A)',end=123,err=123) CLINE
+        !WRITE(6, '(/(1X,A79))') CLINE
         I = INDEX(CLINE,'=')
-CKAL    READ (CLINE(I+1:),*) ZLEVK,HMINB,HMAXB
-CKAL    IF     (ZLEVK.NE.ZLEV(K)) THEN
-CKAL      WRITE(6,'(/ a / a,i4,2f10.3 /)')
-CKAL &      'error - input z level not consistent',
-CKAL &      'k,z.dens,z.temp) = ',k,ZLEV(K),ZLEVK
-CKAL      CALL ZHFLSH(6)
-CKAL      STOP
+        !print *,I
+        !print *,"cline:"//cline
+        READ (CLINE(I+1:),*) ISTEP,RDAY,K,LRDENS,HMINB,HMAXB
+        call zhflsh(6)
+        fldname=trim(cline(1:i-1))
+        print *,"fldname:"//trim(fldname),k
+        if (trim(fldname)=='salin') then
+           kz=max(kz,k)
+        end if
       end do
 123   continue
+      print '(a,i4)',"Number of input layers: ",kz
       stop 'nz on input'
 C
       ALLOCATE( TZ(KZ+1,IDM,JDM) )
@@ -514,7 +542,8 @@ C     TOPOGRAPHY INPUT.
 C
       CALL ZAIOST
 C
-      CALL ZHOPEN(51, 'FORMATTED', 'OLD', 0)
+CKAL  CALL ZHOPEN(51, 'FORMATTED', 'OLD', 0)
+      CALL ZHOPNC(51,"regional.depths.b",'FORMATTED', 'OLD', 0)
       READ (51,'(A79)') PREAMBL
       READ (51,'(A)')   CLINE
       CLOSE(UNIT=51)
@@ -523,7 +552,8 @@ C
       I = INDEX(CLINE,'=')
       READ (CLINE(I+1:),*)   HMINB,HMAXB
 C
-      CALL ZAIOPN('OLD', 51)
+CKAL  CALL ZAIOPN('OLD', 51)
+      CALL ZAIOPF('regional.depths.a','OLD', 51)
       CALL ZAIORD(DEPTH,MSK,.FALSE., HMINA,HMAXA, 51)
       CALL ZAIOCL(51)
 C

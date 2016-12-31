@@ -56,6 +56,7 @@ D=${BASEDIR}/nest/$E/   # Where data ends up
 S=$D/SCRATCH              # SCRATCH dir 
 mkdir -p $S
 cd       $S || { echo " Could not descend scratch dir $S" ; exit 1;}
+echo "Now in directory $S"
 
 
 KSIGMA=$(egrep "'thflag'"  ${BASEDIR}/expt_${X}/blkdat.input  | sed "s/.thflag.*$//" | tr -d "[:blank:]")
@@ -77,7 +78,6 @@ fi
 touch blkdat.subset
 rm    blkdat.subset
 echo "NEMO Relaxation fields"                              > blkdat.subset
-echo "  00        'month ' = month of climatology (01 to 12)"                        >> blkdat.subset
 echo "  $SIGVER        'sigver ' = Version of eqn of state  "                        >> blkdat.subset
 echo "  1        'levtop ' = top level of input clim. to use (optional, default 1)"  >> blkdat.subset
 egrep "'iversn'"  ${BASEDIR}/expt_${X}/blkdat.input >> blkdat.subset
@@ -118,27 +118,11 @@ if [ ! -s  blkdat.subset ] ; then
    echo "Couldnt get blkdat.input " ; exit 1 ;
 fi
 
-#get  thflag from blkdat.input
-touch   fort.51 fort.51A
-/bin/rm fort.51 fort.51A
+${pget} ${BASEDIR}/topo/depth_${R}_${T}.b regional.depth.a || { echo "Couldnt get depth_${R}_${T}.b " ; exit 1 ;}
+${pget} ${BASEDIR}/topo/depth_${R}_${T}.a regional.depth.b  || { echo "Couldnt get depth_${R}_${T}.a " ; exit 1 ;}
 
-touch fort.51 fort.51A
-rm fort.51 fort.51A
-if [ ! -s fort.51 ] ; then
-  ${pget} ${BASEDIR}/topo/depth_${R}_${T}.b fort.51 || { echo "Couldnt get depth_${R}_${T}.b " ; exit 1 ;}
-fi
-if [ ! -s  fort.51A ] ; then
-  ${pget} ${BASEDIR}/topo/depth_${R}_${T}.a fort.51A  || { echo "Couldnt get depth_${R}_${T}.a " ; exit 1 ;}
-fi
-
-touch regional.grid.a regional.grid.b
-rm regional.grid.a regional.grid.b
-if [ ! -s regional.grid.b ]; then
-  ${pget} ${BASEDIR}/topo/regional.grid.b regional.grid.b || { echo "Couldnt get regional.grid.b " ; exit 1 ;}
-fi
-if [ ! -s regional.grid.a ] ; then
-  ${pget} ${BASEDIR}/topo/regional.grid.a regional.grid.a || { echo "Couldnt get regional.grid.b " ; exit 1 ;}
-fi
+${pget} ${BASEDIR}/topo/regional.grid.b regional.grid.b || { echo "Couldnt get regional.grid.b " ; exit 1 ;}
+${pget} ${BASEDIR}/topo/regional.grid.a regional.grid.a || { echo "Couldnt get regional.grid.b " ; exit 1 ;}
 
 #
 # --- Loop over archive files
@@ -147,25 +131,14 @@ for archvfile in $archvfiles ; do
    #
    # --- Input.
    #
-   archvfilea=$(echo $archvfile | sed -e "s/\.[ab]$//")
-   archvfileb=${archvfilea}.b
-   archvfilea=${archvfilea}.a
+   archvfiletrim=$(echo $archvfile | sed -e "s/\.[ab]$//")
+   archvfileb=${archvfiletrim}.b
+   archvfilea=${archvfiletrim}.a
    echo $archvfile $archvfilea $archvfileb
 
-   touch      fort.71 fort.71A fort.72 fort.72A
-   /bin/rm -f fort.71 fort.71A fort.72 fort.72A
-   #${pget} ${BASEDIR}/relax/$CLIM/dens_sig${KSIGMA}_m${MM}.b fort.71  || { echo "Couldnt get z-climatology" ; exit 1 ;}
-   #${pget} ${BASEDIR}/relax/$CLIM/dens_sig${KSIGMA}_m${MM}.a fort.71A || { echo "Couldnt get z-climatology" ; exit 1 ;}
-   #${pget} ${BASEDIR}/relax/$CLIM/saln_sig${KSIGMA}_m${MM}.b fort.73  || { echo "Couldnt get z-climatology" ; exit 1 ;}
-   #${pget} ${BASEDIR}/relax/$CLIM/saln_sig${KSIGMA}_m${MM}.a fort.73A || { echo "Couldnt get z-climatology" ; exit 1 ;}
+   ${pget} ${archvfileb} $(basename ${archvfileb})  || { echo "Couldnt get $archvfileb" ; exit 1 ;}
+   ${pget} ${archvfilea} $(basename ${archvfilea}) || { echo "Couldnt get $archvfilea" ; exit 1 ;}
 
-   ${pget} ${archvfileb} fort.72  || { echo "Couldnt get $archvfileb" ; exit 1 ;}
-   ${pget} ${archvfilea} fort.72A || { echo "Couldnt get $archvfilea" ; exit 1 ;}
-
-   exit 1
- 
-   # Create subset of blkdat.input
-   sed -e "s/^[ 	0-9]*'month ' =/  ${MM}	  'month ' =/" blkdat.subset > fort.99
    
    /bin/rm -f core
    touch core
@@ -174,15 +147,13 @@ for archvfile in $archvfiles ; do
    export FOR012A=fort.12A
    export FOR021A=fort.21A
    export FOR051A=fort.51A
-   export FOR071A=fort.71A
    export FOR072A=fort.72A
-   export FOR073A=fort.73A
    /bin/rm -f fort.10  fort.11  fort.12  fort.21
    /bin/rm -f fort.10A fort.11A fort.12A fort.21A
  
    logfile=$S/log_$MM.out
-   echo "Running relaxi, log in $logfile"
-   ./relaxi > $logfile 2>&1
+   echo "Running relax_archvz, log in $logfile"
+   ${HYCOM_ALL}/relax/src/relaxi_archvz $archvfilea > $logfile 2>&1
    #
    # --- Output.
    #
@@ -192,6 +163,8 @@ for archvfile in $archvfiles ; do
    mv fort.11A relax_sal_m${MM}.a
    mv fort.12  relax_int_m${MM}.b
    mv fort.12A relax_int_m${MM}.a
+
+   exit 
    
    export DAYM=`echo ${MM} | awk '{printf("0000_%3.3d_00\n",30*($1-1)+16)}'`
    #export DAYM=`echo ${MM} | awk '{printf("0000_%3.3d_00\n",30.5*($1-1)+16)}'`
