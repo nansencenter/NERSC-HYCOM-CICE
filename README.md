@@ -23,7 +23,7 @@ The following tools are necessary
 Clone code from main repository 
 
 `
-git clone https://bitbucket.org/knutal/nersc-hycom-cice
+git clone https://github.com/nansencenter/NERSC-HYCOM-CICE
 `
 
 If you get errors about server certificates, see [here](../..//overview#markdown-header-server-certificates)
