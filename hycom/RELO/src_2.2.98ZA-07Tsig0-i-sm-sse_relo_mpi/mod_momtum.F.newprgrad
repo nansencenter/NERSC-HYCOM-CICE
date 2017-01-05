@@ -335,7 +335,16 @@ c ---       atmospheric pressure forcing
 !$OMP END PARALLEL DO
 c
 #if defined(PRGRAD_FROM_GEOPOT_7TERM) || defined(PRGRAD_FROM_GEOPOT_12TERM) || defined(PRGRAD_FROM_GEOPOT_17TERM)
-C --- FV integration of pressure gradient following Adcroft et al (2007)
+C --- FV integration of pressure gradient following Adcroft et al (2007) ---
+C ---
+C --- Calculate actual pressure at layer interfaces
+!$OMP PARALLEL DO PRIVATE(j,k,i,w0)
+!$OMP&         SCHEDULE(STATIC,jblk)
+      do j=1-margin,jj+margin
+        do i=1-margin,ii+margin
+           pact(i,j,k+1) = pb_from_geopot(...)
+        end do
+      end do
 C --- 
 C --- Initialize bottom values
 !$OMP PARALLEL DO PRIVATE(j,k,i,w0)

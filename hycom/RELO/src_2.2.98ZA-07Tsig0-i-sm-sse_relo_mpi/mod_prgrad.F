@@ -148,6 +148,20 @@ C --- Assumed constant over layer. Linearized version
      &   + t3*(pt-pb)**3/6. + t4*(pt-pb)**4/24. + t5*(pt-pb)**5/120.
       end function intgpl
 C
+C --- Get pressure at bottom from geopot and pt. Can be used to construct
+C --- pressure at interfaces from geopotentials
+      real function  pb_from_geop(t,s,phib,phit,pt)
+      implicit none
+      real, intent(in) :: t,s,phib,phit,pt
+      real  :: f1, f2, ut, ub
+      ut=pt+d1(t,s)
+      f1=(phit-phib)*2*myc2(t,s)*d2(t,s)
+      f1=exp(f1)
+      f2=(d2(t,s)+ut)/(d2(t,s)-ut)
+      ub=(f1*f2-1)*d2(t,s)/(1+f1*f2)
+      pb_from_geop=ub-d1(t,s)
+      end function pb_from_geop
+C
 #elif defined(PRGRAD_FROM_GEOPOT_12TERM)
 C ***********************************************************************************
 C --- alpha = 1/rho = ( n_0 + n_1*p) / (d_0 + d_1*p) 
