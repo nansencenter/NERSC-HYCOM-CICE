@@ -46,7 +46,7 @@ The following structure is relative to the checked out code ($NHCROOT)
 
 * Compile MSCPROGS routine, following the instructions given in [./hycom/MSCPROGS/](./hycom/MSCPROGS/)
 
-* Compile HYCOM_ALL programs, following the instructions given in [./hycom/HYCOM_ALL/](./hycom/HYCOM_ALL/)
+* Compile HYCOM_ALL programs, following the instructions given in [./hycom/hycom_ALL/](./hycom/hycom_ALL/)
 
 # Compiling HYCOM-CICE
 
