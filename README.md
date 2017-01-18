@@ -50,4 +50,4 @@ The following structure is relative to the checked out code ($NHCROOT)
 
 # Compiling HYCOM-CICE
 
-Before you attempt this, make sure that the HYCOM-CICE support programs are compiled, that the MSCPROGS programs are compiled, and that you have the other prerequisites described above.
+Before you attempt this, make sure that the HYCOM-CICE support programs are compiled, that the MSCPROGS programs are compiled, and that you have the other prerequisites described above. The compilation is handled by the script compile_model.sh in NHCROOT/bin, and is described in [./doc/HYCOM-CICE-compilation.md](./doc/HYCOM-CICE-compilation.md)
