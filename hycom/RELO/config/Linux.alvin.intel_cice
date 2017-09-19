@@ -1,0 +1,50 @@
+#
+# ---------------------------------------------------------------------
+# intel compiler on hexagon
+# ---------------------------------------------------------------------
+#
+# MACROS      DESCRIPTIONS:
+#
+# FC:         Fortran 90 compiler.
+# FCFFLAGS:   Fortran 90 compilation flags.
+# CC:         C compiler.
+# CCFLAGS:    C compilation flags.
+# CPP:        cpp preprocessor (may be implied by FC).
+# CPPFLAGS:   cpp -D macro flags.
+# LD:         Loader.
+# LDFLAGS:    Loader flags.
+# EXTRALIBS:  Extra local libraries (if any).
+#
+INCLUDES      = -I${I_MPI_ROOT}/intel64/include -I${ESMF_MOD_DIR} -I${ESMF_DIR}/include -I./CICE/rundir/compile -I${NETCDF_DIR}/include
+FC            = ifort 
+FCFFLAGS      =	-Nmpi -xSSE4.2 -O0 -fp-model source -r8 -convert big_endian -assume byterecl -real-size 64 -integer-size 32 -warn general -heap-arrays -g -traceback
+FCFFLAGS      :=	$(FCFFLAGS) $(INCLUDES)
+CC            =	icc
+CCFLAGS       =	-O -xSSE4.2 -mcmodel=medium -Nmpi
+CPP           =	cpp -P
+LD            =	$(FC)
+LDFLAGS       =	-V $(FCFFLAGS) -shared-intel -mcmodel=medium
+# ENDIAN_IO         not needed due to byteswap compiler flag
+# NERSC_HYCOM_CICE  Code changes specific to our version 
+CPPFLAGS      =	-DIA32 -DREAL4
+CPPFLAGS      = -DIA32 -DREAL8 -DMPI -DSERIAL_IO -DNAN2003 -DTIMER -DRELO -DUSE_ESMF -DUSE_ESMF_5 -DNERSC_HYCOM_CICE
+EXTRALIBS     = -L${ESMF_LIB_DIR}/ -lesmf -L$(NETCDF_DIR)/lib -L${I_MPI_ROOT}/intel64/lib/release_mt -L${I_MPI_ROOT}/intel64/lib -lnetcdf -lnetcdff -Nmpi -lmpi -Wl,-rpath,${ESMF_LIB_DIR}
+
+#
+# --- generic make definitions
+#
+SHELL         = /bin/sh
+RM            = \rm -f
+
+#
+# rules.
+#
+
+.c.o:
+	$(CC) $(CPPFLAGS) $(CCFLAGS)  -c $*.c
+
+.f.o:
+	$(FC)             $(FCFFLAGS) -c $*.f
+
+.F.o:
+	$(FC) $(CPPFLAGS) $(FCFFLAGS) -c $*.F
