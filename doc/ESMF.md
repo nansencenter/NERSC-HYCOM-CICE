@@ -30,7 +30,7 @@ module load esmf
 
 For compilation of HYCOM-CICE, the ESMF path should be specified (e.g. in bash shell) by the ESMF_DIR environmental variable as
 
-export ESMF_DIR=/homeappl/home/pr2n0112/HYCOM_TOOLS/esmf/ESMF.6.3.0rp1
+export ESMF_DIR=/appl/climate/esmf/6_3_0rp1/INTEL/16.0
 
 ## Generic linux machine with fortran
 
