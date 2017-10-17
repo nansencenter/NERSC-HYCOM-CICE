@@ -24,6 +24,14 @@ In order to use this library, hycom-cice will have to be compiled with the pgi
 compiler. 
 
 ## Sisu.csc.fi
+On Sisu, ESMF version 6.3.0rp1 has been tested for the intel compilers. In order to use it, issue the command
+
+module load esmf
+
+For compilation of HYCOM-CICE, the ESMF path should be specified (e.g. in bash shell) as
+
+export ESMF_DIR=/homeappl/home/pr2n0112/HYCOM_TOOLS/esmf/ESMF.6.3.0rp1
+
 ## Generic linux machine with fortran
 
 On debian, hycom was successfully compiled and tested  using the gfortran compiler and the
