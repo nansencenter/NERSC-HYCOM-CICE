@@ -5,7 +5,7 @@ of the Eearth System Modelling Framework:
 https://www.earthsystemcog.org/projects/esmf/download/. The code has been tested
 and verified to work with ESMF v 5.2.0.rp3. and ESMF v 6.3.0 on Hexagon and ESMF v 6.3.0 on Sisu.
 
-You could try to install his yourself, instructions are available in the downloaded distribution. 
+You could try to install it yourself, instructions are available in the downloaded distribution. 
 However, it is probably recommended that you let your local IT support to do it
 to make sure that MPI etc is properly set up.
 
