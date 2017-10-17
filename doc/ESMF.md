@@ -28,7 +28,7 @@ On Sisu, ESMF version 6.3.0rp1 has been tested for the intel compilers. In order
 
 module load esmf
 
-For compilation of HYCOM-CICE, the ESMF path should be specified (e.g. in bash shell) as
+For compilation of HYCOM-CICE, the ESMF path should be specified (e.g. in bash shell) by the ESMF_DIR environmental variable as
 
 export ESMF_DIR=/homeappl/home/pr2n0112/HYCOM_TOOLS/esmf/ESMF.6.3.0rp1
 
