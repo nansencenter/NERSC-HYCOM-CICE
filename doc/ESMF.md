@@ -23,6 +23,7 @@ module load esmf/6.3.0rp1-pgi
 In order to use this library, hycom-cice will have to be compiled with the pgi
 compiler. 
 
+## Sisu.csc.fi
 ## Generic linux machine with fortran
 
 On debian, hycom was successfully compiled and tested  using the gfortran compiler and the
