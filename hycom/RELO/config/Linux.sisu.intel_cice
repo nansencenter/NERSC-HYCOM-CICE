@@ -70,3 +70,10 @@ RM            = \rm -f
 
 .F.o:
 	$(FC) $(CPPFLAGS) $(FCFFLAGS) -c $*.F
+
+.f90.o:
+	$(FC)             $(FCFFLAGS) -c $*.f90
+
+.F90.o:
+	$(FC) $(CPPFLAGS) $(FCFFLAGS) -c $*.F90
+
