@@ -158,5 +158,5 @@ mod_netcdf_util.o: \
 mod_prgrad.o: \
 	mod_prgrad.F
 
-mod_hycom_fabm.o \
+mod_hycom_fabm.o: \
         mod_hycom_fabm.F90
