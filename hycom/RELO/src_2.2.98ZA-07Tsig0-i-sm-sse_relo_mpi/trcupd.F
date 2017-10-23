@@ -33,6 +33,10 @@ c
      &          prij(kk+1),trcij(kk,ntracr)
       real      chl,swfrac(kdm+1)
 c
+#ifdef FABM
+      nbio = ntracr
+      trcflg(1:nbio) = 906
+#else
       if (ntracr.eq.0) then
         return  ! no tracer
       endif
@@ -128,6 +132,7 @@ c ---       unknown standard biology.
           endif
         endif
       enddo
+#endif
 c
       if (mnproc.eq.1) then
       write(lp,*)

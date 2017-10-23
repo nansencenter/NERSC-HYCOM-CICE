@@ -1145,7 +1145,12 @@ c
       call blkini(ntracr,'ntracr')
       trcrin = ntracr.gt.0  ! positive from restart, otherwise initialize
       trcout = ntracr.ne.0
+#ifdef FABM
+      call fabm_create_model_from_yaml_file(model)
+      ntracr = size(model%state_variables)
+#else
       ntracr = abs(ntracr)
+#endif
 c
       if (ntracr.gt.mxtrcr) then
         if (mnproc.eq.1) then
@@ -1158,6 +1163,9 @@ c
                stop '(blkdat)'
       endif
 c
+#ifdef FABM
+      trcflg = 9
+#else
       call blkini(trcflg1,'trcflg')
       do k= 1,ntracr
         trcflg(k) = mod(trcflg1,10)  ! least significant decimal digit
@@ -1179,6 +1187,7 @@ c
                  stop '(blkdat)'
         endif
       enddo !k
+#endif
 c
 c --- 'tsofrq' = number of time steps between anti-drift offset calcs
 c --- 'tofset' = temperature anti-drift offset (degC/century)
