@@ -1,0 +1,72 @@
+#
+# ---------------------------------------------------------------------
+# intel compiler on hexagon
+# ---------------------------------------------------------------------
+#
+# MACROS      DESCRIPTIONS:
+#
+# FC:         Fortran 90 compiler.
+# FCFFLAGS:   Fortran 90 compilation flags.
+# CC:         C compiler.
+# CCFLAGS:    C compilation flags.
+# CPP:        cpp preprocessor (may be implied by FC).
+# CPPFLAGS:   cpp -D macro flags.
+# LD:         Loader.
+# LDFLAGS:    Loader flags.
+# EXTRALIBS:  Extra local libraries (if any).
+#
+INCLUDES      = -I$(MPI_HOME)/include  -I${ESMF_MOD_DIR} -I${ESMF_DIR}/include -I./CICE/rundir/compile
+FC            = ftn
+#FCFFLAGS      = -traceback -g -O3  -fp-model source -warn nogeneral -convert big_endian -assume byterecl -real-size 64 -integer-size 32 
+#FCFFLAGS      = -traceback -g -O3  -fp-model source -warn nogeneral -assume byterecl -real-size 64 -integer-size 32 
+
+
+
+#FCFFLAGS      =	 -traceback -g -O3 -fp-model source -warn nogeneral -convert big_endian -assume byterecl -real-size 64 -integer-size 32  -xCORE-AVX2
+
+
+
+
+
+
+FCFFLAGS      =  -xCORE-AVX2 -traceback  -cxxlib -g -O3 -fp-model source -warn nogeneral -convert big_endian -assume byterecl -real-size 64 -integer-size 32  
+
+FCFFLAGS      :=	$(FCFFLAGS) $(INCLUDES)
+CC            = icc
+#CC            =	cc
+CCFLAGS       =	-O 
+CPP           =	cpp -P
+LD            =	$(FC)
+LDFLAGS       =	-V $(FCFFLAGS) -shared-intel
+# ENDIAN_IO         not needed due to byteswap compiler flag
+# NERSC_HYCOM_CICE  Code changes specific to our version 
+CPPFLAGS      =	-DIA32 -DREAL4
+# Mostafa
+CPPFLAGS      = -DIA32 -DREAL8 -DMPI -DSERIAL_IO -DNAN2003 -DTIMER -DRELO -DUSE_ESMF -DUSE_ESMF_5 -DNERSC_HYCOM_CICE
+EXTRALIBS     = -L${ESMF_LIB_DIR}/ -lesmf -lnetcdf 
+
+#CPPFLAGS      = -DIA32 -DREAL8 -DMPI -DSERIAL_IO -DNAN2003 -DTIMER -DRELO -DUSE_ESMF -DNERSC_HYCOM_CICE
+#EXTRALIBS     = -L${ESMF_LIB_DIR}/ -lesmf -lnetcdf
+
+#CPPFLAGS      = -DIA32 -DREAL8 -DMPI -DSERIAL_IO -DNAN2003 -DTIMER -DRELO   -DNERSC_HYCOM_CICE
+#EXTRALIBS     = -lnetcdf
+
+
+#
+# --- generic make definitions
+#
+SHELL         = /bin/sh
+RM            = \rm -f
+
+#
+# rules.
+#
+
+.c.o:
+	$(CC) $(CPPFLAGS) $(CCFLAGS)  -c $*.c
+
+.f.o:
+	$(FC)             $(FCFFLAGS) -c $*.f
+
+.F.o:
+	$(FC) $(CPPFLAGS) $(FCFFLAGS) -c $*.F

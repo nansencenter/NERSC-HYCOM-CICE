@@ -117,6 +117,12 @@ if [ "${unamen:0:7}" == "hexagon" ] ; then
    SITE="hexagon"
    MACROID=$ARCH.$SITE.$compiler
 
+#CAGLAR
+elif [ "${unamen:0:4}" == "sisu" ] ; then
+   SITE="sisu"
+   MACROID=$ARCH.$SITE.$compiler
+#CAGLAR
+
 # Generic case. SITE is empty
 elif [[ "${ARCH}" == "Linux" ]] ; then
    SITE=""
@@ -131,7 +137,7 @@ else
    exit 3
 fi
 echo "$(basename $0) : SITE=$SITE"
-
+echo $MACROID
 
 # Deduce ESMF dir from SITE and possibly ARCH
 if [[ -n "${ESMF_DIR}" ]] &&  [[ -n "${ESMF_MOD_DIR}" ]] && [[ -n "${ESMF_LIB_DIR}" ]] ; then
@@ -148,7 +154,8 @@ elif [ "$SITE" == "hexagon" ] ; then
 
    if [[ -z "${ESMF_DIR}" ]] ; then
       # use as default
-      export ESMF_DIR=/home/nersc/knutali/opt/esmf_5_2_0rp3-nonetcdf/
+       export ESMF_DIR=/homeappl/home/pr2n0112/HYCOM_TOOLS/esmf/ESMF.6.3.0rp1
+      #export ESMF_DIR=/home/nersc/knutali/opt/esmf_5_2_0rp3-nonetcdf/
       #export ESMF_DIR=/home/nersc/knutali/opt/esmf_6_3_0rp1/
       #export ESMF_DIR=/home/nersc/knutali/opt/esmf_7_0_0/
    fi
@@ -159,9 +166,13 @@ elif [ "$SITE" == "hexagon" ] ; then
    ## TODO: Let admins set up INCLUDE opts 
    #export ESMF_MOD_DIR=${ESMF_DIR}/mod
    #export ESMF_LIB_DIR=${ESMF_DIR}/lib
-   
-
-
+elif [ "$SITE" == "sisu" ] ; then  
+	if [[ -z "${ESMF_DIR}" ]] ; then
+          # use as default
+          export ESMF_DIR=/appl/climate/esmf/6_3_0rp1/INTEL/16.0
+	fi
+        export ESMF_MOD_DIR=${ESMF_DIR}/mod/modO/Unicos.$compiler.64.mpi.default/
+	export ESMF_LIB_DIR=${ESMF_DIR}/lib/libO/Unicos.$compiler.64.mpi.default/
 # If site is not given, try to use a generic setup. Macro names composed of compiler name and mpi lib name (openmpi, mpich, lam, etc etc(
 elif [[ "${unames:0:5}" == "Linux" ]] && [[ "$SITE" == "" ]] ; then
    if [ -z "${ESMF_DIR}" ] ; then
@@ -183,6 +194,7 @@ echo "$(basename $0) : ESMF_LIB_DIR=$ESMF_LIB_DIR"
 THFLAG=$(blkdat_get blkdat.input thflag)
 IDM=$(blkdat_get blkdat.input idm)
 JDM=$(blkdat_get blkdat.input jdm)
+ICEFLG=$(blkdat_get blkdat.input iceflg)
 
 #Get statement function include file from SIGVER (in EXPT.src)
 if [ $SIGVER -eq 1 ] ; then
@@ -223,6 +235,9 @@ if [ $THFLAG -ne $MYTHFLAG ] ; then
    exit 1
 fi
 
+
+echo $sourceconfdir "  ##############"
+
 # Copy code to expt dir
 targetdir=$(source_dir $V $TERMS $THFLAG)
 targetdir=$EDIR/build/$targetdir
@@ -251,20 +266,27 @@ cd $targetdir
 echo "Now setting up stmt_fns.h in $targetdir"
 rm stmt_fns.h
 ln -s ALT_CODE/$stmt stmt_fns.h
+echo "Now compiling cice in $targetdir. $ICEFLG" 
 
-# 1) Compile CICE. Environment variables need to be passe to script
-cd $targetdir/CICE/
-env RES=gx3 GRID=${IDM}x${JDM} SITE=$SITE MACROID=$MACROID ./comp_ice.esmf
-res=$?
-if [ $res -ne 0 ] ; then 
-   echo
-   echo "Error when compiling CICE, see above "
-   exit $res
+if [ $ICEFLG -eq 2 ] ; then
+	echo $MACROID
+	# 1) Compile CICE. Environment variables need to be passe to script
+	cd $targetdir/CICE/
+ 	env RES=gx3 GRID=${IDM}x${JDM} SITE=$SITE MACROID=$MACROID ./comp_ice.esmf
+	res=$?
+	if [ $res -ne 0 ] ; then 
+   		echo
+   		echo "Error when compiling CICE, see above "
+  		 exit $res
+	fi
 fi
-
 # Create hycom objects and final hycom_cice executable. 
 cd $targetdir
 echo "Now compiling hycom_cice in $targetdir." 
+echo "#### " $MACROID
+export ARCH=$MACROID
+#csh Make_cice.csh
+echo $targetdir
 env ARCH=$MACROID csh Make_cice.csh 
 res=$?
 if [ $res -ne 0 ] ; then 
