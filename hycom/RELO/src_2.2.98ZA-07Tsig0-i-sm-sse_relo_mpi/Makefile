@@ -24,13 +24,13 @@ MODS =   mod_dimensions.o mod_xc.o mod_za.o mod_cb_arrays.o mod_pipe.o \
          mod_incupd.o \
          mod_floats.o mod_stokes.o mod_tides.o mod_mean.o mod_archiv.o \
          mod_tsadvc.o mod_momtum.o \
-         mod_hycom.o mod_esmf_utils.o mod_netcdf_util.o mod_prgrad.o
+         mod_hycom.o mod_esmf_utils.o mod_netcdf_util.o mod_prgrad.o mod_hycom_fabm.o
 
 MODD =   mod_dimensions.o mod_xc.o mod_za.o mod_cb_arrays.o mod_pipe.o \
          mod_incupd.o \
          mod_floats.o mod_stokes.o mod_tides.o mod_mean.o mod_archiv.o \
          mod_tsadvc.o mod_momtum.o \
-         mod_hycom_dummy.o
+         mod_hycom_dummy.o mod_hycom_fabm.o
 
 OBJS =	         barotp.o  bigrid.o blkdat.o  cnuity.o convec.o \
 	diapfl.o dpthuv.o  dpudpv.o forfun.o  geopar.o hybgen.o \
@@ -121,7 +121,7 @@ mod_hycom_dummy.o: \
 	                                                          mod_momtum.o \
 	                                                          mod_tsadvc.o
 mod_cb_arrays.o: \
-        mod_cb_arrays.F mod_dimensions.o
+        mod_cb_arrays.F mod_dimensions.o mod_hycom_fabm.o
 mod_momtum.o: \
 	mod_momtum.F mod_xc.o mod_cb_arrays.o stmt_fns.h          mod_pipe.o \
 	                                                          mod_tides.o \
@@ -157,3 +157,6 @@ mod_netcdf_util.o: \
 
 mod_prgrad.o: \
 	mod_prgrad.F
+
+mod_hycom_fabm.o \
+        mod_hycom_fabm.F90

@@ -67,3 +67,4 @@ mod_archiv.f: mod_archiv.F
 mod_xc.f:     mod_xc.F
 mod_za.f:     mod_za.F
 mod_OICPL.f:  mod_OICPL.F
+mod_hycom_fabm.f90: mod_hycom_fabm.F90
