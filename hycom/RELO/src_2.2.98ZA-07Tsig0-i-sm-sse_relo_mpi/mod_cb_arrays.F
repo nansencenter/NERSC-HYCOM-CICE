@@ -1,7 +1,15 @@
       module mod_cb_arrays
       use mod_dimensions
+#ifdef FABM
+      use fabm, only: type_model
+#endif
       implicit none
       public ! everything is public
+
+#ifdef FABM
+   type (type_model), save :: fabm_model
+#endif
+
 c
 c     wrapper for common_blocks.h
 c
