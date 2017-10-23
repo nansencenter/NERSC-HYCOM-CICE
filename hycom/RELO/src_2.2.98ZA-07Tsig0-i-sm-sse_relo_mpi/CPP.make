@@ -5,11 +5,15 @@
 #
 
 .SUFFIXES: 
-.SUFFIXES: .c .F .f .o
+.SUFFIXES: .c .F .f .F90 .f90 .o
 
 .F:
 	@echo "Must have an explicit rule for" $*
 .f:
+	@echo "Must have an explicit rule for" $*
+.F90:
+	@echo "Must have an explicit rule for" $*
+.f90:
 	@echo "Must have an explicit rule for" $*
 .c:
 	@echo "Must have an explicit rule for" $*
