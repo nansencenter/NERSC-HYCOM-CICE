@@ -65,6 +65,7 @@ contains
 
         ! Initialize the tracers
         ! This sets the values of arrays sent to fabm_link_interior_state_data, in this case interior_state.
+        tracer = 0
         do k=1,kk
           do j=1,jj
               call fabm_initialize_state(fabm_model, 1, ii, j, k)
