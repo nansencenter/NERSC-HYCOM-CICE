@@ -77,7 +77,7 @@ contains
         end do
 
         tracer(:, :, :, 2, :) = tracer(:, :, :, 1, :)
-        write (*,*) tracer, minval(tracer), maxval(tracer), sum(tracer)
+        !write (*,*) tracer, minval(tracer), maxval(tracer), sum(tracer)
     end subroutine hycom_fabm_initialize
 
     subroutine hycom_fabm_update(m, n, ibio)
@@ -129,6 +129,7 @@ contains
                if (SEA_P) mask(i, j, :) = .true.
             end do
         end do
+        mask = .true.
 
         ! Update cell thicknesses (m)
         h(:, :, :) = dp(1:ii, 1:jj, 1:kk, index)/onem
