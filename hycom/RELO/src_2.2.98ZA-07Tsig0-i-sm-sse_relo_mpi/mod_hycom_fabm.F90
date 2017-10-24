@@ -26,6 +26,9 @@ contains
         ! Provide extents of the spatial domain (number of layers nz for a 1D column)
         call fabm_set_domain(fabm_model, ii, jj, kk)
 
+        ! Send mask - see SEA_P preprocessor macro in trcupd.F
+        call fabm_set_mask(fabm_model, ip(1:ii, 1:jj))
+
         ! Specify vertical index of surface and bottom
         call fabm_model%set_surface_index(1)
         !call fabm_model%set_bottom_index(nz)
