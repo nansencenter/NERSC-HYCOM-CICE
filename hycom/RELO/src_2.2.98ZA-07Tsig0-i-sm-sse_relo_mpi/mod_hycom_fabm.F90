@@ -162,7 +162,7 @@ contains
                       swflx_fabm(i,j)=swflx (i,j,l0)*w0+swflx (i,j,l1)*w1+swflx (i,j,l2)*w2+swflx (i,j,l3)*w3
                     endif !natm
                     if (isnan(swflx_fabm(i,j))) then
-                      write (*,*) 'NaN in swflx_fabm:', swflx_fabm
+                      write (*,*) 'NaN in swflx_fabm:', swflx_fabm(i,j), swflx (i,j,l0),w0,swflx (i,j,l1),w1,swflx (i,j,l2),w2,swflx (i,j,l3),w3
                       stop
                     end if
                 end if
