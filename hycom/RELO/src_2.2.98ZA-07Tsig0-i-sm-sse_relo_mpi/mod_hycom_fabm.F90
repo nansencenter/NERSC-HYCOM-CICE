@@ -102,6 +102,7 @@ contains
       do k=1,kk
         do j=1,jj
           call fabm_get_light_extinction(fabm_model, 1, ii, j, k, extinction)
+          write (*,*) 'extinction', extinction
         end do
       end do
 
@@ -116,7 +117,7 @@ contains
       do k=1,kk
         do j=1,jj
             call fabm_do(fabm_model, 1, ii, j, k, dy)
-            write (*,*) dy
+            write (*,*) 'dy', dy
             do ivar=1,size(fabm_model%state_variables)
                tracer(1:ii, j, k, n, ivar) = tracer(1:ii, j, k, n, ivar) + delt1 * dy(1:ii, ivar)
             end do
