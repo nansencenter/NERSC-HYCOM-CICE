@@ -1,5 +1,5 @@
 module mod_hycom_fabm
-#ifdef FABM
+#ifdef _FABM_
    use fabm
    use fabm_config, only: fabm_create_model_from_yaml_file
    public

@@ -42,7 +42,7 @@ LDFLAGS       =	-V $(FCFFLAGS) -shared-intel
 # NERSC_HYCOM_CICE  Code changes specific to our version 
 CPPFLAGS      =	-DIA32 -DREAL4
 # Mostafa
-CPPFLAGS      = -DIA32 -DREAL8 -DMPI -DSERIAL_IO -DNAN2003 -DTIMER -DRELO -DUSE_ESMF -DUSE_ESMF_5 -DNERSC_HYCOM_CICE -DFABM -I${HOME}/local/fabm/hycom/include
+CPPFLAGS      = -DIA32 -DREAL8 -DMPI -DSERIAL_IO -DNAN2003 -DTIMER -DRELO -DUSE_ESMF -DUSE_ESMF_5 -DNERSC_HYCOM_CICE -D_FABM_ -I${HOME}/local/fabm/hycom/include
 EXTRALIBS     = -L${ESMF_LIB_DIR}/ -lesmf -lnetcdf -L${HOME}/local/fabm/hycom/lib -lfabm
 
 #CPPFLAGS      = -DIA32 -DREAL8 -DMPI -DSERIAL_IO -DNAN2003 -DTIMER -DRELO -DUSE_ESMF -DNERSC_HYCOM_CICE

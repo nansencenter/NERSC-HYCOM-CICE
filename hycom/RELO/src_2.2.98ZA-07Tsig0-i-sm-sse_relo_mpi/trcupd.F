@@ -33,7 +33,7 @@ c
      &          prij(kk+1),trcij(kk,ntracr)
       real      chl,swfrac(kdm+1)
 c
-#ifdef FABM
+#ifdef _FABM_
       nbio = ntracr
       trcflg(1:nbio) = 906
 #else
@@ -812,7 +812,7 @@ c
       return
       end subroutine trcupd_904
 
-#ifdef FABM
+#ifdef _FABM_
       subroutine trcupd_906(m,n, ibio)
       use mod_xc         ! HYCOM communication interface
       use mod_cb_arrays  ! HYCOM saved arrays
