@@ -415,8 +415,8 @@ c
      &                xmin,xmax, nopa, .false.)
           if     (mnproc.eq.1) then
 #ifdef _FABM_
-          write (nop,117) fabm_model%state_variables(ktr)%name(1:8), &
-            nstep,time,k,coord,xmin,xmax
+          write (nop,117) fabm_model%state_variables(ktr)%name(1:8),
+     &      nstep,time,k,coord,xmin,xmax
 #else
           write (nop,117) 'tracer  ',nstep,time,k,coord,xmin,xmax
 #endif
