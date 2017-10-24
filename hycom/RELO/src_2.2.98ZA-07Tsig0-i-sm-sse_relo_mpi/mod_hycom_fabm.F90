@@ -1,3 +1,17 @@
+#if defined(ROW_LAND)
+#define SEA_P .true.
+#define SEA_U .true.
+#define SEA_V .true.
+#elif defined(ROW_ALLSEA)
+#define SEA_P allip(j).or.ip(i,j).ne.0
+#define SEA_U alliu(j).or.iu(i,j).ne.0
+#define SEA_V alliv(j).or.iv(i,j).ne.0
+#else
+#define SEA_P ip(i,j).ne.0
+#define SEA_U iu(i,j).ne.0
+#define SEA_V iv(i,j).ne.0
+#endif
+
 module mod_hycom_fabm
 #ifdef _FABM_
    use fabm
@@ -99,13 +113,20 @@ contains
         integer :: ivar
 
         ! TODO: update mask and kbottom
+        kbottom = kk
+        mask = .false.
+        do j=1,jj
+            do i=1,ii
+               if (SEA_P) mask(i, j, :) = .true.
+            end do
+        end do
 
         ! Update cell thicknesses (m)
         h(:, :, :) = dp(1:ii, 1:jj, 1:kk, index)/onem
 
         ! Compute downwelling shortwave (from thermf.F)
         do j=1,jj
-            do i=1,jj
+            do i=1,ii
                 if (natm.eq.2) then
                   swflx_fabm=swflx (i,j,l0)*w0+swflx (i,j,l1)*w1
                 else
