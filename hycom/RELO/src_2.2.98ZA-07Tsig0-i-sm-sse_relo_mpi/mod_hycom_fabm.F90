@@ -15,6 +15,7 @@ contains
 
     subroutine hycom_fabm_update(m, n, ibio)
       use mod_xc         ! HYCOM communication interface
+      use mod_cb_arrays  ! HYCOM saved arrays
 
       integer, intent(in) :: m, n, ibio
       integer :: k, j, ivar
