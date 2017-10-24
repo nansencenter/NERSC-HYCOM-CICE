@@ -893,6 +893,9 @@ c ---   which only includes the fields up to vbavg (or up to nsterc)
 
       subroutine archiv_tile(n, kkout, iyear,iday,ihour)
 c
+#ifdef _FABM_
+      use mod_hycom_fabm
+#endif
       integer   n, kkout, iyear,iday,ihour
       real      sssc,sstc
 c
@@ -1047,7 +1050,12 @@ c
       do ktr= 1,ntracr
         call ztiowr(tracer(1-nbdy,1-nbdy,k,n,ktr),ip,.true.,
      &              xmin,xmax, nopa, .false.)
+#ifdef _FABM_
+       write (nop,117) fabm_model%state_variables(ktr)%name(1:8),
+     &      nstep,time,k,coord,xmin,xmax
+#else
         write (nop,117) 'tracer  ',nstep,time,k,coord,xmin,xmax
+#endif
         call flush(nop)
       enddo !ktr
       if     (difout) then
