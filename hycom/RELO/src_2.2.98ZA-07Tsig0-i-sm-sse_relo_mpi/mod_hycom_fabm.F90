@@ -77,7 +77,7 @@ contains
         end do
 
         tracer(:, :, :, 2, :) = tracer(:, :, :, 1, :)
-        write (*,*) tracer, minval(tracer), maxval(tracer), sum(tracer)
+        write (*,*) 'tracer min, max, sum:', minval(tracer), maxval(tracer), sum(tracer)
     end subroutine hycom_fabm_initialize
 
     subroutine hycom_fabm_update(m, n, ibio)
@@ -88,7 +88,7 @@ contains
       integer :: i, k, j, ivar
 
       real :: dy(ii, size(fabm_model%state_variables))
-      return
+      write (*,*) 'hycom_fabm_update'
 !
 ! --- leapfrog time step.
 !
