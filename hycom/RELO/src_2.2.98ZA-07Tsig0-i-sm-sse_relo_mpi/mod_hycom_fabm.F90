@@ -7,22 +7,20 @@ module mod_hycom_fabm
 
    private
 
-   public fabm_create_model_from_yaml_file, hycom_fabm_update
+   public fabm_create_model_from_yaml_file, hycom_fabm_initialize, hycom_fabm_update
 
    type (type_model), save, public :: fabm_model
+   real, allocatable :: swflx_fabm(:, :)
+   logical, allocatable :: mask(:, :, :)
+   integer, allocatable :: kbottom(:, :)
 
 contains
 
-    subroutine hycom_fabm_update(m, n, ibio)
-      use mod_xc         ! HYCOM communication interface
-      use mod_cb_arrays  ! HYCOM saved arrays
+    subroutine hycom_fabm_initialize()
+        allocate(swflx_fabm(ii, jj))
+        allocate(mask(ii, jj, kk))
+        allocate(kbottom(ii, jj))
 
-      integer, intent(in) :: m, n, ibio
-      integer :: k, j, ivar
-
-      real :: dy(ii, size(fabm_model%state_variables))
-
-      if     (ibio.lt.0) then !initialize only
         ! Provide extents of the spatial domain (number of layers nz for a 1D column)
         call fabm_set_domain(fabm_model, ii, jj, kk)
 
@@ -31,9 +29,9 @@ contains
 
         ! Specify vertical index of surface and bottom
         call fabm_model%set_surface_index(1)
-        !call fabm_model%set_bottom_index(nz)
+        call fabm_model%set_bottom_index(kbottom)
 
-        call update_fabm_data(n)
+        call update_fabm_data(1)
 
         ! Check whether FABM has all dependencies fulfilled
         ! (i.e., whether all required calls for fabm_link_*_data have been made)
@@ -51,8 +49,17 @@ contains
             call fabm_initialize_surface_state(fabm_model, 1, ii, j)
         end do
 
-        return
-      endif !ibio.lt.0
+        tracer(:, :, :, 2, :) = tracer(:, :, :, 1, :)
+    end subroutine hycom_fabm_initialize
+
+    subroutine hycom_fabm_update(m, n, ibio)
+      use mod_xc         ! HYCOM communication interface
+      use mod_cb_arrays  ! HYCOM saved arrays
+
+      integer, intent(in) :: m, n, ibio
+      integer :: k, j, ivar
+
+      real :: dy(ii, size(fabm_model%state_variables))
 
 !
 ! --- leapfrog time step.
@@ -75,7 +82,29 @@ contains
         use mod_cb_arrays  ! HYCOM saved arrays
 
         integer, intent(in) :: index
+
+        integer :: i, j, k
         integer :: ivar
+
+        ! TODO: update mask and kbottom
+        do j=1,jj
+            do i=1,jj
+                do k=kk,1,-1
+                end do
+            end do
+        end do
+
+        ! Compute downwelling shortwave
+        do j=1,jj
+            do i=1,jj
+                if     (natm.eq.2) then
+                swflx_fabm=swflx (i,j,l0)*w0+swflx (i,j,l1)*w1
+                else
+                swflx_fabm=swflx (i,j,l0)*w0+swflx (i,j,l1)*w1
+            &        +swflx (i,j,l2)*w2+swflx (i,j,l3)*w3
+                endif !natm
+            end do
+        end do
 
         ! Send pointers to state variable data to FABM
         do ivar=1,size(fabm_model%state_variables)
@@ -93,6 +122,7 @@ contains
         ! For this list, visit http://fabm.net/standard_variables
         call fabm_model%link_interior_data(standard_variables%temperature, temp(1:ii, 1:jj, 1:kk, index))
         call fabm_model%link_interior_data(standard_variables%practical_salinity, saln(1:ii, 1:jj, 1:kk, index))
+        call fabm_model%link_horizontal_data(standard_variables%surface_downwelling_shortwave_flux, swflx_fabm(1:ii, 1:jj))
     end subroutine
 #endif
 end module

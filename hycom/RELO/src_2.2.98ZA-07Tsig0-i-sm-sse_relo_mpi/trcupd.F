@@ -164,7 +164,7 @@ c ---       NPZD
 *           call trcupd_909(1,2, -ktr)
           elseif (trcflg(ktr).eq.906) then
 c ---       FABM
-            call hycom_fabm_update(1, 2, -ktr)
+            call hycom_fabm_initialize()
           endif
         enddo
         close(unit=uoff+99)
