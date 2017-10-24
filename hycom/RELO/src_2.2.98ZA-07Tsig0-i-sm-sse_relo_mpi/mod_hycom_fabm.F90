@@ -102,11 +102,10 @@ contains
         ! Compute downwelling shortwave
         do j=1,jj
             do i=1,jj
-                if     (natm.eq.2) then
-                swflx_fabm=swflx (i,j,l0)*w0+swflx (i,j,l1)*w1
+                if (natm.eq.2) then
+                  swflx_fabm=swflx (i,j,l0)*w0+swflx (i,j,l1)*w1
                 else
-                swflx_fabm=swflx (i,j,l0)*w0+swflx (i,j,l1)*w1
-            &        +swflx (i,j,l2)*w2+swflx (i,j,l3)*w3
+                  swflx_fabm=swflx (i,j,l0)*w0+swflx (i,j,l1)*w1+swflx (i,j,l2)*w2+swflx (i,j,l3)*w3
                 endif !natm
             end do
         end do
