@@ -13,6 +13,9 @@ module mod_hycom_fabm
    real, allocatable :: swflx_fabm(:, :)
    logical, allocatable :: mask(:, :, :)
    integer, allocatable :: kbottom(:, :)
+   real, allocatable :: h(:, :, :)
+
+   real,    parameter   :: onem=9806.0          ! g/thref
 
 contains
 
@@ -25,6 +28,7 @@ contains
         allocate(swflx_fabm(ii, jj))
         allocate(mask(ii, jj, kk))
         allocate(kbottom(ii, jj))
+        allocate(h(ii, jj, kk))
 
         ! Provide extents of the spatial domain (number of layers nz for a 1D column)
         call fabm_set_domain(fabm_model, ii, jj, kk)
@@ -35,6 +39,9 @@ contains
         ! Specify vertical index of surface and bottom
         call fabm_model%set_surface_index(1)
         call fabm_model%set_bottom_index(kbottom)
+
+        call fabm_model%link_interior_data(standard_variables%cell_thickness, h(1:ii, 1:jj, 1:kk))
+        call fabm_model%link_horizontal_data(standard_variables%surface_downwelling_shortwave_flux, swflx_fabm(1:ii, 1:jj))
 
         call update_fabm_data(1)
 
@@ -92,14 +99,11 @@ contains
         integer :: ivar
 
         ! TODO: update mask and kbottom
-        do j=1,jj
-            do i=1,jj
-                do k=kk,1,-1
-                end do
-            end do
-        end do
 
-        ! Compute downwelling shortwave
+        ! Update cell thicknesses (m)
+        h(:, :, :) = dp(1:ii, 1:jj, 1:kk, index)/onem
+
+        ! Compute downwelling shortwave (from thermf.F)
         do j=1,jj
             do i=1,jj
                 if (natm.eq.2) then
@@ -126,7 +130,6 @@ contains
         ! For this list, visit http://fabm.net/standard_variables
         call fabm_model%link_interior_data(standard_variables%temperature, temp(1:ii, 1:jj, 1:kk, index))
         call fabm_model%link_interior_data(standard_variables%practical_salinity, saln(1:ii, 1:jj, 1:kk, index))
-        call fabm_model%link_horizontal_data(standard_variables%surface_downwelling_shortwave_flux, swflx_fabm(1:ii, 1:jj))
     end subroutine
 #endif
 end module
