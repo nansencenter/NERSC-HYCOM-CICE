@@ -99,6 +99,17 @@ contains
       ! TODO: send m or n state for computation of source terms? Leapfrog would need m, ECOSMO seems to do n
       call update_fabm_data(n)
 
+    do j=1,jj
+        do i=1,ii
+            if (SEA_P) then
+                if (isnan(swflx_fabm(i,j))) then
+                    write (*,*) 'NaN in swflx_fabm:', swflx_fabm(i,j), swflx (i,j,l0),w0,swflx (i,j,l1),w1,swflx (i,j,l2),w2,swflx (i,j,l3),w3
+                    stop
+                end if
+            end if
+        end do
+    end do
+
       do k=1,kk
         do j=1,jj
           call fabm_get_light_extinction(fabm_model, 1, ii, j, k, extinction)
@@ -161,10 +172,6 @@ contains
                     else
                       swflx_fabm(i,j)=swflx (i,j,l0)*w0+swflx (i,j,l1)*w1+swflx (i,j,l2)*w2+swflx (i,j,l3)*w3
                     endif !natm
-                    if (isnan(swflx_fabm(i,j))) then
-                      write (*,*) 'NaN in swflx_fabm:', swflx_fabm(i,j), swflx (i,j,l0),w0,swflx (i,j,l1),w1,swflx (i,j,l2),w2,swflx (i,j,l3),w3
-                      stop
-                    end if
                 end if
             end do
         end do
