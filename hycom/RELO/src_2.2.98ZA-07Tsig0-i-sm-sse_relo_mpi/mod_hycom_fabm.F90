@@ -17,6 +17,9 @@ module mod_hycom_fabm
 contains
 
     subroutine hycom_fabm_initialize()
+      use mod_xc         ! HYCOM communication interface
+      use mod_cb_arrays  ! HYCOM saved arrays
+
         allocate(swflx_fabm(ii, jj))
         allocate(mask(ii, jj, kk))
         allocate(kbottom(ii, jj))
