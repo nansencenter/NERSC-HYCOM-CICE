@@ -76,7 +76,7 @@ contains
 
         ! Send pointers to state variable data to FABM
         do ivar=1,size(fabm_model%state_variables)
-          call fabm_link_interior_state_data(fabm_model, ivar, tracer(:, :, :, index, ivar))
+          call fabm_link_interior_state_data(fabm_model, ivar, tracer(1:ii, 1:jj, 1:kk, index, ivar))
         end do
         do ivar=1,size(fabm_model%bottom_state_variables)
           !call fabm_link_bottom_state_data(fabm_model, ivar, ???)
@@ -88,8 +88,8 @@ contains
         ! Transfer pointer to environmental data
         ! Do this for all variables on FABM's standard variable list that the model can provide.
         ! For this list, visit http://fabm.net/standard_variables
-        call fabm_model%link_interior_data(standard_variables%temperature, temp(:, :, :, index))
-        call fabm_model%link_interior_data(standard_variables%practical_salinity, saln(:, :, :, index))
+        call fabm_model%link_interior_data(standard_variables%temperature, temp(1:ii, 1:jj, 1:kk, index))
+        call fabm_model%link_interior_data(standard_variables%practical_salinity, saln(1:ii, 1:jj, 1:kk, index))
     end subroutine
 #endif
 end module
