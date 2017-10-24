@@ -121,7 +121,7 @@ contains
         do j=1,jj
             call fabm_do(fabm_model, 1, ii, j, k, dy)
             if (any(isnan(dy))) then
-              write (*,*) 'NaN in extinction:', dy
+              write (*,*) 'NaN in dy:', dy
               stop
             end if
             do ivar=1,size(fabm_model%state_variables)
@@ -155,11 +155,17 @@ contains
         ! Compute downwelling shortwave (from thermf.F)
         do j=1,jj
             do i=1,ii
-                if (natm.eq.2) then
-                  swflx_fabm=swflx (i,j,l0)*w0+swflx (i,j,l1)*w1
-                else
-                  swflx_fabm=swflx (i,j,l0)*w0+swflx (i,j,l1)*w1+swflx (i,j,l2)*w2+swflx (i,j,l3)*w3
-                endif !natm
+                if (SEA_P) then
+                    if (natm.eq.2) then
+                      swflx_fabm(i,j)=swflx (i,j,l0)*w0+swflx (i,j,l1)*w1
+                    else
+                      swflx_fabm(i,j)=swflx (i,j,l0)*w0+swflx (i,j,l1)*w1+swflx (i,j,l2)*w2+swflx (i,j,l3)*w3
+                    endif !natm
+                    if (isnan(swflx_fabm(i,j)) then
+                      write (*,*) 'NaN in swflx_fabm:', swflx_fabm
+                      stop
+                    end if
+                end if
             end do
         end do
 
