@@ -1149,7 +1149,7 @@ c
       trcrin = ntracr.gt.0  ! positive from restart, otherwise initialize
       trcout = ntracr.ne.0
 #ifdef _FABM_
-      call fabm_create_model_from_yaml_file(fabm_model, path='../fabm.yaml')
+      call fabm_create_model_from_yaml_file(fabm_model, '../fabm.yaml')
       ntracr = size(fabm_model%state_variables)
 #else
       ntracr = abs(ntracr)
