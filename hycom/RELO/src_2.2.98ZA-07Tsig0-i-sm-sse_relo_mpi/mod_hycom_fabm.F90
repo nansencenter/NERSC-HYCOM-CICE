@@ -20,6 +20,8 @@ contains
       use mod_xc         ! HYCOM communication interface
       use mod_cb_arrays  ! HYCOM saved arrays
 
+      integer :: j, k
+
         allocate(swflx_fabm(ii, jj))
         allocate(mask(ii, jj, kk))
         allocate(kbottom(ii, jj))
