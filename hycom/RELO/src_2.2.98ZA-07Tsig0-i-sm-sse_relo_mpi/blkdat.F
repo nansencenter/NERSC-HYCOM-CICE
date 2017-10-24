@@ -1147,13 +1147,13 @@ c
       endif !1st tile
       call blkini(ntracr,'ntracr')
       trcrin = ntracr.gt.0  ! positive from restart, otherwise initialize
-      trcout = ntracr.ne.0
 #ifdef _FABM_
       call fabm_create_model_from_yaml_file(fabm_model, '../fabm.yaml')
       ntracr = size(fabm_model%state_variables)
 #else
       ntracr = abs(ntracr)
 #endif
+      trcout = ntracr.ne.0
 c
       if (ntracr.gt.mxtrcr) then
         if (mnproc.eq.1) then
