@@ -130,6 +130,7 @@ contains
       ! Compute source terms and update state
       do k=1,kk
         do j=1,jj
+            dy = 0
             call fabm_do(fabm_model, 1, ii, j, k, dy)
             do ivar=1,size(fabm_model%state_variables)
                if (any(isnan(dy(1:ii, ivar)))) write (*,*) 'NaN in dy:',ivar,dy(1:ii, ivar)
