@@ -16,9 +16,10 @@ contains
     subroutine hycom_fabm_update(m, n, ibio)
       use mod_xc         ! HYCOM communication interface
 
-      integer m,n,ibio
-      integer ivar
-      real dy(ii, size(fabm_model%state_variables))
+      integer, intent(in) :: m, n, ibio
+      integer :: k, j, ivar
+
+      real :: dy(ii, size(fabm_model%state_variables))
 
       if     (ibio.lt.0) then !initialize only
         ! Provide extents of the spatial domain (number of layers nz for a 1D column)
