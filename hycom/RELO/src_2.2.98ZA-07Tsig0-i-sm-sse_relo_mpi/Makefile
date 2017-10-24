@@ -76,7 +76,8 @@ bigrid.o:  bigrid.f  mod_xc.o
 blkdat.o:  blkdat.F  mod_xc.o mod_cb_arrays.o stmt_fns.h          mod_incupd.o \
 	                                                          mod_floats.o \
 	                                                          mod_tides.o \
-	                                                          mod_stokes.o
+	                                                          mod_stokes.o \
+	                                                          mod_hycom_fabm.o
 cnuity.o:  cnuity.F  mod_xc.o mod_cb_arrays.o                     mod_pipe.o \
 	                                                          mod_stokes.o
 convec.o:  convec.F  mod_xc.o mod_cb_arrays.o stmt_fns.h
@@ -107,7 +108,7 @@ prtmsk.o:  prtmsk.f
 psmoo.o:   psmoo.f   mod_xc.o 
 restart.o: restart.f mod_xc.o mod_cb_arrays.o            mod_za.o mod_tides.o
 thermf.o:  thermf.F  mod_xc.o mod_cb_arrays.o stmt_fns.h
-trcupd.o:  trcupd.F  mod_xc.o mod_cb_arrays.o                     mod_pipe.o
+trcupd.o:  trcupd.F  mod_xc.o mod_cb_arrays.o                     mod_pipe.o mod_hycom_fabm.o
 wtime.o:   wtime.F
 mod_hycom.o: \
         mod_hycom.F  mod_xc.o mod_cb_arrays.o            mod_za.o mod_pipe.o \
@@ -125,7 +126,7 @@ mod_hycom_dummy.o: \
 	                                                          mod_momtum.o \
 	                                                          mod_tsadvc.o
 mod_cb_arrays.o: \
-        mod_cb_arrays.F mod_dimensions.o mod_hycom_fabm.o
+        mod_cb_arrays.F mod_dimensions.o
 mod_momtum.o: \
 	mod_momtum.F mod_xc.o mod_cb_arrays.o stmt_fns.h          mod_pipe.o \
 	                                                          mod_tides.o \

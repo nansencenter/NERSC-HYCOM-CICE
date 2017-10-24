@@ -14,6 +14,9 @@
 #if defined(STOKES)
       use mod_stokes     ! HYCOM Stokes Drift effects from Wave fields
 #endif
+#ifdef _FABM_
+      use mod_hycom_fabm
+#endif
       implicit none
 c
       real      day1,hybrlx,cplifq,frzifq

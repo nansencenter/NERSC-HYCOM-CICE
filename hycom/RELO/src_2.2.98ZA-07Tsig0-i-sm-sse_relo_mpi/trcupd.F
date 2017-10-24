@@ -15,6 +15,9 @@
       use mod_xc         ! HYCOM communication interface
       use mod_cb_arrays  ! HYCOM saved arrays
       use mod_pipe       ! HYCOM debugging interface
+#ifdef _FABM_
+      use mod_hycom_fabm
+#endif
       implicit none
 c
       integer mnth
@@ -321,6 +324,9 @@ c
       subroutine trcupd(m,n)
       use mod_xc         ! HYCOM communication interface
       use mod_cb_arrays  ! HYCOM saved arrays
+#ifdef _FABM_
+      use mod_hycom_fabm
+#endif
       implicit none
 c
       integer m,n
@@ -816,6 +822,9 @@ c
       subroutine trcupd_906(m,n, ibio)
       use mod_xc         ! HYCOM communication interface
       use mod_cb_arrays  ! HYCOM saved arrays
+#ifdef _FABM_
+      use mod_hycom_fabm
+#endif
       implicit none
 c
       integer m,n,ibio
