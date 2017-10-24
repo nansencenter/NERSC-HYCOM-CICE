@@ -1,0 +1,76 @@
+#==============================================================================
+# Makefile macros for "conejo," Linux cluster at LANL
+#==============================================================================
+
+INCLDIR    := -I/cluster/software/netCDF-Fortran/4.4.4-intel-2017a-HDF5-1.8.18/include 
+SLIBS      := 
+ULIBS      := 
+
+CPP        := /usr/bin/cpp
+CPPFLAGS   := -P -traditional
+CPPDEFS    := -DLINUX
+CFLAGS     := -c -O2
+ifeq ($(COMMDIR), mpi)
+   FC         :=  mpiifort 
+else
+   FC         :=  ifort 
+endif
+#FIXEDFLAGS := -132
+FREEFLAGS  := -FR
+#FFLAGS     := 	-O2 -fconvert=big-endian -fdefault-real-8 -fdefault-double-8
+FFLAGS     := -traceback -g -O2 -fp-model source -warn nogeneral -convert big_endian -assume byterecl -real-size 64 -integer-size 32	
+#
+
+ifeq ($(THRD), yes)
+   FFLAGS  :=  $(FFLAGS) -openmp
+#cesm   CPPDEFS :=  $(CPPDEFS) -DTHREADED_OMP
+endif
+
+MOD_SUFFIX := mod
+LD         := $(FC)
+LDFLAGS    := $(FFLAGS) -v
+
+    CPPDEFS :=  $(CPPDEFS) -DNXGLOB=$(NXGLOB) -DNYGLOB=$(NYGLOB) \
+                -DBLCKX=$(BLCKX) -DBLCKY=$(BLCKY) -DMXBLCKS=$(MXBLCKS) \
+                -DNICELYR=$(NICELYR) -DNSNWLYR=$(NSNWLYR) -DNICECAT=$(NICECAT) \
+                -DTRAGE=$(TRAGE) -DTRFY=$(TRFY) -DTRLVL=$(TRLVL) -DTRPND=$(TRPND) \
+                -DTRBRI=$(TRBRI) -DNTRAERO=$(NTRAERO) -DNBGCLYR=$(NBGCLYR) \
+                -DTRBGCS=$(TRBGCS) -DNUMIN=$(NUMIN) -DNUMAX=$(NUMAX) \
+                -DNERSC_HYCOM_CICE
+#   CPPDEFS :=  $(CPPDEFS) -DAOMIP
+    CPPDEFS :=  $(CPPDEFS) -DESMF_INTERFACE -DUSE_ESMF_LIB
+#KAL
+    CPPDEFS :=  $(CPPDEFS) -Dcoupled
+
+ifeq ($(DITTO), yes)
+   CPPDEFS :=  $(CPPDEFS) -DREPRODUCIBLE
+endif
+
+ifeq ($(BARRIERS), yes)
+   CPPDEFS :=  $(CPPDEFS) -Dgather_scatter_barrier
+endif
+
+ifeq ($(IO_TYPE), netcdf)
+   CPPDEFS :=  $(CPPDEFS) -Dncdf
+   NETCDF_DIR=/cluster/software/easybuild/software/netCDF-Fortran/4.4.4-foss-2016b
+   SLIBS   := $(SLIBS) -L/$(NETCDF_DIR)/lib  -lnetcdff   #-lnetcdf -lnetcdff -lnetcdf_c++4
+endif
+
+INCLDIR := $(INCLDIR) -I$(ESMF_DIR)include -I$(ESMF_MOD_DIR)
+SLIBS := -lesmf  $(SLIBS) -L$(ESMF_LIB_DIR) 
+
+
+
+### if using parallel I/O, load all 3 libraries.  PIO must be first!
+#ifeq ($(IO_TYPE), pio)
+#   INCLDIR := $(INCLDIR) -I/usr/projects/climate/SHARED_CLIMATE/software/conejo/intel_openmpi/pio-1.4.0
+#   SLIBS   := $(SLIBS) -L/usr/projects/climate/SHARED_CLIMATE/software/conejo/intel_openmpi/pio-1.4.0 -lpio
+#
+#   INCLDIR := $(INCLDIR) -I/usr/projects/climate/SHARED_CLIMATE/software/conejo/intel_openmpi/parallel-netcdf-1.2.0/include
+#   SLIBS   := $(SLIBS) -L/usr/projects/climate/SHARED_CLIMATE/software/conejo/intel_openmpi/parallel-netcdf-1.2.0/lib -lpnetcdf
+#
+#   CPPDEFS :=  $(CPPDEFS) -Dncdf
+#   INCLDIR := $(INCLDIR) -I/usr/projects/climate/SHARED_CLIMATE/software/conejo/intel_openmpi/netcdf-3.6.3/include
+#   SLIBS   := $(SLIBS) -L/usr/projects/climate/SHARED_CLIMATE/software/conejo/intel_openmpi/netcdf-3.6.3/lib -lnetcdf
+
+#endif
