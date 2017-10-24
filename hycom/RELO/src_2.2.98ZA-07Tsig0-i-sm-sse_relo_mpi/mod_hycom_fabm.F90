@@ -21,7 +21,7 @@ module mod_hycom_fabm
 
    private
 
-   public fabm_create_model_from_yaml_file, hycom_fabm_initialize, hycom_fabm_update
+   public fabm_create_model_from_yaml_file, hycom_fabm_initialize, hycom_fabm_update, hycom_fabm_read_relax
 
    type (type_model), save, public :: fabm_model
    real, allocatable :: swflx_fabm(:, :)
@@ -79,6 +79,9 @@ contains
         tracer(:, :, :, 2, :) = tracer(:, :, :, 1, :)
         write (*,*) 'tracer min, max, sum:', minval(tracer), maxval(tracer), sum(tracer)
     end subroutine hycom_fabm_initialize
+
+    subroutine hycom_fabm_read_relax()
+    end subroutine
 
     subroutine hycom_fabm_update(m, n, ibio)
       use mod_xc         ! HYCOM communication interface

@@ -84,7 +84,7 @@ convec.o:  convec.F  mod_xc.o mod_cb_arrays.o stmt_fns.h
 diapfl.o:  diapfl.F  mod_xc.o mod_cb_arrays.o stmt_fns.h          mod_stokes.o
 dpthuv.o:  dpthuv.F  mod_xc.o mod_cb_arrays.o
 dpudpv.o:  dpudpv.F  mod_xc.o 
-forfun.o:  forfun.f  mod_xc.o mod_cb_arrays.o            mod_za.o
+forfun.o:  forfun.f  mod_xc.o mod_cb_arrays.o            mod_za.o mod_hycom_fabm.o
 geopar.o:  geopar.F  mod_xc.o mod_cb_arrays.o stmt_fns.h mod_za.o
 hybgen.o:  hybgen.F  mod_xc.o mod_cb_arrays.o stmt_fns.h          mod_pipe.o
 icloan.o:  icloan.F  mod_xc.o mod_cb_arrays.o stmt_fns.h

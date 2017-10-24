@@ -1,5 +1,8 @@
       subroutine forday(dtime,yrflag, iyear,iday,ihour)
       use mod_xc  ! HYCOM communication interface
+#ifdef _FABM_
+      use mod_hycom_fabm
+#endif
       implicit none
 c
       real*8  dtime
@@ -1648,6 +1651,7 @@ c
 c
       if     (relaxt) then
 #ifdef _FABM_
+        call hycom_fabm_read_relax()
 #else
         call zaiopf(flnmforw(1:lgth)//'relax.trcr.a', 'old', 914)
         if     (mnproc.eq.1) then  ! .b file from 1st tile only
