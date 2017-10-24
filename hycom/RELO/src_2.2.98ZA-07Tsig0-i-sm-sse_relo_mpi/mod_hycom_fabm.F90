@@ -72,16 +72,17 @@ contains
         use mod_cb_arrays  ! HYCOM saved arrays
 
         integer, intent(in) :: index
+        integer :: ivar
 
         ! Send pointers to state variable data to FABM
         do ivar=1,size(fabm_model%state_variables)
-          call fabm_link_interior_state_data(model, ivar, tracer(:, :, :, index, ivar))
+          call fabm_link_interior_state_data(fabm_model, ivar, tracer(:, :, :, index, ivar))
         end do
         do ivar=1,size(fabm_model%bottom_state_variables)
-          !call fabm_link_bottom_state_data(model, ivar, ???)
+          !call fabm_link_bottom_state_data(fabm_model, ivar, ???)
         end do
         do ivar=1,size(fabm_model%surface_state_variables)
-          !call fabm_link_surface_state_data(model, ivar, ???)
+          !call fabm_link_surface_state_data(fabm_model, ivar, ???)
         end do
 
         ! Transfer pointer to environmental data
