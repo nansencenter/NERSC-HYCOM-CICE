@@ -175,8 +175,7 @@ c
 c
 #ifdef _FABM_
       call hycom_fabm_initialize()
-#endif
-
+#else
       if     (iniflg.eq.2) then  ! use climatology
         call rdrlax(mnth,1)
 !$OMP   PARALLEL DO PRIVATE(j,i,k,ktr,pwij,trwij,prij,trcij)
@@ -289,6 +288,7 @@ c
         enddo !j
 !$OMP   END PARALLEL DO
       endif !iniflg.eq.2:else
+#endif
 c
       if     (lpipe .and. lpipe_initrc) then
          do ktr= 1,ntracr
