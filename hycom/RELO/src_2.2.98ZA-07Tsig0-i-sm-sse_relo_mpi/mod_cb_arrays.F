@@ -1,6 +1,5 @@
       module mod_cb_arrays
       use mod_dimensions
-      use mod_hycom_fabm
       implicit none
       public ! everything is public
 
