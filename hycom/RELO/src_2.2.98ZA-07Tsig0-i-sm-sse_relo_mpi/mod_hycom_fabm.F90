@@ -93,6 +93,13 @@ contains
       ! TODO: send m or n state for computation of source terms? Leapfrog would need m, ECOSMO seems to do n
       call update_fabm_data(n)
 
+      ! Update light field
+      do i=1,ii
+        do j=1,jj
+            call fabm_get_light(fabm_model, 1, kk, i, j)
+        end do
+      end do
+
       ! Compute source terms and update state
       do k=1,kk
         do j=1,jj
