@@ -161,7 +161,7 @@ contains
                     else
                       swflx_fabm(i,j)=swflx (i,j,l0)*w0+swflx (i,j,l1)*w1+swflx (i,j,l2)*w2+swflx (i,j,l3)*w3
                     endif !natm
-                    if (isnan(swflx_fabm(i,j)) then
+                    if (isnan(swflx_fabm(i,j))) then
                       write (*,*) 'NaN in swflx_fabm:', swflx_fabm
                       stop
                     end if
