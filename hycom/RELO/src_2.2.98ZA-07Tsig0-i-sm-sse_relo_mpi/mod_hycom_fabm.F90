@@ -90,6 +90,7 @@ contains
       integer, intent(in) :: m, n, ibio
       integer :: i, k, j, ivar
 
+      real :: extinction(ii)
       real :: dy(ii, size(fabm_model%state_variables))
       write (*,*) 'hycom_fabm_update'
 !
@@ -97,6 +98,12 @@ contains
 !
       ! TODO: send m or n state for computation of source terms? Leapfrog would need m, ECOSMO seems to do n
       call update_fabm_data(n)
+
+      do k=1,kk
+        do j=1,jj
+          call fabm_get_light_extinction(fabm_model, 1, ii, j, k, extinction)
+        end do
+      end do
 
       ! Update light field
       do i=1,ii
@@ -132,7 +139,6 @@ contains
                if (SEA_P) mask(i, j, :) = .true.
             end do
         end do
-        mask = .true.
 
         ! Update cell thicknesses (m)
         h(:, :, :) = dp(1:ii, 1:jj, 1:kk, index)/onem
