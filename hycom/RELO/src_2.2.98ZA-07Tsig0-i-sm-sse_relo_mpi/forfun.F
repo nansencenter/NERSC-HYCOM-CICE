@@ -3178,11 +3178,14 @@ c
         endif
 c
         if (relaxt) then
+#ifdef _FABM_
+#else
           do ktr= 1,ntracr
             do k= 1,kk
               call rdmonthck(trwall(1-nbdy,1-nbdy,k,lslot,ktr),914,mnth)
             enddo
           enddo
+#endif
         endif
 c
         mrecc = mrec
