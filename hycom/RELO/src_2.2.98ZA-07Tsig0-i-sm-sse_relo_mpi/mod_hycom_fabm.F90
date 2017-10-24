@@ -10,10 +10,9 @@ module mod_hycom_fabm
    public fabm_create_model_from_yaml_file, hycom_fabm_update
 
    type (type_model), save, public :: fabm_model
-#endif
+
 contains
 
-#ifdef _FABM_
     subroutine hycom_fabm_update(m, n, ibio)
       use mod_xc         ! HYCOM communication interface
       use mod_cb_arrays  ! HYCOM saved arrays
@@ -94,7 +93,7 @@ c
             end do
         end do
       end do
+    end subroutine hycom_fabm_update
 
-      end subroutine trcupd_906
-
+#endif
 end module
