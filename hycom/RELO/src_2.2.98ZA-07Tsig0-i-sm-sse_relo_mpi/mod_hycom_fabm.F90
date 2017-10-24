@@ -131,13 +131,14 @@ contains
       do k=1,kk
         do j=1,jj
             call fabm_do(fabm_model, 1, ii, j, k, dy)
-            if (any(isnan(dy))) then
-              write (*,*) 'NaN in dy:', dy
-              stop
-            end if
             do ivar=1,size(fabm_model%state_variables)
+               if (any(isnan(dy(1:ii, ivar)))) write (*,*) 'NaN in dy:',ivar,dy(1:ii, ivar)
                tracer(1:ii, j, k, n, ivar) = tracer(1:ii, j, k, n, ivar) + delt1 * dy(1:ii, ivar)
             end do
+            if (any(isnan(dy))) then
+              write (*,*) 'NaN in dy'
+              stop
+            end if
         end do
       end do
       stop
