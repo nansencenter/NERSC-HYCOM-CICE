@@ -386,6 +386,9 @@ c
 #if defined(USE_CCSM3)
       subroutine mean_archiv(n, iyear,imonth,iday,ihour)
       use mod_za  ! HYCOM I/O interface
+#ifdef _FABM_
+      use mod_hycom_fabm
+#endif
 c
       integer n, iyear,imonth,iday,ihour
 #else
@@ -624,7 +627,12 @@ c
         call zaiowr(tracer_m(1-nbdy,1-nbdy,k,ktr),ip,.true.,
      &              xmin,xmax, nopa, .false.)
         if     (mnproc.eq.1) then
+#ifdef _FABM_
+          write (nop,117) fabm_model%state_variables(ktr)%name(1:8),
+     &      nmean,time_ave,k,coord,xmin,xmax
+#else
         write (nop,117) 'tracer  ',nmean,time_ave,k,coord,xmin,xmax
+#endif
         call flush(nop)
         endif !1st tile
       enddo !ktr
