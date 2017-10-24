@@ -28,7 +28,7 @@ contains
         call fabm_set_domain(fabm_model, ii, jj, kk)
 
         ! Send mask - see SEA_P preprocessor macro in trcupd.F
-        call fabm_set_mask(fabm_model, ip(1:ii, 1:jj))
+        call fabm_set_mask(fabm_model, mask, mask(:, :, 1))
 
         ! Specify vertical index of surface and bottom
         call fabm_model%set_surface_index(1)
