@@ -146,7 +146,7 @@ mod_stokes.o: \
 mod_tides.o: \
         mod_tides.F  mod_xc.o mod_cb_arrays.o            mod_za.o
 mod_mean.o: \
-        mod_mean.F   mod_xc.o mod_cb_arrays.o            mod_za.o mod_stokes.o mod_netcdf_util.o
+        mod_mean.F   mod_xc.o mod_cb_arrays.o            mod_za.o mod_stokes.o mod_netcdf_util.o mod_hycom_fabm.o
 mod_archiv.o: \
         mod_archiv.F mod_xc.o mod_cb_arrays.o            mod_za.o mod_stokes.o mod_netcdf_util.o mod_hycom_fabm.o
 
