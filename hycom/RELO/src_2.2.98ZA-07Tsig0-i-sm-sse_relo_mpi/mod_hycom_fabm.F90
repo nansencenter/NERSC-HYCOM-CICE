@@ -142,7 +142,7 @@ contains
             end if
         end do
       end do
-      stop
+
     end subroutine hycom_fabm_update
 
     subroutine update_fabm_data(index)
