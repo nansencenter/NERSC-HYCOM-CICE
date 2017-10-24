@@ -3095,7 +3095,11 @@ c
           mrec = (mnth+1)/2
         endif
         if     (relaxt) then
+#ifdef _FABM_
+          mxunit = 913
+#else
           mxunit = 914  ! tracers
+#endif
         elseif (relaxs) then
           mxunit = 912  ! T&S only
         else
