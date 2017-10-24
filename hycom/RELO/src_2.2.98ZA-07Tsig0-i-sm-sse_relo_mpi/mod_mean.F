@@ -394,6 +394,9 @@ c
 #else
       subroutine mean_archiv(n, iyear,iday,ihour)
       use mod_za  ! HYCOM I/O interface
+#ifdef _FABM_
+      use mod_hycom_fabm
+#endif
 c
       integer n, iyear,iday,ihour
 #endif
