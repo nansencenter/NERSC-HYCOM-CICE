@@ -15,7 +15,6 @@ contains
 
     subroutine hycom_fabm_update(m, n, ibio)
       use mod_xc         ! HYCOM communication interface
-      use mod_cb_arrays  ! HYCOM saved arrays
 
       integer m,n,ibio
       integer ivar
@@ -29,22 +28,7 @@ contains
         call model%set_surface_index(1)
         !call model%set_bottom_index(nz)
 
-        ! Send pointers to state variable data to FABM
-        do ivar=1,size(model%state_variables)
-          call fabm_link_interior_state_data(model, ivar, tracer(:, :, :, n, ivar))
-        end do
-        do ivar=1,size(model%bottom_state_variables)
-          !call fabm_link_bottom_state_data(model, ivar, ???)
-        end do
-        do ivar=1,size(model%surface_state_variables)
-          !call fabm_link_surface_state_data(model, ivar, ???)
-        end do
-
-        ! Transfer pointer to environmental data
-        ! Do this for all variables on FABM's standard variable list that the model can provide.
-        ! For this list, visit http://fabm.net/standard_variables
-        call model%link_interior_data(standard_variables%temperature, temp(:, :, :, n))
-        call model%link_interior_data(standard_variables%practical_salinity, saln(:, :, :, n))
+        call update_fabm_data(n)
 
         ! Check whether FABM has all dependencies fulfilled
         ! (i.e., whether all required calls for fabm_link_*_data have been made)
@@ -64,25 +48,12 @@ contains
 
         return
       endif !ibio.lt.0
-c
-c --- leapfrog time step.
-c
-!$OMP PARALLEL DO PRIVATE(j,i,k,chl,pij,par,swfrac,
-!$OMP&                    bm_n,bm_p,bm_z,bn_n,bn_p,bn_z,
-!$OMP&                    bu_n,bu_p,bu_z,
-!$OMP&                    uptake,grazin,pdeath,zdeath)
-!$OMP&         SCHEDULE(STATIC,jblk)
 
+!
+! --- leapfrog time step.
+!
       ! TODO: send m or n state for computation of source terms? Leapfrog would need m, ECOSMO seems to do n
-      do ivar=1,size(model%state_variables)
-        call fabm_link_interior_state_data(model, ivar, tracer(:, :, :, n, ivar))
-      end do
-      do ivar=1,size(model%bottom_state_variables)
-        !call fabm_link_bottom_state_data(model, ivar, ???)
-      end do
-      do ivar=1,size(model%surface_state_variables)
-        !call fabm_link_surface_state_data(model, ivar, ???)
-      end do
+      call update_fabm_data(n)
 
       ! Compute source terms and update state
       do k=1,kk
@@ -95,5 +66,27 @@ c
       end do
     end subroutine hycom_fabm_update
 
+    subroutine update_fabm_data(index)
+        use mod_cb_arrays  ! HYCOM saved arrays
+
+        integer, intent(in) :: index
+
+        ! Send pointers to state variable data to FABM
+        do ivar=1,size(model%state_variables)
+          call fabm_link_interior_state_data(model, ivar, tracer(:, :, :, index, ivar))
+        end do
+        do ivar=1,size(model%bottom_state_variables)
+          !call fabm_link_bottom_state_data(model, ivar, ???)
+        end do
+        do ivar=1,size(model%surface_state_variables)
+          !call fabm_link_surface_state_data(model, ivar, ???)
+        end do
+
+        ! Transfer pointer to environmental data
+        ! Do this for all variables on FABM's standard variable list that the model can provide.
+        ! For this list, visit http://fabm.net/standard_variables
+        call model%link_interior_data(standard_variables%temperature, temp(:, :, :, index))
+        call model%link_interior_data(standard_variables%practical_salinity, saln(:, :, :, index))
+    end subroutine
 #endif
 end module
