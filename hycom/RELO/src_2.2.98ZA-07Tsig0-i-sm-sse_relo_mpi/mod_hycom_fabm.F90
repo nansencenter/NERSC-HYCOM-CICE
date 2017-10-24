@@ -116,11 +116,13 @@ contains
       do k=1,kk
         do j=1,jj
             call fabm_do(fabm_model, 1, ii, j, k, dy)
+            write (*,*) dy
             do ivar=1,size(fabm_model%state_variables)
                tracer(1:ii, j, k, n, ivar) = tracer(1:ii, j, k, n, ivar) + delt1 * dy(1:ii, ivar)
             end do
         end do
       end do
+      stop
     end subroutine hycom_fabm_update
 
     subroutine update_fabm_data(index)
