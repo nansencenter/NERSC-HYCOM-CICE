@@ -1166,10 +1166,10 @@ c
                stop '(blkdat)'
       endif
 c
+      call blkini(trcflg1,'trcflg')
 #ifdef _FABM_
       trcflg = 9
 #else
-      call blkini(trcflg1,'trcflg')
       do k= 1,ntracr
         trcflg(k) = mod(trcflg1,10)  ! least significant decimal digit
         if     (trcflg1.ge.10) then
