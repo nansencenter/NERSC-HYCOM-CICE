@@ -87,7 +87,7 @@ contains
       integer :: i, k, j, ivar
 
       real :: dy(ii, size(fabm_model%state_variables))
-
+      return
 !
 ! --- leapfrog time step.
 !
