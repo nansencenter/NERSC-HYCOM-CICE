@@ -83,7 +83,7 @@ contains
       use mod_cb_arrays  ! HYCOM saved arrays
 
       integer, intent(in) :: m, n, ibio
-      integer :: k, j, ivar
+      integer :: i, k, j, ivar
 
       real :: dy(ii, size(fabm_model%state_variables))
 
