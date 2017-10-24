@@ -1,4 +1,5 @@
 #!/bin/bash
+set -x
 
 # Initialize environment (sets Scratch dir ($S), Data dir $D ++ )
 if [ -f EXPT.src ] ; then
@@ -44,7 +45,7 @@ if [[ $starttime =~  ([0-9]{4})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-
 else 
    tellerror "start time not in righ format" ; exit 1
 fi
-if [[ $endtime =~  ([0-9]){4}-([0-9]){2}-([0-9]){2}T([0-9]){2}:([0-9]){2}:([0-9]){2} ]] ; then
+if [[ $endtime =~  ([0-9]{4})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2}) ]] ; then
    end_year=${BASH_REMATCH[1]}
    end_month=${BASH_REMATCH[2]}
    end_day=${BASH_REMATCH[3]}
