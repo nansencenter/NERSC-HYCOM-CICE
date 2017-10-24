@@ -1647,6 +1647,8 @@ c
       endif
 c
       if     (relaxt) then
+#ifdef _FABM_
+#else
         call zaiopf(flnmforw(1:lgth)//'relax.trcr.a', 'old', 914)
         if     (mnproc.eq.1) then  ! .b file from 1st tile only
         open (unit=uoff+914,file=flnmforw(1:lgth)//'relax.trcr.b',
@@ -1659,6 +1661,7 @@ c
             call rdmonth(util1, 914)
           enddo
         enddo
+#endif
       endif
 c
       if     (mnproc.eq.1) then
