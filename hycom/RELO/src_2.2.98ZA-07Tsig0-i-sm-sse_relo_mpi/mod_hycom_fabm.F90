@@ -98,9 +98,9 @@ contains
 
       real :: extinction(ii)
       real :: sms(ii, size(fabm_model%state_variables))
-      real(rk) :: flux(ii, size(model%state_variables))
-      real(rk) :: sms_bt(ii, size(model%bottom_state_variables))
-      real(rk) :: sms_sf(ii, size(model%surface_state_variables))
+      real :: flux(ii, size(fabm_model%state_variables))
+      real :: sms_bt(ii, size(fabm_model%bottom_state_variables))
+      real :: sms_sf(ii, size(fabm_model%surface_state_variables))
       write (*,*) 'hycom_fabm_update'
 !
 ! --- leapfrog time step.
