@@ -4130,6 +4130,7 @@ c ---     NaN detection, for each tracer.
             endif !1st tile
             lfatal = .true.  !delay exit to allow archive output
           endif !NaN
+#ifndef _FABM_
           if     (ktr.ge.3 .and. trcflg(ktr-2).eq.903) then !NPZ
             smt=(dsumtr(ktr)+dsumtr(ktr-1)+dsumtr(ktr-2))/dsuma
             if (mnproc.eq.1) then
@@ -4160,6 +4161,7 @@ c ---     NaN detection, for each tracer.
             call flush(nod)
             endif !1st tile
           endif !NPZ:NPZD
+#endif
         enddo !ktr
       endif  !diagno ...
 c
