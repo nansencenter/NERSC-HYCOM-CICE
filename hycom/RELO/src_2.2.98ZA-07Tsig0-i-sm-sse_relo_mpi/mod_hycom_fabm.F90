@@ -137,7 +137,7 @@ contains
             call fabm_get_light(fabm_model, 1, kk, i, j)
         end do
       end do
-
+#if 0
       ! Compute bottom source terms
       do j=1,jj
         flux = 0
@@ -175,7 +175,7 @@ contains
           end if
         end do
       end do
-
+#endif
       ! Compute source terms and update state
       do k=1,kk
         do j=1,jj
