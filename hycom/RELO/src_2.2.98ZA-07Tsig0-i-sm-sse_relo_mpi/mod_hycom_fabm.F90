@@ -150,6 +150,10 @@ contains
           if (SEA_P) then
             do ivar=1,size(fabm_model%state_variables)
               tracer(i, j, kbottom(i, j), n, ivar) = tracer(i, j, kbottom(i, j), n, ivar) + delt1 * flux(i, ivar)/h(i, j, kbottom(i, j))
+              if (isnan(tracer(i, j, kbottom(i, j), n, ivar))) then
+                write (*,*) 'NaN after do_bottom:',ivar,tracer(i, j, kbottom(i, j), n, ivar), flux(i, ivar), h(i, j, kbottom(i, j))
+                stop
+              end if
             end do
           end if
         end do
@@ -165,6 +169,10 @@ contains
         end do
         do ivar=1,size(fabm_model%state_variables)
           tracer(1:ii, j, 1, n, ivar) = tracer(1:ii, j, 1, n, ivar) + delt1 * flux(1:ii, ivar)/h(i, j, 1)
+          if (isnan(tracer(1:ii, j, 1, n, ivar))) then
+            write (*,*) 'NaN after do_surface:',ivar,tracer(1:ii, j, 1, n, ivar), flux(1:ii, ivar), h(i, j, 1)
+            stop
+          end if
         end do
       end do
 
