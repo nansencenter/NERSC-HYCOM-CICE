@@ -21,10 +21,10 @@ module mod_hycom_fabm
 
    private
 
-   public fabm_create_model_from_yaml_file, hycom_fabm_initialize, hycom_fabm_update, hycom_fabm_read_relax
+   public hycom_fabm_configure, hycom_fabm_initialize, hycom_fabm_update, hycom_fabm_read_relax
    public fabm_surface_state, fabm_bottom_state
 
-   type (type_model), save, public :: fabm_model
+   class (type_model), pointer, save, public :: fabm_model => null()
    real, allocatable :: swflx_fabm(:, :)
    real, allocatable :: bottom_stress(:, :)
    logical, allocatable :: mask(:, :, :)
@@ -36,6 +36,28 @@ module mod_hycom_fabm
    real,    parameter   :: onem=9806.0          ! g/thref
 
 contains
+
+    subroutine hycom_fabm_configure()
+      integer :: configuration_method
+      logical :: file_exists
+
+      configuration_method = 1
+      inquire(file='../fabm.yaml', exist=file_exists)
+      if (.not.file_exists) then
+        inquire(file='../fabm.nml', exist=file_exists)
+        if (file_exists) configuration_method = 0
+      end if
+
+      select case (configuration_method)
+      case (0)
+        ! From namelists in fabm.nml - DEPRECATED!!
+        fabm_model => fabm_create_model_from_file(namlst, '../fabm.nml')
+      case (1)
+        ! From YAML file fabm.yaml
+        allocate(fabm_model)
+        call fabm_create_model_from_yaml_file(fabm_model, '../fabm.yaml')
+      end select
+    end subroutine hycom_fabm_configure
 
     subroutine hycom_fabm_initialize()
       use mod_xc         ! HYCOM communication interface
@@ -91,7 +113,7 @@ contains
     end subroutine hycom_fabm_initialize
 
     subroutine hycom_fabm_read_relax()
-    end subroutine
+    end subroutine hycom_fabm_read_relax
 
     subroutine hycom_fabm_update(m, n, ibio)
       use mod_xc         ! HYCOM communication interface
@@ -286,6 +308,6 @@ contains
         ! For this list, visit http://fabm.net/standard_variables
         call fabm_model%link_interior_data(standard_variables%temperature, temp(1:ii, 1:jj, 1:kk, index))
         call fabm_model%link_interior_data(standard_variables%practical_salinity, saln(1:ii, 1:jj, 1:kk, index))
-    end subroutine
+    end subroutine update_fabm_data
 #endif
 end module

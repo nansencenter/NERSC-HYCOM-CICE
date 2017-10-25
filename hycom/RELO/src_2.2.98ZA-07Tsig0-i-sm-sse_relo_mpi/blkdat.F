@@ -1148,7 +1148,7 @@ c
       call blkini(ntracr,'ntracr')
       trcrin = ntracr.gt.0  ! positive from restart, otherwise initialize
 #ifdef _FABM_
-      call fabm_create_model_from_yaml_file(fabm_model, '../fabm.yaml')
+      call hycom_fabm_configure()
       ntracr = size(fabm_model%state_variables)
 #else
       ntracr = abs(ntracr)
