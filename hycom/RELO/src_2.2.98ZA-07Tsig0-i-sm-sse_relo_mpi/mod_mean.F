@@ -616,20 +616,20 @@ c
       endif !1st tile
 #ifdef _FABM_
       do ktr= 1,size(fabm_model%surface_state_variables)
-        call zaiowr(fabm_surface_state_m(1-nbdy,1-nbdy),ip,.true.,
+        call zaiowr(fabm_surface_state_m(1-nbdy,1-nbdy,ktr),ip,.true.,
      &              xmin,xmax, nopa, .false.)
         if     (mnproc.eq.1) then
-          write (nop,117) fabm_model%surface_state_variables(ktr)%name(1:8),
-     &      nmean,time_ave,0,coord,xmin,xmax
+          write (nop,117) fabm_model%surface_state_variables
+     &      (ktr)%name(1:8),nmean,time_ave,0,coord,xmin,xmax
           call flush(nop)
         endif !1st tile
       end do
       do ktr= 1,size(fabm_model%bottom_state_variables)
-        call zaiowr(fabm_bottom_state_m(1-nbdy,1-nbdy),ip,.true.,
+        call zaiowr(fabm_bottom_state_m(1-nbdy,1-nbdy,ktr),ip,.true.,
      &              xmin,xmax, nopa, .false.)
         if     (mnproc.eq.1) then
-          write (nop,117) fabm_model%bottom_state_variables(ktr)%name(1:8),
-     &      nmean,time_ave,0,coord,xmin,xmax
+          write (nop,117) fabm_model%bottom_state_variables 
+     &      (ktr)%name(1:8),nmean,time_ave,0,coord,xmin,xmax
         call flush(nop)
       endif !1st tile
       end do
