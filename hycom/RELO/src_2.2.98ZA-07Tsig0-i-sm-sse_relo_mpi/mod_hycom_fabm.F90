@@ -64,7 +64,7 @@ contains
         call fabm_model%link_horizontal_data(standard_variables%surface_downwelling_shortwave_flux, swflx_fabm(1:ii, 1:jj))
         call fabm_model%link_horizontal_data(standard_variables%bottom_stress, bottom_stress(1:ii, 1:jj))
 
-        call update_fabm_data(1, whole_column=.true.)  ! initialize the entire column of wet points, including thin layers
+        call update_fabm_data(1, initializing=.true.)  ! initialize the entire column of wet points, including thin layers
 
         ! Check whether FABM has all dependencies fulfilled
         ! (i.e., whether all required calls for fabm_link_*_data have been made)
@@ -111,7 +111,7 @@ contains
       ! TODO: send m or n state for computation of source terms? Leapfrog would need m, ECOSMO seems to do n
       ! Note: if we use n, then the bottom, surface and interior operations below each perform their own update
       ! before the next operation comes in, and that next one will use the updated value. This is in effect operator splitting...
-      call update_fabm_data(n, whole_column=.false.)  ! skipping thin layers
+      call update_fabm_data(n, initializing=.false.)  ! skipping thin layers
 
     do j=1,jj
         do i=1,ii
@@ -212,11 +212,11 @@ contains
 
     end subroutine hycom_fabm_update
 
-    subroutine update_fabm_data(index, whole_column)
+    subroutine update_fabm_data(index, initializing)
         use mod_cb_arrays  ! HYCOM saved arrays
 
         integer, intent(in) :: index
-        logical, intent(in) :: whole_column
+        logical, intent(in) :: initializing
 
         integer :: i, j, k
         integer :: ivar
@@ -232,7 +232,7 @@ contains
         do j=1,jj
             do i=1,ii
               if (SEA_P) then
-                 if (whole_column) then
+                 if (initializing) then
                    kbottom(i, j) = kk
                  else
                    do k=kk,1,-1
@@ -244,28 +244,31 @@ contains
               end if
             end do
         end do
-        if (.not.whole_column) then
-        ! Compute downwelling shortwave (from thermf.F)
-        do j=1,jj
-            do i=1,ii
-                if (SEA_P) then
-                    if (natm.eq.2) then
-                      swflx_fabm(i,j)=swflx (i,j,l0)*w0+swflx (i,j,l1)*w1
-                    else
-                      swflx_fabm(i,j)=swflx (i,j,l0)*w0+swflx (i,j,l1)*w1+swflx (i,j,l2)*w2+swflx (i,j,l3)*w3
-                    endif !natm
-                end if
-            end do
-        end do
 
-        do j=1,jj
-          do i=1,ii
-            if (SEA_P) then
-              bottom_stress(i, j) = ustarb(i, j)*ustarb(i, j)*rho_0
-            end if
+        if (.not.initializing) then
+          ! Compute downwelling shortwave (from thermf.F)
+          do j=1,jj
+              do i=1,ii
+                  if (SEA_P) then
+                      if (natm.eq.2) then
+                        swflx_fabm(i,j)=swflx (i,j,l0)*w0+swflx (i,j,l1)*w1
+                      else
+                        swflx_fabm(i,j)=swflx (i,j,l0)*w0+swflx (i,j,l1)*w1+swflx (i,j,l2)*w2+swflx (i,j,l3)*w3
+                      endif !natm
+                  end if
+              end do
           end do
-        end do
+
+          ! Compute bottom stress (Pa)
+          do j=1,jj
+            do i=1,ii
+              if (SEA_P) then
+                bottom_stress(i, j) = ustarb(i, j)*ustarb(i, j)*rho_0
+              end if
+            end do
+          end do
         end if
+
         ! Send pointers to state variable data to FABM
         do ivar=1,size(fabm_model%state_variables)
           call fabm_link_interior_state_data(fabm_model, ivar, tracer(1:ii, 1:jj, 1:kk, index, ivar))
