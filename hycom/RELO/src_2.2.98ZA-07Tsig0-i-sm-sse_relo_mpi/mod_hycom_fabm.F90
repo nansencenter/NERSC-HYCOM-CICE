@@ -61,7 +61,7 @@ contains
         call fabm_model%link_interior_data(standard_variables%cell_thickness, h(1:ii, 1:jj, 1:kk))
         call fabm_model%link_horizontal_data(standard_variables%surface_downwelling_shortwave_flux, swflx_fabm(1:ii, 1:jj))
 
-        call update_fabm_data(1)
+        call update_fabm_data(1, .true.)
 
         ! Check whether FABM has all dependencies fulfilled
         ! (i.e., whether all required calls for fabm_link_*_data have been made)
@@ -108,7 +108,7 @@ contains
       ! TODO: send m or n state for computation of source terms? Leapfrog would need m, ECOSMO seems to do n
       ! Note: if we use n, then the bottom, surface and interior operations below each perform their own update
       ! before the next operation comes in, and that next one will use the updated value. This is in effect operator splitting...
-      call update_fabm_data(m)
+      call update_fabm_data(m, .false.)
 
     do j=1,jj
         do i=1,ii
@@ -194,10 +194,11 @@ contains
 
     end subroutine hycom_fabm_update
 
-    subroutine update_fabm_data(index)
+    subroutine update_fabm_data(index, whole_column)
         use mod_cb_arrays  ! HYCOM saved arrays
 
         integer, intent(in) :: index
+        logical, intent(in) :: whole_column
 
         integer :: i, j, k
         integer :: ivar
@@ -211,10 +212,14 @@ contains
         do j=1,jj
             do i=1,ii
               if (SEA_P) then
-                 do k=kk,1,-1
-                   if (h(i, j, k)>0.1) exit
-                 end do
-                 kbottom(i, j) = kk !max(k, 2)
+                 if (whole_column) then
+                   kbottom(i, j) = kk
+                 else
+                   do k=kk,1,-1
+                     if (h(i, j, k)>0.1) exit
+                   end do
+                   kbottom(i, j) = max(k, 2)
+                 end if
                  mask(i, j, 1:kbottom(i, j)) = .true.
               end if
             end do
