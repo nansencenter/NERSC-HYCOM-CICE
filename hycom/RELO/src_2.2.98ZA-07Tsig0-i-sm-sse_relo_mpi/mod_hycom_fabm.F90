@@ -25,6 +25,7 @@ module mod_hycom_fabm
 
    type (type_model), save, public :: fabm_model
    real, allocatable :: swflx_fabm(:, :)
+   real, allocatable :: bottom_stress(:, :)
    logical, allocatable :: mask(:, :, :)
    integer, allocatable :: kbottom(:, :)
    real, allocatable :: h(:, :, :)
@@ -42,6 +43,7 @@ contains
       integer :: j, k
 
         allocate(swflx_fabm(ii, jj))
+        allocate(bottom_stress(ii, jj))
         allocate(mask(ii, jj, kk))
         allocate(kbottom(ii, jj))
         allocate(h(ii, jj, kk))
@@ -60,6 +62,7 @@ contains
 
         call fabm_model%link_interior_data(standard_variables%cell_thickness, h(1:ii, 1:jj, 1:kk))
         call fabm_model%link_horizontal_data(standard_variables%surface_downwelling_shortwave_flux, swflx_fabm(1:ii, 1:jj))
+        call fabm_model%link_horizontal_data(standard_variables%bottom_stress, bottom_stress(1:ii, 1:jj))
 
         call update_fabm_data(1, whole_column=.true.)  ! initialize the entire column of wet points, including thin layers
 
@@ -213,6 +216,8 @@ contains
         integer :: i, j, k
         integer :: ivar
 
+        real, parameter :: rho_0 = 1025.   ! [kg/m3]
+
         ! Update cell thicknesses (m)
         h(:, :, :) = dp(1:ii, 1:jj, 1:kk, index)/onem
 
@@ -246,6 +251,14 @@ contains
                     endif !natm
                 end if
             end do
+        end do
+
+        do j=1,jj
+          do i=1,ii
+            if (SEA_P) then
+              bottom_stress(i, j) = ustarb(i, j)*ustarb(i, j)*rho_0
+            end if
+          end do
         end do
 
         ! Send pointers to state variable data to FABM
