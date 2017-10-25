@@ -190,6 +190,9 @@ contains
             end do
             if (any(isnan(sms))) then
               write (*,*) 'NaN in sms'
+              do ivar=1,size(fabm_model%state_variables)
+                write (*,*) 'state:',ivar,tracer(1:ii, j, k, m, ivar)
+              end do
               stop
             end if
         end do
