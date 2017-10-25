@@ -61,7 +61,7 @@ contains
         call fabm_model%link_interior_data(standard_variables%cell_thickness, h(1:ii, 1:jj, 1:kk))
         call fabm_model%link_horizontal_data(standard_variables%surface_downwelling_shortwave_flux, swflx_fabm(1:ii, 1:jj))
 
-        call update_fabm_data(1, .true.)
+        call update_fabm_data(1, whole_column=.true.)  ! initialize the entire column of wet points, including thin layers
 
         ! Check whether FABM has all dependencies fulfilled
         ! (i.e., whether all required calls for fabm_link_*_data have been made)
@@ -108,7 +108,7 @@ contains
       ! TODO: send m or n state for computation of source terms? Leapfrog would need m, ECOSMO seems to do n
       ! Note: if we use n, then the bottom, surface and interior operations below each perform their own update
       ! before the next operation comes in, and that next one will use the updated value. This is in effect operator splitting...
-      call update_fabm_data(m, .false.)
+      call update_fabm_data(m, whole_column=.false.)  ! skipping thin layers
 
     do j=1,jj
         do i=1,ii
@@ -189,6 +189,16 @@ contains
               write (*,*) 'NaN in sms'
               stop
             end if
+        end do
+      end do
+
+      ! Copy bottom value for pelagic tracers to all layers below bottom
+      ! (currently masked, but could be revived later)
+      do j=1,jj
+        do i=1,ii
+            do k=kbottom(i, j)+1, kk
+               tracer(i, j, k, n, :) = tracer(i, j, kbottom(i, j), n, :)
+            end do
         end do
       end do
 
