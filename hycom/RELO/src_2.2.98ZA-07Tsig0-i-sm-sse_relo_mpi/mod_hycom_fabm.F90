@@ -168,7 +168,7 @@ contains
           fabm_surface_state(1:ii, j, n, ivar) = fabm_surface_state(1:ii, j, n, ivar) + delt1 * sms_sf(1:ii, ivar)
         end do
         do ivar=1,size(fabm_model%state_variables)
-          tracer(1:ii, j, 1, n, ivar) = tracer(1:ii, j, 1, n, ivar) + delt1 * flux(1:ii, ivar)/h(i, j, 1)
+          tracer(1:ii, j, 1, n, ivar) = tracer(1:ii, j, 1, n, ivar) + delt1 * flux(1:ii, ivar)/h(1:ii, j, 1)
           if (any(isnan(tracer(1:ii, j, 1, n, ivar)))) then
             write (*,*) 'NaN after do_surface:',ivar,tracer(1:ii, j, 1, n, ivar), flux(1:ii, ivar), h(i, j, 1)
             stop
