@@ -219,12 +219,12 @@ c
 #endif
 #ifdef _FABM_
             do ktr= 1,size(fabm_model%surface_state_variables)
-              fabm_surface_state_m(i,j,ktr) = fabm_surface_state_m(i,j,ktr) +
-     &          s*fabm_surface_state(i,j,n,ktr)
+              fabm_surface_state_m(i,j,ktr) = fabm_surface_state_m
+     &          (i,j,ktr) + s*fabm_surface_state(i,j,n,ktr)
             end do
             do ktr= 1,size(fabm_model%bottom_state_variables)
-              fabm_bottom_state_m(i,j,ktr) = fabm_bottom_state_m(i,j,ktr) +
-     &        s*fabm_bottom_state(i,j,n,ktr)
+              fabm_bottom_state_m(i,j,ktr) = fabm_bottom_state_m
+     &          (i,j,ktr) + s*fabm_bottom_state(i,j,n,ktr)
             end do
 #endif
           endif !ip
