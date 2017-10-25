@@ -17,6 +17,9 @@
 #if defined(STOKES)
       use mod_stokes     ! HYCOM Stokes drift
 #endif
+#ifdef _FABM_
+      use mod_hycom_fabm
+#endif
 c
       implicit none
 c
@@ -424,17 +427,11 @@ c
 #if defined(USE_CCSM3)
       subroutine mean_archiv(n, iyear,imonth,iday,ihour)
       use mod_za  ! HYCOM I/O interface
-#ifdef _FABM_
-      use mod_hycom_fabm
-#endif
 c
       integer n, iyear,imonth,iday,ihour
 #else
       subroutine mean_archiv(n, iyear,iday,ihour)
       use mod_za  ! HYCOM I/O interface
-#ifdef _FABM_
-      use mod_hycom_fabm
-#endif
 c
       integer n, iyear,iday,ihour
 #endif
