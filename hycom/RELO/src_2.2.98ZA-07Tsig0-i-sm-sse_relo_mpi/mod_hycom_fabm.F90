@@ -40,6 +40,7 @@ contains
     subroutine hycom_fabm_configure()
       integer :: configuration_method
       logical :: file_exists
+      integer, parameter :: namlst = 9000
 
       configuration_method = 1
       inquire(file='../fabm.yaml', exist=file_exists)
