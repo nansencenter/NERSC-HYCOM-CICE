@@ -137,6 +137,7 @@ contains
       ! before the next operation comes in, and that next one will use the updated value. This is in effect operator splitting...
       call update_fabm_data(n, initializing=.false.)  ! skipping thin layers
 
+#ifdef FABM_CHECK_NAN
     do j=1,jj
         do i=1,ii
             if (SEA_P) then
@@ -147,14 +148,17 @@ contains
             end if
         end do
     end do
+#endif
 
       do k=1,kk
         do j=1,jj
           call fabm_get_light_extinction(fabm_model, 1, ii, j, k, extinction)
+#ifdef FABM_CHECK_NAN
           if (any(isnan(extinction))) then
             write (*,*) 'NaN in extinction:', extinction
             stop
           end if
+#endif
         end do
       end do
 
@@ -176,10 +180,12 @@ contains
         do i=1,ii
           if (SEA_P) then
             tracer(i, j, kbottom(i, j), n, :) = tracer(i, j, kbottom(i, j), n, :) + delt1 * flux(i, :)/h(i, j, kbottom(i, j))
+#ifdef FABM_CHECK_NAN
             if (any(isnan(tracer(i, j, kbottom(i, j), n, :)))) then
               write (*,*) 'NaN after do_bottom:', tracer(i, j, kbottom(i, j), n, :), flux(i, :), h(i, j, kbottom(i, j))
               stop
             end if
+#endif
           end if
         end do
       end do
@@ -195,10 +201,12 @@ contains
         do i=1,ii
           if (SEA_P) then
             tracer(i, j, 1, n, :) = tracer(i, j, 1, n, :) + delt1 * flux(i, :)/h(i, j, 1)
+#ifdef FABM_CHECK_NAN
             if (any(isnan(tracer(i, j, 1, n, :)))) then
               write (*,*) 'NaN after do_surface:', tracer(i, j, 1, n, :), flux(i, :), h(i, j, 1)
               stop
             end if
+#endif
           end if
         end do
       end do
@@ -209,16 +217,20 @@ contains
             sms = 0
             call fabm_do(fabm_model, 1, ii, j, k, sms)
             do ivar=1,size(fabm_model%state_variables)
-               if (any(isnan(sms(1:ii, ivar)))) write (*,*) 'NaN in sms:',ivar,sms(1:ii, ivar)
                tracer(1:ii, j, k, n, ivar) = tracer(1:ii, j, k, n, ivar) + delt1 * sms(1:ii, ivar)
             end do
+#ifdef FABM_CHECK_NAN
             if (any(isnan(sms))) then
+              do ivar=1,size(fabm_model%state_variables)
+                if (any(isnan(sms(1:ii, ivar)))) write (*,*) 'NaN in sms:',ivar,sms(1:ii, ivar)
+              end do
               write (*,*) 'NaN in sms'
               do ivar=1,size(fabm_model%state_variables)
                 write (*,*) 'state:',ivar,tracer(1:ii, j, k, m, ivar)
               end do
               stop
             end if
+#endif
         end do
       end do
 
