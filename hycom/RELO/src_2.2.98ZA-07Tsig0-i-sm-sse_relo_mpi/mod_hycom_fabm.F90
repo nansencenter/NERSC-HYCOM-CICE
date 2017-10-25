@@ -148,13 +148,11 @@ contains
         end do
         do i=1,ii
           if (SEA_P) then
-            do ivar=1,size(fabm_model%state_variables)
-              tracer(i, j, kbottom(i, j), n, ivar) = tracer(i, j, kbottom(i, j), n, ivar) + delt1 * flux(i, ivar)/h(i, j, kbottom(i, j))
-              if (isnan(tracer(i, j, kbottom(i, j), n, ivar))) then
-                write (*,*) 'NaN after do_bottom:',ivar,tracer(i, j, kbottom(i, j), n, ivar), flux(i, ivar), h(i, j, kbottom(i, j))
-                stop
-              end if
-            end do
+            tracer(i, j, kbottom(i, j), n, :) = tracer(i, j, kbottom(i, j), n, :) + delt1 * flux(i, :)/h(i, j, kbottom(i, j))
+            if (any(isnan(tracer(i, j, kbottom(i, j), n, :)))) then
+              write (*,*) 'NaN after do_bottom:', tracer(i, j, kbottom(i, j), n, :), flux(i, :), h(i, j, kbottom(i, j))
+              stop
+            end if
           end if
         end do
       end do
@@ -167,11 +165,13 @@ contains
         do ivar=1,size(fabm_model%surface_state_variables)
           fabm_surface_state(1:ii, j, n, ivar) = fabm_surface_state(1:ii, j, n, ivar) + delt1 * sms_sf(1:ii, ivar)
         end do
-        do ivar=1,size(fabm_model%state_variables)
-          tracer(1:ii, j, 1, n, ivar) = tracer(1:ii, j, 1, n, ivar) + delt1 * flux(1:ii, ivar)/h(1:ii, j, 1)
-          if (any(isnan(tracer(1:ii, j, 1, n, ivar)))) then
-            write (*,*) 'NaN after do_surface:',ivar,tracer(1:ii, j, 1, n, ivar), flux(1:ii, ivar), h(i, j, 1)
-            stop
+        do i=1,ii
+          if (SEA_P) then
+            tracer(i, j, 1, n, :) = tracer(i, j, 1, n, :) + delt1 * flux(i, :)/h(i, j, 1)
+            if (any(isnan(tracer(i, j, 1, n, :)))) then
+              write (*,*) 'NaN after do_surface:', tracer(i, j, 1, n, :), flux(i, :), h(i, j, 1)
+              stop
+            end if
           end if
         end do
       end do
