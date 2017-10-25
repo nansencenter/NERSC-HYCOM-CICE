@@ -28,6 +28,8 @@ module mod_hycom_fabm
    logical, allocatable :: mask(:, :, :)
    integer, allocatable :: kbottom(:, :)
    real, allocatable :: h(:, :, :)
+   real, allocatable :: fabm_surface_state(:, :, :, :)
+   real, allocatable :: fabm_bottom_state(:, :, :, :)
 
    real,    parameter   :: onem=9806.0          ! g/thref
 
@@ -43,6 +45,8 @@ contains
         allocate(mask(ii, jj, kk))
         allocate(kbottom(ii, jj))
         allocate(h(ii, jj, kk))
+        allocate(fabm_surface_state(ii, jj, 2, size(fabm_model%surface_state_variables)))
+        allocate(fabm_bottom_state(ii, jj, 2, size(fabm_model%bottom_state_variables)))
 
         ! Provide extents of the spatial domain (number of layers nz for a 1D column)
         call fabm_set_domain(fabm_model, ii, jj, kk)
@@ -76,8 +80,10 @@ contains
             call fabm_initialize_surface_state(fabm_model, 1, ii, j)
         end do
 
+        ! Copy state from time step = 1 to time step = 2
         tracer(:, :, :, 2, :) = tracer(:, :, :, 1, :)
-        write (*,*) 'tracer min, max, sum:', minval(tracer), maxval(tracer), sum(tracer)
+        fabm_bottom_state(:, :, 2, :) = fabm_bottom_state(:, :, 1, :)
+        fabm_surface_state(:, :, 2, :) = fabm_surface_state(:, :, 1, :)
     end subroutine hycom_fabm_initialize
 
     subroutine hycom_fabm_read_relax()
@@ -91,13 +97,18 @@ contains
       integer :: i, k, j, ivar
 
       real :: extinction(ii)
-      real :: dy(ii, size(fabm_model%state_variables))
+      real :: sms(ii, size(fabm_model%state_variables))
+      real(rk) :: flux(ii, size(model%state_variables))
+      real(rk) :: sms_bt(ii, size(model%bottom_state_variables))
+      real(rk) :: sms_sf(ii, size(model%surface_state_variables))
       write (*,*) 'hycom_fabm_update'
 !
 ! --- leapfrog time step.
 !
       ! TODO: send m or n state for computation of source terms? Leapfrog would need m, ECOSMO seems to do n
-      call update_fabm_data(n)
+      ! Note: if we use n, then the bottom, surface and interior operations below each perform their own update
+      ! before the next operation comes in, and that next one will use the updated value. This is in effect operator splitting...
+      call update_fabm_data(m)
 
     do j=1,jj
         do i=1,ii
@@ -127,17 +138,39 @@ contains
         end do
       end do
 
+      ! Compute bottom source terms
+      do j=1,jj
+        flux = 0
+        sms_bt = 0
+        call fabm_do_bottom(model, 1, ii, j, flux, sms_bt)
+        fabm_bottom_state(1:ii, j, n, ivar) = fabm_bottom_state(1:ii, j, n, ivar) + delt1 * sms_bt(1:ii, ivar)
+        do i=1,ii
+          if (SEA_P) then
+             tracer(i, j, kbottom(i, j), n, ivar) = tracer(i, j, kbottom(i, j), n, ivar) + delt1 * flux(1:ii, ivar)
+          end if
+        end do
+      end do
+
+      ! Compute surface source terms
+      do j=1,jj
+        flux = 0
+        sms_sf = 0
+        call fabm_do_surface(model, 1, ii, j, flux, sms_sf)
+        fabm_surface_state(1:ii, j, n, ivar) = fabm_surface_state(1:ii, j, n, ivar) + delt1 * sms_sf(1:ii, ivar)
+        tracer(1:ii, j, kbottom(i, j), n, ivar) = tracer(1:ii, j, 1, n, ivar) + delt1 * flux(1:ii, ivar)
+      end do
+
       ! Compute source terms and update state
       do k=1,kk
         do j=1,jj
-            dy = 0
-            call fabm_do(fabm_model, 1, ii, j, k, dy)
+            sms = 0
+            call fabm_do(fabm_model, 1, ii, j, k, sms)
             do ivar=1,size(fabm_model%state_variables)
-               if (any(isnan(dy(1:ii, ivar)))) write (*,*) 'NaN in dy:',ivar,dy(1:ii, ivar)
-               tracer(1:ii, j, k, n, ivar) = tracer(1:ii, j, k, n, ivar) + delt1 * dy(1:ii, ivar)
+               if (any(isnan(sms(1:ii, ivar)))) write (*,*) 'NaN in sms:',ivar,sms(1:ii, ivar)
+               tracer(1:ii, j, k, n, ivar) = tracer(1:ii, j, k, n, ivar) + delt1 * sms(1:ii, ivar)
             end do
-            if (any(isnan(dy))) then
-              write (*,*) 'NaN in dy'
+            if (any(isnan(sms))) then
+              write (*,*) 'NaN in sms'
               stop
             end if
         end do
@@ -183,10 +216,10 @@ contains
           call fabm_link_interior_state_data(fabm_model, ivar, tracer(1:ii, 1:jj, 1:kk, index, ivar))
         end do
         do ivar=1,size(fabm_model%bottom_state_variables)
-          !call fabm_link_bottom_state_data(fabm_model, ivar, ???)
+          call fabm_link_bottom_state_data(fabm_model, ivar, fabm_bottom_state(1:ii, 1:jj, index, ivar))
         end do
         do ivar=1,size(fabm_model%surface_state_variables)
-          !call fabm_link_surface_state_data(fabm_model, ivar, ???)
+          call fabm_link_surface_state_data(fabm_model, ivar, fabm_surface_state(1:ii, 1:jj, index, ivar))
         end do
 
         ! Transfer pointer to environmental data
