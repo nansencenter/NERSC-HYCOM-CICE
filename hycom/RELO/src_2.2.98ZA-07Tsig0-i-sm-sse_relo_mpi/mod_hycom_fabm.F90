@@ -194,17 +194,23 @@ contains
         integer :: i, j, k
         integer :: ivar
 
+        ! Update cell thicknesses (m)
+        h(:, :, :) = dp(1:ii, 1:jj, 1:kk, index)/onem
+
         ! TODO: update mask and kbottom
-        kbottom = kk
+        kbottom = 0
         mask = .false.
         do j=1,jj
             do i=1,ii
-               if (SEA_P) mask(i, j, :) = .true.
+              if (SEA_P) then
+                 do k=kk,1,-1
+                   if (h(i, j, k)>0.1) exit
+                 end do
+                 kbottom(i, j) = max(k, 2)
+                 mask(i, j, 1:kbottom(i, j)) = .true.
+              end if
             end do
         end do
-
-        ! Update cell thicknesses (m)
-        h(:, :, :) = dp(1:ii, 1:jj, 1:kk, index)/onem
 
         ! Compute downwelling shortwave (from thermf.F)
         do j=1,jj
