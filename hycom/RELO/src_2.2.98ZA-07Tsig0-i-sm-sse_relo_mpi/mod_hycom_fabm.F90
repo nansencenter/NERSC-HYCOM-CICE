@@ -214,7 +214,7 @@ contains
                  do k=kk,1,-1
                    if (h(i, j, k)>0.1) exit
                  end do
-                 kbottom(i, j) = max(k, 2)
+                 kbottom(i, j) = kk !max(k, 2)
                  mask(i, j, 1:kbottom(i, j)) = .true.
               end if
             end do
