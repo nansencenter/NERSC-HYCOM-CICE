@@ -108,7 +108,7 @@ contains
       ! TODO: send m or n state for computation of source terms? Leapfrog would need m, ECOSMO seems to do n
       ! Note: if we use n, then the bottom, surface and interior operations below each perform their own update
       ! before the next operation comes in, and that next one will use the updated value. This is in effect operator splitting...
-      call update_fabm_data(m)
+      call update_fabm_data(n)
 
     do j=1,jj
         do i=1,ii
