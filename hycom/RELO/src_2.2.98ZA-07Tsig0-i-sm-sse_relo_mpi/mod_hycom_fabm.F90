@@ -22,6 +22,7 @@ module mod_hycom_fabm
    private
 
    public fabm_create_model_from_yaml_file, hycom_fabm_initialize, hycom_fabm_update, hycom_fabm_read_relax
+   public fabm_surface_state, fabm_bottom_state
 
    type (type_model), save, public :: fabm_model
    real, allocatable :: swflx_fabm(:, :)
