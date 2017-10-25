@@ -111,7 +111,7 @@ contains
       ! TODO: send m or n state for computation of source terms? Leapfrog would need m, ECOSMO seems to do n
       ! Note: if we use n, then the bottom, surface and interior operations below each perform their own update
       ! before the next operation comes in, and that next one will use the updated value. This is in effect operator splitting...
-      call update_fabm_data(m, whole_column=.false.)  ! skipping thin layers
+      call update_fabm_data(n, whole_column=.false.)  ! skipping thin layers
 
     do j=1,jj
         do i=1,ii
@@ -202,9 +202,11 @@ contains
       ! (currently masked, but could be revived later)
       do j=1,jj
         do i=1,ii
+          if (SEA_P) then
             do k=kbottom(i, j)+1, kk
                tracer(i, j, k, n, :) = tracer(i, j, kbottom(i, j), n, :)
             end do
+          end if
         end do
       end do
 
@@ -242,7 +244,7 @@ contains
               end if
             end do
         end do
-
+        if (.not.whole_column) then
         ! Compute downwelling shortwave (from thermf.F)
         do j=1,jj
             do i=1,ii
@@ -263,7 +265,7 @@ contains
             end if
           end do
         end do
-
+        end if
         ! Send pointers to state variable data to FABM
         do ivar=1,size(fabm_model%state_variables)
           call fabm_link_interior_state_data(fabm_model, ivar, tracer(1:ii, 1:jj, 1:kk, index, ivar))
