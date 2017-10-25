@@ -143,10 +143,14 @@ contains
         flux = 0
         sms_bt = 0
         call fabm_do_bottom(fabm_model, 1, ii, j, flux, sms_bt)
-        fabm_bottom_state(1:ii, j, n, ivar) = fabm_bottom_state(1:ii, j, n, ivar) + delt1 * sms_bt(1:ii, ivar)
+        do ivar=1,size(fabm_model%bottom_state_variables)
+          fabm_bottom_state(1:ii, j, n, ivar) = fabm_bottom_state(1:ii, j, n, ivar) + delt1 * sms_bt(1:ii, ivar)
+        end do
         do i=1,ii
           if (SEA_P) then
-             tracer(i, j, kbottom(i, j), n, ivar) = tracer(i, j, kbottom(i, j), n, ivar) + delt1 * flux(i, ivar)/h(i, j, kbottom(i, j))
+            do ivar=1,size(fabm_model%state_variables)
+              tracer(i, j, kbottom(i, j), n, ivar) = tracer(i, j, kbottom(i, j), n, ivar) + delt1 * flux(i, ivar)/h(i, j, kbottom(i, j))
+            end do
           end if
         end do
       end do
@@ -156,8 +160,12 @@ contains
         flux = 0
         sms_sf = 0
         call fabm_do_surface(fabm_model, 1, ii, j, flux, sms_sf)
-        fabm_surface_state(1:ii, j, n, ivar) = fabm_surface_state(1:ii, j, n, ivar) + delt1 * sms_sf(1:ii, ivar)
-        tracer(1:ii, j, kbottom(i, j), n, ivar) = tracer(1:ii, j, 1, n, ivar) + delt1 * flux(1:ii, ivar)/h(i, j, 1)
+        do ivar=1,size(fabm_model%surface_state_variables)
+          fabm_surface_state(1:ii, j, n, ivar) = fabm_surface_state(1:ii, j, n, ivar) + delt1 * sms_sf(1:ii, ivar)
+        end do
+        do ivar=1,size(fabm_model%state_variables)
+          tracer(1:ii, j, 1, n, ivar) = tracer(1:ii, j, 1, n, ivar) + delt1 * flux(1:ii, ivar)/h(i, j, 1)
+        end do
       end do
 
       ! Compute source terms and update state
