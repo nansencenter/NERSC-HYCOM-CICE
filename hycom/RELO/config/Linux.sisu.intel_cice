@@ -29,7 +29,8 @@ FC            = ftn
 
 
 
-FCFFLAGS      =  -xCORE-AVX2 -traceback  -cxxlib -g -O3 -fp-model source -warn nogeneral -convert big_endian -assume byterecl -real-size 64 -integer-size 32  
+FCFFLAGS      =  -xCORE-AVX2 -traceback  -cxxlib -g -O3 -fp-model source -warn nogeneral -convert big_endian -assume byterecl -real-size 64 -integer-size 32
+#FCFFLAGS      :=        $(FCFFLAGS) -check bounds -check pointers -check uninit 
 
 FCFFLAGS      :=	$(FCFFLAGS) $(INCLUDES)
 CC            = icc
