@@ -135,7 +135,9 @@ contains
       ! TODO: send m or n state for computation of source terms? Leapfrog would need m, ECOSMO seems to do n
       ! Note: if we use n, then the bottom, surface and interior operations below each perform their own update
       ! before the next operation comes in, and that next one will use the updated value. This is in effect operator splitting...
-      call update_fabm_data(n, initializing=.false.)  ! skipping thin layers
+      call update_fabm_data(m, initializing=.false.)  ! skipping thin layers
+
+      call vertical_movement(n, m, delt1)
 
 #ifdef FABM_CHECK_NAN
     do j=1,jj
@@ -247,6 +249,47 @@ contains
       end do
 
     end subroutine hycom_fabm_update
+
+    subroutine vertical_movement(n, m, timestep)
+      integer, intent(in) :: n, m
+      real, intent(in) :: timestep
+
+      real :: w(ii, kk, size(fabm_model%state_variables))
+      real :: flux(ii, 0:kk)
+      integer :: i, j, k, ivar
+
+      do j=1,jj
+        ! Get vertical velocities per tracer (m/s, > 0 for floating, < 0  for sinking)
+        do k=1,kk
+          call fabm_get_vertical_movement(fabm_model, 1, ii, j, k, w(1:ii, k, :))
+        end do
+
+        do ivar=1,size(fabm_model%state_variables)
+          ! Compute tracer flux over layer interfaces
+          flux = 0
+          do k=1,kk
+            do i=1,ii
+              if (w(i, k, ivar) > 0) then
+                ! Floating: move tracer upward over top interface of the layer (flux > 0)
+                flux(i, k-1) = flux(i, k-1) + w(i, k, ivar)*tracer(i, j, k, m, ivar)
+              else
+                ! Sinking: move tracer downward over bottom interface of the layer (flux < 0)
+                flux(i, k) = flux(i, k) + w(i, k, ivar)*tracer(i, j, k, m, ivar)
+              end if
+            end do ! i
+          end do ! k
+
+          ! Update state
+          do i=1,ii
+            do k=1,kbottom(i, j)-1
+              tracer(i, j, k, n, ivar) = tracer(i, j, k, n, ivar) + flux(i, k)*timestep/h(i, j, k)
+              tracer(i, j, k+1, n, ivar) = tracer(i, j, k+1, n, ivar) - flux(i, k)*timestep/h(i, j, k+1)
+            end do
+          end do
+        end do ! ivar
+      end do ! j
+
+    end subroutine vertical_movement
 
     subroutine update_fabm_data(index, initializing)
         use mod_cb_arrays  ! HYCOM saved arrays
