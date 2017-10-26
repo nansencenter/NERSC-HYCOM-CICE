@@ -193,6 +193,8 @@ contains
         end do
       end do
 
+      call check_state('after do_bottom')
+
       ! Compute surface source terms
       do j=1,jj
         flux = 0
@@ -213,6 +215,8 @@ contains
           end if
         end do
       end do
+
+      call check_state('after do_surface')
 
       ! Compute source terms and update state
       do k=1,kk
@@ -236,6 +240,8 @@ contains
 #endif
         end do
       end do
+
+      call check_state('after do')
 
       ! Copy bottom value for pelagic tracers to all layers below bottom
       ! (currently masked, but could be revived later)
