@@ -259,7 +259,7 @@ contains
 
         real, parameter :: rho_0 = 1025.   ! [kg/m3]
 
-        call fabm_update_time(real(nstep))
+        call fabm_update_time(fabm_model, sreal(nstep))
 
         ! Update cell thicknesses (m)
         h(:, :, :) = dp(1:ii, 1:jj, 1:kk, index)/onem
