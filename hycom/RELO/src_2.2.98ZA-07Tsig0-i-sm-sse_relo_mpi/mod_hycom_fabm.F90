@@ -124,6 +124,7 @@ contains
       real :: flux(ii, size(fabm_model%state_variables))
       real :: sms_bt(ii, size(fabm_model%bottom_state_variables))
       real :: sms_sf(ii, size(fabm_model%surface_state_variables))
+
       write (*,*) 'hycom_fabm_update'
 !
 ! --- leapfrog time step.
@@ -131,9 +132,13 @@ contains
       ! TODO: send m or n state for computation of source terms? Leapfrog would need m, ECOSMO seems to do n
       ! Note: if we use n, then the bottom, surface and interior operations below each perform their own update
       ! before the next operation comes in, and that next one will use the updated value. This is in effect operator splitting...
-      call update_fabm_data(m, initializing=.false.)  ! skipping thin layers
+      call update_fabm_data(n, initializing=.false.)  ! skipping thin layers
 
-      call vertical_movement(n, m, delt1)
+      call check_state('before vertical_movement')
+
+      call vertical_movement(n, n, delt1)
+
+      call check_state('after vertical_movement')
 
 #ifdef FABM_CHECK_NAN
     do j=1,jj
@@ -245,6 +250,33 @@ contains
       end do
 
     end subroutine hycom_fabm_update
+
+    subroutine check_state(location)
+      character(len=*), intent(in) :: location
+
+      logical, parameter :: repair = .false.
+      logical :: valid_int, valid_sf, valid_bt
+
+      integer :: j, k
+
+      do k=1,kk
+        do j=1,jj
+          call fabm_check_state(fabm_model, 1, ii, j, k, repair, valid_int)
+          if (.not.(valid_int.or.repair)) then
+            write (*,*) 'Invalid interior state '//location
+            stop
+          end if
+        end do
+      end do
+      do j=1,jj
+        call fabm_check_surface_state(fabm_model, 1, ii, j, repair, valid_sf)
+        call fabm_check_bottom_state(fabm_model, 1, ii, j, repair, valid_bt)
+        if (.not.(valid_sf.and.valid_bt).and..not.repair) then
+          write (*,*) 'Invalid interface state '//location
+          stop
+        end if
+      end do
+    end subroutine check_state
 
     subroutine vertical_movement(n, m, timestep)
       integer, intent(in) :: n, m
