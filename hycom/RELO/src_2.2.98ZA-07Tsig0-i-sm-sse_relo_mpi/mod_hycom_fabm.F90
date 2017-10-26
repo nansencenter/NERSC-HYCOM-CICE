@@ -75,7 +75,7 @@ contains
         allocate(fabm_bottom_state(ii, jj, 2, size(fabm_model%bottom_state_variables)))
 
         ! Provide extents of the spatial domain (number of layers nz for a 1D column)
-        call fabm_set_domain(fabm_model, ii, jj, kk)
+        call fabm_set_domain(fabm_model, ii, jj, kk, baclin)
 
         ! Send mask - see SEA_P preprocessor macro in trcupd.F
         call fabm_set_mask(fabm_model, mask, mask(:, :, 1))
@@ -259,10 +259,12 @@ contains
 
         real, parameter :: rho_0 = 1025.   ! [kg/m3]
 
+        call fabm_update_time(real(nstep, rk))
+
         ! Update cell thicknesses (m)
         h(:, :, :) = dp(1:ii, 1:jj, 1:kk, index)/onem
 
-        ! TODO: update mask and kbottom
+        ! Update mask and kbottom
         kbottom = 0
         mask = .false.
         do j=1,jj
