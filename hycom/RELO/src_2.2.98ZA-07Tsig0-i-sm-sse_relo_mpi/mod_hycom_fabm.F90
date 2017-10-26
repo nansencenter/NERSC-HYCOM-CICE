@@ -17,6 +17,9 @@ module mod_hycom_fabm
    use fabm
    use fabm_config
 
+   use mod_xc         ! HYCOM communication interface
+   use mod_cb_arrays  ! HYCOM saved arrays
+
    implicit none
 
    private
@@ -61,8 +64,6 @@ contains
     end subroutine hycom_fabm_configure
 
     subroutine hycom_fabm_initialize()
-      use mod_xc         ! HYCOM communication interface
-      use mod_cb_arrays  ! HYCOM saved arrays
 
       integer :: j, k
 
@@ -117,9 +118,6 @@ contains
     end subroutine hycom_fabm_read_relax
 
     subroutine hycom_fabm_update(m, n, ibio)
-      use mod_xc         ! HYCOM communication interface
-      use mod_cb_arrays  ! HYCOM saved arrays
-
       integer, intent(in) :: m, n, ibio
       integer :: i, k, j, ivar
 
@@ -292,8 +290,6 @@ contains
     end subroutine vertical_movement
 
     subroutine update_fabm_data(index, initializing)
-        use mod_cb_arrays  ! HYCOM saved arrays
-
         integer, intent(in) :: index
         logical, intent(in) :: initializing
 
