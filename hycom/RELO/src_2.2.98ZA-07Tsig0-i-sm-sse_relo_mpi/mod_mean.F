@@ -141,6 +141,14 @@ c
            si_u_m(i,j) = 0.0
            si_v_m(i,j) = 0.0
 #endif
+#ifdef _FABM_
+           do ktr= 1,size(fabm_model%bottom_state_variables)
+             fabm_bottom_state_m(i,j,ktr) = 0.0
+           end do
+           do ktr= 1,size(fabm_model%surface_state_variables)
+             fabm_surface_state_m(i,j,ktr) = 0.0
+           end do
+#endif
         enddo !i
         do k= 1,kk
           do i=1,ii
@@ -153,10 +161,6 @@ c
                v_m(i,j,k) = 0.0
             do ktr= 1,ntracr
               tracer_m(i,j,k,ktr) = 0.0
-#ifdef _FABM_
-              fabm_bottom_state_m = 0.0
-              fabm_surface_state_m = 0.0
-#endif
             enddo !ktr
           enddo !i
         enddo !k
