@@ -36,8 +36,6 @@ module mod_hycom_fabm
    real, allocatable :: fabm_surface_state(:, :, :, :)
    real, allocatable :: fabm_bottom_state(:, :, :, :)
 
-   real,    parameter   :: onem=9806.0          ! g/thref
-
 contains
 
     subroutine hycom_fabm_configure()
