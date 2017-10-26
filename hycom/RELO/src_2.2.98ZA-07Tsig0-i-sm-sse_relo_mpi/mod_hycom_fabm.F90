@@ -259,8 +259,6 @@ contains
 
         real, parameter :: rho_0 = 1025.   ! [kg/m3]
 
-        call fabm_update_time(fabm_model, real(nstep))
-
         ! Update cell thicknesses (m)
         h(:, :, :) = dp(1:ii, 1:jj, 1:kk, index)/onem
 
@@ -284,6 +282,8 @@ contains
         end do
 
         if (.not.initializing) then
+          call fabm_update_time(fabm_model, real(nstep))
+
           ! Compute downwelling shortwave (from thermf.F)
           do j=1,jj
               do i=1,ii
