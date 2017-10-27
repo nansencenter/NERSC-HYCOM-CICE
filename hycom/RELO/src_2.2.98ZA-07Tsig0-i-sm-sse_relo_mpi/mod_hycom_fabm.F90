@@ -323,7 +323,7 @@ contains
 
       real :: w(ii, kk, size(fabm_model%state_variables))
       real :: flux(ii, 0:kk)
-      integer :: i, j, k, ivar
+      integer :: i, j, k, ivar, kabove
       real, parameter :: epsilon = 1e-8
 
       do j=1,jj
@@ -354,12 +354,12 @@ contains
             do k=1,kbottom(i, j)
               if (h(i, j, k) == 0) then
                 ! thin layer
-                if (flux(i, k-1, ivar) < 0) then
+                if (flux(i, k-1) < 0) then
                   ! sinking into thin layer
-                  flux(i, k, ivar) = flux(i, k, ivar) + flux(i, k-1, ivar)
-                elseif (flux(i, k, ivar) > 0)
+                  flux(i, k) = flux(i, k) + flux(i, k-1)
+                elseif (flux(i, k) > 0)
                   ! floating into thin layer
-                  flux(i, kabove, ivar) = flux(i, kabove, ivar) + flux(i, k, ivar)
+                  flux(i, kabove) = flux(i, kabove) + flux(i, k)
                 end if
               else
                 kabove = k
