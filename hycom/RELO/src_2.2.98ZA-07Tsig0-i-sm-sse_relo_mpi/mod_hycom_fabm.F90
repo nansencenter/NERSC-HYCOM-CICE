@@ -36,12 +36,32 @@ module mod_hycom_fabm
    real, allocatable :: fabm_surface_state(:, :, :, :)
    real, allocatable :: fabm_bottom_state(:, :, :, :)
 
+   logical :: do_interior_sources, do_bottom_sources, do_surface_sources, do_vertical_movement
+
 contains
 
     subroutine hycom_fabm_configure()
       integer :: configuration_method
       logical :: file_exists
       integer, parameter :: namlst = 9000
+      integer :: ios
+      character(len=*), parameter :: path = '../hycom_fabm.nml'
+      namelist /hycom_fabm/ do_interior_sources, do_bottom_sources, do_surface_sources, do_vertical_movement
+
+      ! Read coupler configuration
+      do_interior_sources = .true.
+      do_bottom_sources = .true.
+      do_surface_sources = .true.
+      do_vertical_movement = .true.
+      inquire(file='../hycom_fabm.nml', exist=file_exists)
+      if (file_exists) then
+        write (*,*) 'Reading HYCOM-FABM coupler configuration from '//path
+        open(namlst, file=path, action='read', status='old', iostat=ios)
+        if (ios/=0) stop 'error opening hycom_fabm.nml'
+        read(namlst, nml=hycom_fabm, iostat=ios)
+        if (ios/=0) stop 'error reading hycom_fabm.nml'
+        close(namlst)
+      end if
 
       configuration_method = 1
       inquire(file='../fabm.yaml', exist=file_exists)
@@ -136,9 +156,10 @@ contains
 
       call check_state('before vertical_movement')
 
-      call vertical_movement(n, n, delt1)
-
-      call check_state('after vertical_movement')
+      if (do_vertical_movement) then
+        call vertical_movement(n, n, delt1)
+        call check_state('after vertical_movement')
+      end if
 
 #ifdef FABM_CHECK_NAN
     do j=1,jj
@@ -173,6 +194,7 @@ contains
       end do
 
       ! Compute bottom source terms
+      if (do_bottom_sources) then
       do j=1,jj
         flux = 0
         sms_bt = 0
@@ -192,10 +214,11 @@ contains
           end if
         end do
       end do
-
-      call check_state('after do_bottom')
+      call check_state('after bottom sources')
+      end if
 
       ! Compute surface source terms
+      if (do_surface_sources) then
       do j=1,jj
         flux = 0
         sms_sf = 0
@@ -215,10 +238,11 @@ contains
           end if
         end do
       end do
-
-      call check_state('after do_surface')
+      call check_state('after surface sources')
+      end if
 
       ! Compute source terms and update state
+      if (do_interior_sources) then
       do k=1,kk
         do j=1,jj
             sms = 0
@@ -240,8 +264,8 @@ contains
 #endif
         end do
       end do
-
-      call check_state('after do')
+      call check_state('after interior sources')
+      end if
 
       ! Copy bottom value for pelagic tracers to all layers below bottom
       ! (currently masked, but could be revived later)
