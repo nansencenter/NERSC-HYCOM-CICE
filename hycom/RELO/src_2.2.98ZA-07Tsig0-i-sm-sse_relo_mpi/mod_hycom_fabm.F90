@@ -289,7 +289,7 @@ contains
       logical, parameter :: repair = .false.
       logical :: valid_int, valid_sf, valid_bt
 
-      integer :: j, k
+      integer :: j, k, ivar
 
       do k=1,kk
         do j=1,jj
@@ -309,7 +309,7 @@ contains
         end if
       end do
 
-      do ivar=1,size(model%state_variables)
+      do ivar=1,size(fabm_model%state_variables)
         if (.not.all(ieee_is_finite(tracer(1:ii, 1:jj, 1:kk, n, ivar)))) then
           write (*,*) location, 'Interior state variable not finite:', ivar, 'range', minval(tracer(1:ii, 1:jj, 1:kk, n, ivar)), maxval(tracer(1:ii, 1:jj, 1:kk, n, ivar))
           stop
