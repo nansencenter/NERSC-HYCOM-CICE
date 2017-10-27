@@ -154,11 +154,11 @@ contains
       ! before the next operation comes in, and that next one will use the updated value. This is in effect operator splitting...
       call update_fabm_data(n, initializing=.false.)  ! skipping thin layers
 
-      call check_state('before vertical_movement')
+      call check_state('before vertical_movement', n)
 
       if (do_vertical_movement) then
         call vertical_movement(n, n, delt1)
-        call check_state('after vertical_movement')
+        call check_state('after vertical_movement', n)
       end if
 
 #ifdef FABM_CHECK_NAN
@@ -214,7 +214,7 @@ contains
           end if
         end do
       end do
-      call check_state('after bottom sources')
+      call check_state('after bottom sources', n)
       end if
 
       ! Compute surface source terms
@@ -238,7 +238,7 @@ contains
           end if
         end do
       end do
-      call check_state('after surface sources')
+      call check_state('after surface sources', n)
       end if
 
       ! Compute source terms and update state
@@ -264,7 +264,7 @@ contains
 #endif
         end do
       end do
-      call check_state('after interior sources')
+      call check_state('after interior sources', n)
       end if
 
       ! Copy bottom value for pelagic tracers to all layers below bottom
@@ -281,8 +281,10 @@ contains
 
     end subroutine hycom_fabm_update
 
-    subroutine check_state(location)
+    subroutine check_state(location, n)
+      use, intrinsic :: ieee_arithmetic
       character(len=*), intent(in) :: location
+      integer, intent(in) :: n
 
       logical, parameter :: repair = .false.
       logical :: valid_int, valid_sf, valid_bt
@@ -305,6 +307,12 @@ contains
           write (*,*) 'Invalid interface state '//location
           stop
         end if
+      end do
+
+      do ivar=1,size(model%state_variables)
+        if (.not.all(ieee_is_finite(tracer(1:ii, 1:jj, 1:kk, n, ivar)))) then
+          write (*,*) location, 'Interior state variable not finite:', ivar, 'range', minval(tracer(1:ii, 1:jj, 1:kk, n, ivar)), maxval(tracer(1:ii, 1:jj, 1:kk, n, ivar))
+          stop
       end do
     end subroutine check_state
 
