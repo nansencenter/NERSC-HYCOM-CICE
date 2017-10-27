@@ -316,10 +316,12 @@ contains
 
           ! Update state
           do i=1,ii
+            if (any(flux(i, 1:kbottom(i, j)-1)/=0)) write (*,*) 'before', ivar, i, j, minval(tracer(i, j, 1:kbottom(i, j), n, ivar)), maxval(tracer(i, j, 1:kbottom(i, j), n, ivar))
             do k=1,kbottom(i, j)-1
               tracer(i, j, k, n, ivar) = tracer(i, j, k, n, ivar) + flux(i, k)*timestep/h(i, j, k)
               tracer(i, j, k+1, n, ivar) = tracer(i, j, k+1, n, ivar) - flux(i, k)*timestep/h(i, j, k+1)
             end do
+            if (any(flux(i, 1:kbottom(i, j)-1)/=0)) write (*,*) 'after', ivar, i, j, minval(tracer(i, j, 1:kbottom(i, j), n, ivar)), maxval(tracer(i, j, 1:kbottom(i, j), n, ivar))
           end do
         end do ! ivar
       end do ! j
