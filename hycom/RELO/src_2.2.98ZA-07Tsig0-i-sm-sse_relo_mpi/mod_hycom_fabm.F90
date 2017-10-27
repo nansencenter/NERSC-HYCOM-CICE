@@ -349,12 +349,29 @@ contains
 
           ! Update state
           do i=1,ii
-            if (any(flux(i, 1:kbottom(i, j)-1)/=0)) write (*,*) 'before', ivar, i, j, minval(tracer(i, j, 1:kbottom(i, j), n, ivar)), maxval(tracer(i, j, 1:kbottom(i, j), n, ivar))
-            do k=1,kbottom(i, j)-1
-              tracer(i, j, k, n, ivar) = tracer(i, j, k, n, ivar) + flux(i, k)*timestep/h(i, j, k)
-              tracer(i, j, k+1, n, ivar) = tracer(i, j, k+1, n, ivar) - flux(i, k)*timestep/h(i, j, k+1)
+            ! skip thin layers
+            kabove = 0
+            do k=1,kbottom(i, j)
+              if (h(i, j, k) == 0) then
+                ! thin layer
+                if (flux(i, k-1, ivar) < 0) then
+                  ! sinking into thin layer
+                  flux(i, k, ivar) = flux(i, k, ivar) + flux(i, k-1, ivar)
+                elseif (flux(i, k, ivar) > 0)
+                  ! floating into thin layer
+                  flux(i, kabove, ivar) = flux(i, kabove, ivar) + flux(i, k, ivar)
+                end if
+              else
+                kabove = k
+              end if
             end do
-            if (any(flux(i, 1:kbottom(i, j)-1)/=0)) write (*,*) 'after', ivar, i, j, minval(tracer(i, j, 1:kbottom(i, j), n, ivar)), maxval(tracer(i, j, 1:kbottom(i, j), n, ivar))
+
+            do k=1,kbottom(i, j)-1
+              if (flux(i, k) /= 0) then
+                tracer(i, j, k, n, ivar) = tracer(i, j, k, n, ivar) + flux(i, k)*timestep/h(i, j, k)
+                tracer(i, j, k+1, n, ivar) = tracer(i, j, k+1, n, ivar) - flux(i, k)*timestep/h(i, j, k+1)
+              end if
+            end do
           end do
         end do ! ivar
       end do ! j
