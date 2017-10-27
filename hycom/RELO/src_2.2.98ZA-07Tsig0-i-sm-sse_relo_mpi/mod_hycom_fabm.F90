@@ -291,6 +291,7 @@ contains
       real :: w(ii, kk, size(fabm_model%state_variables))
       real :: flux(ii, 0:kk)
       integer :: i, j, k, ivar
+      real, parameter :: epsilon = 1e-8
 
       do j=1,jj
         ! Get vertical velocities per tracer (m/s, > 0 for floating, < 0  for sinking)
@@ -305,10 +306,10 @@ contains
             do i=1,ii
               if (w(i, k, ivar) > 0) then
                 ! Floating: move tracer upward over top interface of the layer (flux > 0)
-                flux(i, k-1) = flux(i, k-1) + w(i, k, ivar)*tracer(i, j, k, m, ivar)
+                flux(i, k-1) = flux(i, k-1) + min((1-epsilon)*h(i, j, k)/timestep, w(i, k, ivar))*tracer(i, j, k, m, ivar)
               else
                 ! Sinking: move tracer downward over bottom interface of the layer (flux < 0)
-                flux(i, k) = flux(i, k) + w(i, k, ivar)*tracer(i, j, k, m, ivar)
+                flux(i, k) = flux(i, k) + max(-(1-epsilon)*h(i, j, k)/timestep, w(i, k, ivar))*tracer(i, j, k, m, ivar)
               end if
             end do ! i
           end do ! k
