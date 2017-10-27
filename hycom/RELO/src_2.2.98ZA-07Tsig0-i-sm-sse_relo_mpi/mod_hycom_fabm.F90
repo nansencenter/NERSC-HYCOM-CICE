@@ -359,7 +359,7 @@ contains
                   flux(i, k+1) = flux(i, k+1) + flux(i, k)
                 else
                   ! layer below has non-zero height
-                  tracer(i, j, kabove, n, ivar) = tracer(i, j, k, n, ivar) + flux(i, k)*timestep/h(i, j, k)
+                  tracer(i, j, kabove, n, ivar) = tracer(i, j, kabove, n, ivar) + flux(i, k)*timestep/h(i, j, kabove)
                   tracer(i, j, k+1, n, ivar) = tracer(i, j, k+1, n, ivar) - flux(i, k)*timestep/h(i, j, k+1)
                 end if
               end if
