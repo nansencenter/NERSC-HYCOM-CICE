@@ -357,7 +357,7 @@ contains
                 if (flux(i, k-1) < 0) then
                   ! sinking into thin layer
                   flux(i, k) = flux(i, k) + flux(i, k-1)
-                elseif (flux(i, k) > 0)
+                elseif (flux(i, k) > 0) then
                   ! floating into thin layer
                   flux(i, kabove) = flux(i, kabove) + flux(i, k)
                 end if
