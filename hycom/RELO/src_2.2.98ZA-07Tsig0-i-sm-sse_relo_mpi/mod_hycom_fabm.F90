@@ -313,6 +313,7 @@ contains
         if (.not.all(ieee_is_finite(tracer(1:ii, 1:jj, 1:kk, n, ivar)))) then
           write (*,*) location, 'Interior state variable not finite:', ivar, 'range', minval(tracer(1:ii, 1:jj, 1:kk, n, ivar)), maxval(tracer(1:ii, 1:jj, 1:kk, n, ivar))
           stop
+        end if
       end do
     end subroutine check_state
 
