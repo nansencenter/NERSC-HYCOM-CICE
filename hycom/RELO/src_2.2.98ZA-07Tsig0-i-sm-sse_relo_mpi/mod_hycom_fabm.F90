@@ -349,27 +349,19 @@ contains
 
           ! Update state
           do i=1,ii
-            ! skip thin layers
             kabove = 0
-            do k=1,kbottom(i, j)
-              if (h(i, j, k) == 0) then
-                ! thin layer
-                if (flux(i, k-1) < 0) then
-                  ! sinking into thin layer
-                  flux(i, k) = flux(i, k) + flux(i, k-1)
-                elseif (flux(i, k) > 0) then
-                  ! floating into thin layer
-                  flux(i, kabove) = flux(i, kabove) + flux(i, k)
-                end if
-              else
-                kabove = k
-              end if
-            end do
-
             do k=1,kbottom(i, j)-1
+              if (h(i, j, k) > 0) kabove = k
               if (flux(i, k) /= 0) then
-                tracer(i, j, k, n, ivar) = tracer(i, j, k, n, ivar) + flux(i, k)*timestep/h(i, j, k)
-                tracer(i, j, k+1, n, ivar) = tracer(i, j, k+1, n, ivar) - flux(i, k)*timestep/h(i, j, k+1)
+                ! non-zero flux across interface
+                if (h(i, j, k+1) == 0) then
+                  ! layer below is collapsed (height = 0) - move flux to next interface
+                  flux(i, k+1) = flux(i, k+1) + flux(i, k)
+                else
+                  ! layer below has non-zero height
+                  tracer(i, j, kabove, n, ivar) = tracer(i, j, k, n, ivar) + flux(i, k)*timestep/h(i, j, k)
+                  tracer(i, j, k+1, n, ivar) = tracer(i, j, k+1, n, ivar) - flux(i, k)*timestep/h(i, j, k+1)
+                end if
               end if
             end do
           end do
