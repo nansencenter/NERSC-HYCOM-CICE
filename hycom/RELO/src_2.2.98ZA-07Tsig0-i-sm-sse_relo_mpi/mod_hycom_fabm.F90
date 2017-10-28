@@ -152,12 +152,12 @@ contains
       ! TODO: send m or n state for computation of source terms? Leapfrog would need m, ECOSMO seems to do n
       ! Note: if we use n, then the bottom, surface and interior operations below each perform their own update
       ! before the next operation comes in, and that next one will use the updated value. This is in effect operator splitting...
-      call update_fabm_data(n, initializing=.false.)  ! skipping thin layers
+      call update_fabm_data(m, initializing=.false.)  ! skipping thin layers
 
       call check_state('before vertical_movement', n)
 
       if (do_vertical_movement) then
-        call vertical_movement(n, n, delt1)
+        call vertical_movement(n, m, delt1)
         call check_state('after vertical_movement', n)
       end if
 
@@ -351,16 +351,16 @@ contains
           do i=1,ii
             kabove = 0
             do k=1,kbottom(i, j)-1
-              if (h(i, j, k) > 0) kabove = k
+              if (dp(i, j, k, n) > 0) kabove = k
               if (flux(i, k) /= 0) then
                 ! non-zero flux across interface
-                if (h(i, j, k+1) == 0) then
+                if (dp(i, j, k+1, n) == 0) then
                   ! layer below is collapsed (height = 0) - move flux to next interface
                   flux(i, k+1) = flux(i, k+1) + flux(i, k)
                 else
                   ! layer below has non-zero height
-                  tracer(i, j, kabove, n, ivar) = tracer(i, j, kabove, n, ivar) + flux(i, k)*timestep/h(i, j, kabove)
-                  tracer(i, j, k+1, n, ivar) = tracer(i, j, k+1, n, ivar) - flux(i, k)*timestep/h(i, j, k+1)
+                  tracer(i, j, kabove, n, ivar) = tracer(i, j, kabove, n, ivar) + flux(i, k)*timestep/dp(i, j, kabove, n)*onem
+                  tracer(i, j, k+1, n, ivar) = tracer(i, j, k+1, n, ivar) - flux(i, k)*timestep/dp(i, j, k+1, n)*onem
                 end if
               end if
             end do
