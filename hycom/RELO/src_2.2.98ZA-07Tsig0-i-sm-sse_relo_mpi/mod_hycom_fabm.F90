@@ -155,12 +155,12 @@ contains
       ! Note: if we use n, then the bottom, surface and interior operations below each perform their own update
       ! before the next operation comes in, and that next one will use the updated value. This is in effect operator splitting...
       call update_fabm_data(m, initializing=.false.)  ! skipping thin layers
-      call check_state('when entering fabm_hycom_update', current_time_index)
+      call check_state('when entering fabm_hycom_update', current_time_index, .false.)
 
       if (do_vertical_movement) then
-        if (do_check_state) call check_state('before vertical_movement', n)
+        if (do_check_state) call check_state('before vertical_movement', n, .false.)
         call vertical_movement(n, m, delt1)
-        if (do_check_state) call check_state('after vertical_movement', n)
+        if (do_check_state) call check_state('after vertical_movement', n, .false.)
       end if
 
 #ifdef FABM_CHECK_NAN
@@ -216,7 +216,7 @@ contains
           end if
         end do
       end do
-      if (do_check_state) call check_state('after bottom sources', n)
+      if (do_check_state) call check_state('after bottom sources', n, .false.)
       end if
 
       ! Compute surface source terms
@@ -240,7 +240,7 @@ contains
           end if
         end do
       end do
-      if (do_check_state) call check_state('after surface sources', n)
+      if (do_check_state) call check_state('after surface sources', n, .false.)
       end if
 
       ! Compute source terms and update state
@@ -266,8 +266,10 @@ contains
 #endif
         end do
       end do
-      if (do_check_state) call check_state('after interior sources', n)
+      if (do_check_state) call check_state('after interior sources', n, .false.)
       end if
+
+      call check_state('after hycom_fabm_update', n, .true.)
 
       ! Copy bottom value for pelagic tracers to all layers below bottom
       ! (currently masked, but could be revived later)
@@ -283,12 +285,12 @@ contains
 
     end subroutine hycom_fabm_update
 
-    subroutine check_state(location, index)
+    subroutine check_state(location, index, repair)
       use, intrinsic :: ieee_arithmetic
       character(len=*), intent(in) :: location
       integer, intent(in) :: index
+      logical, intent(in) :: repair
 
-      logical, parameter :: repair = .false.
       logical :: valid_int, valid_sf, valid_bt
 
       integer :: j, k, ivar, old_index
