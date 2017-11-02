@@ -438,9 +438,9 @@ contains
         integer, intent(in) :: index
 
         ! Send pointers to state variable data to FABM
-        call fabm_model%link_all_interior_state_data(fabm_model, tracer(1:ii, 1:jj, 1:kk, index, :))
-        call fabm_model%link_all_bottom_state_data(fabm_model, fabm_bottom_state(1:ii, 1:jj, index, :))
-        call fabm_model%link_all_surface_state_data(fabm_model, fabm_surface_state(1:ii, 1:jj, index, :))
+        call fabm_model%link_all_interior_state_data(tracer(1:ii, 1:jj, 1:kk, index, :))
+        call fabm_model%link_all_bottom_state_data(fabm_bottom_state(1:ii, 1:jj, index, :))
+        call fabm_model%link_all_surface_state_data(fabm_surface_state(1:ii, 1:jj, index, :))
     end subroutine update_fabm_state
 #endif
 end module
