@@ -158,8 +158,8 @@ contains
           call add_horizontal_output(fabm_model%bottom_state_variables(ivar))
           last_horizontal_output%data3d => fabm_bottom_state(:, :, :, ivar)
         end do
-        do ivar=1, size(fabm_model%horizonal_diagnostic_variables)
-          call add_horizontal_output(fabm_model%horizonal_diagnostic_variables(ivar))
+        do ivar=1, size(fabm_model%horizontal_diagnostic_variables)
+          call add_horizontal_output(fabm_model%horizontal_diagnostic_variables(ivar))
           last_horizontal_output%data2d => fabm_get_horizontal_diagnostic_data(fabm_model, ivar)
         end do
 
@@ -596,6 +596,9 @@ contains
         endif !1st tile
         horizontal_output => horizontal_output%next
       end do
-    end subroutine hycom_fabm_write_mean_output
+
+      return
+ 117  format (a8,' =',i11,f11.3,i3,f7.3,1p2e16.7)
+     end subroutine hycom_fabm_write_mean_output
 #endif
 end module
