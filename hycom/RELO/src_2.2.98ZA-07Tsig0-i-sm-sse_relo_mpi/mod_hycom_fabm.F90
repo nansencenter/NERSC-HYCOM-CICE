@@ -155,7 +155,7 @@ contains
       ! Note: if we use n, then the bottom, surface and interior operations below each perform their own update
       ! before the next operation comes in, and that next one will use the updated value. This is in effect operator splitting...
       call update_fabm_data(m, initializing=.false.)  ! skipping thin layers
-      call check_state('when entering fabm_hycom_update', current_time_index, .false.)
+      call check_state('when entering fabm_hycom_update', current_time_index, .true.)
 
       if (do_vertical_movement) then
         if (do_check_state) call check_state('before vertical_movement', n, .false.)
