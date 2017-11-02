@@ -172,7 +172,7 @@ contains
         if (variable%output == output_none) return
         allocate(horizontal_output)
         horizontal_output%name => variable%name
-        if (associated(last_horizontal_output))
+        if (associated(last_horizontal_output)) then
           last_horizontal_output%next => horizontal_output
         else
           first_horizontal_output => horizontal_output
@@ -588,8 +588,7 @@ contains
 
       horizontal_output => first_horizontal_output
       do while (associated(horizontal_output))
-        call zaiowr(horizontal_output%mean(1-nbdy,1-nbdy),ip,.true.,
-     &              xmin,xmax, nopa, .false.)
+        call zaiowr(horizontal_output%mean(1-nbdy,1-nbdy),ip,.true.,xmin,xmax, nopa, .false.)
         if     (mnproc.eq.1) then
           write (nop,117) horizontal_output%name(1:8),nmean,time_ave,0,coord,xmin,xmax
           call flush(nop)
