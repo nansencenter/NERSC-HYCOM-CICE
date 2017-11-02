@@ -36,7 +36,7 @@ module mod_hycom_fabm
    real, allocatable :: fabm_surface_state(:, :, :, :)
    real, allocatable :: fabm_bottom_state(:, :, :, :)
 
-   logical :: do_interior_sources, do_bottom_sources, do_surface_sources, do_vertical_movement
+   logical :: do_interior_sources, do_bottom_sources, do_surface_sources, do_vertical_movement, do_check_state
    integer, save :: current_time_index = -1
 
 contains
@@ -54,6 +54,7 @@ contains
       do_bottom_sources = .true.
       do_surface_sources = .true.
       do_vertical_movement = .true.
+      do_check_state = .false.
       inquire(file='../hycom_fabm.nml', exist=file_exists)
       if (file_exists) then
         write (*,*) 'Reading HYCOM-FABM coupler configuration from '//path
@@ -154,12 +155,12 @@ contains
       ! Note: if we use n, then the bottom, surface and interior operations below each perform their own update
       ! before the next operation comes in, and that next one will use the updated value. This is in effect operator splitting...
       call update_fabm_data(m, initializing=.false.)  ! skipping thin layers
-
-      call check_state('before vertical_movement', n)
+      call check_state('when entering fabm_hycom_update', current_time_index)
 
       if (do_vertical_movement) then
+        if (do_check_state) call check_state('before vertical_movement', n)
         call vertical_movement(n, m, delt1)
-        call check_state('after vertical_movement', n)
+        if (do_check_state) call check_state('after vertical_movement', n)
       end if
 
 #ifdef FABM_CHECK_NAN
@@ -215,7 +216,7 @@ contains
           end if
         end do
       end do
-      call check_state('after bottom sources', n)
+      if (do_check_state) call check_state('after bottom sources', n)
       end if
 
       ! Compute surface source terms
@@ -239,7 +240,7 @@ contains
           end if
         end do
       end do
-      call check_state('after surface sources', n)
+      if (do_check_state) call check_state('after surface sources', n)
       end if
 
       ! Compute source terms and update state
@@ -265,7 +266,7 @@ contains
 #endif
         end do
       end do
-      call check_state('after interior sources', n)
+      if (do_check_state) call check_state('after interior sources', n)
       end if
 
       ! Copy bottom value for pelagic tracers to all layers below bottom
