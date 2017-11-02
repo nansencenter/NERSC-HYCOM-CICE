@@ -35,6 +35,8 @@ module mod_hycom_fabm
    real, allocatable :: h(:, :, :)
    real, allocatable :: fabm_surface_state(:, :, :, :)
    real, allocatable :: fabm_bottom_state(:, :, :, :)
+   real, allocatable :: fabm_surface_state_old(:, :, :)
+   real, allocatable :: fabm_bottom_state_old(:, :, :)
 
    logical :: do_interior_sources, do_bottom_sources, do_surface_sources, do_vertical_movement, do_check_state
    integer, save :: current_time_index = -1
@@ -94,6 +96,8 @@ contains
         allocate(h(ii, jj, kk))
         allocate(fabm_surface_state(ii, jj, 2, size(fabm_model%surface_state_variables)))
         allocate(fabm_bottom_state(ii, jj, 2, size(fabm_model%bottom_state_variables)))
+        allocate(fabm_surface_state_old(ii, jj, size(fabm_model%surface_state_variables)))
+        allocate(fabm_bottom_state_old(ii, jj, size(fabm_model%bottom_state_variables)))
 
         ! Provide extents of the spatial domain (number of layers nz for a 1D column)
         call fabm_set_domain(fabm_model, ii, jj, kk, baclin)
@@ -151,12 +155,18 @@ contains
 !
 ! --- leapfrog time step.
 !
-      ! TODO: send m or n state for computation of source terms? Leapfrog would need m, ECOSMO seems to do n
-      ! Note: if we use n, then the bottom, surface and interior operations below each perform their own update
-      ! before the next operation comes in, and that next one will use the updated value. This is in effect operator splitting...
+      ! Send state at midpoint time=t (time index m) to FABM.
+      ! As per leapfrog spec, fluxes at this time are used to update the state at t-delta_t to t+delta_t (both stored at time index n)
       call update_fabm_data(m, initializing=.false.)  ! skipping thin layers
+
+      ! Store old surface/bottom state for later application of Robert-Asselin filter.
+      fabm_surface_state_old = fabm_surface_state(:, :, n, :)
+      fabm_bottom_state_old = fabm_bottom_state(:, :, n, :)
+
+      ! Make sure the biogeochemical state is valid (uses clipping if necessary)
       call check_state('when entering fabm_hycom_update', current_time_index, .true.)
 
+      ! Vertical movement (includes sinking and floating)
       if (do_vertical_movement) then
         if (do_check_state) call check_state('before vertical_movement', n, .false.)
         call vertical_movement(n, m, delt1)
@@ -282,6 +292,11 @@ contains
           end if
         end do
       end do
+
+      ! Apply the Robert-Asselin filter to the surface and bottom state.
+      ! Note that RA will be applied to the pelagic tracers within mod_tsavc - no need to do it here!
+      fabm_surface_state(:, :, m, :) = fabm_surface_state(:, :, m, :) + 0.5*ra2fac*(fabm_surface_state_old(:, :, :)+fabm_surface_state(:, :, n, :)-2.0*fabm_surface_state(:, :, m, :))
+      fabm_bottom_state(:, :, m, :) = fabm_bottom_state(:, :, m, :) + 0.5*ra2fac*(fabm_bottom_state_old(:, :, :)+fabm_bottom_state(:, :, n, :)-2.0*fabm_bottom_state(:, :, m, :))
 
     end subroutine hycom_fabm_update
 
