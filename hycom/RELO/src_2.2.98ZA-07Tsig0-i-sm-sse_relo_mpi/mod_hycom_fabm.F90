@@ -35,8 +35,8 @@ module mod_hycom_fabm
    logical, allocatable :: mask(:, :, :)
    integer, allocatable :: kbottom(:, :)
    real, allocatable :: h(:, :, :)
-   real, allocatable :: fabm_surface_state(:, :, :, :)
-   real, allocatable :: fabm_bottom_state(:, :, :, :)
+   real, allocatable, target :: fabm_surface_state(:, :, :, :)
+   real, allocatable, target :: fabm_bottom_state(:, :, :, :)
    real, allocatable :: fabm_surface_state_old(:, :, :)
    real, allocatable :: fabm_bottom_state_old(:, :, :)
 
@@ -515,9 +515,8 @@ contains
         current_time_index = index
     end subroutine update_fabm_state
 
-
     function hycom_fabm_allocate_mean_output(idm, jdm, kdm, nbdy) result(n)
-      integer, intent(in) :: idm, jdm, nbdy
+      integer, intent(in) :: idm, jdm, kdm, nbdy
       integer :: n
 
       type (type_horizontal_output), pointer :: horizontal_output
@@ -547,6 +546,7 @@ contains
 
       type (type_horizontal_output), pointer :: horizontal_output
       real, pointer :: pdata(:,:)
+      integer :: i, j
 
       horizontal_output => first_horizontal_output
       do while (associated(horizontal_output))
@@ -567,6 +567,7 @@ contains
       real, intent(in) :: q
 
       type (type_horizontal_output), pointer :: horizontal_output
+      integer :: i, j
 
       horizontal_output => first_horizontal_output
       do while (associated(horizontal_output))
