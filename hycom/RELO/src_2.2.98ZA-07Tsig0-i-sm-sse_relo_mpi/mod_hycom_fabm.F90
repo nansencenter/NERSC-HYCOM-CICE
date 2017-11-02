@@ -377,6 +377,8 @@ contains
         integer :: i, j, k
         integer :: ivar
 
+        real, parameter :: rho_0 = 1025.   ! [kg/m3]
+
         ! Update cell thicknesses (m)
         h(:, :, :) = dp(1:ii, 1:jj, 1:kk, index)/onem
 
