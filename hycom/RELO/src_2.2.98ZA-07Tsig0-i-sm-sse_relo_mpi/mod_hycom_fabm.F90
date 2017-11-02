@@ -37,6 +37,7 @@ module mod_hycom_fabm
    real, allocatable :: fabm_bottom_state(:, :, :, :)
 
    logical :: do_interior_sources, do_bottom_sources, do_surface_sources, do_vertical_movement
+   integer, save :: current_time_index = -1
 
 contains
 
@@ -281,16 +282,18 @@ contains
 
     end subroutine hycom_fabm_update
 
-    subroutine check_state(location, n)
+    subroutine check_state(location, index)
       use, intrinsic :: ieee_arithmetic
       character(len=*), intent(in) :: location
-      integer, intent(in) :: n
+      integer, intent(in) :: index
 
       logical, parameter :: repair = .false.
       logical :: valid_int, valid_sf, valid_bt
 
-      integer :: j, k, ivar
+      integer :: j, k, ivar, old_index
 
+      old_index = current_time_index
+      call update_fabm_state(index)
       do k=1,kk
         do j=1,jj
           call fabm_check_state(fabm_model, 1, ii, j, k, repair, valid_int)
@@ -310,11 +313,12 @@ contains
       end do
 
       do ivar=1,size(fabm_model%state_variables)
-        if (.not.all(ieee_is_finite(tracer(1:ii, 1:jj, 1:kk, n, ivar)))) then
-          write (*,*) location, 'Interior state variable not finite:', ivar, 'range', minval(tracer(1:ii, 1:jj, 1:kk, n, ivar)), maxval(tracer(1:ii, 1:jj, 1:kk, n, ivar))
+        if (.not.all(ieee_is_finite(tracer(1:ii, 1:jj, 1:kk, index, ivar)))) then
+          write (*,*) location, 'Interior state variable not finite:', ivar, 'range', minval(tracer(1:ii, 1:jj, 1:kk, index, ivar)), maxval(tracer(1:ii, 1:jj, 1:kk, index, ivar))
           stop
         end if
       end do
+      call update_fabm_state(old_index)
     end subroutine check_state
 
     subroutine vertical_movement(n, m, timestep)
@@ -439,10 +443,14 @@ contains
     subroutine update_fabm_state(index)
         integer, intent(in) :: index
 
+        if (current_time_index == index) return
+
         ! Send pointers to state variable data to FABM
         call fabm_model%link_all_interior_state_data(tracer(1:ii, 1:jj, 1:kk, index, :))
         call fabm_model%link_all_bottom_state_data(fabm_bottom_state(1:ii, 1:jj, index, :))
         call fabm_model%link_all_surface_state_data(fabm_surface_state(1:ii, 1:jj, index, :))
+
+        current_time_index = index
     end subroutine update_fabm_state
 #endif
 end module
