@@ -38,11 +38,6 @@ c
       real,    allocatable, dimension(:,:,:,:),
      &         save, private ::
      &   tracer_m
-#ifdef _FABM_
-      real,    allocatable, dimension(:,:,:),
-     &         save, private ::
-     &   fabm_surface_state_m, fabm_bottom_state_m
-#endif
 c
       real,    allocatable, dimension(:,:,:),
      &         save, private ::
@@ -66,16 +61,11 @@ c
       if     (ntracr.gt.0) then
         allocate( tracer_m(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kdm,ntracr) )
         call mem_stat_add(       (idm+2*nbdy)*(jdm+2*nbdy)*kdm*ntracr )
-#ifdef _FABM_
-        allocate( fabm_surface_state_m(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,
-     &   size(fabm_model%surface_state_variables)))
-        allocate( fabm_bottom_state_m(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,
-     &   size(fabm_model%bottom_state_variables)))
-        call mem_stat_add(       (idm+2*nbdy)*(jdm+2*nbdy)*
-     & (size(fabm_model%surface_state_variables) +
-     &  size(fabm_model%bottom_state_variables)))
-#endif
       endif
+#ifdef _FABM_
+      call mem_stat_add(
+     &  hycom_fabm_allocate_mean_output(idm, jdm, kdm, nbdy))
+#endif
 c
       allocate(      u_m(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kdm) )
       allocate(      v_m(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kdm) )
@@ -141,14 +131,6 @@ c
            si_u_m(i,j) = 0.0
            si_v_m(i,j) = 0.0
 #endif
-#ifdef _FABM_
-           do ktr= 1,size(fabm_model%bottom_state_variables)
-             fabm_bottom_state_m(i,j,ktr) = 0.0
-           end do
-           do ktr= 1,size(fabm_model%surface_state_variables)
-             fabm_surface_state_m(i,j,ktr) = 0.0
-           end do
-#endif
         enddo !i
         do k= 1,kk
           do i=1,ii
@@ -165,6 +147,9 @@ c
           enddo !i
         enddo !k
       enddo !j
+#ifdef _FABM_
+      call hycom_fabm_zero_mean_output()
+#endif
 c
       return
       end subroutine mean_zero
@@ -220,16 +205,6 @@ c
 #if defined(NERSC_HYCOM_CICE)
             si_u_m(i,j)   = si_u_m(i,j)   + s*  si_u(i,j)
             si_v_m(i,j)   = si_v_m(i,j)   + s*  si_v(i,j)
-#endif
-#ifdef _FABM_
-            do ktr= 1,size(fabm_model%surface_state_variables)
-              fabm_surface_state_m(i,j,ktr) = fabm_surface_state_m
-     &          (i,j,ktr) + s*fabm_surface_state(i,j,n,ktr)
-            end do
-            do ktr= 1,size(fabm_model%bottom_state_variables)
-              fabm_bottom_state_m(i,j,ktr) = fabm_bottom_state_m
-     &          (i,j,ktr) + s*fabm_bottom_state(i,j,n,ktr)
-            end do
 #endif
           endif !ip
           if (SEA_U) then
@@ -299,6 +274,9 @@ c
           enddo !i
         enddo !k
       enddo !j
+#ifdef _FABM_
+      call hycom_fabm_increment_mean_output(n, s)
+#endif
 c
       return
       end subroutine mean_add
@@ -359,16 +337,6 @@ c
             si_u_m  (i,j) = si_u_m  (i,j) * q
             si_v_m  (i,j) = si_v_m  (i,j) * q
 #endif
-#ifdef _FABM_
-            do ktr= 1,size(fabm_model%surface_state_variables)
-              fabm_surface_state_m(i,j,ktr) = 
-     &          fabm_surface_state_m(i,j,ktr) * q
-            end do !ktr
-            do ktr= 1,size(fabm_model%bottom_state_variables)
-              fabm_bottom_state_m(i,j,ktr) = 
-     &          fabm_bottom_state_m(i,j,ktr) * q
-            end do !ktr
-#endif
           endif !ip
           if (SEA_U) then
             ubaro_m(i,j) = ubaro_m(i,j) * q
@@ -423,6 +391,9 @@ c
           enddo !i
         enddo !k
       enddo !j
+#ifdef _FABM_
+      call hycom_fabm_end_mean_output(q)
+#endif
 c
       return
       end subroutine mean_end
@@ -619,24 +590,7 @@ c
       call flush(nop)
       endif !1st tile
 #ifdef _FABM_
-      do ktr= 1,size(fabm_model%surface_state_variables)
-        call zaiowr(fabm_surface_state_m(1-nbdy,1-nbdy,ktr),ip,.true.,
-     &              xmin,xmax, nopa, .false.)
-        if     (mnproc.eq.1) then
-          write (nop,117) fabm_model%surface_state_variables
-     &      (ktr)%name(1:8),nmean,time_ave,0,coord,xmin,xmax
-          call flush(nop)
-        endif !1st tile
-      end do
-      do ktr= 1,size(fabm_model%bottom_state_variables)
-        call zaiowr(fabm_bottom_state_m(1-nbdy,1-nbdy,ktr),ip,.true.,
-     &              xmin,xmax, nopa, .false.)
-        if     (mnproc.eq.1) then
-          write (nop,117) fabm_model%bottom_state_variables 
-     &      (ktr)%name(1:8),nmean,time_ave,0,coord,xmin,xmax
-        call flush(nop)
-      endif !1st tile
-      end do
+      call hycom_fabm_write_mean_output(nop, nopa)
 #endif
 c
 c --- layer loop.

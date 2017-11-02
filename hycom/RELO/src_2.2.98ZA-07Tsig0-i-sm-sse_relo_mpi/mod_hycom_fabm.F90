@@ -16,6 +16,7 @@ module mod_hycom_fabm
 #ifdef _FABM_
    use fabm
    use fabm_config
+   use fabm_types, only: attribute_length, output_none
 
    use mod_xc         ! HYCOM communication interface
    use mod_cb_arrays  ! HYCOM saved arrays
@@ -25,6 +26,7 @@ module mod_hycom_fabm
    private
 
    public hycom_fabm_configure, hycom_fabm_initialize, hycom_fabm_update, hycom_fabm_read_relax
+   public hycom_fabm_allocate_mean_output, hycom_fabm_zero_mean_output, hycom_fabm_increment_mean_output, hycom_fabm_end_mean_output
    public fabm_surface_state, fabm_bottom_state
 
    class (type_model), pointer, save, public :: fabm_model => null()
@@ -40,6 +42,15 @@ module mod_hycom_fabm
 
    logical :: do_interior_sources, do_bottom_sources, do_surface_sources, do_vertical_movement, do_check_state
    integer, save :: current_time_index = -1
+
+   type type_horizontal_output
+      character(len=attribute_length) :: name = ''
+      real, pointer :: data2d(:,:) => null()
+      real, pointer :: data3d(:,:,:) => null()
+      real, allocatable :: mean(:,:)
+      type (type_horizontal_output), pointer :: next => null()
+   end type
+   type (type_horizontal_output), pointer, save :: first_horizontal_output => null()
 
 contains
 
@@ -87,7 +98,8 @@ contains
 
     subroutine hycom_fabm_initialize()
 
-      integer :: j, k
+      integer :: j, k, ivar
+      type (type_horizontal_output), pointer :: last_horizontal_output
 
         allocate(swflx_fabm(ii, jj))
         allocate(bottom_stress(ii, jj))
@@ -136,6 +148,38 @@ contains
         tracer(:, :, :, 2, :) = tracer(:, :, :, 1, :)
         fabm_bottom_state(:, :, 2, :) = fabm_bottom_state(:, :, 1, :)
         fabm_surface_state(:, :, 2, :) = fabm_surface_state(:, :, 1, :)
+
+        last_horizontal_output => null()
+        do ivar=1, size(fabm_model%surface_state_variables)
+          call add_horizontal_output(fabm_model%surface_state_variables(ivar))
+          last_horizontal_output%data3d => fabm_surface_state(:, :, :, ivar)
+        end do
+        do ivar=1, size(fabm_model%bottom_state_variables)
+          call add_horizontal_output(fabm_model%bottom_state_variables(ivar))
+          last_horizontal_output%data3d => fabm_bottom_state(:, :, :, ivar)
+        end do
+        do ivar=1, size(fabm_model%horizonal_diagnostic_variables)
+          call add_horizontal_output(fabm_model%horizonal_diagnostic_variables(ivar))
+          last_horizontal_output%data2d => fabm_get_horizontal_diagnostic_data(fabm_model, ivar)
+        end do
+
+    contains
+
+      subroutine add_horizontal_output(variable)
+        class (type_external_variable), intent(in) :: variable
+        type (type_horizontal_output), pointer :: horizontal_output
+
+        if (variable%output == output_none) return
+        allocate(horizontal_output)
+        horizontal_output%name => variable%name
+        if (associated(last_horizontal_output))
+          last_horizontal_output%next => horizontal_output
+        else
+          first_horizontal_output => horizontal_output
+        end if
+        last_horizontal_output => horizontal_output
+      end subroutine
+
     end subroutine hycom_fabm_initialize
 
     subroutine hycom_fabm_read_relax()
@@ -470,5 +514,88 @@ contains
 
         current_time_index = index
     end subroutine update_fabm_state
+
+
+    function hycom_fabm_allocate_mean_output(idm, jdm, kdm, nbdy) result(n)
+      integer, intent(in) :: idm, jdm, nbdy
+      integer :: n
+
+      type (type_horizontal_output), pointer :: horizontal_output
+
+      n = 0
+      horizontal_output => first_horizontal_output
+      do while (associated(horizontal_output))
+        allocate(horizontal_output%mean(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy))
+        n = n + (idm+2*nbdy)*(jdm+2*nbdy)
+        horizontal_output => horizontal_output%next
+      end do
+    end function hycom_fabm_allocate_mean_output
+
+    subroutine hycom_fabm_zero_mean_output()
+      type (type_horizontal_output), pointer :: horizontal_output
+
+      horizontal_output => first_horizontal_output
+      do while (associated(horizontal_output))
+        horizontal_output%mean = 0
+        horizontal_output => horizontal_output%next
+      end do
+    end subroutine hycom_fabm_zero_mean_output
+
+    subroutine hycom_fabm_increment_mean_output(n, s)
+      integer, intent(in) :: n
+      real, intent(in) :: s
+
+      type (type_horizontal_output), pointer :: horizontal_output
+      real, pointer :: pdata(:,:)
+
+      horizontal_output => first_horizontal_output
+      do while (associated(horizontal_output))
+        pdata => horizontal_output%data2d
+        if (associated(horizontal_output%data3d)) pdata => horizontal_output%data3d(:, :, n)
+        do j=1,jj
+          do i=1,ii
+            if (SEA_P) then
+              horizontal_output%mean(i, j) = horizontal_output%mean(i, j) + s*pdata(i,j)
+            end if
+          end do
+        end do
+        horizontal_output => horizontal_output%next
+      end do
+    end subroutine hycom_fabm_increment_mean_output
+
+    subroutine hycom_fabm_end_mean_output(q)
+      real, intent(in) :: q
+
+      type (type_horizontal_output), pointer :: horizontal_output
+
+      horizontal_output => first_horizontal_output
+      do while (associated(horizontal_output))
+        do j=1,jj
+          do i=1,ii
+            if (SEA_P) then
+              horizontal_output%mean(i, j) = horizontal_output%mean(i, j)*q
+            end if
+          end do
+        end do
+        horizontal_output => horizontal_output%next
+      end do
+    end subroutine hycom_fabm_end_mean_output
+
+    subroutine hycom_fabm_write_mean_output(nop, nopa)
+      integer, intent(in) :: nop, nopa
+
+      type (type_horizontal_output), pointer :: horizontal_output
+
+      horizontal_output => first_horizontal_output
+      do while (associated(horizontal_output))
+        call zaiowr(horizontal_output%mean(1-nbdy,1-nbdy),ip,.true.,
+     &              xmin,xmax, nopa, .false.)
+        if     (mnproc.eq.1) then
+          write (nop,117) horizontal_output%name(1:8),nmean,time_ave,0,coord,xmin,xmax
+          call flush(nop)
+        endif !1st tile
+        horizontal_output => horizontal_output%next
+      end do
+    end subroutine hycom_fabm_write_mean_output
 #endif
 end module
