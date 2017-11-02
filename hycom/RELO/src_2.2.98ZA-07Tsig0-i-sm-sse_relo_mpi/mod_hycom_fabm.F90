@@ -339,10 +339,10 @@ contains
             do i=1,ii
               if (w(i, k, ivar) > 0) then
                 ! Floating: move tracer upward over top interface of the layer (flux > 0)
-                flux(i, k-1) = flux(i, k-1) + min((1-epsilon)*h(i, j, k)/timestep, w(i, k, ivar))*tracer(i, j, k, m, ivar)
+                flux(i, k-1) = flux(i, k-1) + min((1-epsilon)*dp(i, j, k, n)/onem/timestep*tracer(i, j, k, n, ivar), w(i, k, ivar)*tracer(i, j, k, m, ivar))
               else
                 ! Sinking: move tracer downward over bottom interface of the layer (flux < 0)
-                flux(i, k) = flux(i, k) + max(-(1-epsilon)*h(i, j, k)/timestep, w(i, k, ivar))*tracer(i, j, k, m, ivar)
+                flux(i, k) = flux(i, k) + max(-(1-epsilon)*dp(i, j, k, n)/onem/timestep*tracer(i, j, k, n, ivar), w(i, k, ivar)*tracer(i, j, k, m, ivar))
               end if
             end do ! i
           end do ! k
@@ -376,8 +376,6 @@ contains
 
         integer :: i, j, k
         integer :: ivar
-
-        real, parameter :: rho_0 = 1025.   ! [kg/m3]
 
         ! Update cell thicknesses (m)
         h(:, :, :) = dp(1:ii, 1:jj, 1:kk, index)/onem
@@ -427,22 +425,22 @@ contains
           end do
         end if
 
-        ! Send pointers to state variable data to FABM
-        do ivar=1,size(fabm_model%state_variables)
-          call fabm_link_interior_state_data(fabm_model, ivar, tracer(1:ii, 1:jj, 1:kk, index, ivar))
-        end do
-        do ivar=1,size(fabm_model%bottom_state_variables)
-          call fabm_link_bottom_state_data(fabm_model, ivar, fabm_bottom_state(1:ii, 1:jj, index, ivar))
-        end do
-        do ivar=1,size(fabm_model%surface_state_variables)
-          call fabm_link_surface_state_data(fabm_model, ivar, fabm_surface_state(1:ii, 1:jj, index, ivar))
-        end do
-
         ! Transfer pointer to environmental data
         ! Do this for all variables on FABM's standard variable list that the model can provide.
         ! For this list, visit http://fabm.net/standard_variables
         call fabm_model%link_interior_data(standard_variables%temperature, temp(1:ii, 1:jj, 1:kk, index))
         call fabm_model%link_interior_data(standard_variables%practical_salinity, saln(1:ii, 1:jj, 1:kk, index))
+
+        call update_fabm_state(index)
     end subroutine update_fabm_data
+
+    subroutine update_fabm_state(index)
+        integer, intent(in) :: index
+
+        ! Send pointers to state variable data to FABM
+        call fabm_model%link_all_interior_state_data(fabm_model, tracer(1:ii, 1:jj, 1:kk, index, :))
+        call fabm_model%link_all_bottom_state_data(fabm_model, fabm_bottom_state(1:ii, 1:jj, index, :))
+        call fabm_model%link_all_surface_state_data(fabm_model, fabm_surface_state(1:ii, 1:jj, index, :))
+    end subroutine update_fabm_state
 #endif
 end module
