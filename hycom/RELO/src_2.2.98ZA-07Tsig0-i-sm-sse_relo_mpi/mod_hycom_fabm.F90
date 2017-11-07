@@ -52,6 +52,15 @@ module mod_hycom_fabm
    end type
    type (type_horizontal_output), pointer, save :: first_horizontal_output => null()
 
+   type type_interior_output
+      class (type_external_variable), pointer :: metadata => null()
+      real, pointer :: data3d(:,:,:) => null()
+      real, pointer :: data4d(:,:,:,:) => null()
+      real, allocatable :: mean(:,:,:)
+      type (type_interior_output), pointer :: next => null()
+   end type
+   type (type_interior_output), pointer, save :: first_interior_output => null()
+
 contains
 
     subroutine hycom_fabm_configure()
@@ -522,9 +531,16 @@ contains
       integer, intent(in) :: idm, jdm, kdm
       integer :: n
 
+      type (type_interior_output),   pointer :: interior_output
       type (type_horizontal_output), pointer :: horizontal_output
 
       n = 0
+      interior_output => first_interior_output
+      do while (associated(interior_output))
+        allocate(interior_output%mean(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kdm))
+        n = n + (idm+2*nbdy)*(jdm+2*nbdy)*kdm
+        interior_output => interior_output%next
+      end do
       horizontal_output => first_horizontal_output
       do while (associated(horizontal_output))
         allocate(horizontal_output%mean(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy))
@@ -534,8 +550,14 @@ contains
     end function hycom_fabm_allocate_mean_output
 
     subroutine hycom_fabm_zero_mean_output()
+      type (type_interior_output),   pointer :: interior_output
       type (type_horizontal_output), pointer :: horizontal_output
 
+      interior_output => first_interior_output
+      do while (associated(interior_output))
+        interior_output%mean = 0
+        interior_output => interior_output%next
+      end do
       horizontal_output => first_horizontal_output
       do while (associated(horizontal_output))
         horizontal_output%mean = 0
@@ -547,39 +569,70 @@ contains
       integer, intent(in) :: n
       real, intent(in) :: s
 
+      type (type_interior_output),   pointer :: interior_output
       type (type_horizontal_output), pointer :: horizontal_output
-      real, pointer :: pdata(:,:)
-      integer :: i, j
+      real, pointer :: pdata2d(:,:), pdata3d(:,:)
+      integer :: i, j, k
+
+      interior_output => first_interior_output
+      do while (associated(interior_output))
+        pdata3d => interior_output%data3d
+        if (associated(interior_output%data4d)) pdata3d => interior_output%data4d(:, :, :, n)
+        do k=1,kk
+          do j=1,jj
+            do i=1,ii
+              if (SEA_P) interior_output%mean(i, j, k) = interior_output%mean(i, j, k) + s * dp(i, j, k, n) * pdata3d(i, j, k)
+            end do
+          end do
+        end do
+        interior_output => interior_output%next
+      end do
 
       horizontal_output => first_horizontal_output
       do while (associated(horizontal_output))
-        pdata => horizontal_output%data2d
-        if (associated(horizontal_output%data3d)) pdata => horizontal_output%data3d(:, :, n)
-        if (.not.associated(pdata)) stop 'BUG: no pdata'
+        pdata2d => horizontal_output%data2d
+        if (associated(horizontal_output%data3d)) pdata2d => horizontal_output%data3d(:, :, n)
         do j=1,jj
           do i=1,ii
-            if (SEA_P) then
-              horizontal_output%mean(i, j) = horizontal_output%mean(i, j) + s*pdata(i,j)
-            end if
+            if (SEA_P) horizontal_output%mean(i, j) = horizontal_output%mean(i, j) + s * pdata2d(i,j)
           end do
         end do
         horizontal_output => horizontal_output%next
       end do
     end subroutine hycom_fabm_increment_mean_output
 
-    subroutine hycom_fabm_end_mean_output(q)
+    subroutine hycom_fabm_end_mean_output(q, dp_m, dpthin)
       real, intent(in) :: q
+      real, intent(in) :: dp_m(:, :, :)
+      real, intent(in) :: dpthin
 
+      type (type_interior_output),   pointer :: interior_output
       type (type_horizontal_output), pointer :: horizontal_output
       integer :: i, j
+
+      interior_output => first_interior_output
+      do while (associated(interior_output))
+        do k=1,kk
+          do j=1,jj
+            do i=1,ii
+              if (SEA_P) then 
+                if (dp_m(i, j, k) .ge. dpthin) then
+                  interior_output%mean(i, j, k) = interior_output%mean(i, j, k)*q/dp_m(i, j, k)
+                else
+                  interior_output%mean(i, j, k) = interior_output%mean(i, j, k-1)
+                end if
+              end if
+            end do
+          end do
+        end do
+        interior_output => interior_output%next
+      end do
 
       horizontal_output => first_horizontal_output
       do while (associated(horizontal_output))
         do j=1,jj
           do i=1,ii
-            if (SEA_P) then
-              horizontal_output%mean(i, j) = horizontal_output%mean(i, j)*q
-            end if
+            if (SEA_P) horizontal_output%mean(i, j) = horizontal_output%mean(i, j)*q
           end do
         end do
         horizontal_output => horizontal_output%next
