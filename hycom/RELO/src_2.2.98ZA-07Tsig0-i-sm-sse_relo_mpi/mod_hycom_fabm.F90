@@ -151,25 +151,28 @@ contains
 
         last_horizontal_output => null()
         do ivar=1, size(fabm_model%surface_state_variables)
-          call add_horizontal_output(fabm_model%surface_state_variables(ivar))
-          last_horizontal_output%data3d => fabm_surface_state(:, :, :, ivar)
+          if (add_horizontal_output(fabm_model%surface_state_variables(ivar))) &
+            last_horizontal_output%data3d => fabm_surface_state(:, :, :, ivar)
         end do
         do ivar=1, size(fabm_model%bottom_state_variables)
-          call add_horizontal_output(fabm_model%bottom_state_variables(ivar))
-          last_horizontal_output%data3d => fabm_bottom_state(:, :, :, ivar)
+          if (add_horizontal_output(fabm_model%bottom_state_variables(ivar))) &
+            last_horizontal_output%data3d => fabm_bottom_state(:, :, :, ivar)
         end do
         do ivar=1, size(fabm_model%horizontal_diagnostic_variables)
-          call add_horizontal_output(fabm_model%horizontal_diagnostic_variables(ivar))
-          last_horizontal_output%data2d => fabm_get_horizontal_diagnostic_data(fabm_model, ivar)
+          if (add_horizontal_output(fabm_model%horizontal_diagnostic_variables(ivar))) &
+            last_horizontal_output%data2d => fabm_get_horizontal_diagnostic_data(fabm_model, ivar)
         end do
 
     contains
 
-      subroutine add_horizontal_output(variable)
+      function add_horizontal_output(variable) result(saved)
         class (type_external_variable), target, intent(in) :: variable
+        logical :: saved
+
         type (type_horizontal_output), pointer :: horizontal_output
 
-        if (variable%output == output_none) return
+        saved = variable%output /= output_none
+        if (.not.saved) return
         allocate(horizontal_output)
         horizontal_output%metadata => variable
         if (associated(last_horizontal_output)) then
@@ -178,7 +181,7 @@ contains
           first_horizontal_output => horizontal_output
         end if
         last_horizontal_output => horizontal_output
-      end subroutine
+      end function
 
     end subroutine hycom_fabm_initialize
 
