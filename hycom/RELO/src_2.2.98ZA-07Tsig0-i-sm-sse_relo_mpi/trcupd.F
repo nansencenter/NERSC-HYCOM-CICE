@@ -38,7 +38,8 @@ c
 c
 #ifdef _FABM_
       nbio = ntracr
-      trcflg(1:nbio) = 906
+      trcflg(1) = 906
+      trcflg(2:nbio) = -906
 #else
       if (ntracr.eq.0) then
         return  ! no tracer
@@ -164,6 +165,7 @@ c ---       NPZD
 *           call trcupd_909(1,2, -ktr)
           elseif (trcflg(ktr).eq.906) then
 c ---       FABM
+            call hycom_fabm_initialize()
           endif
         enddo
         close(unit=uoff+99)
@@ -173,9 +175,7 @@ c
         return  ! tracer from restart
       endif
 c
-#ifdef _FABM_
-      call hycom_fabm_initialize()
-#else
+#ifndef _FABM_
       if     (iniflg.eq.2) then  ! use climatology
         call rdrlax(mnth,1)
 !$OMP   PARALLEL DO PRIVATE(j,i,k,ktr,pwij,trwij,prij,trcij)
