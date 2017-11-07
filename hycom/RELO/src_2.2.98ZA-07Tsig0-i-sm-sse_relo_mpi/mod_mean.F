@@ -64,7 +64,7 @@ c
       endif
 #ifdef _FABM_
       call mem_stat_add(
-     &  hycom_fabm_allocate_mean_output(idm, jdm, kdm, nbdy))
+     &  hycom_fabm_allocate_mean_output(idm, jdm, kdm))
 #endif
 c
       allocate(      u_m(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kdm) )
@@ -590,7 +590,7 @@ c
       call flush(nop)
       endif !1st tile
 #ifdef _FABM_
-      call hycom_fabm_write_mean_output(nop, nopa)
+      call hycom_fabm_write_mean_output(nop, nopa, nmean, time_ave)
 #endif
 c
 c --- layer loop.

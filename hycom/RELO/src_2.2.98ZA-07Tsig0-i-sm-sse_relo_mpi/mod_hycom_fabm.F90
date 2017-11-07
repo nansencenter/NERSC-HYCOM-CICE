@@ -515,8 +515,8 @@ contains
         current_time_index = index
     end subroutine update_fabm_state
 
-    function hycom_fabm_allocate_mean_output(idm, jdm, kdm, nbdy) result(n)
-      integer, intent(in) :: idm, jdm, kdm, nbdy
+    function hycom_fabm_allocate_mean_output(idm, jdm, kdm) result(n)
+      integer, intent(in) :: idm, jdm, kdm
       integer :: n
 
       type (type_horizontal_output), pointer :: horizontal_output
@@ -582,11 +582,15 @@ contains
       end do
     end subroutine hycom_fabm_end_mean_output
 
-    subroutine hycom_fabm_write_mean_output(nop, nopa)
-      integer, intent(in) :: nop, nopa
+    subroutine hycom_fabm_write_mean_output(nop, nopa, nmean, time_ave)
+      integer, intent(in) :: nop, nopa, nmean
+      real(8), intent(in) :: time_ave
+
+      real :: xmin, xmax, coord
 
       type (type_horizontal_output), pointer :: horizontal_output
 
+      coord = 0.
       horizontal_output => first_horizontal_output
       do while (associated(horizontal_output))
         call zaiowr(horizontal_output%mean(1-nbdy,1-nbdy),ip,.true.,xmin,xmax, nopa, .false.)
