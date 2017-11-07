@@ -166,7 +166,7 @@ contains
         end do
         do ivar=1, size(fabm_model%diagnostic_variables)
           if (add_interior_output(fabm_model%diagnostic_variables(ivar))) &
-            last_interior_output%data3d => fabm_get_diagnostic_data(fabm_model, ivar)
+            last_interior_output%data3d => fabm_get_interior_diagnostic_data(fabm_model, ivar)
         end do
 
         last_horizontal_output => null()
