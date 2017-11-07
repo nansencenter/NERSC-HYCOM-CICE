@@ -392,7 +392,7 @@ c
         enddo !k
       enddo !j
 #ifdef _FABM_
-      call hycom_fabm_end_mean_output(q, dp_m, dpthin)
+      call hycom_fabm_end_mean_output(q, dp_m(1:ii, 1:jj, 1:kk), dpthin)
 #endif
 c
       return
