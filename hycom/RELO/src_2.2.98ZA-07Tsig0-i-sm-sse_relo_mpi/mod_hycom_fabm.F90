@@ -44,7 +44,7 @@ module mod_hycom_fabm
    integer, save :: current_time_index = -1
 
    type type_horizontal_output
-      character(len=attribute_length) :: name = ''
+      class (type_external_variable), pointer :: metadata => null()
       real, pointer :: data2d(:,:) => null()
       real, pointer :: data3d(:,:,:) => null()
       real, allocatable :: mean(:,:)
@@ -166,12 +166,12 @@ contains
     contains
 
       subroutine add_horizontal_output(variable)
-        class (type_external_variable), intent(in) :: variable
+        class (type_external_variable), target, intent(in) :: variable
         type (type_horizontal_output), pointer :: horizontal_output
 
         if (variable%output == output_none) return
         allocate(horizontal_output)
-        horizontal_output%name => variable%name
+        horizontal_output%metadata => variable
         if (associated(last_horizontal_output)) then
           last_horizontal_output%next => horizontal_output
         else
@@ -595,7 +595,7 @@ contains
       do while (associated(horizontal_output))
         call zaiowr(horizontal_output%mean(1-nbdy,1-nbdy),ip,.true.,xmin,xmax, nopa, .false.)
         if     (mnproc.eq.1) then
-          write (nop,117) horizontal_output%name(1:8),nmean,time_ave,0,coord,xmin,xmax
+          write (nop,117) horizontal_output%metadata%name(1:8),nmean,time_ave,0,coord,xmin,xmax
           call flush(nop)
         endif !1st tile
         horizontal_output => horizontal_output%next
