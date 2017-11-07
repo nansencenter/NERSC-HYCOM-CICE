@@ -2,7 +2,6 @@
       use mod_dimensions
       implicit none
       public ! everything is public
-
 c
 c     wrapper for common_blocks.h
 c
