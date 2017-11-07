@@ -571,7 +571,7 @@ contains
 
       type (type_interior_output),   pointer :: interior_output
       type (type_horizontal_output), pointer :: horizontal_output
-      real, pointer :: pdata2d(:,:), pdata3d(:,:)
+      real, pointer :: pdata2d(:,:), pdata3d(:,:,:)
       integer :: i, j, k
 
       interior_output => first_interior_output
@@ -608,7 +608,7 @@ contains
 
       type (type_interior_output),   pointer :: interior_output
       type (type_horizontal_output), pointer :: horizontal_output
-      integer :: i, j
+      integer :: i, j, k
 
       interior_output => first_interior_output
       do while (associated(interior_output))
