@@ -35,9 +35,11 @@ c
       real,    save, private :: 
      &   snmean   ! mean sum counter
 c
+#ifndef _FABM_
       real,    allocatable, dimension(:,:,:,:),
      &         save, private ::
      &   tracer_m
+#endif
 c
       real,    allocatable, dimension(:,:,:),
      &         save, private ::
@@ -58,13 +60,14 @@ c
 c
 c --- Allocate mean fields.
 c
+#ifdef _FABM_
+      call mem_stat_add(
+     &  hycom_fabm_allocate_mean_output(idm, jdm, kdm))
+#else
       if     (ntracr.gt.0) then
         allocate( tracer_m(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kdm,ntracr) )
         call mem_stat_add(       (idm+2*nbdy)*(jdm+2*nbdy)*kdm*ntracr )
       endif
-#ifdef _FABM_
-      call mem_stat_add(
-     &  hycom_fabm_allocate_mean_output(idm, jdm, kdm))
 #endif
 c
       allocate(      u_m(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kdm) )
@@ -132,6 +135,7 @@ c
            si_v_m(i,j) = 0.0
 #endif
         enddo !i
+#ifndef _FABM_
         do k= 1,kk
           do i=1,ii
               dp_m(i,j,k) = 0.0
@@ -146,6 +150,7 @@ c
             enddo !ktr
           enddo !i
         enddo !k
+#endif
       enddo !j
 #ifdef _FABM_
       call hycom_fabm_zero_mean_output()
@@ -247,10 +252,12 @@ c
               saln_m(i,j,k) = saln_m(i,j,k) +   saln(i,j,k,n) * q
               th3d_m(i,j,k) = th3d_m(i,j,k) +   th3d(i,j,k,n) * q
                 ke_m(i,j,k) =   ke_m(i,j,k) +     ke          * q
+#ifndef _FABM_
               do ktr= 1,ntracr
                 tracer_m(i,j,k,ktr) = tracer_m(i,j,k,  ktr) +
      &                                  tracer(i,j,k,n,ktr) * q
               enddo !ktr
+#endif
             endif !ip
             if (SEA_U) then
                        q = s*dpu(i,j,k,n)
@@ -355,17 +362,21 @@ c
                 saln_m(i,j,k) = saln_m(i,j,k) * qdp
                 th3d_m(i,j,k) = th3d_m(i,j,k) * qdp
                   ke_m(i,j,k) =   ke_m(i,j,k) * qdp
+#ifndef _FABM_
                 do ktr= 1,ntracr
                   tracer_m(i,j,k,ktr) = tracer_m(i,j,k,  ktr) * qdp
                 enddo !ktr
+#endif
               else  !project into zero thickness layers
                 temp_m(i,j,k) = temp_m(i,j,k-1)
                 saln_m(i,j,k) = saln_m(i,j,k-1)
                 th3d_m(i,j,k) = th3d_m(i,j,k-1)
                   ke_m(i,j,k) =   ke_m(i,j,k-1)
+#ifndef _FABM_
                 do ktr= 1,ntracr
                   tracer_m(i,j,k,ktr) = tracer_m(i,j,k-1,ktr)
                 enddo !ktr
+#endif
               endif
             endif !ip
             if (SEA_U) then
@@ -636,19 +647,16 @@ c
       write (nop,117) 'density ',nmean,time_ave,k,coord,xmin,xmax
       call flush(nop)
       endif !1st tile
+#ifndef _FABM_
       do ktr= 1,ntracr
         call zaiowr(tracer_m(1-nbdy,1-nbdy,k,ktr),ip,.true.,
      &              xmin,xmax, nopa, .false.)
         if     (mnproc.eq.1) then
-#ifdef _FABM_
-          write (nop,117) fabm_model%state_variables(ktr)%name(1:8),
-     &      nmean,time_ave,k,coord,xmin,xmax
-#else
         write (nop,117) 'tracer  ',nmean,time_ave,k,coord,xmin,xmax
-#endif
         call flush(nop)
         endif !1st tile
       enddo !ktr
+#endif
  75   continue
 #ifdef _FABM_
       call hycom_fabm_write_mean_output(nop, nopa, nmean, time_ave)
@@ -803,7 +811,9 @@ c ---   which only includes the fields up to vbaro (or up to nsterc)
      &       0.0, !vcty(itest,jtest,k+1)*1.e4,                       !cm**2/s
      &       0.0, !dift(itest,jtest,k+1)*1.e4,                       !cm**2/s
      &       0.0, !difs(itest,jtest,k+1)*1.e4,                       !cm**2/s
+#ifndef _FABM_
      &       (tracer_m(itest,jtest,k,ktr),ktr=1,ntracr)              !0-999?
+#endif
         enddo !k
         close (unit=nop)
       endif !test point tile
@@ -907,10 +917,12 @@ C --- 2D fields
      &                 trim(c_arch_nc(26)),k,1,1)
          call write_nc(th3d_m(1-nbdy,1-nbdy,k),ip,ncid,
      &                 trim(c_arch_nc(27)),k,1,1)
+#ifndef _FABM_
          do ktr= 1,ntracr
             call write_nc(tracer_m(1-nbdy,1-nbdy,k,ktr),ip,ncid,
      &                    trim(c_arch_nc(28)),k,1,ktr)
          end do
+#endif
       end do
       call close_nc(ncid)
       end subroutine
