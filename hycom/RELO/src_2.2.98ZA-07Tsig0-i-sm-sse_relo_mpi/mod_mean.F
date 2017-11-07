@@ -589,9 +589,6 @@ c
       write (nop,117) 'kebtrop ',nmean,time_ave,0,coord,xmin,xmax
       call flush(nop)
       endif !1st tile
-#ifdef _FABM_
-      call hycom_fabm_write_mean_output(nop, nopa, nmean, time_ave)
-#endif
 c
 c --- layer loop.
 c
@@ -653,6 +650,9 @@ c
         endif !1st tile
       enddo !ktr
  75   continue
+#ifdef _FABM_
+      call hycom_fabm_write_mean_output(nop, nopa, nmean, time_ave)
+#endif
 #if defined(NERSC_HYCOM_CICE)
 C --- Moved here to not interfere with nesting etc
       if     (iceflg.ne.0) then

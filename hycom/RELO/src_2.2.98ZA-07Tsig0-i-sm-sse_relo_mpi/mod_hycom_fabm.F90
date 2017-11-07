@@ -108,6 +108,7 @@ contains
     subroutine hycom_fabm_initialize()
 
       integer :: j, k, ivar
+      type (type_interior_output),   pointer :: last_interior_output
       type (type_horizontal_output), pointer :: last_horizontal_output
 
         allocate(swflx_fabm(ii, jj))
@@ -158,6 +159,16 @@ contains
         fabm_bottom_state(:, :, 2, :) = fabm_bottom_state(:, :, 1, :)
         fabm_surface_state(:, :, 2, :) = fabm_surface_state(:, :, 1, :)
 
+        last_interior_output => null()
+        do ivar=1, size(fabm_model%state_variables)
+          if (add_interior_output(fabm_model%state_variables(ivar))) &
+            last_interior_output%data4d => tracer(1:ii, 1:jj, 1:kk, :, ivar)
+        end do
+        do ivar=1, size(fabm_model%diagnostic_variables)
+          if (add_interior_output(fabm_model%diagnostic_variables(ivar))) &
+            last_interior_output%data3d => fabm_get_diagnostic_data(fabm_model, ivar)
+        end do
+
         last_horizontal_output => null()
         do ivar=1, size(fabm_model%surface_state_variables)
           if (add_horizontal_output(fabm_model%surface_state_variables(ivar))) &
@@ -173,6 +184,24 @@ contains
         end do
 
     contains
+
+      function add_interior_output(variable) result(saved)
+        class (type_external_variable), target, intent(in) :: variable
+        logical :: saved
+
+        type (type_interior_output), pointer :: interior_output
+
+        saved = variable%output /= output_none
+        if (.not.saved) return
+        allocate(interior_output)
+        interior_output%metadata => variable
+        if (associated(last_interior_output)) then
+          last_interior_output%next => interior_output
+        else
+          first_interior_output => interior_output
+        end if
+        last_interior_output => interior_output
+      end function
 
       function add_horizontal_output(variable) result(saved)
         class (type_external_variable), target, intent(in) :: variable
@@ -646,8 +675,23 @@ contains
       real(8), intent(in) :: time_ave
 
       real :: xmin, xmax, coord
+      integer :: k
 
+      type (type_interior_output),   pointer :: interior_output
       type (type_horizontal_output), pointer :: horizontal_output
+
+      do k=1,kk
+        coord = sigma(k)
+        interior_output => first_interior_output
+        do while (associated(interior_output))
+          call zaiowr(interior_output%mean(1-nbdy,1-nbdy,k),ip,.true.,xmin,xmax, nopa, .false.)
+          if     (mnproc.eq.1) then
+            write (nop,117) interior_output%metadata%name(1:8),nmean,time_ave,k,coord,xmin,xmax
+            call flush(nop)
+          endif !1st tile
+          interior_output => interior_output%next
+        end do
+      end do
 
       coord = 0.
       horizontal_output => first_horizontal_output
