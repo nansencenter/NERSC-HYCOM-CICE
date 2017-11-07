@@ -583,6 +583,8 @@ contains
     end subroutine hycom_fabm_end_mean_output
 
     subroutine hycom_fabm_write_mean_output(nop, nopa, nmean, time_ave)
+      use mod_za  ! HYCOM I/O interface
+
       integer, intent(in) :: nop, nopa, nmean
       real(8), intent(in) :: time_ave
 
