@@ -198,7 +198,7 @@ contains
       real :: sms_bt(ii, size(fabm_model%bottom_state_variables))
       real :: sms_sf(ii, size(fabm_model%surface_state_variables))
 
-      write (*,*) 'hycom_fabm_update'
+      write (*,*) 'hycom_fabm_update', nstep, dtime
 !
 ! --- leapfrog time step.
 !
@@ -342,8 +342,8 @@ contains
 
       ! Apply the Robert-Asselin filter to the surface and bottom state.
       ! Note that RA will be applied to the pelagic tracers within mod_tsavc - no need to do it here!
-      fabm_surface_state(:, :, m, :) = fabm_surface_state(:, :, m, :) + 0.5*ra2fac*(fabm_surface_state_old(:, :, :)+fabm_surface_state(:, :, n, :)-2.0*fabm_surface_state(:, :, m, :))
-      fabm_bottom_state(:, :, m, :) = fabm_bottom_state(:, :, m, :) + 0.5*ra2fac*(fabm_bottom_state_old(:, :, :)+fabm_bottom_state(:, :, n, :)-2.0*fabm_bottom_state(:, :, m, :))
+      !fabm_surface_state(:, :, m, :) = fabm_surface_state(:, :, m, :) + 0.5*ra2fac*(fabm_surface_state_old(:, :, :)+fabm_surface_state(:, :, n, :)-2.0*fabm_surface_state(:, :, m, :))
+      !fabm_bottom_state(:, :, m, :) = fabm_bottom_state(:, :, m, :) + 0.5*ra2fac*(fabm_bottom_state_old(:, :, :)+fabm_bottom_state(:, :, n, :)-2.0*fabm_bottom_state(:, :, m, :))
 
     end subroutine hycom_fabm_update
 
