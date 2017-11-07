@@ -198,7 +198,7 @@ contains
       real :: sms_bt(ii, size(fabm_model%bottom_state_variables))
       real :: sms_sf(ii, size(fabm_model%surface_state_variables))
 
-      write (*,*) 'hycom_fabm_update', nstep, dtime
+      write (*,*) 'hycom_fabm_update', nstep, time
 !
 ! --- leapfrog time step.
 !
