@@ -552,6 +552,7 @@ contains
       do while (associated(horizontal_output))
         pdata => horizontal_output%data2d
         if (associated(horizontal_output%data3d)) pdata => horizontal_output%data3d(:, :, n)
+        if (.not.associated(pdata)) stop 'BUG: no pdata'
         do j=1,jj
           do i=1,ii
             if (SEA_P) then
@@ -595,7 +596,7 @@ contains
       coord = 0.
       horizontal_output => first_horizontal_output
       do while (associated(horizontal_output))
-        call zaiowr(horizontal_output%mean(1-nbdy,1-nbdy),ip,.true.,xmin,xmax, nopa, .false.)
+        call zaiowr(horizontal_output%mean,ip,.true.,xmin,xmax, nopa, .false.)
         if     (mnproc.eq.1) then
           write (nop,117) horizontal_output%metadata%name(1:8),nmean,time_ave,0,coord,xmin,xmax
           call flush(nop)
