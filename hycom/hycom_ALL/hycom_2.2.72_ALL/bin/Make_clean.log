@@ -1,6 +1,6 @@
-/bin/rm: No match.
-/bin/rm: No match.
-/bin/rm: No match.
+/bin/rm -f hycom_endian_io.o hycom_profile_lib.o parse.o
+/bin/rm -f *.a
+/bin/rm -f *.mod
 foreach f ( echo2 endian )
 touch echo2
 /bin/rm -f echo2

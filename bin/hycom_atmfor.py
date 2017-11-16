@@ -4,8 +4,8 @@ import argparse
 import datetime
 
 import datetime
-import cfunits
 import numpy
+import cfunits
 import modeltools.tools
 import modeltools.forcing.atmosphere
 import modeltools.tools

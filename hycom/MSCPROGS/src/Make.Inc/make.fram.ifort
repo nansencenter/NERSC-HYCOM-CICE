@@ -7,7 +7,7 @@ LD =  $(CF90)
 # CPP, used internally by compilers - note that some compilers
 # need special options for this, consult compiler manual if in trouble
 CPP= /usr/bin/cpp -traditional-cpp -P 
-CPPARCH = -DIA32 -DREA8 -DSERIA_IO -DTIMER -DIARGC -DFFTW 
+CPPARCH = -DIA32 -DREA8 -DSERIA_IO -DTIMER -DIARGC -DFFTW -DLAPACK 
 CPPFLAGS += $(CPPARCH) 
 
 #NCAR graphics compiler wrappers
