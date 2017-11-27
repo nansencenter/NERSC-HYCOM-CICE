@@ -32,7 +32,7 @@ where ARCH denotes architecture (e.g. Linux, Darwin,…), SITE is deduced from h
 
 ## Changes in $NHCROOT/hycom/RELO/config
 
-As next step, we include a configuration file called $MACROID_hycom (e.g. Linux.sisu.intel_hycom) in the location of $NHCROOT/hycom/RELO/config. This configuration file is the same as the $MACROID_cice (where TYPE, here, is set to "cice"), except we have removed the flags related to the ESMF from variables CPPFLAGS and INCLUDES. For example,  for Sisu HPC in the case of coupled model, they may be given by
+As next step, we include a configuration file called $MACROID_hycom (e.g. Linux.sisu.intel_hycom) in the location of $NHCROOT/hycom/RELO/config. This configuration file is the same as the $MACROID_cice (where TYPE, here, is set to "cice"), except we have removed the flags related to the ESMF from variables CPPFLAGS and INCLUDES. For example,  for Sisu HPC in the case of coupled model, they are given by
 
 INCLUDES      = -I$(MPI_HOME)/include  -I${ESMF_MOD_DIR} -I${ESMF_DIR}/include -I./CICE/rundir/compile
 
