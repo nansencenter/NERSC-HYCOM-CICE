@@ -1,6 +1,6 @@
 
 
-The compilation of a standalone HYCOM from the NERSC-HYCOM-CICE model is mainly carried out using a modified compile script in "$NHCROOT/bin", so-called compile_model.sh. This script has been modified to account for standalone compilation of HYCOM. Here, I will explain briefly all required procedures and processes have been applied to make this compilation up and running. Note the general description can be found in "$NHCROOT/HYCOM-CICE-compilation.md".
+The compilation of a standalone HYCOM from the NERSC-HYCOM-CICE model is mainly carried out using a modified compile script in "$NHCROOT/bin", so-called compile_model.sh. Here, I will explain briefly all required steps to make this compilation up and running. Note the general description can be found in "$NHCROOT/HYCOM-CICE-compilation.md", and I refer you to read through them for more details.
 
 The compile script has to be run in the experiment
 dir, and a local directory "build" will be created that contains a copy of the
@@ -28,11 +28,11 @@ An environment variable called MACROID needs to be specified according to the fo
 
 MACROID=$ARCH.$SITE.$compiler
 
-where ARCH denotes architecture (e.g. Linux, Darwin,…), SITE is deduced from hostname using the line senate command (e.g. Hexagon, Sisu, Fram,…), and compiler denotes the name of compiler (e.g. fortran, intel, pig,….). You may need to modify to include your specific site within the "compile_model.sh"
+where ARCH denotes architecture (e.g. Linux, Darwin,…), SITE is deduced from hostname using the linux "usename" command (e.g. Hexagon, Sisu, Fram,…), and compiler stands for the name of compiler (e.g. fortran, intel, pig,….). You may need to modify the "compile_model.sh" to account for change of site. 
 
 ## Changes in $NHCROOT/hycom/RELO/config
 
-As next step, we include a configuration file called $MACROID_hycom (e.g. Linux.sisu.intel_hycom) in the location of $NHCROOT/hycom/RELO/config. This file is quite similar to the $MACROID_cice (where export TYPE=cice), but we have removed the flags related to the ESMF which is introduced as (for example for Sisu HPC):
+As next step, we include a configuration file called $MACROID_hycom (e.g. Linux.sisu.intel_hycom) in the location of $NHCROOT/hycom/RELO/config. This configuration file is the same as the $MACROID_cice (where TYPE, here, is set to "cice"), except we have removed the flags related to the ESMF from variables CPPFLAGS and INCLUDES. For example,  for Sisu HPC in the case of coupled model, they may be given by
 
 INCLUDES      = -I$(MPI_HOME)/include  -I${ESMF_MOD_DIR} -I${ESMF_DIR}/include -I./CICE/rundir/compile
 
@@ -41,7 +41,7 @@ CPPFLAGS      = -DIA32 -DREAL8 -DMPI -DSERIAL_IO -DNAN2003 -DTIMER -DRELO  -DUSE
 EXTRALIBS     = -L${ESMF_LIB_DIR}/ -lesmf -lnetcdf
   
 
-Above command lines are simply modified as
+which are simply modified as follows to remove the setups related to the ESMF coupler: 
 
 INCLUDES      = -I$(MPI_HOME)/include
 
@@ -49,21 +49,21 @@ CPPFLAGS      = -DIA32 -DREAL8 -DMPI -DSERIAL_IO -DNAN2003 -DTIMER -DRELO -DNERS
 
 
 
-* You need to take of changes according to your HPC and compiler.
+* You need to take care of changes according to your HPC system and compiler type/flags.
 
 ## Changes in $NHCROOT/hycom/RELO/src_2.2.98ZA-07Tsig0-i-sm-sse_relo_mpi
 
-In this folder, we replace the old "Makefile" by the new one which modified to include proper flags for compilation of standalone HYCOM.
+In this folder, we replace the old "Makefile" by the new one which modified to include to correct flags required for compilation of the standalone HYCOM.
 
-Another script to compile model, so-called Make-hycom.csh, is copied in this folder. This script is called by "compile_model.sh" when "iceflg" is set to zero in "blkdat.input".
+Another script to compile model, so-called Make_hycom.csh, is copied in this folder. This script is called by "compile_model.sh" when "iceflg" is set to zero in the "blkdat.input" file.
 
 
 
 ## Changes in experiment folder
 
-Since the model has been meant for a coupled system, there are few inconsistency in two source codes in $NHCROOT/hycom/RELO/src_2.2.98ZA-07Tsig0-i-sm-sse_relo_mpi (i.e. hycom.F and mod_hycom.F). To avoid any mofdification of source codes at this stage, I created a folder called "mysource" including modified hycom.F and mod_hycom.F which are copied to the "$EXPT_PATH/build/src_2.2.98ZA-07Tsig0-i-sm-sse_relo_mpi" during compile time only when "iceflg" is zero in "blkdat.input". Furthermore, you need to have ice_in in experiment folder (this is get read in initialisation which later on be untangled from the standalone compilation).
+Since the model has been meant for a coupled system, there are few inconsistency when try to decouple them. These inconsistent features are appeared n two source codes located in $NHCROOT/hycom/RELO/src_2.2.98ZA-07Tsig0-i-sm-sse_relo_mpi (i.e. hycom.F and mod_hycom.F). To avoid any modification of the HYCOM original source codes at this stage, I created a folder called "mysource" including modified hycom.F and mod_hycom.F. These two codes are copied to the "$EXPT_PATH/build/src_2.2.98ZA-07Tsig0-i-sm-sse_relo_mpi" during compiliation of model only when "iceflg" is set to zero in the "blkdat.input". Furthermore, you need to have "ice_in" in the experiment folder (this file is read in the initialisation which later on will be untangled from the procedure of standalone compilation).
 
 # Compile HYCOM
 
-The final step is to compile the HYCOM source code depending on the status of "iceflg" flag in "blkdat.input". If "iceflg" is non-zero, the model compiles and links both HYCOM and CICE models to generate of hycom-cice executable. If "iceflg" is zero the hycom-cice executable is generated from only compiling HYCOM model.
+The final step is to compile the HYCOM source code depending on the status of "iceflg" flag in the "blkdat.input". If "iceflg" is non-zero, the model compiles and links both HYCOM and CICE models in order to generate the hycom-cice executable. If "iceflg" is zero the hycom-cice executable is generated by only compiling the HYCOM model.
 
