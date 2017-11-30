@@ -273,7 +273,6 @@
 
    ! Register state variables
    call self%register_state_variable( self%id_no3,      'no3',    'mgC/m3',    'nitrate',                   minimum=0.0_rk,        vertical_movement=0.0_rk )
-   write(*,*)id_no3
    call self%register_state_variable( self%id_nh4,      'nh4',    'mgC/m3',    'ammonium',                  minimum=0.0_rk,        vertical_movement=0.0_rk )
    call self%register_state_variable( self%id_pho,      'pho',    'mgC/m3',    'phosphate',                 minimum=0.0_rk,        vertical_movement=0.0_rk )
    call self%register_state_variable( self%id_sil,      'sil',    'mgC/m3',    'silicate',                  minimum=0.0_rk,        vertical_movement=0.0_rk )
