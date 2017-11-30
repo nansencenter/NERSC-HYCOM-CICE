@@ -8,10 +8,10 @@
 !-----------------------------------------------------------------------
 !BOP
 !
-! !MODULE: fabm_nersc_ecosmo --- ECOSMO biogeochemical model
+! !MODULE: fabm_hzg_ecosmo --- ECOSMO biogeochemical model
 !
 ! !INTERFACE:
-   module fabm_nersc_ecosmo
+   module fabm_hzg_ecosmo
 !
 ! !DESCRIPTION:
 !
@@ -27,23 +27,24 @@
    private
 !
 ! !PUBLIC MEMBER FUNCTIONS:
-   public type_nersc_ecosmo
+   public type_hzg_ecosmo
 !
 ! !PRIVATE DATA MEMBERS:
    real(rk), parameter :: secs_pr_day = 86400.0_rk
    real(rk), parameter :: sedy0 = 86400.0_rk
    real(rk), parameter :: mmolm3_in_mll = 44.6608009_rk
-   integer, parameter  :: maxprey=5 ! some high number of prey to cover additional modules
    real(rk)            :: redf(20)=0.0_rk
    real(rk)            :: PrmBioC(45)=0.0_rk,BioC(45)=0.0_rk
+   !real(rk)            :: PrmGI(2,6)=0.0_rk,GI(2,6)=0.0_rk
+   !real(rk)            :: CHLtoC(3,2)=0.0_rk,ALFA(3)=0.0_rk
 !
 ! !PUBLIC DERIVED TYPES:
-   type,extends(type_base_model) :: type_nersc_ecosmo
+   type,extends(type_base_model) :: type_hzg_ecosmo
 !     Variable identifiers
-      type (type_state_variable_id)         :: id_prey(maxprey)
       type (type_state_variable_id)         :: id_no3, id_nh4, id_pho, id_sil
       type (type_state_variable_id)         :: id_opa, id_det, id_dia, id_fla
-      type (type_state_variable_id)         :: id_mesozoo, id_microzoo, id_dom, id_oxy
+      type (type_state_variable_id)         :: id_diachl, id_flachl, id_bgchl
+      type (type_state_variable_id)         :: id_mesozoo, id_microzoo, id_bg, id_dom, id_oxy
       type (type_bottom_state_variable_id)  :: id_sed1, id_sed2, id_sed3
       type (type_dependency_id)             :: id_temp, id_salt, id_par
       type (type_dependency_id)             :: id_parmean
@@ -52,24 +53,30 @@
       type (type_diagnostic_variable_id)    :: id_denit, id_primprod, id_secprod
       type (type_diagnostic_variable_id)    :: id_parmean_diag
 
+      type (type_diagnostic_variable_id)    :: id_c2chl_fla, id_c2chl_dia, id_c2chl_bg
+
 !     Model parameters
       real(rk) :: BioC(45)
       real(rk) :: zpr, frr
-
-      real :: gf_zs(maxprey) ! since we make generic number of preys, we would
-      real :: gf_zl(maxprey) ! like to keep the zooplankton paramters also generic
-      real :: as_zs(maxprey)
-      real :: as_zl(maxprey)
-      real :: gr_zs(maxprey)
-      real :: gr_zl(maxprey)
-      real :: opal_swc(maxprey)
-
+      real(rk) :: prefZsPs
+      real(rk) :: prefZsPl
+      real(rk) :: prefZsBG
+      real(rk) :: prefZsD
+      real(rk) :: prefZlPs
+      real(rk) :: prefZlPl
+      real(rk) :: prefZlBG
+      real(rk) :: prefZlD
+      real(rk) :: prefZlZs
       real(rk) :: surface_deposition_no3
       real(rk) :: surface_deposition_nh4
       real(rk) :: surface_deposition_pho
       real(rk) :: surface_deposition_sil
-
-      integer :: nprey
+      real(rk) :: nfixation_minimum_daily_par
+      real(rk) :: bg_growth_minimum_daily_rad
+      real(rk) :: MAXchl2nPs, MINchl2nPs
+      real(rk) :: MAXchl2nPl, MINchl2nPl
+      real(rk) :: MAXchl2nBG, MINchl2nBG
+      real(rk) :: alfaPl, alfaPs, alfaBG
       contains
 
 !     Model procedures
@@ -79,7 +86,7 @@
       procedure :: do_bottom
       procedure :: get_light_extinction
 
-   end type type_nersc_ecosmo
+   end type type_hzg_ecosmo
 !EOP
 !-----------------------------------------------------------------------
 
@@ -94,65 +101,71 @@
    subroutine initialize(self,configunit)
 !
 ! !DESCRIPTION:
-!  Here, the ecosmo namelist is read and the variables exported
+!  Here, the ecosmo yaml is read and the variables exported
 !  by the model are registered with FABM.
 !
 ! !INPUT PARAMETERS:
-   class (type_nersc_ecosmo),intent(inout),target  :: self
+   class (type_hzg_ecosmo),intent(inout),target  :: self
    integer,                intent(in)            :: configunit
 !
 ! !REVISION HISTORY:
 !  Original author(s): Richard Hofmeister
 !
-! !LOCAL VARIABLES:
-   real(rk) :: no3_init, nh4_init,pho_init,sil_init,oxy_init, &
-               dia_init,fla_init, &
-               mesozoo_init,microzoo_init, &
-               det_init, dom_init, opa_init, &
-               sed1_init, sed2_init, sed3_init
-   integer  :: nprey
-   real(rk) :: zpr, frr
-   real(rk) :: surface_deposition_no3=0.0
-   real(rk) :: surface_deposition_nh4=0.0
-   real(rk) :: surface_deposition_pho=0.0
-   real(rk) :: surface_deposition_sil=0.0
-   real(rk) :: GI(2,maxprey)=0.0_rk
-   real(rk) :: AS(2,maxprey),GR(2,maxprey) ! AS = zooplankton assimilation efficiency
-                                           ! GR = zooplankton grazing rate
-   real(rk) :: opal_swc(maxprey)
-   character(len=4) :: strindex ! used to assign phytoplankton names to generic prey
-   integer  :: i
-   character(len=attribute_length) :: prey_names(maxprey)
+!  Caglar Yumruktepe:
+!  Added fabm.yaml support: parameters from yaml file are copied to
+!                           BioC array. Eventually, BioC array maybe dropped
+!                           from the model where parameter names from the yaml
+!                           file will be used.
+!  Added dynamic chlorophyll-a from Geider etal., 1997
+!
 
-   namelist /nersc_ecosmo/  PrmBioC,GI,zpr,frr, &
-                          no3_init,nh4_init,pho_init, &
-                          sil_init,oxy_init, &
-                          dia_init,fla_init, &
-                          mesozoo_init,microzoo_init, &
-                          det_init, dom_init, opa_init, &
-                          sed1_init, sed2_init, sed3_init, &
-                          surface_deposition_no3, surface_deposition_nh4, &
-                          surface_deposition_pho, surface_deposition_sil, &
-                          nprey,AS,GR,prey_names,opal_swc
-                          ! nprey is the actual number of prey
+
+
+! !LOCAL VARIABLES:
+  ! real(rk) :: no3_init, nh4_init,pho_init,sil_init,oxy_init, &
+  !             dia_init,fla_init,bg_init, &
+  !             mesozoo_init,microzoo_init, &
+  !             det_init, dom_init, opa_init, &
+  !             sed1_init, sed2_init, sed3_init,&
+  !             diachl_init,flachl_init,bgchl_init
+   real(rk) :: sed1_init, sed2_init, sed3_init
+   !real(rk) :: zpr=0.001_rk
+   !real(rk) :: frr=0.4_rk
+   !real(rk) :: surface_deposition_no3!=0.0_rk
+   !real(rk) :: surface_deposition_nh4!=0.0_rk
+   !real(rk) :: surface_deposition_pho!=0.0_rk
+   !real(rk) :: surface_deposition_sil!=0.0_rk
+   !real(rk) :: nfixation_minimum_daily_par!=40.0_rk
+   !real(rk) :: bg_growth_minimum_daily_rad!=120.0_rk
+
+
+   integer  :: i
+
+!   namelist /hzg_ecosmo/  PrmBioC,GI,CHLtoC,ALFA,zpr,frr, &
+!                          no3_init,nh4_init,pho_init, &
+!                          sil_init,oxy_init, &
+!                          dia_init,fla_init,bg_init, &
+!                          diachl_init,flachl_init,bgchl_init, &
+!                          mesozoo_init,microzoo_init, &
+!                          det_init, dom_init, opa_init, &
+!                          sed1_init, sed2_init, sed3_init, &
+!                          surface_deposition_no3, surface_deposition_nh4, &
+!                          surface_deposition_pho, surface_deposition_sil, &
+!                          nfixation_minimum_daily_par, bg_growth_minimum_daily_rad
 
 !EOP
 !-----------------------------------------------------------------------
 !BOC
 
    !include 'ECOSMparamNSBS.f'
-   GI  = 0
-   AS  = 0
-   GR  = 0 ! just to be safe
-   zpr = 0.001_rk
-   frr = 0.4_rk
-   opal_swc = 0
 
    ! Read the namelist
-   if (configunit>0) read(configunit,nml=nersc_ecosmo,err=99,end=100)
-   self%nprey = nprey
-   self%zpr = zpr/secs_pr_day
-   self%frr = frr
+   !if (configunit>0) read(configunit,nml=hzg_ecosmo,err=99,end=100)
+
+   call self%get_parameter(self%zpr, 'zpr','zpr_long_name_needed', default=0.001_rk)
+   call self%get_parameter(self%frr, 'frr','frr_long_name_needed', default=0.4_rk)
+   call self%get_parameter(self%nfixation_minimum_daily_par, 'nfixation_minimum_daily_par', 'minimum daily PAR for N-fixation', default=40.0_rk) ! units needed
+   call self%get_parameter(self%bg_growth_minimum_daily_rad, 'bg_growth_minimum_daily_rad', 'minimum daily rad for BG growth', default=120.0_rk) ! units needed
 
    ! set Redfield ratios:
    redf(1) = 6.625_rk      !C_N
@@ -170,148 +183,125 @@
    end do
 
    ! set surface fluxes in [mgC/m2/s]
-   self%surface_deposition_no3 = surface_deposition_no3*redf(1)*redf(6)/secs_pr_day
-   self%surface_deposition_nh4 = surface_deposition_nh4*redf(1)*redf(6)/secs_pr_day
-   self%surface_deposition_pho = surface_deposition_pho*redf(2)*redf(6)/secs_pr_day
-   self%surface_deposition_sil = surface_deposition_sil*redf(3)*redf(6)/secs_pr_day
+   call self%get_parameter( self%surface_deposition_no3, 'surface_deposition_no3', 'mmolN/m**2 d', 'surface deposition no3', default=0.0_rk, scale_factor=redf(1)*redf(6)/sedy0 )
+   call self%get_parameter( self%surface_deposition_nh4, 'surface_deposition_nh4', 'mmolN/m**2 d', 'surface deposition nh4', default=0.0_rk, scale_factor=redf(1)*redf(6)/sedy0 )
+   call self%get_parameter( self%surface_deposition_pho, 'surface_deposition_pho', 'mmolN/m**2 d', 'surface deposition pho', default=0.0_rk, scale_factor=redf(2)*redf(6)/sedy0 )
+   call self%get_parameter( self%surface_deposition_sil, 'surface_deposition_sil', 'mmolN/m**2 d', 'surface deposition sil', default=0.0_rk, scale_factor=redf(3)*redf(6)/sedy0 )
 
    !  change units 1/day to 1/sec and mmolN,P,Si to mmolC
-           BioC(1) =   PrmBioC(1) /sedy0                    !  1/day
-           BioC(2) =   PrmBioC(2) /sedy0                    !  1/day
-           BioC(3) =   PrmBioC(3)                           !  m**2/W
-           BioC(4) =   PrmBioC(4)                           !  1/m
-           BioC(5) =   PrmBioC(5)/(REDF(1)*REDF(6)) !  m**2/mmolN
-           BioC(6) =   PrmBioC(6)*REDF(1)*REDF(6)   !  mmolN/m**3
-           BioC(7) =   PrmBioC(7)*REDF(1)*REDF(6)   !  mmolN/m**3
-           BioC(8) =   PrmBioC(8)/(REDF(1)*REDF(6)) !  m**3/mmolN
-           BioC(9) =   PrmBioC(9) /sedy0                    !  1/day
-           BioC(10)=   PrmBioC(10)/sedy0                    !  1/day
-           BioC(11)=   PrmBioC(11)/sedy0                    !  1/day
-           BioC(12)=   PrmBioC(12)/sedy0                    !  1/day
-           BioC(13)=   PrmBioC(13)/sedy0                    !  1/day
-           BioC(14)=   PrmBioC(14)*REDF(1)*REDF(6)   !  mmolN/m**3
-           BioC(15)=   PrmBioC(15)/sedy0                    !  1/day
-           BioC(16)=   PrmBioC(16)/sedy0                    !  1/day
-           BioC(17)=   PrmBioC(17)/sedy0                    !  1/day
-           BioC(18)=   PrmBioC(18)/sedy0                    !  1/day
-           BioC(19)=   PrmBioC(19)                          !  1
-           BioC(20)=   PrmBioC(20)                          !  1
-           BioC(21)=   PrmBioC(21)                          !  1
-
-           BioC(22)=   PrmBioC(22)/sedy0                    !   1/day
-           BioC(23)=   PrmBioC(23)/sedy0                    !   m/day
-           BioC(24)=   PrmBioC(24)/sedy0                    !   m/day
+   call self%get_parameter( self%BioC(1) , 'muPl',        '1/day',      'max growth rate for Pl',          default=1.30_rk,  scale_factor=1.0_rk/sedy0             )
+   call self%get_parameter( self%BioC(2) , 'muPs',        '1/day',      'max growth rate for Ps',          default=1.10_rk,  scale_factor=1.0_rk/sedy0             )
+   call self%get_parameter( self%BioC(3) , 'aa',          'm**2/W',     'photosynthesis ef-cy',            default=0.04_rk                                         )
+   call self%get_parameter( self%BioC(4) , 'EXw',         '1/m',        'light extinction',                default=0.041_rk                                        )
+   call self%get_parameter( self%BioC(5) , 'Exphy',       'm**2/mmolN', 'phyto self-shading',              default=0.04_rk,  scale_factor=1.0_rk/(redf(1)*redf(6)) )
+   call self%get_parameter( self%BioC(6) , 'rNH4',        'mmolN/m**3', 'NH4 half saturation',             default=0.20_rk,  scale_factor=redf(1)*redf(6)          )
+   call self%get_parameter( self%BioC(7) , 'rNO3',        'mmolN/m**3', 'NO3 half saturation',             default=0.50_rk,  scale_factor=redf(1)*redf(6)          )
+   call self%get_parameter( self%BioC(8) , 'psi',         'm**3/mmolN', 'NH4 inhibition',                  default=3.0_rk,   scale_factor=1.0_rk/(redf(1)*redf(6)) )
+   call self%get_parameter( self%BioC(9) , 'mPl',         '1/day',      'Pl mortality rate',               default=0.04_rk,  scale_factor=1.0_rk/sedy0             )
+   call self%get_parameter( self%BioC(10), 'mPs',         '1/day',      'Ps mortality rate',               default=0.08_rk,  scale_factor=1.0_rk/sedy0             )
+   call self%get_parameter( self%BioC(11), 'GrZlP',       '1/day',      'Grazing rate Zl on Phyto',        default=0.80_rk,  scale_factor=1.0_rk/sedy0             )
+   call self%get_parameter( self%BioC(12), 'GrZsP',       '1/day',      'Grazing rate Zs on Phyto',        default=1.00_rk,  scale_factor=1.0_rk/sedy0             )
+   call self%get_parameter( self%BioC(13), 'GrZlZ',       '1/day',      'Grazing rate Zl on Zs',           default=0.50_rk,  scale_factor=1.0_rk/sedy0             )
+   call self%get_parameter( self%BioC(14), 'Rg',          'mmolN/m**3', 'Zs, Zl half saturation',          default=0.50_rk,  scale_factor=redf(1)*redf(6)          )
+   call self%get_parameter( self%BioC(15), 'mZl',         '1/day',      'Zl mortality rate',               default=0.10_rk,  scale_factor=1.0_rk/sedy0             )
+   call self%get_parameter( self%BioC(16), 'mZs',         '1/day',      'Zs mortality rate',               default=0.20_rk,  scale_factor=1.0_rk/sedy0             )
+   call self%get_parameter( self%BioC(17), 'excZl',       '1/day',      'Zl excretion rate',               default=0.06_rk,  scale_factor=1.0_rk/sedy0             )
+   call self%get_parameter( self%BioC(18), 'excZs',       '1/day',      'Zs excretion rate',               default=0.08_rk,  scale_factor=1.0_rk/sedy0             )
+   call self%get_parameter( self%BioC(19), 'gammaZlp',    '1',          'Zl assim. eff. on plankton',      default=0.75_rk                                         )
+   call self%get_parameter( self%BioC(20), 'gammaZsp',    '1',          'Zs assim. eff. on plankton',      default=0.75_rk                                         )
+   call self%get_parameter( self%BioC(21), 'gammaZd',     '1',          'Zl & Zs assim. eff. on det',      default=0.75_rk                                         )
+   call self%get_parameter( self%BioC(22), 'reminD',      '1/day',      'Detritus remin. rate',            default=0.003_rk, scale_factor=1.0_rk/sedy0             )
+   call self%get_parameter( self%BioC(23), 'sinkDet',     'm/day',      'Detritus sinking rate',           default=5.00_rk,  scale_factor=1.0_rk/sedy0             )
+   call self%get_parameter( self%BioC(24), 'Wa',          'm/day',      '???',                             default=1.00_rk,  scale_factor=1.0_rk/sedy0             )
 ! set as mmolN/m**3 =0.25  !!!! need a correction
-           BioC(25)=   PrmBioC(25)*REDF(2)*REDF(6)   ! mmolP/m**3
-           BioC(26)=   PrmBioC(26)*REDF(3)*REDF(6)   ! mmolSi/m**3
-           BioC(27)=   PrmBioC(27)/sedy0                    !   1/day
+   call self%get_parameter( self%BioC(25),  'rPO4',       'mmolP/m**3', 'PO4 half saturation',             default=0.05_rk,  scale_factor=redf(2)*redf(6)          )
+   call self%get_parameter( self%BioC(26),  'rSi',        'mmolSi/m**3','SiO2 half saturation',            default=0.50_rk,  scale_factor=redf(3)*redf(6)          )
+   call self%get_parameter( self%BioC(27),  'regenSi',    '1/day',      'Si regeneration rate',            default=0.015_rk, scale_factor=1.0_rk/sedy0             )
+   call self%get_parameter( self%BioC(28),  'muBG',       '1/day',      'max growth rate for BG',          default=1.00_rk,  scale_factor=1.0_rk/sedy0             )
+   call self%get_parameter( self%BioC(29),  'TctrlBG',    '1/degC',     'BG T control beta',               default=1.00_rk                                         )
+   call self%get_parameter( self%BioC(30),  'TrefBG',     'degC',       'BG reference temperature',        default=0.00_rk                                         )
+   call self%get_parameter( self%BioC(31),  'GrBG',       '1/day',      'BG max grazing rate',             default=0.30_rk,  scale_factor=1.0_rk/sedy0             )
+   call self%get_parameter( self%BioC(32),  'mBG',        '1/day',      'BG mortality rate',               default=0.08_rk,  scale_factor=1.0_rk/sedy0             )
+   call self%get_parameter( self%BioC(33),  'upliftBG',   'm/day',      'BG uplifting rate',               default=0.10_rk,  scale_factor=1.0_rk/sedy0             )
+   call self%get_parameter( self%BioC(34),  'crBotStr',   'N/m**2',     'critic. bot. stress for resusp.', default=0.007_rk                                        )
+   call self%get_parameter( self%BioC(35),  'resuspRt',   '1/day',      'resuspension rate',               default=25.0_rk,  scale_factor=1.0_rk/sedy0             )
+   call self%get_parameter( self%BioC(36),  'sedimRt',    'm/day',      'sedimentation rate',              default=3.5_rk,   scale_factor=1.0_rk/sedy0             )
+   call self%get_parameter( self%BioC(37),  'burialRt',   '1/day',      'burial rate',                     default=1E-5_rk,  scale_factor=1.0_rk/sedy0             )
+   call self%get_parameter( self%BioC(38),  'reminSED',   '1/day',      'sediment remineralization rate',  default=0.001_rk, scale_factor=1.0_rk/sedy0             )
+   call self%get_parameter( self%BioC(39),  'TctrlDenit', '1/degC',     'temp. control denitrification',   default=0.15_rk                                         )
+   call self%get_parameter( self%BioC(40),  'RelSEDp1',   'units??',    'P sedim. rel. p1',                default=0.15_rk                                         )
+   call self%get_parameter( self%BioC(41),  'RelSEDp2',   'units??',    'P sedim. rel. p2',                default=0.10_rk                                         )
+   call self%get_parameter( self%BioC(42),  'reminSEDsi', '1/day',      'sed. remineralization rate Si',   default=0.0002_rk,scale_factor=1.0_rk/sedy0             )
+   call self%get_parameter( self%BioC(43),  'sinkOPAL',   'm/day',      'OPAL sinking rate',               default=5.0_rk,   scale_factor=1.0_rk/sedy0             )
+   call self%get_parameter( self%BioC(44),  'sinkBG',     'm/day',      'BG sinking rate',                 default=-1.0_rk,  scale_factor=1.0_rk/sedy0             )
+   call self%get_parameter( self%BioC(45),  'sinkDia',    'm/day',      'Diatom sinking rate',             default=0.0_rk,   scale_factor=1.0_rk/sedy0             )
 
-           BioC(28)=   PrmBioC(28)/sedy0                    !  1/day
-
-           BioC(29)=   PrmBioC(29)                          ! 1/degC
-
-           BioC(30)=   PrmBioC(30)                         ! degC
-
-           BioC(31)=   PrmBioC(31)/sedy0                   ! 1/d
-
-           BioC(32)=   PrmBioC(32)/sedy0                   ! 1/d
-
-           BioC(33)=   PrmBioC(33)/sedy0                   ! m/d
-
-           BioC(34)=   PrmBioC(34)                         !  N/m**2
-
-           BioC(35)=   PrmBioC(35)/sedy0                   ! 1/day
-
-           BioC(36)=   PrmBioC(36)/sedy0                   ! m/day
-
-           BioC(37)=   PrmBioC(37)/sedy0                   ! 1/day
-
-           BioC(38)=   PrmBioC(38)/sedy0                   ! 1/day
-
-           BioC(39)=   PrmBioC(39)                         ! 1/degC
-
-           BioC(40)=   PrmBioC(40)
-
-           BioC(41)=   PrmBioC(41)
-
-           BioC(42)=   PrmBioC(42)/sedy0
-
-           BioC(43)=   PrmBioC(43)/sedy0                    !   m/day
-           BioC(44)=   PrmBioC(44)/sedy0                    !   m/day
-           BioC(45)=   PrmBioC(45)/sedy0                    !   m/day
-
-   ! Store parameter values in our own derived type
-   do i=1,size(BioC)
-     self%BioC(i) = BioC(i)
-   end do
+   !! Store parameter values in our own derived type
+   !do i=1,size(BioC)
+    ! self%BioC(i) = BioC(i)
+   !end do
    !  growth fractions
+   call self%get_parameter( self%prefZsPs,  'prefZsPs',   '1',          'Grazing preference Zs on Ps',     default=0.70_rk                                         )
+   call self%get_parameter( self%prefZsPl,  'prefZsPl',   '1',          'Grazing preference Zs on Pl',     default=0.25_rk                                         )
+   call self%get_parameter( self%prefZsD,   'prefZsD',    '1',          'Grazing preference Zs on Det.',   default=0.00_rk                                         )
+   call self%get_parameter( self%prefZsBG,  'prefZsBG',   '1',          'Grazing preference Zs on BG',     default=0.30_rk                                         )
+   call self%get_parameter( self%prefZlPs,  'prefZlPs',   '1',          'Grazing preference Zl on Ps',     default=0.10_rk                                         )
+   call self%get_parameter( self%prefZlPl,  'prefZlPl',   '1',          'Grazing preference Zl on Pl',     default=0.85_rk                                         )
+   call self%get_parameter( self%prefZlZs,  'prefZlZs',   '1',          'Grazing preference Zl on Zs',     default=0.15_rk                                         )
+   call self%get_parameter( self%prefZlD,   'prefZlD',    '1',          'Grazing preference Zl on Det.',   default=0.00_rk                                         )
+   call self%get_parameter( self%prefZlBG,  'prefZlBG',   '1',          'Grazing preference Zl on BG',     default=0.30_rk                                         )
+   ! chlorophyll-a constants
+   call self%get_parameter( self%MINchl2nPs, 'MINchl2nPs', 'mgChl/mmolN', 'minimum Chl to N ratio Ps', default=0.50_rk, scale_factor=redf(11)*redf(16)             )
+   call self%get_parameter( self%MAXchl2nPs, 'MAXchl2nPs', 'mgChl/mmolN', 'maximum Chl to N ratio Ps', default=3.83_rk, scale_factor=redf(11)*redf(16)             )
+   call self%get_parameter( self%MINchl2nPl, 'MINchl2nPl', 'mgChl/mmolN', 'minimum Chl to N ratio Pl', default=0.50_rk, scale_factor=redf(11)*redf(16)             )
+   call self%get_parameter( self%MAXchl2nPl, 'MAXchl2nPl', 'mgChl/mmolN', 'maximum Chl to N ratio Pl', default=2.94_rk, scale_factor=redf(11)*redf(16)             )
+   call self%get_parameter( self%MINchl2nBG, 'MINchl2nBG', 'mgChl/mmolN', 'minimum Chl to N ratio BG', default=0.50_rk, scale_factor=redf(11)*redf(16)             )
+   call self%get_parameter( self%MAXchl2nBG, 'MAXchl2nBG', 'mgChl/mmolN', 'maximum Chl to N ratio BG', default=3.83_rk, scale_factor=redf(11)*redf(16)             )
+   call self%get_parameter( self%alfaPs,     'alfaPs', 'mmolN m2/(mgChl day W)**-1', 'initial slope P-I curve Ps', default=0.0393_rk, scale_factor=redf(1)*redf(6) )
+   call self%get_parameter( self%alfaPl,     'alfaPl', 'mmolN m2/(mgChl day W)**-1', 'initial slope P-I curve Pl', default=0.0531_rk, scale_factor=redf(1)*redf(6) )
+   call self%get_parameter( self%alfaBG,     'alfaBG', 'mmolN m2/(mgChl day W)**-1', 'initial slope P-I curve BG', default=0.0393_rk, scale_factor=redf(1)*redf(6) )
 
-    self%gf_zs = GI(1,:)
-    self%gf_zl = GI(2,:)
-    self%as_zs = AS(1,:)
-    self%as_zl = AS(2,:)
-    self%gr_zs = GR(1,:)
-    self%gr_zl = GR(2,:)
-    self%opal_swc = opal_swc
+
+!write(*,*) 'chltoc',CHLtoC
+!write(*,*) 'alfa',ALFA
+!write(*,*) 'MINchl2nPs',self%MINchl2nPs
+!write(*,*) 'MINchl2nPl',self%MINchl2nPl
+!write(*,*) 'MAXchl2nPs',self%MAXchl2nPs
+!write(*,*) 'MAXchl2nPl',self%MAXchl2nPl
+!write(*,*) 'alfa_dia',self%alfaPl
+!write(*,*) 'alfa_fla',self%alfaPs
 
    ! Register state variables
-   call self%register_state_variable(self%id_no3,'no3','mgC/m3','nitrate',     &
-                                     initial_value=no3_init*redf(1)*redf(6), &
-                                     vertical_movement=0.0_rk, &
-                                     minimum=0.0_rk)
+   call self%register_state_variable( self%id_no3,      'no3',    'mgC/m3',    'nitrate',                   minimum=0.0_rk,        vertical_movement=0.0_rk )
+   write(*,*)id_no3
+   call self%register_state_variable( self%id_nh4,      'nh4',    'mgC/m3',    'ammonium',                  minimum=0.0_rk,        vertical_movement=0.0_rk )
+   call self%register_state_variable( self%id_pho,      'pho',    'mgC/m3',    'phosphate',                 minimum=0.0_rk,        vertical_movement=0.0_rk )
+   call self%register_state_variable( self%id_sil,      'sil',    'mgC/m3',    'silicate',                  minimum=0.0_rk,        vertical_movement=0.0_rk )
+   call self%register_state_variable( self%id_oxy,      'oxy',    'mmolO2/m3', 'oxygen',                    minimum=-100000._rk,   vertical_movement=0.0_rk )
+   call self%register_state_variable( self%id_fla,      'fla',    'mgC/m3',    'small phytoplankton',       minimum=1.0e-7_rk,     vertical_movement=0.0_rk )
+   call self%register_state_variable( self%id_dia,      'dia',    'mgC/m3',    'large phytoplankton',       minimum=1.0e-7_rk,     vertical_movement=-self%BioC(45) )
+   call self%register_state_variable( self%id_bg,       'bg',     'mgC/m3',    'cyanobacteria',             minimum=1.0e-7_rk,     vertical_movement=-self%BioC(44) )
+   call self%register_state_variable( self%id_diachl,   'diachl', 'mgChl/m3',  'large phytoplankton chl-a', minimum=1.0e-7_rk/27., vertical_movement=-self%BioC(45) )
+   call self%register_state_variable( self%id_flachl,   'flachl', 'mgChl/m3',  'small phytoplankton chl-a', minimum=1.0e-7_rk/20., vertical_movement=0.0_rk )
+   call self%register_state_variable( self%id_bgchl,    'bgchl',  'mgChl/m3',  'cyanobacteria chl-a',       minimum=1.0e-7_rk/20., vertical_movement=-self%BioC(44) )
 
-   call self%register_state_variable(self%id_nh4,'nh4','mgC/m3','ammonium',     &
-                                     initial_value=nh4_init*redf(1)*redf(6), &
-                                     vertical_movement=0.0_rk, &
-                                     minimum=0.0_rk)
-
-   call self%register_state_variable(self%id_pho,'pho','mgC/m3','phosphate',     &
-                                     initial_value=pho_init*redf(2)*redf(6), &
-                                     vertical_movement=0.0_rk, &
-                                     minimum=0.0_rk)
-
-   call self%register_state_variable(self%id_sil,'sil','mgC/m3','silicate',     &
-                                     initial_value=sil_init*redf(3)*redf(6), &
-                                     vertical_movement=0.0_rk, &
-                                     minimum=0.0_rk)
-
-   call self%register_state_variable(self%id_oxy,'oxy','mmolO2/m3','oxygen',     &
-                                     initial_value=oxy_init, &
-                                     vertical_movement=0.0_rk, &
-                                     minimum=-100000._rk)
-
-   call self%register_state_variable(self%id_dia,'dia','mgC/m3','large phytoplankton',     &
-                                     initial_value=dia_init*redf(1)*redf(6), &
-                                     vertical_movement=-BioC(45), &
-                                     minimum=1.0e-07_rk)
-
-   call self%register_state_variable(self%id_fla,'fla','mgC/m3','small phytoplankton',     &
-                                     initial_value=fla_init*redf(1)*redf(6), &
-                                     vertical_movement=0.0_rk, &
-                                     minimum=1.0e-07_rk)
-
-   call self%register_state_variable(self%id_microzoo,'microzoo','mgC/m3','microzooplankton',     &
-                                     initial_value=microzoo_init*redf(1)*redf(6), &
+   call self%register_state_variable( self%id_microzoo, 'microzoo','mgC/m3','microzooplankton',     &
                                      vertical_movement=0.0_rk, &
                                      minimum=1.0e-7_rk)
 
    call self%register_state_variable(self%id_mesozoo,'mesozoo','mgC/m3','mesozooplankton',     &
-                                     initial_value=mesozoo_init*redf(1)*redf(6), &
                                      vertical_movement=0.0_rk, &
                                      minimum=1.0e-7_rk)
 
    call self%register_state_variable(self%id_det,'det','mgC/m3','detritus',     &
-                                     initial_value=det_init*redf(1)*redf(6), &
-                                     vertical_movement=-BioC(23), &
+                                     vertical_movement=-self%BioC(23), &
                                      minimum=0.0_rk)
 
    call self%register_state_variable(self%id_opa,'opa','mgC/m3','opal',     &
-                                     initial_value=opa_init*redf(3)*redf(6), &
-                                     vertical_movement=-BioC(43), &
+                                     vertical_movement=-self%BioC(43), &
                                      minimum=0.0_rk)
 
    call self%register_state_variable(self%id_dom,'dom','mgC/m3','labile dissolved om',     &
-                                     initial_value=dom_init*redf(1)*redf(6), &
                                      vertical_movement=0.0_rk, &
                                      minimum=0.0_rk)
 
@@ -327,12 +317,6 @@
                                      initial_value=sed3_init*redf(2)*redf(6), &
                                      minimum=0.0_rk)
 
-   do i=1,self%nprey
-     write (strindex,'(i0)') i
-     call self%register_state_dependency(self%id_prey(i),'prey_'//trim(strindex),'mgC/m3', 'prey '//trim(strindex) )
-     call self%request_coupling(self%id_prey(i),prey_names(i))
-   end do
-
 
    ! Register diagnostic variables
    call self%register_diagnostic_variable(self%id_denit,'denit','mmolN/m**3/s', &
@@ -343,6 +327,14 @@
          'secondary production rate', output=output_time_step_averaged)
    call self%register_diagnostic_variable(self%id_parmean_diag,'parmean','W/m**2', &
          'daily-mean photosynthetically active radiation', output=output_time_step_averaged)
+
+   ! calls outputs - simulated Carbon to chlorophyll-a ratio
+   call self%register_diagnostic_variable(self%id_c2chl_fla,'c2chl_fla','mgC/mgCHL', &
+         'daily-mean C to CHL ratio for flagellates', output=output_time_step_averaged)
+   call self%register_diagnostic_variable(self%id_c2chl_dia,'c2chl_dia','mgC/mgCHL', &
+         'daily-mean C to CHL ratio for diatoms', output=output_time_step_averaged)
+   call self%register_diagnostic_variable(self%id_c2chl_bg,'c2chl_bg','mgC/mgCHL', &
+         'daily-mean C to CHL ratio for cyanobacteria', output=output_time_step_averaged)
 
    ! Register dependencies
    call self%register_dependency(self%id_temp,standard_variables%temperature)
@@ -356,9 +348,9 @@
 
    return
 
-99 call self%fatal_error('nersc_ecosmo_initialize','Error reading namelist nersc_ecosmo.')
+!99 call self%fatal_error('hzg_ecosmo_initialize','Error reading namelist hzg_ecosmo.')
 
-100 call self%fatal_error('nersc_ecosmo_initialize','Namelist nersc_ecosmo was not found.')
+!100 call self%fatal_error('hzg_ecosmo_initialize','Namelist hzg_ecosmo was not found.')
 
    end subroutine initialize
 !EOC
@@ -374,27 +366,31 @@
 ! !DESCRIPTION:
 !
 ! !INPUT PARAMETERS:
-   class (type_nersc_ecosmo),intent(in) :: self
+   class (type_hzg_ecosmo),intent(in) :: self
    _DECLARE_ARGUMENTS_DO_
 !
 ! !REVISION HISTORY:
 !  Original author(s): Richard Hofmeister
 !
 ! !LOCAL VARIABLES:
-   real(rk) :: no3,nh4,pho,sil,t_sil,oxy,fla,dia
+   real(rk) :: no3,nh4,pho,sil,t_sil,oxy,fla,bg,dia
+   real(rk) :: flachl,diachl,bgchl,chl2c_fla,chl2c_dia,chl2c_bg
    real(rk) :: microzoo,mesozoo,opa,det,dom
    real(rk) :: temp,salt,par
    real(rk) :: frem, fremDOM, blight
-   real(rk) :: Ts,Tl
-   real(rk) :: Prod,Ps_prod,Pl_prod
-   real(rk) :: Fs,Fl,Zson(self%nprey),Zlon(self%nprey)
+   real(rk) :: Ts,Tl,Tbg
+   real(rk) :: Prod,Ps_prod,Pl_prod,Bg_prod
+   real(rk) :: Fs,Fl,ZlonPs,ZlonPl,ZsonD,ZlonD,ZlonBg,ZsonBg,ZsonPs,ZsonPl,ZlonZs
    real(rk) :: up_no3,up_nh4,up_n,up_pho,up_sil
    real(rk) :: bioom1,bioom2,bioom3,bioom4,bioom5,bioom6,bioom7,bioom8,Onitr
    real(rk) :: rhs,dxxdet
    real(rk) :: Zl_prod, Zs_prod
-   real(rk) :: mean_par, mean_surface_par
-   real(rk) :: prey(maxprey)
-   integer  :: i
+   real(rk) :: mean_par, mean_surface_par, Bg_fix
+   real(rk) :: fla_loss=1.0_rk
+   real(rk) :: dia_loss=1.0_rk
+   real(rk) :: bg_loss=1.0_rk
+   real(rk) :: mic_loss=1.0_rk
+   real(rk) :: mes_loss=1.0_rk
 !EOP
 !-----------------------------------------------------------------------
 !BOC
@@ -411,6 +407,10 @@
    _GET_(self%id_sil,sil)
    _GET_(self%id_dia,dia)
    _GET_(self%id_fla,fla)
+   _GET_(self%id_bg,bg)
+   _GET_(self%id_diachl,diachl)
+   _GET_(self%id_flachl,flachl)
+   _GET_(self%id_bgchl,bgchl)
    _GET_(self%id_microzoo,microzoo)
    _GET_(self%id_mesozoo,mesozoo)
    _GET_(self%id_det,det)
@@ -419,9 +419,20 @@
    _GET_(self%id_oxy,oxy)
    _GET_(self%id_parmean,mean_par)
    _GET_HORIZONTAL_(self%id_meansfpar,mean_surface_par)
-   do i=1,self%nprey
-     _GET_(self%id_prey(i),prey(i))
-   end do
+
+   ! CAGLAR
+   ! checks - whether the biomass of plankton is below a predefined threshold,
+   !          where below the threshold, loss terms are removed from the RHS of
+   !          the equations. The idea is to keep plankton safe from extinction.
+   ! loss terms are multiplied by the constants below, which can only be set
+   ! by the model to 0 or 1.
+
+   fla_loss = max(sign(-1.0_rk,fla-0.01_rk),0.0_rk)      ! flagellates
+   dia_loss = max(sign(-1.0_rk,dia-0.01_rk),0.0_rk)      ! diatoms
+   bg_loss  = max(sign(-1.0_rk,bg-0.01_rk),0.0_rk)       ! cyanobacteria
+   mic_loss = max(sign(-1.0_rk,microzoo-0.001_rk),0.0_rk) ! microzooplankton
+   mes_loss = max(sign(-1.0_rk,microzoo-0.001_rk),0.0_rk) ! mesozooplankton
+
 
    ! remineralisation rate
    frem = BioC(22) * (1._rk+20._rk*(temp**2/(13._rk**2+temp**2)))
@@ -442,23 +453,60 @@
    ! temperature dependence
    Ts = 1.0_rk
    Tl = 1.0_rk
+   if ((salt<=10.0) .and. (mean_surface_par > self%bg_growth_minimum_daily_rad)) then
+     Tbg = 1.0_rk/(1.0_rk + exp(BioC(29)*(BioC(30)-temp)))
+   else
+     Tbg = 0.0_rk
+   end if
 
    ! production and nutrient uptake
    Ps_prod = Ts * min(blight, up_n, up_pho)
    Pl_prod = Tl * min(blight, up_n, up_pho, up_sil)
-
+   !Bg_prod = 0.0_rk ! the light criterium restricts growth to surface waters
+   Bg_prod = Tbg * min(blight, up_n, up_pho)
+   Bg_fix=0.0_rk
+   if (mean_par > self%nfixation_minimum_daily_par) then
+     Bg_fix = Tbg * min(blight, up_pho) - Bg_prod
+   end if
    Prod = BioC(1)*Pl_prod*dia + & ! diatoms production
-          BioC(2)*Ps_prod*fla  ! flagellates production
+          BioC(2)*Ps_prod*fla + & ! flagellates production
+          BioC(28)*Bg_prod*bg ! cyanobacteria production
+
+   ! chlorophyll-a to C change
+   chl2c_fla = self%MAXchl2nPs * max(0.1,Ps_prod) * BioC(2) * sedy0 * fla / &
+               (self%alfaPs * par * flachl)
+   chl2c_dia = self%MAXchl2nPl * max(0.1,Pl_prod) * BioC(1) * sedy0 * dia / &
+               (self%alfaPl * par * diachl)
+   chl2c_bg = self%MAXchl2nBG * max(0.1,Bg_prod) * BioC(28) * sedy0 * bg / &
+               (self%alfaBG * par * bgchl)
+
+            chl2c_fla = max(self%MINchl2nPs,chl2c_fla)
+            chl2c_fla = min(self%MAXchl2nPs,chl2c_fla)
+            chl2c_dia = max(self%MINchl2nPl,chl2c_dia)
+            chl2c_dia = min(self%MAXchl2nPl,chl2c_dia)
+            chl2c_bg = max(self%MINchl2nBG,chl2c_bg)
+            chl2c_bg = min(self%MAXchl2nBG,chl2c_bg)
+
+   !         chl2c_fla = 1./20.
+   !         chl2c_dia = 1./27.
 
    ! grazing
    ! gf denotes grazing fraction
 
+   Fs = self%prefZsPs*fla + self%prefZsPl*dia + self%prefZsD*det + self%prefZsBG*bg
+   Fl = self%prefZlPs*fla + self%prefZlPl*dia + self%prefZlZs*microzoo + &
+          self%prefZlD*det + self%prefZlBG*bg
 
-   Fs = sum(self%gf_zs*prey)
-   Fl = sum(self%gf_zl*prey)
+   ZsonPs = fla_loss * BioC(12) * self%prefZsPs * fla/(BioC(14) + Fs)
+   ZsonPl = dia_loss * BioC(12) * self%prefZsPl * dia/(BioC(14) + Fs)
+   ZsonD  =            BioC(12) * self%prefZsD * det/(BioC(14) + Fs)
+   ZsonBg = bg_loss  * BioC(31) * self%prefZsBG * bg/(BioC(14) + Fs)
 
-   Zson(:) = self%gr_zs * self%gf_zs * prey/(BioC(14) + Fs)
-   Zlon(:) = self%gr_zl * self%gf_zl * prey/(BioC(14) + Fl)
+   ZlonPs = fla_loss * BioC(11) * self%prefZlPs * fla/(BioC(14) + Fl)
+   ZlonPl = dia_loss * BioC(11) * self%prefZlPl * dia/(BioC(14) + Fl)
+   ZlonD =             BioC(11) * self%prefZlD * det/(BioC(14) + Fl)
+   ZlonZs = mic_loss * BioC(13) * self%prefZlZs * microzoo/(BioC(14) + Fl)
+   ZlonBg = bg_loss  * BioC(31) * self%prefZlBG * bg/(BioC(14) + Fl)
 
    ! nitrification
    Onitr = 0.01_rk * redf(7) !according to Neumann  (Onitr in mlO2/l see also Stigebrand and Wulff)
@@ -484,44 +532,49 @@
    end if
 
 ! reaction rates
-   _SET_ODE_(self%id_fla, (BioC(2)*Ps_prod - BioC(10))*fla)
-   _SET_ODE_(self%id_dia, (BioC(1)*Pl_prod - BioC(9))*dia)
+
+   _SET_ODE_(self%id_fla, (BioC(2)*Ps_prod - BioC(10)*fla_loss)*fla - ZsonPs*microzoo - ZlonPs*mesozoo)
+   _SET_ODE_(self%id_dia, (BioC(1)*Pl_prod - BioC(9)*dia_loss)*dia - ZsonPl*microzoo - ZlonPl*mesozoo)
+   _SET_ODE_(self%id_bg,  (BioC(28)*(Bg_prod + Bg_fix) - BioC(32)*bg_loss)*bg - ZsonBg*microzoo - ZlonBg*mesozoo)
+
+  ! for chlorophyll-a
+
+   rhs = BioC(2)*Ps_prod*chl2c_fla*fla - ( (BioC(10)*fla_loss*fla + ZsonPs*microzoo + ZlonPs*mesozoo)*flachl/fla )
+   _SET_ODE_(self%id_flachl,rhs)
+   rhs = BioC(1)*Pl_prod*chl2c_dia*dia - ( (BioC(9)*dia*dia_loss + ZsonPl*microzoo + ZlonPl*mesozoo)*diachl/dia )
+   _SET_ODE_(self%id_diachl,rhs)
+   rhs = BioC(28)*(Bg_prod + Bg_fix)*chl2c_bg*bg - ( (BioC(32)*bg*bg_loss + ZsonBg*microzoo + ZlonBg*mesozoo)*bgchl/bg )
+   _SET_ODE_(self%id_bgchl,rhs)
+
 
    ! microzooplankton
-   !Zs_prod = BioC(20)*(ZsonPs + ZsonPl + ZsonBg) + BioC(21)*ZsonD
-   Zs_prod = sum(self%as_zs * Zson)
-   rhs = (Zs_prod - BioC(16) - BioC(18) - self%zpr) * microzoo
-   ! micro grazing by mesozooplankton is handled below along with all prey
-   ! for now we will only include micro loss due to mortality and excretion
+
+   Zs_prod = BioC(20)*(ZsonPs + ZsonPl + ZsonBg) + BioC(21)*ZsonD
+   rhs = (Zs_prod - (BioC(16) + BioC(18) + self%zpr)*mic_loss) * microzoo &
+         - ZlonZs * mesozoo
    _SET_ODE_(self%id_microzoo, rhs)
 
    ! mesozooplankton
-   !Zl_prod = BioC(19)*(ZlonPs + ZlonPl + ZlonBg + ZlonZs) + BioC(21)*ZlonD
-   Zl_prod = sum(self%as_zl * Zlon)
-   rhs = (Zl_prod - BioC(15) - BioC(17) - self%zpr) * mesozoo
+   Zl_prod = BioC(19)*(ZlonPs + ZlonPl + ZlonBg + ZlonZs) + BioC(21)*ZlonD
+   rhs = (Zl_prod - (BioC(15) + BioC(17) + self%zpr)*mes_loss) * mesozoo
    _SET_ODE_(self%id_mesozoo, rhs)
 
    ! detritus
+   dxxdet = (  ((1.0_rk-BioC(20))*(ZsonPs + ZsonPl + ZsonBg) &
+              + (1.0_rk-BioC(21))*ZsonD) * microzoo &
+              + ((1.0_rk-BioC(19))*(ZlonPs + ZlonPl + ZlonBg + ZlonZs) &
+              + (1.0_rk-BioC(21))*ZlonD) * mesozoo &
+              + BioC(16) * microzoo * mic_loss &
+              + BioC(15) * mesozoo * mes_loss &
+              + BioC(10) * fla * fla_loss &
+              + BioC(9)  * dia * dia_loss &
+              + BioC(32) * bg * bg_loss )
 
-   dxxdet = ( sum((1.0_rk-self%as_zs) * Zson) * microzoo &
-              + sum((1.0_rk-self%as_zl) * Zlon) * mesozoo &
-              + BioC(16) * microzoo &
-              + BioC(15) * mesozoo &
-              + BioC(10) * fla &
-              + BioC(9)  * dia )
-
-   rhs = 0.!(1.0_rk-self%frr) * dxxdet - frem * det
+   rhs = (1.0_rk-self%frr) * dxxdet &
+         - ZsonD * microzoo &
+         - ZlonD * mesozoo &
+         - frem * det
    _SET_ODE_(self%id_det, rhs)
-
-   ! Now we can introduce losses of prey due to zooplankton feeding
-   ! Reminer: id_prey includes microzoo as well, which by definition set below
-   ! microzoo is a prey for microzoo which does not make sense, but remember that
-   ! we have set grazing preference = 0 for micro on micro
-
-
-   do i=1,self%nprey
-   _SET_ODE_(self%id_prey(i),-Zson(i)*microzoo - Zlon(i)*mesozoo)
-   end do
 
    ! labile dissolved organic matter
    _SET_ODE_(self%id_dom, self%frr*dxxdet - fremdom * dom)
@@ -536,26 +589,30 @@
 
    ! ammonium
    rhs = -(up_nh4+0.5d-10)/(up_n+1.0d-10)*Prod &
-         + BioC(18) * microzoo &
-         + BioC(17) * mesozoo &
+         + BioC(18) * microzoo * mic_loss &
+         + BioC(17) * mesozoo * mes_loss &
          + frem * det &
          + fremDOM * dom - bioom1 * nh4
    _SET_ODE_(self%id_nh4, rhs)
 
    ! phosphate
-   _SET_ODE_(self%id_pho, -Prod + BioC(18) * microzoo + BioC(17) * mesozoo + frem*det + fremDOM*dom)
+
+   rhs = -Prod -BioC(28)*bg*Bg_fix &
+         + BioC(18) * microzoo * mic_loss &
+         + BioC(17) * mesozoo * mes_loss &
+         + frem*det + fremDOM*dom
+   _SET_ODE_(self%id_pho, rhs)
+
 
    ! silicate
    _SET_ODE_(self%id_sil, -BioC(1)*Pl_prod*dia + BioC(27)*opa)
 
    ! opal
-   _SET_ODE_(self%id_opa, BioC(9)*dia + sum(self%opal_swc* (Zson*microzoo + Zlon*mesozoo)) - BioC(27)*opa)
-
-
+   _SET_ODE_(self%id_opa, BioC(9)*dia*dia_loss + ZsonPl*microzoo + ZlonPl*mesozoo - BioC(27)*opa)
 
    ! oxygen
    rhs = ((6.625*up_nh4 + 8.125*up_no3+1.d-10)/(up_n+1.d-10)*Prod &
-         -bioom6*6.625*(BioC(18)*microzoo + BioC(17)*mesozoo) &
+         -bioom6*6.625*(BioC(18)*microzoo*mic_loss + BioC(17)*mesozoo*mes_loss) &
          -frem*det*(bioom6+bioom7)*6.625 &
          -(bioom6+bioom7)*6.625*fremDOM*dom &
          -2.0_rk*bioom1*nh4)*redf(11)*redf(16)
@@ -563,10 +620,13 @@
 
    ! Export diagnostic variables
    _SET_DIAGNOSTIC_(self%id_denit,(frem*det*bioom5+fremDOM*dom*bioom5)*redf(11)*redf(16))
-   _SET_DIAGNOSTIC_(self%id_primprod, Prod)
+   _SET_DIAGNOSTIC_(self%id_primprod, Prod + BioC(28)*bg*Bg_fix )
    _SET_DIAGNOSTIC_(self%id_secprod, Zl_prod*mesozoo + Zs_prod*microzoo)
    _SET_DIAGNOSTIC_(self%id_parmean_diag, mean_par)
 
+   _SET_DIAGNOSTIC_(self%id_c2chl_fla, 1.0_rk/chl2c_fla)
+   _SET_DIAGNOSTIC_(self%id_c2chl_dia, 1.0_rk/chl2c_dia)
+   _SET_DIAGNOSTIC_(self%id_c2chl_bg, 1.0_rk/chl2c_bg)
    ! Leave spatial loops (if any)
    _LOOP_END_
 
@@ -586,13 +646,13 @@
 ! !INTERFACE:
 
    subroutine do_surface(self,_ARGUMENTS_DO_SURFACE_)
-   class (type_nersc_ecosmo),intent(in) :: self
+   class (type_hzg_ecosmo),intent(in) :: self
    _DECLARE_ARGUMENTS_DO_SURFACE_
 !
 ! !LOCAL VARIABLES:
    real(rk) :: o2flux, T, tr, S, o2sat, oxy
    real(rk) :: no3flux, phoflux
-   real(rk) :: pho,par,blight,up_pho,prod
+   real(rk) :: pho,par,bg,blight,tbg,up_pho,prod
 !EOP
 !-----------------------------------------------------------------------
 !BOC
@@ -603,6 +663,7 @@
    _GET_(self%id_oxy,oxy)
    _GET_(self%id_par,par)
    _GET_(self%id_pho,pho)
+   _GET_(self%id_bg,bg)
 
    ! Oxygen saturation micromol/liter__(Benson and Krause, 1984)
    tr = 1.0_rk/(T + 273.15_rk)
@@ -622,6 +683,24 @@
    _SET_SURFACE_EXCHANGE_(self%id_pho,self%surface_deposition_pho)
    _SET_SURFACE_EXCHANGE_(self%id_sil,self%surface_deposition_sil)
 
+#if 0
+   ! calculate cyanobacteria surface production
+   if (S <= 10.0) then
+     tbg = 1.0_rk/(1.0_rk + exp(BioC(29)*(BioC(30)-T)))
+   else
+     tbg = 0.0_rk
+   end if
+
+   blight=max(tanh(BioC(3)*par),0.)
+   up_pho = pho/(BioC(25)+pho)
+   prod = BioC(28) * bg * Tbg * min(blight, up_pho) ! cyanobacteria production
+
+   !_SET_ODE_(self%id_bg,  prod)
+   !_SET_ODE_(self%id_pho, -prod)
+   !_SET_SURFACE_ODE_(id_oxy, ) ! not included in the modular ECOSMO version
+   !_SET_SURFACE_ODE_(id_dic, -Prod)
+#endif
+
    ! Leave spatial loops over the horizontal domain (if any)
    _HORIZONTAL_LOOP_END_
 
@@ -640,7 +719,7 @@
 ! !INTERFACE:
 
    subroutine do_bottom(self,_ARGUMENTS_DO_BOTTOM_)
-   class (type_nersc_ecosmo),intent(in) :: self
+   class (type_hzg_ecosmo),intent(in) :: self
    _DECLARE_ARGUMENTS_DO_BOTTOM_
 !
 ! !LOCAL VARIABLES:
@@ -752,22 +831,25 @@
    end subroutine do_bottom
 !EOC
 
-! CAGLAR - what happens here ?
+
    subroutine get_light_extinction(self,_ARGUMENTS_GET_EXTINCTION_)
-   class (type_nersc_ecosmo), intent(in) :: self
+   class (type_hzg_ecosmo), intent(in) :: self
    _DECLARE_ARGUMENTS_GET_EXTINCTION_
 
-   real(rk)                     :: dia,fla
+   real(rk)                     :: dom,det,diachl,flachl,bgchl
 
    ! Enter spatial loops (if any)
    _LOOP_BEGIN_
 
    ! Retrieve current (local) state variable values.
 
-   _GET_(self%id_dia, dia)
-   _GET_(self%id_fla, fla)
+   _GET_(self%id_diachl, diachl)
+   _GET_(self%id_flachl, flachl)
+   _GET_(self%id_det, det)
+   _GET_(self%id_dom, dom)
+   _GET_(self%id_bgchl, bgchl)
 
-   _SET_EXTINCTION_( self%BioC(5)*(dia+fla) + self%BioC(4) )
+   _SET_EXTINCTION_( self%BioC(5)*(diachl+flachl+bgchl) + self%BioC(4) )
 
    ! Leave spatial loops (if any)
    _LOOP_END_
@@ -776,4 +858,4 @@
 
 
 
-   end module fabm_nersc_ecosmo
+   end module fabm_hzg_ecosmo
