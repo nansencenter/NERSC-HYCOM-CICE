@@ -244,6 +244,8 @@ contains
     end subroutine hycom_fabm_initialize
 
     subroutine hycom_fabm_relax_init()
+      use mod_za  ! HYCOM I/O interface
+
       integer :: ivar, next_unit, k
       logical :: file_exists
       character preambl(5)*79
