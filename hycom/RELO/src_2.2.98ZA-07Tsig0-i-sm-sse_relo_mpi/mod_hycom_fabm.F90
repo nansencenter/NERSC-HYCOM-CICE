@@ -61,6 +61,25 @@ module mod_hycom_fabm
    end type
    type (type_interior_output), pointer, save :: first_interior_output => null()
 
+   integer, parameter :: role_prescribe = 0
+   integer, parameter :: role_river = 1
+
+   integer, parameter :: first_relax_unit = 915
+
+   integer, allocatable :: relax_unit(:)
+
+   type type_input
+      integer :: file_unit = -1
+
+      integer :: role = role_prescribe
+      integer :: ivariable = -1           ! state variable index (only used if role is role_river)
+      real, allocatable :: data2d(:,:)
+      real, allocatable :: data3d(:,:,:)
+
+      type (type_input), pointer :: next => null()
+   end type type_input
+   type (type_input), pointer, save :: first_input => null()
+
 contains
 
     subroutine hycom_fabm_configure()
@@ -223,8 +242,257 @@ contains
 
     end subroutine hycom_fabm_initialize
 
-    subroutine hycom_fabm_read_relax()
+    subroutine hycom_fabm_relax_init()
+      integer :: ivar
+      integer :: next_unit
+
+      ! Allocate array to holds units for relaxation files of every pelagic state variable
+      allocate(relax_unit(size(fabm_model%state_variables)))
+
+      ! Default: no relaxation
+      relax_unit = -1
+
+      next_unit = first_relax_unit
+      do ivar=1,size(fabm_model%state_variables)
+        ! Check fpor existence of a file named "relax.<FABMNAME>.a". If present, this will contain the relaxation field (one variable; all k levels)
+        inquire(file=flnmforw(1:lgth)//'relax.'//trim(fabm_model%state_variables(ivar)%name)//'.a', exist=file_exists)
+        if (file_exists) then
+          ! Relaxation file exist; assign next available unit.
+          relax_unit(ivar) = next_unit
+          next_unit = next_unit + 1
+
+          ! Open binary file (.a)
+          call zaiopf(flnmforw(1:lgth)//'relax.'//trim(fabm_model%state_variables(ivar)%name)//'.a', 'old', relax_unit(ivar))
+
+          ! Open metadata (.b)
+          if (mnproc.eq.1) then  ! .b file from 1st tile only
+            open (unit=uoff+relax_unit(ivar),file=flnmforw(1:lgth)//'relax.'//trim(fabm_model%state_variables(ivar)%name)//'.b',
+      &        status='old', action='read')
+            read (uoff+relax_unit(ivar),'(a79)') preambl
+          end if !1st tile
+          call preambl_print(preambl)
+
+          ! ?? Not sure why we are reading here, copying from forfun.F
+          do k=1,kk
+            call hycom_fabm_rdmonthck(util1, relax_unit(ivar), 0)
+          end do
+        end if
+      end do
+    end subroutine hycom_fabm_relax_init
+
+    subroutine hycom_fabm_relax_skmonth()
+      integer :: ivar, k
+
+      do ivar=1,size(fabm_model%state_variables)
+        if (relax_unit(ivar) /= -1) then
+          do k=1,kk
+            call skmonth(relax_unit(ivar))
+          end do
+        end if
+      end do
+    end subroutine hycom_fabm_relax_skmonth
+
+    subroutine hycom_fabm_read_relax(lslot, mnth)
+      use mod_za  ! HYCOM I/O interface
+
+      integer, intent(in) :: lslot, mnth
+
+      integer :: ivar, k
+
+      do ivar=1,size(fabm_model%state_variables)
+        if (relax_unit(ivar) /= -1) then
+          do k= 1,kk
+            call hycom_fabm_rdmonthck(trwall(1-nbdy,1-nbdy,k,lslot,ivar), relax_unit(ivar), mnth)
+          end do
+        end if
+      end do
     end subroutine hycom_fabm_read_relax
+
+    subroutine hycom_fabm_rdmonthck(field, iunit, mnthck)
+      use mod_xc         ! HYCOM communication interface
+      use mod_cb_arrays  ! HYCOM saved arrays
+      use mod_za         ! HYCOM I/O interface
+
+      integer   iunit,mnthck
+      real, dimension (1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy) ::
+     &          field
+
+      integer   i,ios,layer,mnth
+      real      denlay,hmina,hminb,hmaxa,hmaxb
+      character cline*80
+
+      call zagetc(cline,ios, uoff+iunit)
+      if     (ios.ne.0) then
+        if     (mnproc.eq.1) then
+          write(lp,*)
+          write(lp,*) 'error in rdmonth - hit end of input'
+          write(lp,*) 'iunit,ios = ',iunit,ios
+          write(lp,*)
+        endif !1st tile
+        call xcstop('(rdmonth)')
+               stop '(rdmonth)'
+      endif
+      if     (mnproc.eq.1) then
+      write (lp,'(a)')  cline  !print input array info
+      endif !1st tile
+      i = index(cline,'=')
+! CKAL  if     (iunit.ge.900 .and. iunit.le.910) then
+!       if     (iunit.ge.899 .and. iunit.le.910) then
+! c ---   atmospheric forcing
+!         read (cline(i+1:),*) mnth,hminb,hmaxb
+!         if     (mnth.lt.1 .or. mnth.gt.12) then
+!           if     (mnproc.eq.1) then
+!           write(lp,'(/ a,i4,a /)')
+!      &      'error on unit',iunit,' - not monthly atmospheric data'
+!           endif !1st tile
+!           call xcstop('(rdmonth)')
+!                  stop '(rdmonth)'
+!         endif
+!         if     (mnthck.gt.0 .and. mnth.ne.mnthck) then
+!           if     (mnproc.eq.1) then
+!           write(lp,'(/ a,i4,a,a,2i4,a /)')
+!      &      'error on unit',iunit,' - wrong atmospheric month',
+!      &      ' (expected,input =',mnthck,mnth,')'
+!           endif !1st tile
+!           call xcstop('(rdmonth)')
+!                  stop '(rdmonth)'
+!         endif
+!       elseif (iunit.eq.916) then
+! c ---   time-invarient heat flux correction
+!         read (cline(i+1:),*) hminb,hmaxb
+!       elseif (iunit.ge.911 .and. iunit.le.914) then
+c ---   relaxation forcing
+        read (cline(i+1:),*) mnth,layer,denlay,hminb,hmaxb
+        if     (mnth.lt.1 .or. mnth.gt.12) then
+          if     (mnproc.eq.1) then
+          write(lp,'(/ a,i4,a /)') 
+     &      'error on unit',iunit,' - not monthly relaxation data'
+          endif !1st tile
+          call xcstop('(hycom_fabm_rdmonthck)')
+                 stop '(hycom_fabm_rdmonthck)'
+        endif
+        if     (mnthck.gt.0 .and. mnth.ne.mnthck) then
+          if     (mnproc.eq.1) then
+          write(lp,'(/ a,i4,a,a,2i4,a /)')
+     &      'error on unit',iunit,' - wrong relaxation month',
+     &      ' (expected,input =',mnthck,mnth,')'
+          endif !1st tile
+          call xcstop('(hycom_fabm_rdmonthck)')
+                 stop '(hycom_fabm_rdmonthck)'
+        endif
+!       elseif (iunit.eq.919) then
+! c ---   kpar or chl forcing
+!         kparan = cline(i-8:i) .eq. ': range ='
+!         if     (kparan) then
+! c ---     annual
+!           read (cline(i+1:),*) hminb,hmaxb
+!         else
+! c ---     monthly
+!           read (cline(i+1:),*) mnth,hminb,hmaxb
+!           if     (mnth.lt.1 .or. mnth.gt.12) then
+!             if     (mnproc.eq.1) then
+!             write(lp,'(/ a,i4,a /)') 
+!      &        'error on unit',iunit,' - not monthly kpar or chl data'
+!             endif !1st tile
+!             call xcstop('(rdmonth)')
+!                    stop '(rdmonth)'
+!           endif
+!           if     (mnthck.gt.0 .and. mnth.ne.mnthck) then
+!             if     (mnproc.eq.1) then
+!             write(lp,'(/ a,i4,a,a,2i4,a /)')
+!      &       'error on unit',iunit,' - wrong kpar month',
+!      &       ' (expected,input =',mnthck,mnth,')'
+!            endif !1st tile
+!            call xcstop('(rdmonth)')
+!                   stop '(rdmonth)'
+!          endif
+!         endif
+!       elseif (iunit.eq.918) then
+! c ---   river forcing
+!         rivera = cline(i-8:i) .eq. ': range ='
+!         if     (rivera) then
+! c ---     annual
+!           read (cline(i+1:),*) hminb,hmaxb
+!         else
+! c ---     monthly
+!           read (cline(i+1:),*) mnth,hminb,hmaxb
+!           if     (mnth.lt.1 .or. mnth.gt.12) then
+!             if     (mnproc.eq.1) then
+!             write(lp,'(/ a,i4,a /)') 
+!      &        'error on unit',iunit,' - not monthly river data'
+!             endif !1st tile
+!             call xcstop('(rdmonth)')
+!                    stop '(rdmonth)'
+!           endif
+!           if     (mnthck.gt.0 .and. mnth.ne.mnthck) then
+!             if     (mnproc.eq.1) then
+!             write(lp,'(/ a,i4,a,a,2i4,a /)')
+!      &       'error on unit',iunit,' - wrong river month',
+!      &       ' (expected,input =',mnthck,mnth,')'
+!            endif !1st tile
+!            call xcstop('(rdmonth)')
+!                   stop '(rdmonth)'
+!          endif
+!         endif
+!       elseif (iunit.eq.915) then
+! c ---   relaxation time scale
+!         read (cline(i+1:),*) hminb,hmaxb
+!       elseif (iunit.eq.922) then
+! c ---   target density field.
+!         read (cline(i+1:),*) layer,hminb,hmaxb
+!         if     (hminb.gt.sigma(layer)+0.005 .or.
+!      &          hmaxb.lt.sigma(layer)-0.005     ) then
+!           if     (mnproc.eq.1) then
+!           write(lp,'(/ a,i4,a /)') 
+!      &      'error on unit',iunit,' - not consistent with sigma(k)'
+!           endif !1st tile
+!           call xcstop('(rdmonth)')
+!                  stop '(rdmonth)'
+!         endif
+!       elseif (iunit.eq.923) then
+! c ---   laplacian or biharmonic diffusion velocity field
+!         read (cline(i+1:),*) hminb,hmaxb
+!       elseif (iunit.eq.924) then
+! c ---   minimum depth for isopycnal layers
+!         read (cline(i+1:),*) hminb,hmaxb
+!       elseif (iunit.eq.925) then
+! c ---   tidal drag roughness or SAL
+!         read (cline(i+1:),*) hminb,hmaxb
+!       else
+!         if     (mnproc.eq.1) then
+!         write(lp,'(a,a / a,i5)')
+! CKAL &    'error - iunit must be 900-910 or 911-916',
+!      &    'error - iunit must be 899-910 or 911-916',
+!      &                       'or 918-919 or 922-925',
+!      &    'iunit =',iunit
+!         endif !1st tile
+!         call xcstop('(rdmonth)')
+!                stop '(rdmonth)'
+!       endif
+
+      if     (hminb.eq.hmaxb) then  !constant field
+        field(:,:) = hminb
+        call zaiosk(iunit)
+      else
+        call zaiord(field,ip,.false., hmina,hmaxa,
+     &              iunit)
+
+        if     (abs(hmina-hminb).gt.abs(hminb)*1.e-4 .or.
+     &          abs(hmaxa-hmaxb).gt.abs(hmaxb)*1.e-4     ) then
+          if     (mnproc.eq.1) then
+          write(lp,'(/ a / a,i3 / a / a,1p3e14.6 / a,1p3e14.6 /)')
+     &      'error - .a and .b files not consistent:',
+     &      'iunit = ',iunit,
+     &      cline,
+     &      '.a,.b min = ',hmina,hminb,hmina-hminb,
+     &      '.a,.b max = ',hmaxa,hmaxb,hmaxa-hmaxb
+          endif !1st tile
+          call xcstop('(rdmonth)')
+                 stop '(rdmonth)'
+        endif
+      endif
+
+    end subroutine hycom_fabm_rdmonthck
 
     subroutine hycom_fabm_update(m, n, ibio)
       integer, intent(in) :: m, n, ibio
@@ -235,6 +503,7 @@ contains
       real :: flux(ii, size(fabm_model%state_variables))
       real :: sms_bt(ii, size(fabm_model%bottom_state_variables))
       real :: sms_sf(ii, size(fabm_model%surface_state_variables))
+      type (type_input), pointer :: input
 
       write (*,*) 'hycom_fabm_update', nstep, time
 !
@@ -363,6 +632,15 @@ contains
       end do
       if (do_check_state) call check_state('after interior sources', n, .false.)
       end if
+
+      input => first_input
+      do while (associated(input))
+        if (input%role == role_river) then
+          ! River field
+          tracer(1:ii, 1:jj, 1, n, input%ivariable) = tracer(1:ii, 1:jj, 1, n, input%ivariable) + delt1 * input%data2d(1:ii, 1:jj)/h(1:ii, 1:jj, 1)
+        end if
+        input => input%next
+      end do
 
       call check_state('after hycom_fabm_update', n, .true.)
 

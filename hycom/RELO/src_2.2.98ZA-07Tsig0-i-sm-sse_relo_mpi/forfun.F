@@ -1651,7 +1651,7 @@ c
 c
       if     (relaxt) then
 #ifdef _FABM_
-        call hycom_fabm_read_relax()
+        call hycom_fabm_relax_init()
 #else
         call zaiopf(flnmforw(1:lgth)//'relax.trcr.a', 'old', 914)
         if     (mnproc.eq.1) then  ! .b file from 1st tile only
@@ -3149,6 +3149,9 @@ c
               enddo
             endif
           enddo
+#ifdef _FABM_
+          call hycom_fabm_relax_skmonth()
+#endif
         enddo
 c
 c --- read desired month
@@ -3183,6 +3186,7 @@ c
 c
         if (relaxt) then
 #ifdef _FABM_
+          call hycom_fabm_read_relax(lslot, mnth)
 #else
           do ktr= 1,ntracr
             do k= 1,kk
