@@ -3186,7 +3186,7 @@ c
 c
         if (relaxt) then
 #ifdef _FABM_
-          call hycom_fabm_read_relax(lslot, mnth)
+          call hycom_fabm_relax_read(lslot, mnth)
 #else
           do ktr= 1,ntracr
             do k= 1,kk

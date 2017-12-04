@@ -25,7 +25,8 @@ module mod_hycom_fabm
 
    private
 
-   public hycom_fabm_configure, hycom_fabm_initialize, hycom_fabm_update, hycom_fabm_read_relax
+   public hycom_fabm_configure, hycom_fabm_initialize, hycom_fabm_update
+   public hycom_fabm_read_relax, hycom_fabm_relax
    public hycom_fabm_allocate_mean_output, hycom_fabm_zero_mean_output, hycom_fabm_increment_mean_output, hycom_fabm_end_mean_output, hycom_fabm_write_mean_output
    public fabm_surface_state, fabm_bottom_state
 
@@ -66,7 +67,7 @@ module mod_hycom_fabm
 
    integer, parameter :: first_relax_unit = 915
 
-   integer, allocatable :: relax_unit(:)
+   integer, allocatable :: hycom_fabm_relax(:)
 
    type type_input
       integer :: file_unit = -1
@@ -248,10 +249,10 @@ contains
       character preambl(5)*79
 
       ! Allocate array to holds units for relaxation files of every pelagic state variable
-      allocate(relax_unit(size(fabm_model%state_variables)))
+      allocate(hycom_fabm_relax(size(fabm_model%state_variables)))
 
       ! Default: no relaxation
-      relax_unit = -1
+      hycom_fabm_relax = -1
 
       next_unit = first_relax_unit
       do ivar=1,size(fabm_model%state_variables)
@@ -259,23 +260,23 @@ contains
         inquire(file=trim(flnmforw)//'relax.'//trim(fabm_model%state_variables(ivar)%name)//'.a', exist=file_exists)
         if (file_exists) then
           ! Relaxation file exist; assign next available unit.
-          relax_unit(ivar) = next_unit
+          hycom_fabm_relax(ivar) = next_unit
           next_unit = next_unit + 1
 
           ! Open binary file (.a)
-          call zaiopf(trim(flnmforw)//'relax.'//trim(fabm_model%state_variables(ivar)%name)//'.a', 'old', relax_unit(ivar))
+          call zaiopf(trim(flnmforw)//'relax.'//trim(fabm_model%state_variables(ivar)%name)//'.a', 'old', hycom_fabm_relax(ivar))
 
           ! Open metadata (.b)
           if (mnproc.eq.1) then  ! .b file from 1st tile only
-            open (unit=uoff+relax_unit(ivar),file=trim(flnmforw)//'relax.'//trim(fabm_model%state_variables(ivar)%name)//'.b', &
+            open (unit=uoff+hycom_fabm_relax(ivar),file=trim(flnmforw)//'relax.'//trim(fabm_model%state_variables(ivar)%name)//'.b', &
                status='old', action='read')
-            read (uoff+relax_unit(ivar),'(a79)') preambl
+            read (uoff+hycom_fabm_relax(ivar),'(a79)') preambl
           end if !1st tile
           call preambl_print(preambl)
 
           ! ?? Not sure why we are reading here, copying from forfun.F
           do k=1,kk
-            call hycom_fabm_rdmonthck(util1, relax_unit(ivar), 0)
+            call hycom_fabm_rdmonthck(util1, hycom_fabm_relax(ivar), 0)
           end do
         end if
       end do
@@ -285,9 +286,9 @@ contains
       integer :: ivar, k
 
       do ivar=1,size(fabm_model%state_variables)
-        if (relax_unit(ivar) /= -1) then
+        if (hycom_fabm_relax(ivar) /= -1) then
           do k=1,kk
-            call skmonth(relax_unit(ivar))
+            call skmonth(hycom_fabm_relax(ivar))
           end do
         end if
       end do
@@ -301,9 +302,9 @@ contains
       integer :: ivar, k
 
       do ivar=1,size(fabm_model%state_variables)
-        if (relax_unit(ivar) /= -1) then
+        if (hycom_fabm_relax(ivar) /= -1) then
           do k= 1,kk
-            call hycom_fabm_rdmonthck(trwall(1-nbdy,1-nbdy,k,lslot,ivar), relax_unit(ivar), mnth)
+            call hycom_fabm_rdmonthck(trwall(1-nbdy,1-nbdy,k,lslot,ivar), hycom_fabm_relax(ivar), mnth)
           end do
         end if
       end do

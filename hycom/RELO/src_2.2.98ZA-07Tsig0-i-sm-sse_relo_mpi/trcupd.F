@@ -175,7 +175,6 @@ c
         return  ! tracer from restart
       endif
 c
-#ifndef _FABM_
       if     (iniflg.eq.2) then  ! use climatology
         call rdrlax(mnth,1)
 !$OMP   PARALLEL DO PRIVATE(j,i,k,ktr,pwij,trwij,prij,trcij)
@@ -198,6 +197,9 @@ c
      &                    trcij,prij,kk        )
               do k=1,kk
                 do ktr= 1,ntracr
+#ifdef _FABM_
+                  if (hycom_fabm_relax(ivar) == -1) continue
+#endif
                   tracer(i,j,k,1,ktr)=trcij(k,ktr)
                   tracer(i,j,k,2,ktr)=trcij(k,ktr)
                 enddo !ktr
@@ -207,6 +209,7 @@ c
         enddo !j
 !$OMP   END PARALLEL DO
       else ! analytic inititalization
+#ifndef _FABM_
 !$OMP   PARALLEL DO PRIVATE(j,i,k,ktr,prij,chl,swfrac,zk,bio_n,bio_p)
 !$OMP&           SCHEDULE(STATIC,jblk)
         do j=1,jj
@@ -287,8 +290,8 @@ c
           enddo !i
         enddo !j
 !$OMP   END PARALLEL DO
-      endif !iniflg.eq.2:else
 #endif
+      endif !iniflg.eq.2:else
 c
       if     (lpipe .and. lpipe_initrc) then
          do ktr= 1,ntracr
