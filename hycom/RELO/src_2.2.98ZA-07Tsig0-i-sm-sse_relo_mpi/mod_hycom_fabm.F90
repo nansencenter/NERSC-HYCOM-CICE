@@ -243,8 +243,9 @@ contains
     end subroutine hycom_fabm_initialize
 
     subroutine hycom_fabm_relax_init()
-      integer :: ivar
-      integer :: next_unit
+      integer :: ivar, next_unit, k
+      logical :: file_exists
+      character preambl(5)*79
 
       ! Allocate array to holds units for relaxation files of every pelagic state variable
       allocate(relax_unit(size(fabm_model%state_variables)))
