@@ -321,159 +321,40 @@ contains
       character cline*80
 
       call zagetc(cline,ios, uoff+iunit)
-      if     (ios.ne.0) then
-        if     (mnproc.eq.1) then
+      if (ios.ne.0) then
+        if (mnproc.eq.1) then
           write(lp,*)
           write(lp,*) 'error in rdmonth - hit end of input'
           write(lp,*) 'iunit,ios = ',iunit,ios
           write(lp,*)
-        endif !1st tile
+        end if !1st tile
         call xcstop('(rdmonth)')
-               stop '(rdmonth)'
-      endif
-      if     (mnproc.eq.1) then
-      write (lp,'(a)')  cline  !print input array info
-      endif !1st tile
+        stop '(rdmonth)'
+      end if
+      if (mnproc.eq.1) write (lp,'(a)')  cline  !print input array info
       i = index(cline,'=')
-! CKAL  if     (iunit.ge.900 .and. iunit.le.910) then
-!       if     (iunit.ge.899 .and. iunit.le.910) then
-! c ---   atmospheric forcing
-!         read (cline(i+1:),*) mnth,hminb,hmaxb
-!         if     (mnth.lt.1 .or. mnth.gt.12) then
-!           if     (mnproc.eq.1) then
-!           write(lp,'(/ a,i4,a /)')
-!      &      'error on unit',iunit,' - not monthly atmospheric data'
-!           endif !1st tile
-!           call xcstop('(rdmonth)')
-!                  stop '(rdmonth)'
-!         endif
-!         if     (mnthck.gt.0 .and. mnth.ne.mnthck) then
-!           if     (mnproc.eq.1) then
-!           write(lp,'(/ a,i4,a,a,2i4,a /)')
-!      &      'error on unit',iunit,' - wrong atmospheric month',
-!      &      ' (expected,input =',mnthck,mnth,')'
-!           endif !1st tile
-!           call xcstop('(rdmonth)')
-!                  stop '(rdmonth)'
-!         endif
-!       elseif (iunit.eq.916) then
-! c ---   time-invarient heat flux correction
-!         read (cline(i+1:),*) hminb,hmaxb
-!       elseif (iunit.ge.911 .and. iunit.le.914) then
-c ---   relaxation forcing
-        read (cline(i+1:),*) mnth,layer,denlay,hminb,hmaxb
-        if     (mnth.lt.1 .or. mnth.gt.12) then
-          if     (mnproc.eq.1) then
-          write(lp,'(/ a,i4,a /)') 'error on unit',iunit,' - not monthly relaxation data'
-          end if !1st tile
-          call xcstop('(hycom_fabm_rdmonthck)')
-                 stop '(hycom_fabm_rdmonthck)'
-        endif
-        if     (mnthck.gt.0 .and. mnth.ne.mnthck) then
-          if     (mnproc.eq.1) then
-          write(lp,'(/ a,i4,a,a,2i4,a /)') 'error on unit',iunit,' - wrong relaxation month (expected,input =',mnthck,mnth,')'
-          endif !1st tile
-          call xcstop('(hycom_fabm_rdmonthck)')
-                 stop '(hycom_fabm_rdmonthck)'
-        endif
-!       elseif (iunit.eq.919) then
-! c ---   kpar or chl forcing
-!         kparan = cline(i-8:i) .eq. ': range ='
-!         if     (kparan) then
-! c ---     annual
-!           read (cline(i+1:),*) hminb,hmaxb
-!         else
-! c ---     monthly
-!           read (cline(i+1:),*) mnth,hminb,hmaxb
-!           if     (mnth.lt.1 .or. mnth.gt.12) then
-!             if     (mnproc.eq.1) then
-!             write(lp,'(/ a,i4,a /)') 
-!      &        'error on unit',iunit,' - not monthly kpar or chl data'
-!             endif !1st tile
-!             call xcstop('(rdmonth)')
-!                    stop '(rdmonth)'
-!           endif
-!           if     (mnthck.gt.0 .and. mnth.ne.mnthck) then
-!             if     (mnproc.eq.1) then
-!             write(lp,'(/ a,i4,a,a,2i4,a /)')
-!      &       'error on unit',iunit,' - wrong kpar month',
-!      &       ' (expected,input =',mnthck,mnth,')'
-!            endif !1st tile
-!            call xcstop('(rdmonth)')
-!                   stop '(rdmonth)'
-!          endif
-!         endif
-!       elseif (iunit.eq.918) then
-! c ---   river forcing
-!         rivera = cline(i-8:i) .eq. ': range ='
-!         if     (rivera) then
-! c ---     annual
-!           read (cline(i+1:),*) hminb,hmaxb
-!         else
-! c ---     monthly
-!           read (cline(i+1:),*) mnth,hminb,hmaxb
-!           if     (mnth.lt.1 .or. mnth.gt.12) then
-!             if     (mnproc.eq.1) then
-!             write(lp,'(/ a,i4,a /)') 
-!      &        'error on unit',iunit,' - not monthly river data'
-!             endif !1st tile
-!             call xcstop('(rdmonth)')
-!                    stop '(rdmonth)'
-!           endif
-!           if     (mnthck.gt.0 .and. mnth.ne.mnthck) then
-!             if     (mnproc.eq.1) then
-!             write(lp,'(/ a,i4,a,a,2i4,a /)')
-!      &       'error on unit',iunit,' - wrong river month',
-!      &       ' (expected,input =',mnthck,mnth,')'
-!            endif !1st tile
-!            call xcstop('(rdmonth)')
-!                   stop '(rdmonth)'
-!          endif
-!         endif
-!       elseif (iunit.eq.915) then
-! c ---   relaxation time scale
-!         read (cline(i+1:),*) hminb,hmaxb
-!       elseif (iunit.eq.922) then
-! c ---   target density field.
-!         read (cline(i+1:),*) layer,hminb,hmaxb
-!         if     (hminb.gt.sigma(layer)+0.005 .or.
-!      &          hmaxb.lt.sigma(layer)-0.005     ) then
-!           if     (mnproc.eq.1) then
-!           write(lp,'(/ a,i4,a /)') 
-!      &      'error on unit',iunit,' - not consistent with sigma(k)'
-!           endif !1st tile
-!           call xcstop('(rdmonth)')
-!                  stop '(rdmonth)'
-!         endif
-!       elseif (iunit.eq.923) then
-! c ---   laplacian or biharmonic diffusion velocity field
-!         read (cline(i+1:),*) hminb,hmaxb
-!       elseif (iunit.eq.924) then
-! c ---   minimum depth for isopycnal layers
-!         read (cline(i+1:),*) hminb,hmaxb
-!       elseif (iunit.eq.925) then
-! c ---   tidal drag roughness or SAL
-!         read (cline(i+1:),*) hminb,hmaxb
-!       else
-!         if     (mnproc.eq.1) then
-!         write(lp,'(a,a / a,i5)')
-! CKAL &    'error - iunit must be 900-910 or 911-916',
-!      &    'error - iunit must be 899-910 or 911-916',
-!      &                       'or 918-919 or 922-925',
-!      &    'iunit =',iunit
-!         endif !1st tile
-!         call xcstop('(rdmonth)')
-!                stop '(rdmonth)'
-!       endif
 
-      if     (hminb.eq.hmaxb) then  !constant field
+      read (cline(i+1:),*) mnth,layer,denlay,hminb,hmaxb
+      if (mnth.lt.1 .or. mnth.gt.12) then
+        if (mnproc.eq.1) write(lp,'(/ a,i4,a /)') 'error on unit',iunit,' - not monthly relaxation data'
+        call xcstop('(hycom_fabm_rdmonthck)')
+        stop '(hycom_fabm_rdmonthck)'
+      end if
+      if (mnthck.gt.0 .and. mnth.ne.mnthck) then
+        if (mnproc.eq.1) &
+          write(lp,'(/ a,i4,a,a,2i4,a /)') 'error on unit',iunit,' - wrong relaxation month (expected,input =',mnthck,mnth,')'
+        call xcstop('(hycom_fabm_rdmonthck)')
+        stop '(hycom_fabm_rdmonthck)'
+      end if
+
+      if (hminb.eq.hmaxb) then  !constant field
         field(:,:) = hminb
         call zaiosk(iunit)
       else
         call zaiord(field,ip,.false., hmina,hmaxa,iunit)
 
-        if     (abs(hmina-hminb).gt.abs(hminb)*1.e-4 .or. abs(hmaxa-hmaxb).gt.abs(hmaxb)*1.e-4     ) then
-          if     (mnproc.eq.1) then
+        if (abs(hmina-hminb).gt.abs(hminb)*1.e-4 .or. abs(hmaxa-hmaxb).gt.abs(hmaxb)*1.e-4     ) then
+          if (mnproc.eq.1) then
           write(lp,'(/ a / a,i3 / a / a,1p3e14.6 / a,1p3e14.6 /)') &
             'error - .a and .b files not consistent:', &
             'iunit = ',iunit, &
@@ -482,7 +363,7 @@ c ---   relaxation forcing
             '.a,.b max = ',hmaxa,hmaxb,hmaxa-hmaxb
           end if !1st tile
           call xcstop('(rdmonth)')
-                 stop '(rdmonth)'
+          stop '(rdmonth)'
         end if
       end if
 
