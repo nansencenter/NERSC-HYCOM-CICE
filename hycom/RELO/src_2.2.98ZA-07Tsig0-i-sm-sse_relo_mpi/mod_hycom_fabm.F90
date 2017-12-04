@@ -255,19 +255,19 @@ contains
       next_unit = first_relax_unit
       do ivar=1,size(fabm_model%state_variables)
         ! Check fpor existence of a file named "relax.<FABMNAME>.a". If present, this will contain the relaxation field (one variable; all k levels)
-        inquire(file=flnmforw(1:lgth)//'relax.'//trim(fabm_model%state_variables(ivar)%name)//'.a', exist=file_exists)
+        inquire(file=trim(flnmforw)//'relax.'//trim(fabm_model%state_variables(ivar)%name)//'.a', exist=file_exists)
         if (file_exists) then
           ! Relaxation file exist; assign next available unit.
           relax_unit(ivar) = next_unit
           next_unit = next_unit + 1
 
           ! Open binary file (.a)
-          call zaiopf(flnmforw(1:lgth)//'relax.'//trim(fabm_model%state_variables(ivar)%name)//'.a', 'old', relax_unit(ivar))
+          call zaiopf(trim(flnmforw)//'relax.'//trim(fabm_model%state_variables(ivar)%name)//'.a', 'old', relax_unit(ivar))
 
           ! Open metadata (.b)
           if (mnproc.eq.1) then  ! .b file from 1st tile only
-            open (unit=uoff+relax_unit(ivar),file=flnmforw(1:lgth)//'relax.'//trim(fabm_model%state_variables(ivar)%name)//'.b',
-      &        status='old', action='read')
+            open (unit=uoff+relax_unit(ivar),file=trim(flnmforw)//'relax.'//trim(fabm_model%state_variables(ivar)%name)//'.b', &
+               status='old', action='read')
             read (uoff+relax_unit(ivar),'(a79)') preambl
           end if !1st tile
           call preambl_print(preambl)
