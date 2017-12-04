@@ -314,8 +314,7 @@ contains
       use mod_za         ! HYCOM I/O interface
 
       integer   iunit,mnthck
-      real, dimension (1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy) ::
-     &          field
+      real, dimension (1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy) :: field
 
       integer   i,ios,layer,mnth
       real      denlay,hmina,hminb,hmaxa,hmaxb
@@ -365,17 +364,14 @@ c ---   relaxation forcing
         read (cline(i+1:),*) mnth,layer,denlay,hminb,hmaxb
         if     (mnth.lt.1 .or. mnth.gt.12) then
           if     (mnproc.eq.1) then
-          write(lp,'(/ a,i4,a /)') 
-     &      'error on unit',iunit,' - not monthly relaxation data'
-          endif !1st tile
+          write(lp,'(/ a,i4,a /)') 'error on unit',iunit,' - not monthly relaxation data'
+          end if !1st tile
           call xcstop('(hycom_fabm_rdmonthck)')
                  stop '(hycom_fabm_rdmonthck)'
         endif
         if     (mnthck.gt.0 .and. mnth.ne.mnthck) then
           if     (mnproc.eq.1) then
-          write(lp,'(/ a,i4,a,a,2i4,a /)')
-     &      'error on unit',iunit,' - wrong relaxation month',
-     &      ' (expected,input =',mnthck,mnth,')'
+          write(lp,'(/ a,i4,a,a,2i4,a /)') 'error on unit',iunit,' - wrong relaxation month (expected,input =',mnthck,mnth,')'
           endif !1st tile
           call xcstop('(hycom_fabm_rdmonthck)')
                  stop '(hycom_fabm_rdmonthck)'
@@ -474,23 +470,21 @@ c ---   relaxation forcing
         field(:,:) = hminb
         call zaiosk(iunit)
       else
-        call zaiord(field,ip,.false., hmina,hmaxa,
-     &              iunit)
+        call zaiord(field,ip,.false., hmina,hmaxa,iunit)
 
-        if     (abs(hmina-hminb).gt.abs(hminb)*1.e-4 .or.
-     &          abs(hmaxa-hmaxb).gt.abs(hmaxb)*1.e-4     ) then
+        if     (abs(hmina-hminb).gt.abs(hminb)*1.e-4 .or. abs(hmaxa-hmaxb).gt.abs(hmaxb)*1.e-4     ) then
           if     (mnproc.eq.1) then
-          write(lp,'(/ a / a,i3 / a / a,1p3e14.6 / a,1p3e14.6 /)')
-     &      'error - .a and .b files not consistent:',
-     &      'iunit = ',iunit,
-     &      cline,
-     &      '.a,.b min = ',hmina,hminb,hmina-hminb,
-     &      '.a,.b max = ',hmaxa,hmaxb,hmaxa-hmaxb
-          endif !1st tile
+          write(lp,'(/ a / a,i3 / a / a,1p3e14.6 / a,1p3e14.6 /)') &
+            'error - .a and .b files not consistent:', &
+            'iunit = ',iunit, &
+            cline, &
+            '.a,.b min = ',hmina,hminb,hmina-hminb, &
+            '.a,.b max = ',hmaxa,hmaxb,hmaxa-hmaxb
+          end if !1st tile
           call xcstop('(rdmonth)')
                  stop '(rdmonth)'
-        endif
-      endif
+        end if
+      end if
 
     end subroutine hycom_fabm_rdmonthck
 
