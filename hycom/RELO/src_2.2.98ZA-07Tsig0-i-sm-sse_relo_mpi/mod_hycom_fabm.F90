@@ -26,7 +26,7 @@ module mod_hycom_fabm
    private
 
    public hycom_fabm_configure, hycom_fabm_initialize, hycom_fabm_update
-   public hycom_fabm_read_relax, hycom_fabm_relax
+   public hycom_fabm_relax_init, hycom_fabm_relax_skmonth, hycom_fabm_relax_read, hycom_fabm_relax
    public hycom_fabm_allocate_mean_output, hycom_fabm_zero_mean_output, hycom_fabm_increment_mean_output, hycom_fabm_end_mean_output, hycom_fabm_write_mean_output
    public fabm_surface_state, fabm_bottom_state
 
@@ -294,7 +294,7 @@ contains
       end do
     end subroutine hycom_fabm_relax_skmonth
 
-    subroutine hycom_fabm_read_relax(lslot, mnth)
+    subroutine hycom_fabm_relax_read(lslot, mnth)
       use mod_za  ! HYCOM I/O interface
 
       integer, intent(in) :: lslot, mnth
@@ -308,7 +308,7 @@ contains
           end do
         end if
       end do
-    end subroutine hycom_fabm_read_relax
+    end subroutine hycom_fabm_relax_read
 
     subroutine hycom_fabm_rdmonthck(field, iunit, mnthck)
       use mod_xc         ! HYCOM communication interface
