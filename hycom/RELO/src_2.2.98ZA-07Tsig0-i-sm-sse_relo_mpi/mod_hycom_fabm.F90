@@ -762,8 +762,11 @@ contains
 
       interior_output => first_interior_output
       do while (associated(interior_output))
-        pdata3d => interior_output%data3d
-        if (associated(interior_output%data4d)) pdata3d => interior_output%data4d(:, :, :, n)
+        if (associated(interior_output%data4d)) then
+          pdata3d => interior_output%data4d(1:ii, 1:jj, 1:kk, n)
+        else
+          pdata3d => interior_output%data3d(1:ii, 1:jj, 1:kk)
+        end if
         do k=1,kk
           do j=1,jj
             do i=1,ii
@@ -776,8 +779,11 @@ contains
 
       horizontal_output => first_horizontal_output
       do while (associated(horizontal_output))
-        pdata2d => horizontal_output%data2d
-        if (associated(horizontal_output%data3d)) pdata2d => horizontal_output%data3d(:, :, n)
+        if (associated(horizontal_output%data3d)) then
+          pdata2d => horizontal_output%data3d(1:ii, 1:jj, n)
+        else
+          pdata2d => horizontal_output%data2d(1:ii, 1:jj)
+        end if
         do j=1,jj
           do i=1,ii
             if (SEA_P) horizontal_output%mean(i, j) = horizontal_output%mean(i, j) + s * pdata2d(i,j)
