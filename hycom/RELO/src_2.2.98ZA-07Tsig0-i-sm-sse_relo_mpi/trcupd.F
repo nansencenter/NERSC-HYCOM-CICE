@@ -198,7 +198,7 @@ c
               do k=1,kk
                 do ktr= 1,ntracr
 #ifdef _FABM_
-                  if (hycom_fabm_relax(ktr) == -1) continue
+                  if (hycom_fabm_relax(ktr) == -1) cycle
 #endif
                   tracer(i,j,k,1,ktr)=trcij(k,ktr)
                   tracer(i,j,k,2,ktr)=trcij(k,ktr)
