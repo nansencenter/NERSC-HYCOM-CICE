@@ -1,13 +1,14 @@
-# makefile includes for hexagon, portland compilers
+# makefile includes for Sisu, intel compilers
 # Standard compilers and linkers
 CF90= ftn
-CF77= ftn
+CF77= $(CF90)
 CC= cc
-LD= ftn
+LD= $(CF90)
 
 # CPP, used internally by compilers - note that some compilers
 # need special options for this, consult compiler manual if in trouble
-CPP= /usr/bin/cpp -P -traditional
+#CPP= /usr/bin/cpp -P -traditional
+CPP= /usr/bin/cpp -P
 
 #NCAR graphics compiler wrappers
 NCARGCF90=ncargf90
@@ -16,43 +17,25 @@ NCARGCC=ncargcc
 NCARGLD=ncargf90
 
 # Flags for fixed/free format
-F90FLG= -Mfree
-F77FLG= -Mfixed
+F90FLG= -free
+F77FLG = -nofree
 
-## uncomment below for debugging and set MPI = NO in makefile
-#  CF90 = pgfortran
-#  CF77 = pgfortran
-#  LD = pgfortran
-#  DEBUG_FLAGS = -g -Minform=inform
-#  PAR0 =
-#  OPTO = 
-#  INC_NETCDF = -I/local/netcdf-3.6.2-pgi/include
-#  LIB_NETCDF = /local/netcdf-3.6.2-pgi/lib/libnetcdf.a
-#  INC_FFTW = -I/opt/fftw/3.2.2/include
-#  LIB_FFTW = /opt/fftw/3.2.2/lib/libfftw3.a
-#
-# Compiler flags, real8 version, optimized
-#FLAGS= -fast -fastsse -byteswapio -g -r8 -Minform=inform
-FFLAGS= -fast -fastsse -byteswapio -g -r8
-CFLAGS= -fast -fastsse
-# Compiler flags, real8 version, unoptimized
-#FFLAGS= -byteswapio -g -r8
-#CFLAGS= 
+
+# Compiler flags, real8 version
+FFLAGS= -real_size 64 -convert big_endian -w -O2  -g -r8  -xAVX -axCORE-AVX2 
+CFLAGS= -O2
 
 # Compiler flags, real4 version (needed for NCARG routines)
-FFLAGSR4= -fast -fastsse -byteswapio -g -r4
-CFLAGSR4= -fast -fastsse
+FFLAGSR4= -real_size 32 -convert big_endian -w -O2  -g -xAVX -axCORE-AVX2 
+CFLAGSR4= -O2
 
 # Linker flags
-LINKFLAGS= $(FFLAGS)
+LINKFLAGS= $(FFLAGS)  
 
-#Netcdf, FFTW and lapack Libraries
-NETCDF_INC =
-
-# Not needed on cray machines
-INCLUDE= 
-LIBS =  
+#Libraries, Netcdf, FFTW, LAPACK
+LIBS = 
+INCLUDE = 
 
 # Some fortran compilers have iargc as built in, 
-# others as library routine. NB: CPP flags and libs mustr be consistent
-CPPFLAGS=-DIARGC -DFFTW -DLAPACK
+# others as library routine
+CPPFLAGS=-DFFTW -DLAPACK

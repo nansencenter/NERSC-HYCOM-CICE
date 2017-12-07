@@ -445,7 +445,7 @@ contains
    integer :: var_dims(ndims)
    integer :: fieldint(nx,ny,nz)
    integer :: varid, countlo, counthi 
-   character(len=80) :: stdname, longname, units, vnamenc, cellmethod
+   character(len=85) :: stdname, longname, units, vnamenc, cellmethod
    integer :: fillval
    real    :: scale_factor, add_offset, limits(2)
 
