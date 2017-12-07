@@ -337,12 +337,12 @@ contains
       if (ios.ne.0) then
         if (mnproc.eq.1) then
           write(lp,*)
-          write(lp,*) 'error in rdmonth - hit end of input'
+          write(lp,*) 'error in hycom_fabm_rdmonthck - hit end of input'
           write(lp,*) 'iunit,ios = ',iunit,ios
           write(lp,*)
         end if !1st tile
-        call xcstop('(rdmonth)')
-        stop '(rdmonth)'
+        call xcstop('(hycom_fabm_rdmonthck)')
+        stop '(hycom_fabm_rdmonthck)'
       end if
       if (mnproc.eq.1) write (lp,'(a)')  cline  !print input array info
       i = index(cline,'=')
@@ -375,8 +375,8 @@ contains
             '.a,.b min = ',hmina,hminb,hmina-hminb, &
             '.a,.b max = ',hmaxa,hmaxb,hmaxa-hmaxb
           end if !1st tile
-          call xcstop('(rdmonth)')
-          stop '(rdmonth)'
+          call xcstop('(hycom_fabm_rdmonthck)')
+          stop '(hycom_fabm_rdmonthck)'
         end if
       end if
 
