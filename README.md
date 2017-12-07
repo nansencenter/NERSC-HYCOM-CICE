@@ -39,9 +39,10 @@ The following structure is relative to the checked out code ($NHCROOT)
     │   ├── MSCPROGS        # Location of setup/diag routines  developed at NERSC
     │   └── RELO            # Location of hycom source code
     ├── input               # Location of some input files 
-    ├──  TP0a1.00            # Location of "Reference experiment"
-    ├──  TP5a0.06            # Location of "Reference experiment for TOPAZ5 system"
-    └──  NMOa0.08            # Location of "Reference experiment for nesting from NEMO for TOPAZ5 system"
+    ├──  TP0a1.00           # Location of "Reference experiment"
+    ├──  TP5a0.06           # Location of "Reference experiment for TOPAZ5 system"
+    └──  NMOa0.08           # Location of "Reference experiment for nesting 
+                            # from NEMO for TOPAZ5 system"
 
 
 # Compiling HYCOM-CICE support programs
@@ -52,7 +53,9 @@ The following structure is relative to the checked out code ($NHCROOT)
 
 # Compiling HYCOM-CICE
 
-Before you attempt this, make sure that the HYCOM-CICE support programs are compiled, that the MSCPROGS programs are compiled, and that you have the other prerequisites described above. The compilation is handled by the script compile_model.sh in NHCROOT/bin, and is described in [./doc/HYCOM-CICE-compilation.md](./doc/HYCOM-CICE-compilation.md)
+Before you attempt this, make sure that the HYCOM-CICE support programs are 
+compiled, that the MSCPROGS programs are compiled, and that you have the other prerequisites described above. 
+The compilation is handled by the script compile_model.sh in NHCROOT/bin, and is described in [./doc/HYCOM-CICE-compilation.md](./doc/HYCOM-CICE-compilation.md)
 
 
 # Compiling HYCOM alone from the HYCOM-CICE model
