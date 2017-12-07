@@ -24,7 +24,9 @@ Following is the general structure of HYCOM-CICE directory hierarchy:
 We aim to produce nesting archive [ab] files for HYCOM-CICE region as inner model (here TP5a0.06) from the NEMO global data as outer model (i.e. NMOa0.08). 
 Therefore your working directory should contain two folder: Target (inner model) region folder TPa0.06; and Source (outer model) region folder NMOa0.08. All processing programs to produce the target archive files are run in the (source) region folder of NMOa.08. 
 
-The following illustrates how these two directories are usually organised before starting nesting procedure
+The following illustrates how these two directories are usually organised 
+
+**(1) before starting nesting procedure
 
     └── TP5a0.06             # Region directory for TOPAZ5 region
         └── expt_01.0        # Experiment directory
@@ -35,7 +37,7 @@ The following illustrates how these two directories are usually organised before
         └── expt_01.0        # Experiment directory
         └── topo             # topography and grid directory
         └── REGION.src       # creation configuration file
-And after applying nesting
+**(2) after applying nesting
 
     └── TP5a0.06             # Region directory for TOPAZ5 region
         └── expt_03.0        # Experiment directory
