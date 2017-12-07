@@ -768,7 +768,7 @@ cKAL  call zaiopf("landfill.a",'replace', 99)
 cKAL  atmp = mm(1:m,1:n,0)
 cKAL  call zaiowr(atmp,mm(1:m,1:n,0),.false., 
 cKAL &   hmina,hmaxa, 99, .false.)
-cMostafa
+c
       if     (lfirst) then
         write(6,'(/a,6i5/)')
      &    'landfill - m,n,if,il,jf,jl =',m,n,if,il,jf,jl
@@ -787,18 +787,10 @@ cMostafa
                 jj = j+kj
                 do ki= -scanrange,scanrange
                   ii = i+ki
-c ---
-c --- BEGIN: Mostafa
-c ---
                   if     (mm(ii,jj,ip0).eq.1) then
-                    sa = sa + s(min(1,max(-1,ki)),min(1,max(-1,kj)))*
-     &                        a(ii,jj)
-                    ss = ss + s(min(1,max(-1,ki)),min(1,max(-1,kj)))
+                    sa = sa + s(ki,kj)*a(ii,jj)
+                    ss = ss + s(ki,kj)
                   endif
-c ---
-c --- END: Mostafa
-c ---
-
                 enddo
               enddo
               if     (ss.ne.0.0) then
