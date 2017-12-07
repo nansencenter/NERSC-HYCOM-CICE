@@ -40,7 +40,7 @@ The following structure is relative to the checked out code ($NHCROOT)
     │   └── RELO            # Location of hycom source code
     ├── input               # Location of some input files 
     ├──  TP0a1.00            # Location of "Reference experiment"
-    ├──  TP0a5.06            # Location of "Reference experiment for TOPAZ5 system"
+    ├──  TP5a0.06            # Location of "Reference experiment for TOPAZ5 system"
     └──  NMOa0.08            # Location of "Reference experiment for nesting from NEMO for TOPAZ5 system"
 
 
