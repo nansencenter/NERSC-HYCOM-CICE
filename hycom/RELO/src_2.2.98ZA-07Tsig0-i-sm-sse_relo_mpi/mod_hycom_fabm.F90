@@ -257,10 +257,14 @@ contains
       hycom_fabm_relax = -1
 
       next_unit = first_relax_unit
+      if (mnproc.eq.1) write (lp,*) 'Looking for relaxation data for pelagic FABM state variables...'
       do ivar=1,size(fabm_model%state_variables)
         ! Check fpor existence of a file named "relax.<FABMNAME>.a". If present, this will contain the relaxation field (one variable; all k levels)
         inquire(file=trim(flnmforw)//'relax.'//trim(fabm_model%state_variables(ivar)%name)//'.a', exist=file_exists)
         if (file_exists) then
+          if (mnproc.eq.1) write (lp,*) '  - '//trim(fabm_model%state_variables(ivar)%name)//': ON, ' &
+            //trim(flnmforw)//'relax.'//trim(fabm_model%state_variables(ivar)%name)//'.a was found.'
+
           ! Relaxation file exist; assign next available unit.
           hycom_fabm_relax(ivar) = next_unit
           next_unit = next_unit + 1
@@ -280,6 +284,11 @@ contains
           do k=1,kk
             call hycom_fabm_rdmonthck(util1, hycom_fabm_relax(ivar), 0)
           end do
+        else
+          ! Disable relaxation for this tracer
+          if (mnproc.eq.1) write (lp,*) '  - '//trim(fabm_model%state_variables(ivar)%name)//': OFF, ' &
+            //trim(flnmforw)//'relax.'//trim(fabm_model%state_variables(ivar)%name)//'.a not found.'
+          rmutr(:,:,ivar) = 0.0
         end if
       end do
     end subroutine hycom_fabm_relax_init
