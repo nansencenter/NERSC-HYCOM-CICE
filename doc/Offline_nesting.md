@@ -166,9 +166,19 @@ Parameters required for the vertical structure are acquired from the "blkdat.inp
 
 # Generating port data
 
-To create ports and relaxation zones as part of nesting procedure, following script is used (we are still in NMOa0.08/expt_010 directory):
+To create ports and relaxation zones as part of nesting procedure, following script is used (we are now in TP5a0.06/expt_030 directory):
 
    ../bin/nest_setup_ports.sh ${width_of_relax_zone} ${efold_time_in_day}
 
-Where "width_of_relax_zone" and "efold_time_in_day" can be set, for example, to 20 and 20, respectively.
+Where "width_of_relax_zone" and "efold_time_in_day" can be set, for example, to 20 and 20, respectively. If program runs successfully, a file called "ports.nest" and "rum.[ab]" are created and stored in "../nest/030":
    
+    └── TP5a0.06            
+        └── bin.    
+        └── expt_03.0        
+        └── topo            
+        └── REGION.src      
+        └── nest             
+             └── 030             
+                 └── archv.YYYY_ddd_hh.[ab]             
+                 └── ports.nest            
+                 └── rum.[ab]            
