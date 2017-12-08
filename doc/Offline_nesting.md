@@ -97,7 +97,7 @@ Our current directory, hereafter, is NMOa0.08/expt_01.0:
 
 After establishing grid and bathymetry files in "topo" folder, the user must to start interpolation from the outer domain to the inner domain (i.e. TP5a0.06).In order to do this interpolation, an index mapping matrix (from outer region to inner region) is required which is used by $HYCOMALL/subregion/src/isubaregion.f. The corresponding bash script in the "bin" folder is used as follows:
        
-./bin/isuba_gmapi.sh. $target_region
+         ../bin/isuba_gmapi.sh. $target_region
 
 where target_region denotes ../../TP5a0.06 according to previously shown structure.
 
