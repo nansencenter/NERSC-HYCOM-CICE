@@ -8,17 +8,17 @@ Details about the required procedures to carry out offline nesting can be found 
 
 Following is the general structure of HYCOM-CICE directory hierarchy:
 
-├── bin                 # Location of binaries and python routines
-├── cice                # Location of CICE code
-├── doc                 # Documentation in markdown format
-├── hycom               # Location of hycom code and utilities
-│   ├── hycom_ALL       # Location of setup/diag routines 
-│   ├── MSCPROGS        # Location of setup/diag routines  developed at NERSC
-│   └── RELO            # Location of hycom source code
-├── input               # Location of some input files 
-├──  TP0a1.00           # Location of "Reference experiment"
-├──  TP5a0.06           # Location of "Reference experiment for TOPAZ5 system"
-└──  NMOa0.08           # Location of "Reference experiment for nesting from NEMO for TOPAZ5 system"
+	├── bin                 # Location of binaries and python routines
+	├── cice                # Location of CICE code
+	├── doc                 # Documentation in markdown format
+	├── hycom               # Location of hycom code and utilities
+	│   ├── hycom_ALL       # Location of setup/diag routines 
+	│   ├── MSCPROGS        # Location of setup/diag routines  developed at NERSC
+	│   └── RELO            # Location of hycom source code
+	├── input               # Location of some input files 
+	├──  TP0a1.00           # Location of "Reference experiment"
+	├──  TP5a0.06           # Location of "Reference experiment for TOPAZ5 system"
+	└──  NMOa0.08           # Location of "Reference experiment for nesting from NEMO 				# for TOPAZ5 system"
 
 
 We aim to produce nesting archive [ab] files for HYCOM-CICE region as inner model (here TP5a0.06) from the NEMO global data as outer model (i.e. NMOa0.08). 
