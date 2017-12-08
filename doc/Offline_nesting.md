@@ -94,7 +94,7 @@ The data from MERCATOR GLOBAL_ANALYSIS_FORECAST_PHY_001_024 are input for a pyth
                    └── archv.YYYY_ddd_hh.[ab]             
          └── topo             
 
-* HYCOM may like "hh" appeared in the name of archive files to be at "00" and MERCATOR GLOBAL_ANALYSIS_FORECAST_PHY_001_024 daily data are archived at "12". Therefore, the python code do also a time average to cope with this issue (in the case that the next day data are available).
+* HYCOM may like "hh" appeared in the name of archive files to be at "00" and MERCATOR GLOBAL_ANALYSIS_FORECAST_PHY_001_024 daily data are archived at "12". Therefore, the python code do also a time average to cope with this issue (in the case data for the next day are available).
 
 # Horizontal interpolation to the inner domain
 
@@ -164,3 +164,11 @@ Parameters required for the vertical structure are acquired from the "blkdat.inp
                  └── archv.YYYY_ddd_hh.[ab]             
 
 
+# Generating port data
+
+To create ports and relaxation zones as part of nesting procedure, following script is used (we are still in NMOa0.08/expt_010 directory):
+
+   ../bin/nest_setup_ports.sh ${width_of_relax_zone} ${efold_time_in_day}
+
+Where "width_of_relax_zone" and "efold_time_in_day" can be set, for example, to 20 and 20, respectively.
+   
