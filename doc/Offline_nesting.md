@@ -86,7 +86,7 @@ The NEMO horizontal mesh on T-cell are converted to [ab] archive files using the
 
 Our current directory, hereafter, is NMOa0.08/expt_01.0:
 
-└── NMOa0.08            
+      └── NMOa0.08            
 	└── bin             
 	└── expt_01.0        
 	└── topo             
