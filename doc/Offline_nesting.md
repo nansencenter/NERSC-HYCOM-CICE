@@ -39,7 +39,7 @@ Therefore your working directory (e.g. in Sisu: /wrk/pr2nXXXX/NERSC-HYCOM-CICE) 
 
 The following illustrates how these two directories are organised in the presence of nesting. 
 
-## (1) before starting nesting procedure
+## (1) before starting nesting
 
     └── NMOa0.08             # Region directory for NEMO files
         └── bin             # Link to bin utility folder (this directory should be in the region directory)
@@ -93,6 +93,8 @@ The data from MERCATOR GLOBAL_ANALYSIS_FORECAST_PHY_001_024 are input for a pyth
              └── data             
                    └── archv.YYYY_ddd_hh.[ab]             
          └── topo             
+
+* It is noted that HYCOM may like "hh" in Archie file names tube "00" and MERCATOR GLOBAL_ANALYSIS_FORECAST_PHY_001_024 daily data have been archived ar "12". Therefore, the python code do a time average to cope with this issue.
 
 # Horizontal interpolation to the inner domain
 
@@ -160,3 +162,5 @@ Parameters required for the vertical structure are acquired from the "blkdat.inp
         └── nest             
              └── 030             
                  └── archv.YYYY_ddd_hh.[ab]             
+
+
