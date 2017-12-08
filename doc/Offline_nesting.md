@@ -170,7 +170,7 @@ To create ports and relaxation zones as part of nesting procedure, following scr
 
    ../bin/nest_setup_ports.sh ${width_of_relax_zone} ${efold_time_in_day}
 
-Where "width_of_relax_zone" and "efold_time_in_day" can be set, for example, to 20 and 20, respectively. If program runs successfully, a file called "ports.nest" and "rum.[ab]" are created and stored in "../nest/030":
+Where "width_of_relax_zone" and "efold_time_in_day" can be set, for example, to 20 and 20, respectively. If program runs successfully, a file called "ports.nest" and "rmu.[ab]" are created and stored in "../nest/030":
    
     └── TP5a0.06            
         └── bin.    
@@ -181,4 +181,4 @@ Where "width_of_relax_zone" and "efold_time_in_day" can be set, for example, to 
              └── 030             
                  └── archv.YYYY_ddd_hh.[ab]             
                  └── ports.nest            
-                 └── rum.[ab]            
+                 └── rmu.[ab]            
