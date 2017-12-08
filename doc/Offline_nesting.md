@@ -94,7 +94,7 @@ The data from MERCATOR GLOBAL_ANALYSIS_FORECAST_PHY_001_024 are input for a pyth
                    └── archv.YYYY_ddd_hh.[ab]             
          └── topo             
 
-* HYCOM may like "hh" appeared in the name of archive files to be at "00" and MERCATOR GLOBAL_ANALYSIS_FORECAST_PHY_001_024 daily data have been archived ar "12". Therefore, the python code do also a time average to cope with this issue (in the case that the next day data are available).
+* HYCOM may like "hh" appeared in the name of archive files to be at "00" and MERCATOR GLOBAL_ANALYSIS_FORECAST_PHY_001_024 daily data are archived at "12". Therefore, the python code do also a time average to cope with this issue (in the case that the next day data are available).
 
 # Horizontal interpolation to the inner domain
 
