@@ -3,7 +3,7 @@
 # Name: nemo2archvz.py
 # Purpose: Convert MMERCATOR data to HYCOM archive files in z coordinates
 # Author: Mostafa Bakhoday-Paskyabi (Mostafa.Bakhoday@nersc.no)
-# Created: Sep 2017
+# Created: 8 December 2017
 # Copyright: (c) NERSC Norway 2017
 # Licence:
 # This script is free software: you can redistribute it and/or modify
