@@ -99,7 +99,27 @@ After establishing grid and bathymetry files in "topo" folder, the user must to 
        
          ../bin/isuba_gmapi.sh. $target_region
 
-where target_region denotes ../../TP5a0.06 according to previously shown structure.
+where target_region denotes ../../TP5a0.06 according to previously shown structure. If remapping [ab] files can be created successfully, they are located in subregion folder as follows:
 
 
-  
+      └── NMOa0.08            
+         └── REGION.src       
+         └── bin             
+         └── expt_01.0        
+         └── topo             
+         └── subregion             
+             └── 010             
+             └── TP5a0.06.gmap.[ab]             
+
+In script "../bin/nemo2hycom.sh",program "../bin/archvz2hycom.sh" use executable "$HYCOMALL/subregion/src/isubaregion" using following inputs/outputs:
+
+   
+    --- 'flnm_reg'  = target sub-region grid       filename
+    --- 'flnm_map'  = target sub-region grid map   filename
+    --- 'flnm_top'  = target bathymetry filename, or 'NONE'
+    --- 'flnm_tin'  = input  bathymetry filename, or 'NONE'
+    --- 'flnm_in'   = input  archive    filename
+    --- 'flnm_out'  = output archive    filename
+    --- 'cline_out' = output title line (replaces preambl(5))
+         
+         
