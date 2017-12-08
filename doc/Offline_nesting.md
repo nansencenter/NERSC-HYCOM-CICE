@@ -7,13 +7,13 @@ Details about the required procedures to carry out offline nesting can be found 
 
 Based on mesh and coordinate MERCATOR netcdf files, the archive data files for grid and bathymetry are reconstructed on the same horizontal grid cells of NEMO model output. Having these files, we need to do following basic steps to create nesting archive files:
 
-## Produce mapping index [ab] files (using /bin/isuba_gmap.sh).
+(1) Produce mapping index [ab] files (using /bin/isuba_gmap.sh).
 
-## Interpolate horizontally the outer model fields (NEMO model outputs) to the inner subdomain (TOPAZ5).
+(2) Interpolate horizontally the outer model fields (NEMO model outputs) to the inner subdomain (TOPAZ5).
 
-## Choose vertical isopycnal structure (located in blkdat.input) and do vertical interpolation of temp, salin, u-vel., v-vel., and thknness according to the chosen vertical structure.
+(3) Choose vertical isopycnal structure (located in blkdat.input) and do vertical interpolation of temp, salin, u-vel., v-vel., and thknness according to the chosen vertical structure.
 
-## Build port files.
+(4) Build port files.
 
 #  Directory structure
 
