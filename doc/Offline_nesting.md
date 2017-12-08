@@ -1,8 +1,19 @@
 
 #  Description of HYCOM-CICE offline nesting usage
 
-Details about the required procedures to carry out offline nesting can be found in the HYCOM USER GUIDE (Wallcraft, 2003, available at http://hycom.rsmas.miami.edu/hycom-model/ documentation.html). Here, we closely follow the standard HYCOM nesting approach based on the MERCATOR GLO-PHY-024 product (as outer model data).
+Details about the required procedures to carry out offline nesting can be found in the HYCOM USER GUIDE (Wallcraft, 2003, available at http://hycom.rsmas.miami.edu/hycom-model/ documentation.html). Here, we closely follow the standard HYCOM nesting approach based on the MERCATOR GLOBAL_ANALYSIS_FORECAST_PHY_001_024 product (as outer model data).
 
+#  Quick start
+
+Based on mesh and coordinate MERCATOR netcdf files, the archive data files for grid and bathymetry are reconstructed on the same horizontal grid cells of NEMO model output. Having these files, we need to do following basic steps to create nesting archive files:
+
+## Produce mapping index [ab] files (using /bin/isuba_gmap.sh).
+
+## Interpolate horizontally the outer model fields (NEMO model outputs) to the inner subdomain (TOPAZ5).
+
+## Choose vertical isopycnal structure (located in blkdat.input) and do vertical interpolation of temp, salin, u-vel., v-vel., and thknness according to the chosen vertical structure.
+
+## Build port files.
 
 #  Directory structure
 
@@ -62,3 +73,9 @@ Data folder includes dummy (intermediate) archive files converted from netcdf to
             ├── 030          # a directory named with the same experiment number, i.e. 030
 
 Nest folder includes all vertically interpolated archive data files from the horizontally interpolated files in outer region directory (i.e. NMOa0.08/subregion/010/).
+
+# The NEMO grid
+
+The daily product of Operational Mercator global ocean analysis and forecast system with NEMO ocean model (at 1/12 degree) starts on December 27, 2006. The model is used here as outer model including daily files of temperature, salinity, currents, sea level, mixed layer depth and ice parameters. The global ocean output files are represented on 1/12 degree horizontal resolution (no staggered grid) with regular longitude/latitude equirectangular projection. The output files cover 50 vertical levels ranging from 0 to 5500 meters.
+
+The NEMO horizontal mesh on T-cell are converted to [ab] archive files using the coordinate netcdf files provided by MERCATOR.
