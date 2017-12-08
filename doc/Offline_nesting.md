@@ -122,4 +122,16 @@ In script "../bin/nemo2hycom.sh",program "../bin/archvz2hycom.sh" use executable
     --- 'flnm_out'  = output archive    filename
     --- 'cline_out' = output title line (replaces preambl(5))
          
+
+Now, the interpolated archive files are created and located in "subregion/010" directory as 
+
+         └── subregion             
+             └── 010             
+                 └── archv.YYYY_ddd_hh_L.[ab]             
+             └── TP5a0.06.gmap.[ab]             
+
+
+# Vertical interpolation using the chosen vertical (isopycnal) structure
+
+
          
