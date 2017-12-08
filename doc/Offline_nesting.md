@@ -82,6 +82,9 @@ The daily product of Operational Mercator global ocean analysis and forecast sys
 
 The NEMO horizontal mesh on T-cell are converted to [ab] archive files using the coordinate/mesh netcdf files provided by MERCATOR. All pre- and post-processing programs read these [ab] files which are produced only once. 
 
+# Building NEMO archive files
+
+
 # Horizontal interpolation to the inner domain
 
 Our current directory, hereafter, is NMOa0.08/expt_01.0:
