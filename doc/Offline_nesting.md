@@ -7,13 +7,15 @@ Details about the required procedures to carry out offline nesting can be found 
 
 Based on mesh and coordinate MERCATOR netcdf files, the archive data files for grid and bathymetry are reconstructed on the same horizontal grid cells of NEMO model output. Having these files, we need to do following basic steps to create nesting archive files:
 
-(1) Produce mapping index [ab] files (using /bin/isuba_gmap.sh).
+(1) Do tiling when running on shared/distributed memory machine (/bin/tile_grid.sh).
 
-(2) Interpolate horizontally the outer model fields (NEMO model outputs) to the inner subdomain (TOPAZ5).
+(2) Produce mapping index [ab] files (using /bin/isuba_gmap..sh).
 
-(3) Choose vertical isopycnal structure (located in blkdat.input) and do vertical interpolation of temp, salin, u-vel., v-vel., and thknness according to the chosen vertical structure.
+(3) Interpolate horizontally the outer model fields (NEMO model outputs) to the inner subdomain (TOPAZ5).
 
-(4) Build port files.
+(4) Choose vertical isopycnal structure (located in blkdat.input) and do vertical interpolation of temp, salin, u-vel., v-vel., and thknness according to the chosen vertical structure.
+
+(5) Build port files.
 
 #  Directory structure
 
@@ -76,6 +78,23 @@ Nest folder includes all vertically interpolated archive data files from the hor
 
 # The NEMO grid
 
-The daily product of Operational Mercator global ocean analysis and forecast system with NEMO ocean model (at 1/12 degree) starts on December 27, 2006. The model is used here as outer model including daily files of temperature, salinity, currents, sea level, mixed layer depth and ice parameters. The global ocean output files are represented on 1/12 degree horizontal resolution (no staggered grid) with regular longitude/latitude equirectangular projection. The output files cover 50 vertical levels ranging from 0 to 5500 meters.
+The daily product of Operational Mercator global ocean analysis and forecast system with NEMO ocean model (at 1/12 degree) starts on December 27, 2006. The model is used here as outer model including daily fields of temperature, salinity, currents, sea level, mixed layer depth and ice parameters. The global ocean output files are represented on 1/12 degree horizontal resolution (no staggered grid) with regular longitude/latitude equirectangular projection. The output files cover 50 vertical levels ranging from 0 to 5500 meters.
 
-The NEMO horizontal mesh on T-cell are converted to [ab] archive files using the coordinate netcdf files provided by MERCATOR.
+The NEMO horizontal mesh on T-cell are converted to [ab] archive files using the coordinate/mesh netcdf files provided by MERCATOR. All pre- and post-processing programs read these [ab] files which are produced only once. 
+
+# Horizontal interpolation to the inner domain
+
+Our current directory, hereafter, is NMO0.08/expt_01.0:
+
+    └── NMOa0.08            
+        └── bin             
+	└── expt_01.0        
+        └── topo             
+        └── REGION.src       
+
+After establishing grid and bathymetry files in "topo" folder, the user must to start interpolation from the outer domain to the inner domain (i.e. TP5a0.06).In order to do this interpolation, an index mapping matrix (from outer region to inner region) is required which is used by $HYCOMALL/subregion/src/isubaregion.f. The corresponding bash script in the "bin" folder is used as follows:
+       bin/isuba_gmapi.sh. $target_region
+where target_region denotes ../../TP5a0.06 according to previously shown structure.
+
+
+
