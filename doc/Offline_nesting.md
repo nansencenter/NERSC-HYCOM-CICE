@@ -84,11 +84,14 @@ The NEMO horizontal mesh on T-cell are converted to [ab] archive files using the
 
 # Building NEMO archive files
 
+The data from MERCATOR GLOBAL_ANALYSIS_FORECAST_PHY_001_024 are input for a python code "nemo2archvz.py" which converts temp, salon, u-vel., v-vel., and thinness fields from their non-native grid forms (e.g. regular grid) to the same grid but in HYCOM convention, I.e. [ab] archive data files. If the program run successfully a directory called "data" are created and the archive files, archv.YYYY_ddd_hh.[ab], are copied there.
+
       └── NMOa0.08            
          └── REGION.src       
          └── bin             
          └── expt_01.0        
              └── data             
+                   └── archv.YYYY_ddd_hh.[ab]             
          └── topo             
 
 # Horizontal interpolation to the inner domain
@@ -121,7 +124,7 @@ In script "../bin/nemo2hycom.sh",program "../bin/archvz2hycom.sh" is executed by
 
     ../bin/archvz2hycom.sh $target_experiment $subregion_archz
 
-Where "target_experiment" is "TPa0.05/expt_03.0" and subregion_archz is "data/archv.YYYY.ddd.[ab]" generated at the previous step.
+Where "target_experiment" is "TPa0.05/expt_03.0" and "subregion_archz" is set to "data/archv.YYYY.ddd.[ab]" generated at the previous step.
 
 use executable "$HYCOMALL/subregion/src/isubaregion" using following inputs/outputs:
 
@@ -146,5 +149,14 @@ Now, the interpolated archive files are created and located in the "subregion/01
 # Vertical interpolation using the chosen vertical (isopycnal) structure
 
 Parameters required for the vertical structure are acquired from the "blkdat.input" (located in the target experiment folder. For example, sigma, dp00s,…). We have our dummy (intermediate) archive files including temp, salon, u-vel., v-vel., thkness
- Fields at "subregion/010" which are still in z-levels. Using an executable "$HYCOMALL/relax/src/nemo_archvz", all mentioned fields are converted from z-levels to isopycnal, see "../bin/archvz2hycom.sh". By this the target archive data files are created and copied in "TP5a0.0" 
+ Fields at "subregion/010" which are still in z-levels. Using an executable "$HYCOMALL/relax/src/nemo_archvz", all mentioned fields are converted from z-levels to isopycnal, see "../bin/archvz2hycom.sh". By this the target archive data files are created and copied in "TP5a0.0/nest/030/archv.YYYY_ddd_hh.[ab]". 
          
+
+    └── TP5a0.06            
+        └── bin.    
+        └── expt_03.0        
+        └── topo            
+        └── REGION.src      
+        └── nest             
+             └── 030             
+                 └── archv.YYYY_ddd_hh.[ab]             
