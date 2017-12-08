@@ -87,10 +87,10 @@ The NEMO horizontal mesh on T-cell are converted to [ab] archive files using the
 Our current directory, hereafter, is NMOa0.08/expt_01.0:
 
       └── NMOa0.08            
-	└── bin             
-	└── expt_01.0        
-	└── topo             
-	└── REGION.src       
+         └── bin             
+         └── expt_01.0        
+         └── topo             
+         └── REGION.src       
 
 After establishing grid and bathymetry files in "topo" folder, the user must to start interpolation from the outer domain to the inner domain (i.e. TP5a0.06).In order to do this interpolation, an index mapping matrix (from outer region to inner region) is required which is used by $HYCOMALL/subregion/src/isubaregion.f. The corresponding bash script in the "bin" folder is used as follows:
        bin/isuba_gmapi.sh. $target_region
