@@ -96,8 +96,8 @@ filename="MERCATOR-PHY-24-"$year"-"$month"-"$day".nc"
 #
 # (1) Create archive [ab] files from the MERCATOR netcdf file.
 #
-chmod a+x ${BASEDIR}/bin/nemo2archvz.py.py
-${BASEDIR}/bin/nemo2archvz.py.py $1 $source_archv --iexpt ${iexpt} --iversn ${iversn} --yrflag ${yrflag}
+chmod a+x ${BASEDIR}/bin/nemo2archvz.py
+${BASEDIR}/bin/nemo2archvz.py $1 $source_archv --iexpt ${iexpt} --iversn ${iversn} --yrflag ${yrflag}
 
 #
 # (2) Based on generated archive files in (1) the grid and topography files are generated.
