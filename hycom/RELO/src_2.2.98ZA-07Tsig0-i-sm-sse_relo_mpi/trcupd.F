@@ -163,9 +163,11 @@ c ---       NPZD
 *         elseif (trcflg(ktr).eq.909) then
 * ---       Chai 9-component.
 *           call trcupd_909(1,2, -ktr)
+#ifdef _FABM_
           elseif (trcflg(ktr).eq.906) then
 c ---       FABM
             call hycom_fabm_initialize()
+#endif
           endif
         enddo
         close(unit=uoff+99)
@@ -416,12 +418,14 @@ c ---     NPZ
         elseif (trcflg(ktr).eq.904) then
 c ---     NPZD
           call trcupd_904(m,n, ktr)
+#ifdef _FABM_
         elseif (trcflg(ktr).eq.906) then
 c ---     FABM
           call hycom_fabm_update(m, n, ktr)
 *       elseif (trcflg(ktr).eq.909) then
 * ---     Chai 9-component.
 *         call trcupd_909(m,n, ktr)
+#endif
         endif
       enddo !ktr
       return
