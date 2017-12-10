@@ -122,11 +122,11 @@ where target_region denotes ../../TP5a0.06 according to previously shown structu
              └── 010             
              └── TP5a0.06.gmap.[ab]             
 
-In script "../bin/nemo2hycom.sh",program "../bin/archvz2hycom.sh" is executed by
+In script "../bin/nemo2hycom.sh",program "../bin/remap_nemo.sh" is executed by
 
-    ../bin/archvz2hycom.sh $target_experiment $subregion_archz
+    ../bin/remap_nemo.sh $target_experiment $subregion_archz
 
-Where "target_experiment" is "TPa0.05/expt_03.0" and "subregion_archz" is set to "data/archv.YYYY.ddd.[ab]" generated at the previous step.
+Where "target_experiment" is "TPa0.05/expt_03.0" and "subregion_archz" is set to "data/archv.YYYY.ddd.[ab]" generated at the previous step using python script.
 
 use executable "$HYCOMALL/subregion/src/isubaregion" using following inputs/outputs:
 
