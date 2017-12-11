@@ -1,1 +1,1 @@
-setenv ARCH amd64
+setenv ARCH gfortran

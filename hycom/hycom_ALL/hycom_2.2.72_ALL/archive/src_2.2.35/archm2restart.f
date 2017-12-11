@@ -19,7 +19,8 @@ c
 c --- 'lhycom' -- hycom (vs micom) input file
 c --- 'trcout' -- tracer input
       logical   lhycom,trcout
-      data      lhycom/.false./, trcout/.false./
+c --- MOSTAFA
+      data      lhycom/.true./, trcout/.false./
 c
       call xcspmd
       call zaiost
