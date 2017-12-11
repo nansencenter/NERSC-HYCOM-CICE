@@ -34,3 +34,27 @@ We will use version numbers, we have start with the a number 0.1.0 and go to 1.0
 
 ## Open issues on the GitHub
 Each issue will be assigned to one person which is responible for solving and closing the issue.
+
+## Usefull commands for keeping your code up to date with the develop branch
+
+To show all local and remote branches:
+$ git branch -a
+
+To track changes 'develop' branch in your local dir:
+
+$ git checkout --track origin/develop
+
+To switch to the 'develp' branch in your local dir:
+$ git checkout develop
+
+If you want merge for example 'nesting' or 'Fram' in 'develop' branch:
+1- first switch to 'develop'
+$ git checkout develop
+You can verify this by running '$git branch -a' and you will see a * pointing to 'develop' on the list
+2- now run merge command
+$ git merge --no-ff nesting
+
+This will update 'develop' with all new changes in 'nesting'
+
+If you there are some conflicts in some files, then you have to resolve them by opening these files
+one by one.
