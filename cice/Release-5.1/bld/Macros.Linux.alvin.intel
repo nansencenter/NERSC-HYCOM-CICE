@@ -24,7 +24,7 @@ else
 endif
 FIXEDFLAGS := -132
 FREEFLAGS  := -FR
-FFLAGS     := -Nmpi -O3 -g -traceback -w -convert big_endian -assume byterecl -ftz -traceback -shared-intel -mcmodel=medium
+FFLAGS     := -Nmpi -O3 -w -convert big_endian -assume byterecl -ftz -traceback -shared-intel -mcmodel=medium
 
 ifeq ($(THRD), yes)
    FFLAGS  :=  $(FFLAGS) -openmp
