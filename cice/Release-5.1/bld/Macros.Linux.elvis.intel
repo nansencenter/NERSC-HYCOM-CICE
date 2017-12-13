@@ -61,7 +61,7 @@ ifeq ($(IO_TYPE), netcdf)
    SLIBS   := $(SLIBS) -L/$(NETCDF_DIR)/lib  -lnetcdf -lnetcdff #-lnetcdf_c++4
 endif
 
-INCLDIR := $(INCLDIR) -I$(ESMF_MOD_DIR) -I${ESMF_DIR_INSTALL}/include -I$(MKL_ROOT)/include/fftw
+INCLDIR := $(INCLDIR) -I$(ESMF_MOD_DIR) -I${ESMF_DIR}/include -I$(MKL_ROOT)/include/fftw
 SLIBS := -lesmf  $(SLIBS) -L$(ESMF_LIB_DIR)/ -mkl=parallel -Nmpi -lmpi -lgsl -Wl,-rpath,${ESMF_LIB_DIR} 
 
 INCLDIR := $(INCLDIR) -I${I_MPI_ROOT}/intel64/include  

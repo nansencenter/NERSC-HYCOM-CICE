@@ -16,10 +16,15 @@ source ${BASEDIR}/REGION.src || { echo "Could not source ${BASEDIR}/REGION.src" 
 source ./EXPT.src || { echo "Could not source ./EXPT.src" ; exit 1 ; }
 #sourcedir=$BASEDIR/../hycom/RELO/src_${V}ZA-07Tsig0-i-sm-sse_relo_mpi/ # Yes, we always use this version
 #sourceconfdir=$BASEDIR/../hycom/RELO/config/
-sourcedir=$NHCROOT/hycom/RELO/src_${V}ZA-07Tsig0-i-sm-sse_relo_mpi/ # Yes, we always use this version
+echo ${V}
+if [ "${V}" == "2.2.98" ]; then
+	sourcedir=$NHCROOT/hycom/RELO/src_${V}ZA-07Tsig0-i-sm-sse_relo_mpi/
+elif [ "${V}" == "2.2.98.01" ]; then
+        sourcedir=$NHCROOT/hycom/RELO/src_${V}ZA-07Tsig0-i-sm-sse_relo_mpi/
+else
+	sourcedir=$NHCROOT/hycom/RELO/src_${V}G-17Tsig2-SD-i_relo_mpi/ 
+fi
 sourceconfdir=$NHCROOT/hycom/RELO/config/
-
-
 
 usage="
    This script must be run in an experiment directory as it needs to read EXPT.src
@@ -117,6 +122,18 @@ if [ "${unamen:0:7}" == "hexagon" ] ; then
    SITE="hexagon"
    MACROID=$ARCH.$SITE.$compiler
 
+elif [ "${unamen:0:4}" == "sisu" ] ; then
+   SITE="sisu"
+   MACROID=$ARCH.$SITE.$compiler
+
+elif [ "${unamen:0:5}" == "alvin" ] ; then
+   SITE="alvin"
+   MACROID=$ARCH.$SITE.$compiler
+
+elif [ "${unamen:0:5}" == "elvis" ] ; then
+   SITE="elvis"
+   MACROID=$ARCH.$SITE.$compiler
+
 # Generic case. SITE is empty
 elif [[ "${ARCH}" == "Linux" ]] ; then
    SITE=""
@@ -131,7 +148,7 @@ else
    exit 3
 fi
 echo "$(basename $0) : SITE=$SITE"
-
+echo $MACROID
 
 # Deduce ESMF dir from SITE and possibly ARCH
 if [[ -n "${ESMF_DIR}" ]] &&  [[ -n "${ESMF_MOD_DIR}" ]] && [[ -n "${ESMF_LIB_DIR}" ]] ; then
@@ -148,7 +165,8 @@ elif [ "$SITE" == "hexagon" ] ; then
 
    if [[ -z "${ESMF_DIR}" ]] ; then
       # use as default
-      export ESMF_DIR=/home/nersc/knutali/opt/esmf_5_2_0rp3-nonetcdf/
+       export ESMF_DIR=/homeappl/home/pr2n0112/HYCOM_TOOLS/esmf/ESMF.6.3.0rp1
+      #export ESMF_DIR=/home/nersc/knutali/opt/esmf_5_2_0rp3-nonetcdf/
       #export ESMF_DIR=/home/nersc/knutali/opt/esmf_6_3_0rp1/
       #export ESMF_DIR=/home/nersc/knutali/opt/esmf_7_0_0/
    fi
@@ -159,8 +177,22 @@ elif [ "$SITE" == "hexagon" ] ; then
    ## TODO: Let admins set up INCLUDE opts 
    #export ESMF_MOD_DIR=${ESMF_DIR}/mod
    #export ESMF_LIB_DIR=${ESMF_DIR}/lib
-   
+elif [ "$SITE" == "sisu" ] ; then  
+	if [[ -z "${ESMF_DIR}" ]] ; then
+          # use as default
+          export ESMF_DIR=/appl/climate/esmf/6_3_0rp1/INTEL/16.0
+	fi
+        export ESMF_MOD_DIR=${ESMF_DIR}/mod/modO/Unicos.$compiler.64.mpi.default/
+	export ESMF_LIB_DIR=${ESMF_DIR}/lib/libO/Unicos.$compiler.64.mpi.default/
 
+elif [ "$SITE" == "alvin" ] || ["$SITE" == "elvis" ] ; then
+    echo "hardcoded settings for $SITE"
+    if [[ -z "${ESMF_DIR}" ]] ; then
+       export ESMF_DIR=/home/sm_grasu/local
+    fi
+
+   export ESMF_MOD_DIR=${ESMF_DIR}/mod/modO/Linux.$compiler.64.mpi.default/
+   export ESMF_LIB_DIR=${ESMF_DIR}/lib/libO/Linux.$compiler.64.mpi.default/
 
 # If site is not given, try to use a generic setup. Macro names composed of compiler name and mpi lib name (openmpi, mpich, lam, etc etc(
 elif [[ "${unames:0:5}" == "Linux" ]] && [[ "$SITE" == "" ]] ; then
@@ -183,6 +215,7 @@ echo "$(basename $0) : ESMF_LIB_DIR=$ESMF_LIB_DIR"
 THFLAG=$(blkdat_get blkdat.input thflag)
 IDM=$(blkdat_get blkdat.input idm)
 JDM=$(blkdat_get blkdat.input jdm)
+ICEFLG=$(blkdat_get blkdat.input iceflg)
 
 #Get statement function include file from SIGVER (in EXPT.src)
 if [ $SIGVER -eq 1 ] ; then
@@ -223,6 +256,9 @@ if [ $THFLAG -ne $MYTHFLAG ] ; then
    exit 1
 fi
 
+
+echo $sourceconfdir "  ##############"
+
 # Copy code to expt dir
 targetdir=$(source_dir $V $TERMS $THFLAG)
 targetdir=$EDIR/build/$targetdir
@@ -242,6 +278,16 @@ else
    fi
 fi
 
+
+if [ ! -f $EDIR/mysource/ ] ; then
+
+	cp $EDIR/mysource/mod_hycom.F $targetdir/        
+	cp $EDIR/mysource/hycom.F $targetdir/
+else
+	echo "You need to use correct mod_hycom and hycom files"
+	exit 0
+fi
+
 # Copy hycom feature flag in expt dir if present
 [ -f $EDIR/hycom_feature_flags  ] && cp $EDIR/hycom_feature_flags $targetdir
 
@@ -251,25 +297,43 @@ cd $targetdir
 echo "Now setting up stmt_fns.h in $targetdir"
 rm stmt_fns.h
 ln -s ALT_CODE/$stmt stmt_fns.h
-
-# 1) Compile CICE. Environment variables need to be passe to script
-cd $targetdir/CICE/
-env RES=gx3 GRID=${IDM}x${JDM} SITE=$SITE MACROID=$MACROID ./comp_ice.esmf
-res=$?
-if [ $res -ne 0 ] ; then 
-   echo
-   echo "Error when compiling CICE, see above "
-   exit $res
+echo "Now compiling cice in $targetdir. $ICEFLG" 
+echo $sourcedir
+if [ $ICEFLG -eq 2 ] ; then
+	echo $MACROID
+	# 1) Compile CICE. Environment variables need to be passe to script
+	cd $targetdir/CICE/
+ 	env RES=gx3 GRID=${IDM}x${JDM} SITE=$SITE MACROID=$MACROID ./comp_ice.esmf
+	res=$?
+	if [ $res -ne 0 ] ; then 
+   		echo
+   		echo "Error when compiling CICE, see above "
+  		 exit $res
+	fi
 fi
-
 # Create hycom objects and final hycom_cice executable. 
 cd $targetdir
-echo "Now compiling hycom_cice in $targetdir." 
-env ARCH=$MACROID csh Make_cice.csh 
-res=$?
-if [ $res -ne 0 ] ; then 
-   echo
-   echo "Error when compiling HYCOM, see above "
-   exit $res
+if [ $ICEFLG -ne 0 ] ; then
+    echo "Now compiling hycom_cice in $targetdir."
+    env ARCH=$MACROID csh Make_cice.csh
+    res=$?
+    if [ $res -ne 0 ] ; then
+        echo
+        echo "Error when compiling HYCOM, see above "
+        exit $res
+    fi
+else
+    echo "Now compiling hycom in $targetdir."
+    export ICEFLG=${ICEFLG}
+    export ARCH=${MACROID}
+    echo $ARCH
+ 
+    csh Make_hycom.csh ${MACROID} ${ICEFLG}
+    res=$?
+    if [ $res -ne 0 ] ; then
+        echo
+        echo "Error when compiling HYCOM, see above "
+        exit $res
+    fi
 fi
-echo "Success"
+
