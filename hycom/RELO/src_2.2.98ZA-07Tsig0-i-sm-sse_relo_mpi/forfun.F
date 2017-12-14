@@ -3124,6 +3124,9 @@ c
             endif
             call zaiorw(iunit)
           enddo
+#ifdef _FABM_
+          call hycom_fabm_relax_rewind()
+#endif
 *         if     (mnproc.eq.1) then
 *         write(lp,*) 'rdrlax: mrecc,mrec = ',mrecc,mrec,'  (rewind)'
 *         endif !1st tile

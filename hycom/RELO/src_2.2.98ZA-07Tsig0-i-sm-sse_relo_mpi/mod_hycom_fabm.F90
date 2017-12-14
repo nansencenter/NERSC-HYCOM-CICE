@@ -26,7 +26,7 @@ module mod_hycom_fabm
    private
 
    public hycom_fabm_configure, hycom_fabm_initialize, hycom_fabm_update
-   public hycom_fabm_relax_init, hycom_fabm_relax_skmonth, hycom_fabm_relax_read, hycom_fabm_relax
+   public hycom_fabm_relax_init, hycom_fabm_relax_rewind, hycom_fabm_relax_skmonth, hycom_fabm_relax_read, hycom_fabm_relax
    public hycom_fabm_allocate_mean_output, hycom_fabm_zero_mean_output, hycom_fabm_increment_mean_output, hycom_fabm_end_mean_output, hycom_fabm_write_mean_output
    public fabm_surface_state, fabm_bottom_state
 
@@ -292,6 +292,24 @@ contains
         end if
       end do
     end subroutine hycom_fabm_relax_init
+
+    subroutine hycom_fabm_relax_rewind()
+      integer :: ivar
+
+      do ivar=1,size(fabm_model%state_variables)
+        if (hycom_fabm_relax(ivar) /= -1) then
+          if (mnproc.eq.1) then
+            rewind uoff+hycom_fabm_relax(ivar)
+            read  (uoff+hycom_fabm_relax(ivar),*)
+            read  (uoff+hycom_fabm_relax(ivar),*)
+            read  (uoff+hycom_fabm_relax(ivar),*)
+            read  (uoff+hycom_fabm_relax(ivar),*)
+            read  (uoff+hycom_fabm_relax(ivar),*)
+          end if
+          call zaiorw(hycom_fabm_relax(ivar))
+        end if
+      end do
+    end subroutine hycom_fabm_relax_rewind
 
     subroutine hycom_fabm_relax_skmonth()
       integer :: ivar, k
