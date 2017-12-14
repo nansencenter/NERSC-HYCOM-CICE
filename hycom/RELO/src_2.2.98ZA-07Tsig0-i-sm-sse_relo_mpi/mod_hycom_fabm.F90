@@ -294,6 +294,7 @@ contains
     end subroutine hycom_fabm_relax_init
 
     subroutine hycom_fabm_relax_rewind()
+      use mod_za
       integer :: ivar
 
       do ivar=1,size(fabm_model%state_variables)
