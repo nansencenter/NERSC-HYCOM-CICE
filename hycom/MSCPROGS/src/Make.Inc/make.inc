@@ -1,1 +1,1 @@
-make.hexagon.pgi
+make.fram.ifort

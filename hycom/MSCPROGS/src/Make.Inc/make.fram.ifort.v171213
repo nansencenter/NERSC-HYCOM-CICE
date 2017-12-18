@@ -1,0 +1,37 @@
+# include file for fimm, intel compilers
+CF90 = ifort
+CF77 = $(CF90)
+CC = icc
+LD =  $(CF90)
+
+# CPP, used internally by compilers - note that some compilers
+# need special options for this, consult compiler manual if in trouble
+CPP= /usr/bin/cpp -traditional-cpp -P 
+CPPARCH = -DIA32 -DREA8 -DSERIA_IO -DTIMER -DIARGC -DFFTW 
+CPPFLAGS += $(CPPARCH) 
+
+#NCAR graphics compiler wrappers
+#NCARGCF90=ncargf90
+#NCARGCF77=ncargf77
+#NCARGCC=ncargcc
+#NCARGLD=ncargf90
+
+# Flags for fixed/free format
+F90FLG= -free
+F77FLG = -nofree
+
+
+# Compiler flags - real*8 version 
+#FFLAGS= -g -convert big_endian -assume byterecl -cm -vec_reprot0 -w -o2 -r8 -g -traceback
+FFLAGS= -g -convert big_endian -assume byterecl -cm -vec_reprot0 -w -xCORE-AVX2 -o2 -no-prec-div -qopt-prefetch -auto-p32 -no-ansi-alias -qopt-mem-layout=2 -r8 -g -traceback
+
+# Compiler flags - real*4 version (Needed for NCARG routines)
+FFLAGSR4= -real_size 32 -convert big_endian -O2  -g
+CFLAGSR4= -O
+
+# Linker flags
+LINKFLAGS= $(FFLAGS)  
+
+
+LIBS = -lfftw3 -lnetcdff -lnetcdf -lmkl
+#LIBS = -lfftw3 -lnetcdff -lnetcdf
