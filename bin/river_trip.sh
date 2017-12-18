@@ -133,10 +133,10 @@ ${pget} ${BASEDIR}/topo/grid.info grid.info  || { echo "Could not get file river
 if [ $create -ne 0 ] ; then
    echo
    echo "**Calculating TRIP weights"
-   $MSCPROGS/bin_setup/trip_weights $src  || { echo "Error when running riverweight (see errors above)" ; exit 1 ; }
+   $MSCPROGS/src/TRIP/trip_weights $src  || { echo "Error when running riverweight (see errors above)" ; exit 1 ; }
    echo
    echo "**Calculating TRIP river flow"
-   $MSCPROGS/bin_setup/trip_flow    $src  || { echo "Error when running riverflow  (see errors above)" ; exit 1 ; }
+   $MSCPROGS/src/TRIP/trip_flow    $src  || { echo "Error when running riverflow  (see errors above)" ; exit 1 ; }
 # Copy from previously stored files 
 else 
    cp $flowpath/$flowfile   .  || { echo "Could not get file $flowpath/$flowfile"   ; exit 1 ; }
@@ -147,7 +147,7 @@ fi
 # This uses trip_era40_clim.nc (from trip_flow) to interpolate to model grid. Uses conformal mapping
 echo
 echo "**Interpolating TRIP river flow to hycom"
-$MSCPROGS/bin_setup/trip_tohycom $src $along $across    || { echo "Error when running trip_tohycom  (see errors above)" ; exit 1 ; }
+$MSCPROGS/src/TRIP/trip_tohycom $src $along $across    || { echo "Error when running trip_tohycom  (see errors above)" ; ex    it 1 ; }
 
 
 for i in forcing.*.[ab] ; do
