@@ -37,7 +37,7 @@ clean:
 
 MODS = mod_xc.o mod_za.o wtime.o
 LIBS = blkdat.o interp.o zh.o
-LIBN = blkdat.o interp.o zh.o libnetcdf.a $(EXTRANCDF)
+LIBN = blkdat.o interp.o zh.o   $(EXTRANCDF)
 
 # select one of the programs to make,
 #  e.g. make z_levitus ARCH=sun >& Make_z_levitus

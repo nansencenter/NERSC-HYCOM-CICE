@@ -8,7 +8,6 @@ LD =  $(CF90)
 # need special options for this, consult compiler manual if in trouble
 CPP= /usr/bin/cpp -P -traditional-cpp
 CPPARCH = -DIA32 -DREA8 -DMPI -DSERIA_IO -DTIMER -DIARGC -DFFTW -DLAPACK
-
 #NCAR graphics compiler wrappers
 #NCARGCF90=ncargf90
 #NCARGCF77=ncargf77

@@ -148,6 +148,11 @@ elif [[ "${ARCH}" == "Linux" ]] ; then
    fi
    MACROID=$ARCH.$compiler.$mpilib
 
+   echo 'MACROID=' ${MACROID}
+   if [ "${mpilib}" == "fram" ]; then
+      SITE="fram"
+   fi
+
 else
    echo "Unknown SITE. uname -n gives $unamen"
    exit 3
@@ -182,6 +187,7 @@ elif [ "$SITE" == "hexagon" ] ; then
    ## TODO: Let admins set up INCLUDE opts 
    #export ESMF_MOD_DIR=${ESMF_DIR}/mod
    #export ESMF_LIB_DIR=${ESMF_DIR}/lib
+<<<<<<< HEAD
 elif [ "$SITE" == "sisu" ] ; then  
 	if [[ -z "${ESMF_DIR}" ]] ; then
           # use as default
@@ -206,6 +212,15 @@ elif [ "$SITE" == "fram" ] ; then
    export ESMF_MOD_DIR=${ESMF_DIR}mod/
    export ESMF_LIB_DIR=${ESMF_DIR}lib/
 >>>>>>> nesting
+=======
+   
+elif [[ "${unames:0:5}" == "Linux" ]] && [[ "$SITE" == "fram" ]] ; then
+   export ESMF_DIR=/cluster/software/ESMF/6.3.0rp1-intel-2017a-HDF5-1.8.18/
+   export ESMF_MOD_DIR=${ESMF_DIR}mod/
+   export ESMF_LIB_DIR=${ESMF_DIR}lib/
+
+
+>>>>>>> Fram
 # If site is not given, try to use a generic setup. Macro names composed of compiler name and mpi lib name (openmpi, mpich, lam, etc etc(
 elif [[ "${unames:0:5}" == "Linux" ]] && [[ "$SITE" == "" ]] ; then
    if [ -z "${ESMF_DIR}" ] ; then

@@ -5,7 +5,7 @@ module mod_spline_calc
 ! and then 
 
 
-use mod_parameters
+   use mod_parameters
    integer, save :: ndeep
    real, save, allocatable :: deeps(:)
    character(len=20) ,save :: vimethod
@@ -501,7 +501,7 @@ subroutine calcconst(kk,U,deep,a,b,c,cflag,bflag)
    !call DGECON('1',dimen,Amatr,dimen,'I',RCOND,lapwork,ipvt,info)
    call DGESV(dimen,1,Amatr,dimen,ipvt,rhs,dimen,info)
 #else
-#error calcconst has not a library routine defined for this machine
+!#error calcconst has not a library routine defined for this machine
    print *,'calcconst has not a library routine'
    print *,'defined for this machine'
    stop '(m_calcconst.F90)'
