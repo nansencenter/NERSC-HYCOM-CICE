@@ -1,6 +1,7 @@
 /bin/rm -f parse.o
 /bin/rm: No match.
 /bin/rm: No match.
+
 foreach f ( echo2 endian )
 touch echo2
 /bin/rm -f echo2

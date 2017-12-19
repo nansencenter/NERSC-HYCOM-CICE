@@ -4,7 +4,7 @@ c
 c --- iqr   = maximum number of tiles in i direction
 c --- jqr   = maximum number of tiles in j direction
       integer    iqr,jqr
-      parameter (iqr=299,jqr=299)  ! multiple tiles (TYPE=ompi or mpi or shmem)
+      parameter (iqr=54,jqr=59)  ! multiple tiles (TYPE=ompi or mpi or shmem)
 c
 c --- mxthrd= maximum number of OpenMP threads
       integer    mxthrd
