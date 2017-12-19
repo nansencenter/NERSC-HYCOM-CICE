@@ -1,0 +1,45 @@
+# include file for alvin, intel compilers
+CF90 = ifort
+CF77 = $(CF90)
+CC = icc
+LD =  $(CF90)
+
+# CPP, used internally by compilers - note that some compilers
+# need special options for this, consult compiler manual if in trouble
+CPP= /usr/bin/cpp -P -traditional
+
+#NCAR graphics compiler wrappers
+NCARGCF90=ncargf90
+NCARGCF77=ncargf77
+NCARGCC=ncargcc
+NCARGLD=ncargf90
+
+# Flags for fixed/free format
+F90FLG= -free
+F77FLG = -nofree
+
+# Compiler flags - real*8 version 
+FFLAGS= -real_size 64 -convert big_endian -O2  -g -traceback #-shared-intel
+-mcmodel=medium # -assume byterecl
+CFLAGS= -O2
+
+# Compiler flags - real*4 version (Needed for NCARG routines)
+FFLAGSR4= -real_size 32 -convert big_endian -O2  -g -traceback
+CFLAGSR4= -O2
+
+# Linker flags
+LINKFLAGS= $(FFLAGS)
+
+#Libraries, Netcdf, FFTW, LAPACK
+LIBS = -L $(NETCDF_DIR)/lib  -Nmpi -lmpi -lnetcdf -lnetcdff  -I $(NETCDF_DIR)/include -mkl=sequential
+#LIBS = -lnetcdf -lnetcdff -lfftw3 \
+#        -lmkl_lapack95_lp64 -lmkl_intel_lp64 -lmkl_sequential -lmkl_core
+
+INCLUDE = -I $(NETCDF_DIR)/include -I /$(MKLROOT)/include/fftw
+##INCLUDE = -I $(NETCDF_DIR)/include -I /software/apps/intel/composer_xe_2015.1.133/mkl/include/fftw/fftw3.f
+
+
+# Define CPP flags consistent with libs above
+#CPPFLAGS = -L $(NETCDF_DIR)/lib -I $(NETCDF_DIR)/include -lnetcdf -Nmpi -lmpi# -lmpi -lnetcdf -lnetcdff -lfftw3 -lgsl 
+CPPFLAGS= -DFFTW -DLAPACK
+#CPPFLAGS= -DFFTW -DLAPACK -DIA64 -DREAL8 
