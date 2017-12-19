@@ -126,17 +126,14 @@ elif [ "${unamen:0:4}" == "sisu" ] ; then
    SITE="sisu"
    MACROID=$ARCH.$SITE.$compiler
 
-<<<<<<< HEAD
 elif [ "${unamen:0:5}" == "alvin" ] ; then
    SITE="alvin"
    MACROID=$ARCH.$SITE.$compiler
 
 elif [ "${unamen:0:5}" == "elvis" ] ; then
    SITE="elvis"
-=======
 elif [ "${unamen:0:5}" == "login" ] ; then # fram
    SITE="fram"
->>>>>>> nesting
    MACROID=$ARCH.$SITE.$compiler
 
 # Generic case. SITE is empty
@@ -187,7 +184,6 @@ elif [ "$SITE" == "hexagon" ] ; then
    ## TODO: Let admins set up INCLUDE opts 
    #export ESMF_MOD_DIR=${ESMF_DIR}/mod
    #export ESMF_LIB_DIR=${ESMF_DIR}/lib
-<<<<<<< HEAD
 elif [ "$SITE" == "sisu" ] ; then  
 	if [[ -z "${ESMF_DIR}" ]] ; then
           # use as default
@@ -195,7 +191,6 @@ elif [ "$SITE" == "sisu" ] ; then
 	fi
         export ESMF_MOD_DIR=${ESMF_DIR}/mod/modO/Unicos.$compiler.64.mpi.default/
 	export ESMF_LIB_DIR=${ESMF_DIR}/lib/libO/Unicos.$compiler.64.mpi.default/
-<<<<<<< HEAD
 
 elif [ "$SITE" == "alvin" ] || ["$SITE" == "elvis" ] ; then
     echo "hardcoded settings for $SITE"
@@ -206,21 +201,16 @@ elif [ "$SITE" == "alvin" ] || ["$SITE" == "elvis" ] ; then
    export ESMF_MOD_DIR=${ESMF_DIR}/mod/modO/Linux.$compiler.64.mpi.default/
    export ESMF_LIB_DIR=${ESMF_DIR}/lib/libO/Linux.$compiler.64.mpi.default/
 
-=======
 elif [ "$SITE" == "fram" ] ; then 
    export ESMF_DIR=/cluster/software/ESMF/6.3.0rp1-intel-2017a-HDF5-1.8.18/
    export ESMF_MOD_DIR=${ESMF_DIR}mod/
    export ESMF_LIB_DIR=${ESMF_DIR}lib/
->>>>>>> nesting
-=======
    
 elif [[ "${unames:0:5}" == "Linux" ]] && [[ "$SITE" == "fram" ]] ; then
    export ESMF_DIR=/cluster/software/ESMF/6.3.0rp1-intel-2017a-HDF5-1.8.18/
    export ESMF_MOD_DIR=${ESMF_DIR}mod/
    export ESMF_LIB_DIR=${ESMF_DIR}lib/
 
-
->>>>>>> Fram
 # If site is not given, try to use a generic setup. Macro names composed of compiler name and mpi lib name (openmpi, mpich, lam, etc etc(
 elif [[ "${unames:0:5}" == "Linux" ]] && [[ "$SITE" == "" ]] ; then
    if [ -z "${ESMF_DIR}" ] ; then

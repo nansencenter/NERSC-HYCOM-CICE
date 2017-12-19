@@ -1,0 +1,41 @@
+# makefile includes for Sisu, intel compilers
+# Standard compilers and linkers
+CF90= ftn
+CF77= $(CF90)
+CC= cc
+LD= $(CF90)
+
+# CPP, used internally by compilers - note that some compilers
+# need special options for this, consult compiler manual if in trouble
+#CPP= /usr/bin/cpp -P -traditional
+CPP= /usr/bin/cpp -P
+
+#NCAR graphics compiler wrappers
+NCARGCF90=ncargf90
+NCARGCF77=ncargf77
+NCARGCC=ncargcc
+NCARGLD=ncargf90
+
+# Flags for fixed/free format
+F90FLG= -free
+F77FLG = -nofree
+
+
+# Compiler flags, real8 version
+FFLAGS= -real_size 64 -convert big_endian -w -O2  -g -r8  -xAVX -axCORE-AVX2 
+CFLAGS= -O2
+
+# Compiler flags, real4 version (needed for NCARG routines)
+FFLAGSR4= -real_size 32 -convert big_endian -w -O2  -g -xAVX -axCORE-AVX2 
+CFLAGSR4= -O2
+
+# Linker flags
+LINKFLAGS= $(FFLAGS)  
+
+#Libraries, Netcdf, FFTW, LAPACK
+LIBS = 
+INCLUDE = 
+
+# Some fortran compilers have iargc as built in, 
+# others as library routine
+CPPFLAGS=-DFFTW -DLAPACK
