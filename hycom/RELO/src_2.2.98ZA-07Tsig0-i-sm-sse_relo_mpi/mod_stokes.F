@@ -59,6 +59,13 @@ c     Arrays holding Surface Stokes Velocities
      & usds,    ! Surface Stokes Drift U Velocity, p-grid
      & vsds     ! Surface Stokes Drift V Velocity, p-grid
 
+C$$ c   Arrays holding paramters for Langmuir mixing in KPP   
+C$$       real,    dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy),
+C$$      &         save, public  ::
+C$$      & usdshat,     ! Surface  U hat , p-grid
+C$$      & vsdshat,     ! Surface  V hat, p-grid 
+C$$      & langnum     ! Langmuir number =sqrt(ustar_speed/usds_speed)
+
 c     -U- & -V- grid Arrays holding Vertically averaged Stokes Velocities
 
       real,    allocatable, dimension(:,:),
@@ -140,8 +147,12 @@ C      real,  dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,2),
       real,    allocatable, dimension(:,:,:),
 C     real,  dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,2),
      &         save, public  ::
-     & twomx,    ! Wind stress transfered to waves and subject to dissipation
-     & twomy     ! Wind stress transfered to waves and subject to dissipation
+     & twomx,    ! Wave to ocean  momentum flux 
+     & twomy     ! Wave to ocean momentum flux
+      
+C$$       real,  dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,2),
+C$$      &         save, public  ::
+C$$      & tm01    ! Wave mean period from m0/m1
       
 
 
@@ -251,13 +262,22 @@ c --- Stokes Drift velocity setup
       call mem_stat_add( 2*(idm+2*nbdy)*(jdm+2*nbdy) )
       usds(:,:) = 0.0
       vsds(:,:) = 0.0
+C$$ c          
+C$$       allocate(usdshat(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy),
+C$$                vsdshat(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy),
+C$$      &         langnum(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy))
+C$$       call mem_stat_add( 2*(idm+2*nbdy)*(jdm+2*nbdy) )
+C$$       usdshat(:,:) = 0.0
+C$$       vsdshat(:,:) = 0.0
+C$$       langnum(:,:) = 0.0
+c     Arrar for transport
 
       allocate( tusd(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,2),
      &          tvsd(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,2))
       call mem_stat_add( 2*(idm+2*nbdy)*(jdm+2*nbdy)*2 )
       tusd(:,:,:) = 0.0
       tvsd(:,:,:) = 0.0
-
+c
       allocate( tauwx(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,2),
      &          tauwy(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,2))
       call mem_stat_add( 2*(idm+2*nbdy)*(jdm+2*nbdy)*2 )
@@ -269,9 +289,8 @@ c --- Stokes Drift velocity setup
       call mem_stat_add( 2*(idm+2*nbdy)*(jdm+2*nbdy)*2 )
       twomx(:,:,:) = 0.0
       twomy(:,:,:) = 0.0
-
-     & twomx,    ! Wind stress transfered to waves and subject to dissipation
-     & twomy     ! Wind stress transfered to waves and subject to dissipation
+C$$ C 
+C$$       tm01(:,:,:)    = 0.0
  
 
 c      allocate( dzdx(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kdm),
@@ -335,7 +354,8 @@ c --- I/O and array I/O units 927 and 928 are reserved for the entire run.
 c
 c --- all input fields much be defined at all grid points
 c
-      real*8    stime(927:928)
+C$$       real*8    stime(927:928)
+      real*8    stime(927:932)
 c
       real*8    dtime0,dtime1
       save      dtime0,dtime1
@@ -344,9 +364,9 @@ c
       save      scl1,scl2
 c
       character preambl(5)*79,clinex*80,cliney*80
-      integer   i,ios,iunit,j,lgth,nrec,k,f,fmax
-      logical   sdprnt
-      real      dpthin,sum_u,sum_v
+      integer   i,ios,iunit,j,lgth,nrec,k,l,f,fmax
+      logical   sdprnt, hycom_isnaninf
+      real      dpthin,sum_u,sum_v,pzb,pzt
 c
 c --- ws0 negative on first call only.
       if     (ws0.lt.-1.0) then
