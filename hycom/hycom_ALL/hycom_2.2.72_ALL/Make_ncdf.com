@@ -24,8 +24,11 @@ source Make_ncdf.src
 printenv NCDF
 #
 if (! -e ${NCDF}/lib/libnetcdf.a) then
-  echo "NCDF = " $NCDF "  is not correct"
-  exit 2
+  echo "NCDF = " $NCDF "  probably is not correct"
+  if (! -e ${NCDF}/lib/libnetcdff.a) then
+    echo "NCDF = " $NCDF "  is not correct"
+    exit 2 
+  endif
 endif
 #
 setenv A $cwd

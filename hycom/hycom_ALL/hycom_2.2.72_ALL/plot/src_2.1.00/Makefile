@@ -81,9 +81,9 @@ PROC_SRC = 	arrow1.f bigrid.f bigrd1.f bklin.f bord.f \
 		tracks.f \
 		mod_xc.F mod_za.F mod_za_sm.F wtime.F
 
-NAVO_OBJ = 	$(PROC_OBJ) getdat_nc.o libnetcdf.a $(EXTRANCDF)
+NAVO_OBJ = 	$(PROC_OBJ) getdat_nc.o   $(EXTRANCDF)
 
-NAVO_LIB = 	libnetcdf.a $(EXTRANCDF)
+NAVO_LIB = 	  $(EXTRANCDF)
 
 NAVO_SRC = 	$(PROC_SRC) getdat_nc.f
 

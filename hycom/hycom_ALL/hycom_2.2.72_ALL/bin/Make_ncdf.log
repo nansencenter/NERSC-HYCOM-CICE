@@ -1,10 +1,12 @@
 source ../Make_ncdf.src
-setenv NCDF /common/netcdf/pgi11.8/3.6.3
-setenv EXTRANCDF 
+module restore system
+module: Command not found.
+module load NCL/6.4.0-intel-2017a
+module: Command not found.
+setenv NCDF /cluster/software/netCDF-Fortran/4.4.4-intel-2017a
+setenv EXTRANCDF -lnetcdff -lnetcdf
 /bin/rm -f netcdf.mod libnetcdf.a
 /bin/rm -f typesizes.mod
-ln -s /common/netcdf/pgi11.8/3.6.3/include/netcdf.mod /common/netcdf/pgi11.8/3.6.3/include/typesizes.mod .
-ln -s /common/netcdf/pgi11.8/3.6.3/lib/libnetcdf.a .
 setenv OS `/bin/uname`
 /bin/uname
 if ( Linux == Linux ) then
@@ -14,88 +16,90 @@ if ( `/bin/uname -m` == x86_64 ) then
 /bin/uname -m
 setenv OS Linux64
 endif
+setenv OS LinuxGF_NC
 endif
-switch ( Linux64 )
-setenv FC pgf90
-setenv FFLAGS -g -fast -byteswapio -tp k8-64 -mcmodel=medium -Mnolarge_arrays
+switch ( LinuxGF_NC )
+setenv FC gfortran
+setenv FFLAGS -I/cluster/software/easybuild/software/netCDF-Fortran/4.4.4-foss-2016b/include -fPIC -fno-second-underscore -fconvert=big-endian -O
+setenv FLIBS -lfftw3 -lnetcdff -lnetcdf 
 setenv CC gcc
-setenv CFLAGS -O -march=k8 -m64 -mcmodel=medium
+setenv CFLAGS -fPIC -fno-second-underscore -O
 breaksw
 foreach f ( hycom_binning_nc hycom_scrip_nc )
-if ( ! -e hycom_binning_nc_Linux64 ) then
+if ( ! -e hycom_binning_nc_LinuxGF_NC ) then
 if ( -f `find ${f}.F -prune -newer ${f}_${OS}` ) then
-find hycom_binning_nc.F -prune -newer hycom_binning_nc_Linux64
-echo hycom_binning_nc_Linux64 is already up to date
-hycom_binning_nc_Linux64 is already up to date
+find hycom_binning_nc.F -prune -newer hycom_binning_nc_LinuxGF_NC
+echo hycom_binning_nc_LinuxGF_NC is already up to date
+hycom_binning_nc_LinuxGF_NC is already up to date
 endif
 touch hycom_binning_nc
 /bin/rm -f hycom_binning_nc
-chmod a+rx hycom_binning_nc_Linux64
-/bin/ln -s hycom_binning_nc_Linux64 hycom_binning_nc
+chmod a+rx hycom_binning_nc_LinuxGF_NC
+/bin/ln -s hycom_binning_nc_LinuxGF_NC hycom_binning_nc
 end
-if ( ! -e hycom_scrip_nc_Linux64 ) then
+if ( ! -e hycom_scrip_nc_LinuxGF_NC ) then
 if ( -f `find ${f}.F -prune -newer ${f}_${OS}` ) then
-find hycom_scrip_nc.F -prune -newer hycom_scrip_nc_Linux64
-echo hycom_scrip_nc_Linux64 is already up to date
-hycom_scrip_nc_Linux64 is already up to date
+find hycom_scrip_nc.F -prune -newer hycom_scrip_nc_LinuxGF_NC
+echo hycom_scrip_nc_LinuxGF_NC is already up to date
+hycom_scrip_nc_LinuxGF_NC is already up to date
 endif
 touch hycom_scrip_nc
 /bin/rm -f hycom_scrip_nc
-chmod a+rx hycom_scrip_nc_Linux64
-/bin/ln -s hycom_scrip_nc_Linux64 hycom_scrip_nc
+chmod a+rx hycom_scrip_nc_LinuxGF_NC
+/bin/ln -s hycom_scrip_nc_LinuxGF_NC hycom_scrip_nc
 end
 foreach f ( hycom_profile2z_nc hycom_profile2s_nc hycom_seaice_nc )
-if ( ! -e hycom_profile2z_nc_Linux64 ) then
+if ( ! -e hycom_profile2z_nc_LinuxGF_NC ) then
 if ( -f `find ${f}.F -prune -newer ${f}_${OS}` ) then
-find hycom_profile2z_nc.F -prune -newer hycom_profile2z_nc_Linux64
-echo hycom_profile2z_nc_Linux64 is already up to date
-hycom_profile2z_nc_Linux64 is already up to date
+find hycom_profile2z_nc.F -prune -newer hycom_profile2z_nc_LinuxGF_NC
+echo hycom_profile2z_nc_LinuxGF_NC is already up to date
+hycom_profile2z_nc_LinuxGF_NC is already up to date
 endif
 touch hycom_profile2z_nc
 /bin/rm -f hycom_profile2z_nc
-chmod a+rx hycom_profile2z_nc_Linux64
-/bin/ln -s hycom_profile2z_nc_Linux64 hycom_profile2z_nc
+chmod a+rx hycom_profile2z_nc_LinuxGF_NC
+/bin/ln -s hycom_profile2z_nc_LinuxGF_NC hycom_profile2z_nc
 end
-if ( ! -e hycom_profile2s_nc_Linux64 ) then
+if ( ! -e hycom_profile2s_nc_LinuxGF_NC ) then
 if ( -f `find ${f}.F -prune -newer ${f}_${OS}` ) then
-find hycom_profile2s_nc.F -prune -newer hycom_profile2s_nc_Linux64
-echo hycom_profile2s_nc_Linux64 is already up to date
-hycom_profile2s_nc_Linux64 is already up to date
+find hycom_profile2s_nc.F -prune -newer hycom_profile2s_nc_LinuxGF_NC
+echo hycom_profile2s_nc_LinuxGF_NC is already up to date
+hycom_profile2s_nc_LinuxGF_NC is already up to date
 endif
 touch hycom_profile2s_nc
 /bin/rm -f hycom_profile2s_nc
-chmod a+rx hycom_profile2s_nc_Linux64
-/bin/ln -s hycom_profile2s_nc_Linux64 hycom_profile2s_nc
+chmod a+rx hycom_profile2s_nc_LinuxGF_NC
+/bin/ln -s hycom_profile2s_nc_LinuxGF_NC hycom_profile2s_nc
 end
-if ( ! -e hycom_seaice_nc_Linux64 ) then
+if ( ! -e hycom_seaice_nc_LinuxGF_NC ) then
 if ( -f `find ${f}.F -prune -newer ${f}_${OS}` ) then
-find hycom_seaice_nc.F -prune -newer hycom_seaice_nc_Linux64
-echo hycom_seaice_nc_Linux64 is already up to date
-hycom_seaice_nc_Linux64 is already up to date
+find hycom_seaice_nc.F -prune -newer hycom_seaice_nc_LinuxGF_NC
+echo hycom_seaice_nc_LinuxGF_NC is already up to date
+hycom_seaice_nc_LinuxGF_NC is already up to date
 endif
 touch hycom_seaice_nc
 /bin/rm -f hycom_seaice_nc
-chmod a+rx hycom_seaice_nc_Linux64
-/bin/ln -s hycom_seaice_nc_Linux64 hycom_seaice_nc
+chmod a+rx hycom_seaice_nc_LinuxGF_NC
+/bin/ln -s hycom_seaice_nc_LinuxGF_NC hycom_seaice_nc
 end
 foreach f ( wind_stat_nc wind_stat_range_nc )
-if ( ! -e wind_stat_nc_Linux64 ) then
+if ( ! -e wind_stat_nc_LinuxGF_NC ) then
 if ( -f `find ${f}.f -prune -newer ${f}_${OS}` ) then
-find wind_stat_nc.f -prune -newer wind_stat_nc_Linux64
-echo wind_stat_nc_Linux64 is already up to date
-wind_stat_nc_Linux64 is already up to date
+find wind_stat_nc.f -prune -newer wind_stat_nc_LinuxGF_NC
+echo wind_stat_nc_LinuxGF_NC is already up to date
+wind_stat_nc_LinuxGF_NC is already up to date
 endif
 touch wind_stat_nc
 /bin/rm -f wind_stat_nc
-chmod a+rx wind_stat_nc_Linux64
+chmod a+rx wind_stat_nc_LinuxGF_NC
 end
-if ( ! -e wind_stat_range_nc_Linux64 ) then
+if ( ! -e wind_stat_range_nc_LinuxGF_NC ) then
 if ( -f `find ${f}.f -prune -newer ${f}_${OS}` ) then
-find wind_stat_range_nc.f -prune -newer wind_stat_range_nc_Linux64
-echo wind_stat_range_nc_Linux64 is already up to date
-wind_stat_range_nc_Linux64 is already up to date
+find wind_stat_range_nc.f -prune -newer wind_stat_range_nc_LinuxGF_NC
+echo wind_stat_range_nc_LinuxGF_NC is already up to date
+wind_stat_range_nc_LinuxGF_NC is already up to date
 endif
 touch wind_stat_range_nc
 /bin/rm -f wind_stat_range_nc
-chmod a+rx wind_stat_range_nc_Linux64
+chmod a+rx wind_stat_range_nc_LinuxGF_NC
 end

@@ -26,6 +26,9 @@
 #KAL - ARCH must now be set before running Make_cice.csh script. It is of type
 #KAL - xt4.hexagon ...
 setenv TYPE cice
+#setenv ARCH Linux.sisu.intel
+setenv CICE_FLAG 2
+echo "(1) $ARCH"
 echo "Make_cice.csh: Environment variable TYPE=$TYPE"
 echo "Make_cice.csh: Environment variable ARCH=$ARCH"
 
@@ -66,14 +69,20 @@ endif
 
 # --- KAL. Touch this file to make sure it exists. It may be empty, but the makefile will look for it
 touch ./hycom_feature_flags
-
+echo "################## " $CICE_FLAG
 #
 # --- make HYCOM component, and update hycom_cice
 #
 # --- force a relink, because CICE is not in the dependencies
 /bin/rm hycom_cice
-make ARCH=$ARCH TYPE=$TYPE CICE_DIR=./CICE/ hycom_cice
-
+if ($CICE_FLAG == 0) then
+	echo "only hycom"
+      	make ARCH=$ARCH TYPE=$TYPE CICE_FLAG=$CICE_FLAG hycom
+      	echo "Replacing HYCOM with HYCOM_CICE ..."
+      	mv hycom hycom_cice
+else
+	make ARCH=$ARCH TYPE=$TYPE CICE_DIR=./CICE/ hycom_cice
+endif
 # --- some machines require gmake
 #gmake ARCH=$ARCH TYPE=$TYPE hycom_cice
 exit $status
