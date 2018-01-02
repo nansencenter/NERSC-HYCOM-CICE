@@ -11,10 +11,15 @@
 #setenv NCDF /common/netcdf-3.6.2-amd64
 #setenv NCDF /common/netcdf-3.6.2-amd64pg
 #setenv NCDF /common/netcdf/deprecated/netcdf-3.6.2-amd64pg
-#
-setenv NCDF /common/netcdf/pgi11.8/3.6.3
+#setenv NCDF /common/netcdf/pgi11.8/3.6.3
+module restore system
+module load NCL/6.4.0-intel-2017a
+module swap netCDF-Fortran/4.4.4-intel-2017a-HDF5-1.8.18 netCDF-Fortran/4.4.4-intel-2017a
+setenv NCDF /cluster/software/netCDF-Fortran/4.4.4-intel-2017a
 #
 # --- Use EXTRANCDF for the extra libraries needed for NCDF v4
 #
 #setenv EXTRANCDF "/u/home/wallcraf/pkgs/hdf5-1.8.4-serial/lib/libhdf5_hl.a /u/home/wallcraf/pkgs/hdf5-1.8.4-serial/lib/libhdf5.a /u/home/wallcraf/pkgs/zlib-1.2.3/lib/libz.a"
-setenv EXTRANCDF ""
+#setenv EXTRANCDF "/u/home/wallcraf/pkgs/hdf5-1.8.4-serial/lib/libhdf5_hl.a /u/home/wallcraf/pkgs/hdf5-1.8.4-serial/lib/libhdf5.a /u/home/wallcraf/pkgs/zlib-1.2.3/lib/libz.a"
+#setenv EXTRANCDF "/cluster/software/easybuild/software/netCDF/4.4.1-intel-2016b"
+setenv EXTRANCDF "-lnetcdff -lnetcdf"

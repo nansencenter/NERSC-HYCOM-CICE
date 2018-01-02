@@ -278,9 +278,9 @@ contains
 
          !!get dump time from filename
          !!TODO: what if under 1 hour?
-         read(df%filebase(10:13),'(i4.4)') df%iyear
-         read(df%filebase(15:17),'(i3.3)') df%iday
-         read(df%filebase(19:20),'(i2.2)') df%ihour
+         read(df%filebase(7:10),'(i4.4)') df%iyear
+         read(df%filebase(13:14),'(i3.3)') df%iday
+         read(df%filebase(16:27),'(i2.2)') df%ihour
          df%imin  = 0
          df%isec  = 0
          write(df%ctime,'(i2.2,i2.2,i2.2)') df%ihour,df%imin,df%isec

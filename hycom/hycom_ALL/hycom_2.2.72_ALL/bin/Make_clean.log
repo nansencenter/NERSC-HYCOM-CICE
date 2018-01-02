@@ -1,6 +1,7 @@
+/bin/rm -f parse.o
 /bin/rm: No match.
 /bin/rm: No match.
-/bin/rm: No match.
+
 foreach f ( echo2 endian )
 touch echo2
 /bin/rm -f echo2
@@ -1874,8 +1875,12 @@ end
 end
 foreach f ( echo2 endian )
 if ( -e echo2_Linux64 ) then
+/bin/rm -f echo2_Linux64
+endif
 end
 if ( -e endian_Linux64 ) then
+/bin/rm -f endian_Linux64
+endif
 end
 foreach f ( clim_stat wind_stat wind_stat_check wind_stat_range wind_stat_range2 wind_stat_range5 wind_stat_raw hycom_sigma wind_stat_nc wind_stat_range_nc )
 if ( -e clim_stat_Linux64 ) then
@@ -1893,6 +1898,8 @@ end
 if ( -e wind_stat_raw_Linux64 ) then
 end
 if ( -e hycom_sigma_Linux64 ) then
+/bin/rm -f hycom_sigma_Linux64
+endif
 end
 if ( -e wind_stat_nc_Linux64 ) then
 end
@@ -1900,257 +1907,507 @@ if ( -e wind_stat_range_nc_Linux64 ) then
 end
 foreach f ( cice_restart cice_stat hycom_palette lonlat_dist hycom_alat hycom_archm_dates hycom_archv_dates hycom_depth hycom_depth_40 hycom_nest_dates hycom_profile+sig hycom_profile+thstar hycom_profile2pcm hycom_profile2z hycom_profile2zi hycom_profile_argo hycom_profile_hybgen+ hycom_profile_hybgen hycom_profile_locsig hycom_profile_mld hycom_profile_remap hycom_sigma hycom_ts hycom_wind_date hycom_wind_ymdh hycom_ymdh_wind hycom_yoflat sigma0_to_sigma2 sigma2_to_sigma0 ts_to_sigma z2zi zi2z hycom_date_wind hycom_profile2plm hycom_profile_hybgen_34 hycom_profile_hybgen_35 hycom_subset_xy hycom_dp0k hycom_dp0k_cm hycom_dp0k_sigma )
 if ( -e cice_restart_Linux64 ) then
+/bin/rm -f cice_restart_Linux64
+endif
 end
 if ( -e cice_stat_Linux64 ) then
+/bin/rm -f cice_stat_Linux64
+endif
 end
 if ( -e hycom_palette_Linux64 ) then
+/bin/rm -f hycom_palette_Linux64
+endif
 end
 if ( -e lonlat_dist_Linux64 ) then
+/bin/rm -f lonlat_dist_Linux64
+endif
 end
 if ( -e hycom_alat_Linux64 ) then
+/bin/rm -f hycom_alat_Linux64
+endif
 end
 if ( -e hycom_archm_dates_Linux64 ) then
+/bin/rm -f hycom_archm_dates_Linux64
+endif
 end
 if ( -e hycom_archv_dates_Linux64 ) then
+/bin/rm -f hycom_archv_dates_Linux64
+endif
 end
 if ( -e hycom_depth_Linux64 ) then
+/bin/rm -f hycom_depth_Linux64
+endif
 end
 if ( -e hycom_depth_40_Linux64 ) then
+/bin/rm -f hycom_depth_40_Linux64
+endif
 end
 if ( -e hycom_nest_dates_Linux64 ) then
+/bin/rm -f hycom_nest_dates_Linux64
+endif
 end
 if ( -e hycom_profile+sig_Linux64 ) then
+/bin/rm -f hycom_profile+sig_Linux64
+endif
 end
 if ( -e hycom_profile+thstar_Linux64 ) then
+/bin/rm -f hycom_profile+thstar_Linux64
+endif
 end
 if ( -e hycom_profile2pcm_Linux64 ) then
+/bin/rm -f hycom_profile2pcm_Linux64
+endif
 end
 if ( -e hycom_profile2z_Linux64 ) then
+/bin/rm -f hycom_profile2z_Linux64
+endif
 end
 if ( -e hycom_profile2zi_Linux64 ) then
+/bin/rm -f hycom_profile2zi_Linux64
+endif
 end
 if ( -e hycom_profile_argo_Linux64 ) then
+/bin/rm -f hycom_profile_argo_Linux64
+endif
 end
 if ( -e hycom_profile_hybgen+_Linux64 ) then
+/bin/rm -f hycom_profile_hybgen+_Linux64
+endif
 end
 if ( -e hycom_profile_hybgen_Linux64 ) then
+/bin/rm -f hycom_profile_hybgen_Linux64
+endif
 end
 if ( -e hycom_profile_locsig_Linux64 ) then
+/bin/rm -f hycom_profile_locsig_Linux64
+endif
 end
 if ( -e hycom_profile_mld_Linux64 ) then
+/bin/rm -f hycom_profile_mld_Linux64
+endif
 end
 if ( -e hycom_profile_remap_Linux64 ) then
+/bin/rm -f hycom_profile_remap_Linux64
+endif
 end
 if ( -e hycom_sigma_Linux64 ) then
 end
 if ( -e hycom_ts_Linux64 ) then
+/bin/rm -f hycom_ts_Linux64
+endif
 end
 if ( -e hycom_wind_date_Linux64 ) then
+/bin/rm -f hycom_wind_date_Linux64
+endif
 end
 if ( -e hycom_wind_ymdh_Linux64 ) then
+/bin/rm -f hycom_wind_ymdh_Linux64
+endif
 end
 if ( -e hycom_ymdh_wind_Linux64 ) then
+/bin/rm -f hycom_ymdh_wind_Linux64
+endif
 end
 if ( -e hycom_yoflat_Linux64 ) then
+/bin/rm -f hycom_yoflat_Linux64
+endif
 end
 if ( -e sigma0_to_sigma2_Linux64 ) then
+/bin/rm -f sigma0_to_sigma2_Linux64
+endif
 end
 if ( -e sigma2_to_sigma0_Linux64 ) then
+/bin/rm -f sigma2_to_sigma0_Linux64
+endif
 end
 if ( -e ts_to_sigma_Linux64 ) then
+/bin/rm -f ts_to_sigma_Linux64
+endif
 end
 if ( -e z2zi_Linux64 ) then
+/bin/rm -f z2zi_Linux64
+endif
 end
 if ( -e zi2z_Linux64 ) then
+/bin/rm -f zi2z_Linux64
+endif
 end
 if ( -e hycom_date_wind_Linux64 ) then
+/bin/rm -f hycom_date_wind_Linux64
+endif
 end
 if ( -e hycom_profile2plm_Linux64 ) then
+/bin/rm -f hycom_profile2plm_Linux64
+endif
 end
 if ( -e hycom_profile_hybgen_34_Linux64 ) then
+/bin/rm -f hycom_profile_hybgen_34_Linux64
+endif
 end
 if ( -e hycom_profile_hybgen_35_Linux64 ) then
+/bin/rm -f hycom_profile_hybgen_35_Linux64
+endif
 end
 if ( -e hycom_subset_xy_Linux64 ) then
+/bin/rm -f hycom_subset_xy_Linux64
+endif
 end
 if ( -e hycom_dp0k_Linux64 ) then
+/bin/rm -f hycom_dp0k_Linux64
+endif
 end
 if ( -e hycom_dp0k_cm_Linux64 ) then
+/bin/rm -f hycom_dp0k_cm_Linux64
+endif
 end
 if ( -e hycom_dp0k_sigma_Linux64 ) then
+/bin/rm -f hycom_dp0k_sigma_Linux64
+endif
 end
 foreach f ( hycom_crosscorr hycom_crosscorr_lag hycom_join unf42hycom unf82hycom hycom2raw hycom2raw8 hycom_1st_isopyc hycom_arctic hycom_arctic_ok hycom_bandmask hycom_binning hycom_binning_fld hycom_bouflx hycom_clip hycom_count hycom_eddy_center hycom_expr hycom_extract hycom_fill hycom_halfsm hycom_histogram hycom_ij2lonlat hycom_islands hycom_larger hycom_lonlat2ij hycom_lonlat2xy hycom_mask hycom_mass hycom_mean hycom_meanfit hycom_median hycom_meridional hycom_meridional_lon hycom_mixlay hycom_mixlay_old hycom_mxthrd hycom_NaN hycom_print hycom_range hycom_range_ij hycom_rivers hycom_rotate hycom_runmean hycom_sample hycom_sample_list hycom_sea_ok hycom_shift hycom_skill hycom_slopefit hycom_smooth hycom_stericssh hycom_subset hycom_superset hycom_thirdsm hycom_tidelat hycom_triple hycom_void hycom_xy2lonlat hycom_zonal hycom_zonal_lat ascii2hycom raw2hycom raw82hycom hycom_2d_ok hycom_autocorr hycom_autocorr_lag hycom_boxmean hycom_boxtime hycom_index_sort hycom_mask_ok hycom_mass_corr hycom_newzi hycom_quadlsq hycom_regression hycom_sstice hycom_profile_list hycom_botfric hycom_boxsmooth hycom_diflat hycom_merge hycom_sample_xy hycom_scatter hycom_tidebody hycom_vmean hycom_xward )
 if ( -e hycom_crosscorr_Linux64 ) then
+/bin/rm -f hycom_crosscorr_Linux64
+endif
 end
 if ( -e hycom_crosscorr_lag_Linux64 ) then
+/bin/rm -f hycom_crosscorr_lag_Linux64
+endif
 end
 if ( -e hycom_join_Linux64 ) then
+/bin/rm -f hycom_join_Linux64
+endif
 end
 if ( -e unf42hycom_Linux64 ) then
+/bin/rm -f unf42hycom_Linux64
+endif
 end
 if ( -e unf82hycom_Linux64 ) then
+/bin/rm -f unf82hycom_Linux64
+endif
 end
 if ( -e hycom2raw_Linux64 ) then
+/bin/rm -f hycom2raw_Linux64
+endif
 end
 if ( -e hycom2raw8_Linux64 ) then
+/bin/rm -f hycom2raw8_Linux64
+endif
 end
 if ( -e hycom_1st_isopyc_Linux64 ) then
+/bin/rm -f hycom_1st_isopyc_Linux64
+endif
 end
 if ( -e hycom_arctic_Linux64 ) then
+/bin/rm -f hycom_arctic_Linux64
+endif
 end
 if ( -e hycom_arctic_ok_Linux64 ) then
+/bin/rm -f hycom_arctic_ok_Linux64
+endif
 end
 if ( -e hycom_bandmask_Linux64 ) then
+/bin/rm -f hycom_bandmask_Linux64
+endif
 end
 if ( -e hycom_binning_Linux64 ) then
+/bin/rm -f hycom_binning_Linux64
+endif
 end
 if ( -e hycom_binning_fld_Linux64 ) then
+/bin/rm -f hycom_binning_fld_Linux64
+endif
 end
 if ( -e hycom_bouflx_Linux64 ) then
+/bin/rm -f hycom_bouflx_Linux64
+endif
 end
 if ( -e hycom_clip_Linux64 ) then
+/bin/rm -f hycom_clip_Linux64
+endif
 end
 if ( -e hycom_count_Linux64 ) then
+/bin/rm -f hycom_count_Linux64
+endif
 end
 if ( -e hycom_eddy_center_Linux64 ) then
+/bin/rm -f hycom_eddy_center_Linux64
+endif
 end
 if ( -e hycom_expr_Linux64 ) then
+/bin/rm -f hycom_expr_Linux64
+endif
 end
 if ( -e hycom_extract_Linux64 ) then
+/bin/rm -f hycom_extract_Linux64
+endif
 end
 if ( -e hycom_fill_Linux64 ) then
+/bin/rm -f hycom_fill_Linux64
+endif
 end
 if ( -e hycom_halfsm_Linux64 ) then
+/bin/rm -f hycom_halfsm_Linux64
+endif
 end
 if ( -e hycom_histogram_Linux64 ) then
+/bin/rm -f hycom_histogram_Linux64
+endif
 end
 if ( -e hycom_ij2lonlat_Linux64 ) then
+/bin/rm -f hycom_ij2lonlat_Linux64
+endif
 end
 if ( -e hycom_islands_Linux64 ) then
+/bin/rm -f hycom_islands_Linux64
+endif
 end
 if ( -e hycom_larger_Linux64 ) then
+/bin/rm -f hycom_larger_Linux64
+endif
 end
 if ( -e hycom_lonlat2ij_Linux64 ) then
+/bin/rm -f hycom_lonlat2ij_Linux64
+endif
 end
 if ( -e hycom_lonlat2xy_Linux64 ) then
+/bin/rm -f hycom_lonlat2xy_Linux64
+endif
 end
 if ( -e hycom_mask_Linux64 ) then
+/bin/rm -f hycom_mask_Linux64
+endif
 end
 if ( -e hycom_mass_Linux64 ) then
+/bin/rm -f hycom_mass_Linux64
+endif
 end
 if ( -e hycom_mean_Linux64 ) then
+/bin/rm -f hycom_mean_Linux64
+endif
 end
 if ( -e hycom_meanfit_Linux64 ) then
+/bin/rm -f hycom_meanfit_Linux64
+endif
 end
 if ( -e hycom_median_Linux64 ) then
+/bin/rm -f hycom_median_Linux64
+endif
 end
 if ( -e hycom_meridional_Linux64 ) then
+/bin/rm -f hycom_meridional_Linux64
+endif
 end
 if ( -e hycom_meridional_lon_Linux64 ) then
+/bin/rm -f hycom_meridional_lon_Linux64
+endif
 end
 if ( -e hycom_mixlay_Linux64 ) then
+/bin/rm -f hycom_mixlay_Linux64
+endif
 end
 if ( -e hycom_mixlay_old_Linux64 ) then
+/bin/rm -f hycom_mixlay_old_Linux64
+endif
 end
 if ( -e hycom_mxthrd_Linux64 ) then
+/bin/rm -f hycom_mxthrd_Linux64
+endif
 end
 if ( -e hycom_NaN_Linux64 ) then
+/bin/rm -f hycom_NaN_Linux64
+endif
 end
 if ( -e hycom_print_Linux64 ) then
+/bin/rm -f hycom_print_Linux64
+endif
 end
 if ( -e hycom_range_Linux64 ) then
+/bin/rm -f hycom_range_Linux64
+endif
 end
 if ( -e hycom_range_ij_Linux64 ) then
+/bin/rm -f hycom_range_ij_Linux64
+endif
 end
 if ( -e hycom_rivers_Linux64 ) then
+/bin/rm -f hycom_rivers_Linux64
+endif
 end
 if ( -e hycom_rotate_Linux64 ) then
+/bin/rm -f hycom_rotate_Linux64
+endif
 end
 if ( -e hycom_runmean_Linux64 ) then
+/bin/rm -f hycom_runmean_Linux64
+endif
 end
 if ( -e hycom_sample_Linux64 ) then
+/bin/rm -f hycom_sample_Linux64
+endif
 end
 if ( -e hycom_sample_list_Linux64 ) then
+/bin/rm -f hycom_sample_list_Linux64
+endif
 end
 if ( -e hycom_sea_ok_Linux64 ) then
+/bin/rm -f hycom_sea_ok_Linux64
+endif
 end
 if ( -e hycom_shift_Linux64 ) then
+/bin/rm -f hycom_shift_Linux64
+endif
 end
 if ( -e hycom_skill_Linux64 ) then
+/bin/rm -f hycom_skill_Linux64
+endif
 end
 if ( -e hycom_slopefit_Linux64 ) then
+/bin/rm -f hycom_slopefit_Linux64
+endif
 end
 if ( -e hycom_smooth_Linux64 ) then
+/bin/rm -f hycom_smooth_Linux64
+endif
 end
 if ( -e hycom_stericssh_Linux64 ) then
+/bin/rm -f hycom_stericssh_Linux64
+endif
 end
 if ( -e hycom_subset_Linux64 ) then
+/bin/rm -f hycom_subset_Linux64
+endif
 end
 if ( -e hycom_superset_Linux64 ) then
+/bin/rm -f hycom_superset_Linux64
+endif
 end
 if ( -e hycom_thirdsm_Linux64 ) then
+/bin/rm -f hycom_thirdsm_Linux64
+endif
 end
 if ( -e hycom_tidelat_Linux64 ) then
+/bin/rm -f hycom_tidelat_Linux64
+endif
 end
 if ( -e hycom_triple_Linux64 ) then
+/bin/rm -f hycom_triple_Linux64
+endif
 end
 if ( -e hycom_void_Linux64 ) then
+/bin/rm -f hycom_void_Linux64
+endif
 end
 if ( -e hycom_xy2lonlat_Linux64 ) then
+/bin/rm -f hycom_xy2lonlat_Linux64
+endif
 end
 if ( -e hycom_zonal_Linux64 ) then
+/bin/rm -f hycom_zonal_Linux64
+endif
 end
 if ( -e hycom_zonal_lat_Linux64 ) then
+/bin/rm -f hycom_zonal_lat_Linux64
+endif
 end
 if ( -e ascii2hycom_Linux64 ) then
+/bin/rm -f ascii2hycom_Linux64
+endif
 end
 if ( -e raw2hycom_Linux64 ) then
+/bin/rm -f raw2hycom_Linux64
+endif
 end
 if ( -e raw82hycom_Linux64 ) then
+/bin/rm -f raw82hycom_Linux64
+endif
 end
 if ( -e hycom_2d_ok_Linux64 ) then
+/bin/rm -f hycom_2d_ok_Linux64
+endif
 end
 if ( -e hycom_autocorr_Linux64 ) then
+/bin/rm -f hycom_autocorr_Linux64
+endif
 end
 if ( -e hycom_autocorr_lag_Linux64 ) then
+/bin/rm -f hycom_autocorr_lag_Linux64
+endif
 end
 if ( -e hycom_boxmean_Linux64 ) then
+/bin/rm -f hycom_boxmean_Linux64
+endif
 end
 if ( -e hycom_boxtime_Linux64 ) then
+/bin/rm -f hycom_boxtime_Linux64
+endif
 end
 if ( -e hycom_index_sort_Linux64 ) then
+/bin/rm -f hycom_index_sort_Linux64
+endif
 end
 if ( -e hycom_mask_ok_Linux64 ) then
+/bin/rm -f hycom_mask_ok_Linux64
+endif
 end
 if ( -e hycom_mass_corr_Linux64 ) then
+/bin/rm -f hycom_mass_corr_Linux64
+endif
 end
 if ( -e hycom_newzi_Linux64 ) then
+/bin/rm -f hycom_newzi_Linux64
+endif
 end
 if ( -e hycom_quadlsq_Linux64 ) then
+/bin/rm -f hycom_quadlsq_Linux64
+endif
 end
 if ( -e hycom_regression_Linux64 ) then
+/bin/rm -f hycom_regression_Linux64
+endif
 end
 if ( -e hycom_sstice_Linux64 ) then
+/bin/rm -f hycom_sstice_Linux64
+endif
 end
 if ( -e hycom_profile_list_Linux64 ) then
+/bin/rm -f hycom_profile_list_Linux64
+endif
 end
 if ( -e hycom_botfric_Linux64 ) then
+/bin/rm -f hycom_botfric_Linux64
+endif
 end
 if ( -e hycom_boxsmooth_Linux64 ) then
+/bin/rm -f hycom_boxsmooth_Linux64
+endif
 end
 if ( -e hycom_diflat_Linux64 ) then
+/bin/rm -f hycom_diflat_Linux64
+endif
 end
 if ( -e hycom_merge_Linux64 ) then
+/bin/rm -f hycom_merge_Linux64
+endif
 end
 if ( -e hycom_sample_xy_Linux64 ) then
+/bin/rm -f hycom_sample_xy_Linux64
+endif
 end
 if ( -e hycom_scatter_Linux64 ) then
+/bin/rm -f hycom_scatter_Linux64
+endif
 end
 if ( -e hycom_tidebody_Linux64 ) then
+/bin/rm -f hycom_tidebody_Linux64
+endif
 end
 if ( -e hycom_vmean_Linux64 ) then
+/bin/rm -f hycom_vmean_Linux64
+endif
 end
 if ( -e hycom_xward_Linux64 ) then
+/bin/rm -f hycom_xward_Linux64
+endif
 end
 foreach f ( hycom_binning_nc hycom_scrip_nc hycom_force2nc hycom_profile2z_nc hycom_profile2s_nc hycom_seaice_nc )
 if ( -e hycom_binning_nc_Linux64 ) then

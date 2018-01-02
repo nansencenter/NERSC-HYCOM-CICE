@@ -14,11 +14,11 @@
       module mod_stokes
       use mod_xc  ! HYCOM communication interface
       use mod_cb_arrays  ! HYCOM saved arrays
-c
+c     use m_get_erfc
       implicit none
 c
 c --- HYCOM Stokes Drift from external data files
-c
+c --- this module include array declarations and data forcing
       logical, parameter, private :: debug_stokes=.false.  !usually .false.
 c
 c     Logical flags for Stokes Drift Effects
@@ -27,17 +27,30 @@ c     has been implemented  following:
 c          - Craig & Banner + Ardhuin-Filipot-Perenne
 c          - Uchiyama-McWilliams-Shchepetkin
 c
+      REAL, PARAMETER , private:: PI = 3.1415927
+c      
       logical, save, public ::
      & stdflg,   ! Stokes Drift Velocities:           TRUE/FALSE
      & stdsur,   ! Stokes Drift Surface Stresses:     TRUE/FALSE (dissipation due to breaking and rolling)
      & stdbot    ! Stokes Drift Bottom Stress:        TRUE/FALSE (dissipation due to bottom friction)
+     & stdarc,   ! Stokes Drift Velocities in Archive TRUE/FALSE
+     & stdtau,   ! Removing from the total wind stress the part transfered to the wave field subjected to dissipation: TRUE/FALSE
+     & stdwom    ! Adding the wave-to-ocean momentum flux due to wave dissipation/breaking: TRUE/FALSE
+C%%%      & stpres,   ! Stokes Wave Induced Mean Pressure: TRUE/FALSE
+C%%%      & stdtau,   ! Removing from the total wind stress the part transfered to the wave field subjected to dissipation: TRUE/FALSE
+C%%%      & stustr    ! if stmxsr=1,2: velocity scale for the wave vertical mixing in KPP given by WW3 (TRUE) or by Hyc
 c
 c    Constant values
 c     Number of fixed interface depths for Stokes input
 c
       integer,   save, public   ::
      &  nsdzi,   ! Number of fixed interface depths for Stokes input 
-     & langmr    ! Langmuir turb enhancement (KPP) 0: None 1:McWilliams-Sulliva 2:Smyth 3:McWilliams-Harcourt 4:Takaya
+     &  langmr    ! Langmuir turb enhancement (KPP) 0: None 1:McWilliams-Sulliva 2:Smyth 3:McWilliams-Harcourt 4:Takaya
+C%%%      & stmxsr,   ! Surface wave mixing turb enhancement 0: None, 1,2:Craig Banner Perenne et al (KPP,Yamada), 3: Uchiyama (KPP only), 4: replace diffusion by an analytical profile
+C%%%      & stalfa,   ! if stmxsr=1,2: wave energy factor 0: Constant, 1:alpha from phi_oc (WW3) and u*(WW3 or Hycom) 
+C%%%       real,   save, public   ::
+C%%%      & al_cst,   ! if stmxsr=1,2: minimum value (stalfa=/0) or value (stalfa=0) of the wave energy factor
+C%%%      & z0ctop    ! if stmxsr=1,2: minimum value (stz0tp=/0) or value (stz0tp=0) of the surface roughnes 
 
 c     Arrays holding Surface Stokes Velocities
 
@@ -108,6 +121,29 @@ c     Dissipations (bottom and breakin)
      & wave_bdy(:,:,:),     ! Bottom dissipation  
      & wave_brkx(:,:,:),     ! Dissipation  by breaking
      & wave_brky(:,:,:)      ! Dissipation  by breaking
+c     Arrays used to calculate transport
+
+      real,    allocatable, dimension(:,:,:),
+C     real,  dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,2),
+     &     save, public  ::
+     &  tusd,      ! Stokes transport u direction, p-grid
+     &  tvsd       ! Stokes transport v direction, p-grid 
+      
+c     Arrays used to calculate the wind stresses
+ 
+      real,    allocatable, dimension(:,:,:),
+C      real,  dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,2),
+     &         save, public  ::
+     & tauwx,    ! Wind stress transfered to waves and subject to dissipation
+     & tauwy     ! Wind stress transfered to waves and subject to dissipation
+
+      real,    allocatable, dimension(:,:,:),
+C     real,  dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,2),
+     &         save, public  ::
+     & twomx,    ! Wind stress transfered to waves and subject to dissipation
+     & twomy     ! Wind stress transfered to waves and subject to dissipation
+      
+
 
 c     Arrays used for the parameterization of the vertical mixing
 
@@ -124,6 +160,15 @@ c     Arrays used for the parameterization of the vertical mixing
      & z0top,    ! Surface roughness from WW3
      & ustarw3   ! Velocity scale from WW3
 c
+C$$$$ c Be careful: When using radiation stresses, u must contain the eulerian and the Stokes velocity!
+C$$$$       real,    allocatable, dimension(:,:,:),
+C$$$$      &         save, public  ::
+C$$$$      & d_sx,     ! d/dx (sxx) + d/dy (sxy) - sx. components of the radiation stress
+C$$$$      & d_sy      ! d/dy (syy) + d/dx (syx) - sy. components of the radiation stress
+C$$$$        
+C$$$$ #endif
+
+
 
 c    Weights for holding values during a barotropic time step.
 
@@ -136,6 +181,31 @@ c    Stokes indexes
       integer,    save, public ::
      &  ls0,
      &  ls1
+
+C$$$$ c    Units assigned to I/O     
+C$$$$ C{{{{{{{{{{{{{{{{{{{{{{{{{{c
+C$$$$ #if defined(STOKES_3D)
+C$$$$       integer, parameter, private :: 
+C$$$$ C$$$$      .    iusdk  = 980,      !  Unit used to read usdk
+C$$$$ C$$$$      .    ivsdk  = 981,      !  Unit used to read vsdk
+C$$$$      .    isj    = 982,      !  Unit used to read sj
+C$$$$ C$$$$      .    isdk   = 983,      !  Unit used to read sdka
+C$$$$ C$$$$      .    iwadir = 984,      !  Unit used to read wave_dir
+C$$$$ C$$$$      .    ihsig  = 985,      !  Unit used to read h_sig
+C$$$$      .    iepsbk = 986,      !  Unit used to read eps_brk
+C$$$$      .    itauwx = 987,      !  Unit used to read x wind stress lost by wave dissipation
+C$$$$      .    itauwy = 988,      !  Unit used to read y wind stress lost by wave dissipation
+C$$$$      .    iustar = 989,      !  Unit used to read the velocity scale of WW3
+C$$$$      .    iphioc = 990,      !  Unit used to read the turbulent kinetic energy from WW3
+C$$$$ C$$$$      .    iz0top = 991       !  Unit used to read the surface roughness or Hsw
+C$$$$ #endif
+C$$$$ #
+C$$$$ #if defined(STOKES_2D)
+C$$$$       integer, parameter, private :: 
+C$$$$      .    istrad = 980       !  Unit used to read radiation stresses
+C$$$$ #endif
+C$$$$ C}}}}}}}}}}}}}}}}}}}}}}}}}}
+
 
       contains 
 c*********************************************************************************************
@@ -181,6 +251,28 @@ c --- Stokes Drift velocity setup
       call mem_stat_add( 2*(idm+2*nbdy)*(jdm+2*nbdy) )
       usds(:,:) = 0.0
       vsds(:,:) = 0.0
+
+      allocate( tusd(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,2),
+     &          tvsd(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,2))
+      call mem_stat_add( 2*(idm+2*nbdy)*(jdm+2*nbdy)*2 )
+      tusd(:,:,:) = 0.0
+      tvsd(:,:,:) = 0.0
+
+      allocate( tauwx(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,2),
+     &          tauwy(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,2))
+      call mem_stat_add( 2*(idm+2*nbdy)*(jdm+2*nbdy)*2 )
+      tauwx(:,:,:) = 0.0
+      tauwy(:,:,:) = 0.0
+
+      allocate( twomx(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,2),
+     &          twomy(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,2))
+      call mem_stat_add( 2*(idm+2*nbdy)*(jdm+2*nbdy)*2 )
+      twomx(:,:,:) = 0.0
+      twomy(:,:,:) = 0.0
+
+     & twomx,    ! Wind stress transfered to waves and subject to dissipation
+     & twomy     ! Wind stress transfered to waves and subject to dissipation
+ 
 
 c      allocate( dzdx(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kdm),
 c     &          dzdy(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kdm))
