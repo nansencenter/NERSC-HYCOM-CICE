@@ -25,7 +25,7 @@ module mod_hycom_fabm
 
    private
 
-   public hycom_fabm_configure, hycom_fabm_initialize, hycom_fabm_update
+   public hycom_fabm_configure, hycom_fabm_initialize, hycom_fabm_initialize_state, hycom_fabm_update
    public hycom_fabm_relax_init, hycom_fabm_relax_rewind, hycom_fabm_relax_skmonth, hycom_fabm_relax_read, hycom_fabm_relax
    public hycom_fabm_allocate_mean_output, hycom_fabm_zero_mean_output, hycom_fabm_increment_mean_output, hycom_fabm_end_mean_output, hycom_fabm_write_mean_output
    public fabm_surface_state, fabm_bottom_state
@@ -167,24 +167,6 @@ contains
         ! (i.e., whether all required calls for fabm_link_*_data have been made)
         call fabm_check_ready(fabm_model)
 
-        ! Initialize the tracers
-        ! This sets the values of arrays sent to fabm_link_interior_state_data, in this case interior_state.
-        tracer = 0
-        do k=1,kk
-          do j=1,jj
-              call fabm_initialize_state(fabm_model, 1, ii, j, k)
-          end do
-        end do
-        do j=1,jj
-            call fabm_initialize_bottom_state(fabm_model, 1, ii, j)
-            call fabm_initialize_surface_state(fabm_model, 1, ii, j)
-        end do
-
-        ! Copy state from time step = 1 to time step = 2
-        tracer(:, :, :, 2, :) = tracer(:, :, :, 1, :)
-        fabm_bottom_state(:, :, 2, :) = fabm_bottom_state(:, :, 1, :)
-        fabm_surface_state(:, :, 2, :) = fabm_surface_state(:, :, 1, :)
-
         last_interior_output => null()
         do ivar=1, size(fabm_model%state_variables)
           if (add_interior_output(fabm_model%state_variables(ivar))) &
@@ -248,6 +230,28 @@ contains
       end function
 
     end subroutine hycom_fabm_initialize
+
+    subroutine hycom_fabm_initialize_state()
+      integer :: k, j
+
+      ! Initialize the tracers
+      ! This sets the values of arrays sent to fabm_link_interior_state_data, in this case interior_state.
+      tracer = 0
+      do k=1,kk
+        do j=1,jj
+            call fabm_initialize_state(fabm_model, 1, ii, j, k)
+        end do
+      end do
+      do j=1,jj
+          call fabm_initialize_bottom_state(fabm_model, 1, ii, j)
+          call fabm_initialize_surface_state(fabm_model, 1, ii, j)
+      end do
+
+      ! Copy state from time step = 1 to time step = 2
+      tracer(:, :, :, 2, :) = tracer(:, :, :, 1, :)
+      fabm_bottom_state(:, :, 2, :) = fabm_bottom_state(:, :, 1, :)
+      fabm_surface_state(:, :, 2, :) = fabm_surface_state(:, :, 1, :)
+    end subroutine hycom_fabm_initialize_state
 
     subroutine hycom_fabm_relax_init()
       use mod_za  ! HYCOM I/O interface

@@ -177,6 +177,13 @@ c
         return  ! tracer from restart
       endif
 c
+#ifdef _FABM_
+c     Analytic [spatially homeogeneous] initialization, even when using
+c     climatology, because climatological fields may be available for a
+c     subset of tracers only.
+      call hycom_fabm_initialize_state()
+#endif
+
       if     (iniflg.eq.2) then  ! use climatology
         call rdrlax(mnth,1)
 !$OMP   PARALLEL DO PRIVATE(j,i,k,ktr,pwij,trwij,prij,trcij)
