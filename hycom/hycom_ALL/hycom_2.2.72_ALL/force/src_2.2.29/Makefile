@@ -135,22 +135,22 @@ conv_w_mm5:              $(MODS) conv_w_mm5.o   zh.o
 	$(LD) $(LDFLAGS) conv_w_mm5.o  $(MODS)  zh.o    -o conv_w_mm5
 
 force2nc:                            force2nc.o $(MODS) zh.o   
-	$(LD) $(LDFLAGS) -o force2nc force2nc.o $(MODS) zh.o    libnetcdf.a $(EXTRANCDF)
+	$(LD) $(LDFLAGS) -o force2nc force2nc.o $(MODS) zh.o      $(EXTRANCDF)
 
 nrl2nc:                              nrl2nc.o   $(MODS) zh.o   
-	$(LD) $(LDFLAGS) -o nrl2nc   nrl2nc.o   $(MODS) zh.o    libnetcdf.a $(EXTRANCDF)
+	$(LD) $(LDFLAGS) -o nrl2nc   nrl2nc.o   $(MODS) zh.o      $(EXTRANCDF)
 
 ap_nc:                       $(MODS) ap_nc.o            $(LIBS)
-	$(LD) $(LDFLAGS) -o ap_nc    ap_nc.o    $(MODS) $(LIBS) libnetcdf.a $(EXTRANCDF)
+	$(LD) $(LDFLAGS) -o ap_nc    ap_nc.o    $(MODS) $(LIBS)   $(EXTRANCDF)
 
 kp_nc:                       $(MODS) kp_nc.o            $(LIBS)
-	$(LD) $(LDFLAGS) -o kp_nc    kp_nc.o    $(MODS) $(LIBS) libnetcdf.a $(EXTRANCDF)
+	$(LD) $(LDFLAGS) -o kp_nc    kp_nc.o    $(MODS) $(LIBS)   $(EXTRANCDF)
 
 tp_nc:                       $(MODS) tp_nc.o            $(LIBS)
-	$(LD) $(LDFLAGS) -o tp_nc    tp_nc.o    $(MODS) $(LIBS) libnetcdf.a $(EXTRANCDF)
+	$(LD) $(LDFLAGS) -o tp_nc    tp_nc.o    $(MODS) $(LIBS)   $(EXTRANCDF)
 
 wi_nc:                       $(MODP) wi_nc.o            $(LIBP)
-	$(LD) $(LDFLAGS) -o wi_nc    wi_nc.o    $(MODP) $(LIBP) libnetcdf.a $(EXTRANCDF)
+	$(LD) $(LDFLAGS) -o wi_nc    wi_nc.o    $(MODP) $(LIBP)   $(EXTRANCDF)
 
 mod_scrip.o: mod_scrip.f
 

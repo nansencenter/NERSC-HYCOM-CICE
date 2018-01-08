@@ -701,8 +701,11 @@
 
       real (kind=dbl_kind), parameter :: & 
                                       ! [,] = range of values that can be tested 
-         csw       = 0.002_dbl_kind ,&! ice-ocn drag coefficient [0.0005,0.005]
-         csa       = 0.0005_dbl_kind,&! ice-air drag coefficient [0.0001,0.001] 
+!         csw       = 0.002_dbl_kind ,&! ice-ocn drag coefficient [0.0005,0.005]
+!         csa       = 0.0005_dbl_kind,&! ice-air drag coefficient [0.0001,0.001] 
+!        tuning with the radio 0.3 by Jiping in NOV2017 
+         csw       = 0.0013_dbl_kind ,&! ice-ocn drag coefficient [0.0005,0.005]
+         csa       = 0.0004_dbl_kind,&! ice-air drag coefficient [0.0001,0.001] 
          dragia    = 0.0012_dbl_kind,&! ice-air drag coefficient [0.0005,0.002] 
          mrdg      = c20            ,&! screening effect see Lu2011 [5,50]
          mrdgo     = c10            ,&! screening effect see Lu2011 [5,50]
