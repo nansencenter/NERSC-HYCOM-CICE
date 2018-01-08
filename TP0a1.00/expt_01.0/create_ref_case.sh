@@ -65,6 +65,12 @@ res=$?
 [ $res -ne 0 ] && echo "Failure...  Log in  $EDIR/log/ref_seawifs.out"
 echo ".."
 
+# Create thk4 file
+echo "thk4 forcing"
+generate_thkd4.sh > $EDIR/log/thkd4.out 2>&1
+echo ".."
+
+
 # Create tiling. 
 echo "grid tiling"
 tile_grid.sh -2 -2 ${T} > $EDIR/log/ref_tiling.out 2>&1

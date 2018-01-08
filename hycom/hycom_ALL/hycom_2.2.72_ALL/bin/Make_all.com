@@ -12,7 +12,7 @@ if ($OS == "Linux") then
   endif
 # setenv OS LinuxIFC
 # setenv OS LinuxICE
-# setenv OS LinuxGF
+ setenv OS LinuxGF_NC
 # setenv OS XT5
 endif
 #if ($OS == "SunOS") then
@@ -49,11 +49,11 @@ case 'LinuxICE':
 	setenv CC	"icc"
 	setenv CFLAGS	"-O"
 	breaksw
-case 'LinuxGF':
+case 'LinuxGF_NC':
 #       compile for gfortran
 	setenv FC	"gfortran"
 	setenv FFLAGS	"-fPIC -fno-second-underscore -fconvert=big-endian -O"
-	setenv FLIBS	""
+	setenv FLIBS	"-lfftw3 -lnetcdff -lnetcdf"
 	setenv CC	"gcc"
 	setenv CFLAGS	"-fPIC -fno-second-underscore -O"
 	breaksw
@@ -181,7 +181,7 @@ end
 #
 $FC $FFLAGS -c hycom_endian_io.F
 $CC $CFLAGS -c parse.c
-#
+##
 foreach f ( hycom_crosscorr hycom_crosscorr_lag hycom_join unf42hycom unf82hycom hycom2raw hycom2raw8 hycom_1st_isopyc hycom_arctic hycom_arctic_ok hycom_bandmask hycom_binning hycom_binning_fld hycom_bouflx hycom_clip hycom_count hycom_eddy_center hycom_expr hycom_extract hycom_fill hycom_halfsm hycom_histogram hycom_ij2lonlat hycom_islands hycom_larger hycom_lonlat2ij hycom_lonlat2xy hycom_mask hycom_mass hycom_mean hycom_meanfit hycom_median hycom_meridional hycom_meridional_lon hycom_mixlay hycom_mixlay_old hycom_mxthrd hycom_NaN hycom_print hycom_range hycom_range_ij hycom_rivers hycom_rotate hycom_runmean hycom_sample hycom_sample_list hycom_sea_ok hycom_shift hycom_skill hycom_slopefit hycom_smooth hycom_stericssh hycom_subset hycom_superset hycom_thirdsm hycom_tidelat hycom_triple hycom_void hycom_xy2lonlat hycom_zonal hycom_zonal_lat ascii2hycom raw2hycom raw82hycom hycom_2d_ok hycom_autocorr hycom_autocorr_lag hycom_boxmean hycom_boxtime hycom_index_sort hycom_mask_ok hycom_mass_corr hycom_newzi hycom_quadlsq hycom_regression hycom_sstice hycom_botfric hycom_boxsmooth hycom_diflat hycom_merge hycom_sample_xy hycom_scatter hycom_tidebody hycom_vmean hycom_xward )
   if ( ! -e ${f}_${OS} ) then
     $FC $FFLAGS ${f}.F $FLIBS hycom_endian_io.o parse.o -o ${f}_${OS}
@@ -205,6 +205,19 @@ foreach f ( hycom_profile_list )
     $FC $FFLAGS ${f}.F $FLIBS hycom_profile_lib.o hycom_endian_io.o parse.o -o ${f}_${OS}
   else if ( -f `find ${f}.F -prune -newer ${f}_${OS}` ) then
     $FC $FFLAGS ${f}.F $FLIBS hycom_profile_lib.o hycom_endian_io.o parse.o -o ${f}_${OS}
+  else
+    echo "${f}_${OS} is already up to date"
+  endif
+  touch       ${f}
+  /bin/rm -f  ${f}
+  chmod a+rx  ${f}_${OS}
+  /bin/ln -s  ${f}_${OS} ${f}
+end
+foreach f ( hycom_profile_argo hycom_profile_hybgen hycom_profile_hybgen+ )
+  if ( ! -e ${f}_${OS} ) then
+    $FC $FFLAGS ${f}.f $FLIBS hycom_profile_lib.o hycom_endian_io.o parse.o -o ${f}_${OS}
+  else if ( -f `find ${f}.F -prune -newer ${f}_${OS}` ) then
+    $FC $FFLAGS ${f}.f $FLIBS hycom_profile_lib.o hycom_endian_io.o parse.o -o ${f}_${OS}
   else
     echo "${f}_${OS} is already up to date"
   endif

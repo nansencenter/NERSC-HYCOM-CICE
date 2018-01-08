@@ -3,9 +3,9 @@
 To run the HYCOM-CICE coupled code, you will need to have a working installation
 of the Eearth System Modelling Framework:
 https://www.earthsystemcog.org/projects/esmf/download/. The code has been tested
-and verified to work with ESMF v 5.2.0.rp3. and ESMF v 6.3.0 on Hexagon and ESMF v 6.3.0 on Sisu.
+and verified to work with ESMF v 5.2.0.rp3. and ESMF v 6.3.0.
 
-You could try to install it yourself, instructions are available in the downloaded distribution. 
+You could try to install his yourself, instructions are available in the downloaded distribution. 
 However, it is probably recommended that you let your local IT support to do it
 to make sure that MPI etc is properly set up.
 
@@ -22,15 +22,6 @@ module load esmf/6.3.0rp1-pgi
 
 In order to use this library, hycom-cice will have to be compiled with the pgi
 compiler. 
-
-## Sisu.csc.fi
-On Sisu, ESMF version 6.3.0rp1 has been tested for the intel compilers. In order to use it, issue the command
-
-module load esmf
-
-For compilation of HYCOM-CICE, the ESMF path should be specified (e.g. in bash shell) by the ESMF_DIR environmental variable as
-
-export ESMF_DIR=/appl/climate/esmf/6_3_0rp1/INTEL/16.0
 
 ## Generic linux machine with fortran
 

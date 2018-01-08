@@ -27,10 +27,10 @@ endif
 
 # Rules for running cpp and updating files 
 .F.o:
-	cd Build/ ; $(CF90)  $(CPPFLAGS) $(INCLUDEDIR) $(FFLAGS) $(F77FLG) $(INCLUDE) -c ../$<
+	cd Build/ ; $(CF90) -c $(CPPFLAGS) $(INCLUDEDIR) $(FFLAGS) $(F77FLG) $(INCLUDE) -o $*.o ../$<
 
 .F90.o:
-	cd Build/ ; $(CF90)  $(CPPFLAGS) $(INCLUDEDIR) $(FFLAGS) $(F90FLG) $(INCLUDE) -c ../$<
+	cd Build/ ; $(CF90) -c $(CPPFLAGS) $(INCLUDEDIR) $(FFLAGS) $(F90FLG) $(INCLUDE) -o $*.o ../$<
 
 
 TARGET=rivers

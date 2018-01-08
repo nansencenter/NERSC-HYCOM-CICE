@@ -26,6 +26,13 @@ MODS =   mod_dimensions.o mod_xc.o mod_za.o mod_cb_arrays.o mod_pipe.o \
          mod_tsadvc.o mod_momtum.o \
          mod_hycom.o mod_esmf_utils.o mod_netcdf_util.o mod_prgrad.o
 
+MODS_HYCOM =   mod_dimensions.o mod_xc.o mod_za.o mod_cb_arrays.o mod_pipe.o \
+         mod_incupd.o \
+         mod_floats.o mod_stokes.o mod_tides.o mod_mean.o mod_archiv.o \
+         mod_tsadvc.o mod_momtum.o \
+         mod_hycom.o  mod_netcdf_util.o mod_prgrad.o
+
+
 MODD =   mod_dimensions.o mod_xc.o mod_za.o mod_cb_arrays.o mod_pipe.o \
          mod_incupd.o \
          mod_floats.o mod_stokes.o mod_tides.o mod_mean.o mod_archiv.o \
@@ -40,8 +47,8 @@ OBJS =	         barotp.o  bigrid.o blkdat.o  cnuity.o convec.o \
 	thermf.o trcupd.o  \
        machine.o  wtime.o machi_c.o  isnan.o
 
-hycom:	$(MODS) $(OBJS) hycom.o
-	$(LD)  $(LDFLAGS) -o hycom  hycom.o $(MODS) $(OBJS) $(EXTRALIBS)
+hycom:	$(MODS_HYCOM) $(OBJS) hycom.o
+	$(LD)  $(LDFLAGS) -o hycom  hycom.o $(MODS_HYCOM) $(OBJS) $(EXTRALIBS)
 
 esmf:	$(MODS) $(OBJS)
 	@echo "--- ESMF hycom component has been built ---"
