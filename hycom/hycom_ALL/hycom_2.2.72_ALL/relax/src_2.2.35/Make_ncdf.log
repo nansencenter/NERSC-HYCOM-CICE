@@ -1,0 +1,16 @@
+Resetting modules to system default
+
+The following have been reloaded with a version change:
+  1) HDF5/1.8.18-intel-2017a => HDF5/1.10.0-patch1-intel-2017a                            3) netCDF/4.4.1.1-intel-2017a-HDF5-1.8.18 => netCDF/4.4.1.1-intel-2017a
+  2) netCDF-Fortran/4.4.4-intel-2017a-HDF5-1.8.18 => netCDF-Fortran/4.4.4-intel-2017a
+
+NCDF =  /cluster/software/netCDF-Fortran/4.4.4-intel-2017a
+ARCH =  intelIFC
+Make worked: ssh_modas
+Make failed: sst_modas
+Make worked: sst_gdem3
+Make worked: sst_gdem4
+Make worked: sst_woa
+Make worked: z_gdem3
+Make worked: z_gdem4
+Make worked: z_woa_tracer
