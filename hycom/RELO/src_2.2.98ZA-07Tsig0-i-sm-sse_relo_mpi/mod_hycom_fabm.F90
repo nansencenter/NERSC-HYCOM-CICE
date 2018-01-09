@@ -142,10 +142,10 @@ contains
         allocate(kbottomn(ii, jj))
 ! CAGLAR
         allocate(h(ii, jj, kk))
-        allocate(fabm_surface_state(ii, jj, 2, size(fabm_model%surface_state_variables)))
-        allocate(fabm_bottom_state(ii, jj, 2, size(fabm_model%bottom_state_variables)))
-        allocate(fabm_surface_state_old(ii, jj, size(fabm_model%surface_state_variables)))
-        allocate(fabm_bottom_state_old(ii, jj, size(fabm_model%bottom_state_variables)))
+        allocate(fabm_surface_state(1-nbdy:ii+nbdy, 1-nbdy:jj+nbdy, 2, size(fabm_model%surface_state_variables)))
+        allocate(fabm_bottom_state(1-nbdy:ii+nbdy, 1-nbdy:jj+nbdy, 2, size(fabm_model%bottom_state_variables)))
+        allocate(fabm_surface_state_old(1-nbdy:ii+nbdy, 1-nbdy:jj+nbdy, size(fabm_model%surface_state_variables)))
+        allocate(fabm_bottom_state_old(1-nbdy:ii+nbdy, 1-nbdy:jj+nbdy, size(fabm_model%bottom_state_variables)))
 
         ! Provide extents of the spatial domain (number of layers nz for a 1D column)
         call fabm_set_domain(fabm_model, ii, jj, kk, baclin)
@@ -180,11 +180,11 @@ contains
         last_horizontal_output => null()
         do ivar=1, size(fabm_model%surface_state_variables)
           if (add_horizontal_output(fabm_model%surface_state_variables(ivar))) &
-            last_horizontal_output%data3d => fabm_surface_state(:, :, :, ivar)
+            last_horizontal_output%data3d => fabm_surface_state(1:ii, 1:jj, :, ivar)
         end do
         do ivar=1, size(fabm_model%bottom_state_variables)
           if (add_horizontal_output(fabm_model%bottom_state_variables(ivar))) &
-            last_horizontal_output%data3d => fabm_bottom_state(:, :, :, ivar)
+            last_horizontal_output%data3d => fabm_bottom_state(1:ii, 1:jj, :, ivar)
         end do
         do ivar=1, size(fabm_model%horizontal_diagnostic_variables)
           if (add_horizontal_output(fabm_model%horizontal_diagnostic_variables(ivar))) &
@@ -589,8 +589,8 @@ contains
 
       ! Apply the Robert-Asselin filter to the surface and bottom state.
       ! Note that RA will be applied to the pelagic tracers within mod_tsavc - no need to do it here!
-      fabm_surface_state(:, :, m, :) = fabm_surface_state(:, :, m, :) + 0.5*ra2fac*(fabm_surface_state_old(:, :, :)+fabm_surface_state(:, :, n, :)-2.0*fabm_surface_state(:, :, m, :))
-      fabm_bottom_state(:, :, m, :) = fabm_bottom_state(:, :, m, :) + 0.5*ra2fac*(fabm_bottom_state_old(:, :, :)+fabm_bottom_state(:, :, n, :)-2.0*fabm_bottom_state(:, :, m, :))
+      fabm_surface_state(1:ii, 1:jj, m, :) = fabm_surface_state(1:ii, 1:jj, m, :) + 0.5*ra2fac*(fabm_surface_state_old(1:ii, 1:jj, :)+fabm_surface_state(1:ii, 1:jj, n, :)-2.0*fabm_surface_state(1:ii, 1:jj, m, :))
+      fabm_bottom_state(1:ii, 1:jj, m, :) = fabm_bottom_state(1:ii, 1:jj, m, :) + 0.5*ra2fac*(fabm_bottom_state_old(1:ii, 1:jj, :)+fabm_bottom_state(1:ii, 1:jj, n, :)-2.0*fabm_bottom_state(1:ii, 1:jj, m, :))
 
     end subroutine hycom_fabm_update
 

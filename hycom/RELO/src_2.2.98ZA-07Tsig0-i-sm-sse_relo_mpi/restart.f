@@ -3,6 +3,9 @@
       use mod_cb_arrays  ! HYCOM saved arrays
       use mod_za         ! HYCOM I/O interface
       use mod_tides      ! HYCOM tides
+#ifdef _FABM_
+      use mod_hycom_fabm
+#endif
       implicit none
 c
       integer       nstep0
@@ -309,6 +312,16 @@ c
           call restart_in3d(tracer(1-nbdy,1-nbdy,1,1,ktr),
      &                             2*kdm, ip, 'tracer  ')
         enddo
+#ifdef _FABM_
+        do ktr=1,size(fabm_model%surface_state_variables)
+          call restart_in3d(fabm_surface_state(1-nbdy,1-nbdy,1,ktr),
+     &                             2, ip, 'fabm_sf ')
+        enddo
+        do ktr=1,size(fabm_model%bottom_state_variables)
+          call restart_in3d(fabm_bottom_state(1-nbdy,1-nbdy,1,ktr),
+     &                             2, ip, 'fabm_bt ')
+        enddo
+#endif
       endif
       if     (mnproc.eq.1) then  ! .b file from 1st tile only
         close (unit=uoff+11)
@@ -430,6 +443,9 @@ c
       use mod_cb_arrays  ! HYCOM saved arrays
       use mod_za         ! HYCOM I/O interface
       use mod_tides      ! HYCOM tides
+#ifdef _FABM_
+      use mod_hycom_fabm
+#endif
       implicit none
 c
       logical last
@@ -780,6 +796,36 @@ c
           call flush(iunit)
           endif !1st tile
         enddo !ktr
+#ifdef _FABM_
+        do ktr= 1,size(fabm_model%surface_state_variables)
+          call zaiowr3(fabm_surface_state(1-nbdy,1-nbdy,1,ktr),  2,
+     &                 ip,.false., xmin,xmax, iunta,.true.)
+          call xctilr( fabm_surface_state(1-nbdy,1-nbdy,1,ktr),1,2,
+     &                  nbdy,nbdy, halo_ps)
+          if     (mnproc.eq.1) then
+          do l= 1,2
+            do k= 0,0
+              write(iunit,4100) 'fabm_sf ',k,l,xmin(l),xmax(l)
+            enddo
+          enddo
+          call flush(iunit)
+          endif !1st tile
+        enddo !ktr
+        do ktr= 1,size(fabm_model%bottom_state_variables)
+          call zaiowr3(fabm_bottom_state(1-nbdy,1-nbdy,1,ktr),  2,
+     &                 ip,.false., xmin,xmax, iunta,.true.)
+          call xctilr( fabm_bottom_state(1-nbdy,1-nbdy,1,ktr),1,2,
+     &                  nbdy,nbdy, halo_ps)
+          if     (mnproc.eq.1) then
+          do l= 1,2
+            do k= 0,0
+              write(iunit,4100) 'fabm_bt ',k,l,xmin(l),xmax(l)
+            enddo
+          enddo
+          call flush(iunit)
+          endif !1st tile
+        enddo !ktr
+#endif
       endif !trcout
 c
       if     (flnmra.ne.flnmrb) then  !unique restart file
