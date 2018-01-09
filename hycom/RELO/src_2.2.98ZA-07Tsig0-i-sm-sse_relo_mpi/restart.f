@@ -308,18 +308,23 @@ c
         endif
       endif
       if (trcrin) then
+#ifndef _FABM_
         do ktr= 1,ntracr
           call restart_in3d(tracer(1-nbdy,1-nbdy,1,1,ktr),
      &                             2*kdm, ip, 'tracer  ')
         enddo
-#ifdef _FABM_
+#else
+        do ktr= 1,ntracr
+          call restart_in3d(tracer(1-nbdy,1-nbdy,1,1,ktr),2*kdm,ip,
+     &                      fabm_model%state_variables(ktr)%name(1:8))
+        enddo
         do ktr=1,size(fabm_model%surface_state_variables)
-          call restart_in3d(fabm_surface_state(1-nbdy,1-nbdy,1,ktr),
-     &                             2, ip, 'fabm_sf ')
+          call restart_in3d(fabm_surface_state(1-nbdy,1-nbdy,1,ktr),2,ip,
+     &                      fabm_model%surface_state_variables(ktr)%name(1:8))
         enddo
         do ktr=1,size(fabm_model%bottom_state_variables)
-          call restart_in3d(fabm_bottom_state(1-nbdy,1-nbdy,1,ktr),
-     &                             2, ip, 'fabm_bt ')
+          call restart_in3d(fabm_bottom_state(1-nbdy,1-nbdy,1,ktr),2,ip,
+     &                      fabm_model%bottom_state_variables(ktr)%name(1:8))
         enddo
 #endif
       endif
@@ -789,8 +794,13 @@ c
           if     (mnproc.eq.1) then
           do l= 0,1
             do k= 1,kdm
+#ifndef _FABM_
               write(iunit,4100) 'tracer  ',k,l+1,xmin(k+l*kdm),
      &                                        xmax(k+l*kdm)
+#else
+              write(iunit,4100) fabm_model%state_variables(ktr)%name(1:8),
+     &           k,l+1,xmin(k+l*kdm),xmax(k+l*kdm)
+#endif
             enddo
           enddo
           call flush(iunit)
@@ -805,7 +815,8 @@ c
           if     (mnproc.eq.1) then
           do l= 1,2
             do k= 0,0
-              write(iunit,4100) 'fabm_sf ',k,l,xmin(l),xmax(l)
+              write(iunit,4100) fabm_model%surface_state_variables
+     &           (ktr)%name(1:8),k,l,xmin(l),xmax(l)
             enddo
           enddo
           call flush(iunit)
@@ -819,7 +830,8 @@ c
           if     (mnproc.eq.1) then
           do l= 1,2
             do k= 0,0
-              write(iunit,4100) 'fabm_bt ',k,l,xmin(l),xmax(l)
+              write(iunit,4100) fabm_model%bottom_state_variables
+     &           (ktr)%name(1:8),k,l,xmin(l),xmax(l)
             enddo
           enddo
           call flush(iunit)

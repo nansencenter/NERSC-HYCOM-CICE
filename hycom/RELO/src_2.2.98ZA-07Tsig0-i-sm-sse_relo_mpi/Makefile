@@ -106,7 +106,7 @@ overtn.o:  overtn.F  mod_xc.o mod_cb_arrays.o
 poflat.o:  poflat.f
 prtmsk.o:  prtmsk.f
 psmoo.o:   psmoo.f   mod_xc.o 
-restart.o: restart.f mod_xc.o mod_cb_arrays.o            mod_za.o mod_tides.o
+restart.o: restart.f mod_xc.o mod_cb_arrays.o            mod_za.o mod_tides.o mod_hycom_fabm.o
 thermf.o:  thermf.F  mod_xc.o mod_cb_arrays.o stmt_fns.h
 trcupd.o:  trcupd.F  mod_xc.o mod_cb_arrays.o                     mod_pipe.o mod_hycom_fabm.o
 wtime.o:   wtime.F
