@@ -117,7 +117,8 @@ mod_hycom.o: \
 	                                                          mod_floats.o \
 	                                                          mod_momtum.o \
 	                                                          mod_tsadvc.o \
-	                                                          mod_stokes.o
+	                                                          mod_stokes.o \
+	                                                          mod_hycom_fabm.o
 mod_hycom_dummy.o: \
         mod_hycom_dummy.F  mod_xc.o mod_cb_arrays.o      mod_za.o mod_pipe.o \
 	                                                          mod_incupd.o \

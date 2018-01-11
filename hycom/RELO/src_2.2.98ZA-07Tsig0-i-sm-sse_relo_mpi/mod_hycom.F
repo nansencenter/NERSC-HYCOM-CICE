@@ -42,6 +42,9 @@
       use ccsm3_global_reductions                ! ccsm3 ocean mpi comms
       use shr_timer_mod                          ! ccsm3 shared timing routine
 #endif
+#ifdef _FABM_
+      use mod_hycom_fabm
+#endif
 c
 c --- -----------------------------------------
 c --- MICOM-based HYbrid Coordinate Ocean Model
@@ -1765,6 +1768,9 @@ c
       if (mnproc.eq.1) then
         call mem_stat_print('  cb_allocate:')
       endif !1st tile
+#ifdef _FABM_
+      call hycom_fabm_allocate()
+#endif
 c
 c --- initiate named-pipe comparison utility
       call pipe_init

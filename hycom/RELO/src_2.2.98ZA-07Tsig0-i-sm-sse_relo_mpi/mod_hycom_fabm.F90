@@ -25,7 +25,7 @@ module mod_hycom_fabm
 
    private
 
-   public hycom_fabm_configure, hycom_fabm_initialize, hycom_fabm_initialize_state, hycom_fabm_update
+   public hycom_fabm_configure, hycom_fabm_allocate, hycom_fabm_initialize, hycom_fabm_initialize_state, hycom_fabm_update
    public hycom_fabm_relax_init, hycom_fabm_relax_rewind, hycom_fabm_relax_skmonth, hycom_fabm_relax_read, hycom_fabm_relax
    public hycom_fabm_allocate_mean_output, hycom_fabm_zero_mean_output, hycom_fabm_increment_mean_output, hycom_fabm_end_mean_output, hycom_fabm_write_mean_output
    public fabm_surface_state, fabm_bottom_state
@@ -128,12 +128,7 @@ contains
       end select
     end subroutine hycom_fabm_configure
 
-    subroutine hycom_fabm_initialize()
-
-      integer :: j, k, ivar
-      type (type_interior_output),   pointer :: last_interior_output
-      type (type_horizontal_output), pointer :: last_horizontal_output
-
+    subroutine hycom_fabm_allocate()
         allocate(swflx_fabm(ii, jj))
         allocate(bottom_stress(ii, jj))
         allocate(mask(ii, jj, kk))
@@ -146,6 +141,13 @@ contains
         allocate(fabm_bottom_state(1-nbdy:ii+nbdy, 1-nbdy:jj+nbdy, 2, size(fabm_model%bottom_state_variables)))
         allocate(fabm_surface_state_old(1-nbdy:ii+nbdy, 1-nbdy:jj+nbdy, size(fabm_model%surface_state_variables)))
         allocate(fabm_bottom_state_old(1-nbdy:ii+nbdy, 1-nbdy:jj+nbdy, size(fabm_model%bottom_state_variables)))
+    end subroutine hycom_fabm_allocate
+
+    subroutine hycom_fabm_initialize()
+
+      integer :: j, k, ivar
+      type (type_interior_output),   pointer :: last_interior_output
+      type (type_horizontal_output), pointer :: last_horizontal_output
 
         ! Provide extents of the spatial domain (number of layers nz for a 1D column)
         call fabm_set_domain(fabm_model, ii, jj, kk, baclin)
