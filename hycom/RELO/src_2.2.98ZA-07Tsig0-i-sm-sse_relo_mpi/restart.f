@@ -319,12 +319,12 @@ c
      &                      fabm_model%state_variables(ktr)%name(1:8))
         enddo
         do ktr=1,size(fabm_model%surface_state_variables)
-          call restart_in3d(fabm_surface_state(1-nbdy,1-nbdy,1,ktr),2,ip,
-     &      fabm_model%surface_state_variables(ktr)%name(1:8))
+          call restart_in3d(fabm_surface_state(1-nbdy,1-nbdy,1,ktr),2,
+     &      ip,fabm_model%surface_state_variables(ktr)%name(1:8))
         enddo
         do ktr=1,size(fabm_model%bottom_state_variables)
-          call restart_in3d(fabm_bottom_state(1-nbdy,1-nbdy,1,ktr),2,ip,
-     &      fabm_model%bottom_state_variables(ktr)%name(1:8))
+          call restart_in3d(fabm_bottom_state(1-nbdy,1-nbdy,1,ktr),2,
+     &      ip,fabm_model%bottom_state_variables(ktr)%name(1:8))
         enddo
 #endif
       endif
