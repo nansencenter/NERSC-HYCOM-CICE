@@ -27,7 +27,7 @@ c     has been implemented  following:
 c          - Craig & Banner + Ardhuin-Filipot-Perenne
 c          - Uchiyama-McWilliams-Shchepetkin
 c
-      REAL, PARAMETER , private:: PI = 3.1415927
+c     REAL, PARAMETER , private:: PI = 3.1415927
 c      
       logical, save, public ::
      & stdflg,   ! Stokes Drift Velocities:           TRUE/FALSE
