@@ -257,7 +257,7 @@ contains
          df%fyear = df%iyear + (df%imonth -1) / 12. + (df%iweek -1. ) /(4.*12.) + 1./96.
          df%iday  = (df%imonth -1) / 12. + (df%iweek -1. ) /(4.*12.)  + 1/96.
          df%iday  = floor(df%iday*365.)
-   else if (trim(df%ftype)=='archv') then
+   else if (trim(df%ftype)=='archv'.or.trim(df%ftype)=='archm') then
       !!check if old-style archive or new type
       do i=1,10
          read(nop,'(a)') c80
@@ -269,18 +269,16 @@ contains
       if (c80(1:5)=='field') then
          !!old-style
          print*,' '
-         print*,'********************************************'
-         print*,'old style archv header file'
-         print*,'********************************************'
+         print*,'*******************************'
+         print*,'old style arch[v,m] header file'
+         print*,'*******************************'
          print*,' '
-
          read(nop,316) ctitle,df%iversn,df%iexpt,df%yrflag
-
          !!get dump time from filename
          !!TODO: what if under 1 hour?
          read(df%filebase(7:10),'(i4.4)') df%iyear
-         read(df%filebase(13:14),'(i3.3)') df%iday
-         read(df%filebase(16:27),'(i2.2)') df%ihour
+         read(df%filebase(12:14),'(i3.3)') df%iday
+         read(df%filebase(16:17),'(i2.2)') df%ihour
          df%imin  = 0
          df%isec  = 0
          write(df%ctime,'(i2.2,i2.2,i2.2)') df%ihour,df%imin,df%isec
@@ -417,7 +415,8 @@ contains
     character(len=5) :: char5
     integer :: ios
     if (    trim(ftype)=='nersc_weekly' .or. trim(ftype) == 'nersc_daily' &
-        .or.trim(ftype)=='archv'.or.trim(ftype)=='archv_wav') then
+        .or.trim(ftype)=='archv'.or.trim(ftype)=='archv_wav'&
+        .or.trim(ftype)=='archm') then
        ios=0 ; char5=''
        do while (char5/='field' .and. ios==0)
           read(nop,'(a5)',iostat=ios) char5
@@ -498,7 +497,8 @@ contains
     else if (trim(ftype)=="nersc_daily" .or. trim(ftype)=="nersc_weekly") then
        read(nop,117,iostat=ios) cfld,nstep,rday,coord,dens,xmin,xmax
        tlevel=1
-    else if (trim(ftype)=="archv".or.trim(ftype)=="archv_wav") then
+    else if (trim(ftype)=="archv".or.trim(ftype)=="archv_wav"&
+             .or.trim(ftype)=="archm") then
        read(nop,118,iostat=ios) cfld,nstep,rday,coord,dens,xmin,xmax
        tlevel=1
     else
@@ -529,7 +529,8 @@ contains
        write(nop,4100,iostat=ios) cfld2,coord,tlevel,xmin,xmax
     else if (trim(ftype)=="nersc_daily" .or. trim(ftype)=="nersc_weekly") then
        write(nop,117,iostat=ios) cfld2,0,0.,coord,0.,xmin,xmax
-    else if (trim(ftype)=="archv".or.trim(ftype)=="archv_wav") then
+    else if (trim(ftype)=="archv".or.trim(ftype)=="archv_wav"&
+             .or.trim(ftype)=="archm") then
        write(nop,118,iostat=ios) cfld2,0,0.,coord,0.,xmin,xmax
     else
        print *,'writeFieldEntry> unknown file type: '//trim(ftype)
@@ -577,7 +578,7 @@ contains
    else if (trim(df%ftype)=='nersc_weekly') then
       write(nop,216) ctitle,df%iversn,df%iexpt,df%yrflag, &
          idm,jdm,kdm,df%iyear,df%imonth, df%count
-   else if (trim(df%ftype)=='archv') then
+   else if (trim(df%ftype)=='archv'.or.trim(df%ftype)=='archm') then
       !TODO add archv_wav?
       write(nop,316) ctitle,df%iversn,df%iexpt,df%yrflag, &
          idm,jdm
@@ -723,7 +724,8 @@ contains
    elseif (trim(df%ftype)=="nersc_weekly") then
       call HFReadField(df,dp,idm,jdm,'pres    ',coord,tlevel)
       if (trim(units2) == 'pressure') dp=dp*onem
-   elseif (trim(df%ftype)=="archv".or.trim(df%ftype)=="archv_wav") then
+   elseif (trim(df%ftype)=="archv".or.trim(df%ftype)=="archv_wav"&
+          .or.trim(df%ftype)=="archm") then
       call HFReadField(df,dp,idm,jdm,'thknss  ',coord,tlevel)
       if (trim(units2) == 'meter') dp=dp/onem
    else
@@ -775,7 +777,7 @@ contains
    elseif (trim(df%ftype)=="nersc_weekly") then
       call HFReadField(df,ut,idm,jdm,'utot    ',vlevel,1)
       call HFReadField(df,vt,idm,jdm,'vtot    ',vlevel,1)
-   elseif (trim(df%ftype)=="archv") then
+   elseif (trim(df%ftype)=="archv".or.trim(df%ftype)=="archm") then
       call HFReadField(df,ut,idm,jdm,'u-vel.  ',vlevel,1)
       call HFReadField(df,vt,idm,jdm,'v-vel.  ',vlevel,1)
       call HFReadField(df,ub,idm,jdm,'u_btrop ',0,1)
@@ -845,7 +847,7 @@ contains
    elseif (trim(df%ftype)=="nersc_weekly") then
       call HFReadField(df,ub,idm,jdm,'ubavg   ',0,1)
       call HFReadField(df,vb,idm,jdm,'vbavg   ',0,1)
-   elseif (trim(df%ftype)=="archv") then
+   elseif (trim(df%ftype)=="archv".or.trim(df%ftype)=="archm") then
       call HFReadField(df,ub,idm,jdm,'u_btrop ',0,1)
       call HFReadField(df,vb,idm,jdm,'v_btrop ',0,1)
    elseif (trim(df%ftype)=="archv_wav") then
@@ -990,6 +992,26 @@ contains
      is3DVar=.true.
    else if(cfld=='salt1000') then
      is3DVar=.true.
+! _FABM__caglar_
+   else if(cfld=='chl_fabm') then
+     is3DVar=.true.
+   else if(cfld=='nit_fabm') then
+     is3DVar=.true.
+   else if(cfld=='sil_fabm') then
+     is3DVar=.true.
+   else if(cfld=='pho_fabm') then
+     is3DVar=.true.
+   else if(cfld=='pbiofabm') then
+     is3DVar=.true.
+   else if(cfld=='zbiofabm') then
+     is3DVar=.true.
+   else if(cfld=='oxy_fabm') then
+     is3DVar=.true.
+   else if(cfld=='prmpfabm') then
+     is3DVar=.true.
+   else if(cfld=='attcfabm') then
+     is3DVar=.true.
+! _FABM__caglar_
    else        
      is3DVar=count( df%cfld == char8 .and. df%tlevel==timelevel ) > 1
    end if
@@ -1003,7 +1025,7 @@ contains
       isDPVar=trim(cfld)=='dp'
    else if (trim(df%ftype)=='nersc_daily' .or. trim(df%ftype)=='nersc_weekly') then
       isDPVar=trim(cfld)=='pres'
-   elseif (trim(df%ftype)=='archv') then
+   elseif (trim(df%ftype)=='archv'.or.trim(df%ftype)=='archm') then
       isDPVar=trim(cfld)=='tknss'
    elseif (trim(df%ftype)=='archv_wav') then
       isDPVar=trim(cfld)=='tknss'
@@ -1020,7 +1042,7 @@ contains
       vDim=count( df%cfld == 'dp      ' .and. df%tlevel==1 ) 
    else if (trim(df%ftype)=='nersc_daily' .or. trim(df%ftype)=='nersc_weekly') then
       vDim=count( df%cfld == 'pres    ' .and. df%tlevel==1 ) 
-   elseif (trim(df%ftype)=='archv') then
+   elseif (trim(df%ftype)=='archv'.or.trim(df%ftype)=='archm') then
       vDim=count( df%cfld == 'thknss  ' .and. df%tlevel==1 ) 
    elseif (trim(df%ftype)=='archv_wav') then
       vDim=count( df%cfld == 'thknss  ' .and. df%tlevel==1 ) 
@@ -1060,7 +1082,7 @@ contains
    character(len=*), intent(in) :: filename
    character(len=20) :: getfiletype
    integer :: findhdr,findab,finddaily,findweek,findrst              &
-  &   ,findarchv,findarchv_wav
+  &   ,findarchv,findarchv_wav,findarchm
 
    ! Check for type ...
    findhdr  =index(filename,'.hdr')
@@ -1079,7 +1101,7 @@ contains
       findhdr  =index(filename,'.hdr')
       findarchv_wav=index(filename,'archv_wav')
       findarchv=index(filename,'archv.')
-
+      findarchm=index(filename,'archm.')
       if (findrst==4) then
          getfiletype='restart'
       elseif (finddaily==4) then
@@ -1090,12 +1112,15 @@ contains
          getfiletype='archv_wav'
       elseif (findarchv>0) then
          getfiletype='archv'
+      elseif (findarchm>0) then
+         getfiletype='archm'
       elseif (findhdr>0) then
          getfiletype='pak'
          print *,'pak files no longer supported in this version'
          stop '(mod_hycomfile_io:getfiletype)'
       else
          print *,'Can not deduce file type from  file name'
+         write(*,*)filename,findarchm
          stop '(mod_hycomfile_io:getfiletype)'
       end if
    end if
@@ -1425,6 +1450,53 @@ contains
          limits=(/0.,360./)
          stdname='mean_wave_from_direction'
          cellmethod='area: mean'
+! _FABM__caglar_
+         case ('chl_fabm')
+         vname='chl'
+         units='mg m-3'
+         limits=(/0.,100./)
+         stdname='mass_concentration_of_chlorophyll_a_in_sea_water'
+         case ('nit_fabm')
+         vname='n03'
+         units='mmol m-3'
+         limits=(/0.,50./)
+         stdname='mole_concentration_of_nitrate_in_sea_water'
+         case ('sil_fabm')
+         vname='si'
+         units='mmol m-3'
+         limits=(/0.,100./)
+         stdname='mole_concentration_of_silicate_in_sea_water'
+         case ('pho_fabm')
+         vname='po4'
+         units='mmol m-3'
+         limits=(/0.,10./)
+         stdname='mole_concentration_of_phosphate_in_sea_water'
+         case ('pbiofabm')
+         vname='phyc'
+         units='mmol m-3'
+         limits=(/0.,100./)
+         stdname='mole_concentration_of_phytoplankton_expressed_as_carbon_in_sea_water'
+         case ('zbiofabm')
+         vname='zooc'
+         units='mmol m-3'
+         limits=(/0.,100./)
+         stdname='mole_concentration_of_zooplankton_expressed_as_carbon_in_sea_water' 
+         case ('oxy_fabm')
+         vname='o2'
+         units='mmol m-3'
+         limits=(/0.,500./)
+         stdname='mole_concentration_of_dissolved_molecular_oxygen_in_sea_water'
+         case ('prmpfabm')
+         vname='nppv'
+         units='mg m-3 d-1'
+         limits=(/0.,250./)
+         stdname='net_primary_production_of_biomass_expressed_as_carbon_per_unit_volume_in_sea_water'
+         case ('attcfabm')
+         vname='kd'
+         units='m-1'
+         limits=(/0.,1./)
+         stdname='volume_attenuation_coefficient_of_downwelling_radiative_flux_in_sea_water'
+! _FABM__caglar_
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1493,7 +1565,7 @@ contains
          rday  = real(hfile%iday) + real(hfile%ihour)/24.0
          call year_day(rday,hfile%iyear,rt,'ecmwf')
          !call year_day(real(hfile%iday),hfile%iyear,rt,'ecmwf')
-      else if (trim(hfile%ftype)=='archv') then
+      else if (trim(hfile%ftype)=='archv'.or.trim(hfile%ftype)=='archm') then
          !rday  = real(hfile%iday) + real(hfile%ihour)/24.0
          rday  = hfile%iday+(3600*hfile%ihour+60*hfile%imin+hfile%isec)/(24.*3600.)
          call year_day(rday,hfile%iyear,rt,'ecmwf')
@@ -1523,7 +1595,12 @@ contains
          call forecastDate(hfile,rt)
       else if (trim(hfile%ftype)=='restart') then
          call forecastDate(hfile,rt)
-      else if (trim(hfile%ftype)=='archv') then
+! CAGLAR - please check this - not sure about including archm here
+!          as below there are time conversions
+!          - I am very focused on creating outputs that I will leave
+!          this without inspection at the moment
+      else if (trim(hfile%ftype)=='archv'&
+               .or.trim(hfile%ftype)=='archm') then
 
          read(hfile%start_ctime,'(i2.2,i2.2,i2.2)') ihour,imin,isec
          dtime = hfile%start_iday+(3600*ihour+60*imin+isec)/(24.*3600.)
