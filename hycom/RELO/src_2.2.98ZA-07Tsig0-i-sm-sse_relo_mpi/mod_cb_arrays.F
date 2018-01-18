@@ -20,9 +20,9 @@ c
      & montg          ! montgomery potential
 
 #if defined(RELO)
-      real, save, allocatable, dimension(:,:,:,:,:) ::
+      real, save, target, allocatable, dimension(:,:,:,:,:) ::
 #else
-      real, save,
+      real, save, target,
      &      dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kdm,2,mxtrcr) ::
 #endif
      & tracer         ! inert tracers

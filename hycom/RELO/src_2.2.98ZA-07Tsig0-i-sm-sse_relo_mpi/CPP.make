@@ -5,11 +5,15 @@
 #
 
 .SUFFIXES: 
-.SUFFIXES: .c .F .f .o
+.SUFFIXES: .c .F .f .F90 .f90 .o
 
 .F:
 	@echo "Must have an explicit rule for" $*
 .f:
+	@echo "Must have an explicit rule for" $*
+.F90:
+	@echo "Must have an explicit rule for" $*
+.f90:
 	@echo "Must have an explicit rule for" $*
 .c:
 	@echo "Must have an explicit rule for" $*
@@ -67,3 +71,4 @@ mod_archiv.f: mod_archiv.F
 mod_xc.f:     mod_xc.F
 mod_za.f:     mod_za.F
 mod_OICPL.f:  mod_OICPL.F
+mod_hycom_fabm.f90: mod_hycom_fabm.F90

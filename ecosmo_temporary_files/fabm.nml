@@ -1,0 +1,145 @@
+&fabm_nml
+!models = 'nersc_ecosmo','nersc_ecosmo_bg'
+models = 'nersc_ecosmo'
+/
+
+&nersc_ecosmo
+  PrmBioC(1)=1.30,  !growth rate for Pl      SIGl  1/day
+  PrmBioC(2)=1.10,  !growth rate for Ps     SIGs  1/day
+  PrmBioC(3)=0.03,  !photosynthesis ef-cy  PrmBioC(3)  aa    m**2/W
+  PrmBioC(4)=0.05,  !light extinction      PrmBioC(4)  EXw   1/m
+  PrmBioC(5)=0.03,  !lphyto self-shading PrmBioC(5) EXph m**2/mmolN
+  PrmBioC(6)=0.20,  !lNO3 half saturation   PrmBioC(6)  rNH4  mmolN/m**3
+  PrmBioC(7)=0.50,  !lNH4 half saturation   PrmBioC(7)  rNO3  mmolN/m**3
+  PrmBioC(8)=3.00,  !lNH4 inhibition        PrmBioC(8)  PSI   m**3/mmolN
+  PrmBioC(9)=0.04,  !lPl mortality rate     PrmBioC(9)  BMpl  1/day
+  PrmBioC(10)=0.08, !lPs mortality rate     PrmBioC(10) BMps  1/day
+  PrmBioC(11)=0.80, !lGrazing rate Zl on Pl PrmBioC(11) Gll   1/day
+  PrmBioC(12)=1.00, !lGrazing rate Zs on Ps PrmBioC(12) Gss   1/day
+  PrmBioC(13)=0.50, !Grazing rate Zl on Zs PrmBioC(13) Gh    1/day
+  PrmBioC(14)=0.50, !zs,zl half saturation PrmBioC(14) Rg    mmolN/m**3
+  PrmBioC(15)=0.10, !Zl mortality rate     PrmBioC(15) BMzl  1/day
+  PrmBioC(16)=0.20, !Zs mortality rate     PrmBioC(16) BMzs  1/day
+  PrmBioC(17)=0.06, !Zl excretion rate     PrmBioC(17) BMUzl 1/day
+  PrmBioC(18)=0.08, !Zs excretion rate     PrmBioC(18) BMUzs 1/day
+  PrmBioC(19)=0.75, !assimilation ef-ncy   PrmBioC(19) GUMll 1
+  PrmBioC(20)=0.75, !assimilation ef-ncy   PrmBioC(20) GUMss 1
+  PrmBioC(21)=0.75, !assimilation ef-ncy   PrmBioC(21) GUMh  1
+  PrmBioC(22)=0.003, !D remineralization    PrmBioC(22) EE      1/day
+  PrmBioC(23)=5.00, !D sinking rate        PrmBioC(23) Ws      m/day
+  PrmBioC(24)=1.00, !Wa                    PrmBioC(24) Wa      m/day
+  PrmBioC(25)=0.05, !PO4 half saturation   PrmBioC(25) rPO4  mmolN/m**3
+  PrmBioC(26)=0.50, !SiO2 half saturation  PrmBioC(26) rSiO2 mmolN/m**3
+  PrmBioC(27)=0.015, !Si regeneration rate  PrmBioC(27) EE2     1/day
+  PrmBioC(28)=1.00, !BG max growth rate    PrmBioC(28) SIGbg 1/day
+  PrmBioC(29)=1.00, !BG T control beta     PrmBioC(29) beta  1/degC
+  PrmBioC(30)=0.00, !BG ref temp           PrmBioC(30) Tref    1/degC
+  PrmBioC(31)=0.30, !BG max grazing rate   PrmBioC(31)         1/d
+  PrmBioC(32)=0.08, !Bg mortality rate     PrmBioC(32)         1/d
+  PrmBioC(33)=0.10, !BG uplift rate        PrmBioC(33)         m/d
+  PrmBioC(34)=0.007, !critical bottom stress for resuspension  PrmBioC(34)         N/m**2
+  PrmBioC(35)=25.00, !resuspension rate      PrmBioC(35)         1/day
+  PrmBioC(36)=3.50, !sedimentation rate    PrmBioC(36)         m/day
+  PrmBioC(37)=0.00001, !burial rate           PrmBioC(37)         1/day
+  PrmBioC(38)=0.0010,  !sedim. mineral.       PrmBioC(38)         1/day
+  PrmBioC(39)=0.15,  !temp. control         PrmBioC(39)         1/degC
+  PrmBioC(40)=0.15,  !P sedim. rel. p1      PrmBioC(40)
+  PrmBioC(41)=0.10,  !P sedim. rel. p2      PrmBioC(41)
+  PrmBioC(42)=0.00020,  !sedim. mineral. Si    PrmBioC(42)         1/day
+  PrmBioC(43)=5.,  !sinking rate Opal    PrmBioC(43)         m/day
+  PrmBioC(44)=-1.,  !sinking rate BG    PrmBioC(44)         m/day
+  PrmBioC(45)=0.  !sinking rate diat    PrmBioC(45)         m/day
+
+  nprey = 5                  ! meaning only PS,PL,ZS,ZL,D are preys
+                             ! ZL is considered as a prey for now but
+                             ! set to 0 anyway. I will try to find a 
+                             ! better solution in time
+  prey_names(1) = 'fla'      !
+  prey_names(2) = 'dia'      ! DO NOT CHANGE THE ORDER OF PREY
+  prey_names(3) = 'microzoo' ! DO NOT CHANGE THE ORDER OF GI,AS,GR
+  prey_names(4) = 'mesozoo'  ! you can eventually add more prey
+  prey_names(5) = 'det'      ! such as bg
+
+  opal_swc(2) = 1
+
+  GI(1,1)=0.70,  !Zs-Ps   GI(1,1)     =    0.70
+  GI(1,2)=0.25,  !Zs-Pl   GI(1,2)     =    0.25
+  GI(1,3)=0.00,  !Zs-Zs   GI(1,3)     =    0.00
+  GI(1,4)=0.00,  !Zs-Zl   GI(1,4)     =    0.00
+  GI(1,5)=0.00,  !Zs-D    GI(1,5)     =    0.10
+!  GI(1,6)=0.30,  !Zs-BG   GI(1,6)     =    0.30
+
+  GI(2,1)=0.10,  !Zl-Ps   GI(2,1)     =    0.10
+  GI(2,2)=0.85,  !Zl-Pl   GI(2,2)     =    0.85
+  GI(2,3)=0.15,  !Zl-Zs   GI(2,3)     =    0.15
+  GI(2,4)=0.00,  !Zl-Zl   GI(2,4)     =    0.00
+  GI(2,5)=0.00,  !Zl-D    GI(2,5)     =    0.10
+!  GI(2,6)=0.30,  !Zl-BG   Gi(2,6)     =    0.30
+
+  GR(1,1)=1.00,  !Zs-Ps
+  GR(1,2)=1.00,  !Zs-Pl
+  GR(1,3)=1.00,  !Zs-Zs
+  GR(1,4)=1.00,  !Zs-Zl
+  GR(1,5)=1.00,  !Zs-D
+!  GR(1,6)=0.30,  !Zs-BG 
+
+  GR(2,1)=0.80,  !Zl-Ps
+  GR(2,2)=0.80,  !Zl-Pl
+  GR(2,3)=0.50,  !Zl-Zs
+  GR(2,4)=0.80,  !Zl-Zl
+  GR(2,5)=0.80,  !Zl-D
+!  GR(2,6)=0.30,  !Zl-BG 
+
+  AS(1,1)=0.75,  !Zs-Ps
+  AS(1,2)=0.75,  !Zs-Pl
+  AS(1,3)=0.75,  !Zs-Zs
+  AS(1,4)=0.75,  !Zs-Zl
+  AS(1,5)=0.75,  !Zs-D
+!  AS(1,6)=0.75,  !Zs-BG
+
+  AS(2,1)=0.75,  !Zl-Ps
+  AS(2,2)=0.75,  !Zl-Pl
+  AS(2,3)=0.75,  !Zl-Zs
+  AS(2,4)=0.75,  !Zl-Zl
+  AS(2,5)=0.75,  !Zl-D
+!  AS(2,6)=0.75,  !Zl-BG
+
+
+  zpr = 0.001
+  frr = 0.4
+  surface_deposition_no3 = 0.35
+  surface_deposition_nh4 = 0.32
+  surface_deposition_pho = 0.045
+  surface_deposition_sil = 0.50
+  no3_init = 5.0  ! initial nitrate mmolN/m**3
+  nh4_init = 0.1  ! initial ammonium mmolN/m**3
+  oxy_init = 85.0  ! initial oxygen mmolO2/m**3
+  pho_init = 0.3  ! initial phosphate mmolP/m**3
+  det_init = 2.0  ! initial detritus mmolN/m**3
+  dom_init = 3.0  ! initial dom mmolN/m**3
+  sil_init = 5.0  ! initial silicate mmolSi/m**3
+  opa_init = 2.0  ! initial opal mmolSi/m**3
+  dia_init = 1.0e-4  ! initial diatoms mmolN/m**3
+  fla_init = 1.0e-4  ! initial flagellates mmolN/m**3
+  sed1_init = 0.0
+  sed2_init = 0.0
+  sed3_init = 0.0
+  mesozoo_init = 1.0e-6  ! initial mesozooplankton mmolN/m**3
+  microzoo_init = 1.0e-6  ! initial microzooplankton mmolN/m**3
+
+/
+
+&nersc_ecosmo_bg
+  bg_growth_minimum_daily_rad = 120.
+  nfixation_minimum_daily_par = 35.
+  bg_init = 1.0e-4  ! initial cyanobacteria mmolN/m**3
+  no3_name = 'nersc_ecosmo/no3'
+/
+
+&pml_carbonate
+   dic_initial = 1500.,  ! Initial concentration of total dissolved inorganic carbon
+!   pCO2a       = 390.    ! Atmospheric partial pressure of CO2 (ppm)
+   alk_param   = .true.  ! Parameterize alkalintiy as linear function of salinity
+   alk_offset  = 1470.,  ! Beldowski et al 2010
+   alk_slope   = 25.3    ! Beldowski et al 2010
+/

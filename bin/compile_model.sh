@@ -1,6 +1,8 @@
 #!/bin/bash
 # Script for quickly setting up model source code and compiling it. 
-
+source  ~/.bashrc
+export LANG=en_US.UTF-8
+export LC_ALL=en_US
 
 # Must be in expt dir to run this script
 if [ -f EXPT.src ] ; then

@@ -1536,9 +1536,13 @@ c
             vmag=0.5*sqrt(ubot**2+vbot**2)
             dall=cbp(i,j)*(vmag+cbarp(i,j))  !no tidal drag
             drag(i,j)=dall*onem/thkbop(i,j)
+#ifdef _FABM_
+            ustarb(i,j)=sqrt(dall*vmag)
+#else
             if (mxlkpp .and. bblkpp) then
               ustarb(i,j)=sqrt(dall*vmag)
             endif
+#endif
 c
 c ---       tidal bottom drag, drgten.1.1 is drgscl*rh
 c
@@ -3555,9 +3559,13 @@ c
             vmag=0.5*sqrt(ubot**2+vbot**2)
             dall=cbp(i,j)*(vmag+cbarp(i,j))  !no tidal drag
             drag(i,j)=dall*onem/thkbop(i,j)
+#ifdef _FABM_
+            ustarb(i,j)=sqrt(dall*vmag)
+#else
             if (mxlkpp .and. bblkpp) then
               ustarb(i,j)=sqrt(dall*vmag)
             endif
+#endif
 c
 c ---       tidal bottom drag, drgten.1.1 is drgscl*rh
 c
