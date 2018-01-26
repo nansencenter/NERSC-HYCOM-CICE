@@ -1,6 +1,8 @@
 #!/bin/bash
 # Script for quickly setting up model source code and compiling it. 
-
+source  ~/.bashrc
+export LANG=en_US.UTF-8
+export LC_ALL=en_US
 
 # Must be in expt dir to run this script
 if [ -f EXPT.src ] ; then
@@ -190,7 +192,7 @@ elif [ "$SITE" == "sisu" ] ; then
           export ESMF_DIR=/appl/climate/esmf/6_3_0rp1/INTEL/16.0
 	fi
         export ESMF_MOD_DIR=${ESMF_DIR}/mod/modO/Unicos.$compiler.64.mpi.default/
-	export ESMF_LIB_DIR=${ESMF_DIR}/lib/libO/Unicos.$compiler.64.mpi.default/
+     	export ESMF_LIB_DIR=${ESMF_DIR}/lib/libO/Unicos.$compiler.64.mpi.default/
 
 elif [ "$SITE" == "alvin" ] || ["$SITE" == "elvis" ] ; then
     echo "hardcoded settings for $SITE"
@@ -202,6 +204,7 @@ elif [ "$SITE" == "alvin" ] || ["$SITE" == "elvis" ] ; then
    export ESMF_LIB_DIR=${ESMF_DIR}/lib/libO/Linux.$compiler.64.mpi.default/
 
 elif [ "$SITE" == "fram" ] ; then 
+    echo "from Line 205, SitE, = $SITE"
    export ESMF_DIR=/cluster/software/ESMF/6.3.0rp1-intel-2017a-HDF5-1.8.18/
    export ESMF_MOD_DIR=${ESMF_DIR}mod/
    export ESMF_LIB_DIR=${ESMF_DIR}lib/

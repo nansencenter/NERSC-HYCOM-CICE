@@ -102,7 +102,7 @@ Currently Loaded Modules:
    pip install --user git+http://github.com/knutal/gridxsec 
    pip install --user f90nml 
    pip install --user netCDF4
-   pip install --ser pyproj 
+   pip install --user pyproj 
 
 6) running the model of TP0 on fram, the sepecific paths and the task system information are referred under the diretory of NERSC-HYCOM-CICE/TP0a1.00/expt_01.0/fram
 
