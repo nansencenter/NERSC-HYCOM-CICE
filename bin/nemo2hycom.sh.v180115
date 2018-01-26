@@ -66,13 +66,13 @@ N="depth_${R}_${T}"
 export CDF_NEMO=$1
 expt_path=${BASEDIR}/expt_$X
 data_path=$expt_path/data
-HYCOM_ALL="/nird/home/bjornb/NERSC-HYCOM-CICE/hycom/hycom_ALL/hycom_2.2.72_ALL"
+HYCOM_ALL="/Users/mba098/Documents/Mostafa/Software/models/NERSC-HYCOM-CICE/hycom/hycom_ALL/hycom_2.2.72_ALL"
 #
 iexpt=10
 iversn=22
 yrflag=3
-idm=$(egrep "'idm   ' = longitudinal array size" ../topo/regional.grid.b | head -n1 | awk '{print $1;}')
-jdm=$(egrep "'jdm   ' = latitudinal  array size" ../topo/regional.grid.b | head -n1 | awk '{print $1;}')
+idm=4320   #$(egrep "'idm'"  ${data_path}/archv.  | sed "s/.thflag.*$//" | tr -d "[:blank:]")
+jdm=721     #$(egrep "'jdm'"  ${data_path}/expt_${X}/blkdat.input  | sed "s/.iversn.*$//" | tr -d "[:blank:]")
 #
 #
 #

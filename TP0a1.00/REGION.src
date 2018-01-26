@@ -40,7 +40,7 @@ done
 
 # Update path
 export PATH=$BINDIR/:$PATH
-export Sysdir=/nird/projects/fram/nn2993k
+export Sysdir=/cluster/projects/nn2993k
 
 
 
