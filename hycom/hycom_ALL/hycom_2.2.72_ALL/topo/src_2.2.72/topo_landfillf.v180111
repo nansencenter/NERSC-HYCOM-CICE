@@ -35,8 +35,8 @@ c
       call zaiord(dh,ip,.false., hmina,hmaxa, 51)
       call zaiocl(51)
 c
-      if     (abs(hmina-hminb).gt.abs(hminb)*1.e-1 .or.
-     &        abs(hmaxa-hmaxb).gt.abs(hmaxb)*1.e-1     ) then
+      if     (abs(hmina-hminb).gt.abs(hminb)*1.e-4 .or.
+     &        abs(hmaxa-hmaxb).gt.abs(hmaxb)*1.e-4     ) then
         write(6,'(/ a / a,1p3e14.6 / a,1p3e14.6 /)')
      &    'error - .a and .b topography files not consistent:',
      &    '.a,.b min = ',hmina,hminb,hmina-hminb,

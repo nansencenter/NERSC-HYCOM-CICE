@@ -1,5 +1,3 @@
-ifort             -g -tpp7 -O3 -convert big_endian -c topo_ports.f
-ifort: command line remark #10148: option '-tpp7' not supported
 ifort -g -tpp7 -O3 -convert big_endian -Vaxlib topo_ports.o      zh.o mod_xc.o mod_za.o wtime.o -o topo_ports
 ifort: command line remark #10148: option '-tpp7' not supported
 ifort: command line remark #10148: option '-Vaxlib' not supported
