@@ -2,7 +2,12 @@ module m_bio_conversions
    real, parameter :: b2=0.04, ny=1.38E-2, N2CHLA=11.0, kd_chl=0.02
    real, parameter :: cnit=14.01,cpho=30.97,csil=28.09, ccar=12.01
    real, parameter :: oxyml=44.6608009,oxygr=32.0,C2NIT=6.625 ! redfield
-
+! _FABM__caglar_
+   real, parameter :: kd_fabm=0.04   ! light attenuation coeff. for chlorophyll
+   real, parameter :: C2SIL=6.625    ! redfield C:Si mol ratio.
+   real, parameter :: C2PHO=106.0    ! redfield C:P mol ratio
+   real, parameter :: kd_water=0.041 ! light attenuation coeff. for Arctic sea water 
+! _FABM__caglar_
    contains
 
    subroutine chlorophyll(dia,fla,chl_a,idm,jdm,kdm)
@@ -164,6 +169,7 @@ module m_bio_conversions
       kg_oxy=1e-6*oxygr*oxyml*oxy
 
    end subroutine oxygen_conv_eco
+
 !------------------------------------------------
    subroutine primary_production(primprod,pres,gpp_depthint,onem,idm,jdm,kdm)
 !compute gross primary production: kg m-2 s-1
@@ -389,6 +395,107 @@ module m_bio_conversions
 
    end subroutine integrated_chlorophyll_eco
 !------------------------------------------------
+
+! _FABM__caglar_
+      subroutine chlorophyll_fabm(dia,fla,chl_a,idm,jdm,kdm)
+      !compute chlorophyll: mg m-3
+        implicit none
+
+        integer, intent(in) :: idm,jdm,kdm
+        real, dimension(idm,jdm,kdm)  , intent(in)  ::dia, fla
+        real, dimension(idm,jdm,kdm)  , intent(out) ::chl_a
+        real, dimension(idm,jdm,kdm)  ::boss
+        integer :: i,j,k
+
+        chl_a=dia+fla
+
+     end subroutine chlorophyll_fabm
+
+     subroutine nitrate_conv_fabm(nit,nitrate,idm,jdm,kdm)
+     !compute nitrate: mmole m-3
+      implicit none
+
+      integer, intent(in) :: idm,jdm,kdm
+      real, dimension(idm,jdm,kdm)  , intent(in)  ::nit !mgC m-3
+      real, dimension(idm,jdm,kdm)  , intent(out) ::nitrate
+
+      nitrate=nit/ccar/C2NIT
+
+     end subroutine nitrate_conv_fabm
+
+     subroutine silicate_conv_fabm(sil,silicate,idm,jdm,kdm)
+     !compute silicate: mmole m-3
+      implicit none
+
+      integer, intent(in) :: idm,jdm,kdm
+      real, dimension(idm,jdm,kdm)  , intent(in)  ::sil !mgC m-3
+      real, dimension(idm,jdm,kdm)  , intent(out) ::silicate
+
+      silicate=sil/ccar/C2SIL
+
+     end subroutine silicate_conv_fabm
+
+     subroutine phosphate_conv_fabm(pho,phosphate,idm,jdm,kdm)
+     !compute phosphate: mmole m-3
+      implicit none
+
+      integer, intent(in) :: idm,jdm,kdm
+      real, dimension(idm,jdm,kdm)  , intent(in)  ::pho !mgC m-3
+      real, dimension(idm,jdm,kdm)  , intent(out) ::phosphate
+
+      phosphate=pho/ccar/C2PHO
+
+     end subroutine phosphate_conv_fabm
+
+     subroutine pbiomass_fabm(dia,fla,biomass,idm,jdm,kdm)
+     !compute phytoplankton biomass: mmoleC m-3
+      implicit none
+
+      integer, intent(in) :: idm,jdm,kdm
+      real, dimension(idm,jdm,kdm)  , intent(in)  ::fla, dia !mgC m-3
+      real, dimension(idm,jdm,kdm)  , intent(out) ::biomass
+
+      biomass=(fla+dia)/ccar
+
+     end subroutine pbiomass_fabm
+
+     subroutine oxygen_conv_fabm(oxy,mmol_oxy,idm,jdm,kdm)
+!compute dissolved oxygen: mmol m-3
+      implicit none
+
+      integer, intent(in) :: idm,jdm,kdm
+      real, dimension(idm,jdm,kdm)  , intent(in)  ::oxy !mmol 02 m-3
+      real, dimension(idm,jdm,kdm)  , intent(out) ::mmol_oxy
+! original oxygen unit mmol/m3
+      mmol_oxy=oxy
+
+     end subroutine oxygen_conv_fabm
+
+     subroutine pp_conv_fabm(pp,pp_daily,idm,jdm,kdm)
+!compute gross primary production (we distribute to CMEMS as net pp): mg m-3 d-1
+      implicit none
+
+      integer, intent(in) :: idm,jdm,kdm
+      real, dimension(idm,jdm,kdm)  , intent(in)  ::pp ! mg m-3 s-1
+      real, dimension(idm,jdm,kdm)  , intent(out) ::pp_daily
+
+      pp_daily=pp*24.*60.*60.
+
+     end subroutine pp_conv_fabm
+
+     subroutine attenuation_fabm(dia,fla,attencoef,idm,jdm,kdm)
+!compute the attenuation coefficient: m-1
+      implicit none
+
+      integer, intent(in) :: idm,jdm,kdm
+      real, dimension(idm,jdm,kdm)  , intent(in)  ::dia, fla
+      real, dimension(idm,jdm,kdm)  , intent(out) ::attencoef
+
+      attencoef=kd_water+kd_fabm*(dia+fla)
+
+   end subroutine attenuation_fabm
+
+! _FABM__caglar_
 end module
 
 

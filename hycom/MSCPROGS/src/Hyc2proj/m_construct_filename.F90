@@ -40,6 +40,12 @@ contains
       find=find+4
       ncfil=fbase(1:find)//                &
             '_'//rtd%cyy//rtd%cmm//rtd%cdm//'_'//rtd%chh//'.nc'
+   else if (trim(hfile%ftype)=='archm') then ! archm
+      !TODO add dump time to filename
+      find=index(fbase,'archm')
+      find=find+4
+      ncfil=fbase(1:find)//                &
+            '_'//rtd%cyy//rtd%cmm//rtd%cdm//'_'//rtd%chh//'.nc'
    else if (trim(hfile%ftype)=='archv_wav') then ! archv_wav
       find=index(fbase,'archv_wav')
       find=find+8

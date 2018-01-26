@@ -14,6 +14,9 @@
 #if defined(STOKES)
       use mod_stokes     ! HYCOM Stokes Drift effects from Wave fields
 #endif
+#ifdef _FABM_
+      use mod_hycom_fabm
+#endif
       implicit none
 c
       real      day1,hybrlx,cplifq,frzifq
@@ -1144,8 +1147,13 @@ c
       endif !1st tile
       call blkini(ntracr,'ntracr')
       trcrin = ntracr.gt.0  ! positive from restart, otherwise initialize
-      trcout = ntracr.ne.0
+#ifdef _FABM_
+      call hycom_fabm_configure()
+      ntracr = size(fabm_model%state_variables)
+#else
       ntracr = abs(ntracr)
+#endif
+      trcout = ntracr.ne.0
 c
       if (ntracr.gt.mxtrcr) then
         if (mnproc.eq.1) then
@@ -1159,6 +1167,9 @@ c
       endif
 c
       call blkini(trcflg1,'trcflg')
+#ifdef _FABM_
+      trcflg = 9
+#else
       do k= 1,ntracr
         trcflg(k) = mod(trcflg1,10)  ! least significant decimal digit
         if     (trcflg1.ge.10) then
@@ -1179,6 +1190,7 @@ c
                  stop '(blkdat)'
         endif
       enddo !k
+#endif
 c
 c --- 'tsofrq' = number of time steps between anti-drift offset calcs
 c --- 'tofset' = temperature anti-drift offset (degC/century)

@@ -42,7 +42,7 @@ endif
 @ a = $NXGLOB * $NYGLOB ; @ b = $BLCKX * $BLCKY * $NTASK  
 @ m = $a / $b ; setenv MXBLCKS $m; if ($MXBLCKS == 0) setenv MXBLCKS 1
 #setenv MXBLCKS 37 # if necessary (code will print proper value)
-setenv MXBLCKS 2 # if necessary (code will print proper value)
+setenv MXBLCKS 7 # if necessary (code will print proper value)
 
 ### Tracers               # match ice_in tracer_nml to conserve memory
 setenv TRAGE   1          # set to 1 for ice age tracer
@@ -132,7 +132,7 @@ if ( ! -f $MACROFILE ) then
 endif
 
 
-cc -o makdep $CBLD/makdep.c                         || exit 2
+icc -o makdep $CBLD/makdep.c                         || exit 2
 
 setenv MAKECMD make
 #MAKECMD=gmake

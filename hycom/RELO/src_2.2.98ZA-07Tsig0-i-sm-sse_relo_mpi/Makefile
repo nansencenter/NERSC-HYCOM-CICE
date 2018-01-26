@@ -7,13 +7,17 @@
 #
 
 .SUFFIXES: 
-.SUFFIXES: .c .F .f .o
+.SUFFIXES: .c .F .f .F90 .f90 .o
 
 .F:
 	@echo "Must have an explicit rule for" $*
 .f:
 	@echo "Must have an explicit rule for" $*
 .c:
+	@echo "Must have an explicit rule for" $*
+.F90:
+	@echo "Must have an explicit rule for" $*
+.f90:
 	@echo "Must have an explicit rule for" $*
 
 include ../config/$(ARCH)_$(TYPE)
@@ -47,6 +51,12 @@ OBJS =	         barotp.o  bigrid.o blkdat.o  cnuity.o convec.o \
 	thermf.o trcupd.o  \
        machine.o  wtime.o machi_c.o  isnan.o
 
+# CAGLAR - ADDED FABM SUPPORT -
+ifneq (,$(findstring -D_FABM_,$(CPPFLAGS)))
+  MODS  := $(MODS) mod_hycom_fabm.o
+  MODD  := $(MODD) mod_hycom_fabm.o
+endif
+# CAGLAR ----------------------
 hycom:	$(MODS_HYCOM) $(OBJS) hycom.o
 	$(LD)  $(LDFLAGS) -o hycom  hycom.o $(MODS_HYCOM) $(OBJS) $(EXTRALIBS)
 
@@ -79,14 +89,14 @@ bigrid.o:  bigrid.f  mod_xc.o
 blkdat.o:  blkdat.F  mod_xc.o mod_cb_arrays.o stmt_fns.h          mod_incupd.o \
 	                                                          mod_floats.o \
 	                                                          mod_tides.o \
-	                                                          mod_stokes.o
+	                                                          mod_stokes.o 
 cnuity.o:  cnuity.F  mod_xc.o mod_cb_arrays.o                     mod_pipe.o \
 	                                                          mod_stokes.o
 convec.o:  convec.F  mod_xc.o mod_cb_arrays.o stmt_fns.h
 diapfl.o:  diapfl.F  mod_xc.o mod_cb_arrays.o stmt_fns.h          mod_stokes.o
 dpthuv.o:  dpthuv.F  mod_xc.o mod_cb_arrays.o
 dpudpv.o:  dpudpv.F  mod_xc.o 
-forfun.o:  forfun.f  mod_xc.o mod_cb_arrays.o            mod_za.o
+forfun.o:  forfun.F  mod_xc.o mod_cb_arrays.o            mod_za.o
 geopar.o:  geopar.F  mod_xc.o mod_cb_arrays.o stmt_fns.h mod_za.o
 hybgen.o:  hybgen.F  mod_xc.o mod_cb_arrays.o stmt_fns.h          mod_pipe.o
 icloan.o:  icloan.F  mod_xc.o mod_cb_arrays.o stmt_fns.h
@@ -108,7 +118,7 @@ overtn.o:  overtn.F  mod_xc.o mod_cb_arrays.o
 poflat.o:  poflat.f
 prtmsk.o:  prtmsk.f
 psmoo.o:   psmoo.f   mod_xc.o 
-restart.o: restart.f mod_xc.o mod_cb_arrays.o            mod_za.o mod_tides.o
+restart.o: restart.F mod_xc.o mod_cb_arrays.o            mod_za.o mod_tides.o
 thermf.o:  thermf.F  mod_xc.o mod_cb_arrays.o stmt_fns.h
 trcupd.o:  trcupd.F  mod_xc.o mod_cb_arrays.o                     mod_pipe.o
 wtime.o:   wtime.F
@@ -164,3 +174,19 @@ mod_netcdf_util.o: \
 
 mod_prgrad.o: \
 	mod_prgrad.F
+
+# CAGLAR - ADDED FABM SUPPORT -
+ifneq (,$(findstring -D_FABM_,$(CPPFLAGS)))
+  
+mod_hycom_fabm.o: \
+      mod_hycom_fabm.F90 mod_xc.o mod_cb_arrays.o
+blkdat.o:     mod_hycom_fabm.o
+forfun.o:     mod_hycom_fabm.o
+restart.o:    mod_hycom_fabm.o
+trcupd.o:     mod_hycom_fabm.o
+mod_hycom.o:  mod_hycom_fabm.o
+mod_mean.o:   mod_hycom_fabm.o
+mod_archiv.o: mod_hycom_fabm.o
+
+endif
+# CAGLAR ----------------------

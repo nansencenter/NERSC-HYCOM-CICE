@@ -1435,6 +1435,9 @@ c
       use mod_xc         ! HYCOM communication interface
       use mod_cb_arrays  ! HYCOM saved arrays
       use mod_za         ! HYCOM I/O interface
+#ifdef _FABM_
+      use mod_hycom_fabm
+#endif
       implicit none
 c
 c --- initialize input of thermal/tracer relaxation forcing fields
@@ -1647,6 +1650,9 @@ c
       endif
 c
       if     (relaxt) then
+#ifdef _FABM_
+        call hycom_fabm_relax_init()
+#else
         call zaiopf(flnmforw(1:lgth)//'relax.trcr.a', 'old', 914)
         if     (mnproc.eq.1) then  ! .b file from 1st tile only
         open (unit=uoff+914,file=flnmforw(1:lgth)//'relax.trcr.b',
@@ -1659,6 +1665,7 @@ c
             call rdmonth(util1, 914)
           enddo
         enddo
+#endif
       endif
 c
       if     (mnproc.eq.1) then
@@ -3060,6 +3067,9 @@ c
       use mod_xc         ! HYCOM communication interface
       use mod_cb_arrays  ! HYCOM saved arrays
       use mod_za         ! HYCOM I/O interface
+#ifdef _FABM_
+      use mod_hycom_fabm
+#endif
       implicit none
 c
       integer lslot,month
@@ -3088,7 +3098,11 @@ c
           mrec = (mnth+1)/2
         endif
         if     (relaxt) then
+#ifdef _FABM_
+          mxunit = 913
+#else
           mxunit = 914  ! tracers
+#endif
         elseif (relaxs) then
           mxunit = 912  ! T&S only
         else
@@ -3110,6 +3124,9 @@ c
             endif
             call zaiorw(iunit)
           enddo
+#ifdef _FABM_
+          call hycom_fabm_relax_rewind()
+#endif
 *         if     (mnproc.eq.1) then
 *         write(lp,*) 'rdrlax: mrecc,mrec = ',mrecc,mrec,'  (rewind)'
 *         endif !1st tile
@@ -3138,6 +3155,9 @@ c
               enddo
             endif
           enddo
+#ifdef _FABM_
+          call hycom_fabm_relax_skmonth()
+#endif
         enddo
 c
 c --- read desired month
@@ -3171,11 +3191,15 @@ c
         endif
 c
         if (relaxt) then
+#ifdef _FABM_
+          call hycom_fabm_relax_read(lslot, mnth)
+#else
           do ktr= 1,ntracr
             do k= 1,kk
               call rdmonthck(trwall(1-nbdy,1-nbdy,k,lslot,ktr),914,mnth)
             enddo
           enddo
+#endif
         endif
 c
         mrecc = mrec
