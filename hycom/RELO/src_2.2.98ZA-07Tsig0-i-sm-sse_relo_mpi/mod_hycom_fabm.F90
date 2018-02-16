@@ -35,9 +35,7 @@ module mod_hycom_fabm
    real, allocatable :: bottom_stress(:, :)
    logical, allocatable :: mask(:, :, :)
    integer, allocatable :: kbottom(:, :)
-! CAGLAR
    integer, allocatable :: kbottomn(:, :)
-! CAGLAR
    real, allocatable :: h(:, :, :)
    real, allocatable, target :: fabm_surface_state(:, :, :, :)
    real, allocatable, target :: fabm_bottom_state(:, :, :, :)
@@ -133,9 +131,7 @@ contains
         allocate(bottom_stress(ii, jj))
         allocate(mask(ii, jj, kk))
         allocate(kbottom(ii, jj))
-! CAGLAR
         allocate(kbottomn(ii, jj))
-! CAGLAR
         allocate(h(ii, jj, kk))
         allocate(fabm_surface_state(1-nbdy:ii+nbdy, 1-nbdy:jj+nbdy, 2, size(fabm_model%surface_state_variables)))
         allocate(fabm_bottom_state(1-nbdy:ii+nbdy, 1-nbdy:jj+nbdy, 2, size(fabm_model%bottom_state_variables)))
@@ -163,7 +159,7 @@ contains
         call fabm_model%link_horizontal_data(standard_variables%surface_downwelling_shortwave_flux, swflx_fabm(1:ii, 1:jj))
         call fabm_model%link_horizontal_data(standard_variables%bottom_stress, bottom_stress(1:ii, 1:jj))
 
-        call update_fabm_data(1, initializing=.true.)  ! initialize the entire column of wet points, including thin layers
+        call update_fabm_data(1,2, initializing=.true.)  ! initialize the entire column of wet points, including thin layers
 
         ! Check whether FABM has all dependencies fulfilled
         ! (i.e., whether all required calls for fabm_link_*_data have been made)
@@ -431,7 +427,7 @@ contains
       ! Send state at midpoint time=t (time index m) to FABM.
       ! As per leapfrog spec, fluxes at this time are used to update the state at t-delta_t to t+delta_t (both stored at time index n)
       ! This also sets FABM's mask, which will exclude layers that are vanishingly thin at either time m or n (or both).
-      call update_fabm_data(m, initializing=.false.)  ! skipping thin layers
+      call update_fabm_data(m,n, initializing=.false.)  ! skipping thin layers
 
       ! Store old surface/bottom state for later application of Robert-Asselin filter.
       fabm_surface_state_old = fabm_surface_state(:, :, n, :)
@@ -569,23 +565,9 @@ contains
       do j=1,jj
         do i=1,ii
           if (SEA_P) then
-! CAGLAR
-!do k=kk,1,-1
-!   if (dp(i, j, k, n)/onem>0.1) exit
-!end do
-!kbottomn(i, j) = max(k, 2)
-!if (kbottomn(i, j)<kbottom(i, j) ) then
-!  do k=kbottomn(i, j)+1,kk
-!    tracer(i, j, k, n, :) = tracer(i, j, kbottomn(i, j), n, :)
-!  enddo
-!else
-! CAGLAR
             do k=kbottomn(i, j)+1, kk
                tracer(i, j, k, n, :) = tracer(i, j, kbottomn(i, j), n, :)
             end do
-! CAGLAR
-!endif
-! CAGLAR
           end if
         end do
       end do
@@ -642,22 +624,8 @@ contains
 
       real :: w(ii, kk, size(fabm_model%state_variables))
       real :: flux(ii, 0:kk)
-!      integer, allocatable :: kbottomv(:, :)
       integer :: i, j, k, ivar, kabove
       real, parameter :: epsilon = 1e-8
-!      allocate(kbottomv(ii, jj))
-!
-!        kbottomv = 0
-!        do j=1,jj
-!            do i=1,ii
-!              if (SEA_P) then
-!                   do k=kk,1,-1
-!                     if (dp(i, j, k, n)/onem > 0.1) exit
-!                   end do
-!                   kbottomv(i, j) = max(k, 2)
-!                 end if
-!            end do
-!        end do
 
       do j=1,jj
         ! Get vertical velocities per tracer (m/s, > 0 for floating, < 0  for sinking)
@@ -723,11 +691,11 @@ contains
         end do
     end subroutine get_bottom_k
 
-    subroutine update_fabm_data(index, initializing)
-        integer, intent(in) :: index
+    subroutine update_fabm_data(index, n, initializing)
+        integer, intent(in) :: index, n
         logical, intent(in) :: initializing
 
-        integer :: i, j, k, n
+        integer :: i, j, k
         integer :: ivar
 
         real, parameter :: rho_0 = 1025.   ! [kg/m3]
