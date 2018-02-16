@@ -430,6 +430,7 @@ contains
 !
       ! Send state at midpoint time=t (time index m) to FABM.
       ! As per leapfrog spec, fluxes at this time are used to update the state at t-delta_t to t+delta_t (both stored at time index n)
+      ! This also sets FABM's mask, which will exclude layers that are vanishingly thin at either time m or n (or both).
       call update_fabm_data(m, initializing=.false.)  ! skipping thin layers
 
       ! Store old surface/bottom state for later application of Robert-Asselin filter.
@@ -488,11 +489,11 @@ contains
           fabm_bottom_state(1:ii, j, n, ivar) = fabm_bottom_state(1:ii, j, n, ivar) + delt1 * sms_bt(1:ii, ivar)
         end do
         do i=1,ii
-          if (SEA_P) then
-            tracer(i, j, kbottom(i, j), n, :) = tracer(i, j, kbottom(i, j), n, :) + delt1 * flux(i, :)/h(i, j, kbottom(i, j))
+          if (kbottomn(i, j) > 0) then
+            tracer(i, j, kbottomn(i, j), n, :) = tracer(i, j, kbottomn(i, j), n, :) + delt1 * flux(i, :)/dp(i, j, kbottomn(i, j), n)*onem
 #ifdef FABM_CHECK_NAN
-            if (any(isnan(tracer(i, j, kbottom(i, j), n, :)))) then
-              write (*,*) 'NaN after do_bottom:', tracer(i, j, kbottom(i, j), n, :), flux(i, :), h(i, j, kbottom(i, j))
+            if (any(isnan(tracer(i, j, kbottomn(i, j), n, :)))) then
+              write (*,*) 'NaN after do_bottom:', tracer(i, j, kbottomn(i, j), n, :), flux(i, :), dp(i, j, kbottomn(i, j), n)/onem)
               stop
             end if
 #endif
@@ -512,11 +513,11 @@ contains
           fabm_surface_state(1:ii, j, n, ivar) = fabm_surface_state(1:ii, j, n, ivar) + delt1 * sms_sf(1:ii, ivar)
         end do
         do i=1,ii
-          if (SEA_P) then
-            tracer(i, j, 1, n, :) = tracer(i, j, 1, n, :) + delt1 * flux(i, :)/h(i, j, 1)
+          if (kbottomn(i, j) > 0) then
+            tracer(i, j, 1, n, :) = tracer(i, j, 1, n, :) + delt1 * flux(i, :)/dp(i, j, 1, n)*onem
 #ifdef FABM_CHECK_NAN
             if (any(isnan(tracer(i, j, 1, n, :)))) then
-              write (*,*) 'NaN after do_surface:', tracer(i, j, 1, n, :), flux(i, :), h(i, j, 1)
+              write (*,*) 'NaN after do_surface:', tracer(i, j, 1, n, :), flux(i, :), dp(i, j, 1, n)/onem
               stop
             end if
 #endif
@@ -579,8 +580,8 @@ contains
 !  enddo
 !else
 ! CAGLAR
-            do k=kbottom(i, j)+1, kk
-               tracer(i, j, k, n, :) = tracer(i, j, kbottom(i, j), n, :)
+            do k=kbottomn(i, j)+1, kk
+               tracer(i, j, k, n, :) = tracer(i, j, kbottomn(i, j), n, :)
             end do
 ! CAGLAR
 !endif
@@ -702,6 +703,26 @@ contains
 
     end subroutine vertical_movement
 
+    subroutine get_bottom_k(index, kbottom)
+        integer, intent(in)  :: index
+        integer, intent(out) :: kbottom(ii, jj)
+
+        real, parameter :: h_min = 0.1
+        integer :: i, j
+
+        kbottom = 0
+        do j=1,jj
+            do i=1,ii
+              if (SEA_P) then
+                do k = kk, 1, -1
+                  if (dp(i, j, k, index) > h_min/onem) exit
+                end do
+                kbottom(i, j) = max(k, 2)
+              end if
+            end do
+        end do
+    end subroutine get_bottom_k
+
     subroutine update_fabm_data(index, initializing)
         integer, intent(in) :: index
         logical, intent(in) :: initializing
@@ -714,22 +735,26 @@ contains
         ! Update cell thicknesses (m)
         h(:, :, :) = dp(1:ii, 1:jj, 1:kk, index)/onem
 
-        ! Update mask and kbottom
-        kbottom = 0
+        ! Update index (k) of bottom layer
+        if (initializing) then
+          kbottom = kk
+          kbottomn = kk
+        else
+          ! Get index of bottom for the time step at which we evaluate sinks/sources.
+          call get_bottom_k(index, kbottom)
+
+          ! Get index of bottom layers at the next time step.
+          ! For that we use time idnex n, which assumes dp(:,:,:,n) has already been updated!
+          ! A (partial?) update seems to happen in cnuity, which is indeed called before trcupd.
+          call get_bottom_k(n, kbottomn)
+        end if
+
+        ! Update interior mask
+        ! Process points only if their layer has not vanished at the time of evaluation, nor at the time we need to update to (n).
         mask = .false.
         do j=1,jj
             do i=1,ii
-              if (SEA_P) then
-                 if (initializing) then
-                   kbottom(i, j) = kk
-                 else
-                   do k=kk,1,-1
-                     if (h(i, j, k)>0.1) exit
-                   end do
-                   kbottom(i, j) = max(k, 2)
-                 end if
-                 mask(i, j, 1:kbottom(i, j)) = .true.
-              end if
+                mask(i, j, 1:min(kbottom(i, j), kbottomn(i, j))) = .true.
             end do
         end do
 
