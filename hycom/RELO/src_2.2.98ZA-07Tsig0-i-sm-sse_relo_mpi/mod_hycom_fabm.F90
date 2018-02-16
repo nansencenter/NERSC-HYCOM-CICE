@@ -708,7 +708,7 @@ contains
         integer, intent(out) :: kbottom(ii, jj)
 
         real, parameter :: h_min = 0.1
-        integer :: i, j
+        integer :: i, j, k
 
         kbottom = 0
         do j=1,jj
@@ -727,7 +727,7 @@ contains
         integer, intent(in) :: index
         logical, intent(in) :: initializing
 
-        integer :: i, j, k
+        integer :: i, j, k, n
         integer :: ivar
 
         real, parameter :: rho_0 = 1025.   ! [kg/m3]
