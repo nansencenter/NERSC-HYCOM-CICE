@@ -565,8 +565,8 @@ contains
       do j=1,jj
         do i=1,ii
           if (SEA_P) then
-            do k=kbottomn(i, j)+1, kk
-               tracer(i, j, k, n, :) = tracer(i, j, kbottomn(i, j), n, :)
+            do k=min(kbottomn(i, j),kbottom(i, j))+1, kk
+               tracer(i, j, k, n, :) = tracer(i, j, min(kbottomn(i, j),kbottom(i, j)), n, :)
             end do
           end if
         end do
@@ -655,13 +655,15 @@ contains
               if (dp(i, j, k, n) > 0) kabove = k
               if (flux(i, k) /= 0) then
                 ! non-zero flux across interface
-                if (dp(i, j, k+1, n) == 0) then
+                if (dp(i, j, k+1, n)/onem <= 0.1) then ! THIS IS NOT THE BEST SOLUTION BUT MAKES THINGS STABLE AT THE MOMENT
                   ! layer below is collapsed (height = 0) - move flux to next interface
-                  flux(i, k+1) = flux(i, k+1) + flux(i, k)
+!                  flux(i, k+1) = flux(i, k+1) + flux(i, k)
+                flux(i, k) = 0
                 else
-                  ! layer below has non-zero height
-                  tracer(i, j, kabove, n, ivar) = tracer(i, j, kabove, n, ivar) + flux(i, k)*timestep/dp(i, j, kabove, n)*onem
-                  tracer(i, j, k+1, n, ivar) = tracer(i, j, k+1, n, ivar) - flux(i, k)*timestep/dp(i, j, k+1, n)*onem
+                  ! layer below has non-zero height, BUT RESTRICTED TO BE DIVIED BY 1 AT LEAST TO PREVENT ACCUMULATION IN THIN LAYERS
+                  !                                  TO DO: MAYBE ALLOW ACCUMULATION AT THE DEEPEST LAYER?
+                  tracer(i, j, kabove, n, ivar) = tracer(i, j, kabove, n, ivar) + flux(i, k)*timestep/max(dp(i, j, kabove, n)/onem,1.0)
+                  tracer(i, j, k+1, n, ivar) = tracer(i, j, k+1, n, ivar) - flux(i, k)*timestep/max(dp(i, j, k+1, n)/onem,1.0)
                 end if
               end if
             end do
