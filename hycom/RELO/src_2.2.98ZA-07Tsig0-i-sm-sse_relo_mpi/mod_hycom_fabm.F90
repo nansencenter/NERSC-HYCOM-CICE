@@ -159,7 +159,7 @@ contains
         call fabm_model%link_horizontal_data(standard_variables%surface_downwelling_shortwave_flux, swflx_fabm(1:ii, 1:jj))
         call fabm_model%link_horizontal_data(standard_variables%bottom_stress, bottom_stress(1:ii, 1:jj))
 
-        call update_fabm_data(1,2, initializing=.true.)  ! initialize the entire column of wet points, including thin layers
+        call update_fabm_data(1, initializing=.true.)  ! initialize the entire column of wet points, including thin layers
 
         ! Check whether FABM has all dependencies fulfilled
         ! (i.e., whether all required calls for fabm_link_*_data have been made)
@@ -427,7 +427,12 @@ contains
       ! Send state at midpoint time=t (time index m) to FABM.
       ! As per leapfrog spec, fluxes at this time are used to update the state at t-delta_t to t+delta_t (both stored at time index n)
       ! This also sets FABM's mask, which will exclude layers that are vanishingly thin at either time m or n (or both).
-      call update_fabm_data(m,n, initializing=.false.)  ! skipping thin layers
+      call update_fabm_data(m, initializing=.false.)  ! skipping thin layers
+
+      ! Get index of bottom layers at the next time step.
+      ! For that we use time index n, which assumes dp(:,:,:,n) has already been updated!
+      ! A (partial?) update seems to happen in cnuity, which is indeed called before trcupd.
+      call get_bottom_k(n, kbottomn)
 
       ! Store old surface/bottom state for later application of Robert-Asselin filter.
       fabm_surface_state_old = fabm_surface_state(:, :, n, :)
@@ -481,11 +486,9 @@ contains
         flux = 0
         sms_bt = 0
         call fabm_do_bottom(fabm_model, 1, ii, j, flux, sms_bt)
-        do ivar=1,size(fabm_model%bottom_state_variables)
-          fabm_bottom_state(1:ii, j, n, ivar) = fabm_bottom_state(1:ii, j, n, ivar) + delt1 * sms_bt(1:ii, ivar)
-        end do
         do i=1,ii
           if (kbottomn(i, j) > 0) then
+            fabm_bottom_state(i, j, n, :) = fabm_bottom_state(i, j, n, :) + delt1 * sms_bt(i, :)
             tracer(i, j, kbottomn(i, j), n, :) = tracer(i, j, kbottomn(i, j), n, :) + delt1 * flux(i, :)/dp(i, j, kbottomn(i, j), n)*onem
 #ifdef FABM_CHECK_NAN
             if (any(isnan(tracer(i, j, kbottomn(i, j), n, :)))) then
@@ -505,11 +508,9 @@ contains
         flux = 0
         sms_sf = 0
         call fabm_do_surface(fabm_model, 1, ii, j, flux, sms_sf)
-        do ivar=1,size(fabm_model%surface_state_variables)
-          fabm_surface_state(1:ii, j, n, ivar) = fabm_surface_state(1:ii, j, n, ivar) + delt1 * sms_sf(1:ii, ivar)
-        end do
         do i=1,ii
           if (kbottomn(i, j) > 0) then
+            fabm_surface_state(i, j, n, :) = fabm_surface_state(i, j, n, :) + delt1 * sms_sf(i, :)
             tracer(i, j, 1, n, :) = tracer(i, j, 1, n, :) + delt1 * flux(i, :)/dp(i, j, 1, n)*onem
 #ifdef FABM_CHECK_NAN
             if (any(isnan(tracer(i, j, 1, n, :)))) then
@@ -693,8 +694,8 @@ contains
         end do
     end subroutine get_bottom_k
 
-    subroutine update_fabm_data(index, n, initializing)
-        integer, intent(in) :: index, n
+    subroutine update_fabm_data(index, initializing)
+        integer, intent(in) :: index
         logical, intent(in) :: initializing
 
         integer :: i, j, k
@@ -705,28 +706,22 @@ contains
         ! Update cell thicknesses (m)
         h(:, :, :) = dp(1:ii, 1:jj, 1:kk, index)/onem
 
-        ! Update index (k) of bottom layer
+        ! Update interior mask (all cells set to .true. will be processed by FABM) and index of bottom layer.
         if (initializing) then
+          mask = .true.
           kbottom = kk
-          kbottomn = kk
         else
           ! Get index of bottom for the time step at which we evaluate sinks/sources.
           call get_bottom_k(index, kbottom)
 
-          ! Get index of bottom layers at the next time step.
-          ! For that we use time idnex n, which assumes dp(:,:,:,n) has already been updated!
-          ! A (partial?) update seems to happen in cnuity, which is indeed called before trcupd.
-          call get_bottom_k(n, kbottomn)
+          ! Process points only if their layer has not vanished at the time of evaluation.
+          mask = .false.
+          do j=1,jj
+              do i=1,ii
+                  mask(i, j, 1:kbottom(i, j)) = .true.
+              end do
+          end do
         end if
-
-        ! Update interior mask
-        ! Process points only if their layer has not vanished at the time of evaluation, nor at the time we need to update to (n).
-        mask = .false.
-        do j=1,jj
-            do i=1,ii
-                mask(i, j, 1:min(kbottom(i, j), kbottomn(i, j))) = .true.
-            end do
-        end do
 
         if (.not.initializing) then
           call fabm_update_time(fabm_model, real(nstep))
