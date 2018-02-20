@@ -683,7 +683,7 @@ contains
             do i=1,ii
               if (SEA_P) then
                 do k = kk, 1, -1
-                  if (dp(i, j, k, index) > h_min/onem) exit
+                  if (dp(i, j, k, index)/onem > h_min) exit
                 end do
                 kbottom(i, j) = max(k, 2)
               end if
