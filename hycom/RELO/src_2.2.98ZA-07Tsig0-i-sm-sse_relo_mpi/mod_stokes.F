@@ -128,6 +128,7 @@ c     Dissipations (bottom and breakin)
      & wave_bdy(:,:,:),     ! Bottom dissipation  
      & wave_brkx(:,:,:),     ! Dissipation  by breaking
      & wave_brky(:,:,:)      ! Dissipation  by breaking
+c
 c     Arrays used to calculate transport
 
       real,    allocatable, dimension(:,:,:),
@@ -266,7 +267,7 @@ C$$ c
 C$$       allocate(usdshat(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy),
 C$$                vsdshat(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy),
 C$$      &         langnum(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy))
-C$$       call mem_stat_add( 2*(idm+2*nbdy)*(jdm+2*nbdy) )
+C$$       call mem_stat_add( 3*(idm+2*nbdy)*(jdm+2*nbdy) )
 C$$       usdshat(:,:) = 0.0
 C$$       vsdshat(:,:) = 0.0
 C$$       langnum(:,:) = 0.0
@@ -290,7 +291,9 @@ c
       twomx(:,:,:) = 0.0
       twomy(:,:,:) = 0.0
 C$$ C 
-C$$       tm01(:,:,:)    = 0.0
+C$$   allocate( tm01(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,2),
+C$$   call mem_stat_add( 1*(idm+2*nbdy)*(jdm+2*nbdy)*2 )
+C$$    tm01(:,:,:)    = 0.0
  
 
 c      allocate( dzdx(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kdm),
