@@ -1027,8 +1027,11 @@ c     If dir is "in" and name ends with restart_in, dont touch it.
       if (trim(dir) == "in") then
          restart_name=trim(flnmrsi)
          n=len_trim(restart_name)
-         if (n>=10 .and. restart_name(n-9:n) == "restart_in") then
-            return
+cALFA         if (n>=10 .and. restart_name(n-9:n) == "restart_in") then
+        if (n>=10 ) then
+           if (restart_name(n-9:n) == "restart_in") then
+             return
+           end if
          end if
 c     If dir is "out" and name ends with restart_out, dont touch it.
       elseif (trim(dir) == "out") then

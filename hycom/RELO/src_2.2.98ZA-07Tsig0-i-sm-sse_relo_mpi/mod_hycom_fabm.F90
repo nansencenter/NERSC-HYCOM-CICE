@@ -35,7 +35,9 @@ module mod_hycom_fabm
    real, allocatable :: bottom_stress(:, :)
    logical, allocatable :: mask(:, :, :)
    integer, allocatable :: kbottom(:, :)
+! CAGLAR
    integer, allocatable :: kbottomn(:, :)
+! CAGLAR
    real, allocatable :: h(:, :, :)
    real, allocatable, target :: fabm_surface_state(:, :, :, :)
    real, allocatable, target :: fabm_bottom_state(:, :, :, :)
@@ -131,7 +133,9 @@ contains
         allocate(bottom_stress(ii, jj))
         allocate(mask(ii, jj, kk))
         allocate(kbottom(ii, jj))
+! CAGLAR
         allocate(kbottomn(ii, jj))
+! CAGLAR
         allocate(h(ii, jj, kk))
         allocate(fabm_surface_state(1-nbdy:ii+nbdy, 1-nbdy:jj+nbdy, 2, size(fabm_model%surface_state_variables)))
         allocate(fabm_bottom_state(1-nbdy:ii+nbdy, 1-nbdy:jj+nbdy, 2, size(fabm_model%bottom_state_variables)))
@@ -426,13 +430,7 @@ contains
 !
       ! Send state at midpoint time=t (time index m) to FABM.
       ! As per leapfrog spec, fluxes at this time are used to update the state at t-delta_t to t+delta_t (both stored at time index n)
-      ! This also sets FABM's mask, which will exclude layers that are vanishingly thin at either time m or n (or both).
       call update_fabm_data(m, initializing=.false.)  ! skipping thin layers
-
-      ! Get index of bottom layers at the next time step.
-      ! For that we use time index n, which assumes dp(:,:,:,n) has already been updated!
-      ! A (partial?) update seems to happen in cnuity, which is indeed called before trcupd.
-      call get_bottom_k(n, kbottomn)
 
       ! Store old surface/bottom state for later application of Robert-Asselin filter.
       fabm_surface_state_old = fabm_surface_state(:, :, n, :)
@@ -486,13 +484,15 @@ contains
         flux = 0
         sms_bt = 0
         call fabm_do_bottom(fabm_model, 1, ii, j, flux, sms_bt)
+        do ivar=1,size(fabm_model%bottom_state_variables)
+          fabm_bottom_state(1:ii, j, n, ivar) = fabm_bottom_state(1:ii, j, n, ivar) + delt1 * sms_bt(1:ii, ivar)
+        end do
         do i=1,ii
-          if (kbottomn(i, j) > 0) then
-            fabm_bottom_state(i, j, n, :) = fabm_bottom_state(i, j, n, :) + delt1 * sms_bt(i, :)
-            tracer(i, j, kbottomn(i, j), n, :) = tracer(i, j, kbottomn(i, j), n, :) + delt1 * flux(i, :)/dp(i, j, kbottomn(i, j), n)*onem
+          if (SEA_P) then
+            tracer(i, j, kbottom(i, j), n, :) = tracer(i, j, kbottom(i, j), n, :) + delt1 * flux(i, :)/h(i, j, kbottom(i, j))
 #ifdef FABM_CHECK_NAN
-            if (any(isnan(tracer(i, j, kbottomn(i, j), n, :)))) then
-              write (*,*) 'NaN after do_bottom:', tracer(i, j, kbottomn(i, j), n, :), flux(i, :), dp(i, j, kbottomn(i, j), n)/onem)
+            if (any(isnan(tracer(i, j, kbottom(i, j), n, :)))) then
+              write (*,*) 'NaN after do_bottom:', tracer(i, j, kbottom(i, j), n, :), flux(i, :), h(i, j, kbottom(i, j))
               stop
             end if
 #endif
@@ -508,13 +508,15 @@ contains
         flux = 0
         sms_sf = 0
         call fabm_do_surface(fabm_model, 1, ii, j, flux, sms_sf)
+        do ivar=1,size(fabm_model%surface_state_variables)
+          fabm_surface_state(1:ii, j, n, ivar) = fabm_surface_state(1:ii, j, n, ivar) + delt1 * sms_sf(1:ii, ivar)
+        end do
         do i=1,ii
-          if (kbottomn(i, j) > 0) then
-            fabm_surface_state(i, j, n, :) = fabm_surface_state(i, j, n, :) + delt1 * sms_sf(i, :)
-            tracer(i, j, 1, n, :) = tracer(i, j, 1, n, :) + delt1 * flux(i, :)/dp(i, j, 1, n)*onem
+          if (SEA_P) then
+            tracer(i, j, 1, n, :) = tracer(i, j, 1, n, :) + delt1 * flux(i, :)/h(i, j, 1)
 #ifdef FABM_CHECK_NAN
             if (any(isnan(tracer(i, j, 1, n, :)))) then
-              write (*,*) 'NaN after do_surface:', tracer(i, j, 1, n, :), flux(i, :), dp(i, j, 1, n)/onem
+              write (*,*) 'NaN after do_surface:', tracer(i, j, 1, n, :), flux(i, :), h(i, j, 1)
               stop
             end if
 #endif
@@ -566,9 +568,23 @@ contains
       do j=1,jj
         do i=1,ii
           if (SEA_P) then
-            do k=min(kbottomn(i, j),kbottom(i, j))+1, kk
-               tracer(i, j, k, n, :) = tracer(i, j, min(kbottomn(i, j),kbottom(i, j)), n, :)
+! CAGLAR
+!do k=kk,1,-1
+!   if (dp(i, j, k, n)/onem>0.1) exit
+!end do
+!kbottomn(i, j) = max(k, 2)
+!if (kbottomn(i, j)<kbottom(i, j) ) then
+!  do k=kbottomn(i, j)+1,kk
+!    tracer(i, j, k, n, :) = tracer(i, j, kbottomn(i, j), n, :)
+!  enddo
+!else
+! CAGLAR
+            do k=kbottom(i, j)+1, kk
+               tracer(i, j, k, n, :) = tracer(i, j, kbottom(i, j), n, :)
             end do
+! CAGLAR
+!endif
+! CAGLAR
           end if
         end do
       end do
@@ -625,8 +641,22 @@ contains
 
       real :: w(ii, kk, size(fabm_model%state_variables))
       real :: flux(ii, 0:kk)
+!      integer, allocatable :: kbottomv(:, :)
       integer :: i, j, k, ivar, kabove
       real, parameter :: epsilon = 1e-8
+!      allocate(kbottomv(ii, jj))
+!
+!        kbottomv = 0
+!        do j=1,jj
+!            do i=1,ii
+!              if (SEA_P) then
+!                   do k=kk,1,-1
+!                     if (dp(i, j, k, n)/onem > 0.1) exit
+!                   end do
+!                   kbottomv(i, j) = max(k, 2)
+!                 end if
+!            end do
+!        end do
 
       do j=1,jj
         ! Get vertical velocities per tracer (m/s, > 0 for floating, < 0  for sinking)
@@ -656,15 +686,13 @@ contains
               if (dp(i, j, k, n) > 0) kabove = k
               if (flux(i, k) /= 0) then
                 ! non-zero flux across interface
-                if (dp(i, j, k+1, n)/onem <= 0.1) then ! THIS IS NOT THE BEST SOLUTION BUT MAKES THINGS STABLE AT THE MOMENT
+                if (dp(i, j, k+1, n) == 0) then
                   ! layer below is collapsed (height = 0) - move flux to next interface
-!                  flux(i, k+1) = flux(i, k+1) + flux(i, k)
-                flux(i, k) = 0
+                  flux(i, k+1) = flux(i, k+1) + flux(i, k)
                 else
-                  ! layer below has non-zero height, BUT RESTRICTED TO BE DIVIED BY 1 AT LEAST TO PREVENT ACCUMULATION IN THIN LAYERS
-                  !                                  TO DO: MAYBE ALLOW ACCUMULATION AT THE DEEPEST LAYER?
-                  tracer(i, j, kabove, n, ivar) = tracer(i, j, kabove, n, ivar) + flux(i, k)*timestep/max(dp(i, j, kabove, n)/onem,1.0)
-                  tracer(i, j, k+1, n, ivar) = tracer(i, j, k+1, n, ivar) - flux(i, k)*timestep/max(dp(i, j, k+1, n)/onem,1.0)
+                  ! layer below has non-zero height
+                  tracer(i, j, kabove, n, ivar) = tracer(i, j, kabove, n, ivar) + flux(i, k)*timestep/dp(i, j, kabove, n)*onem
+                  tracer(i, j, k+1, n, ivar) = tracer(i, j, k+1, n, ivar) - flux(i, k)*timestep/dp(i, j, k+1, n)*onem
                 end if
               end if
             end do
@@ -673,26 +701,6 @@ contains
       end do ! j
 
     end subroutine vertical_movement
-
-    subroutine get_bottom_k(index, kbottom)
-        integer, intent(in)  :: index
-        integer, intent(out) :: kbottom(ii, jj)
-
-        real, parameter :: h_min = 0.1
-        integer :: i, j, k
-
-        kbottom = 0
-        do j=1,jj
-            do i=1,ii
-              if (SEA_P) then
-                do k = kk, 1, -1
-                  if (dp(i, j, k, index)/onem > h_min) exit
-                end do
-                kbottom(i, j) = max(k, 2)
-              end if
-            end do
-        end do
-    end subroutine get_bottom_k
 
     subroutine update_fabm_data(index, initializing)
         integer, intent(in) :: index
@@ -706,22 +714,24 @@ contains
         ! Update cell thicknesses (m)
         h(:, :, :) = dp(1:ii, 1:jj, 1:kk, index)/onem
 
-        ! Update interior mask (all cells set to .true. will be processed by FABM) and index of bottom layer.
-        if (initializing) then
-          mask = .true.
-          kbottom = kk
-        else
-          ! Get index of bottom for the time step at which we evaluate sinks/sources.
-          call get_bottom_k(index, kbottom)
-
-          ! Process points only if their layer has not vanished at the time of evaluation.
-          mask = .false.
-          do j=1,jj
-              do i=1,ii
-                  mask(i, j, 1:kbottom(i, j)) = .true.
-              end do
-          end do
-        end if
+        ! Update mask and kbottom
+        kbottom = 0
+        mask = .false.
+        do j=1,jj
+            do i=1,ii
+              if (SEA_P) then
+                 if (initializing) then
+                   kbottom(i, j) = kk
+                 else
+                   do k=kk,1,-1
+                     if (h(i, j, k)>0.1) exit
+                   end do
+                   kbottom(i, j) = max(k, 2)
+                 end if
+                 mask(i, j, 1:kbottom(i, j)) = .true.
+              end if
+            end do
+        end do
 
         if (.not.initializing) then
           call fabm_update_time(fabm_model, real(nstep))
