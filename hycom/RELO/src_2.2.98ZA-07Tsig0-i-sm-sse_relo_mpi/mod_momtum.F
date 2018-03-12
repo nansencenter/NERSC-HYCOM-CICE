@@ -878,7 +878,7 @@ c
 *    &   '   wind,vpmx,airt,sst =',wind,vpmx,airt,sst
 *
       rair = 1.22
-      rair = 1.0/rair
+      qrair = 1.0/rair
 
       zi = 10.0
       tv = (airt+tzero)*(1.0+0.608*vpmx)  !in Kelvin
