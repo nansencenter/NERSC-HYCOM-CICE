@@ -93,6 +93,7 @@ export RLX=`grep "'relax ' =" blkdat.input | awk '{printf("%1d", $1)}'`
 export THKDF4=`grep "'thkdf4' =" blkdat.input | awk '{printf("%f", $1)}'`
 export KAPREF=`grep "'kapref' =" blkdat.input | awk '{printf("%f", $1)}'`
 export VSIGMA=`grep "'vsigma' =" blkdat.input | awk '{printf("%1d", $1)}'`
+export STDFLG=`grep "'stdflg' =" blkdat.input | awk '{printf("%1d", $1)}'`
 export BNSTFQ=$(blkdat_get blkdat.input bnstfq)
 export NESTFQ=$(blkdat_get blkdat.input nestfq)
 export THKDF2=$(blkdat_get blkdat.input thkdf2)
@@ -146,6 +147,7 @@ echo "SSS    is $SSSRLX"
 echo "SST    is $SSTRLX"
 echo "BNSTFQ is $BNSTFQ"
 echo "NESTFQ is $NESTFQ"
+echo "STDFLG is $STDFLG"
 echo "--------------------"
 
 # Check baroclinic time step 
@@ -436,7 +438,27 @@ if [ $tmp -eq 1 -o $tmp2 -eq 1 ] ; then
       tellerror "Nesting dir $nest does not exist"
    fi
 fi
-
+#export waveSDIR=/work/shared/nersc/msc/STOKES/Globww3/tmp
+#export  waveSDIR=/work/shared/nersc/msc/STOKES/Globww3
+echo "===================================================="
+echo "STDFLG =  $STDFLG"
+if [ $STDFLG -eq 1 ] ; then
+ echo "===================================================="
+ echo " -------Setting up Wave Stokes Coriolis forcing----"
+ for foo in  forcing.stokex.a forcing.stokex.b forcing.stokey.a forcing.stokey.b\
+     forcing.transx.a forcing.transx.b forcing.transy.a forcing.transy.b\
+     forcing.tauwx.a  forcing.tauwx.b forcing.tauwy.a  forcing.tauwy.b \
+     forcing.twomx.a  forcing.twomx.b forcing.twomy.a  forcing.twomy.b \
+     forcing.t01.a    forcing.t01.b     ; do
+ 
+    echo "|--> linking to $waveSDIR/${foo}"
+     ln -sf $waveSDIR/${foo} . ||  tellerror "Could not fetch stokes forcing"
+ done
+ echo "===================================================="
+ else
+    echo "STD=F: No attempt to link to  wave data in SCRATCH" 
+fi
+#read -t 5 
 # Need ports.input file in these cases
 if [ $tmp -eq 1 -a $LBFLAG -ne 2 -a $LBFLAG -ne 4 ] ; then
       tellerror "Must have lbflag = 2 or 4 when bnstfq <> 0.0 "
