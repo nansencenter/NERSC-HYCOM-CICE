@@ -225,6 +225,56 @@ c
 c
       mbdy = 6
 c
+
+C$RMY c   >>>>>>>>>>>>>>>>wave induced pressure      
+C$RMY #if defined(STOKES_3D)
+C$RMY       if (stpres) then
+C$RMY          margin = 0
+C$RMY !$OMP PARALLEL DO PRIVATE(j,i)
+C$RMY !$OMP&         SCHEDULE(STATIC,jblk)
+C$RMY          do j = 1-margin, jj+margin
+C$RMY          do i = 1-margin, ii+margin
+C$RMY             if (SEA_U) then
+C$RMY                utotn(i,j) = utotn(i,j)
+C$RMY      .                 - (ws0*(sj(i,j,ls0)-sj(i-1,j,ls0)) +
+C$RMY      .                    ws1*(sj(i,j,ls1)-sj(i-1,j,ls1)))*scuxi(i,j)
+C$RMY             endif !iu
+C$RMY             if (SEA_V) then
+C$RMY                vtotn(i,j) = vtotn(i,j)
+C$RMY      .                 - (ws0*(sj(i,j,ls0)-sj(i,j-1,ls0)) +
+C$RMY      .                    ws1*(sj(i,j,ls1)-sj(i,j-1,ls1)))*scvyi(i,j)
+C$RMY             endif !iv
+C$RMY          enddo !i
+C$RMY          enddo !j
+C$RMY       endif
+C$RMY #endif
+C$RMY c
+C$RMY c   >>>>>>>>>>>>>>>>wave induced radiation stress
+C$RMY #if defined(STOKES_2D)
+C$RMY       margin = 0
+C$RMY !$OMP PARALLEL DO PRIVATE(j,i)
+C$RMY !$OMP&         SCHEDULE(STATIC,jblk)
+C$RMY       do j = 1-margin, jj+margin
+C$RMY       do i = 1-margin, ii+margin
+C$RMY          if (SEA_U) then
+C$RMY             utotn(i,j) = utotn(i,j)
+C$RMY      .              - ( ws0*d_sx(i,j,ls0) + ws1*d_sx(i,j,ls1) )
+C$RMY      .               / max(onem,
+C$RMY      .                 0.5*(pbot(i-1,j)*onetai(i-1,j)+pbavg(i-1,j,m) + 
+C$RMY      .                      pbot(i,j)*onetai(i,j)    +pbavg(i,j,m)))
+C$RMY          endif !iu
+C$RMY          if (SEA_V) then
+C$RMY             vtotn(i,j) = vtotn(i,j)
+C$RMY      .              - ( ws0*d_sy(i,j,ls0) + ws1*d_sy(i,j,ls1) )
+C$RMY      .               / max(onem,
+C$RMY      .                 0.5*(pbot(i-1,j)*onetai(i,j-1)+pbavg(i,j-1,m) + 
+C$RMY      .                      pbot(i,j)*onetai(i,j)    +pbavg(i,j,m)))
+C$RMY          endif !iv
+C$RMY       enddo !i
+C$RMY       enddo !j
+C$RMY #endif
+
+c
 c --- utotn,vtotn from momtum is time step t-1 to t+1 barotropic tendency
       call xctilr(utotn(  1-nbdy,1-nbdy    ),1, 1, 6,6, halo_uv)
       call xctilr(vtotn(  1-nbdy,1-nbdy    ),1, 1, 6,6, halo_vv)

@@ -26,9 +26,10 @@
 #KAL - ARCH must now be set before running Make_cice.csh script. It is of type
 #KAL - xt4.hexagon ...
 setenv TYPE cice
-#setenv ARCH Linux.sisu.intel
+#setenv ARCH Linux.sisu.intel   
 setenv CICE_FLAG 2
-echo "(1) $ARCH"
+echo "(1) ARCH = $ARCH"
+echo "if error: make sure to set the correct ARCH in Make_cice.csh"
 echo "Make_cice.csh: Environment variable TYPE=$TYPE"
 echo "Make_cice.csh: Environment variable ARCH=$ARCH"
 
