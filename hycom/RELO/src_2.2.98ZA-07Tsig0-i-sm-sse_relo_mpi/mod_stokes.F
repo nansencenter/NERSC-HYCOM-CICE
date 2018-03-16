@@ -476,7 +476,6 @@ C$$$            call preambl_print(preambl)
 C$$$         else
 C$$$            tm01(:,:,:) = 0.
 C$$$         endif
-c
 C$2DIM c ---   read in the Stokes Drift interface depths
 C$2DIM c
 C$2DIM         do k=1,nsdzi
@@ -1084,7 +1083,7 @@ c
       real    ,parameter :: betaa=1.0
       real    zbot,ztop, Vzbot,Vztop    !stokes depth  
       logical hycom_isnaninf
-      real    s1d(nsdzi,2),ts1d(2)   !input Stokes fields 
+      real    ts1d(2)     !input Stokes trans. 
       real    f1dphil(kdm,2),       !Phillips actua. prof. 
      &        f1dphilavg(kdm,2),    !Phillips averaged prof.
      &        prsf(kdm+1)           !model layer interfaces
@@ -1105,14 +1104,13 @@ C$2DIM      &                     ws1*usdz(i,j,2,k)
 C$2DIM                 s1d(k,2) = ws0*vsdz(i,j,1,k) +
 C$2DIM      &                     ws1*vsdz(i,j,2,k)
 C$2DIM               enddo             !k 1:nsdzi  
-C    ---  transport at i,j
+C    --- input transport at i,j (time interp.)
               ts1d(1) = ws0*tusd(i,j,1) +
      &                  ws1*tusd(i,j,2)
               ts1d(2) = ws0*tvsd(i,j,1) +
      &                  ws1*tvsd(i,j,2)
 C    ---  comp speed and angle of the transport
 C    ---  comp stokes surface speed              
-c              v0sp=sqrt(s1d(1,1)**2+s1d(1,2)**2)
               v0sp=sqrt(usds(i,j)**2+vsds(i,j)**2) 
               tvsp=sqrt(ts1d(1)**2+ts1d(2)**2)
               thetatv0=atan2(ts1d(2),ts1d(1))
@@ -1126,33 +1124,33 @@ c    --  Now comp layer averaged profile
             write (lp,103) nstep,itest+i0,jtest+j0,
      .      ' stokes_forfun: Phlavgsp  Phlsp  usdz      dpth'
           endif  
-       endif
-             sum0=0.0
-             prsf(1)=0.0
-             do k=1,kk
-c                prsf(k+1) = p(i,j,k+1)
-                prsf(k+1)=min(prsf(k)+dp(i,j,k,n),p(i,j,kk+1))
-                !     layer zbot,ztop
-                ztop=prsf(k)/onem    ! top    
-                zbot=prsf(k+1)/onem  ! bot
-                ! 
-c              actual profile                    
-                v0spzi=phillips_profile(v0sp,
-     $              kbar,-1*ztop,betaa)                   
-                f1dphil(k,1)=v0spzi*cos(thetatv0)
-                f1dphil(k,2)=v0spzi*sin(thetatv0)
-!              layer_averaged profile               
-                Vztopsp=phillips_transportz(v0sp,
-     $                                  kbar,-1*ztop,betaa)
-                Vzbotsp=phillips_transportz(v0sp,
-     $                                  kbar,-1*zbot,betaa)
-                v0spzilayer=(Vzbotsp-Vztopsp)/max(zbot-ztop,epsil)
-                f1dphilavg(k,1)=v0spzilayer*cos(thetatv0)
-                f1dphilavg(k,2)=v0spzilayer*sin(thetatv0)
+         endif
+         sum0=0.0
+         prsf(1)=0.0
+         do k=1,kk
+c            prsf(k+1) = p(i,j,k+1)
+            prsf(k+1)=min(prsf(k)+dp(i,j,k,n),p(i,j,kk+1))
+            !   layer k:  zbot,ztop
+            ztop=prsf(k)/onem    ! top    
+            zbot=prsf(k+1)/onem  ! bot
+            ! 
+c   --   actual Stokes profile (not really needed, just for debugging)                   
+            v0spzi=phillips_profile(v0sp,
+     $          kbar,-1*ztop,betaa)                   
+            f1dphil(k,1)=v0spzi*cos(thetatv0)
+            f1dphil(k,2)=v0spzi*sin(thetatv0)
+c   --      layer_averaged Stokes profile               
+            Vztopsp=phillips_transportz(v0sp,
+     $                              kbar,-1*ztop,betaa)
+            Vzbotsp=phillips_transportz(v0sp,
+     $                              kbar,-1*zbot,betaa)
+            v0spzilayer=(Vzbotsp-Vztopsp)/max(zbot-ztop,epsil)
+            f1dphilavg(k,1)=v0spzilayer*cos(thetatv0)
+            f1dphilavg(k,2)=v0spzilayer*sin(thetatv0)
 C     ------ Finish   computing layeravg stokes
-C             now update assign stokes at p points
-                usdp(i,j,k) = f1dphilavg(k,1)
-                vsdp(i,j,k) = f1dphilavg(k,2)
+C            now update assign stokes at p points
+            usdp(i,j,k) = f1dphilavg(k,1)
+            vsdp(i,j,k) = f1dphilavg(k,2)
 c   >---------------------------------------------------------
 C$$        if     (debug_stokes) then
 C$$  103    format (i9,2i5,a)
