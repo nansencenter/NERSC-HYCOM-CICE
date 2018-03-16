@@ -322,12 +322,11 @@ c
         do i=1-margin,ii+margin
           if (SEA_U) then
             do k=1,kk
-#if defined(STOKES)                
-      uold2(i,j,k   )=u(i,j,k,n)+usd(i,j,k)+ubavg(i,j,n)
-      uold2(i,j,k+kk)=u(i,j,k,n)+usd(i,j,k)+ubavg(i,j,n)
-#else                
               uold2(i,j,k   )=u(i,j,k,n)+ubavg(i,j,n)
               uold2(i,j,k+kk)=u(i,j,k,n)+ubavg(i,j,n)
+#if defined(STOKES)                
+              uold2(i,j,k   )=uold2(i,j,k   )+usd(i,j,k)
+              uold2(i,j,k+kk)=uold2(i,j,k+kk)+usd(i,j,k)
 #endif              
             enddo !k
             dlondx(i,j)=(plon(i  ,j)*scpy(i  ,j)- 
@@ -340,12 +339,11 @@ c
           endif !iu
           if (SEA_V) then
             do k=1,kk
-#if defined(STOKES)                
-      vold2(i,j,k   )=v(i,j,k,n)+vsd(i,j,k)+vbavg(i,j,n)+vsdbavg(i,j)
-      vold2(i,j,k+kk)=v(i,j,k,n)+vsd(i,j,k)+vbavg(i,j,n)+vsdbavg(i,j)
-#else                 
               vold2(i,j,k   )=v(i,j,k,n)+vbavg(i,j,n)
               vold2(i,j,k+kk)=v(i,j,k,n)+vbavg(i,j,n)
+#if defined(STOKES)                
+              vold2(i,j,k   )=vold2(i,j,k   )+vsd(i,j,k)
+              vold2(i,j,k+kk)=vold2(i,j,k+kk)+vsd(i,j,k)
 #endif                  
             enddo !k
             dlondy(i,j)=(plon(i,j  )*scpx(i,j  )-

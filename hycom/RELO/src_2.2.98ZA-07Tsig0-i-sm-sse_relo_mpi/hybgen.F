@@ -346,6 +346,7 @@ cdiag         if (i.eq.itest .and. j.eq.jtest) then
 cdiag           write (lp,'(i6,1x,5f9.3)')
 cdiag.          k,dp0ij(k)*qonem,q*qonem,p(i,j,k)*qonem-dp0cum(k)*qonem,
 cdiag.                                   p(i,j,k)*qonem,dp0cum(k)*qonem
+cdiag.            p(i,j,k)*qonem,dp0cum(k)*qonem
 cdiag         endif !debug
         enddo !k
       endif !qdep<1:else
@@ -500,6 +501,130 @@ cdiag          write(lp,'(a,i3)')
 cdiag     &          'hybgen, deepest inflated layer:',kp
 cdiag          call flush(lp)
 cdiag        endif !debug
+      elseif (k.gt.fixlay+1 .and. qdep.eq.1.0 .and.  !layer not fixed depth
+     &        p(i,j,k)-p(i,j,k-1).ge.dpthin   .and.  !layer above not too thin
+     &        theta(i,j,k)-epsil.gt.th3d(i,j,k,n) .and.
+     &         th3d(i,j,k-1,n)  .gt.th3d(i,j,k,n)      ) then
+c
+c ---   water in the deepest inflated layer with significant thickness
+c ---   (kp) is too light, and it is lighter than the layer above.
+c ---
+c ---   swap the entire layer with the one above.
+cdiag        if (i.eq.itest .and. j.eq.jtest) then
+cdiag          write(lp,'(a,i3,f8.5,5f10.5)')
+cdiag     &      'hybgen, original:',
+cdiag     &      k-1,0.0,temp(i,j,k-1,n),saln(i,j,k-1,n),
+cdiag     &          th3d(i,j,k-1,n)+thbase,theta(i,j,k-1)+thbase
+cdiag          write(lp,'(a,i3,f8.5,5f10.5)')
+cdiag     &      'hybgen, original:',
+cdiag     &      k,0.0,temp(i,j,k,  n),saln(i,j,k,  n),
+cdiag     &          th3d(i,j,k,  n)+thbase,theta(i,j,k  )+thbase
+cdiag        endif !debug
+        if     (p(i,j,k+1)-p(i,j,k).le.p(i,j,k)-p(i,j,k-1)) then
+c ---     bottom layer is thinner, take entire bottom layer
+c---      note the double negative in T=T-q*(T-T'), equiv. to T=T+q*(T'-T)
+          s1d(k-1,1) = temp(i,j,k-1,n)
+          s1d(k-1,2) = saln(i,j,k-1,n)
+          s1d(k-1,3) = th3d(i,j,k-1,n)
+          q = (p(i,j,k+1)-p(i,j,k))/(p(i,j,k)-p(i,j,k-1))  !<=1.0
+          if     (hybflg.eq.0) then  !T&S
+            temp(i,j,k-1,n)=temp(i,j,k-1,n)-q*(temp(i,j,k-1,n) -
+     &                                         temp(i,j,k,  n)  )
+            saln(i,j,k-1,n)=saln(i,j,k-1,n)-q*(saln(i,j,k-1,n) -
+     &                                         saln(i,j,k,  n)  )
+            th3d(i,j,k-1,n)=sig(temp(i,j,k-1,n),saln(i,j,k-1,n))-thbase
+          elseif (hybflg.eq.1) then  !th&S
+            th3d(i,j,k-1,n)=th3d(i,j,k-1,n)-q*(th3d(i,j,k-1,n) -
+     &                                         th3d(i,j,k,  n)  )
+            saln(i,j,k-1,n)=saln(i,j,k-1,n)-q*(saln(i,j,k-1,n) -
+     &                                         saln(i,j,k,  n)  )
+            temp(i,j,k-1,n)=tofsig(th3d(i,j,k-1,n)+thbase,
+     &                             saln(i,j,k-1,n))
+          elseif (hybflg.eq.2) then  !th&T
+            th3d(i,j,k-1,n)=th3d(i,j,k-1,n)-q*(th3d(i,j,k-1,n) -
+     &                                         th3d(i,j,k,  n)  )
+            temp(i,j,k-1,n)=temp(i,j,k-1,n)-q*(temp(i,j,k-1,n) -
+     &                                         temp(i,j,k,  n)  )
+            saln(i,j,k-1,n)=sofsig(th3d(i,j,k-1,n)+thbase,
+     &                             temp(i,j,k-1,n))
+          endif
+          temp(i,j,k,n) = s1d(k-1,1)
+          saln(i,j,k,n) = s1d(k-1,2)
+          th3d(i,j,k,n) = s1d(k-1,3)
+          do ktr= 1,ntracr
+            s1d(k-1,2+ktr)        = tracer(i,j,k-1,n,ktr)
+            tracer(i,j,k-1,n,ktr) = tracer(i,j,k-1,n,ktr)-
+     &                                   q*(tracer(i,j,k-1,n,ktr) -
+     &                                      tracer(i,j,k,  n,ktr)  )
+            tracer(i,j,k,  n,ktr) = s1d(k-1,2+ktr)
+          enddo !ktr
+          if (mxlmy) then
+            s1d(k-1,ntracr+3) = q2( i,j,k-1,n)
+            s1d(k-1,ntracr+4) = q2l(i,j,k-1,n)
+            q2( i,j,k-1,n)    = q2( i,j,k-1,n)-
+     &                            q*(q2( i,j,k-1,n)-q2( i,j,k,n))
+            q2l(i,j,k-1,n)    = q2l(i,j,k-1,n)-
+     &                            q*(q2l(i,j,k-1,n)-q2l(i,j,k,n))
+            q2( i,j,k,  n)    = s1d(k-1,ntracr+3)
+            q2l(i,j,k,  n)    = s1d(k-1,ntracr+4)
+          endif
+        else
+c ---     bottom layer is thicker, take entire layer above
+          s1d(k,1) = temp(i,j,k,n)
+          s1d(k,2) = saln(i,j,k,n)
+          s1d(k,3) = th3d(i,j,k,n)
+          q = (p(i,j,k)-p(i,j,k-1))/(p(i,j,k+1)-p(i,j,k))  !<1.0
+          if     (hybflg.eq.0) then  !T&S
+            temp(i,j,k,n)=temp(i,j,k,n)+q*(temp(i,j,k-1,n) -
+     &                                     temp(i,j,k,  n)  )
+            saln(i,j,k,n)=saln(i,j,k,n)+q*(saln(i,j,k-1,n) -
+     &                                       saln(i,j,k,  n)  )
+            th3d(i,j,k,n)=sig(temp(i,j,k,n),saln(i,j,k,n))-thbase
+          elseif (hybflg.eq.1) then  !th&S
+            th3d(i,j,k,n)=th3d(i,j,k,n)+q*(th3d(i,j,k-1,n) -
+     &                                     th3d(i,j,k,  n)  )
+            saln(i,j,k,n)=saln(i,j,k,n)+q*(saln(i,j,k-1,n) -
+     &                                     saln(i,j,k,  n)  )
+            temp(i,j,k,n)=tofsig(th3d(i,j,k,n)+thbase,saln(i,j,k,n))
+          elseif (hybflg.eq.2) then  !th&T
+            th3d(i,j,k,n)=th3d(i,j,k,n)+q*(th3d(i,j,k-1,n) -
+     &                                     th3d(i,j,k,  n)  )
+            temp(i,j,k,n)=temp(i,j,k,n)+q*(temp(i,j,k-1,n) -
+     &                                     temp(i,j,k,  n)  )
+            saln(i,j,k,n)=sofsig(th3d(i,j,k,n)+thbase,temp(i,j,k,n))
+          endif
+          temp(i,j,k-1,n) = s1d(k,1)
+          saln(i,j,k-1,n) = s1d(k,2)
+          th3d(i,j,k-1,n) = s1d(k,3)
+          do ktr= 1,ntracr
+            s1d(k,2+ktr)          = tracer(i,j,k,n,ktr)
+            tracer(i,j,k,  n,ktr) = tracer(i,j,k,n,ktr)+
+     &                                   q*(tracer(i,j,k-1,n,ktr) -
+     &                                      tracer(i,j,k,  n,ktr)  )
+            tracer(i,j,k-1,n,ktr) = s1d(k,2+ktr)
+          enddo !ktr
+          if (mxlmy) then
+            s1d(k,ntracr+3)   = q2( i,j,k,n)
+            s1d(k,ntracr+4)   = q2l(i,j,k,n)
+            q2( i,j,k,  n)    = q2( i,j,k,n)-
+     &                            q*(q2( i,j,k-1,n)-q2( i,j,k,n))
+            q2l(i,j,k,  n)    = q2l(i,j,k,n)-
+     &                            q*(q2l(i,j,k-1,n)-q2l(i,j,k,n))
+            q2( i,j,k-1,n)    = s1d(k,ntracr+3)
+            q2l(i,j,k-1,n)    = s1d(k,ntracr+4)
+          endif
+        endif !bottom too light
+cdiag        if (i.eq.itest .and. j.eq.jtest) then
+cdiag          write(lp,'(a,i3,f8.5,5f10.5)')
+cdiag     &      'hybgen, overturn:',
+cdiag     &      k-1,q,temp(i,j,k-1,n),saln(i,j,k-1,n),
+cdiag     &          th3d(i,j,k-1,n)+thbase,theta(i,j,k-1)+thbase
+cdiag          write(lp,'(a,i3,f8.5,5f10.5)')
+cdiag     &      'hybgen, overturn:',
+cdiag     &      k,  q,temp(i,j,k,  n),saln(i,j,k,  n),
+cdiag     &          th3d(i,j,k,  n)+thbase,theta(i,j,k  )+thbase
+cdiag          call flush(lp)
+cdiag        endif !debug
       endif
 c
       k  = kp  !at least 2
@@ -522,6 +647,7 @@ c ---   and one exactly matching the T&S properties of layer k-1.
 c ---   To prevent "runaway" T or S, the result satisfies either
 c ---     abs(T.k - T.k-1) <= abs(T.k-2 - T.k-1) or
 c ---     abs(S.k - S.k-1) <= abs(S.k-2 - S.k-1) 
+c ---     th3d.k-1 - th3d.k-N is at least theta(k-1) - theta(k-2)
 c ---   It is also limited to a 50% change in layer thickness.
 c
 cdiag        if (i.eq.itest .and. j.eq.jtest) then
@@ -530,12 +656,21 @@ cdiag     &      'hybgen, deepest inflated layer too light   (stable):',k
 cdiag          call flush(lp)
 cdiag        endif !debug
 c
-        delsm=abs(saln(i,j,k-2,n)-saln(i,j,k-1,n))
+        ka = 1
+        do ktr= k-2,2,-1
+          if     ( th3d(i,j,k-1,n)- th3d(i,j,ktr,n).ge.
+     &            theta(i,j,k-1)  -theta(i,j,k-2)     ) then
+            ka = ktr  !usually k-2
+            exit
+          endif
+        enddo !ktr
+c
+        delsm=abs(saln(i,j,ka,n)-saln(i,j,k-1,n))
         dels =abs(saln(i,j,k-1,n)-saln(i,j,k,  n))
-        deltm=abs(temp(i,j,k-2,n)-temp(i,j,k-1,n))
+        deltm=abs(temp(i,j,ka,n)-temp(i,j,k-1,n))
         delt =abs(temp(i,j,k-1,n)-temp(i,j,k,  n))
 c ---   sanity check on deltm and delsm
-        q=min(temp(i,j,k-2,n),temp(i,j,k-1,n),temp(i,j,k,n))
+        q=min(temp(i,j,ka,n),temp(i,j,k-1,n),temp(i,j,k,n))
         if     (q.gt. 6.0) then
           deltm=min( deltm,  6.0*(theta(i,j,k)-theta(i,j,k-1)) )
         else  !(q.le. 6.0)
@@ -746,16 +881,27 @@ c
 c
 cdiag   if (i.eq.itest .and. j.eq.jtest) then
 cdiag     write(cinfo,'(a9,i2.2,1x)') '  do 88 k=',k
-cdiag 109 format (i9,2i5,a,a/(i9,8x,a,a,i3,f9.2,f8.2,f9.2,f8.2))
-cdiag     write(lp,109) nstep,itest+i0,jtest+j0,
-cdiag.      cinfo,':    othkns  odpth    nthkns  ndpth',
-cdiag.      (nstep,cinfo,':',ka,
-cdiag.      (pres(ka+1)-
-cdiag.       pres(ka)   )*qonem,
-cdiag.       pres(ka+1)  *qonem,
-cdiag.      (p(itest,jtest,ka+1)-
-cdiag.       p(itest,jtest,ka)   )*qonem,
-cdiag.       p(itest,jtest,ka+1)  *qonem,ka=1,kk)
+cdiag     write(lp,'(i9,2i5,a,a)') nstep,itest+i0,jtest+j0,
+cdiag.      cinfo,':     othkns    odpth    nthkns    ndpth'
+cdiag     do ka=1,kk
+cdiag       if     (pres(ka+1).eq.p(itest,jtest,ka+1) .and.
+cdiag.              pres(ka  ).eq.p(itest,jtest,ka  )      ) then
+cdiag         write(lp,'(i9,8x,a,a,i3,f10.3,f9.3)')
+cdiag.         nstep,cinfo,':',ka,
+cdiag.        (pres(ka+1)-
+cdiag.         pres(ka)   )*qonem,
+cdiag.         pres(ka+1)  *qonem
+cdiag       else
+cdiag         write(lp,'(i9,8x,a,a,i3,f10.3,f9.3,f10.3,f9.3)')
+cdiag.         nstep,cinfo,':',ka,
+cdiag.        (pres(ka+1)-
+cdiag.         pres(ka)   )*qonem,
+cdiag.         pres(ka+1)  *qonem,
+cdiag.        (p(itest,jtest,ka+1)-
+cdiag.         p(itest,jtest,ka)   )*qonem,
+cdiag.         p(itest,jtest,ka+1)  *qonem
+cdiag       endif
+cdiag     enddo !ka
 cdiag     call flush(lp)
 cdiag   endif !debug
 c
@@ -812,8 +958,13 @@ c               layer k-1 too dense, take entire layer
                 q=(theta(i,j,k)-th3d(i,j,k,  n))/
      &            (theta(i,j,k)-th3d(i,j,k-1,n))         ! -1 <= q < 0
                 p_hat0=p(i,j,k)+q*(p(i,j,k+1)-p(i,j,k))  ! <p(i,j,k)
+                if     (k.eq.fixlay+2) then
+c ---             treat layer k-1 as fixed.
+                  p_hat =p(i,j,k-1)+  max(p_hat0-p(i,j,k-1),dp0ij(k-1))
+                else
 c               maintain minimum thickess of layer k-1.
-                p_hat =p(i,j,k-1)+cushn(p_hat0-p(i,j,k-1),dp0ij(k-1))
+                  p_hat =p(i,j,k-1)+cushn(p_hat0-p(i,j,k-1),dp0ij(k-1))
+                endif !fixlay+2:else
               end if
               p_hat=min(p_hat,p(i,j,kk+1))
 c
@@ -827,9 +978,17 @@ c ---           do nothing.
      &                 p(i,j,k-1).gt.dp0cum(k-1)+tenm .and.
      &                (p(i,j,kk+1)-p(i,j,k-1).lt.thkbop .or.
      &                 p(i,j,k-1) -p(i,j,k-2).gt.qqmx*dp0ij(k-2))) then ! k.gt.2
-                p_hat2=p(i,j,k-2)+
+                if     (k.eq.fixlay+3) then
+c ---             treat layer k-2 as fixed.
+                  p_hat2=p(i,j,k-2)+
+     &                     max(p(i,j,k-1)-p_hat+p_hat0-p(i,j,k-2),
+     &                         dp0ij(k-2))
+                else
+c ---             maintain minimum thickess of layer k-2.
+                 p_hat2=p(i,j,k-2)+
      &                 cushn(p(i,j,k-1)-p_hat+p_hat0-p(i,j,k-2),
      &                       dp0ij(k-2))
+                endif !fixlay+3:else
                 if (p_hat2.lt.p(i,j,k-1)-onemm) then
                   p(i,j,k-1)=(1.0-qhrlx(k-1))*p(i,j,k-1) +
      &                            qhrlx(k-1) *max(p_hat2,
@@ -845,9 +1004,17 @@ c ---             do nothing.
                 elseif (p(i,j,k-2).gt.dp0cum(k-2)+tenm .and.
      &                 (p(i,j,kk+1)-p(i,j,k-2).lt.thkbop .or.
      &                  p(i,j,k-2) -p(i,j,k-3).gt.qqmx*dp0ij(k-3))) then
-                  p_hat3=p(i,j,k-3)+cushn(p(i,j,k-2)-p_hat+
+                  if     (k.eq.fixlay+4) then
+c ---               treat layer k-3 as fixed.
+                    p_hat3=p(i,j,k-3)+  max(p(i,j,k-2)-p_hat+
+     &                                p_hat0-p(i,j,k-3),
+     &                                dp0ij(k-3))
+                  else
+c ---               maintain minimum thickess of layer k-3.
+                   p_hat3=p(i,j,k-3)+cushn(p(i,j,k-2)-p_hat+
      &                              p_hat0-p(i,j,k-3),
      &                              dp0ij(k-3))
+                  endif !fixlay+4:else
                   if (p_hat3.lt.p(i,j,k-2)-onemm) then
                     p(i,j,k-2)=(1.0-qhrlx(k-2))*p(i,j,k-2) +
      &                              qhrlx(k-2)*max(p_hat3,
@@ -875,12 +1042,13 @@ cdiag                 endif !debug
                   endif !p_hat3
                 endif !p_hat2:blocking
               endif !blocking
-              p_hat=min(p_hat,p(i,j,kk+1))
+cAlfatih              p_hat=min(p_hat,p(i,j,kk+1))
 c
-c ---         move upper interface up or down
-              p(i,j,k)=min( (1.0-qhrlx(k))*p(i,j,k) +
-     &                           qhrlx(k) *p_hat,
-     &                      p(i,j,k+1) )
+              if (p_hat.lt.p(i,j,k)) then
+c ---           entrain layer k-1 water into layer k, move interface up.
+                   p(i,j,k)=(1.0-qhrlx(k))*p(i,j,k) +
+     &                         qhrlx(k) *p_hat
+              endif !entrain
 c
 cdiag         if (i.eq.itest .and. j.eq.jtest) then
 cdiag           write(lp,'(a,i3.2,f8.2)') 'hybgen, entrain(k) :',
@@ -2618,3 +2786,8 @@ c> Apr. 2013 -- bugfix for constant thickness layer k = 1
 c> May  2014 - use land/sea masks (e.g. ip) to skip land
 c> Feb. 2015 - when too light, include layer k+2 in "near bottom" logic
 c> Apr. 2015 - fixed a k+3 for k=kk-1 (k+3=kk+2) bug
+C ALFatih: taken from version 99 and 101
+c> Aug. 2015 - changed k-2 to k-N in lowest layer "runaway" unmixing test
+c> Aug. 2015 - overturn with the layer above if bottom layer is very light
+c> Aug. 2015 - entrain into too dense layer (only move upper interface up)
+c> Aug. 2015 - allow entrainment to increase fixlay by 1

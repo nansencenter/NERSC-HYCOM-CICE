@@ -139,12 +139,9 @@ c
             if (i.ge.1-margin) then
               if (iuopn(i,j).ne.0) then
                 q=min(dp(i  ,j,k,n),max(0.,depthu(i+1,j)-util3(i  ,j)))
-#if defined(STOKES)
-!             write(6,*)'cnuity.F line 106,i+1,j,k= ',i+1,j,k
-                utotm(i,j)=(u(i+1,j,k,m)+ubavg(i,j,m)+
-     &                     usd(i+1,j,k))*scuy(i,j)
-#else                
                 utotm(i,j)=(u(i+1,j,k,m)+ubavg(i,j,m))*scuy(i,j)
+#if defined(STOKES)
+                utotm(i,j)=utotm(i,j)+usd(i+1,j,k)*scuy(i,j)
 #endif                
                 uflux(i,j)=utotm(i,j)*q
               endif
@@ -153,12 +150,9 @@ c
             if (i.le.ii+margin) then
               if (iuopn(i,j).ne.0) then
                 q=min(dp(i-1,j,k,n),max(0.,depthu(i-1,j)-util3(i-1,j)))
-#if defined(STOKES)
-!               write(6,*)'cnuity.F line 119,i-1,j,k= ',i-1,j,k
-                utotm(i,j)=(u(i-1,j,k,m)+ubavg(i,j,m)+
-     &                      usd(i-1,j,k))*scuy(i,j)
-#else               
                 utotm(i,j)=(u(i-1,j,k,m)+ubavg(i,j,m))*scuy(i,j)
+#if defined(STOKES)
+                utotm(i,j)=utotm(i,j)+usd(i-1,j,k)*scuy(i,j)
 #endif                
                 uflux(i,j)=utotm(i,j)*q
               endif
@@ -178,12 +172,9 @@ c
             if (j.ge.1-margin) then
               if (ivopn(i,j).ne.0) then
                 q=min(dp(i,j  ,k,n),max(0.,depthv(i,j+1)-util3(i,j  )))
-#if defined(STOKES)
-!             write(6,*)'cnuity.F line 144,i,j+1,k= ',i,j+1,k
-                vtotm(i,j)=(v(i,j+1,k,m)+vbavg(i,j,m)+
-     &                      vsd(i,j+1,k))*scvx(i,j)
-#else               
                 vtotm(i,j)=(v(i,j+1,k,m)+vbavg(i,j,m))*scvx(i,j)
+#if defined(STOKES)
+                vtotm(i,j)=vtotm(i,j)+vsd(i,j+1,k)*scvx(i,j)
 #endif                
                 vflux(i,j)=vtotm(i,j)*q
               endif
@@ -192,12 +183,9 @@ c
             if (j.le.jj+margin) then
               if (ivopn(i,j).ne.0) then
                 q=min(dp(i,j-1,k,n),max(0.,depthv(i,j-1)-util3(i,j-1)))
-#if defined(STOKES)
-!             write(6,*)'cnuity.F line 144,i,j-1,k= ',i,j-1,k
-                vtotm(i,j)=(v(i,j-1,k,m)+vbavg(i,j,m)+vsd(i,j-1,k)
-     &                                   )*scvx(i,j)
-#else              
                 vtotm(i,j)=(v(i,j-1,k,m)+vbavg(i,j,m))*scvx(i,j)
+#if defined(STOKES)
+                vtotm(i,j)=vtotm(i,j)+vsd(i,j-1,k)*scvx(i,j)
 #endif                
                 vflux(i,j)=vtotm(i,j)*q
               endif
@@ -218,12 +206,9 @@ c
         do j=1-margin,jj+margin
           do i=1-margin,ii+margin
             if (SEA_U) then
-#if defined(STOKES)
-!             write(6,*)'cnuity.F line 181,i,j,k= ',i,j,k
-              utotm(i,j)=(u(i,j,k,m)+ubavg(i,j,m)+
-     &                    usd(i,j,k))*scuy(i,j)
-#else               
               utotm(i,j)=(u(i,j,k,m)+ubavg(i,j,m))*scuy(i,j)
+#if defined(STOKES)
+              utotm(i,j)=utotm(i,j)+usd(i,j,k)*scuy(i,j)
 #endif              
               if (utotm(i,j).ge.0.) then
                 q=min(dp(i-1,j,k,n),max(0.,depthu(i,j)-util3(i-1,j)))
@@ -239,11 +224,9 @@ c
 !      write(6,*)'cnuity.F line 197, j = ',j
           do i=1-margin,ii+margin
             if (SEA_V) then
-#if defined(STOKES)
-              vtotm(i,j)=(v(i,j,k,m)+vbavg(i,j,m)+vsd(i,j,k)
-     &                               )*scvx(i,j)
-#else                
               vtotm(i,j)=(v(i,j,k,m)+vbavg(i,j,m))*scvx(i,j)
+#if defined(STOKES)
+              vtotm(i,j)=vtotm(i,j)+vsd(i,j,k)*scvx(i,j)
 #endif              
               if (vtotm(i,j).ge.0.) then
                 q=min(dp(i,j-1,k,n),max(0.,depthv(i,j)-util3(i,j-1)))

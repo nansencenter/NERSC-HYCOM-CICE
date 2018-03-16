@@ -43,6 +43,10 @@ c
         return  ! diapycnal mixing only every mixfrq,mixfrq+1 time steps
       endif
 c
+      call xctilr(u(1-nbdy,1-nbdy,1,n),1,kk, 1,1, halo_uv)
+      call xctilr(v(1-nbdy,1-nbdy,1,n),1,kk, 1,1, halo_vv)
+      call xctilr(p(1-nbdy,1-nbdy,2  ),1,kk, 1,1, halo_ps)
+c
 !$OMP PARALLEL DO PRIVATE(j)
 !$OMP&             SHARED(m,n)
 !$OMP&         SCHEDULE(STATIC,jblk)
@@ -52,6 +56,8 @@ c
 !$OMP END PARALLEL DO
 c
 c --- momentum mixing
+c
+      call xctilr(vcty(1-nbdy,1-nbdy,2),1,kk, 1,1, halo_ps)
 c
 !$OMP PARALLEL DO PRIVATE(j)
 !$OMP&             SHARED(m,n)
@@ -1389,3 +1395,4 @@ c> Oct  2010 - replaced two calls to dsiglocdX with one call at mid-point
 c> Aug  2011 - replaced dpold,dpoldm with dpo
 c> July 2013 - added diws and diwm
 c> May  2014 - use land/sea masks (e.g. ip) to skip land
+c> from  2.2.99 Mar  2016 - added needed halo updates (xctilr)

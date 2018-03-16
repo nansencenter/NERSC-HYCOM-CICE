@@ -39,10 +39,18 @@ c
                 surflx(i,j) = (1.0-covice(i,j))*surflx(i,j) +
      &                                          flxice(i,j)   !cell average
                 sstflx(i,j) = (1.0-covice(i,j))*sstflx(i,j)   !relax over ocean
-                salflx(i,j) = (1.0-covice(i,j))*salflx(i,j) +
+                if     (rivers(i,j,1).eq.0.0) then  !usual case
+                  salflx(i,j) = 
+     &                        (1.0-covice(i,j))*salflx(i,j) +
      &                                          sflice(i,j) + !cell average
      &                                          rivflx(i,j) + !rivers everywhere
      &                                          sssflx(i,j)   !relax  everywhere
+                else !a river point
+                  salflx(i,j) =                 salflx(i,j) + !might be a river
+     &                                          sflice(i,j) + !cell average
+     &                                          rivflx(i,j) + !rivers evrywhere
+     &                                          sssflx(i,j)   !relax  evrywhere
+                endif !rivers
               else  !under an ice shelf
                 sswflx(i,j) = 0.0
                 surflx(i,j) = 0.0
@@ -61,10 +69,18 @@ c
               surflx(i,j) = (1.0-covice(i,j))*surflx(i,j) +
      &                                        flxice(i,j)   !cell average
               sstflx(i,j) = (1.0-covice(i,j))*sstflx(i,j)   !relax over ocean
-              salflx(i,j) = (1.0-covice(i,j))*salflx(i,j) +
+              if     (rivers(i,j,1).eq.0.0) then  !usual case
+                salflx(i,j) =
+     &                      (1.0-covice(i,j))*salflx(i,j) +
      &                                        sflice(i,j) + !cell average
      &                                        rivflx(i,j) + !rivers everywhere
      &                                        sssflx(i,j)   !relax  everywhere
+              else !a river point
+                salflx(i,j) =                 salflx(i,j) + !might be a river
+     &                                        sflice(i,j) + !cell average
+     &                                        rivflx(i,j) + !rivers evrywhere
+     &                                        sssflx(i,j)   !relax  evrywhere
+              endif !rivers
                util1(i,j) = surflx(i,j)*scp2(i,j)
                util2(i,j) = salflx(i,j)*scp2(i,j)
             endif !ip
@@ -653,7 +669,7 @@ c
 c --- thermal forcing of ocean surface, for row j.
 c
       integer i,ihr,it_a,ilat
-      real    radfl,swfl,sstrlx,wind,airt,vpmx,prcp,xtau,ytau,
+      real    radfl,swfl,swflc,sstrlx,wind,airt,vpmx,prcp,xtau,ytau,
      &        evap,evape,emnp,esst,sssf,
      &        snsibl,dsgdt,sssc,sssdif,sstdif,rmus,rmut
       real    cd0,clh,cl0,cl1,csh,
@@ -854,7 +870,7 @@ c ---     daily to diurnal shortwave correction to swfl and radfl.
      &            (1.0-xhr)*     xlat *diurnl(ihr,  ilat+1) +
      &                 xhr *(1.0-xlat)*diurnl(ihr+1,ilat  ) +
      &                 xhr *     xlat *diurnl(ihr+1,ilat+1)
-          radfl = (swscl-1.0)*swfl  !diurnal correction only
+          swflc = (swscl-1.0)*swfl  !diurnal correction only
           swfl  =  swscl     *swfl
 cdiag         if     (i.eq.itest.and.j.eq.jtest) then
 cdiag           write(lp,'(i9,a,2i5,2f8.5)')
@@ -867,16 +883,16 @@ cdiag.                                     diurnl(ihr+1,ilat+1)
 cdiag           call flush(lp)
 cdiag         endif !test
         else
-          radfl = 0.0 !no diurnal correction
+           swflc = 0.0 !no diurnal correction
         endif !dswflg
 c ---   radfl= net       radiative thermal flux (W/m^2) +ve into ocean/ice
 c ---        = Qsw+Qlw across the atmosphere to ocean or sea-ice interface
 c ---   existing radfl is the diurnal Qsw correction only
         if     (natm.eq.2) then
-          radfl=radfl + (radflx(i,j,l0)*w0+radflx(i,j,l1)*w1)
+          radfl= (radflx(i,j,l0)*w0+radflx(i,j,l1)*w1)
         else
-          radfl=radfl + (radflx(i,j,l0)*w0+radflx(i,j,l1)*w1
-     &                  +radflx(i,j,l2)*w2+radflx(i,j,l3)*w3)
+          radfl= (radflx(i,j,l0)*w0+radflx(i,j,l1)*w1
+     &            +radflx(i,j,l2)*w2+radflx(i,j,l3)*w3)
         endif !natm
         if     (lwflag.eq.-1) then
 c ---     input radflx is Qlwdn, convert to Qlw + Qsw
@@ -903,8 +919,12 @@ c ---     over-ocean longwave correction to radfl (Qsw+Qlw).
           radfl = radfl - (4.506+0.0554*tsur) * tdif
           !count the correction as a relaxation term
           sstflx(i,j) = - (4.506+0.0554*tsur) * tdif
+          !allow for any diurnal correction
+          radfl =  radfl + swflc
         else
           sstflx(i,j) = 0.0
+          !allow for any diurnal correction
+          radfl = radfl + swflc
         endif
         if     (pcipf) then
 c ---     prcp = precipitation (m/sec; positive into ocean)
@@ -976,6 +996,9 @@ c ---   ustar = U* (sqrt(N.m/kg))
       else !flxlfg==0, i.e. no flux
         swfl=0.0
         sstflx(i,j)=0.0
+        mixflx(i,j)=0.0
+        buoflx(i,j)=0.0
+        bhtflx(i,j)=0.0
         ustar( i,j)=0.0
         hekman(i,j)=0.0
       endif !flxflg
