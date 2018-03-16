@@ -370,11 +370,11 @@ c
 #endif
 #if defined(STOKES)
                 if     (stdarc) then
-                  usdp_m(i,j,k) = usdp_m(i,j,k) * qdp
-                  vsdp_m(i,j,k) = vsdp_m(i,j,k) * qdp
+                  usdp_m(i,j,k) = usdp_m(i,j,k-1)
+                  vsdp_m(i,j,k) = vsdp_m(i,j,k-1)
                 endif !stdarc
 #endif
-              endif
+              endif !dpthin:else
             endif !ip
             if (SEA_U) then
               qdp = min(depthu(i,j), 0.5*(p(i,j,k+1)+p(i-1,j,k+1))) -

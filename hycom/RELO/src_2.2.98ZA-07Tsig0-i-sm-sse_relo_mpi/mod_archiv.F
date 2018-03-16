@@ -16,6 +16,8 @@ c
      &   jpnts         ! j-indexes of profile locations
       integer,       save, private ::
      &   npnts         ! number of profile locations
+      logical,       save, private ::
+     &   fpnts         ! initialize profile location files
 c
 #if ! defined(NERSC_HYCOM_CICE)
       integer, parameter, private :: nfields=19  !no. fields in surface archive
@@ -96,6 +98,9 @@ c
       end subroutine archiv_init
 
       subroutine archiv(n, kkout, iyear,iday,ihour, intvl)
+#if defined(STOKES)
+      use mod_stokes  ! Stokes Drift Velocity Module
+#endif
 #if defined(NERSC_HYCOM_CICE) && defined(NETCDF_ARCHV)
       use mod_netcdf_util
 #endif /* defined(NERSC_HYCOM_CICE) && defined(NETCDF_ARCHV)*/
@@ -423,6 +428,24 @@ c
           call flush(nop)
           endif !1st tile
         enddo !ktr
+#if defined(STOKES)
+        if     (stdarc) then
+          call zaiowr(usdp(1-nbdy,1-nbdy,k),ip,.true.,
+     &                xmin,xmax, nopa, .false.)
+          if     (mnproc.eq.1) then
+C$Alfatih          write (nop,117) 'tracer  ',nstep,time,k,coord,xmin,xmax
+          write (nop,117) 'usdp  ',nstep,time,k,coord,xmin,xmax
+          call flush(nop)
+          endif !1st tile
+          call zaiowr(vsdp(1-nbdy,1-nbdy,k),ip,.true.,
+     &                xmin,xmax, nopa, .false.)
+          if     (mnproc.eq.1) then
+C$Alfatih        write (nop,117) 'tracer  ',nstep,time,k,coord,xmin,xmax
+           write (nop,117) 'vsdp ',nstep,time,k,coord,xmin,xmax
+          call flush(nop)
+          endif !1st tile
+        endif !stdarc
+#endif
         if     (difout) then
           call zaiowr(vcty(1-nbdy,1-nbdy,k+1),ip,.true.,
      &                xmin,xmax, nopa, .false.)
@@ -546,11 +569,12 @@ c
       integer      ios,kpnt
 c
 c --- check that the requried directory exists
+c --- not all compilers detect directories, so look for a dummy file.
 c
-      inquire(file='ARCHP',exist=lexist)
+      inquire(file='ARCHP/archv.dummy.txt',exist=lexist)
       if     (.not.lexist) then
         if     (mnproc.eq.1) then
-        write (lp,*) 'directory ARCHP must exist'
+        write (lp,*) 'file ARCHP/archv.dummy.txt must exist'
         endif
         call xcstop('(archv_prof_init)')
                stop '(archv_prof_init)'
@@ -584,6 +608,8 @@ c
         read(uoff+99,*) ipnts(kpnt),jpnts(kpnt),cpnts(kpnt)
       enddo !kpnt
       close (unit=uoff+99)
+c
+      fpnts = .true.  !initialize profile location files
       return
       end subroutine archiv_prof_init
 
@@ -595,35 +621,38 @@ c
 c
 c --- multi-location profile output.
 c
-      character*81 flnmarcp  !1 extra character for trailing "_"
-      integer      ipnt,jpnt,kpnt,ldot,nop
+      character*81, save :: flnmarcp  !1 extra character for trailing "_"
+      integer,      save :: ldot
+      integer ::            ipnt,jpnt,kpnt,nop
 c
       if     (npnts.eq.0) then
         return
       endif
 c
-      flnmarcp = flnmarc
-      ldot = index(flnmarcp,'.',back=.true.)
-      if     (ldot.eq.0) then
-        if     (mnproc.eq.1) then
-        write (lp,*) 'need decimal point in flnmarcp'
-        write (lp,*) 'flnmarcp = ',trim(flnmarcp)
-        endif
-        call xchalt('(flnmarcp)')
-               stop '(flnmarcp)'
-      endif
-      ldot = min(ldot,len(flnmarcp)-12)  !need 12 characters for archive date
-c
-      if     (proffq.ge.1.0/24.0) then
-c ---   indicate the archive date
-        write(flnmarcp(ldot+1:ldot+12),'(i4.4,a1,i3.3,a1,i2.2,a1)') 
+      if     (fpnts) then  ! initialize profile location files
+       flnmarcp = flnmarc
+       ldot = index(flnmarcp,'.',back=.true.)
+       if     (ldot.eq.0) then
+         if     (mnproc.eq.1) then
+         write (lp,*) 'need decimal point in flnmarcp'
+         write (lp,*) 'flnmarcp = ',trim(flnmarcp)
+         endif
+         call xchalt('(flnmarcp)')
+                stop '(flnmarcp)'
+         endif
+       ldot = min(ldot,len(flnmarcp)-12)  !need 12 characters for archive date
+c      
+       if     (proffq.ge.1.0/24.0) then
+c ---    indicate the archive date
+         write(flnmarcp(ldot+1:ldot+12),'(i4.4,a1,i3.3,a1,i2.2,a1)') 
      &   iyear,'_',iday,'_',ihour,'_'
-        ldot=ldot+12
-      else
-c ---   indicate the archive time step
-        write(flnmarcp(ldot+1:ldot+12),'(i11.11,a1)') nstep,'_'
-        ldot=ldot+12
-      endif
+         ldot=ldot+12
+       else
+c ---    indicate the archive time step
+         write(flnmarcp(ldot+1:ldot+12),'(i11.11,a1)') nstep,'_'
+         ldot=ldot+12
+       endif
+      endif !fpnts
       nop =13+uoff
 c
       do kpnt= 1,npnts
@@ -632,13 +661,22 @@ c
 c
         if     (ipnt.gt.0 .and. ipnt.le.ii .and.
      &          jpnt.gt.0 .and. jpnt.le.jj      ) then
-          open (unit=nop,status='new',
-     &      file='ARCHP/'//flnmarcp(1:ldot)//trim(cpnts(kpnt))//'.txt')
+          if     (fpnts) then  ! initialize profile location files
+            open (unit=nop,status='new',
+     &       action='write',form='formatted',
+     &       file='ARCHP/'//flnmarcp(1:ldot)//trim(cpnts(kpnt))//'.txt')
+          else  !write at the end of existing profile files
+            open (unit=nop,status='old',position='append',
+     &       action='write',form='formatted',
+     &       file='ARCHP/'//flnmarcp(1:ldot)//trim(cpnts(kpnt))//'.txt')
+          endif !fpnts
           call archiv_prof_out(n, iyear,iday,ihour,
      &                         ipnts(kpnt),jpnts(kpnt), nop)
           close (unit=nop)
         endif !test point tile
       enddo !kpnt
+c
+      fpnts = .false.  ! use existing profile location files
 c
       call xcsync(no_flush)  !called on all tiles
       return
@@ -659,9 +697,12 @@ c
       character*80 cformat
       integer      ipnt,ipnt1,jpnt,jpnt1,k,ktr
       real         ssha,sshn,sshs,sssc,sstc,ubpnt,upnt,vbpnt,vpnt
+      real         difsp
 #if defined(STOKES)
       real         ubstk,ustk,ust0,vbstk,vstk,vst0
 #endif
+c
+      real, parameter :: difriv = 60.0  !river diffusion, cm**2/s
 c
       ipnt = ipoint - i0
       jpnt = jpoint - j0
@@ -686,11 +727,15 @@ c
         endif
         sshn = ssha - sshs
 c
-        if     (relaxf .and. sstflg.le.1) then
+        if     (sstflg.le.1) then
+          if     (relaxf) then
           sstc = twall(ipnt,jpnt,1,lc0)*wc0+
      &           twall(ipnt,jpnt,1,lc1)*wc1+
      &           twall(ipnt,jpnt,1,lc2)*wc2+
      &           twall(ipnt,jpnt,1,lc3)*wc3
+          else
+            sstc = 99.9999
+          endif !relaxf
         else !synoptic observed sst
           if     (natm.eq.2) then
             sstc = seatmp(ipnt,jpnt,l0)*w0+
@@ -702,10 +747,14 @@ c
      &             seatmp(ipnt,jpnt,l3)*w3
           endif !natm
         endif
+        if     (relaxf) then
         sssc  = swall(ipnt,jpnt,1,lc0)*wc0+
      &          swall(ipnt,jpnt,1,lc1)*wc1+
      &          swall(ipnt,jpnt,1,lc2)*wc2+
      &          swall(ipnt,jpnt,1,lc3)*wc3
+        else
+          sssc = 99.9999
+        endif !relaxf
 c
 c ---   interpolate to the p-grid, but only if it requres no halo points
         ipnt1 = min(ipnt+1,ii)  !either ipnt+1 or ipnt
@@ -728,12 +777,17 @@ c ---   which only includes the fields up to vbavg (or up to nsterc)
      &    '    umix    vmix   ubavg   vbavg  steric  nsterc',
      &    '   tclim   sclim',
      &    '  sswflx  mixflx  sstflx',
-     &    '      E-P   sssE-P  bhtflx  buoflx',
+     &    '      E-P   sssE-P   rivE-P  bhtflx  buoflx',
      &    '    ustar   hekman    dpbbl',
      &    ' usdbave vsdbave    usd0    vsd0'
-        write (nop,'(a,f11.4,f8.2,f8.1, 2f9.3,3f8.4, 6f8.2,
-     &               2f8.4, 3f8.1, 2f9.2,2f8.4, f9.5, 2f9.3,
-     &               4f8.2)')
+        write (nop,'(a,f11.4,f8.2,f8.1,'//  !...surflx
+     &              '2f9.3,3f8.4,'//        !... thmix
+     &              '6f8.2,'//              !...nsterc
+     &              '2f8.4,'//              !... sclim
+     &              '3f8.1,'//              !...sstflx
+     &              '3f9.2,2f8.4,'//        !...buoflx
+     &              'f9.5, 2f9.3,'//        !... dpbbl
+     &              '4f8.2)')               !...  vsd0
      &    '#',time,                                            !model-day
      &    ssha*100.0/g,                                        !cm
      &    surflx(ipnt,jpnt),                                   !W/m**2
@@ -774,10 +828,15 @@ c ---   which only includes the fields up to vbavg (or up to nsterc)
      &    '    umix    vmix   ubavg   vbavg  steric  nsterc',
      &    '   tclim   sclim',
      &    '  sswflx  mixflx  sstflx',
-     &    '      E-P   sssE-P  bhtflx  buoflx',
+     &    '      E-P   sssE-P   rivE-P  bhtflx  buoflx',
      &    '    ustar   hekman    dpbbl'
-        write (nop,'(a,f11.4,f8.2,f8.1, 2f9.3,3f8.4, 6f8.2,
-     &               2f8.4, 3f8.1, 2f9.2,2f8.4, f9.5, 2f9.3)')
+        write (nop,'(a,f11.4,f8.2,f8.1,'//  !...surflx
+     &              '2f9.3,3f8.4,'//        !... thmix
+     &              '6f8.2,'//              !...nsterc
+     &              '2f8.4,'//              !... sclim
+     &              '3f8.1,'//              !...sstflx
+     &              '3f9.2,2f8.4,'//        !...buoflx
+     &              'f9.5, 2f9.3)')         !... dpbbl
      &    '#',time,                                            !model-day
      &    ssha*100.0/g,                                        !cm
      &    surflx(ipnt,jpnt),                                   !W/m**2
@@ -799,6 +858,7 @@ c ---   which only includes the fields up to vbavg (or up to nsterc)
      &    sstflx(ipnt,jpnt),                                   !W/m**2
      &    salflx(ipnt,jpnt)*thref*8.64E7/saln(ipnt,jpnt,1,n),  !mm/day
      &    sssflx(ipnt,jpnt)*thref*8.64E7/saln(ipnt,jpnt,1,n),  !mm/day
+     &    rivflx(ipnt,jpnt)*thref*8.64E7/saln(ipnt,jpnt,1,n),  !mm/day
      &    bhtflx(ipnt,jpnt)*1.e6,                         !1.e6*m**2/sec**3
      &    buoflx(ipnt,jpnt)*1.e6,                         !1.e6*m**2/sec**3
      &     ustar(ipnt,jpnt),                                   !m/s?
@@ -859,9 +919,14 @@ c ---   which only includes the fields up to vbavg (or up to nsterc)
           upnt = 0.5*(u(ipnt,jpnt,k,n)+u(ipnt1,jpnt, k,n)) + ubpnt
           vpnt = 0.5*(v(ipnt,jpnt,k,n)+v(ipnt, jpnt1,k,n)) + vbpnt
 #if defined(STOKES)
-          ustk = 0.5*(usd(ipnt,jpnt,k)+usd(ipnt1,jpnt, k)) + ubstk
-          vstk = 0.5*(vsd(ipnt,jpnt,k)+vsd(ipnt, jpnt1,k)) + vbstk
+          ustk = 0.5*(usd(ipnt,jpnt,k)+usd(ipnt1,jpnt, k))
+          vstk = 0.5*(vsd(ipnt,jpnt,k)+vsd(ipnt, jpnt1,k))
 #endif
+          difsp = min(9999.99,difs(ipnt,jpnt,k+1)*1.e4)
+          if     (rivers(ipnt,jpnt,  1).ne.0.0 .and.
+     &                 p(ipnt,jpnt,k+1).lt.thkriv   ) then
+            difsp = max(difsp, difriv)
+          endif
           write (nop,cformat)
      &       k,
      &       max(-999.99,min(999.99,upnt*100.0)),                  !cm/s
@@ -873,7 +938,7 @@ c ---   which only includes the fields up to vbavg (or up to nsterc)
      &         (p(ipnt,jpnt,k+1)+p(ipnt,jpnt,k))*0.5*qonem,        !m
      &       min(9999.99,vcty(ipnt,jpnt,k+1)*1.e4),                !cm**2/s
      &       min(9999.99,dift(ipnt,jpnt,k+1)*1.e4),                !cm**2/s
-     &       min(9999.99,difs(ipnt,jpnt,k+1)*1.e4),                !cm**2/s
+     &                   difsp,                                    !cm**2/s
 #if defined(STOKES)
      &       max(-999.99,min(999.99,ustk*100.0)),                  !cm/s
      &       max(-999.99,min(999.99,vstk*100.0)),                  !cm/s
@@ -892,6 +957,9 @@ c ---   which only includes the fields up to vbavg (or up to nsterc)
       end subroutine archiv_prof_out
 
       subroutine archiv_tile(n, kkout, iyear,iday,ihour)
+#if defined(STOKES)
+      use mod_stokes  ! Stokes Drift Velocity Module
+#endif
 c
 #ifdef _FABM_
       use mod_hycom_fabm
@@ -910,9 +978,10 @@ c
       real         coord,xmin,xmax
 c
 c --- only write archive when the corresponing directory exists
+c --- not all compilers detect directories, so look for a dummy file.
 c
       write(cdir,'(a6,i5.5,a1)') 'ARCHT/',mnproc,'/'
-      inquire(file=cdir(1:11),exist=lexist)
+      inquire(file=cdir//'archt.dummy.txt',exist=lexist)
       if     (.not.lexist) then
         call xcsync(no_flush)  !called on all tiles, see end of routine
         return
@@ -1058,6 +1127,24 @@ c
 #endif
         call flush(nop)
       enddo !ktr
+#if defined(STOKES)
+      if     (stdarc) then
+        call zaiowr(usdp(1-nbdy,1-nbdy,k),ip,.true.,
+     &              xmin,xmax, nopa, .false.)
+        if     (mnproc.eq.1) then
+C$ALFAtih   write (nop,117) 'tracer  ',nstep,time,k,coord,xmin,xmax
+        write (nop,117) 'usdp  ',nstep,time,k,coord,xmin,xmax
+        call flush(nop)
+        endif !1st tile
+        call zaiowr(vsdp(1-nbdy,1-nbdy,k),ip,.true.,
+     &              xmin,xmax, nopa, .false.)
+        if     (mnproc.eq.1) then
+C$Alfatih    write (nop,117) 'tracer  ',nstep,time,k,coord,xmin,xmax
+        write (nop,117) 'vsdp  ',nstep,time,k,coord,xmin,xmax
+        call flush(nop)
+        endif !1st tile
+      endif !stdarc
+#endif
       if     (difout) then
         call ztiowr(vcty(1-nbdy,1-nbdy,k+1),ip,.true.,
      &              xmin,xmax, nopa, .false.)

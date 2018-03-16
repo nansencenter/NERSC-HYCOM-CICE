@@ -413,7 +413,7 @@ c
      &                          +(tauy(i,j,l3)+tauy(i,j+1,l3))*w3)*0.5
                 endif !natm
               else !wndflg.eq.4,5,6
-c ---           calculate stress from 10m winds using cd_coare or cd_core2
+c ---           calculate stress from 10m winds using cd_coare or cd_core3
                 if     (natm.eq.2) then
                   airt = airtmp(i,j,l0)*w0+airtmp(i,j,l1)*w1
                   vpmx = vapmix(i,j,l0)*w0+vapmix(i,j,l1)*w1
@@ -1088,7 +1088,7 @@ c
      &           oneta(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy),
      &           gslpr(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy),
      &           gtide(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy) )
-        call mem_stat_add( 6*(idm+2*nbdy)*(jdm+2*nbdy) )
+        call mem_stat_add( 8*(idm+2*nbdy)*(jdm+2*nbdy) )
                 stress = r_init
                 stresx = r_init
                 stresy = r_init
@@ -3137,7 +3137,7 @@ c
      &           oneta(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy),
      &           gslpr(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy),
      &           gtide(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy) )
-        call mem_stat_add( 6*(idm+2*nbdy)*(jdm+2*nbdy) )
+        call mem_stat_add( 8*(idm+2*nbdy)*(jdm+2*nbdy) )
                 stress = r_init
                 stresx = r_init
                 stresy = r_init
