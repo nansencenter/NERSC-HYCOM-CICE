@@ -33,9 +33,12 @@ module mod_hycom_fabm
    class (type_model), pointer, save, public :: fabm_model => null()
    real, allocatable :: swflx_fabm(:, :)
    real, allocatable :: bottom_stress(:, :)
+   real :: bottom_stress_keep 
    logical, allocatable :: mask(:, :, :)
    integer, allocatable :: kbottom(:, :)
    integer, allocatable :: kbottomn(:, :)
+   integer :: nbottom
+   real :: hbottom
    real, allocatable :: h(:, :, :)
    real, allocatable, target :: fabm_surface_state(:, :, :, :)
    real, allocatable, target :: fabm_bottom_state(:, :, :, :)
@@ -488,11 +491,24 @@ contains
         call fabm_do_bottom(fabm_model, 1, ii, j, flux, sms_bt)
         do i=1,ii
           if (kbottomn(i, j) > 0) then
-            fabm_bottom_state(i, j, n, :) = fabm_bottom_state(i, j, n, :) + delt1 * sms_bt(i, :)
-            tracer(i, j, kbottomn(i, j), n, :) = tracer(i, j, kbottomn(i, j), n, :) + delt1 * flux(i, :)/dp(i, j, kbottomn(i, j), n)*onem
+            fabm_bottom_state(i, j, n, :) = fabm_bottom_state(i, j, n, :) + delt1 * sms_bt(i, :) ! update sediment layer
+            if ( dp(i, j, min(kbottomn(i,j),kbottom(i,j)), n)/onem >= 9.999 ) then ! check if the bottom layer is thicker than 10 meters, if so, apply the flux as usual (I will decrease the criteria in time)
+              tracer(i, j, min(kbottomn(i,j),kbottom(i,j)), n, :) = tracer(i, j, min(kbottomn(i,j),kbottom(i,j)), n, :) + delt1 * flux(i, :)/dp(i, j, min(kbottomn(i,j),kbottom(i,j)), n)*onem
+            else ! in case less than 10 meters, to avoid accumulation at the bottom thin layers, distribute the flux into multiple layers that add up to > 10 meters thickness
+              hbottom = 0
+              nbottom = 0
+              do k = min(kbottomn(i,j),kbottom(i,j)),1,-1
+                hbottom = hbottom + dp(i ,j , k, n)/onem
+                if ( hbottom >= 9.999 ) exit
+                nbottom = nbottom + 1
+              end do
+              do k = min(kbottomn(i,j),kbottom(i,j))-nbottom , min(kbottomn(i,j),kbottom(i,j)) ! distribute the flux to total height, and to multiple layers
+                tracer(i, j, k, n, :) = tracer(i, j, k, n, :) + delt1 * flux(i, :)/hbottom
+              end do
+            end if
 #ifdef FABM_CHECK_NAN
-            if (any(isnan(tracer(i, j, kbottomn(i, j), n, :)))) then
-              write (*,*) 'NaN after do_bottom:', tracer(i, j, kbottomn(i, j), n, :), flux(i, :), dp(i, j, kbottomn(i, j), n)/onem)
+            if (any(isnan(tracer(i, j, min(kbottomn(i,j),kbottom(i,j)), n, :)))) then
+              write (*,*) 'NaN after do_bottom:', tracer(i, j, min(kbottomn(i,j),kbottom(i,j)), n, :), flux(i, :), dp(i, j, min(kbottomn(i,j),kbottom(i,j)), n)/onem
               stop
             end if
 #endif
@@ -558,7 +574,6 @@ contains
         end if
         input => input%next
       end do
-
       call check_state('after hycom_fabm_update', n, .true.)
 
       ! Copy bottom value for pelagic tracers to all layers below bottom
@@ -566,17 +581,17 @@ contains
       do j=1,jj
         do i=1,ii
           if (SEA_P) then
-            do k=min(kbottomn(i, j),kbottom(i, j))+1, kk
-               tracer(i, j, k, n, :) = tracer(i, j, min(kbottomn(i, j),kbottom(i, j)), n, :)
+            do k=min(kbottomn(i, j),kbottom(i,j))+1, kk
+              tracer(i, j, k, n, :) = tracer(i, j, min(kbottomn(i, j),kbottom(i,j)), n, :)
             end do
           end if
         end do
       end do
-
       ! Apply the Robert-Asselin filter to the surface and bottom state.
       ! Note that RA will be applied to the pelagic tracers within mod_tsavc - no need to do it here!
-      fabm_surface_state(1:ii, 1:jj, m, :) = fabm_surface_state(1:ii, 1:jj, m, :) + 0.5*ra2fac*(fabm_surface_state_old(1:ii, 1:jj, :)+fabm_surface_state(1:ii, 1:jj, n, :)-2.0*fabm_surface_state(1:ii, 1:jj, m, :))
-      fabm_bottom_state(1:ii, 1:jj, m, :) = fabm_bottom_state(1:ii, 1:jj, m, :) + 0.5*ra2fac*(fabm_bottom_state_old(1:ii, 1:jj, :)+fabm_bottom_state(1:ii, 1:jj, n, :)-2.0*fabm_bottom_state(1:ii, 1:jj, m, :))
+      ! CAGLAR: Since there is no advection of sediment and surface state, applying a filter here is unnecessary. Setting it to state_m prevents (-) variables for the next time step.
+      fabm_surface_state(1:ii, 1:jj, m, :) = fabm_surface_state(1:ii, 1:jj, n, :)! + 0.5*ra2fac*(fabm_surface_state_old(1:ii, 1:jj, :)+fabm_surface_state(1:ii, 1:jj, n, :)-2.0*fabm_surface_state(1:ii, 1:jj, m, :))
+      fabm_bottom_state(1:ii, 1:jj, m, :) = fabm_bottom_state(1:ii, 1:jj, n, :)!fabm_bottom_state(1:ii, 1:jj, m, :) + 0.5*ra2fac*(fabm_bottom_state_old(1:ii, 1:jj, :)+fabm_bottom_state(1:ii, 1:jj, n, :)-2.0*fabm_bottom_state(1:ii, 1:jj, m, :))
 
     end subroutine hycom_fabm_update
 
@@ -625,7 +640,7 @@ contains
 
       real :: w(ii, kk, size(fabm_model%state_variables))
       real :: flux(ii, 0:kk)
-      integer :: i, j, k, ivar, kabove
+      integer :: i, j, k, ivar, kabove, kb
       real, parameter :: epsilon = 1e-8
 
       do j=1,jj
@@ -652,19 +667,39 @@ contains
           ! Update state
           do i=1,ii
             kabove = 0
-            do k=1,kbottom(i, j)-1
+            do k=1,min(kbottom(i, j),kbottomn(i, j))-1
               if (dp(i, j, k, n) > 0) kabove = k
               if (flux(i, k) /= 0) then
                 ! non-zero flux across interface
-                if (dp(i, j, k+1, n)/onem <= 0.1) then ! THIS IS NOT THE BEST SOLUTION BUT MAKES THINGS STABLE AT THE MOMENT
+                if (dp(i, j, k+1, n)/onem < 0.1) then ! THIS IS NOT THE BEST SOLUTION BUT MAKES THINGS STABLE AT THE MOMENT
                   ! layer below is collapsed (height = 0) - move flux to next interface
-!                  flux(i, k+1) = flux(i, k+1) + flux(i, k)
+                !  flux(i, k+1) = 0.!flux(i, k+1) + flux(i, k)
                 flux(i, k) = 0
                 else
-                  ! layer below has non-zero height, BUT RESTRICTED TO BE DIVIED BY 1 AT LEAST TO PREVENT ACCUMULATION IN THIN LAYERS
-                  !                                  TO DO: MAYBE ALLOW ACCUMULATION AT THE DEEPEST LAYER?
-                  tracer(i, j, kabove, n, ivar) = tracer(i, j, kabove, n, ivar) + flux(i, k)*timestep/max(dp(i, j, kabove, n)/onem,1.0)
-                  tracer(i, j, k+1, n, ivar) = tracer(i, j, k+1, n, ivar) - flux(i, k)*timestep/max(dp(i, j, k+1, n)/onem,1.0)
+                  ! Prevent accumulation of settling particles in thin layers 
+                  if ( flux(i, k) < 0 .and. k == min(kbottom(i, j),kbottomn(i, j))-1 ) then ! if settling and if at the layer above the bottom
+                    if ( dp(i, j, k+1, n)/onem >= 9.999 ) then ! check if the bottom layer is actually < 10 meters, if not, apply the regular flux additions
+                      tracer(i, j, kabove, n, ivar) = tracer(i, j, kabove, n, ivar) + flux(i, k)*timestep/(dp(i, j, kabove, n)/onem)
+                      tracer(i, j, k+1, n, ivar) = tracer(i, j, k+1, n, ivar) - flux(i, k)*timestep/(dp(i, j, k+1, n)/onem)
+                      else ! if < 10 meters
+                        hbottom = 0
+                        nbottom = 0 
+                        do kb = min(kbottom(i, j),kbottomn(i, j)),1,-1 ! find number of layers that add up to > 10 meters, and store the total height
+                          hbottom = hbottom + dp(i ,j , kb, n)/onem
+                          if ( hbottom >= 9.999 ) exit
+                          nbottom = nbottom + 1
+                        end do
+                        ! Settle the particles from kabove
+                        tracer(i, j, kabove, n, ivar) = tracer(i, j, kabove, n, ivar) + flux(i, k)*timestep/(dp(i, j, kabove, n)/onem) 
+                        ! and distribute that flux to multiple layers which the depths add up to > 10 meters
+                        do kb = min(kbottom(i, j),kbottomn(i, j)) - nbottom , min(kbottom(i, j),kbottomn(i, j))
+                          tracer(i, j, kb, n, ivar) = tracer(i, j, kb, n, ivar) - flux(i, k)*timestep/hbottom
+                        end do
+                    end if  
+                  else ! this applies to all other layers including floating particles
+                    tracer(i, j, kabove, n, ivar) = tracer(i, j, kabove, n, ivar) + flux(i, k)*timestep/(dp(i, j, kabove, n)/onem)
+                    tracer(i, j, k+1, n, ivar) = tracer(i, j, k+1, n, ivar) - flux(i, k)*timestep/(dp(i, j, k+1, n)/onem)
+                  endif
                 end if
               end if
             end do
@@ -682,13 +717,24 @@ contains
         integer :: i, j, k
 
         kbottom = 0
-        do j=1,jj
-            do i=1,ii
+       ! do j=1,jj
+       !     do i=1,ii
+       !       if (SEA_P) then
+       !         do k = kk, 1, -1
+       !           if (dp(i, j, k, index)/onem > h_min) exit
+       !         end do
+       !         kbottom(i, j) = max(k, 2)
+       !       end if
+       !     end do
+       ! end do
+        do j=1,jj       ! CAGLAR - I did it from top to bottom in order to avoid having < 0.1 m layer in the water column.
+            do i=1,ii   !          Looking for other solutions for this
               if (SEA_P) then
-                do k = kk, 1, -1
-                  if (dp(i, j, k, index)/onem > h_min) exit
+                do k = 1,kk
+                  if (dp(i, j, k, index)/onem <= h_min) exit
+                  kbottom(i, j) = k
                 end do
-                kbottom(i, j) = max(k, 2)
+                kbottom(i, j) = max(kbottom(i,j), 2)
               end if
             end do
         end do
