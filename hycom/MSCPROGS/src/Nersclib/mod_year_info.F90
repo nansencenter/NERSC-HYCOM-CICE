@@ -122,7 +122,9 @@ subroutine year_day(time,refyear,tt,rforce)
          tt%imm=i
          write(tt%cmm,'(i2.2)')tt%imm
          tt%idm=ttday
-         write(tt%cdm,'(i2.2)')ttday+1
+        ! write(tt%cdm,'(i2.2)')ttday+1
+        ! Alfatih (no need to add 1 for archm)
+         write(tt%cdm,'(i2.2)')ttday
          exit
       endif
    enddo
