@@ -90,6 +90,7 @@ export JERLV=`grep "'jerlv0' =" blkdat.input | awk '{printf("%1d", $1)}'`
 export SSSRLX=`grep "'sssflg' =" blkdat.input | awk '{printf("%1d", $1)}'`
 export SSTRLX=`grep "'sstflg' =" blkdat.input | awk '{printf("%1d", $1)}'`
 export RLX=`grep "'relax ' =" blkdat.input | awk '{printf("%1d", $1)}'`
+export TRCRLX=`grep "'trcrlx' =" blkdat.input | awk '{printf("%1d", $1)}'`
 export THKDF4=`grep "'thkdf4' =" blkdat.input | awk '{printf("%f", $1)}'`
 export KAPREF=`grep "'kapref' =" blkdat.input | awk '{printf("%f", $1)}'`
 export VSIGMA=`grep "'vsigma' =" blkdat.input | awk '{printf("%1d", $1)}'`
@@ -381,8 +382,25 @@ if [ $RLX -eq 1 ] ; then
    ln -sf $BASEDIR/relax/${E}/relax_rmu.a relax.rmu.a  || tellerror "Could not get relax.rmu.a"
    ln -sf $BASEDIR/relax/${E}/relax_rmu.b relax.rmu.b  || tellerror "Could not get relax.rmu.b"
 fi
-
-
+#
+# --- tracer relaxation
+#
+if [ $TRCRLX -eq 1 ] ; then
+   echo "**Setting up tracer relaxation"
+   for i in ECO_no3 ECO_pho ECO_sil ; do
+# |CAGLAR| oxygen relax files won't work with TP2, don't know why yet. So no ECO_oxy here. Add it manually
+      j=$(echo $i | head -c7)
+      [ ! -f  $BASEDIR/relax/${E}/relax.$j.a ] && tellerror "$BASEDIR/relax/${E}/relax_$j.a does not exist"
+      [ ! -f  $BASEDIR/relax/${E}/relax.$j.b ] && tellerror "$BASEDIR/relax/${E}/relax_$j.b does not exist"
+      ln -sf $BASEDIR/relax/${E}/relax.$j.a relax.$i.a  || tellerror "Could not get relax.$i.a"
+      ln -sf $BASEDIR/relax/${E}/relax.$j.b relax.$i.b  || tellerror "Could not get relax.$i.b"
+   done
+   echo "**Setting up tracer relaxation masks"
+   [ ! -f  $BASEDIR/relax/${E}/relax_rmutr.a ] && tellerror "$BASEDIR/relax/${E}/relax_rmutr.a does not exist"
+   [ ! -f  $BASEDIR/relax/${E}/relax_rmutr.b ] && tellerror "$BASEDIR/relax/${E}/relax_rmutr.b does not exist"
+   ln -sf $BASEDIR/relax/${E}/relax_rmutr.a relax.rmutr.a  || tellerror "Could not get relax.rmutr.a"
+   ln -sf $BASEDIR/relax/${E}/relax_rmutr.b relax.rmutr.b  || tellerror "Could not get relax.rmutr.b"
+fi
 #
 # - thermobaric reference state?
 # 
