@@ -60,13 +60,15 @@ program p_hyc2proj
    use m_construct_filename
    implicit none
 
+   real, parameter :: thref=1e-3
+   include 'stmt_funcs.H'
    ! Version info of this program
    character(len=*), parameter :: cver = 'V0.3'
 
    type(year_info) :: rt
-   integer            :: k,ifile, i, i2, i3, i4, kdm
+   integer            :: k,ifile, i,j, i2, i3, i4, kdm
    real, allocatable, dimension(:,:,:) :: hy3d, regu3d, regusp3d, depthint, &
-      hy3d2,pres, levint, temp, sal
+      hy3d2,pres, levint, temp, sal, dens
 !AS06092011 - adding biological variables for MyOcean
    real, allocatable, dimension(:,:,:) :: fla, dia, nit, pho, oxy, pp, biovar,s1000
    real, allocatable, dimension(:,:,:) :: micro, meso, sil
@@ -545,12 +547,34 @@ program p_hyc2proj
                   allocate(temp(idm,jdm,kdm))
                   allocate(sal(idm,jdm,kdm))
                   call HFReadField3D(hfile,temp,idm,jdm,kdm,'temp    ',1)
-                  call HFReadField3D(hfile,sal ,idm,jdm,kdm,'saln    ',1)
+                 !call HFReadField3D(hfile,sal ,idm,jdm,kdm,'saln    ',1)
+                  call HFReadField3D(hfile,sal ,idm,jdm,kdm,'salin    ',1)
                   ! LB, pressure is expected in meters
                   call mixlayer_depths(temp,sal,pres/onem,mld1,mld2,idm,jdm,kdm)
                   deallocate(temp,sal)
                   if (trim(fld(ifld)%fextract)=='mld1') hy2d=mld1
                   if (trim(fld(ifld)%fextract)=='mld2') hy2d=mld2
+                  
+               elseif (trim(fld(ifld)%fextract)=='GS_MLD') then 
+                  ! Compute the mixed layer depth interpolated
+                  allocate(temp(idm,jdm,kdm))
+                  allocate(sal(idm,jdm,kdm))
+                  allocate(dens(idm,jdm,kdm))
+                  allocate(biovar2D(idm,jdm))
+                  call HFReadField3D(hfile,temp,idm,jdm,kdm,'temp',1)
+                  call HFReadField3D(hfile,sal,idm,jdm,kdm,'salin',1)
+                  !call HFReadField3D(hfile,sal,idm,jdm,kdm,'saln',1)
+                  do i=1,idm
+                    do j=1,jdm
+                      do k=1,kdm
+                        dens(i,j,k)=sig(temp(i,j,k),sal(i,j,k))
+                      end do
+                    end do
+                  end do
+                    print '(a)','calling gs_mld'
+                  call gs_mld(-dens,pres/onem,biovar2d,idm,jdm,kdm,0.03)
+                  hy2d=biovar2d
+                  deallocate(temp,sal,dens,biovar2d)
                elseif (trim(fld(ifld)%fextract)=='bsf') then 
                   ! Compute barotropic streamfunction 
                   allocate(mqlon (0:idm+1,0:jdm+1))
