@@ -305,8 +305,8 @@ contains
       end do
     end subroutine hycom_fabm_relax_init
 
-    subroutine hycom_fabm_input_init(imonth)
-      integer, intent(in) :: imonth
+    subroutine hycom_fabm_input_init(dtime, dyear0, dyear, dmonth)
+      real, intent(in) :: dtime, dyear0, dyear, dmonth
 
       integer :: ivar
       logical :: file_exists
@@ -314,7 +314,7 @@ contains
 
       ! Months and slot indices for monthly climatological forcing
       ! (shared between all inputs that are defined on monthly climatological time scales)
-      m_clim1=imonth
+      m_clim1=1.+mod(dtime+dyear0,dyear)/dmonth
       m_clim0=mod(m_clim1+10,12)+1
       m_clim2=mod(m_clim1,   12)+1
       m_clim3=mod(m_clim2,   12)+1
