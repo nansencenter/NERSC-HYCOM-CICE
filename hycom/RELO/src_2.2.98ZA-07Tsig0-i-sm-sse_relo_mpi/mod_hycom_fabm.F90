@@ -390,6 +390,8 @@ contains
       type (type_input), intent(inout) :: input
       integer,           intent(in)    :: month, lslot
 
+      integer :: irec, k
+
       if (clmflg.eq.12) then
         mrec = mnth
       else
@@ -417,12 +419,12 @@ contains
       end do
     end subroutine read_input
 
-    subroutine hycom_fabm_input_update(month)
-      integer, intent(in) :: month
+    subroutine hycom_fabm_input_update(dtime, dyear0, dyear, dmonth)
+      real, intent(in) :: dtime, dyear0, dyear, dmonth
 
       integer :: mnth
       type (type_input), pointer :: input
-      real :: w0, w1, w2, w3
+      real :: x, x1, w0, w1, w2, w3
       integer :: lt
 
       mnth=mod(month-1,12)+1
