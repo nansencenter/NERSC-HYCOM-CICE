@@ -70,7 +70,7 @@ module mod_hycom_fabm
    integer, parameter :: role_prescribe = 0
    integer, parameter :: role_river = 1
 
-   integer, parameter :: first_relax_unit = 915
+   integer, save :: next_unit = 915
 
    integer, allocatable :: hycom_fabm_relax(:)
 
@@ -259,7 +259,7 @@ contains
     subroutine hycom_fabm_relax_init()
       use mod_za  ! HYCOM I/O interface
 
-      integer :: ivar, next_unit, k
+      integer :: ivar, k
       logical :: file_exists
       character preambl(5)*79
 
@@ -269,7 +269,6 @@ contains
       ! Default: no relaxation
       hycom_fabm_relax = -1
 
-      next_unit = first_relax_unit
       if (mnproc.eq.1) write (lp,*) 'Looking for relaxation data for pelagic FABM state variables...'
       do ivar=1,size(fabm_model%state_variables)
         ! Check for existence of a file named "relax.<FABMNAME>.a". If present, this will contain the relaxation field (one variable; all k levels)
@@ -309,9 +308,7 @@ contains
     subroutine hycom_fabm_input_init(imonth)
       integer, intent(in) :: imonth
 
-      use mod_za  ! HYCOM I/O interface
-
-      integer :: ivar, next_unit
+      integer :: ivar
       logical :: file_exists
       type (type_input), pointer :: input
 
@@ -327,7 +324,6 @@ contains
       l3=4
 
       ! Detect river forcing for pelagic state variables
-      next_unit = first_relax_unit + size(fabm_model%state_variables)
       if (mnproc.eq.1) write (lp,*) 'Looking for river loadings for pelagic FABM state variables...'
       do ivar=1,size(fabm_model%state_variables)
         ! Check for existence of a file named "rivers.<FABMNAME>.a". If present, this will contain the river loadings for this variable across the entire model grid (one 2d variable; units <UNITS>*m/s)
@@ -347,20 +343,20 @@ contains
     end subroutine hycom_fabm_input_init
 
     function add_input(path, is_2d) result(input)
+      use mod_za  ! HYCOM I/O interface
+
       character(len=*), intent(in) :: path
       logical,          intent(in) :: is_2d
       type (type_input), pointer :: input
-
-      use mod_za  ! HYCOM I/O interface
 
       integer :: k
       character preambl(5)*79
 
       allocate(input)
       if (is_2d) then
-        allocate(input%data_ip(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,1)
+        allocate(input%data_ip(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,1))
       else
-        allocate(input%data_ip(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kk)
+        allocate(input%data_ip(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kk))
       end if
       allocate(input%data_src(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,size(input%data_ip,3),4))
       input%file_unit = next_unit
@@ -380,7 +376,7 @@ contains
       call preambl_print(preambl)
 
       ! ?? Not sure why we are reading here, copying from forfun.F
-      do k=1,size(input%data, 3)
+      do k=1,size(input%data_ip, 3)
         call hycom_fabm_rdmonthck(util1, input%file_unit, 0)
       end do
 
@@ -415,7 +411,7 @@ contains
       end if
 
       do irec=input%mrec+1,mrec-1
-        do k=1,size(input%data, 3)
+        do k=1,size(input%data_src, 3)
           call skmonth(input%file_unit)
         end do
       end do
@@ -454,7 +450,7 @@ contains
         w2=x *(1.+x1*(1.-1.5*x1))
         w0=-.5*x *x1*x1
         w3=-.5*x1*x *x
-        input%data_ip = data_src(:,:,:,l0)*w0 + data_src(:,:,:,l1)*w1 + data_src(:,:,:,l2)*w2 + data_src(:,:,:,l3)*w3
+        input%data_ip = input%data_src(:,:,:,l0)*w0 + input%data_src(:,:,:,l1)*w1 + input%data_src(:,:,:,l2)*w2 + input%data_src(:,:,:,l3)*w3
         input => input%next
       end do
     end subroutine hycom_fabm_input_update
@@ -725,7 +721,7 @@ contains
       do while (associated(input))
         if (input%role == role_river) then
           ! River field
-          tracer(1:ii, 1:jj, 1, n, input%ivariable) = tracer(1:ii, 1:jj, 1, n, input%ivariable) + delt1 * input%data(1:ii, 1:jj, 1)/h(1:ii, 1:jj, 1)
+          tracer(1:ii, 1:jj, 1, n, input%ivariable) = tracer(1:ii, 1:jj, 1, n, input%ivariable) + delt1 * input%data_ip(1:ii, 1:jj, 1)/h(1:ii, 1:jj, 1)
         end if
         input => input%next
       end do
