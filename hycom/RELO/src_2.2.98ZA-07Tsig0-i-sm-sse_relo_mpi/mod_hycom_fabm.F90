@@ -387,6 +387,8 @@ contains
     end function add_input
 
     subroutine read_input(input, mrec, lslot)
+      use mod_za  ! HYCOM I/O interface
+
       type (type_input), intent(inout) :: input
       integer,           intent(in)    :: mrec, lslot
 
