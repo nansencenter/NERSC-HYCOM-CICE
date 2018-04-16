@@ -386,17 +386,11 @@ contains
       call read_input(input,m3,l3)
     end function add_input
 
-    subroutine read_input(input, month, lslot)
+    subroutine read_input(input, mrec, lslot)
       type (type_input), intent(inout) :: input
-      integer,           intent(in)    :: month, lslot
+      integer,           intent(in)    :: mrec, lslot
 
       integer :: irec, k
-
-      if (clmflg.eq.12) then
-        mrec = mnth
-      else
-        mrec = (mnth+1)/2
-      end if
 
       if (mrec <= input%mrec) then
         ! Rewind
@@ -417,6 +411,12 @@ contains
           call skmonth(input%file_unit)
         end do
       end do
+
+      do k= 1,size(input%data_src,3)
+        call hycom_fabm_rdmonthck(input%data_src(1-nbdy,1-nbdy,k,lslot), input%file_unit, mrec)
+      end do
+
+      input%mrec = mrec
     end subroutine read_input
 
     subroutine hycom_fabm_input_update(dtime, dyear0, dyear, dmonth)
