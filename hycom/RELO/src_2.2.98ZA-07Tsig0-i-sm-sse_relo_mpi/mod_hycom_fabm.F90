@@ -74,8 +74,8 @@ module mod_hycom_fabm
 
    integer, allocatable :: hycom_fabm_relax(:)
 
-   integer :: m0, m1, m2, m3
-   integer :: lc0, lc1, lc2, lc3
+   integer :: m_clim0, m_clim1, m_clim2, m_clim3
+   integer :: l_clim0, l_clim1, l_clim2, l_clim3
    type type_input
       integer :: file_unit = -1
 
@@ -314,14 +314,14 @@ contains
 
       ! Months and slot indices for monthly climatological forcing
       ! (shared between all inputs that are defined on monthly climatological time scales)
-      m1=imonth
-      m0=mod(m1+10,12)+1
-      m2=mod(m1,   12)+1
-      m3=mod(m2,   12)+1
-      lc0=1
-      lc1=2
-      lc2=3
-      lc3=4
+      m_clim1=imonth
+      m_clim0=mod(m_clim1+10,12)+1
+      m_clim2=mod(m_clim1,   12)+1
+      m_clim3=mod(m_clim2,   12)+1
+      l_clim0=1
+      l_clim1=2
+      l_clim2=3
+      l_clim3=4
 
       ! Detect river forcing for pelagic state variables
       if (mnproc.eq.1) write (lp,*) 'Looking for river loadings for pelagic FABM state variables...'
@@ -380,10 +380,10 @@ contains
         call hycom_fabm_rdmonthck(util1, input%file_unit, 0)
       end do
 
-      call read_input(input,m0,lc0)
-      call read_input(input,m1,lc1)
-      call read_input(input,m2,lc2)
-      call read_input(input,m3,lc3)
+      call read_input(input,m_clim0,l_clim0)
+      call read_input(input,m_clim1,l_clim1)
+      call read_input(input,m_clim2,l_clim2)
+      call read_input(input,m_clim3,l_clim3)
     end function add_input
 
     subroutine read_input(input, mrec, lslot)
@@ -424,36 +424,36 @@ contains
 
       integer :: imonth
       type (type_input), pointer :: input
-      real :: dmonth, x, x1, w0, w1, w2, w3
+      real :: month, x, x1, w0, w1, w2, w3
       integer :: lt
 
-      dmonth=1.+mod(dtime+dyear0,dyear)/dmonth
-      imonth=int(dmonth)
-      if (mnproc.eq.1) write(lp,*) 'update_inputs - month = ',dmonth,imonth
+      month=1.+mod(dtime+dyear0,dyear)/dmonth
+      imonth=int(month)
+      if (mnproc.eq.1) write(lp,*) 'update_inputs - month = ',month,imonth
       call xcsync(flush_lp)
 
       input => first_input
       do while (associated(input))
         
-        if (imonth.ne.m1) then
-          m1=imonth
-          m0=mod(m1+10,12)+1
-          m2=mod(m1,   12)+1
-          m3=mod(m2,   12)+1
-          lt = lc0
-          lc0=lc1
-          lc1=lc2
-          lc2=lc3
-          lc3=lt
-          call read_input(input, m3, l3)
+        if (imonth.ne.m_clim1) then
+          m_clim1=imonth
+          m_clim0=mod(m_clim1+10,12)+1
+          m_clim2=mod(m_clim1,   12)+1
+          m_clim3=mod(m_clim2,   12)+1
+          lt = l_clim0
+          l_clim0=l_clim1
+          l_clim1=l_clim2
+          l_clim2=l_clim3
+          l_clim3=lt
+          call read_input(input, m_clim3, l3)
         end if
-        x=mod(dmonth,1.)
+        x=mod(month,1.)
         x1=1.-x
         w1=x1*(1.+x *(1.-1.5*x ))
         w2=x *(1.+x1*(1.-1.5*x1))
         w0=-.5*x *x1*x1
         w3=-.5*x1*x *x
-        input%data_ip = input%data_src(:,:,:,lc0)*w0 + input%data_src(:,:,:,lc1)*w1 + input%data_src(:,:,:,lc2)*w2 + input%data_src(:,:,:,lc3)*w3
+        input%data_ip = input%data_src(:,:,:,l_clim0)*w0 + input%data_src(:,:,:,l_clim1)*w1 + input%data_src(:,:,:,l_clim2)*w2 + input%data_src(:,:,:,l_clim3)*w3
         input => input%next
       end do
     end subroutine hycom_fabm_input_update
