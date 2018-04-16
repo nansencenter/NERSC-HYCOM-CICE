@@ -75,7 +75,7 @@ module mod_hycom_fabm
    integer, allocatable :: hycom_fabm_relax(:)
 
    integer :: m0, m1, m2, m3
-   integer :: l0, l1, l2, l3
+   integer :: lc0, lc1, lc2, lc3
    type type_input
       integer :: file_unit = -1
 
@@ -318,10 +318,10 @@ contains
       m0=mod(m1+10,12)+1
       m2=mod(m1,   12)+1
       m3=mod(m2,   12)+1
-      l0=1
-      l1=2
-      l2=3
-      l3=4
+      lc0=1
+      lc1=2
+      lc2=3
+      lc3=4
 
       ! Detect river forcing for pelagic state variables
       if (mnproc.eq.1) write (lp,*) 'Looking for river loadings for pelagic FABM state variables...'
@@ -380,10 +380,10 @@ contains
         call hycom_fabm_rdmonthck(util1, input%file_unit, 0)
       end do
 
-      call read_input(input,m0,l0)
-      call read_input(input,m1,l1)
-      call read_input(input,m2,l2)
-      call read_input(input,m3,l3)
+      call read_input(input,m0,lc0)
+      call read_input(input,m1,lc1)
+      call read_input(input,m2,lc2)
+      call read_input(input,m3,lc3)
     end function add_input
 
     subroutine read_input(input, mrec, lslot)
@@ -422,37 +422,38 @@ contains
     subroutine hycom_fabm_input_update(dtime, dyear0, dyear, dmonth)
       real, intent(in) :: dtime, dyear0, dyear, dmonth
 
-      integer :: mnth
+      integer :: imonth
       type (type_input), pointer :: input
-      real :: x, x1, w0, w1, w2, w3
+      real :: dmonth, x, x1, w0, w1, w2, w3
       integer :: lt
 
-      mnth=mod(month-1,12)+1
-      if (mnproc.eq.1) write(lp,*) 'update_inputs - month = ',month,mnth
+      dmonth=1.+mod(dtime+dyear0,dyear)/dmonth
+      imonth=int(dmonth)
+      if (mnproc.eq.1) write(lp,*) 'update_inputs - month = ',dmonth,imonth
       call xcsync(flush_lp)
 
       input => first_input
       do while (associated(input))
-        x=1.+mod(dtime+dyear0,dyear)/dmonth
-        if (int(x).ne.m1) then
-          m1=x
+        
+        if (imonth.ne.m1) then
+          m1=imonth
           m0=mod(m1+10,12)+1
           m2=mod(m1,   12)+1
           m3=mod(m2,   12)+1
-          lt = l0
-          l0=l1
-          l1=l2
-          l2=l3
-          l3=lt
+          lt = lc0
+          lc0=lc1
+          lc1=lc2
+          lc2=lc3
+          lc3=lt
           call read_input(input, m3, l3)
         end if
-        x=mod(x,1.)
+        x=mod(dmonth,1.)
         x1=1.-x
         w1=x1*(1.+x *(1.-1.5*x ))
         w2=x *(1.+x1*(1.-1.5*x1))
         w0=-.5*x *x1*x1
         w3=-.5*x1*x *x
-        input%data_ip = input%data_src(:,:,:,l0)*w0 + input%data_src(:,:,:,l1)*w1 + input%data_src(:,:,:,l2)*w2 + input%data_src(:,:,:,l3)*w3
+        input%data_ip = input%data_src(:,:,:,lc0)*w0 + input%data_src(:,:,:,lc1)*w1 + input%data_src(:,:,:,lc2)*w2 + input%data_src(:,:,:,lc3)*w3
         input => input%next
       end do
     end subroutine hycom_fabm_input_update
