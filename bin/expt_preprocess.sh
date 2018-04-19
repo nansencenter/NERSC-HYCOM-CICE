@@ -85,6 +85,7 @@ cp $P/blkdat.input blkdat.input || tellerror "No blkdat.input file"
 export LBFLAG=`grep "'lbflag' =" blkdat.input | awk '{printf("%03d", $1)}'`
 export EB=`grep "'iexpt ' =" blkdat.input | awk '{printf("%03d", $1)}'`
 export PRIVER=`grep "'priver' =" blkdat.input | awk '{printf("%1d", $1)}'`
+export NTRACR=`grep "'ntracr' =" blkdat.input | awk '{printf("%03d", $1)}'`
 export YRFLAG=`grep "'yrflag' =" blkdat.input | awk '{printf("%1d", $1)}'`
 export JERLV=`grep "'jerlv0' =" blkdat.input | awk '{printf("%1d", $1)}'`
 export SSSRLX=`grep "'sssflg' =" blkdat.input | awk '{printf("%1d", $1)}'`
@@ -349,6 +350,15 @@ if [ $PRIVER -eq 1 ] ; then
    echo "**Setting up river forcing"
    cp $BASEDIR/force/rivers/$E/rivers.a forcing.rivers.a || tellerror "Could not get river .a file"
    cp $BASEDIR/force/rivers/$E/rivers.b forcing.rivers.b || tellerror "Could not get river .b file"
+   if [ $NTRACR -ne 0 ] ; then
+      echo "**Setting up bio river forcing"
+      cp $BASEDIR/force/rivers/$E/ECO_no3.a forcing.ECO_no3.a || tellerror "Could not get NO3 river .a file"
+      cp $BASEDIR/force/rivers/$E/ECO_no3.b forcing.ECO_no3.b || tellerror "Could not get NO3 river .b file"
+      cp $BASEDIR/force/rivers/$E/ECO_sil.a forcing.ECO_sil.a || tellerror "Could not get SIL river .a file"
+      cp $BASEDIR/force/rivers/$E/ECO_sil.b forcing.ECO_sil.b || tellerror "Could not get SIL river .b file"
+      cp $BASEDIR/force/rivers/$E/ECO_pho.a forcing.ECO_pho.a || tellerror "Could not get PHO river .a file"
+      cp $BASEDIR/force/rivers/$E/ECO_pho.b forcing.ECO_pho.b || tellerror "Could not get PHO river .b file"
+   fi
 fi
 
 
