@@ -27,6 +27,7 @@ module mod_hycom_fabm
 
    public hycom_fabm_configure, hycom_fabm_allocate, hycom_fabm_initialize, hycom_fabm_initialize_state, hycom_fabm_update
    public hycom_fabm_relax_init, hycom_fabm_relax_rewind, hycom_fabm_relax_skmonth, hycom_fabm_relax_read, hycom_fabm_relax
+   public hycom_fabm_input_init, hycom_fabm_input_update
    public hycom_fabm_allocate_mean_output, hycom_fabm_zero_mean_output, hycom_fabm_increment_mean_output, hycom_fabm_end_mean_output, hycom_fabm_write_mean_output
    public fabm_surface_state, fabm_bottom_state
 
@@ -69,19 +70,20 @@ module mod_hycom_fabm
    integer, parameter :: role_prescribe = 0
    integer, parameter :: role_river = 1
 
-   integer, parameter :: first_relax_unit = 915
+   integer, save :: next_unit = 915
 
    integer, allocatable :: hycom_fabm_relax(:)
 
+   integer :: m_clim0, m_clim1, m_clim2, m_clim3
+   integer :: l_clim0, l_clim1, l_clim2, l_clim3
    type type_input
       integer :: file_unit = -1
 
       integer :: role = role_prescribe
       integer :: ivariable = -1           ! state variable index (only used if role is role_river)
-      real, allocatable :: data2d(:,:)
-      real, allocatable :: data3d(:,:,:)
-
+      real, allocatable :: data_ip(:,:,:), data_src(:,:,:,:)
       type (type_input), pointer :: next => null()
+      integer :: mrec = -1
    end type type_input
    type (type_input), pointer, save :: first_input => null()
 
@@ -257,7 +259,7 @@ contains
     subroutine hycom_fabm_relax_init()
       use mod_za  ! HYCOM I/O interface
 
-      integer :: ivar, next_unit, k
+      integer :: ivar, k
       logical :: file_exists
       character preambl(5)*79
 
@@ -267,10 +269,9 @@ contains
       ! Default: no relaxation
       hycom_fabm_relax = -1
 
-      next_unit = first_relax_unit
       if (mnproc.eq.1) write (lp,*) 'Looking for relaxation data for pelagic FABM state variables...'
       do ivar=1,size(fabm_model%state_variables)
-        ! Check fpor existence of a file named "relax.<FABMNAME>.a". If present, this will contain the relaxation field (one variable; all k levels)
+        ! Check for existence of a file named "relax.<FABMNAME>.a". If present, this will contain the relaxation field (one variable; all k levels)
         inquire(file=trim(flnmforw)//'relax.'//trim(fabm_model%state_variables(ivar)%name)//'.a', exist=file_exists)
         if (file_exists) then
           if (mnproc.eq.1) write (lp,*) '  - '//trim(fabm_model%state_variables(ivar)%name)//': ON, ' &
@@ -303,6 +304,161 @@ contains
         end if
       end do
     end subroutine hycom_fabm_relax_init
+
+    subroutine hycom_fabm_input_init(dtime, dyear0, dyear, dmonth)
+      real, intent(in) :: dtime, dyear0, dyear, dmonth
+
+      integer :: ivar
+      logical :: file_exists
+      type (type_input), pointer :: input
+
+      ! Months and slot indices for monthly climatological forcing
+      ! (shared between all inputs that are defined on monthly climatological time scales)
+      m_clim1=1.+mod(dtime+dyear0,dyear)/dmonth
+      m_clim0=mod(m_clim1+10,12)+1
+      m_clim2=mod(m_clim1,   12)+1
+      m_clim3=mod(m_clim2,   12)+1
+      l_clim0=1
+      l_clim1=2
+      l_clim2=3
+      l_clim3=4
+
+      ! Detect river forcing for pelagic state variables
+      if (mnproc.eq.1) write (lp,*) 'Looking for river loadings for pelagic FABM state variables...'
+      do ivar=1,size(fabm_model%state_variables)
+        ! Check for existence of a file named "rivers.<FABMNAME>.a". If present, this will contain the river loadings for this variable across the entire model grid (one 2d variable; units <UNITS>*m/s)
+        inquire(file=trim(flnmforw)//'rivers.'//trim(fabm_model%state_variables(ivar)%name)//'.a', exist=file_exists)
+        if (file_exists) then
+          if (mnproc.eq.1) write (lp,*) '  - '//trim(fabm_model%state_variables(ivar)%name)//': ON, ' &
+            //trim(flnmforw)//'rivers.'//trim(fabm_model%state_variables(ivar)%name)//'.a was found.'
+          input => add_input(trim(flnmforw)//'rivers.'//trim(fabm_model%state_variables(ivar)%name)//'.a', .true.)
+          input%role = role_river
+          input%ivariable = ivar
+        else
+          ! Disable river input for this tracer
+          if (mnproc.eq.1) write (lp,*) '  - '//trim(fabm_model%state_variables(ivar)%name)//': OFF, ' &
+            //trim(flnmforw)//'rivers.'//trim(fabm_model%state_variables(ivar)%name)//'.a not found.'
+        end if
+      end do
+    end subroutine hycom_fabm_input_init
+
+    function add_input(path, is_2d) result(input)
+      use mod_za  ! HYCOM I/O interface
+
+      character(len=*), intent(in) :: path
+      logical,          intent(in) :: is_2d
+      type (type_input), pointer :: input
+
+      integer :: k
+      character preambl(5)*79
+
+      allocate(input)
+      if (is_2d) then
+        allocate(input%data_ip(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,1))
+      else
+        allocate(input%data_ip(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kk))
+      end if
+      allocate(input%data_src(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,size(input%data_ip,3),4))
+      input%file_unit = next_unit
+      input%next => first_input
+      first_input => input%next
+      next_unit = next_unit + 1
+
+      ! Open binary file (.a)
+      call zaiopf(path, 'old', input%file_unit)
+
+      ! Open metadata (.b)
+      if (mnproc.eq.1) then  ! .b file from 1st tile only
+        open (unit=uoff+input%file_unit, file=path(1:len(path)-2)//'.b', &
+            status='old', action='read')
+        read (uoff+input%file_unit,'(a79)') preambl
+      end if !1st tile
+      call preambl_print(preambl)
+
+      ! ?? Not sure why we are reading here, copying from forfun.F
+      do k=1,size(input%data_ip, 3)
+        call hycom_fabm_rdmonthck(util1, input%file_unit, 0)
+      end do
+
+      call read_input(input,m_clim0,l_clim0)
+      call read_input(input,m_clim1,l_clim1)
+      call read_input(input,m_clim2,l_clim2)
+      call read_input(input,m_clim3,l_clim3)
+    end function add_input
+
+    subroutine read_input(input, mrec, lslot)
+      use mod_za  ! HYCOM I/O interface
+
+      type (type_input), intent(inout) :: input
+      integer,           intent(in)    :: mrec, lslot
+
+      integer :: irec, k
+
+      if (mrec <= input%mrec) then
+        ! Rewind
+        if (mnproc.eq.1) then  ! .b file from 1st tile only
+          rewind uoff+input%file_unit
+          read  (uoff+input%file_unit,*)
+          read  (uoff+input%file_unit,*)
+          read  (uoff+input%file_unit,*)
+          read  (uoff+input%file_unit,*)
+          read  (uoff+input%file_unit,*)
+        end if
+        call zaiorw(input%file_unit)
+        input%mrec = 0
+      end if
+
+      do irec=input%mrec+1,mrec-1
+        do k=1,size(input%data_src, 3)
+          call skmonth(input%file_unit)
+        end do
+      end do
+
+      do k= 1,size(input%data_src,3)
+        call hycom_fabm_rdmonthck(input%data_src(1-nbdy,1-nbdy,k,lslot), input%file_unit, mrec)
+      end do
+
+      input%mrec = mrec
+    end subroutine read_input
+
+    subroutine hycom_fabm_input_update(dtime, dyear0, dyear, dmonth)
+      real, intent(in) :: dtime, dyear0, dyear, dmonth
+
+      integer :: imonth
+      type (type_input), pointer :: input
+      real :: month, x, x1, w0, w1, w2, w3
+      integer :: lt
+
+      month=1.+mod(dtime+dyear0,dyear)/dmonth
+      imonth=int(month)
+      if (mnproc.eq.1) write(lp,*) 'update_inputs - month = ',month,imonth
+      call xcsync(flush_lp)
+
+      input => first_input
+      do while (associated(input))
+        
+        if (imonth.ne.m_clim1) then
+          m_clim1=imonth
+          m_clim0=mod(m_clim1+10,12)+1
+          m_clim2=mod(m_clim1,   12)+1
+          m_clim3=mod(m_clim2,   12)+1
+          lt = l_clim0
+          l_clim0=l_clim1
+          l_clim1=l_clim2
+          l_clim2=l_clim3
+          l_clim3=lt
+          call read_input(input, m_clim3, l3)
+        end if
+        x=mod(month,1.)
+        x1=1.-x
+        w1=x1*(1.+x *(1.-1.5*x ))
+        w2=x *(1.+x1*(1.-1.5*x1))
+        w0=-.5*x *x1*x1
+        w3=-.5*x1*x *x
+        input%data_ip = input%data_src(:,:,:,l_clim0)*w0 + input%data_src(:,:,:,l_clim1)*w1 + input%data_src(:,:,:,l_clim2)*w2 + input%data_src(:,:,:,l_clim3)*w3
+        input => input%next
+      end do
+    end subroutine hycom_fabm_input_update
 
     subroutine hycom_fabm_relax_rewind()
       use mod_za
@@ -570,7 +726,7 @@ contains
       do while (associated(input))
         if (input%role == role_river) then
           ! River field
-          tracer(1:ii, 1:jj, 1, n, input%ivariable) = tracer(1:ii, 1:jj, 1, n, input%ivariable) + delt1 * input%data2d(1:ii, 1:jj)/h(1:ii, 1:jj, 1)
+          tracer(1:ii, 1:jj, 1, n, input%ivariable) = tracer(1:ii, 1:jj, 1, n, input%ivariable) + delt1 * input%data_ip(1:ii, 1:jj, 1)/h(1:ii, 1:jj, 1)
         end if
         input => input%next
       end do
