@@ -2641,6 +2641,11 @@ c
         wn1=-99.0
         call rdnest(dtime0)
       endif
+
+#ifdef _FABM_
+      call hycom_fabm_input_init(dtime, dyear0, dyear, dmonth)
+#endif
+
 #endif /* USE_CCSM3:else */
 c
 c --- initialize incremental update.
@@ -3122,6 +3127,9 @@ cdiag if (mnproc.eq.1) then
 cdiag write (lp,'(i9,'' relax time interpolation: months'',4i3,
 cdiag.  '',  weights '',4f6.3)') nstep,lc0,lc1,lc2,lc3,wc0,wc1,wc2,wc3
 cdiag endif !1st tile
+#ifdef _FABM_
+      call hycom_fabm_input_update(dtime, dyear0, dyear, dmonth)
+#endif
 #endif /* USE_CCSM3:else */
 c
 #if defined(USE_ESMF)
