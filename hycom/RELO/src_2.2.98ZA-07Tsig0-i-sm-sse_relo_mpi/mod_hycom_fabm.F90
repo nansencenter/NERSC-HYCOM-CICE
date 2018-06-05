@@ -596,9 +596,19 @@ contains
       ! Store old surface/bottom state for later application of Robert-Asselin filter.
       fabm_surface_state_old = fabm_surface_state(:, :, n, :)
       fabm_bottom_state_old = fabm_bottom_state(:, :, n, :)
-
       ! Make sure the biogeochemical state is valid (uses clipping if necessary)
       call check_state('when entering fabm_hycom_update', current_time_index, .true.)
+      ! Copy bottom value for pelagic tracers to all layers below bottom
+      ! (currently masked, but could be revived later)
+      do j=1,jj
+        do i=1,ii
+          if (SEA_P) then
+            do k=kbottom(i, j)+1, kk
+              tracer(i, j, k, m, :) = tracer(i, j, kbottom(i, j), m, :)
+            end do
+          end if
+        end do
+      end do
 
       ! Vertical movement (includes sinking and floating)
       if (do_vertical_movement) then
@@ -648,23 +658,23 @@ contains
         do i=1,ii
           if (kbottomn(i, j) > 0) then
             fabm_bottom_state(i, j, n, :) = fabm_bottom_state(i, j, n, :) + delt1 * sms_bt(i, :) ! update sediment layer
-            if ( dp(i, j, min(kbottomn(i,j),kbottom(i,j)), n)/onem >= 9.999 ) then ! check if the bottom layer is thicker than 10 meters, if so, apply the flux as usual (I will decrease the criteria in time)
-              tracer(i, j, min(kbottomn(i,j),kbottom(i,j)), n, :) = tracer(i, j, min(kbottomn(i,j),kbottom(i,j)), n, :) + delt1 * flux(i, :)/dp(i, j, min(kbottomn(i,j),kbottom(i,j)), n)*onem
+            if ( dp(i, j, kbottomn(i,j), n)/onem >= 6.0 ) then ! check if the bottom layer is thicker than 10 meters, if so, apply the flux as usual (I will decrease the criteria in time)
+              tracer(i, j, kbottomn(i,j), n, :) = tracer(i, j, kbottomn(i,j), n, :) + delt1 * flux(i, :)/dp(i, j, kbottomn(i,j), n)*onem
             else ! in case less than 10 meters, to avoid accumulation at the bottom thin layers, distribute the flux into multiple layers that add up to > 10 meters thickness
               hbottom = 0
               nbottom = 0
-              do k = min(kbottomn(i,j),kbottom(i,j)),1,-1
+              do k = kbottomn(i,j),1,-1
                 hbottom = hbottom + dp(i ,j , k, n)/onem
-                if ( hbottom >= 9.999 ) exit
+                if ( hbottom >= 6.0 ) exit
                 nbottom = nbottom + 1
               end do
-              do k = min(kbottomn(i,j),kbottom(i,j))-nbottom , min(kbottomn(i,j),kbottom(i,j)) ! distribute the flux to total height, and to multiple layers
+              do k = kbottomn(i,j)-nbottom , kbottomn(i,j) ! distribute the flux to total height, and to multiple layers
                 tracer(i, j, k, n, :) = tracer(i, j, k, n, :) + delt1 * flux(i, :)/hbottom
               end do
             end if
 #ifdef FABM_CHECK_NAN
-            if (any(isnan(tracer(i, j, min(kbottomn(i,j),kbottom(i,j)), n, :)))) then
-              write (*,*) 'NaN after do_bottom:', tracer(i, j, min(kbottomn(i,j),kbottom(i,j)), n, :), flux(i, :), dp(i, j, min(kbottomn(i,j),kbottom(i,j)), n)/onem
+            if (any(isnan(tracer(i, j, kbottomn(i,j), n, :)))) then
+              write (*,*) 'NaN after do_bottom:', tracer(i, j, kbottomn(i,j), n, :), flux(i, :), dp(i, j, kbottomn(i,j), n)/onem
               stop
             end if
 #endif
@@ -734,20 +744,25 @@ contains
 
       ! Copy bottom value for pelagic tracers to all layers below bottom
       ! (currently masked, but could be revived later)
-      do j=1,jj
-        do i=1,ii
-          if (SEA_P) then
-            do k=min(kbottomn(i, j),kbottom(i,j))+1, kk
-              tracer(i, j, k, n, :) = tracer(i, j, min(kbottomn(i, j),kbottom(i,j)), n, :)
-            end do
-          end if
-        end do
-      end do
+!      do j=1,jj
+!        do i=1,ii
+!          if (SEA_P) then
+!            do k=kbottomn(i, j)+1, kk
+!              tracer(i, j, k, n, :) = tracer(i, j, kbottomn(i,j), n, :)
+!            end do
+!              if ( tracer(i, j, 50, n, 14) < -2E+10 ) then
+!                write(*,*)'DETECTED',k,kbottom(i, j),kbottomn(i, j)
+!                write(*,*)'DETECTED',mask(i,j,kbottom(i,j)),mask(i,j,kbottomn(i, j))
+!                write(*,*)'DETECTED',tracer(i, j, :, n, 14)
+!              endif
+!          end if
+!        end do
+!      end do
       ! Apply the Robert-Asselin filter to the surface and bottom state.
       ! Note that RA will be applied to the pelagic tracers within mod_tsavc - no need to do it here!
       ! CAGLAR: Since there is no advection of sediment and surface state, applying a filter here is unnecessary. Setting it to state_m prevents (-) variables for the next time step.
-      fabm_surface_state(1:ii, 1:jj, m, :) = fabm_surface_state(1:ii, 1:jj, n, :)! + 0.5*ra2fac*(fabm_surface_state_old(1:ii, 1:jj, :)+fabm_surface_state(1:ii, 1:jj, n, :)-2.0*fabm_surface_state(1:ii, 1:jj, m, :))
-      fabm_bottom_state(1:ii, 1:jj, m, :) = fabm_bottom_state(1:ii, 1:jj, n, :)!fabm_bottom_state(1:ii, 1:jj, m, :) + 0.5*ra2fac*(fabm_bottom_state_old(1:ii, 1:jj, :)+fabm_bottom_state(1:ii, 1:jj, n, :)-2.0*fabm_bottom_state(1:ii, 1:jj, m, :))
+      fabm_surface_state(1:ii, 1:jj, m, :) = fabm_surface_state(1:ii, 1:jj, m, :) + 0.5*ra2fac*(fabm_surface_state_old(1:ii, 1:jj, :)+fabm_surface_state(1:ii, 1:jj, n, :)-2.0*fabm_surface_state(1:ii, 1:jj, m, :))
+      fabm_bottom_state(1:ii, 1:jj, m, :) = fabm_bottom_state(1:ii, 1:jj, m, :) + 0.5*ra2fac*(fabm_bottom_state_old(1:ii, 1:jj, :)+fabm_bottom_state(1:ii, 1:jj, n, :)-2.0*fabm_bottom_state(1:ii, 1:jj, m, :))
 
     end subroutine hycom_fabm_update
 
@@ -823,7 +838,7 @@ contains
           ! Update state
           do i=1,ii
             kabove = 0
-            do k=1,min(kbottom(i, j),kbottomn(i, j))-1
+            do k=1,kbottomn(i, j)-1
               if (dp(i, j, k, n) > 0) kabove = k
               if (flux(i, k) /= 0) then
                 ! non-zero flux across interface
@@ -833,22 +848,22 @@ contains
                 flux(i, k) = 0
                 else
                   ! Prevent accumulation of settling particles in thin layers 
-                  if ( flux(i, k) < 0 .and. k == min(kbottom(i, j),kbottomn(i, j))-1 ) then ! if settling and if at the layer above the bottom
-                    if ( dp(i, j, k+1, n)/onem >= 9.999 ) then ! check if the bottom layer is actually < 10 meters, if not, apply the regular flux additions
+                  if ( flux(i, k) < 0 .and. k == kbottomn(i, j)-1 ) then ! if settling and if at the layer above the bottom
+                    if ( dp(i, j, k+1, n)/onem >= 6.0 ) then ! check if the bottom layer is actually < 10 meters, if not, apply the regular flux additions
                       tracer(i, j, kabove, n, ivar) = tracer(i, j, kabove, n, ivar) + flux(i, k)*timestep/(dp(i, j, kabove, n)/onem)
                       tracer(i, j, k+1, n, ivar) = tracer(i, j, k+1, n, ivar) - flux(i, k)*timestep/(dp(i, j, k+1, n)/onem)
                       else ! if < 10 meters
                         hbottom = 0
                         nbottom = 0 
-                        do kb = min(kbottom(i, j),kbottomn(i, j)),1,-1 ! find number of layers that add up to > 10 meters, and store the total height
+                        do kb = kbottomn(i, j),1,-1 ! find number of layers that add up to > 10 meters, and store the total height
                           hbottom = hbottom + dp(i ,j , kb, n)/onem
-                          if ( hbottom >= 9.999 ) exit
+                          if ( hbottom >= 6.0 ) exit
                           nbottom = nbottom + 1
                         end do
                         ! Settle the particles from kabove
                         tracer(i, j, kabove, n, ivar) = tracer(i, j, kabove, n, ivar) + flux(i, k)*timestep/(dp(i, j, kabove, n)/onem) 
                         ! and distribute that flux to multiple layers which the depths add up to > 10 meters
-                        do kb = min(kbottom(i, j),kbottomn(i, j)) - nbottom , min(kbottom(i, j),kbottomn(i, j))
+                        do kb = kbottomn(i, j) - nbottom , kbottomn(i, j)
                           tracer(i, j, kb, n, ivar) = tracer(i, j, kb, n, ivar) - flux(i, k)*timestep/hbottom
                         end do
                     end if  
