@@ -1,5 +1,0 @@
-ifort             -g -tpp7 -O3 -convert big_endian -c archm2restart.f
-ifort: command line remark #10148: option '-tpp7' not supported
-ifort -g -tpp7 -O3 -convert big_endian -Vaxlib -o archm2restart archm2restart.o mod_plot.o mod_xc.o mod_za.o mod_restart.o wtime.o bigrid.o           blkin.o buoflx.o extrct.o  extrot.o fordate.o getdat.o  getdtm.o getdepth.o indxi.o  indxj.o pakk.o             psmoo.o zebra.o  zh.o dum_gks.o
-ifort: command line remark #10148: option '-tpp7' not supported
-ifort: command line remark #10148: option '-Vaxlib' not supported
