@@ -27,17 +27,19 @@ module mod_hycom_fabm
 
    public hycom_fabm_configure, hycom_fabm_allocate, hycom_fabm_initialize, hycom_fabm_initialize_state, hycom_fabm_update
    public hycom_fabm_relax_init, hycom_fabm_relax_rewind, hycom_fabm_relax_skmonth, hycom_fabm_relax_read, hycom_fabm_relax
+   public hycom_fabm_input_init, hycom_fabm_input_update
    public hycom_fabm_allocate_mean_output, hycom_fabm_zero_mean_output, hycom_fabm_increment_mean_output, hycom_fabm_end_mean_output, hycom_fabm_write_mean_output
    public fabm_surface_state, fabm_bottom_state
 
    class (type_model), pointer, save, public :: fabm_model => null()
    real, allocatable :: swflx_fabm(:, :)
    real, allocatable :: bottom_stress(:, :)
+   real :: bottom_stress_keep 
    logical, allocatable :: mask(:, :, :)
    integer, allocatable :: kbottom(:, :)
-! CAGLAR
    integer, allocatable :: kbottomn(:, :)
-! CAGLAR
+   integer :: nbottom
+   real :: hbottom
    real, allocatable :: h(:, :, :)
    real, allocatable, target :: fabm_surface_state(:, :, :, :)
    real, allocatable, target :: fabm_bottom_state(:, :, :, :)
@@ -68,19 +70,20 @@ module mod_hycom_fabm
    integer, parameter :: role_prescribe = 0
    integer, parameter :: role_river = 1
 
-   integer, parameter :: first_relax_unit = 915
+   integer, save :: next_unit = 915
 
    integer, allocatable :: hycom_fabm_relax(:)
 
+   integer :: m_clim0, m_clim1, m_clim2, m_clim3
+   integer :: l_clim0, l_clim1, l_clim2, l_clim3
    type type_input
       integer :: file_unit = -1
 
       integer :: role = role_prescribe
       integer :: ivariable = -1           ! state variable index (only used if role is role_river)
-      real, allocatable :: data2d(:,:)
-      real, allocatable :: data3d(:,:,:)
-
+      real, allocatable :: data_ip(:,:,:), data_src(:,:,:,:)
       type (type_input), pointer :: next => null()
+      integer :: mrec = -1
    end type type_input
    type (type_input), pointer, save :: first_input => null()
 
@@ -133,9 +136,7 @@ contains
         allocate(bottom_stress(ii, jj))
         allocate(mask(ii, jj, kk))
         allocate(kbottom(ii, jj))
-! CAGLAR
         allocate(kbottomn(ii, jj))
-! CAGLAR
         allocate(h(ii, jj, kk))
         allocate(fabm_surface_state(1-nbdy:ii+nbdy, 1-nbdy:jj+nbdy, 2, size(fabm_model%surface_state_variables)))
         allocate(fabm_bottom_state(1-nbdy:ii+nbdy, 1-nbdy:jj+nbdy, 2, size(fabm_model%bottom_state_variables)))
@@ -258,7 +259,7 @@ contains
     subroutine hycom_fabm_relax_init()
       use mod_za  ! HYCOM I/O interface
 
-      integer :: ivar, next_unit, k
+      integer :: ivar, k
       logical :: file_exists
       character preambl(5)*79
 
@@ -268,10 +269,9 @@ contains
       ! Default: no relaxation
       hycom_fabm_relax = -1
 
-      next_unit = first_relax_unit
       if (mnproc.eq.1) write (lp,*) 'Looking for relaxation data for pelagic FABM state variables...'
       do ivar=1,size(fabm_model%state_variables)
-        ! Check fpor existence of a file named "relax.<FABMNAME>.a". If present, this will contain the relaxation field (one variable; all k levels)
+        ! Check for existence of a file named "relax.<FABMNAME>.a". If present, this will contain the relaxation field (one variable; all k levels)
         inquire(file=trim(flnmforw)//'relax.'//trim(fabm_model%state_variables(ivar)%name)//'.a', exist=file_exists)
         if (file_exists) then
           if (mnproc.eq.1) write (lp,*) '  - '//trim(fabm_model%state_variables(ivar)%name)//': ON, ' &
@@ -304,6 +304,161 @@ contains
         end if
       end do
     end subroutine hycom_fabm_relax_init
+
+    subroutine hycom_fabm_input_init(dtime, dyear0, dyear, dmonth)
+      real, intent(in) :: dtime, dyear0, dyear, dmonth
+
+      integer :: ivar
+      logical :: file_exists
+      type (type_input), pointer :: input
+
+      ! Months and slot indices for monthly climatological forcing
+      ! (shared between all inputs that are defined on monthly climatological time scales)
+      m_clim1=1.+mod(dtime+dyear0,dyear)/dmonth
+      m_clim0=mod(m_clim1+10,12)+1
+      m_clim2=mod(m_clim1,   12)+1
+      m_clim3=mod(m_clim2,   12)+1
+      l_clim0=1
+      l_clim1=2
+      l_clim2=3
+      l_clim3=4
+
+      ! Detect river forcing for pelagic state variables
+      if (mnproc.eq.1) write (lp,*) 'Looking for river loadings for pelagic FABM state variables...'
+      do ivar=1,size(fabm_model%state_variables)
+        ! Check for existence of a file named "rivers.<FABMNAME>.a". If present, this will contain the river loadings for this variable across the entire model grid (one 2d variable; units <UNITS>*m/s)
+        inquire(file=trim(flnmforw)//'rivers.'//trim(fabm_model%state_variables(ivar)%name)//'.a', exist=file_exists)
+        if (file_exists) then
+          if (mnproc.eq.1) write (lp,*) '  - '//trim(fabm_model%state_variables(ivar)%name)//': ON, ' &
+            //trim(flnmforw)//'rivers.'//trim(fabm_model%state_variables(ivar)%name)//'.a was found.'
+          input => add_input(trim(flnmforw)//'rivers.'//trim(fabm_model%state_variables(ivar)%name)//'.a', .true.)
+          input%role = role_river
+          input%ivariable = ivar
+        else
+          ! Disable river input for this tracer
+          if (mnproc.eq.1) write (lp,*) '  - '//trim(fabm_model%state_variables(ivar)%name)//': OFF, ' &
+            //trim(flnmforw)//'rivers.'//trim(fabm_model%state_variables(ivar)%name)//'.a not found.'
+        end if
+      end do
+    end subroutine hycom_fabm_input_init
+
+    function add_input(path, is_2d) result(input)
+      use mod_za  ! HYCOM I/O interface
+
+      character(len=*), intent(in) :: path
+      logical,          intent(in) :: is_2d
+      type (type_input), pointer :: input
+
+      integer :: k
+      character preambl(5)*79
+
+      allocate(input)
+      if (is_2d) then
+        allocate(input%data_ip(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,1))
+      else
+        allocate(input%data_ip(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kk))
+      end if
+      allocate(input%data_src(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,size(input%data_ip,3),4))
+      input%file_unit = next_unit
+      input%next => first_input
+      first_input => input%next
+      next_unit = next_unit + 1
+
+      ! Open binary file (.a)
+      call zaiopf(path, 'old', input%file_unit)
+
+      ! Open metadata (.b)
+      if (mnproc.eq.1) then  ! .b file from 1st tile only
+        open (unit=uoff+input%file_unit, file=path(1:len(path)-2)//'.b', &
+            status='old', action='read')
+        read (uoff+input%file_unit,'(a79)') preambl
+      end if !1st tile
+      call preambl_print(preambl)
+
+      ! ?? Not sure why we are reading here, copying from forfun.F
+      do k=1,size(input%data_ip, 3)
+        call hycom_fabm_rdmonthck(util1, input%file_unit, 0)
+      end do
+
+      call read_input(input,m_clim0,l_clim0)
+      call read_input(input,m_clim1,l_clim1)
+      call read_input(input,m_clim2,l_clim2)
+      call read_input(input,m_clim3,l_clim3)
+    end function add_input
+
+    subroutine read_input(input, mrec, lslot)
+      use mod_za  ! HYCOM I/O interface
+
+      type (type_input), intent(inout) :: input
+      integer,           intent(in)    :: mrec, lslot
+
+      integer :: irec, k
+
+      if (mrec <= input%mrec) then
+        ! Rewind
+        if (mnproc.eq.1) then  ! .b file from 1st tile only
+          rewind uoff+input%file_unit
+          read  (uoff+input%file_unit,*)
+          read  (uoff+input%file_unit,*)
+          read  (uoff+input%file_unit,*)
+          read  (uoff+input%file_unit,*)
+          read  (uoff+input%file_unit,*)
+        end if
+        call zaiorw(input%file_unit)
+        input%mrec = 0
+      end if
+
+      do irec=input%mrec+1,mrec-1
+        do k=1,size(input%data_src, 3)
+          call skmonth(input%file_unit)
+        end do
+      end do
+
+      do k= 1,size(input%data_src,3)
+        call hycom_fabm_rdmonthck(input%data_src(1-nbdy,1-nbdy,k,lslot), input%file_unit, mrec)
+      end do
+
+      input%mrec = mrec
+    end subroutine read_input
+
+    subroutine hycom_fabm_input_update(dtime, dyear0, dyear, dmonth)
+      real, intent(in) :: dtime, dyear0, dyear, dmonth
+
+      integer :: imonth
+      type (type_input), pointer :: input
+      real :: month, x, x1, w0, w1, w2, w3
+      integer :: lt
+
+      month=1.+mod(dtime+dyear0,dyear)/dmonth
+      imonth=int(month)
+      if (mnproc.eq.1) write(lp,*) 'update_inputs - month = ',month,imonth
+      call xcsync(flush_lp)
+
+      input => first_input
+      do while (associated(input))
+        
+        if (imonth.ne.m_clim1) then
+          m_clim1=imonth
+          m_clim0=mod(m_clim1+10,12)+1
+          m_clim2=mod(m_clim1,   12)+1
+          m_clim3=mod(m_clim2,   12)+1
+          lt = l_clim0
+          l_clim0=l_clim1
+          l_clim1=l_clim2
+          l_clim2=l_clim3
+          l_clim3=lt
+          call read_input(input, m_clim3, l3)
+        end if
+        x=mod(month,1.)
+        x1=1.-x
+        w1=x1*(1.+x *(1.-1.5*x ))
+        w2=x *(1.+x1*(1.-1.5*x1))
+        w0=-.5*x *x1*x1
+        w3=-.5*x1*x *x
+        input%data_ip = input%data_src(:,:,:,l_clim0)*w0 + input%data_src(:,:,:,l_clim1)*w1 + input%data_src(:,:,:,l_clim2)*w2 + input%data_src(:,:,:,l_clim3)*w3
+        input => input%next
+      end do
+    end subroutine hycom_fabm_input_update
 
     subroutine hycom_fabm_relax_rewind()
       use mod_za
@@ -430,14 +585,30 @@ contains
 !
       ! Send state at midpoint time=t (time index m) to FABM.
       ! As per leapfrog spec, fluxes at this time are used to update the state at t-delta_t to t+delta_t (both stored at time index n)
+      ! This also sets FABM's mask, which will exclude layers that are vanishingly thin at either time m or n (or both).
       call update_fabm_data(m, initializing=.false.)  ! skipping thin layers
+
+      ! Get index of bottom layers at the next time step.
+      ! For that we use time index n, which assumes dp(:,:,:,n) has already been updated!
+      ! A (partial?) update seems to happen in cnuity, which is indeed called before trcupd.
+      call get_bottom_k(n, kbottomn)
 
       ! Store old surface/bottom state for later application of Robert-Asselin filter.
       fabm_surface_state_old = fabm_surface_state(:, :, n, :)
       fabm_bottom_state_old = fabm_bottom_state(:, :, n, :)
-
       ! Make sure the biogeochemical state is valid (uses clipping if necessary)
       call check_state('when entering fabm_hycom_update', current_time_index, .true.)
+      ! Copy bottom value for pelagic tracers to all layers below bottom
+      ! (currently masked, but could be revived later)
+      do j=1,jj
+        do i=1,ii
+          if (SEA_P) then
+            do k=kbottom(i, j)+1, kk
+              tracer(i, j, k, m, :) = tracer(i, j, kbottom(i, j), m, :)
+            end do
+          end if
+        end do
+      end do
 
       ! Vertical movement (includes sinking and floating)
       if (do_vertical_movement) then
@@ -484,15 +655,26 @@ contains
         flux = 0
         sms_bt = 0
         call fabm_do_bottom(fabm_model, 1, ii, j, flux, sms_bt)
-        do ivar=1,size(fabm_model%bottom_state_variables)
-          fabm_bottom_state(1:ii, j, n, ivar) = fabm_bottom_state(1:ii, j, n, ivar) + delt1 * sms_bt(1:ii, ivar)
-        end do
         do i=1,ii
-          if (SEA_P) then
-            tracer(i, j, kbottom(i, j), n, :) = tracer(i, j, kbottom(i, j), n, :) + delt1 * flux(i, :)/h(i, j, kbottom(i, j))
+          if (kbottomn(i, j) > 0) then
+            fabm_bottom_state(i, j, n, :) = fabm_bottom_state(i, j, n, :) + delt1 * sms_bt(i, :) ! update sediment layer
+            if ( dp(i, j, kbottomn(i,j), n)/onem >= 6.0 ) then ! check if the bottom layer is thicker than 10 meters, if so, apply the flux as usual (I will decrease the criteria in time)
+              tracer(i, j, kbottomn(i,j), n, :) = tracer(i, j, kbottomn(i,j), n, :) + delt1 * flux(i, :)/dp(i, j, kbottomn(i,j), n)*onem
+            else ! in case less than 10 meters, to avoid accumulation at the bottom thin layers, distribute the flux into multiple layers that add up to > 10 meters thickness
+              hbottom = 0
+              nbottom = 0
+              do k = kbottomn(i,j),1,-1
+                hbottom = hbottom + dp(i ,j , k, n)/onem
+                if ( hbottom >= 6.0 ) exit
+                nbottom = nbottom + 1
+              end do
+              do k = kbottomn(i,j)-nbottom , kbottomn(i,j) ! distribute the flux to total height, and to multiple layers
+                tracer(i, j, k, n, :) = tracer(i, j, k, n, :) + delt1 * flux(i, :)/hbottom
+              end do
+            end if
 #ifdef FABM_CHECK_NAN
-            if (any(isnan(tracer(i, j, kbottom(i, j), n, :)))) then
-              write (*,*) 'NaN after do_bottom:', tracer(i, j, kbottom(i, j), n, :), flux(i, :), h(i, j, kbottom(i, j))
+            if (any(isnan(tracer(i, j, kbottomn(i,j), n, :)))) then
+              write (*,*) 'NaN after do_bottom:', tracer(i, j, kbottomn(i,j), n, :), flux(i, :), dp(i, j, kbottomn(i,j), n)/onem
               stop
             end if
 #endif
@@ -508,15 +690,13 @@ contains
         flux = 0
         sms_sf = 0
         call fabm_do_surface(fabm_model, 1, ii, j, flux, sms_sf)
-        do ivar=1,size(fabm_model%surface_state_variables)
-          fabm_surface_state(1:ii, j, n, ivar) = fabm_surface_state(1:ii, j, n, ivar) + delt1 * sms_sf(1:ii, ivar)
-        end do
         do i=1,ii
-          if (SEA_P) then
-            tracer(i, j, 1, n, :) = tracer(i, j, 1, n, :) + delt1 * flux(i, :)/h(i, j, 1)
+          if (kbottomn(i, j) > 0) then
+            fabm_surface_state(i, j, n, :) = fabm_surface_state(i, j, n, :) + delt1 * sms_sf(i, :)
+            tracer(i, j, 1, n, :) = tracer(i, j, 1, n, :) + delt1 * flux(i, :)/dp(i, j, 1, n)*onem
 #ifdef FABM_CHECK_NAN
             if (any(isnan(tracer(i, j, 1, n, :)))) then
-              write (*,*) 'NaN after do_surface:', tracer(i, j, 1, n, :), flux(i, :), h(i, j, 1)
+              write (*,*) 'NaN after do_surface:', tracer(i, j, 1, n, :), flux(i, :), dp(i, j, 1, n)/onem
               stop
             end if
 #endif
@@ -556,41 +736,31 @@ contains
       do while (associated(input))
         if (input%role == role_river) then
           ! River field
-          tracer(1:ii, 1:jj, 1, n, input%ivariable) = tracer(1:ii, 1:jj, 1, n, input%ivariable) + delt1 * input%data2d(1:ii, 1:jj)/h(1:ii, 1:jj, 1)
+          tracer(1:ii, 1:jj, 1, n, input%ivariable) = tracer(1:ii, 1:jj, 1, n, input%ivariable) + delt1 * input%data_ip(1:ii, 1:jj, 1)/h(1:ii, 1:jj, 1)
         end if
         input => input%next
       end do
-
       call check_state('after hycom_fabm_update', n, .true.)
 
       ! Copy bottom value for pelagic tracers to all layers below bottom
       ! (currently masked, but could be revived later)
-      do j=1,jj
-        do i=1,ii
-          if (SEA_P) then
-! CAGLAR
-!do k=kk,1,-1
-!   if (dp(i, j, k, n)/onem>0.1) exit
-!end do
-!kbottomn(i, j) = max(k, 2)
-!if (kbottomn(i, j)<kbottom(i, j) ) then
-!  do k=kbottomn(i, j)+1,kk
-!    tracer(i, j, k, n, :) = tracer(i, j, kbottomn(i, j), n, :)
-!  enddo
-!else
-! CAGLAR
-            do k=kbottom(i, j)+1, kk
-               tracer(i, j, k, n, :) = tracer(i, j, kbottom(i, j), n, :)
-            end do
-! CAGLAR
-!endif
-! CAGLAR
-          end if
-        end do
-      end do
-
+!      do j=1,jj
+!        do i=1,ii
+!          if (SEA_P) then
+!            do k=kbottomn(i, j)+1, kk
+!              tracer(i, j, k, n, :) = tracer(i, j, kbottomn(i,j), n, :)
+!            end do
+!              if ( tracer(i, j, 50, n, 14) < -2E+10 ) then
+!                write(*,*)'DETECTED',k,kbottom(i, j),kbottomn(i, j)
+!                write(*,*)'DETECTED',mask(i,j,kbottom(i,j)),mask(i,j,kbottomn(i, j))
+!                write(*,*)'DETECTED',tracer(i, j, :, n, 14)
+!              endif
+!          end if
+!        end do
+!      end do
       ! Apply the Robert-Asselin filter to the surface and bottom state.
       ! Note that RA will be applied to the pelagic tracers within mod_tsavc - no need to do it here!
+      ! CAGLAR: Since there is no advection of sediment and surface state, applying a filter here is unnecessary. Setting it to state_m prevents (-) variables for the next time step.
       fabm_surface_state(1:ii, 1:jj, m, :) = fabm_surface_state(1:ii, 1:jj, m, :) + 0.5*ra2fac*(fabm_surface_state_old(1:ii, 1:jj, :)+fabm_surface_state(1:ii, 1:jj, n, :)-2.0*fabm_surface_state(1:ii, 1:jj, m, :))
       fabm_bottom_state(1:ii, 1:jj, m, :) = fabm_bottom_state(1:ii, 1:jj, m, :) + 0.5*ra2fac*(fabm_bottom_state_old(1:ii, 1:jj, :)+fabm_bottom_state(1:ii, 1:jj, n, :)-2.0*fabm_bottom_state(1:ii, 1:jj, m, :))
 
@@ -641,22 +811,8 @@ contains
 
       real :: w(ii, kk, size(fabm_model%state_variables))
       real :: flux(ii, 0:kk)
-!      integer, allocatable :: kbottomv(:, :)
-      integer :: i, j, k, ivar, kabove
+      integer :: i, j, k, ivar, kabove, kb
       real, parameter :: epsilon = 1e-8
-!      allocate(kbottomv(ii, jj))
-!
-!        kbottomv = 0
-!        do j=1,jj
-!            do i=1,ii
-!              if (SEA_P) then
-!                   do k=kk,1,-1
-!                     if (dp(i, j, k, n)/onem > 0.1) exit
-!                   end do
-!                   kbottomv(i, j) = max(k, 2)
-!                 end if
-!            end do
-!        end do
 
       do j=1,jj
         ! Get vertical velocities per tracer (m/s, > 0 for floating, < 0  for sinking)
@@ -682,17 +838,39 @@ contains
           ! Update state
           do i=1,ii
             kabove = 0
-            do k=1,kbottom(i, j)-1
+            do k=1,kbottomn(i, j)-1
               if (dp(i, j, k, n) > 0) kabove = k
               if (flux(i, k) /= 0) then
                 ! non-zero flux across interface
-                if (dp(i, j, k+1, n) == 0) then
+                if (dp(i, j, k+1, n)/onem < 0.1) then ! THIS IS NOT THE BEST SOLUTION BUT MAKES THINGS STABLE AT THE MOMENT
                   ! layer below is collapsed (height = 0) - move flux to next interface
-                  flux(i, k+1) = flux(i, k+1) + flux(i, k)
+                !  flux(i, k+1) = 0.!flux(i, k+1) + flux(i, k)
+                flux(i, k) = 0
                 else
-                  ! layer below has non-zero height
-                  tracer(i, j, kabove, n, ivar) = tracer(i, j, kabove, n, ivar) + flux(i, k)*timestep/dp(i, j, kabove, n)*onem
-                  tracer(i, j, k+1, n, ivar) = tracer(i, j, k+1, n, ivar) - flux(i, k)*timestep/dp(i, j, k+1, n)*onem
+                  ! Prevent accumulation of settling particles in thin layers 
+                  if ( flux(i, k) < 0 .and. k == kbottomn(i, j)-1 ) then ! if settling and if at the layer above the bottom
+                    if ( dp(i, j, k+1, n)/onem >= 6.0 ) then ! check if the bottom layer is actually < 10 meters, if not, apply the regular flux additions
+                      tracer(i, j, kabove, n, ivar) = tracer(i, j, kabove, n, ivar) + flux(i, k)*timestep/(dp(i, j, kabove, n)/onem)
+                      tracer(i, j, k+1, n, ivar) = tracer(i, j, k+1, n, ivar) - flux(i, k)*timestep/(dp(i, j, k+1, n)/onem)
+                      else ! if < 10 meters
+                        hbottom = 0
+                        nbottom = 0 
+                        do kb = kbottomn(i, j),1,-1 ! find number of layers that add up to > 10 meters, and store the total height
+                          hbottom = hbottom + dp(i ,j , kb, n)/onem
+                          if ( hbottom >= 6.0 ) exit
+                          nbottom = nbottom + 1
+                        end do
+                        ! Settle the particles from kabove
+                        tracer(i, j, kabove, n, ivar) = tracer(i, j, kabove, n, ivar) + flux(i, k)*timestep/(dp(i, j, kabove, n)/onem) 
+                        ! and distribute that flux to multiple layers which the depths add up to > 10 meters
+                        do kb = kbottomn(i, j) - nbottom , kbottomn(i, j)
+                          tracer(i, j, kb, n, ivar) = tracer(i, j, kb, n, ivar) - flux(i, k)*timestep/hbottom
+                        end do
+                    end if  
+                  else ! this applies to all other layers including floating particles
+                    tracer(i, j, kabove, n, ivar) = tracer(i, j, kabove, n, ivar) + flux(i, k)*timestep/(dp(i, j, kabove, n)/onem)
+                    tracer(i, j, k+1, n, ivar) = tracer(i, j, k+1, n, ivar) - flux(i, k)*timestep/(dp(i, j, k+1, n)/onem)
+                  endif
                 end if
               end if
             end do
@@ -701,6 +879,37 @@ contains
       end do ! j
 
     end subroutine vertical_movement
+
+    subroutine get_bottom_k(index, kbottom)
+        integer, intent(in)  :: index
+        integer, intent(out) :: kbottom(ii, jj)
+
+        real, parameter :: h_min = 0.1
+        integer :: i, j, k
+
+        kbottom = 0
+       ! do j=1,jj
+       !     do i=1,ii
+       !       if (SEA_P) then
+       !         do k = kk, 1, -1
+       !           if (dp(i, j, k, index)/onem > h_min) exit
+       !         end do
+       !         kbottom(i, j) = max(k, 2)
+       !       end if
+       !     end do
+       ! end do
+        do j=1,jj       ! CAGLAR - I did it from top to bottom in order to avoid having < 0.1 m layer in the water column.
+            do i=1,ii   !          Looking for other solutions for this
+              if (SEA_P) then
+                do k = 1,kk
+                  if (dp(i, j, k, index)/onem <= h_min) exit
+                  kbottom(i, j) = k
+                end do
+                kbottom(i, j) = max(kbottom(i,j), 2)
+              end if
+            end do
+        end do
+    end subroutine get_bottom_k
 
     subroutine update_fabm_data(index, initializing)
         integer, intent(in) :: index
@@ -714,24 +923,22 @@ contains
         ! Update cell thicknesses (m)
         h(:, :, :) = dp(1:ii, 1:jj, 1:kk, index)/onem
 
-        ! Update mask and kbottom
-        kbottom = 0
-        mask = .false.
-        do j=1,jj
-            do i=1,ii
-              if (SEA_P) then
-                 if (initializing) then
-                   kbottom(i, j) = kk
-                 else
-                   do k=kk,1,-1
-                     if (h(i, j, k)>0.1) exit
-                   end do
-                   kbottom(i, j) = max(k, 2)
-                 end if
-                 mask(i, j, 1:kbottom(i, j)) = .true.
-              end if
-            end do
-        end do
+        ! Update interior mask (all cells set to .true. will be processed by FABM) and index of bottom layer.
+        if (initializing) then
+          mask = .true.
+          kbottom = kk
+        else
+          ! Get index of bottom for the time step at which we evaluate sinks/sources.
+          call get_bottom_k(index, kbottom)
+
+          ! Process points only if their layer has not vanished at the time of evaluation.
+          mask = .false.
+          do j=1,jj
+              do i=1,ii
+                  mask(i, j, 1:kbottom(i, j)) = .true.
+              end do
+          end do
+        end if
 
         if (.not.initializing) then
           call fabm_update_time(fabm_model, real(nstep))

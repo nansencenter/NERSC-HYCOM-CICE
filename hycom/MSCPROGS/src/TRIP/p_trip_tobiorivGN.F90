@@ -488,12 +488,16 @@ program trip_tobioriv
          tmpweight=sum(tmpflag)*tmpweight/sum(tmpweight)
          ! Here we ensure that sum(tmpweight)=nb of weight points in the
          ! neighborood
+! CAGLAR
+! -------> This script originally created nutrient fluxes in mg Nutrient/s
+! -------> ECOSMO requires mgC. Make the necessary conversions here.
+! CAGLAR
          do k=1,12
             unif_flux=mod_riv_flux(i,j,k)/darea
-            unif_flux_nit=mod_nitriv_flux(i,j,k)/darea
-            unif_flux_pho=mod_phoriv_flux(i,j,k)/darea
-            unif_flux_sil=mod_silriv_flux(i,j,k)/darea
-            unif_flux_don=mod_donriv_flux(i,j,k)/darea
+            unif_flux_nit=mod_nitriv_flux(i,j,k)*(6.625*12.01/14.01)/darea
+            unif_flux_pho=mod_phoriv_flux(i,j,k)*(106.0*12.01/30.97)/darea
+            unif_flux_sil=mod_silriv_flux(i,j,k)*(6.625*12.01/28.09)/darea
+            unif_flux_don=mod_donriv_flux(i,j,k)*(6.625*12.01/14.01)/darea
             ! Use weights
             mod_riv_flux_spread(:,:,k)=mod_riv_flux_spread(:,:,k)+tmpweight*unif_flux
             mod_nitriv_flux_spread(:,:,k)=mod_nitriv_flux_spread(:,:,k)+tmpweight*unif_flux_nit
@@ -527,51 +531,51 @@ program trip_tobioriv
 
    print *,minval(mod_nitriv_flux_spread),maxval(mod_nitriv_flux_spread)
    ! 3rd step - Save to forcing files
-   open (unit=910, file='forcing.rivnitr.b',  &
+   open (unit=910, file='forcing.ECO_no3.b',  &
          status='replace', action='write')
    write(910,'(a)') 'Nitrate river fluxes from TRIP+nitrate climatology '
    write(910,'(a)') ''
    write(910,'(a)') ''
    write(910,'(a)') ''
    write(910,'(a,2i5)') 'i/jdm = ',idm,jdm
-   call zaiopf('forcing.rivnitr.a', 'replace', 910) 
+   call zaiopf('forcing.ECO_no3.a', 'replace', 910) 
    do k=1,12
       call zaiowr(mod_nitriv_flux_spread(:,:,k),ip,.false.,hmin,hmax,910,.true.)
-      write(910,'(" rivnitr:month,range = ",i2.2,2e16.8)')  k,hmin,hmax
+      write(910,'(" ECO_no3:month,range = ",i2.2,2e16.8)')  k,hmin,hmax
    end do
    close(910)
    call zaiocl(910)
 
    print *,minval(mod_phoriv_flux_spread),maxval(mod_phoriv_flux_spread)
    ! 3rd step - Save to forcing files
-   open (unit=911, file='forcing.rivphos.b',  &
+   open (unit=911, file='forcing.ECO_pho.b',  &
          status='replace', action='write')
    write(911,'(a)') 'Phosphate river fluxes from TRIP+phosphate climatology '
    write(911,'(a)') ''
    write(911,'(a)') ''
    write(911,'(a)') ''
    write(911,'(a,2i5)') 'i/jdm = ',idm,jdm
-   call zaiopf('forcing.rivphos.a', 'replace', 911) 
+   call zaiopf('forcing.ECO_pho.a', 'replace', 911) 
    do k=1,12
       call zaiowr(mod_phoriv_flux_spread(:,:,k),ip,.false.,hmin,hmax,911,.true.)
-      write(911,'(" rivphos:month,range = ",i2.2,2e16.8)')  k,hmin,hmax
+      write(911,'(" ECO_pho:month,range = ",i2.2,2e16.8)')  k,hmin,hmax
    end do
    close(911)
    call zaiocl(911)
 
    print *,minval(mod_silriv_flux_spread),maxval(mod_silriv_flux_spread)
    ! 3rd step - Save to forcing files
-   open (unit=912, file='forcing.rivsili.b',  &
+   open (unit=912, file='forcing.ECO_sil.b',  &
          status='replace', action='write')
    write(912,'(a)') 'Silicate river fluxes from TRIP+silicate climatology '
    write(912,'(a)') ''
    write(912,'(a)') ''
    write(912,'(a)') ''
    write(912,'(a,2i5)') 'i/jdm = ',idm,jdm
-   call zaiopf('forcing.rivsili.a', 'replace', 912) 
+   call zaiopf('forcing.ECO_sil.a', 'replace', 912) 
    do k=1,12
       call zaiowr(mod_silriv_flux_spread(:,:,k),ip,.false.,hmin,hmax,912,.true.)
-      write(912,'(" rivsili:month,range = ",i2.2,2e16.8)')  k,hmin,hmax
+      write(912,'(" ECO_sil:month,range = ",i2.2,2e16.8)')  k,hmin,hmax
    end do
    close(912)
    call zaiocl(912)

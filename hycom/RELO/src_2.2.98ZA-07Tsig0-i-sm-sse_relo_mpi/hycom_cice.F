@@ -511,7 +511,8 @@ c
 c
 c ----- Print ocnClock (same as ice clock)
         call ESMF_TimeGet(ocnTime,timestring=tstr)
-        write(msg,'("ocnClock and iceClock:",a)') trim(tstr)
+        write(msg,'("==================>>>ocnClock and iceClock:",a)')
+     &                    trim(tstr)
         call ESMF_LogWrite(msg, ESMF_LOGMSG_INFO, rc=rc)
         if (localPet.eq.0) print '(a)',trim(msg)
       enddo !icpl

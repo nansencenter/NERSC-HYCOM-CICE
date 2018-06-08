@@ -1,1 +1,50 @@
-Linux.ifort.fram_hycom
+#
+# ---------------------------------------------------------------------
+# intel compiler on hexagon
+# ---------------------------------------------------------------------
+#
+# MACROS      DESCRIPTIONS:
+#
+# FC:         Fortran 90 compiler.
+# FCFFLAGS:   Fortran 90 compilation flags.
+# CC:         C compiler.
+# CCFLAGS:    C compilation flags.
+# CPP:        cpp preprocessor (may be implied by FC).
+# CPPFLAGS:   cpp -D macro flags.
+# LD:         Loader.
+# LDFLAGS:    Loader flags.
+# EXTRALIBS:  Extra local libraries (if any).
+#
+INCLUDES      = -I/cluster/software/netCDF-Fortran/4.4.4-intel-2017a-HDF5-1.8.18/include  -I${ESMF_MOD_DIR} -I${ESMF_DIR}include -I./CICE/rundir/compile
+FC            = mpiifort 
+#FCFFLAGS      =	-traceback -g -O2 -fp-model source -warn nogeneral -convert big_endian -assume byterecl -real-size 64 -integer-size 32 
+FCFFLAGS      =	-g -convert big_endian -assume byterecl -cm -vec_report0 -w -O3 -tpp7 -xW -r8 
+
+FCFFLAGS     :=	$(FCFFLAGS) $(INCLUDES)
+CC            = mpicc	
+CCFLAGS       =	-O 
+CPP           =	cpp -P
+LD            =	$(FC)
+LDFLAGS       =	$(FCFFLAGS) -mcmodel=medium
+CPPFLAGS      = -DIA32 -DREAL4
+CPPFLAGS      = -DIA32 -DREAL8 -DMPI -DSERIAL_IO -DNAN2003 -DTIMER -DRELO -DNERSC_HYCOM_CICE
+EXTRALIBS     = -L${ESMF_LIB_DIR}/ -lesmf -lfftw3 -lmkl -lnetcdff -lnetcdf -lmpi -lmpifort
+
+#
+# --- generic make definitions
+#
+SHELL         = /bin/sh
+RM            = \rm -f
+
+#
+# rules.
+#
+
+.c.o:
+	$(CC) $(CPPFLAGS) $(CCFLAGS)  -c $*.c
+
+.f.o:
+	$(FC)             $(FCFFLAGS) -c $*.f
+
+.F.o:
+	$(FC) $(CPPFLAGS) $(FCFFLAGS) -c $*.F
