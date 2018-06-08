@@ -84,7 +84,7 @@ c
      &          onetai(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy),
      &           gslpr(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy),
      &           gtide(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy) )
-        call mem_stat_add( 6*(idm+2*nbdy)*(jdm+2*nbdy) )
+        call mem_stat_add( 9*(idm+2*nbdy)*(jdm+2*nbdy) )
                 stress = r_init
                 stresx = r_init
                 stresy = r_init
@@ -372,15 +372,8 @@ c ---           average currents over top thkcdw meters
                 psur   = 0.0
                 do k= 1,kk
                   dpsur = min( dpo(i,j,k,n), max( 0.0, thksur-psur ) )
-#if defined(STOKES)
-                  usur  = usur + dpsur*(u(i,j,k,n)+u(i+1,j,k,n)+
-     &                                usd(i,j,k)+usd(i+1,j,k))
-                  vsur  = vsur + dpsur*(v(i,j,k,n)+v(i,j+1,k,n)+
-     &                                vsd(i,j,k)+vsd(i,j+1,k))
-#else                 
                   usur  = usur + dpsur*(u(i,j,k,n)+u(i+1,j,k,n))
                   vsur  = vsur + dpsur*(v(i,j,k,n)+v(i,j+1,k,n))
-#endif                  
                   psur  = psur + dpsur
                   if     (psur.ge.thksur) then
                     exit
@@ -420,7 +413,7 @@ c
      &                          +(tauy(i,j,l3)+tauy(i,j+1,l3))*w3)*0.5
                 endif !natm
               else !wndflg.eq.4,5,6
-c ---           calculate stress from 10m winds using cd_coare or cd_core2
+c ---           calculate stress from 10m winds using cd_coare or cd_core3
                 if     (natm.eq.2) then
                   airt = airtmp(i,j,l0)*w0+airtmp(i,j,l1)*w1
                   vpmx = vapmix(i,j,l0)*w0+vapmix(i,j,l1)*w1
@@ -481,7 +474,15 @@ c ---             use wind-current magnitude and direction for stress
               endif !wndflg
 c
               surtx(i,j) = surtx(i,j) + oftaux(i,j)
+C$RMY #if defined(STOKES_3D) 
+C$RMY      &                    -tauwx(i,j,ls0)*ws0
+C$RMY      &                    -tauwx(i,j,ls1)*ws1
+C$RMY #endif
               surty(i,j) = surty(i,j) + oftauy(i,j)
+C$RMY #if defined(STOKES_3D) 
+C$RMY      &                    -tauwy(i,j,ls0)*ws0
+C$RMY      &                    -tauwy(i,j,ls1)*ws1
+C$RMY #endif
 c
               if     (ishlf(i,j).eq.0) then !under an ice shelf
                 surtx(i,j) = 0.0
@@ -878,7 +879,7 @@ c
 *    &   '   wind,vpmx,airt,sst =',wind,vpmx,airt,sst
 *
       rair = 1.22
-      rair = 1.0/rair
+      qrair = 1.0/rair
 
       zi = 10.0
       tv = (airt+tzero)*(1.0+0.608*vpmx)  !in Kelvin
@@ -1035,22 +1036,18 @@ c
 #else
       real, save, dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy) ::
 #endif
-     &                 usdflux,vsdflux,dz,rholocall,rholocalr,
-     &                 zbot,ztop
+     &                 usdflux,vsdflux
 c
 #if defined(RELO)
       real, save, allocatable, dimension(:,:,:) ::
 #else
       real, save, dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,1:kk) ::
 #endif
-     &            dvdzu,dudzu,dvdzv,dudzv,dzponddxu,dzponddyv,
-     &            Vtopced,Vbotced,Utopced,Ubotced,grho,dzdx,dzdy,
-     &            Vstopcedu,Vstopcedv,Vsbotcedu,Vsbotcedv,
-     &            Ustopcedu,Ustopcedv,Usbotcedu,Usbotcedv
+     &            dvdzu,dudzu,dvdzv,dudzv,dzdx,dzdy
 c
 
-      integer km1, kp1
-      real    uatvk0,uatvkm,uatvkp,usdatv,vatuk0,vatukm,vatukp,vsdatu
+      real    uatvk0,uatvkm,uatvkp,usd_v,vatuk0,vatukm,vatukp,vsd_u,
+     &        zbot,ztop
 
 #endif /* STOKES */
       integer, save :: ifirst
@@ -1061,6 +1058,7 @@ c
      &     dt1inv,phi,plo,pbop,pthkbl,ubot,vbot,pstres,
      &     dgslpr,dgtide,dmontg,dthstr,dragu,dragv,qdpu,qdpv,dpthin,
      &     dpun,uhm,uh0,uhp,dpvn,vhm,vh0,vhp,sum_m,sum_n
+      real dp12,dp23,dp123,dp3m1,ql1,ql2,ql3
       integer i,ia,ib,j,ja,jb,k,ka,l,mbdy,ktop,kmid,kbot,margin
 c
 *     real*8    wtime
@@ -1090,7 +1088,7 @@ c
      &           oneta(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy),
      &           gslpr(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy),
      &           gtide(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy) )
-        call mem_stat_add( 6*(idm+2*nbdy)*(jdm+2*nbdy) )
+        call mem_stat_add( 8*(idm+2*nbdy)*(jdm+2*nbdy) )
                 stress = r_init
                 stresx = r_init
                 stresy = r_init
@@ -1152,66 +1150,25 @@ c
       if     (.not.allocated(usdflux)) then
         allocate(
      &             usdflux(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy),
-     &             vsdflux(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy),
-     &                  dz(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy),
-     &           rholocall(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy),
-     &           rholocalr(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy), 
-     &                ztop(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy),
-     &                zbot(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy) )
-        call mem_stat_add( 7*(idm+2*nbdy)*(jdm+2*nbdy) )
+     &             vsdflux(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy) )
+        call mem_stat_add( 2*(idm+2*nbdy)*(jdm+2*nbdy) )
                    usdflux = 0.0 !r_init
                    vsdflux = 0.0 !r_init
-                        dz = 0.0 !r_init
-                 rholocall = 0.0 !r_init
-                 rholocalr = 0.0 !r_init
-                 rholocalr = 0.0 !r_init
-                      ztop = 0.0 !r_init
-                      zbot = 0.0 !r_init
 c
         allocate(
      &                dvdzu(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,1:kk),
      &                dudzu(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,1:kk),
      &                dvdzv(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,1:kk),
      &                dudzv(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,1:kk),
-     &                 grho(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,1:kk),
      &                 dzdx(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,1:kk),
-     &                 dzdy(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,1:kk),
-     &            dzponddxu(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,1:kk),
-     &            dzponddyv(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,1:kk),
-     &              Vtopced(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,1:kk),
-     &              Vbotced(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,1:kk),
-     &              Utopced(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,1:kk),
-     &              Ubotced(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,1:kk),
-     &            Vstopcedu(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,1:kk),
-     &            Vstopcedv(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,1:kk),
-     &            Vsbotcedu(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,1:kk),
-     &            Vsbotcedv(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,1:kk),
-     &            Ustopcedu(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,1:kk),
-     &            Ustopcedv(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,1:kk),
-     &            Usbotcedu(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,1:kk),
-     &            Usbotcedv(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,1:kk) )
-        call mem_stat_add( 21*(idm+2*nbdy)*(jdm+2*nbdy)*kk )
+     &                 dzdy(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,1:kk) )
+        call mem_stat_add( 6*(idm+2*nbdy)*(jdm+2*nbdy)*kk )
                       dvdzu = 0.0 !r_init
                       dudzu = 0.0 !r_init
                       dvdzv = 0.0 !r_init
                       dudzv = 0.0 !r_init
-                       grho = 0.0 !r_init
                        dzdx = 0.0 !r_init
                        dzdy = 0.0 !r_init
-                  dzponddxu = 0.0 !r_init
-                  dzponddyv = 0.0 !r_init
-                    Vtopced = 0.0 !r_init
-                    Vbotced = 0.0 !r_init
-                    Utopced = 0.0 !r_init
-                    Ubotced = 0.0 !r_init
-                  Vstopcedu = 0.0 !r_init
-                  Vstopcedv = 0.0 !r_init
-                  Vsbotcedu = 0.0 !r_init
-                  Vsbotcedv = 0.0 !r_init
-                  Ustopcedu = 0.0 !r_init
-                  Ustopcedv = 0.0 !r_init
-                  Usbotcedu = 0.0 !r_init
-                  Usbotcedv = 0.0 !r_init
       endif !usdflux
 #endif /* STOKES */
 #endif /* RELO */
@@ -1227,107 +1184,6 @@ c --- dp and dpo have up to date halos from cnuity
       call xctilr(vbavg(1-nbdy,1-nbdy,1  ),1,   2, 6,6, halo_vv)
       call xctilr(uflx( 1-nbdy,1-nbdy,1  ),1,  kk, 6,6, halo_uv)
       call xctilr(vflx( 1-nbdy,1-nbdy,1  ),1,  kk, 6,6, halo_vv)
-#if defined(STOKES)      
-cedric  -  From  Ody  code
-      dz(:,:)=0.
-      dzponddxu(:,:,:)=0.
-      dzponddyv(:,:,:)=0.
-!      utotmk(:,:,:)=0.D0
-      utopced(:,:,:)=0.
-      ubotced(:,:,:)=0.
-!      vtotmk(:,:,:)=0.D0
-      vtopced(:,:,:)=0.
-      vbotced(:,:,:)=0.
-      
-      rholocall(:,:)=0.
-      rholocalr(:,:)=0.
-c
-c     overlay d*dz* arrays for now.
-c     the two uses of these fields are probably equivalent.
-c
-      margin = mbdy-1
-c
-!$OMP PARALLEL DO PRIVATE(j,i,k,
-!$OMP&                    vatuk0,vatukm,vatukp,
-!$OMP&                    uatvk0,uatvkm,uatvkp)
-!$OMP&         SCHEDULE(STATIC,jblk)
-      do j=1-margin,jj+margin
-        do k= 1,kk
-          km1= max(1,k-1)
-          kp1= min(kk,k+1)
-          do i=1-margin,ii+margin
-            if (SEA_U) then
-              vatukm = 0.25*(v(i,  j,  km1,m)+
-     &                       v(i-1,j,  km1,m)+
-     &                       v(i,  j+1,km1,m)+
-     &                       v(i-1,j+1,km1,m) )
-              vatuk0 = 0.25*(v(i,  j,  k,  m)+
-     &                       v(i-1,j,  k,  m)+
-     &                       v(i,  j+1,k,  m)+
-     &                       v(i-1,j+1,k,  m) )
-              vatukp = 0.25*(v(i,  j,  kp1,m)+
-     &                       v(i-1,j,  kp1,m)+
-     &                       v(i,  j+1,kp1,m)+
-     &                       v(i-1,j+1,kp1,m) )
-              dudzu(i,j,k) = 
-     &                  ( (u(i,j,km1,m)*max(epsil,dpu(i,j,k,  m))+
-     &                     u(i,j,k,  m)*max(epsil,dpu(i,j,km1,m)) ) /
-     &                       (max(epsil,dpu(i,j,k,  m))+
-     &                        max(epsil,dpu(i,j,km1,m)) )
-     &                   -(u(i,j,k,  m)*max(epsil,dpu(i,j,kp1,m))+
-     &                     u(i,j,kp1,m)*max(epsil,dpu(i,j,k,  m)) ) /
-     &                       (max(epsil,dpu(i,j,k,  m))+
-     &                        max(epsil,dpu(i,j,kp1,m)) ) )
-     &                 / max(epsil,dpu(i,j,k,m))
-              dvdzu(i,j,k) = 
-     &                  ( (vatukm*max(epsil,dpu(i,j,k,  m))+
-     &                     vatuk0*max(epsil,dpu(i,j,km1,m)) ) /
-     &                       (max(epsil,dpu(i,j,k,  m))+
-     &                        max(epsil,dpu(i,j,km1,m)) )
-     &                   -(vatuk0*max(epsil,dpu(i,j,kp1,m))+
-     &                     vatukp*max(epsil,dpu(i,j,k,  m)) ) /
-     &                       (max(epsil,dpu(i,j,k,  m))+
-     &                        max(epsil,dpu(i,j,kp1,m)) ) )
-     &                 / max(epsil,dpu(i,j,k,m))
-            endif !iu
-            if (SEA_V) then
-              uatvkm = 0.25*(u(i,  j,  km1,m)+
-     &                       u(i,  j-1,km1,m)+
-     &                       u(i+1,j,  km1,m)+
-     &                       u(i+1,j-1,km1,m)  )
-              uatvk0 = 0.25*(u(i,  j,  k,  m)+
-     &                       u(i,  j-1,k,  m)+
-     &                       u(i+1,j,  k,  m)+
-     &                       u(i+1,j-1,k,  m)  )
-              uatvkp = 0.25*(u(i,  j,  kp1,m)+
-     &                       u(i,  j-1,kp1,m)+
-     &                       u(i+1,j,  kp1,m)+
-     &                       u(i+1,j-1,kp1,m)  )
-              dvdzv(i,j,k) = 
-     &                 ( (v(i,j,km1,m)*max(epsil,dpv(i,j,k,  m))+
-     &                    v(i,j,k,  m)*max(epsil,dpv(i,j,km1,m)) ) /
-     &                      (max(epsil,dpv(i,j,k,  m))+
-     &                       max(epsil,dpv(i,j,km1,m)) )
-     &                  -(v(i,j,k,  m)*max(epsil,dpv(i,j,kp1,m))+
-     &                    v(i,j,kp1,m)*max(epsil,dpv(i,j,k,  m)) ) /
-     &                      (max(epsil,dpv(i,j,k,  m))+
-     &                       max(epsil,dpv(i,j,kp1,m)) ) )
-     &                 / max(epsil,dpv(i,j,k,m))
-              dudzv(i,j,k) = 
-     &                 ( (uatvkm*max(epsil,dpv(i,j,k,  m))+
-     &                    uatvk0*max(epsil,dpv(i,j,km1,m)) ) /
-     &                      (max(epsil,dpv(i,j,k,  m))+
-     &                       max(epsil,dpv(i,j,km1,m)) )
-     &                  -(uatvk0*max(epsil,dpv(i,j,kp1,m))+
-     &                    uatvkp*max(epsil,dpv(i,j,k,  m)) ) /
-     &                      (max(epsil,dpv(i,j,k,  m))+
-     &                       max(epsil,dpv(i,j,kp1,m)) ) )
-     &                 / max(epsil,dpv(i,j,k,m))
-            endif !iv
-          enddo !i
-        enddo !k
-      enddo !j
-#endif
 c
       if     (ifirst.eq.0) then
         ifirst=1
@@ -1346,6 +1202,10 @@ c
         enddo !j
       endif
 c
+      dpthin  = 0.001*onemm
+      h1      =       tenm  !used in lateral weighting of hor.pres.grad.
+      cutoff  =   0.5*onem
+      qcutoff = 1.0/cutoff
 c --- ---------------------------------------
 c --- hydrostatic equation and surface stress
 c --- ---------------------------------------
@@ -1373,89 +1233,243 @@ c
         enddo !i
       enddo !j
 !$OMP END PARALLEL DO
+c 
+c --- Calculate dudzu,dvdzu using a Lagrange interpolation.
 c
-c                             Calculate the sum of the layer thicknesses
-c                             ------------------------------------------
-       margin = 0
-       do j = 1-margin, jj+margin
-         do i=1-margin,ii+margin
-           if (SEA_P) then
-             util2(i,j) = onetai(i,j) + pbavg(i,j,n)/pbot(i,j)
-           endif !ip
-         enddo !i
-       enddo   !j
-       call xctilr(util2(1-nbdy,1-nbdy),1, 1, 1,1, halo_ps)
+      margin = mbdy-1
 c
-c       Calculation of grho needed for ztop/zb ot calculation
-
-        do k = 1, kk
-          do j = 1-margin,jj+margin
-            do i=1-margin,ii+margin
-              if (SEA_P) then
-#if defined KEY_SIGMA_TRUE
-                 grho(i,j,k) = g*(qthref+thstar(i,j,k,1)+thbase)
-#else
-                 grho(i,j,k) = g/(thref-(thstar(i,j,k,1)+thbase)
-     &                              *thref*thref)
-#endif
-                endif  ! ip
-              enddo  !i
-            enddo !j
-         enddo !k
-         call xctilr(grho(1-nbdy,1-nbdy,1),1, kk, 1,1, halo_ps)
+!$OMP PARALLEL DO PRIVATE(j,i,k,
+!$OMP&                    dp12,dp23,dp123,dp3m1,ql1,ql2,ql3,
+!$OMP&                    vatuk0,vatukm,vatukp,
+!$OMP&                    uatvk0,uatvkm,uatvkp)
+!$OMP&         SCHEDULE(STATIC,jblk)
+      do j=1-margin,jj+margin
+        k=1
+          do i=1-margin,ii+margin
+            if (SEA_U) then
+              dp12   = max(cutoff,dpu(i,j,1,m))+
+     &                 max(cutoff,dpu(i,j,2,m))
+              dp23   = max(cutoff,dpu(i,j,2,m))+
+     &                 max(cutoff,dpu(i,j,3,m))
+              dp123  = dp12+dp23
+              ql1    = -2.0*(dp12+dp123)/(dp12 *dp123)
+              ql2    =  2.0*      dp123 /(dp12 *dp23)
+              ql3    = -2.0* dp12       /(dp123*dp23)
+              vatukm = 0.25*(v(i,  j,  1,m)+
+     &                       v(i-1,j,  1,m)+
+     &                       v(i,  j+1,1,m)+
+     &                       v(i-1,j+1,1,m) )
+              vatuk0 = 0.25*(v(i,  j,  2,  m)+
+     &                       v(i-1,j,  2,  m)+
+     &                       v(i,  j+1,2,  m)+
+     &                       v(i-1,j+1,2,  m) )
+              vatukp = 0.25*(v(i,  j,  3,m)+
+     &                       v(i-1,j,  3,m)+
+     &                       v(i,  j+1,3,m)+
+     &                       v(i-1,j+1,3,m) )
+              dudzu(i,j,1) = onem*(u(i,j,1,m)*ql1+
+     &                             u(i,j,2,m)*ql2+
+     &                             u(i,j,3,m)*ql3 )
+              dvdzu(i,j,k) = onem*(vatukm    *ql1+
+     &                             vatuk0    *ql2+
+     &                             vatukp    *ql3 )
+            endif !iu
+            if (SEA_V) then
+              dp12   = max(cutoff,dpv(i,j,1,m))+
+     &                 max(cutoff,dpv(i,j,2,m))
+              dp23   = max(cutoff,dpv(i,j,2,m))+
+     &                 max(cutoff,dpv(i,j,3,m))
+              dp123  = dp12+dp23
+              ql1    = -2.0*(dp12+dp123)/(dp12 *dp123)
+              ql2    =  2.0*      dp123 /(dp12 *dp23)
+              ql3    = -2.0* dp12       /(dp123*dp23)
+              uatvkm = 0.25*(u(i,  j,  1,m)+
+     &                       u(i-1,j,  1,m)+
+     &                       u(i,  j+1,1,m)+
+     &                       u(i-1,j+1,1,m) )
+              uatvk0 = 0.25*(u(i,  j,  2,  m)+
+     &                       u(i-1,j,  2,  m)+
+     &                       u(i,  j+1,2,  m)+
+     &                       u(i-1,j+1,2,  m) )
+              uatvkp = 0.25*(u(i,  j,  3,m)+
+     &                       u(i-1,j,  3,m)+
+     &                       u(i,  j+1,3,m)+
+     &                       u(i-1,j+1,3,m) )
+              dvdzv(i,j,1) = onem*(v(i,j,1,m)*ql1+
+     &                             v(i,j,2,m)*ql2+
+     &                             v(i,j,3,m)*ql3 )
+              dudzv(i,j,k) = onem*(uatvkm    *ql1+
+     &                             uatvk0    *ql2+
+     &                             uatvkp    *ql3 )
+            endif !iv
+          enddo !i
+!       k=1
+        do k= 2,kk-1
+          do i=1-margin,ii+margin
+            if (SEA_U) then
+              dp12   = max(cutoff,dpu(i,j,k-1,m))+
+     &                 max(cutoff,dpu(i,j,k,  m))
+              dp23   = max(cutoff,dpu(i,j,k,  m))+
+     &                 max(cutoff,dpu(i,j,k+1,m))
+              dp123  = dp12+dp23
+              dp3m1  = dp23-dp12
+              ql1    = -2.0*dp23/(dp12*dp123)
+              ql2    =  2.0*dp3m1/(dp12*dp23)
+              ql3    =  2.0*dp12/(dp123*dp23)
+              vatukm = 0.25*(v(i,  j,  k-1,m)+
+     &                       v(i-1,j,  k-1,m)+
+     &                       v(i,  j+1,k-1,m)+
+     &                       v(i-1,j+1,k-1,m) )
+              vatuk0 = 0.25*(v(i,  j,  k,  m)+
+     &                       v(i-1,j,  k,  m)+
+     &                       v(i,  j+1,k,  m)+
+     &                       v(i-1,j+1,k,  m) )
+              vatukp = 0.25*(v(i,  j,  k+1,m)+
+     &                       v(i-1,j,  k+1,m)+
+     &                       v(i,  j+1,k+1,m)+
+     &                       v(i-1,j+1,k+1,m) )
+              dudzu(i,j,k) = onem*(u(i,j,k-1,m)*ql1+
+     &                             u(i,j,k,  m)*ql2+
+     &                             u(i,j,k+1,m)*ql3 )
+              dvdzu(i,j,k) = onem*(vatukm*      ql1+
+     &                             vatuk0      *ql2+
+     &                             vatukp      *ql3 )
+cdiag         if (max(abs(i-itest),abs(j-jtest)).eq.0) then
+cdiag           write(lp,'(a,i3,3g20.10)')
+cdiag.            'dp,k =',k,dp12,dp23,ql1+ql2+ql3
+cdiag           write(lp,'(a,i3,3g20.10)')
+cdiag.            'ql,k =',k,ql1,ql2,ql3
+cdiag           write(lp,'(a,i3,2g20.10)')
+cdiag.            'dz,k =',k,dudzu(i,j,k),dvdzu(i,j,k)
+cdiag         endif !test
+            endif !iu
+            if (SEA_V) then
+              dp12   = max(cutoff,dpv(i,j,k-1,m))+
+     &                 max(cutoff,dpv(i,j,k,  m))
+              dp23   = max(cutoff,dpv(i,j,k,  m))+
+     &                 max(cutoff,dpv(i,j,k+1,m))
+              dp123  = dp12+dp23
+              dp3m1  = dp23-dp12
+              ql1    = -2.0*dp23/(dp12*dp123)
+              ql2    =  2.0*dp3m1/(dp12*dp23)
+              ql3    =  2.0*dp12/(dp123*dp23)
+              uatvkm = 0.25*(u(i,  j,  k-1,m)+
+     &                       u(i-1,j,  k-1,m)+
+     &                       u(i,  j+1,k-1,m)+
+     &                       u(i-1,j+1,k-1,m) )
+              uatvk0 = 0.25*(u(i,  j,  k,  m)+
+     &                       u(i-1,j,  k,  m)+
+     &                       u(i,  j+1,k,  m)+
+     &                       u(i-1,j+1,k,  m) )
+              uatvkp = 0.25*(u(i,  j,  k+1,m)+
+     &                       u(i-1,j,  k+1,m)+
+     &                       u(i,  j+1,k+1,m)+
+     &                       u(i-1,j+1,k+1,m) )
+              dvdzv(i,j,k) = onem*(v(i,j,k-1,m)*ql1+
+     &                             v(i,j,k  ,m)*ql2+
+     &                             v(i,j,k+1,m)*ql3 )
+              dudzv(i,j,k) = onem*(uatvkm      *ql1+
+     &                             uatvk0      *ql2+
+     &                             uatvkp      *ql3 )
+            endif !iv
+          enddo !i
+        enddo !k
+        k=kk
+          do i=1-margin,ii+margin
+            if (SEA_U) then
+              dp12   = max(cutoff,dpu(i,j,kk-2,m))+
+     &                 max(cutoff,dpu(i,j,kk-1,m))
+              dp23   = max(cutoff,dpu(i,j,kk-1,m))+
+     &                 max(cutoff,dpu(i,j,kk,  m))
+              dp123  = dp12+dp23
+              ql1    =  2.0*dp23/(dp12*dp123)
+              ql2    = -2.0*dp123/(dp12*dp23)
+              ql3    =  2.0*(dp12+dp123)/(dp123*dp23)
+              vatukm = 0.25*(v(i,  j  ,kk-2,m)+
+     &                       v(i-1,j  ,kk-2,m)+
+     &                       v(i,  j+1,kk-2,m)+
+     &                       v(i-1,j+1,kk-2,m) )
+              vatuk0 = 0.25*(v(i,  j  ,kk-1,  m)+
+     &                       v(i-1,j  ,kk-1,  m)+
+     &                       v(i,  j+1,kk-1,  m)+
+     &                       v(i-1,j+1,kk-1,  m) )
+              vatukp = 0.25*(v(i,  j,  kk,m)+
+     &                       v(i-1,j,  kk,m)+
+     &                       v(i,  j+1,kk,m)+
+     &                       v(i-1,j+1,kk,m) )
+              dudzu(i,j,kk) = onem*(u(i,j,kk-2,m)*ql1+
+     &                              u(i,j,kk-1,m)*ql2+
+     &                              u(i,j,kk,  m)*ql3 )
+              dvdzu(i,j,kk) = onem*(vatukm       *ql1+
+     &                              vatuk0       *ql2+
+     &                              vatukp       *ql3 )
+            endif !iu
+            if (SEA_V) then
+              dp12   = max(cutoff,dpv(i,j,kk-2,m))+
+     &                 max(cutoff,dpv(i,j,kk-1,m))
+              dp23   = max(cutoff,dpv(i,j,kk-1,m))+
+     &                 max(cutoff,dpv(i,j,kk,  m))
+              dp123  = dp12+dp23
+              ql1    =  2.0*dp23/(dp12*dp123)
+              ql2    = -2.0*dp123/(dp12*dp23)
+              ql3    =  2.0*(dp12+dp123)/(dp123*dp23)
+              uatvkm = 0.25*(u(i,  j  ,kk-2,m)+
+     &                       u(i-1,j  ,kk-2,m)+
+     &                       u(i,  j+1,kk-2,m)+
+     &                       u(i-1,j+1,kk-2,m) )
+              uatvk0 = 0.25*(u(i,  j  ,kk-1,m)+
+     &                       u(i-1,j  ,kk-1,m)+
+     &                       u(i,  j+1,kk-1,m)+
+     &                       u(i-1,j+1,kk-1,m) )
+              uatvkp = 0.25*(u(i,  j,  kk,  m)+
+     &                       u(i-1,j,  kk,  m)+
+     &                       u(i,  j+1,kk,  m)+
+     &                       u(i-1,j+1,kk,  m) )
+              dvdzv(i,j,kk) = onem*(v(i,j,kk-2,m)*ql1+
+     &                              v(i,j,kk-1,m)*ql2+
+     &                              v(i,j,kk,  m)*ql3 )
+              dudzv(i,j,kk) = onem*(uatvkm       *ql1+
+     &                              uatvk0       *ql2+
+     &                              uatvkp       *ql3 )
+            endif !iv
+          enddo !i
+!       k=kk
+      enddo !j     
 c
 c                              Calculation of dzdx,dzdy needed in momtum -u-v-
 c                              -----------------------------------------
 c
-         do j = 1-margin, jj+margin
-           do i=1-margin,ii+margin
-             if (SEA_U) then
-               ztop(i,j) = -(depths(i,j)-depths(i-1,j))
-               zbot(i,j) = -(depths(i,j)-depths(i-1,j))
-             endif  ! iu
-           enddo  !i
-         enddo !j
+      margin = 0
 c
-         do k = kk, 1, -1
-            do j = 1-margin, jj+margin
-              do i=1-margin,ii+margin
-                if (SEA_U) then  
-                  ztop(i,j)  = ztop(i,j) +
-     &                        (dp(i,  j,k,n)*util2(i,  j)/grho(i,  j,k)-
-     &                         dp(i-1,j,k,n)*util2(i-1,j)/grho(i-1,j,k))
-                  dzdx(i,j,k) = 0.5*(ztop(i,j)+zbot(i,j))
-                  zbot(i,j)   = ztop(i,j)
-                endif  ! iu
-              enddo  !i
-            enddo !j
-         enddo !k
-
+!$OMP PARALLEL DO PRIVATE(j,i,k,zbot,ztop)
+!$OMP&         SCHEDULE(STATIC,jblk)
+      do j = 1-margin, jj+margin
+        do i=1-margin,ii+margin
+          if (SEA_U) then  
+            ztop = -(depths(i,j)-depths(i-1,j))
+            do k = kk, 1, -1
+              zbot        = ztop
+              ztop        = zbot +
+     &                      qonem*(dp(i,  j,k,m)*oneta(i,  j)-
+     &                             dp(i-1,j,k,m)*oneta(i-1,j) )
+              dzdx(i,j,k) = 0.5*(ztop+zbot)
+            enddo !k
+          endif  ! iu
 c
-         do j = 1-margin, jj+margin
-           do i=1-margin,ii+margin
-             if (SEA_V) then
-               ztop(i,j) = -(depths(i,j)-depths(i,j-1))
-               zbot(i,j) = -(depths(i,j)-depths(i,j-1))
-             endif  ! iv
-           enddo  !i
-         enddo !j
-c
-         do k = kk, 1, -1
-           do j = 1-margin, jj+margin
-             do i=1-margin,ii+margin
-               if (SEA_V) then  
-                 ztop(i,j)  = ztop(i,j) +
-     &                       (dp(i,j,  k,n)*util2(i,j  )/grho(i,j,  k)-
-     &                        dp(i,j-1,k,n)*util2(i,j-1)/grho(i,j-1,k))
-                 dzdy(i,j,k) = 0.5*(ztop(i,j)+zbot(i,j))
-                 zbot(i,j)   = ztop(i,j)
-               endif  ! iv
-             enddo  !i
-           enddo !j
-         enddo !k
-         call xctilr(grho(1-nbdy,1-nbdy,1),1, kk, nbdy,nbdy, halo_ps)
-         call xctilr(dzdx(1-nbdy,1-nbdy,1),1, kk, nbdy,nbdy, halo_uv)
-         call xctilr(dzdy(1-nbdy,1-nbdy,1),1, kk, nbdy,nbdy, halo_vv)
+          if (SEA_V) then
+            ztop = -(depths(i,j)-depths(i,j-1))
+            do k = kk, 1, -1
+              zbot        = ztop
+              ztop        = zbot +
+     &                      qonem*(dp(i,j,  k,m)*oneta(i,  j)-
+     &                             dp(i,j-1,k,m)*oneta(i,j-1) )
+              dzdy(i,j,k) = 0.5*(ztop+zbot)
+            enddo !k
+          endif  ! iv
+        enddo  !i
+      enddo !j
+      call xctilr(dzdx(1-nbdy,1-nbdy,1),1, kk, nbdy,nbdy, halo_uv)
+      call xctilr(dzdy(1-nbdy,1-nbdy,1),1, kk, nbdy,nbdy, halo_vv)
 #endif /* STOKES */
 c
 c --- rhs: p, u.n+, v.n+, ubavg.n+, vbavg.n+, depthv+, pvtrop+
@@ -1637,236 +1651,8 @@ c ---     p.1
           pnkp( i,j)=0.0
         enddo !i
         enddo !j
-#if defined(STOKES)    
-cOdyOdyOdy  ##if defined(KEY_STOKES_GENERIC_COORDINATE_OLD)
-c     On cree une boucle sur k pour calculer les vitesses aux interfaces
-c     superieure et inferieure des couches. Ce calcul faisant intervenir
-c     les vitesses de couches sucessives, le lissage temporel utilise dans
-c     la boucle principale sur k ne modifie pas les valeurs des vitesses utilisees.
-c>>>>>>>>>  From Babel Fish <<<<<<<<<<<<<<<<<<<<
-c     We created a loop on k to calculate speeds to the upper and lower layers of interfaces. 
-c     This calculation involving layers successive temporal smoothing velocities used in the 
-c      main loop on k does not modify the values of speeds used.
-      do k=1,kk
-         
-c     On interpole les vitesses sur les interfaces superieure et inferieure 
-c     a partir des couches superieure (k-1),  actuelle (k) et inferieure (k+1)
-c>>>>>>>>>  From Babel Fish <<<<<<<<<<<<<<<<<<<< 
-c      It interpolates the speeds on the interfaces upper and lower from the 
-c      layers top (k-1), current (k) and lower (k + 1)
-         if (k.NE.1 .AND. k.NE.KK) then
-            ktop=k-1
-            kmid=k
-            kbot=k+1
-c     Sauf pour les premiere et derniere couches - on fait l'hypothese que la
-c     pente est egale a la couche 2 pour la premiere couche et egale a l'avant derniere couche
-c     pour la derniere couche
-c>>>>>>>>>  From Babel Fish <<<<<<<<<<<<<<<<<<<< 
-c  Except for the first and last is layers - l 'hypothesis that the slope is equal 
-c  to the layer 2 for the first layer and equal a l' before last layer to the last
-c  layer 
-         else
-c           On prend les valeurs de la couche 2
-            if (k.EQ.1) then
-               ktop=1
-               kmid=2
-               kbot=3
-c           On prend les valeurs de l'avant derniere couche
-            else
-               ktop=KK-2
-               kmid=KK-1
-               kbot=KK
-            endif
-         endif
-
-c     Boucle sur frontieres points V - j'ai repris le code dans la boucle principale
-c     (avec les commentaires)
-         do i=1-margin,ii+margin
-            do l=1,jsv(i) !ok
-
-c     Frontiere sud du segment l considere
-               j=jfv(i,l)-1
-c     cAP
-               if (j .ge. 1-margin) then
-                  if( ivopn(i,j) .gt. 0 ) then
-c     cAP
-c     to be checked
-!     Division par somme des ponderations - Attention a division par zero
-                        Vtopced(i,j,k)=v(i,j+1,ktop,m)*dpv(i,j,ktop,m)+
-     &                                 v(i,j+1,kmid,m)*dpv(i,j,kmid,m)
-                        Vtopced(i,j,k)=Vtopced(i,j,k)/(dpv(i,j,ktop,m)+
-     &                                 dpv(i,j,kmid,m)+epsil)
-                        Vbotced(i,j,k)=v(i,j+1,kbot,m)*dpv(i,j,kbot,m)+
-     &                                 v(i,j+1,kmid,m)*dpv(i,j,kmid,m)
-                        Vbotced(i,j,k)=Vbotced(i,j,k)/(dpv(i,j,kbot,m)+
-     &                                 dpv(i,j,kmid,m)+epsil)
-                        Utopced(i,j,k)=u(i,j+1,ktop,m)*dpu(i,j,ktop,m)+
-     &                                 u(i,j+1,kmid,m)*dpu(i,j,kmid,m)
-                        Utopced(i,j,k)=Utopced(i,j,k)/(dpu(i,j,ktop,m)+
-     &                                 dpu(i,j,kmid,m)+epsil)
-                        Ubotced(i,j,k)=u(i,j+1,kbot,m)*dpu(i,j,kbot,m)+
-     &                                 u(i,j+1,kmid,m)*dpu(i,j,kmid,m)
-                        Ubotced(i,j,k)=Ubotced(i,j,k)/(dpu(i,j,kbot,m)+
-     &                                 dpu(i,j,kmid,m)+epsil)
-                  endif
-               endif
-               
-c     Frontiere nord du segment l considere 
-               j=jlv(i,l)+1
-               
-               if (j .le. jj+margin) then
-                  if (ivopn(i,j) .gt. 0) then
-c     cAP
-c     to be checked
-!     NB en toute rigueur, c'est 0.5*dpu mais le 0.5 est simplifie au final
-!     Division par somme des ponderations - Attention a division par zero
-                        Vtopced(i,j,k)=v(i,j-1,ktop,m)*dpv(i,j,ktop,m)+
-     &                                 v(i,j-1,kmid,m)*dpv(i,j,kmid,m)
-                        Vtopced(i,j,k)=Vtopced(i,j,k)/(dpv(i,j,ktop,m)+
-     &                                         dpv(i,j,kmid,m)+epsil)
-                        Vbotced(i,j,k)=v(i,j-1,kbot,m)*dpv(i,j,kbot,m)+
-     &                                 v(i,j-1,kmid,m)*dpv(i,j,kmid,m)
-                        Vbotced(i,j,k)=Vbotced(i,j,k)/(dpv(i,j,kbot,m)+
-     &                                          dpv(i,j,kmid,m)+epsil)
-                        Utopced(i,j,k)=u(i,j-1,ktop,m)*dpu(i,j,ktop,m)+
-     &                                 u(i,j-1,kmid,m)*dpu(i,j,kmid,m)
-                        Utopced(i,j,k)=utopced(i,j,k)/(dpu(i,j,ktop,m)+
-     &                                          dpu(i,j,kmid,m)+epsil)
-                        Ubotced(i,j,k)=u(i,j-1,kbot,m)*dpu(i,j,kbot,m)+
-     &                                 u(i,j-1,kmid,m)*dpu(i,j,kmid,m)
-                        Ubotced(i,j,k)=ubotced(i,j,k)/(dpu(i,j,kbot,m)+
-     &                                          dpu(i,j,kmid,m)+epsil)
-                  endif
-               endif
-               
-            enddo !l
-          enddo !i
-c================================================================
-c  DO the East and West frontiers need to be examined ??
-c----------------------------------------------------------------
-c
-c     Reste des points V - domaine principale
-         do j=1-margin,jj+margin
-            do i=1-margin,ii+margin
-              if (SEA_V) then
-!     NB en toute rigueur, c'est 0.5*dpu mais le 0.5 est simplifie au final
-!     Division par somme des ponderations - Attention a division par zero
-                  Vtopced(i,j,k)=v(i,j,ktop,m)*dpv(i,j,ktop,m)+
-     &                           v(i,j,kmid,m)*dpv(i,j,kmid,m)
-                  Vtopced(i,j,k)=Vtopced(i,j,k)/(dpv(i,j,ktop,m)+
-     &                              dpv(i,j,kmid,m)+epsil)
-                  Vbotced(i,j,k)=v(i,j,kbot,m)*dpv(i,j,kbot,m)+
-     &                           v(i,j,kmid,m)*dpv(i,j,kmid,m)
-                  Vbotced(i,j,k)=Vbotced(i,j,k)/(dpv(i,j,kbot,m)+
-     &                              dpv(i,j,kmid,m)+epsil)
-                  Utopced(i,j,k)=u(i,j,ktop,m)*dpu(i,j,ktop,m)+
-     &                           u(i,j,kmid,m)*dpu(i,j,kmid,m)
-                  Utopced(i,j,k)=Utopced(i,j,k)/(dpu(i,j,ktop,m)+
-     &                              dpu(i,j,kmid,m)+epsil)
-                  Ubotced(i,j,k)=u(i,j,kbot,m)*dpu(i,j,kbot,m)+
-     &                           u(i,j,kmid,m)*dpu(i,j,kmid,m)
-                  Ubotced(i,j,k)=Ubotced(i,j,k)/(dpu(i,j,kbot,m)+
-     &                             dpu(i,j,kmid,m)+epsil)
-               endif !iv
-            enddo !i
-         enddo !j
-         
-c     Fin de la boucle k
-      enddo !k
-            
-            
-c     On cree une boucle sur k pour calculer les vitesses aux interfaces
-c     superieure et inferieure des couches. Ce calcul faisant intervenir
-c     les vitesses de couches sucessives, le lissage temporel utilise dans
-c     la boucle principale sur k ne modifie pas les valeurs des vitesses utilisees.
-c>>>>>>>>>>>>>>>>>>>>>>>>>>>>  BABEL FISH  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-c     We created a loop on k to calculate speeds to the upper and lower 
-c     layers of interfaces. This calculation involving layers successive 
-c     temporal smoothing speeds uses 
-!      print *,'On passe par ici'
-!      STOP
-      do k=1,kk
-         
-c     On interpole les vitesses sur les interfaces superieure et inferieure 
-c     a partir des couches superieure (k-1),  actuelle (k) et inferieure (k+1) 
-         if (k.NE.1 .AND. k.NE.KK) then
-            ktop=k-1
-            kmid=k
-            kbot=k+1
-c     Sauf pour les premiere et derniere couches - on fait l'hypothese que la
-c     pente est egale a la couche 2 pour la premiere couche et egale a l'avant derniere couche
-c     pour la derniere couche
-         else
-c           On prend les valeurs de la couche 2
-            if (k.EQ.1) then
-               ktop=1
-               kmid=2
-               kbot=3
-c           On prend les valeurs de l'avant derniere couche
-            else
-               ktop=KK-2
-               kmid=KK-1
-               kbot=KK
-            endif
-         endif
-
-c     !!! ON TRAVAILLE AVEC LA VITESSE STOKES DEFINIE EN TOUT PT (voir waves.f)
-c     Reste des points V - domaine principale
-         do j=1-margin,jj+margin
-            do i=1-margin,ii+margin
-               if (SEA_V) then
-!     NB en toute rigueur, c'est 0.5*dpu mais le 0.5 est simplifie au final
-!     Division par somme des ponderations - Attention a division par zero
-                  Vstopcedu(i,j,k)=usd(i,j,ktop)*dpv(i,j,ktop,m)+
-     &                  usd(i,j,kmid)*dpv(i,j,kmid,m)
-                  Vstopcedu(i,j,k)=Vstopcedu(i,j,k)/(dpv(i,j,ktop,m)+
-     &                  dpv(i,j,kmid,m)+epsil)
-                  Vsbotcedu(i,j,k)=usd(i,j,kbot)*dpv(i,j,kbot,m)+
-     &                  usd(i,j,kmid)*dpv(i,j,kmid,m)
-                  Vsbotcedu(i,j,k)=Vsbotcedu(i,j,k)/(dpv(i,j,kbot,m)+
-     &                  dpv(i,j,kmid,m)+epsil)
-                  
-                  Ustopcedv(i,j,k)=vsd(i,j,ktop)*dpu(i,j,ktop,m)+
-     &                  vsd(i,j,kmid)*dpu(i,j,kmid,m)
-                  Ustopcedv(i,j,k)=Ustopcedv(i,j,k)/(dpu(i,j,ktop,m)+
-     &                  dpu(i,j,kmid,m)+epsil)
-                  Usbotcedv(i,j,k)=vsd(i,j,kbot)*dpu(i,j,kbot,m)+
-     &                  vsd(i,j,kmid)*dpu(i,j,kmid,m)
-                  Usbotcedv(i,j,k)=Usbotcedv(i,j,k)/(dpu(i,j,kbot,m)+
-     &                  dpu(i,j,kmid,m)+epsil)
-               endif !iv
-            enddo !i
-         enddo !j
-         
-c     Fin de la boucle k
-      enddo !k
-#endif        
 c
       do 9 k=1,kk
-#if defined(STOKES)
-c
-      km1= max(1,k-1)
-      kp1= min(kk,k+1)
-         if (k.NE.1 .AND. k.NE.KK) then
-            ktop=k-1
-            kmid=k
-            kbot=k+1
-         else
-c           On prend les valeurs de la couche 2
-            if (k.EQ.1) then
-               ktop=1
-               kmid=2
-               kbot=3
-c           On prend les valeurs de l'avant derniere couche
-            else
-               ktop=KK-2
-               kmid=KK-1
-               kbot=KK
-            endif
-         endif
-#endif
-         
-          
 c
 c --- store total (barotropic plus baroclinic) flow at old and mid time in
 c --- -utotn,vtotn- and -utotm,vtotm- respectively. store minimum thickness
@@ -1919,7 +1705,7 @@ c
               utotn(i,j)=u(i+1,j,k,n)+ubavg(i,j,n)
               uflux(i,j)=utotm(i,j)*max(dpo(i,j,k,m),cutoff)
 #if defined(STOKES)
-            usdflux(i,j)=(usd(i+1,j,k)+usdbavg(i,j))*
+            usdflux(i,j)=usd(i+1,j,k)*
      &                              max(dpo(i,j,k,m),cutoff)
 #endif
             endif
@@ -1931,7 +1717,7 @@ c
               utotn(i,j)=u(i-1,j,k,n)+ubavg(i,j,n)
               uflux(i,j)=utotm(i,j)*max(dpo(i-1,j,k,m),cutoff)
 #if defined(STOKES)
-            usdflux(i,j)=(usd(i-1,j,k)+usdbavg(i,j))*
+             usdflux(i,j)=usd(i-1,j,k)*
      &                              max(dpo(i-1,j,k,m),cutoff)
 #endif
             endif
@@ -1943,8 +1729,7 @@ c
             utotn(i,j)=u(i,j,k,n)+ubavg(i,j,n)
             uflux(i,j)=utotm(i,j)*max(dpu(i,j,k,m),cutoff)
 #if defined(STOKES)
-          usdflux(i,j)=(usd(i,j,k)+usdbavg(i,j))*
-     &                            max(dpu(i,j,k,m),cutoff)
+          usdflux(i,j)=usd(i,j,k)*max(dpu(i,j,k,m),cutoff)  !usd is total drift
 #endif
             pu(i,j,k+1)=pu(i,j,k)+dpu(i,j,k,m)
 c
@@ -1969,7 +1754,7 @@ c
               vtotn(i,j)=v(i,j+1,k,n)+vbavg(i,j,n)
               vflux(i,j)=vtotm(i,j)*max(dpo(i,j,k,m),cutoff)
 #if defined(STOKES)
-            vsdflux(i,j)=(vsd(i,j+1,k)+vsdbavg(i,j))*
+            vsdflux(i,j)=vsd(i,j+1,k)*
      &                              max(dpo(i,j,k,m),cutoff)
 #endif
             endif
@@ -1981,7 +1766,7 @@ c
               vtotn(i,j)=v(i,j-1,k,n)+vbavg(i,j,n)
               vflux(i,j)=vtotm(i,j)*max(dpo(i,j-1,k,m),cutoff)
 #if defined(STOKES)
-            vsdflux(i,j)=(vsd(i,j-1,k)+vsdbavg(i,j))*
+            vsdflux(i,j)=vsd(i,j-1,k)*
      &                              max(dpo(i,j-1,k,m),cutoff)
 #endif
             endif
@@ -2001,8 +1786,7 @@ c
             vtotn(i,j)=v(i,j,k,n)+vbavg(i,j,n)
             vflux(i,j)=vtotm(i,j)*max(dpv(i,j,k,m),cutoff)
 #if defined(STOKES)
-          vsdflux(i,j)=(vsd(i,j,k)+vsdbavg(i,j))*
-     &                            max(dpv(i,j,k,m),cutoff)
+          vsdflux(i,j)=vsd(i,j,k)*max(dpv(i,j,k,m),cutoff)  !vsd is total drift
 #endif
             pv(i,j,k+1)=pv(i,j,k)+dpv(i,j,k,m)
           endif !iv
@@ -2418,36 +2202,26 @@ c
               dthstr=     q *(thstar(i,j,k,1)-thstar(i-1,j,k,1))+
      &               (1.0-q)*(thstar(i,j,k,2)-thstar(i-1,j,k,2))
             endif
-#if defined(STOKES)
-            vsdatu = 0.25*(vsd(i,  j,  k)+
-     &                     vsd(i-1,j,  k)+
-     &                     vsd(i,  j+1,k)+
-     &                     vsd(i-1,j+1,k) )
-#endif
             pgtx(i,j)=util1(i,j)*dgtide
             pgfx(i,j)=util1(i,j)*
      &          ( dmontg+
      &            dgslpr+
-#if defined(STOKES)
-     &            dzdx(i,j,k)* 
-     &             (usd(i,j,k)*dudzu(i,j,k)+
-     &              vsdatu    *dvdzu(i,j,k) ) +
-#endif
      &            dthstr*(p(i,j,k+1)*p(i-1,j,k+1)-
      &                    p(i,j,k  )*p(i-1,j,k  ))*thref**2
      &                      /(dp(i,j,k,m)+dp(i-1,j,k,m)+epsil) )
 #if defined(STOKES)
-c#if defined KEY_SIGMA_TRUE
-               rholocall(i,j) = qthref+thstar(i-1,j,k,1)+thbase
-               rholocalr(i,j) = qthref+thstar(i,  j,k,1)+thbase
-c#else
-c               rholocall(i,j) = 1.e0/(thref-(thstar(i-1,j,k,1)+thbase)*thref*thref)
-c               rholocalr(i,j) = 1.e0/(thref-(thstar(i,j,k,1)+thbase)*thref*thref)
-c#endif
-
-               ! PONDERE par util1!!!!!!!!!
-               dz(i,j)=util1(i,j)/g*(dmontg-(0.5*(p(i,j,k)+p(i,j,k+1))/
-     &    rholocalr(i,j)-0.5*(p(i-1,j,k)+p(i-1,j,k+1))/rholocall(i,j)))
+            vsd_u = 0.25*(vsd(i,  j,  k)+
+     &                    vsd(i-1,j,  k)+
+     &                    vsd(i,  j+1,k)+
+     &                    vsd(i-1,j+1,k) )
+            pgfx(i,j)=pgfx(i,j)+util1(i,j)*
+     &          ( dzdx(i,j,k)* 
+     &             (usd(i,j,k)*dudzu(i,j,k)+
+     &              vsd_u     *dvdzu(i,j,k) ) )
+            util3(i,j)=util1(i,j)*
+     &          ( dzdx(i,j,k)* 
+     &             (usd(i,j,k)*dudzu(i,j,k)+
+     &              vsd_u     *dvdzu(i,j,k) ) )
 #endif            
           endif !iu
         enddo !i
@@ -2477,7 +2251,19 @@ c ---   compare two model runs.
         write (text,'(a9,i3)') 'dp.m+  k=',k
         call pipe_compare(util4, iu,text)
         write (text,'(a9,i3)') 'pgfx   k=',k
-        call pipe_compare(pgfx,  iu,text)
+        call pipe_compare( pgfx,  iu,text)
+#if defined(STOKES)
+        write (text,'(a9,i3)') 'pgfxST k=',k
+        call pipe_compare( util3, iu,text)
+        write (text,'(a9,i3)') 'dpu.m  k=',k
+        call pipe_compare( dpu(1-nbdy,1-nbdy,k,m),iu,text)
+        write (text,'(a9,i3)') 'dzdx   k=',k
+        call pipe_compare( dzdx(1-nbdy,1-nbdy,k),iu,text)
+        write (text,'(a9,i3)') 'dudzu  k=',k
+        call pipe_compare( dudzu(1-nbdy,1-nbdy,k),iu,text)
+        write (text,'(a9,i3)') 'dvdzu  k=',k
+        call pipe_compare( dvdzu(1-nbdy,1-nbdy,k),iu,text)
+#endif            
       endif
 c
 *         wtime2(14,k) = wtime()
@@ -2565,45 +2351,6 @@ c ---         !anti-drag on detided velocity (always explicit)
 c
 cdiag       util4(i,j) = u(i,j,k,n)
 
-#if defined(STOKES)
-c     Calcul du gradient de pente pondere
-            dzponddxu(i,j,k)=(dz(i,j)+(h1-util1(i,j))*
-     &           (dz (i-1,j)+dz (i+1,j)+dz (i,ja)+dz (i,jb))/
-     &           (util1(i-1,j)+util1(i+1,j)+util1(i,ja)+util1(i,jb)+
-     &           epsil))/h1*scuxi(i,j)
-
-c     Calcul des vitesses aux interfaces sup et inf au point u
-c     Ajout de la vitesse barotrope pour comparaison - pas strictement necessaire, au contraire
-            Vtopced(i,j,k)=0.5*( vbavg(i,j,m)+Vtopced(i,j,k)
-     &                          + vbavg(i-1,j,m)+Vtopced(i-1,j,k) )
-            Vbotced(i,j,k)=0.5*( vbavg(i,j,m)+Vbotced(i,j,k)
-     &                          + vbavg(i-1,j,m)+Vbotced(i-1,j,k))
-            Utopced(i,j,k)= ubavg(i,j,m)+Utopced(i,j,k)
-            Ubotced(i,j,k)= ubavg(i,j,m)+Ubotced(i,j,k)
-            
-c     Calcul du gradient vertical - Attention au cutoff
-            if (dpu(i,j,kmid,m)*thref/g.GT.0.0001) then
-c              Version sans oneta
-               dvdzu(i,j,k)=(Vtopced(i,j,k)-Vbotced(i,j,k))/
-     &                              (dpu(i,j,kmid,m)*thref/g)
-               dudzu(i,j,k)=(Utopced(i,j,k)-Ubotced(i,j,k))/
-     &                              (dpu(i,j,kmid,m)*thref/g)
-!               dztermu(i,j,k)=(Vstopcedu(i,j,k)-Vsbotcedu(i,j,k))/
-!     &                             (dpu(i,j,kmid,m)*thref/g)
-            else
-               dvdzu(i,j,k)=0.
-               dudzu(i,j,k)=0.
-!               dztermu(i,j,k)=0.
-            endif
-
-c     !!!!!!!!! ******** DEBUG ******** !!!!!!!
-!            dzponddxu(i,j,k)=0.025
-
-c     Ajout de la contribution du terme metrique - dzdx dvdz Vs
-!        -delt1*(dvdzu(i,j,k)*dzponddxu(i,j,k)*0.5*(vst3(i,j,k)+vst3(i-1,j,k)))
-!            print *,'dvdz',dvdzu(i,j,k),Vtopced(i,j,k),Vbotced(i,j,k)
-!            print *,-delt1*(dvdzu(i,j,k)*dzponddxu(i,j,k)*0.5*(vst3(i,j,k)+vst3(i-1,j,k)))
-#endif
             u(i,j,k,n) = utotn(i,j) +
      &        delt1*(-scuxi(i,j)*(gradx(i,j)+grdtx(i,j)
      &                            +0.25*(utotm(i+1,j  )**2-
@@ -2615,18 +2362,18 @@ c     Ajout de la contribution du terme metrique - dzdx dvdz Vs
      &               +0.125*(vflux(i  ,j)+vflux(i  ,j+1)+
      &                       vflux(i-1,j)+vflux(i-1,j+1) )
      &                     *(potvor(i,j)+potvor(i,j+1))
-#if defined(STOKES)
-     &           +0.125*(vsdflux(i  ,j)+vsdflux(i  ,j+1)+
-     &                   vsdflux(i-1,j)+vsdflux(i-1,j+1) )
-     &                 *(potvor(i,j)+potvor(i,j+1))
-     &    -dvdzu(i,j,k)*dzponddxu(i,j,k)*0.25*
-     &     (vsd(i,j,k)+vsd(i-1,j,k)+vsd(i,j+1,k)+vsd(i-1,j+1,k))
-     &    -dudzu(i,j,k)*dzponddxu(i,j,k)*usd(i,j,k)
-#endif
      &               -ubrhs(i,j)
      &               +stress(i,j)
      &               -(uflux1(i,j)-uflux1(i-1,j)+
      &                 uflux3(i,j)-uflux2(i  ,j) )*qdpu/scu2(i,j) )
+#if defined(STOKES)
+            u(i,j,k,n) = u(i,j,k,n) +
+     &        delt1*(+0.125*(vsdflux(i  ,j)+vsdflux(i  ,j+1)+
+     &                       vsdflux(i-1,j)+vsdflux(i-1,j+1) )
+     &                     *(potvor(i,j)+potvor(i,j+1))
+C$RMY     &           + wave_bdx(i,j,k) + wave_brkx(i,j,k)
+     &              )
+#endif
 c
 c
 c ---       Robert-Asselin time filter of -u- field
@@ -2686,6 +2433,18 @@ c ---   compare two model runs.
         write (text,'(a9,i3)') 'ubrhs  k=',k
         call pipe_compare(ubrhs, iu,text)
         write (text,'(a9,i3)') 'stress k=',k
+#if defined(STOKES)
+        util4(1:ii,1:jj) =  vsdflux(1:ii,  1:jj  )
+     &                     +vsdflux(0:ii-1,1:jj  )
+     &                     +vsdflux(1:ii,  2:jj+1)
+     &                     +vsdflux(0:ii-1,2:jj+1)
+        write (text,'(a9,i3)') 'vsdflx k=',k
+        call pipe_compare(util4, iu,text)
+        write (text,'(a9,i3)') 'dvdzu  k=',k
+        call pipe_compare(dvdzu(1-nbdy,1-nbdy,k), iu,text)
+        write (text,'(a9,i3)') 'dudzu  k=',k
+        call pipe_compare(dudzu(1-nbdy,1-nbdy,k), iu,text)
+#endif /* STOKES */
         call pipe_compare(stress,iu,text)
         write (text,'(a9,i3)') 'u.n    k=',k
         call pipe_compare(u(1-nbdy,1-nbdy,k,n),iu,text)
@@ -2836,24 +2595,27 @@ c
               dthstr=     q *(thstar(i,j,k,1)-thstar(i,j-1,k,1))+
      &               (1.0-q)*(thstar(i,j,k,2)-thstar(i,j-1,k,2))
             endif
-#if defined(STOKES)
-            usdatv = 0.25*(usd(i,  j,  k)+
-     &                     usd(i,  j-1,k)+
-     &                     usd(i-1,j,  k)+
-     &                     usd(i-1,j-1,k) )
-#endif
             pgty(i,j)=util2(i,j)*dgtide
             pgfy(i,j)=util2(i,j)*
      &          ( dmontg+
      &            dgslpr+
-#if defined(STOKES)
-     &            dzdy(i,j,k)* 
-     &              (vsd(i,j,k)*dvdzv(i,j,k)+
-     &               usdatv    *dudzv(i,j,k) ) +
-#endif
      &            dthstr*(p(i,j,k+1)*p(i,j-1,k+1)-
      &                    p(i,j,k  )*p(i,j-1,k  ))*thref**2
      &                      /(dp(i,j,k,m)+dp(i,j-1,k,m)+epsil) )
+#if defined(STOKES)
+            usd_v = 0.25*(usd(i,  j,  k)+
+     &                    usd(i,  j-1,k)+
+     &                    usd(i-1,j,  k)+
+     &                    usd(i-1,j-1,k) )
+            pgfy(i,j)=pgfy(i,j)+util2(i,j)*
+     &          ( dzdy(i,j,k)* 
+     &              (vsd(i,j,k)*dvdzv(i,j,k)+
+     &               usd_v     *dudzv(i,j,k) ) )
+            util3(i,j)=util2(i,j)*
+     &          ( dzdy(i,j,k)* 
+     &              (vsd(i,j,k)*dvdzv(i,j,k)+
+     &               usd_v     *dudzv(i,j,k) ) )
+#endif            
           endif !iv
         enddo !i
       enddo !j
@@ -2883,6 +2645,19 @@ c ---   compare two model runs.
         call pipe_compare(util4, iv,text)
         write (text,'(a9,i3)') 'pgfy   k=',k
         call pipe_compare(pgfy,  iv,text)
+#if defined(STOKES)
+        write (text,'(a9,i3)') 'pgfyST k=',k
+        call pipe_compare(util3, iv,text)
+
+        write (text,'(a9,i3)') 'dpv.m  k=',k
+        call pipe_compare( dpv(1-nbdy,1-nbdy,k,m),iv,text)
+        write (text,'(a9,i3)') 'dzdy   k=',k
+        call pipe_compare( dzdy(1-nbdy,1-nbdy,k),iu,text)
+        write (text,'(a9,i3)') 'dvdzv  k=',k
+        call pipe_compare( dvdzv(1-nbdy,1-nbdy,k),iu,text)
+        write (text,'(a9,i3)') 'dudzv  k=',k
+        call pipe_compare( dudzv(1-nbdy,1-nbdy,k),iu,text)
+#endif            
       endif
 c
 *         wtime2(18,k) = wtime()
@@ -2906,12 +2681,6 @@ c
      &        +pgfy (i,j-1)+pgfy (i,j+1))/
      &        (util2(ia ,j)+util2(ib ,j)
      &        +util2(i,j-1)+util2(i,j+1)+epsil))/h1
-#if defined(STOKES)            
-            rholocall(i,j) = qthref+thstar(i,j-1,k,1)+thbase
-            rholocalr(i,j) = qthref+thstar(i,j,  k,1)+thbase
-            dz(i,j)=util2(i,j)/g*(dmontg-(0.5*(p(i,j,k)+p(i,j,k+1))/
-     &    rholocalr(i,j)-0.5*(p(i,j-1,k)+p(i,j-1,k+1))/rholocall(i,j)))
-#endif            
           endif !iv
         enddo !i
       enddo !j
@@ -2974,48 +2743,6 @@ c ---         !anti-drag on detided velocity (always explicit)
               stresl(i,j)=stresl(i,j)
      &                      +vntide(i,j)*min(dragv,adrlim*dt1inv)
       endif !tidflg
-      
-#if defined(STOKES)
-c     Calcul du gradient de pente pondere
-c     Calculation of weighted gradient slope
-            dzponddyv(i,j,k)=(dz(i,j)+(h1-util2(i,j))*
-     &           (   dz(ia, j)+   dz(ib, j)+
-     &               dz(i,j-1)+   dz(i,j+1))/
-     &           (util2(ia, j)+util2(ib, j)+
-     &            util2(i,j-1)+util2(i,j+1)+epsil))/h1*scvyi(i,j)
-
-c     Calcul des vitesses aux interfaces sup et inf au point u
-c     Ajout de la vitesse barotrope pour comparaison - pas strictement necessaire, au contraire
-            Utopced(i,j,k)=0.5*( ubavg(i,j,  m)+Utopced(i,j,  k)
-     &                          +ubavg(i,j-1,m)+Utopced(i,j-1,k) )
-            Ubotced(i,j,k)=0.5*( ubavg(i,j,  m)+Ubotced(i,j,  k)
-     &                          +ubavg(i,j-1,m)+ubotced(i,j-1,k))
-            Vtopced(i,j,k)=vbavg(i,j,m)+Vtopced(i,j,k)
-            Vbotced(i,j,k)=vbavg(i,j,m)+Vbotced(i,j,k)
-            
-c     Calcul du gradient vertical - Attention au cutoff
-            if (dpu(i,j,kmid,m)*thref/g.GT.0.0001) then
-c              Version sans oneta
-               dvdzv(i,j,k)=(Vtopced(i,j,k)-Vbotced(i,j,k))/
-     &                              (dpv(i,j,kmid,m)*thref/g)
-               dudzv(i,j,k)=(Utopced(i,j,k)-Ubotced(i,j,k))/
-     &                              (dpv(i,j,kmid,m)*thref/g)
-!               dztermv(i,j,k)=(Vstopcedv(i,j,k)-Vsbotcedu(i,j,k))/
-!     &                             (dpv(i,j,kmid,m)*thref/g)
-            else
-               dvdzv(i,j,k)=0.
-               dudzv(i,j,k)=0.
-!               dztermv(i,j,k)=0.
-            endif
-
-c     !!!!!!!!! ******** DEBUG ******** !!!!!!!
-!            dzponddxu(i,j,k)=0.025
-
-c     Ajout de la contribution du terme metrique - dzdx dvdz Vs
-!        -delt1*(dvdzu(i,j,k)*dzponddxu(i,j,k)*0.5*(vst3(i,j,k)+vst3(i-1,j,k)))
-!            print *,'dvdz',dvdzu(i,j,k),Vtopced(i,j,k),Vbotced(i,j,k)
-!            print *,-delt1*(dvdzu(i,j,k)*dzponddxu(i,j,k)*0.5*(vst3(i,j,k)+vst3(i-1,j,k)))
-#endif
 c
 cdiag       util4(i,j) = v(i,j,k,n)
             v(i,j,k,n) = vtotn(i,j) +
@@ -3029,18 +2756,19 @@ cdiag       util4(i,j) = v(i,j,k,n)
      &               -0.125*(uflux(i,  j  )+uflux(i+1,j  )+
      &                       uflux(i,  j-1)+uflux(i+1,j-1) )
      &                     *(potvor(i,j)+potvor(i+1,j))
-#if defined(STOKES)
-     &           -0.125*(usdflux(i,  j  )+usdflux(i+1,j  )+
-     &                   usdflux(i,  j-1)+usdflux(i+1,j-1) )
-     &                 *(potvor(i,j)+potvor(i+1,j))
-     &    -dvdzv(i,j,k)*dzponddyv(i,j,k)*vsd(i,j,k)
-     &    -dudzv(i,j,k)*dzponddyv(i,j,k)*0.25*
-     &       (usd(i,j-1,k)+usd(i,j,k)+usd(i+1,j,k)+usd(i+1,j-1,k))
-#endif
      &               -vbrhs(i,j)
      &               +stress(i,j)
      &               -(vflux1(i,j)-vflux1(i,j-1)+
      &                 vflux3(i,j)-vflux2(i,j  ) )*qdpv/scv2(i,j) )
+#if defined(STOKES)
+            v(i,j,k,n) = v(i,j,k,n) +
+     &        delt1*(-0.125*(usdflux(i,  j  )+usdflux(i+1,j  )+
+     &                       usdflux(i,  j-1)+usdflux(i+1,j-1) )
+     &                     *(potvor(i,j)+potvor(i+1,j))
+C$RMY       &      + wave_bdy(i,j,k) + wave_brky(i,j,k)              
+     &              )
+#endif
+c
 c
 c ---       Robert-Asselin time filter of -v- field
 c ---       Note that this is smoothing dp * vtot,
@@ -3122,6 +2850,18 @@ c ---   compare two model runs.
      &                     +potvor(2:ii+1,1:jj  )
         write (text,'(a9,i3)') 'potvor k=',k
         call pipe_compare(util4, iv,text)
+#if defined(STOKES)
+        util4(1:ii,1:jj) =  usdflux(1:ii,  1:jj  )
+     &                     +usdflux(2:ii+1,1:jj  )
+     &                     +usdflux(1:ii,  0:jj-1)
+     &                     +usdflux(2:ii+1,0:jj-1)
+        write (text,'(a9,i3)') 'usdflx k=',k
+        call pipe_compare(util4, iv,text)
+        write (text,'(a9,i3)') 'dvdzv  k=',k
+        call pipe_compare(dvdzv(1-nbdy,1-nbdy,k), iv,text)
+        write (text,'(a9,i3)') 'dudzv  k=',k
+        call pipe_compare(dudzv(1-nbdy,1-nbdy,k), iv,text)
+#endif /* STOKES */
         util4(1:ii,1:jj) =  vflux1(1:ii,  1:jj  )
      &                     -vflux1(1:ii,  0:jj-1)
      &                     +vflux3(1:ii,  1:jj  )
@@ -3266,6 +3006,9 @@ c
       use mod_cb_arrays  ! HYCOM saved arrays
       use mod_pipe       ! HYCOM debugging interface
       use mod_tides      ! HYCOM tides
+C$RMY #if defined(STOKES_3D)
+C$RMY       use mod_stokes          ! HYCOM Stokes drift
+C$RMY #endif
       implicit none
 c
       integer m,n
@@ -3394,7 +3137,7 @@ c
      &           oneta(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy),
      &           gslpr(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy),
      &           gtide(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy) )
-        call mem_stat_add( 6*(idm+2*nbdy)*(jdm+2*nbdy) )
+        call mem_stat_add( 8*(idm+2*nbdy)*(jdm+2*nbdy) )
                 stress = r_init
                 stresx = r_init
                 stresy = r_init

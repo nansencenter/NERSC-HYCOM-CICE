@@ -51,7 +51,8 @@ echo ".."
 # Create simple river forcing
 cd $EDIR
 echo "river forcing"
-river_nersc.sh 100 300 $INPUTDIR/rivers.dat > $EDIR/log/ref_river_nersc.out 2>&1
+#river_nersc.sh 100 300 $INPUTDIR/rivers.dat > $EDIR/log/ref_river_nersc.out 2>&1
+river_trip_bio.sh erai > $EDIR/log/ref_river_nersc.out 2>&1
 res=$?
 [ $res -eq 0 ] && echo "Success"
 [ $res -ne 0 ] && echo "Failure...  Log in  $EDIR/log/ref_river_nersc.out"
@@ -64,12 +65,6 @@ res=$?
 [ $res -eq 0 ] && echo "Success"
 [ $res -ne 0 ] && echo "Failure...  Log in  $EDIR/log/ref_seawifs.out"
 echo ".."
-
-# Create thk4 file
-echo "thk4 forcing"
-generate_thkd4.sh > $EDIR/log/thkd4.out 2>&1
-echo ".."
-
 
 # Create tiling. 
 echo "grid tiling"

@@ -901,41 +901,25 @@ c --------- average currents over top thkcdw meters
             psur2  = 0.0
             do k= 1,kk
               dp1   = min( dp(i,j,k,1), max( 0.0, thksur-psur1 ) )
-#if defined(STOKES)
-              usur1=usur1+dp1*(
-     &           u(i,j,k,1)+u(i+1,j,k,1)+usd(i,j,k)+usd(i+1,j,k))
-              vsur1=vsur1+dp1*(
-     &           v(i,j,k,1)+v(i,j+1,k,1)+vsd(i,j,k)+vsd(i,j+1,k))
-#else
               usur1 = usur1 + dp1*(u(i,j,k,1)+u(i+1,j,k,1))
               vsur1 = vsur1 + dp1*(v(i,j,k,1)+v(i,j+1,k,1))
+#if defined(STOKES)
+              usur1 = usur1 + dp1*(usd(i,j,k)+usd(i+1,j,k))
+              vsur1 = vsur1 + dp1*(vsd(i,j,k)+vsd(i,j+1,k))
 #endif
               psur1 = psur1 + dp1
               dp2   = min( dp(i,j,k,2), max( 0.0, thksur-psur2 ) )
-#if defined(STOKES)
-              usur2=usur2+dp2*(
-     &           u(i,j,k,1)+u(i+1,j,k,2)+usd(i,j,k)+usd(i+1,j,k))
-              vsur2=vsur2+dp2*(
-     &           v(i,j,k,1)+v(i,j+1,k,2)+vsd(i,j,k)+vsd(i,j+1,k))
-#else
               usur2 = usur2 + dp2*(u(i,j,k,2)+u(i+1,j,k,2))
               vsur2 = vsur2 + dp2*(v(i,j,k,2)+v(i,j+1,k,2))
+#if defined(STOKES)
+              usur2 = usur2 + dp2*(usd(i,j,k)+usd(i+1,j,k))
+              vsur2 = vsur2 + dp2*(vsd(i,j,k)+vsd(i,j+1,k))
 #endif
               psur2 = psur2 + dp2
               if     (min(psur1,psur2).ge.thksur) then
                 exit
               endif
             enddo
-#if defined(STOKES)
-            umxl  = 0.25*( usur1/psur1+ubavg(i,j,1) + usdbavg(i,j) +
-     &                         ubavg(i+1,j,1)  + usdbavg(i+1,j) +
-     &           usur2/psur2 + ubavg(i,  j,2) + usdbavg(i,j) +
-     &                         ubavg(i+1,j,2) + usdbavg(i+1,j) )
-            vmxl  = 0.25*( vsur1/psur1+vbavg(i,j,1) + vsdbavg(i,j) +
-     &                         vbavg(i,j+1,1) +  vsdbavg(i,j+1) +
-     &           vsur2/psur2 + vbavg(i,j,  2) + vsdbavg(i,j) +
-     &                         vbavg(i,j+1,2) + vadbavg(i,j+1) )
-#else
             umxl  = 0.25*( usur1/psur1 + ubavg(i,  j,1) +
      &                                   ubavg(i+1,j,1) +
      &                     usur2/psur2 + ubavg(i,  j,2) +
@@ -944,7 +928,6 @@ c --------- average currents over top thkcdw meters
      &                                   vbavg(i,j+1,1) +
      &                     vsur2/psur2 + vbavg(i,j,  2) +
      &                                   vbavg(i,j+1,2)  )
-#endif
             util2(i,j)              = umxl
             util3(i,j)              = vmxl
             expData(1)%p(i+i0,j+j0) = tmxl                           !in C
@@ -2181,18 +2164,10 @@ c
           if (isopyc .or. mxlkrt) then
             do i=1,ii
               if (SEA_U) then
-#if defined(STOKES) 
-                umix(i,j)=u(i,j,1,n) + usd(i,j,1)
-#else
                 umix(i,j)=u(i,j,1,n)
-#endif
               endif !iu
               if (SEA_V) then
-#if defined(STOKES)
-                vmix(i,j)=v(i,j,1,n) + vsd(i,j,1)
-#else
                 vmix(i,j)=v(i,j,1,n)
-#endif
               endif !iv
             enddo !i
           endif !isopyc.or.mxlkrt
@@ -2666,6 +2641,11 @@ c
         wn1=-99.0
         call rdnest(dtime0)
       endif
+
+#ifdef _FABM_
+      call hycom_fabm_input_init(dtime, dyear0, dyear, dmonth)
+#endif
+
 #endif /* USE_CCSM3:else */
 c
 c --- initialize incremental update.
@@ -3042,13 +3022,13 @@ c ---   pressure can be the only atmospheric forcing,
 c ---   set weights and fields for high frequency pressure forcing.
         call forfunhp(dtime)
       endif
-#if defined(STOKES)
-c
-c --- set weights and input fields for Stokes Drift
-      if     (nsdzi.gt.0) then
-        call stokes_forfun(dtime,n)
-      endif !nsdzi
-#endif
+C$$$ALF  #if defined(STOKES)
+C$$$ALF  c
+C$$$ALF  c --- set weights and input fields for Stokes Drift
+C$$$ALF        if     (nsdzi.gt.0) then
+C$$$ALF          call stokes_forfun(dtime,n)
+C$$$ALF        endif !nsdzi
+C$$$ALF  #endif
 c
 c --- set weights for quasi-hermite time interpolation for kpar.
       if     (jerlv0.le.0) then
@@ -3147,6 +3127,9 @@ cdiag if (mnproc.eq.1) then
 cdiag write (lp,'(i9,'' relax time interpolation: months'',4i3,
 cdiag.  '',  weights '',4f6.3)') nstep,lc0,lc1,lc2,lc3,wc0,wc1,wc2,wc3
 cdiag endif !1st tile
+#ifdef _FABM_
+      call hycom_fabm_input_update(dtime, dyear0, dyear, dmonth)
+#endif
 #endif /* USE_CCSM3:else */
 c
 #if defined(USE_ESMF)
@@ -3473,14 +3456,13 @@ c
                   vtotp=0.5*( v(i,j,  k,n)+vbavg(i,j,  n) +
      &                        v(i,j+1,k,n)+vbavg(i,j+1,n)  )
 #if defined(STOKES)
+                  utotp=utotp+0.5*( usd(i,  j,k) +
+     &                              usd(i+1,j,k)  )
+                  vtotp=vtotp+0.5*( vsd(i,j,  k) +
+     &                              vsd(i,j+1,k)  )
                   util6(i,j)=dp(i,j,k,n)*scp2(i,j)*
-     &                      0.5*(1000.0+th3d(i,j,k,n)+thbase)*
+     &                      0.5*(qthref+th3d(i,j,k,n)+thbase)*
      &                          (utotp**2+vtotp**2)
-c
-                  utotp=utotp+0.5*( usd(i,  j,k)+usdbavg(i,  j) +
-     &                              usd(i+1,j,k)+usdbavg(i+1,j)  )
-                  vtotp=vtotp+0.5*( vsd(i,j,  k)+vsdbavg(i,j) +
-     &                              vsd(i,j+1,k)+vsdbavg(i,j+1)  )
 #endif
                   util4(i,j)=dp(i,j,k,n)*scp2(i,j)*
      &                      0.5*(1000.0+th3d(i,j,k,n)+thbase)*
@@ -3497,7 +3479,7 @@ c
             dskea=dskea+dske
           enddo !k
 #if defined(STOKES)
-          smx=(dskea-dskesa)/(area*onem)
+          smx=(dskesa-dskea)/(area*onem)
 #endif
           sum=dskea/(area*onem)
           if (mnproc.eq.1) then
@@ -3977,19 +3959,19 @@ c
      &                        u(i+1,j,k,n)+ubavg(i+1,j,n)  )
                   vtotp=0.5*( v(i,j,  k,n)+vbavg(i,j,  n) +
      &                        v(i,j+1,k,n)+vbavg(i,j+1,n)  )
-#if defined(STOKES)
-                  util6(i,j)=dp(i,j,k,n)*scp2(i,j)*
-     &                      0.5*(1000.0+th3d(i,j,k,n)+thbase)*
-     &                          (utotp**2+vtotp**2)
-c
-                  utotp=utotp+0.5*( usd(i,  j,k)+usdbavg(i,  j) +
-     &                              usd(i+1,j,k)+usdbavg(i+1,j)  )
-                  vtotp=vtotp+0.5*( vsd(i,j,  k)+vsdbavg(i,j) +
-     &                              vsd(i,j+1,k)+vsdbavg(i,j+1)  )
-#endif
                 util4(i,j)=dp(i,j,k,n)*scp2(i,j)*
-     &                    0.5*(1000.0+th3d(i,j,k,n)+thbase)*
+     &                    0.5*(qthref+th3d(i,j,k,n)+thbase)*
      &                        (utotp**2+vtotp**2)
+c
+#if defined(STOKES)
+                  utotp=utotp+0.5*( usd(i,  j,k) +
+     &                              usd(i+1,j,k)  )
+                  vtotp=vtotp+0.5*( vsd(i,j,  k) +
+     &                              vsd(i,j+1,k)  )
+                  util6(i,j)=dp(i,j,k,n)*scp2(i,j)*
+     &                      0.5*(qthref+th3d(i,j,k,n)+thbase)*
+     &                          (utotp**2+vtotp**2)
+#endif
 c
                 util1(i,j)=dp(i,j,k,n)*scp2(i,j)
                 util2(i,j)=dp(i,j,k,n)*scp2(i,j)*temp(i,j,k,n)
@@ -4040,7 +4022,7 @@ c
           endif !1st tile
         enddo !k
 #if defined(STOKES)
-        smx=(dskea-dskesa)/(area*onem)
+        smx=(dskesa-dskea)/(area*onem)
 #endif
         sum=dskea/(area*onem)
         smt=dsmta/dsuma
@@ -4462,6 +4444,13 @@ c
       if (incflg.ne.0) then
         call incupd_rd(dtime)
       endif
+#if defined(STOKES)
+c
+c --- calculate Stokes Drift for the next time step
+      if     (nsdzi.gt.0) then
+        call stokes_forfun(dtime,n)
+      endif !nsdzi
+#endif
 c
       delt1=baclin+baclin
 c

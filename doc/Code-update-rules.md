@@ -20,6 +20,8 @@ The developer’s branch should be continuously updated:
 *	All developments or bug fixes should be done on issue-branches, and those changes are pushed back to the develop-branch as soon as the issue is solved. After the issue is solved, the issue-branch should be discontinued.
 *	Bug fixes on the master branch must also be pushed to the developer branch.
 
+* do not put any executables on the github - only code and scripts.
+
 **If doubt when merging confer with Mostafa or Annette.**
 
 ## Quality control
