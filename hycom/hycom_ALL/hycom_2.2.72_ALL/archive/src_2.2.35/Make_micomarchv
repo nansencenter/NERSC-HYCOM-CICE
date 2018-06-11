@@ -1,5 +1,0 @@
-ifort             -g -tpp7 -O3 -convert big_endian -c micomarchv.f
-ifort: command line remark #10148: option '-tpp7' not supported
-ifort -g -tpp7 -O3 -convert big_endian -Vaxlib -o micomarchv  micomarchv.o mod_plot.o mod_xc.o mod_za.o               wtime.o bigrid.o blkin.o extrct.o extrot.o getdat.o getdtm.o getdepth.f putdat.o indxi.o  indxj.o zebra.o  zh.o     dum_gks.o pakk.o   
-ifort: command line remark #10148: option '-tpp7' not supported
-ifort: command line remark #10148: option '-Vaxlib' not supported
