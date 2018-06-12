@@ -1,3 +1,0 @@
-ifort             -g -tpp7 -O3 -convert big_endian -c sst_modas.f
-ifort: command line remark #10148: option '-tpp7' not supported
-make: *** No rule to make target `-lnetcdff', needed by `sst_modas'.  Stop.

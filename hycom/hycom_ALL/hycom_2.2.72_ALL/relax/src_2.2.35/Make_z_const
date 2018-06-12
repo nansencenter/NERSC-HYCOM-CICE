@@ -1,5 +1,0 @@
-ifort             -g -tpp7 -O3 -convert big_endian -c z_const.f
-ifort: command line remark #10148: option '-tpp7' not supported
-ifort -g -tpp7 -O3 -convert big_endian -Vaxlib z_const.o       mod_xc.o mod_za.o wtime.o blkdat.o interp.o zh.o -o z_const
-ifort: command line remark #10148: option '-tpp7' not supported
-ifort: command line remark #10148: option '-Vaxlib' not supported
