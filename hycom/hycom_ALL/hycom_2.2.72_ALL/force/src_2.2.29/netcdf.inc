@@ -1,1 +1,0 @@
-/cluster/software/netCDF-Fortran/4.4.4-intel-2017a/include/netcdf.inc

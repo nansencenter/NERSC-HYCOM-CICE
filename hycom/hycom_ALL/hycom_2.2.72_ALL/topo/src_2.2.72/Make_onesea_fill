@@ -1,3 +1,0 @@
-ifort -g -tpp7 -O3 -convert big_endian -Vaxlib topo_onesea_fill.o zh.o mod_xc.o mod_za.o wtime.o -o topo_onesea_fill
-ifort: command line remark #10148: option '-tpp7' not supported
-ifort: command line remark #10148: option '-Vaxlib' not supported

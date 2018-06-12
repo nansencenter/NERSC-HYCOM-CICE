@@ -1,5 +1,0 @@
-ifort             -g -tpp7 -O3 -convert big_endian -c hesmf_std.f
-ifort: command line remark #10148: option '-tpp7' not supported
-ifort -g -tpp7 -O3 -convert big_endian -Vaxlib  -o hesmf_std   hesmf_std.o  mod_mean.o mod_mean_esmf.o mod_xc.o mod_za.o wtime.o zh.o bigrid.o blkin.o extrct.o getdat.o putdat.o
-ifort: command line remark #10148: option '-tpp7' not supported
-ifort: command line remark #10148: option '-Vaxlib' not supported

@@ -1,5 +1,0 @@
-ifort             -g -tpp7 -O3 -convert big_endian -c wi_meanfit.f
-ifort: command line remark #10148: option '-tpp7' not supported
-ifort -g -tpp7 -O3 -convert big_endian -Vaxlib wi_meanfit.o   mod_xc.o mod_za.o wtime.o interp.o zh.o -o wi_meanfit
-ifort: command line remark #10148: option '-tpp7' not supported
-ifort: command line remark #10148: option '-Vaxlib' not supported
