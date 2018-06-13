@@ -1,6 +1,7 @@
 *.o
 *.pyc
 *.mod
+*.log
 
 #--------
 hycom/MSCPROGS/bin/
