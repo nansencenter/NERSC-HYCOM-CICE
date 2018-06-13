@@ -2,7 +2,7 @@
 #
 # --- environment variables defining the region and experiment number.
 #
-export R=TP0a1.00
+export R=AGUa0.10
 
 # Consistency check. 
 mydir=$(cd $(dirname ${BASH_SOURCE}) && pwd)
@@ -49,27 +49,26 @@ export LEVITUS_PATH=${Sysdir}/ModelInput/clim/levitus/
 export PHC_PATH=${Sysdir}/ModelInput/clim/PHC/
 export WOA2013_PATH=${Sysdir}/ModelInput/clim/WOA2013/hycom_0.25
 #export WOA2013_PATH=$mydir/../input/data/WOA2013/sigma-0/
-
 export SEAWIFS=${Sysdir}/ModelInput/clim/seawifs/
-export COADSWIND=/work/shared/nersc/msc/ModelInput/force/wind_ieee/coads/
-export COADSFLUX=/work/shared/nersc/msc/ModelInput/force/flux_ieee/coads/
-export ERA15=/work/shared/nersc/msc/ModelInput/force/era15/monthly/
-export NCEP_CLIM_PATH=/work/shared/nersc/NCEP_Clim/
+#export COADSWIND=/work/shared/nersc/msc/ModelInput/force/wind_ieee/coads/
+#export COADSFLUX=/work/shared/nersc/msc/ModelInput/force/flux_ieee/coads/
+#export ERA15=/work/shared/nersc/msc/ModelInput/force/era15/monthly/
+#export NCEP_CLIM_PATH=/work/shared/nersc/NCEP_Clim/
 export ERA40_CLIM_PATH=${Sysdir}/ERA40-Clim/
 export ERA40_PATH=${Sysdir}/ERA40/
 export ERAI_PATH=${Sysdir}/ERA-I/
 export WOA2005_PATH=${Sysdir}/ModelInput/WOA2005/
-export ECNC_PATH=/work/shared/nersc/ECMWFR_T799/
-export NCEP_PATH=/work/shared/nersc/NCEP/
+#export ECNC_PATH=/work/shared/nersc/ECMWFR_T799/
+#export NCEP_PATH=/work/shared/nersc/NCEP/
 export ETOPO5_PATH=${Sysdir}/ModelInput/bathymetry/ETOPO5/
 export GEBCO_PATH=${Sysdir}/ModelInput/bathymetry/GEBCO/
 export IBCAO_PATH=${Sysdir}/ModelInput/bathymetry/IBCAO_v3/
-export FES_PATH=/work/shared/nersc/msc/ModelInput/tides/FES2004/
-export CSR_PATH=/work/shared/nersc/msc/ModelInput/tides/CSR/
-export TRIP_PATH=/work/shared/nersc/TRIP/
-export WAM_PATH=/work/shared/nersc/msc/WAM
-export WAMNSEA_PATH=/work/shared/nersc/msc/WAMNSEA/
-export BACKUP_PATH=/migrate/${USER}
+export FES_PATH=${Sysdir}/ModelInput/tides/FES2004/
+export CSR_PATH=${Sysdir}/ModelInput/tides/CSR/
+export TRIP_PATH=${Sysdir}/ModelInput/TRIP/
+#export WAM_PATH=/work/shared/nersc/msc/WAM
+#export WAMNSEA_PATH=/work/shared/nersc/msc/WAMNSEA/
+export BACKUP_PATH=/nird/projects/nird/NS2993K/NORSTORE_OSL_TAPE/${USER}
 
 
 # These variables sets climatology to use when setting up the model. Sourced by run script
