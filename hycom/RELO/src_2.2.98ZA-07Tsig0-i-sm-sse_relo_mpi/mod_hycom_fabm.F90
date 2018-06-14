@@ -35,9 +35,8 @@ module mod_hycom_fabm
    real, allocatable :: swflx_fabm(:, :)
    real, allocatable :: bottom_stress(:, :)
    real :: bottom_stress_keep 
-   logical, allocatable :: mask(:, :, :)
-   integer, allocatable :: kbottom(:, :)
-   integer, allocatable :: kbottomn(:, :)
+   logical, allocatable :: mask(:, :, :, :)
+   integer, allocatable :: kbottom(:, :, :)
    integer :: nbottom
    real :: hbottom
    real, allocatable :: h(:, :, :)
@@ -134,9 +133,8 @@ contains
     subroutine hycom_fabm_allocate()
         allocate(swflx_fabm(ii, jj))
         allocate(bottom_stress(ii, jj))
-        allocate(mask(ii, jj, kk))
-        allocate(kbottom(ii, jj))
-        allocate(kbottomn(ii, jj))
+        allocate(mask(ii, jj, kk, 2))
+        allocate(kbottom(ii, jj, 2))
         allocate(h(ii, jj, kk))
         allocate(fabm_surface_state(1-nbdy:ii+nbdy, 1-nbdy:jj+nbdy, 2, size(fabm_model%surface_state_variables)))
         allocate(fabm_bottom_state(1-nbdy:ii+nbdy, 1-nbdy:jj+nbdy, 2, size(fabm_model%bottom_state_variables)))
@@ -153,12 +151,8 @@ contains
         ! Provide extents of the spatial domain (number of layers nz for a 1D column)
         call fabm_set_domain(fabm_model, ii, jj, kk, baclin)
 
-        ! Send mask - see SEA_P preprocessor macro in trcupd.F
-        call fabm_set_mask(fabm_model, mask, mask(:, :, 1))
-
-        ! Specify vertical index of surface and bottom
+        ! Specify vertical index of surface (constant during simulation)
         call fabm_model%set_surface_index(1)
-        call fabm_model%set_bottom_index(kbottom)
 
         call fabm_model%link_interior_data(standard_variables%cell_thickness, h(1:ii, 1:jj, 1:kk))
         call fabm_model%link_horizontal_data(standard_variables%surface_downwelling_shortwave_flux, swflx_fabm(1:ii, 1:jj))
@@ -598,24 +592,14 @@ contains
       ! Get index of bottom layers at the next time step.
       ! For that we use time index n, which assumes dp(:,:,:,n) has already been updated!
       ! A (partial?) update seems to happen in cnuity, which is indeed called before trcupd.
-      call get_bottom_k(n, kbottomn)
+      call get_mask(m, mask(:, :, :, m), kbottom(:, :, m))
+      call get_mask(n, mask(:, :, :, n), kbottom(:, :, n))
 
       ! Store old surface/bottom state for later application of Robert-Asselin filter.
       fabm_surface_state_old = fabm_surface_state(:, :, n, :)
       fabm_bottom_state_old = fabm_bottom_state(:, :, n, :)
       ! Make sure the biogeochemical state is valid (uses clipping if necessary)
       call check_state('when entering fabm_hycom_update', current_time_index, .true.)
-      ! Copy bottom value for pelagic tracers to all layers below bottom
-      ! (currently masked, but could be revived later)
-      do j=1,jj
-        do i=1,ii
-          if (SEA_P) then
-            do k=kbottom(i, j)+1, kk
-              tracer(i, j, k, m, :) = tracer(i, j, kbottom(i, j), m, :)
-            end do
-          end if
-        end do
-      end do
 
       ! Vertical movement (includes sinking and floating)
       if (do_vertical_movement) then
@@ -663,25 +647,25 @@ contains
         sms_bt = 0
         call fabm_do_bottom(fabm_model, 1, ii, j, flux, sms_bt)
         do i=1,ii
-          if (kbottomn(i, j) > 0) then
+          if (kbottom(i, j, n) > 0) then
             fabm_bottom_state(i, j, n, :) = fabm_bottom_state(i, j, n, :) + delt1 * sms_bt(i, :) ! update sediment layer
-            if ( dp(i, j, kbottomn(i,j), n)/onem >= 6.0 ) then ! check if the bottom layer is thicker than 10 meters, if so, apply the flux as usual (I will decrease the criteria in time)
-              tracer(i, j, kbottomn(i,j), n, :) = tracer(i, j, kbottomn(i,j), n, :) + delt1 * flux(i, :)/dp(i, j, kbottomn(i,j), n)*onem
+            if ( dp(i, j, kbottom(i,j,n), n)/onem >= 6.0 ) then ! check if the bottom layer is thicker than 10 meters, if so, apply the flux as usual (I will decrease the criteria in time)
+              tracer(i, j, kbottom(i,j,n), n, :) = tracer(i, j, kbottom(i,j,n), n, :) + delt1 * flux(i, :)/dp(i, j, kbottom(i,j,n), n)*onem
             else ! in case less than 10 meters, to avoid accumulation at the bottom thin layers, distribute the flux into multiple layers that add up to > 10 meters thickness
               hbottom = 0
               nbottom = 0
-              do k = kbottomn(i,j),1,-1
+              do k = kbottom(i,j,n),1,-1
                 hbottom = hbottom + dp(i ,j , k, n)/onem
                 if ( hbottom >= 6.0 ) exit
                 nbottom = nbottom + 1
               end do
-              do k = kbottomn(i,j)-nbottom , kbottomn(i,j) ! distribute the flux to total height, and to multiple layers
+              do k = kbottom(i,j,n)-nbottom , kbottom(i,j,n) ! distribute the flux to total height, and to multiple layers
                 tracer(i, j, k, n, :) = tracer(i, j, k, n, :) + delt1 * flux(i, :)/hbottom
               end do
             end if
 #ifdef FABM_CHECK_NAN
-            if (any(isnan(tracer(i, j, kbottomn(i,j), n, :)))) then
-              write (*,*) 'NaN after do_bottom:', tracer(i, j, kbottomn(i,j), n, :), flux(i, :), dp(i, j, kbottomn(i,j), n)/onem
+            if (any(isnan(tracer(i, j, kbottom(i,j,n), n, :)))) then
+              write (*,*) 'NaN after do_bottom:', tracer(i, j, kbottom(i,j,n), n, :), flux(i, :), dp(i, j, kbottom(i,j,n), n)/onem
               stop
             end if
 #endif
@@ -698,7 +682,7 @@ contains
         sms_sf = 0
         call fabm_do_surface(fabm_model, 1, ii, j, flux, sms_sf)
         do i=1,ii
-          if (kbottomn(i, j) > 0) then
+          if (kbottom(i, j, n) > 0) then
             fabm_surface_state(i, j, n, :) = fabm_surface_state(i, j, n, :) + delt1 * sms_sf(i, :)
             tracer(i, j, 1, n, :) = tracer(i, j, 1, n, :) + delt1 * flux(i, :)/dp(i, j, 1, n)*onem
 #ifdef FABM_CHECK_NAN
@@ -749,22 +733,6 @@ contains
       end do
       call check_state('after hycom_fabm_update', n, .true.)
 
-      ! Copy bottom value for pelagic tracers to all layers below bottom
-      ! (currently masked, but could be revived later)
-!      do j=1,jj
-!        do i=1,ii
-!          if (SEA_P) then
-!            do k=kbottomn(i, j)+1, kk
-!              tracer(i, j, k, n, :) = tracer(i, j, kbottomn(i,j), n, :)
-!            end do
-!              if ( tracer(i, j, 50, n, 14) < -2E+10 ) then
-!                write(*,*)'DETECTED',k,kbottom(i, j),kbottomn(i, j)
-!                write(*,*)'DETECTED',mask(i,j,kbottom(i,j)),mask(i,j,kbottomn(i, j))
-!                write(*,*)'DETECTED',tracer(i, j, :, n, 14)
-!              endif
-!          end if
-!        end do
-!      end do
       ! Apply the Robert-Asselin filter to the surface and bottom state.
       ! Note that RA will be applied to the pelagic tracers within mod_tsavc - no need to do it here!
       ! CAGLAR: Since there is no advection of sediment and surface state, applying a filter here is unnecessary. Setting it to state_m prevents (-) variables for the next time step.
@@ -781,7 +749,7 @@ contains
 
       logical :: valid_int, valid_sf, valid_bt
 
-      integer :: j, k, ivar, old_index
+      integer :: i, j, k, ivar, old_index
 
       old_index = current_time_index
       call update_fabm_state(index)
@@ -809,6 +777,22 @@ contains
           stop
         end if
       end do
+
+      if (repair) then
+        ! FABM will have placed "missing value" for all state variables in all masked cells.
+        ! However, as these can be revived later in the simulation, make sure their value is valid by
+        ! copying bottom value for pelagic tracers to all layers below bottom.
+        do j=1,jj
+          do i=1,ii
+            if (SEA_P) then
+              do k=kbottom(i, j, index)+1, kk
+                tracer(i, j, k, index, :) = tracer(i, j, kbottom(i, j, index), index, :)
+              end do
+            end if
+          end do
+        end do
+      end if
+
       call update_fabm_state(old_index)
     end subroutine check_state
 
@@ -845,7 +829,7 @@ contains
           ! Update state
           do i=1,ii
             kabove = 0
-            do k=1,kbottomn(i, j)-1
+            do k=1,kbottom(i, j, n)-1
               if (dp(i, j, k, n) > 0) kabove = k
               if (flux(i, k) /= 0) then
                 ! non-zero flux across interface
@@ -855,14 +839,14 @@ contains
                 flux(i, k) = 0
                 else
                   ! Prevent accumulation of settling particles in thin layers 
-                  if ( flux(i, k) < 0 .and. k == kbottomn(i, j)-1 ) then ! if settling and if at the layer above the bottom
+                  if ( flux(i, k) < 0 .and. k == kbottom(i, j, n)-1 ) then ! if settling and if at the layer above the bottom
                     if ( dp(i, j, k+1, n)/onem >= 6.0 ) then ! check if the bottom layer is actually < 10 meters, if not, apply the regular flux additions
                       tracer(i, j, kabove, n, ivar) = tracer(i, j, kabove, n, ivar) + flux(i, k)*timestep/(dp(i, j, kabove, n)/onem)
                       tracer(i, j, k+1, n, ivar) = tracer(i, j, k+1, n, ivar) - flux(i, k)*timestep/(dp(i, j, k+1, n)/onem)
                       else ! if < 10 meters
                         hbottom = 0
                         nbottom = 0 
-                        do kb = kbottomn(i, j),1,-1 ! find number of layers that add up to > 10 meters, and store the total height
+                        do kb = kbottom(i, j, n),1,-1 ! find number of layers that add up to > 10 meters, and store the total height
                           hbottom = hbottom + dp(i ,j , kb, n)/onem
                           if ( hbottom >= 6.0 ) exit
                           nbottom = nbottom + 1
@@ -870,7 +854,7 @@ contains
                         ! Settle the particles from kabove
                         tracer(i, j, kabove, n, ivar) = tracer(i, j, kabove, n, ivar) + flux(i, k)*timestep/(dp(i, j, kabove, n)/onem) 
                         ! and distribute that flux to multiple layers which the depths add up to > 10 meters
-                        do kb = kbottomn(i, j) - nbottom , kbottomn(i, j)
+                        do kb = kbottom(i, j, n) - nbottom , kbottom(i, j, n)
                           tracer(i, j, kb, n, ivar) = tracer(i, j, kb, n, ivar) - flux(i, k)*timestep/hbottom
                         end do
                     end if  
@@ -887,9 +871,10 @@ contains
 
     end subroutine vertical_movement
 
-    subroutine get_bottom_k(index, kbottom)
+    subroutine get_mask(index, mask, kbottom)
         integer, intent(in)  :: index
-        integer, intent(out) :: kbottom(ii, jj)
+        logical, intent(out) :: mask(:, :, :)
+        integer, intent(out) :: kbottom(:, :)
 
         real, parameter :: h_min = 0.1
         integer :: i, j, k
@@ -916,7 +901,14 @@ contains
               end if
             end do
         end do
-    end subroutine get_bottom_k
+
+        mask = .false.
+        do j=1,jj
+            do i=1,ii
+                mask(i, j, 1:kbottom(i, j)) = .true.
+            end do
+        end do
+    end subroutine get_mask
 
     subroutine update_fabm_data(index, initializing)
         integer, intent(in) :: index
@@ -930,21 +922,10 @@ contains
         ! Update cell thicknesses (m)
         h(:, :, :) = dp(1:ii, 1:jj, 1:kk, index)/onem
 
-        ! Update interior mask (all cells set to .true. will be processed by FABM) and index of bottom layer.
         if (initializing) then
+          ! Make sure everything is unmasked, so that the state is initialized everywhere
           mask = .true.
           kbottom = kk
-        else
-          ! Get index of bottom for the time step at which we evaluate sinks/sources.
-          call get_bottom_k(index, kbottom)
-
-          ! Process points only if their layer has not vanished at the time of evaluation.
-          mask = .false.
-          do j=1,jj
-              do i=1,ii
-                  mask(i, j, 1:kbottom(i, j)) = .true.
-              end do
-          end do
         end if
 
         if (.not.initializing) then
@@ -986,6 +967,10 @@ contains
         integer, intent(in) :: index
 
         if (current_time_index == index) return
+
+        ! Update mask and index of bottommost layer
+        call fabm_set_mask(fabm_model, mask(:, :, :, index), mask(:, :, 1, index))
+        call fabm_model%set_bottom_index(kbottom(:, :, index))
 
         ! Send pointers to state variable data to FABM
         call fabm_model%link_all_interior_state_data(tracer(1:ii, 1:jj, 1:kk, index, :))
