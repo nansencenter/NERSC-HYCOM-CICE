@@ -294,7 +294,7 @@ contains
 
           ! ?? Not sure why we are reading here, copying from forfun.F
           do k=1,kk
-            call hycom_fabm_rdmonthck(util1, hycom_fabm_relax(ivar), 0)
+            call hycom_fabm_rdmonthck(util1, hycom_fabm_relax(ivar), 0, is_2d=.false.)
           end do
         else
           ! Disable relaxation for this tracer
@@ -377,7 +377,7 @@ contains
 
       ! ?? Not sure why we are reading here, copying from forfun.F
       do k=1,size(input%data_ip, 3)
-        call hycom_fabm_rdmonthck(util1, input%file_unit, 0)
+        call hycom_fabm_rdmonthck(util1, input%file_unit, 0, is_2d)
       end do
 
       call read_input(input,m_clim0,l_clim0)
@@ -393,6 +393,7 @@ contains
       integer,           intent(in)    :: mrec, lslot
 
       integer :: irec, k
+      logical :: is_2d
 
       if (mrec <= input%mrec) then
         ! Rewind
@@ -414,8 +415,9 @@ contains
         end do
       end do
 
+      is_2d = size(input%data_src,3) == 1
       do k= 1,size(input%data_src,3)
-        call hycom_fabm_rdmonthck(input%data_src(1-nbdy,1-nbdy,k,lslot), input%file_unit, mrec)
+        call hycom_fabm_rdmonthck(input%data_src(1-nbdy,1-nbdy,k,lslot), input%file_unit, mrec, is_2d)
       end do
 
       input%mrec = mrec
@@ -501,19 +503,20 @@ contains
       do ivar=1,size(fabm_model%state_variables)
         if (hycom_fabm_relax(ivar) /= -1) then
           do k= 1,kk
-            call hycom_fabm_rdmonthck(trwall(1-nbdy,1-nbdy,k,lslot,ivar), hycom_fabm_relax(ivar), mnth)
+            call hycom_fabm_rdmonthck(trwall(1-nbdy,1-nbdy,k,lslot,ivar), hycom_fabm_relax(ivar), mnth, is_2d=.false.)
           end do
         end if
       end do
     end subroutine hycom_fabm_relax_read
 
-    subroutine hycom_fabm_rdmonthck(field, iunit, mnthck)
+    subroutine hycom_fabm_rdmonthck(field, iunit, mnthck, is_2d)
       use mod_xc         ! HYCOM communication interface
       use mod_cb_arrays  ! HYCOM saved arrays
       use mod_za         ! HYCOM I/O interface
 
       integer   iunit,mnthck
       real, dimension (1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy) :: field
+      logical, intent(in) :: is_2d
 
       integer   i,ios,layer,mnth
       real      denlay,hmina,hminb,hmaxa,hmaxb
@@ -533,7 +536,11 @@ contains
       if (mnproc.eq.1) write (lp,'(a)')  cline  !print input array info
       i = index(cline,'=')
 
-      read (cline(i+1:),*) mnth,layer,denlay,hminb,hmaxb
+      if (is_2d) then
+        read (cline(i+1:),*) mnth,hminb,hmaxb
+      else
+        read (cline(i+1:),*) mnth,layer,denlay,hminb,hmaxb
+      end if
       if (mnth.lt.1 .or. mnth.gt.12) then
         if (mnproc.eq.1) write(lp,'(/ a,i4,a /)') 'error on unit',iunit,' - not monthly relaxation data'
         call xcstop('(hycom_fabm_rdmonthck)')
