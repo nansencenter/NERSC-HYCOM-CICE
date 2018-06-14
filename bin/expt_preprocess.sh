@@ -352,12 +352,12 @@ if [ $PRIVER -eq 1 ] ; then
    cp $BASEDIR/force/rivers/$E/rivers.b forcing.rivers.b || tellerror "Could not get river .b file"
    if [ $NTRACR -ne 0 ] ; then
       echo "**Setting up bio river forcing"
-      cp $BASEDIR/force/rivers/$E/ECO_no3.a forcing.ECO_no3.a || tellerror "Could not get NO3 river .a file"
-      cp $BASEDIR/force/rivers/$E/ECO_no3.b forcing.ECO_no3.b || tellerror "Could not get NO3 river .b file"
-      cp $BASEDIR/force/rivers/$E/ECO_sil.a forcing.ECO_sil.a || tellerror "Could not get SIL river .a file"
-      cp $BASEDIR/force/rivers/$E/ECO_sil.b forcing.ECO_sil.b || tellerror "Could not get SIL river .b file"
-      cp $BASEDIR/force/rivers/$E/ECO_pho.a forcing.ECO_pho.a || tellerror "Could not get PHO river .a file"
-      cp $BASEDIR/force/rivers/$E/ECO_pho.b forcing.ECO_pho.b || tellerror "Could not get PHO river .b file"
+      cp $BASEDIR/force/rivers/$E/ECO_no3.a rivers.ECO_no3.a || tellerror "Could not get NO3 river .a file"
+      cp $BASEDIR/force/rivers/$E/ECO_no3.b rivers.ECO_no3.b || tellerror "Could not get NO3 river .b file"
+      cp $BASEDIR/force/rivers/$E/ECO_sil.a rivers.ECO_sil.a || tellerror "Could not get SIL river .a file"
+      cp $BASEDIR/force/rivers/$E/ECO_sil.b rivers.ECO_sil.b || tellerror "Could not get SIL river .b file"
+      cp $BASEDIR/force/rivers/$E/ECO_pho.a rivers.ECO_pho.a || tellerror "Could not get PHO river .a file"
+      cp $BASEDIR/force/rivers/$E/ECO_pho.b rivers.ECO_pho.b || tellerror "Could not get PHO river .b file"
    fi
 fi
 
