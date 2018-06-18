@@ -1,0 +1,11 @@
+Routines described in this README:
+
+force_perturb-2.2    - perturb existing forcing fields  with random forcing
+------------------
+In this directory is the routine force_perturb-2.2. This routine simply 
+adds time-dependent perturbations on existing forcing files. it reads
+infile2.in to get variances  of  random forcing ++, and applies them to
+existing forcing fields. Results are put in files with names a la 
+tst.forcing.airtmp.[ab]
+The call method is similar to forfun_nersc
+
