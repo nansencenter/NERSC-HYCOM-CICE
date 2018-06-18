@@ -48,7 +48,7 @@ OBJS =	         barotp.o  bigrid.o blkdat.o  cnuity.o convec.o \
 	icloan.o inicon.o inigiss.o inikpp.o   inimy.o latbdy.o \
 	matinv.o mxkprf.o  mxkrt.o  mxkrtm.o  mxpwp.o \
 	overtn.o poflat.o  prtmsk.o  psmoo.o restart.o \
-	thermf.o trcupd.o  m_get_erfc.o \
+	thermf.o trcupd.o  \
        machine.o  wtime.o machi_c.o  isnan.o
 
 # CAGLAR - ADDED FABM SUPPORT -
