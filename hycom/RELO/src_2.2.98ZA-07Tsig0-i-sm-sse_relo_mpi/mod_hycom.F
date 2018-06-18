@@ -1100,16 +1100,16 @@ c --------- We dont handle cases where input is E-P.
         enddo !i
       enddo !j
 cKAL
-      if (mnproc==1) 
-     &   print *,"WARN: Make sure treatment of wind components is ok"
-      if (mnproc==1) 
-     &   print *,"WARN: Make sure treatment of tilt components is ok"
-      if (mnproc==1) 
-     &   print *,"WARN: Make sure treatment of sw rad is ok"
-      if (mnproc==1) 
-     &   print *,"WARN: Make sure treatment of lw rad is ok"
-      if (mnproc==1) 
-     &   print *,"WARN: must match CICE thermodynamics freezing point"
+!      if (mnproc==1) 
+!     &   print *,"WARN: Make sure treatment of wind components is ok"
+!      if (mnproc==1) 
+!     &   print *,"WARN: Make sure treatment of tilt components is ok"
+!      if (mnproc==1) 
+!     &   print *,"WARN: Make sure treatment of sw rad is ok"
+!      if (mnproc==1) 
+!     &   print *,"WARN: Make sure treatment of lw rad is ok"
+!      if (mnproc==1) 
+!     &   print *,"WARN: must match CICE thermodynamics freezing point"
 cKAL
 c
 c --- Smooth surface ocean velocity fields
