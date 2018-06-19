@@ -27,7 +27,8 @@
 #KAL - xt4.hexagon ...
 setenv TYPE cice
 #setenv ARCH Linux.sisu.intel   
-setenv CICE_FLAG 2
+setenv CICE_FLAG $2
+setenv ARCH $1
 echo "(1) ARCH = $ARCH"
 echo "if error: make sure to set the correct ARCH in Make_cice.csh"
 echo "Make_cice.csh: Environment variable TYPE=$TYPE"
@@ -70,7 +71,6 @@ endif
 
 # --- KAL. Touch this file to make sure it exists. It may be empty, but the makefile will look for it
 touch ./hycom_feature_flags
-echo "################## " $CICE_FLAG
 #
 # --- make HYCOM component, and update hycom_cice
 #

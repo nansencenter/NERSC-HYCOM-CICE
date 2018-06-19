@@ -296,9 +296,10 @@ else
    fi
 fi
 
-
+# Mostafa: add new folder named "mysource" when you aim for standalone HYCOM
+# Files from this folder will be copied onto appropriate paths. This is under construction ...
 if [ ! -f $EDIR/mysource/ ] ; then
-
+        echo "############# copy from  $EDIR/mysource to build folder"
 	cp $EDIR/mysource/mod_hycom.F $targetdir/        
 	cp $EDIR/mysource/hycom.F $targetdir/
 else
@@ -333,7 +334,8 @@ fi
 cd $targetdir
 if [ $ICEFLG -ne 0 ] ; then
     echo "Now compiling hycom_cice in $targetdir."
-    env ARCH=$MACROID csh Make_cice.csh
+    #env ARCH=$MACROID csh Make_cice.csh
+    env csh Make_cice.csh ${MACROID} ${ICEFLG}
     res=$?
     if [ $res -ne 0 ] ; then
         echo
