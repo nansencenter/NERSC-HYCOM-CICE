@@ -154,7 +154,7 @@ else
    echo $rscale >> rmu.in
 fi
 
-$MSCPROGS/bin_setup/rmunew
+$MSCPROGS/src/Relax/rmunew
 #knutali/Progs/HYCOM_UTILITY_ROUTINES/HYCOM_2.1.03/ALL/relax/src_2.1.00/rmunew
 
 

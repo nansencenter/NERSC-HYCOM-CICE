@@ -2,7 +2,7 @@
 #
 # --- environment variables defining the region and experiment number.
 #
-export R=AGUa0.10
+export R=TP0a1.00
 
 # Consistency check. 
 mydir=$(cd $(dirname ${BASH_SOURCE}) && pwd)
@@ -47,7 +47,7 @@ export Sysdir=/cluster/projects/nn2993k
 # PATHS to hycom-supplied ocean climatologies, on specially formatted input files
 export LEVITUS_PATH=${Sysdir}/ModelInput/clim/levitus/   
 export PHC_PATH=${Sysdir}/ModelInput/clim/PHC/
-export WOA2013_PATH=${Sysdir}/ModelInput/clim/WOA2013/hycom_0.25
+export WOA2013_PATH=${Sysdir}/ModelInput/clim/WOA2013/hycom_0.25/sigma-0
 #export WOA2013_PATH=$mydir/../input/data/WOA2013/sigma-0/
 export SEAWIFS=${Sysdir}/ModelInput/clim/seawifs/
 #export COADSWIND=/work/shared/nersc/msc/ModelInput/force/wind_ieee/coads/
