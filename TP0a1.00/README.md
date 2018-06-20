@@ -3,6 +3,7 @@ This is the REGION directory. Here is the typical content of this directory:
 
     ├── expt_01.0     # Experiment directory
     ├── force         # forcing input data for experiments
+    ├── mysource      # Direcotry containing mod_hycom.F and hycom.F for running HYCOM standalone
     ├── README.md      
     ├── REGION.src    # source file containing important environment variables and paths
     ├── relax         # Relaxation input data for experiments
@@ -74,3 +75,12 @@ which consists of "TP4" (for TOPAZ 4), "a" as a version number (in case you want
 
 
 # Scripts for setting up new region grid and bathymetry files
+
+# Compile HYCOM standalone
+
+For a detailed explanation on how to compile HYCOM standalone see $NHCROOT/doc/HYCOM-only-compilation.md
+
+Quick start: To compile HYCOM as standalone (i.e. not coupled with CICE) you need to do the following:
+1. In blkdat.input set ‘iceflg’ to 0.
+2. Link $NHCROOT/TP0a1.00/expt_01.0/mysource to experiment directory
+3. compile_model.sh -m fram -u ifort
