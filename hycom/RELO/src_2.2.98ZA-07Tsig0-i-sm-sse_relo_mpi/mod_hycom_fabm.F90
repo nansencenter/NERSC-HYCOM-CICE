@@ -69,7 +69,7 @@ module mod_hycom_fabm
    integer, parameter :: role_prescribe = 0
    integer, parameter :: role_river = 1
 
-   integer, save :: next_unit = 915
+   integer, save :: next_unit = 940  !ASJUN18 - increased since 218 is reserved in hycom
 
    integer, allocatable :: hycom_fabm_relax(:)
 
@@ -368,11 +368,13 @@ contains
         read (uoff+input%file_unit,'(a79)') preambl
       end if !1st tile
       call preambl_print(preambl)
+      input%mrec = 0  !ASJUN18 - initiate value of mrec
 
-      ! ?? Not sure why we are reading here, copying from forfun.F
-      do k=1,size(input%data_ip, 3)
-        call hycom_fabm_rdmonthck(util1, input%file_unit, 0, is_2d)
-      end do
+!ASJUN18 Removed since it is not doing anything.
+!      ! ?? Not sure why we are reading here, copying from forfun.F
+!      do k=1,size(input%data_ip, 3)
+!        call hycom_fabm_rdmonthck(util1, input%file_unit, 0, is_2d)
+!      end do
 
       call read_input(input,m_clim0,l_clim0)
       call read_input(input,m_clim1,l_clim1)
@@ -388,16 +390,18 @@ contains
 
       integer :: irec, k
       logical :: is_2d
+      character preambl(5)*79
 
       if (mrec <= input%mrec) then
         ! Rewind
         if (mnproc.eq.1) then  ! .b file from 1st tile only
           rewind uoff+input%file_unit
-          read  (uoff+input%file_unit,*)
-          read  (uoff+input%file_unit,*)
-          read  (uoff+input%file_unit,*)
-          read  (uoff+input%file_unit,*)
-          read  (uoff+input%file_unit,*)
+          read (uoff+input%file_unit,'(a79)') preambl
+!          read  (uoff+input%file_unit,*)
+!          read  (uoff+input%file_unit,*)
+!          read  (uoff+input%file_unit,*)
+!          read  (uoff+input%file_unit,*)
+!          read  (uoff+input%file_unit,*)
         end if
         call zaiorw(input%file_unit)
         input%mrec = 0
@@ -542,7 +546,7 @@ contains
       end if
       if (mnthck.gt.0 .and. mnth.ne.mnthck) then
         if (mnproc.eq.1) &
-          write(lp,'(/ a,i4,a,a,2i4,a /)') 'error on unit',iunit,' - wrong relaxation month (expected,input =',mnthck,mnth,')'
+          write(lp,'(/ a,i4,a,2i4,a /)') 'error on unit',iunit,' - wrong relaxation month (expected,input =',mnthck,mnth,')'
         call xcstop('(hycom_fabm_rdmonthck)')
         stop '(hycom_fabm_rdmonthck)'
       end if
