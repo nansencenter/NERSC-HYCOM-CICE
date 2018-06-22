@@ -136,7 +136,8 @@ def relaxation_mask(rmumask,ifport,ilport,jfport,jlport,kdport,rmu_width) :
    elif kdport == 3 : # East
       #print "east"
       #distedge[jfport:jlport+1,ifport-rmu_width:ifport] = tmp[::-1]
-      distedge[jfport:jlport+1,ifport-rmu_width-1:ifport-1] = tmp[::-1]
+      #distedge[jfport:jlport+1,ifport-rmu_width-1:ifport-1] = tmp[::-1]
+      distedge[jfport:jlport+1,ifport-rmu_width-1:ifport-1] = tmp[::-1].transpose()
    elif kdport == 4 : # West
       #print "west"
       #print distedge[jfport:jlport+1,ifport:ifport+rmu_width].shape, tmp.shape
