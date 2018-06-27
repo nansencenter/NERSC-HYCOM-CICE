@@ -395,21 +395,20 @@ fi
 #
 # --- tracer relaxation
 #
-if [ $TRCRLX -eq 1 ] ; then
+if [ $TRCRLX -ne 0 ] ; then
    echo "**Setting up tracer relaxation"
-   for i in ECO_no3 ECO_pho ECO_sil ; do
-# |CAGLAR| oxygen relax files won't work with TP2, don't know why yet. So no ECO_oxy here. Add it manually
+   for i in ECO_no3 ECO_pho ECO_sil ECO_oxy; do
       j=$(echo $i | head -c7)
-      [ ! -f  $BASEDIR/relax/${E}/relax.$j.a ] && tellerror "$BASEDIR/relax/${E}/relax_$j.a does not exist"
-      [ ! -f  $BASEDIR/relax/${E}/relax.$j.b ] && tellerror "$BASEDIR/relax/${E}/relax_$j.b does not exist"
+      [ ! -f  $BASEDIR/relax/${E}/relax.$j.a ] && tellerror "$BASEDIR/relax/${E}/relax.$j.a does not exist"
+      [ ! -f  $BASEDIR/relax/${E}/relax.$j.b ] && tellerror "$BASEDIR/relax/${E}/relax.$j.b does not exist"
       ln -sf $BASEDIR/relax/${E}/relax.$j.a relax.$i.a  || tellerror "Could not get relax.$i.a"
       ln -sf $BASEDIR/relax/${E}/relax.$j.b relax.$i.b  || tellerror "Could not get relax.$i.b"
    done
    echo "**Setting up tracer relaxation masks"
-   [ ! -f  $BASEDIR/relax/${E}/relax_rmutr.a ] && tellerror "$BASEDIR/relax/${E}/relax_rmutr.a does not exist"
-   [ ! -f  $BASEDIR/relax/${E}/relax_rmutr.b ] && tellerror "$BASEDIR/relax/${E}/relax_rmutr.b does not exist"
-   ln -sf $BASEDIR/relax/${E}/relax_rmutr.a relax.rmutr.a  || tellerror "Could not get relax.rmutr.a"
-   ln -sf $BASEDIR/relax/${E}/relax_rmutr.b relax.rmutr.b  || tellerror "Could not get relax.rmutr.b"
+   [ ! -f  $BASEDIR/relax/${E}/relax_rmu.a ] && tellerror "$BASEDIR/relax/${E}/relax_rmutr.a does not exist"
+   [ ! -f  $BASEDIR/relax/${E}/relax_rmu.b ] && tellerror "$BASEDIR/relax/${E}/relax_rmutr.b does not exist"
+   ln -sf $BASEDIR/relax/${E}/relax_rmu.a relax.rmutr.a  || tellerror "Could not get relax.rmutr.a"
+   ln -sf $BASEDIR/relax/${E}/relax_rmu.b relax.rmutr.b  || tellerror "Could not get relax.rmutr.b"
 fi
 #
 # - thermobaric reference state?

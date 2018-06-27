@@ -14,6 +14,9 @@ BASEDIR=$(cd $(dirname $0)/.. && pwd)/ # Location of basedir
 source $BASEDIR/REGION.src
 source $EDIR/EXPT.src
 
+KSIGMA=$(egrep "'thflag'"  $EDIR/blkdat.input  | sed "s/.thflag.*$//" | tr -d "[:blank:]")
+export NTRACR=`grep "'ntracr' =" $EDIR/blkdat.input | awk '{printf("%03d", $1)}'`
+
 # Create z-level relaxation files
 cd $EDIR
 echo "z climatology"
@@ -31,6 +34,42 @@ res=$?
 [ $res -eq 0 ] && echo "Success"
 [ $res -ne 0 ] && echo "Failure...  Log in  $EDIR/log/ref_hybrid_relax.out"
 echo ".."
+
+if [ $NTRACR -ne 0 ] ; then
+  # Create biology z-relaxation files from WOA2013
+  cd $EDIR
+  echo "bio relax climatology"
+  z_woa2013_bio.sh $KSIGMA > $EDIR/log/ref_bio_relax.out 2>&1
+  res=$?
+  [ $res -eq 0 ] && echo "Success"
+  [ $res -ne 0 ] && echo "Failure... Log in $EDIR/log/ref_bio_relax.out"
+  echo ".."
+
+  # Create biology hybrid-relaxation files from WOA2013
+  cd $EDIR 
+  echo "bio hybrid relax climatology"
+  relax_sil.sh ${X} woa2013 > $EDIR/log/ref_sil_relax.out 2>&1
+  res=$?       
+  [ $res -eq 0 ] && echo "Success"
+  [ $res -ne 0 ] && echo "Failure... Log in $EDIR/log/ref_sil_relax.out"
+
+  relax_pho.sh ${X} woa2013 > $EDIR/log/ref_pho_relax.out 2>&1
+  res=$?
+  [ $res -eq 0 ] && echo "Success"
+  [ $res -ne 0 ] && echo "Failure... Log in $EDIR/log/ref_pho_relax.out"
+
+  relax_nit.sh ${X} woa2013 > $EDIR/log/ref_no3_relax.out 2>&1
+  res=$?
+  [ $res -eq 0 ] && echo "Success"
+  [ $res -ne 0 ] && echo "Failure... Log in $EDIR/log/ref_no3_relax.out"
+
+  relax_oxy.sh ${X} woa2013 > $EDIR/log/ref_oxy_relax.out 2>&1
+  res=$?
+  [ $res -eq 0 ] && echo "Success"
+  [ $res -ne 0 ] && echo "Failure... Log in $EDIR/log/ref_oxy_relax.out"
+
+  echo ".."
+fi
 
 # Create relaxation mask
 echo "relaxation mask"
