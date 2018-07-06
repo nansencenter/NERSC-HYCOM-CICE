@@ -875,15 +875,15 @@ contains
 
     end subroutine vertical_movement
 
-    subroutine get_mask(index, mask, kbottom)
+    subroutine get_mask(index, lmask, lkbottom)
         integer, intent(in)  :: index
-        logical, intent(out) :: mask(:, :, :)
-        integer, intent(out) :: kbottom(:, :)
+        logical, intent(out) :: lmask(:, :, :)
+        integer, intent(out) :: lkbottom(:, :)
 
         real, parameter :: h_min = 0.1
         integer :: i, j, k
 
-        kbottom = 0
+        lkbottom = 0
        ! do j=1,jj
        !     do i=1,ii
        !       if (SEA_P) then
@@ -899,17 +899,17 @@ contains
               if (SEA_P) then
                 do k = 1,kk
                   if (dp(i, j, k, index)/onem <= h_min) exit
-                  kbottom(i, j) = k
+                  lkbottom(i, j) = k
                 end do
-                kbottom(i, j) = max(kbottom(i,j), 2)
+                lkbottom(i, j) = max(lkbottom(i,j), 2)
               end if
             end do
         end do
 
-        mask = .false.
+        lmask = .false.
         do j=1,jj
             do i=1,ii
-                mask(i, j, 1:kbottom(i, j)) = .true.
+                lmask(i, j, 1:lkbottom(i, j)) = .true.
             end do
         end do
     end subroutine get_mask
