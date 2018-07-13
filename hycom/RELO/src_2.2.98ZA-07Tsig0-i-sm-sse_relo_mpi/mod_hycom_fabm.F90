@@ -355,7 +355,7 @@ contains
       allocate(input%data_src(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,size(input%data_ip,3),4))
       input%file_unit = next_unit
       input%next => first_input
-      first_input => input%next
+      first_input => input
       next_unit = next_unit + 1
 
       ! Open binary file (.a)
