@@ -40,6 +40,7 @@ module mod_hycom_fabm
    integer :: nbottom
    real :: hbottom
    real, allocatable :: h(:, :, :)
+   real, allocatable :: hriver(:, :)
    real, allocatable, target :: fabm_surface_state(:, :, :, :)
    real, allocatable, target :: fabm_bottom_state(:, :, :, :)
    real, allocatable :: fabm_surface_state_old(:, :, :)
@@ -136,6 +137,7 @@ contains
         allocate(mask(ii, jj, kk, 2))
         allocate(kbottom(ii, jj, 2))
         allocate(h(ii, jj, kk))
+        allocate(hriver(ii, jj))
         allocate(fabm_surface_state(1-nbdy:ii+nbdy, 1-nbdy:jj+nbdy, 2, size(fabm_model%surface_state_variables)))
         allocate(fabm_bottom_state(1-nbdy:ii+nbdy, 1-nbdy:jj+nbdy, 2, size(fabm_model%bottom_state_variables)))
         allocate(fabm_surface_state_old(1-nbdy:ii+nbdy, 1-nbdy:jj+nbdy, size(fabm_model%surface_state_variables)))
@@ -355,7 +357,7 @@ contains
       allocate(input%data_src(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,size(input%data_ip,3),4))
       input%file_unit = next_unit
       input%next => first_input
-      first_input => input%next
+      first_input => input
       next_unit = next_unit + 1
 
       ! Open binary file (.a)
@@ -436,7 +438,6 @@ contains
 
       input => first_input
       do while (associated(input))
-        
         if (imonth.ne.m_clim1) then
           m_clim1=imonth
           m_clim0=mod(m_clim1+10,12)+1
@@ -731,17 +732,31 @@ contains
       do while (associated(input))
         if (input%role == role_river) then
           ! River field
-          tracer(1:ii, 1:jj, 1, n, input%ivariable) = tracer(1:ii, 1:jj, 1, n, input%ivariable) + delt1 * input%data_ip(1:ii, 1:jj, 1)/h(1:ii, 1:jj, 1)
+          do i=1,ii
+            do j=1,jj
+              hriver(i, j) = sum ( h(i, j, 1:5) )
+              if (SEA_P) then
+                if ( hriver(i,j) > 0.0 ) then
+                  do k=1,5
+                    tracer(i, j, k, n, input%ivariable) = tracer(i, j, k, n, input%ivariable) + delt1 * input%data_ip(i, j, 1)/hriver(i, j)
+                  end do
+                end if
+              end if
+            end do
+          end do
         end if
         input => input%next
       end do
+
       call check_state('after hycom_fabm_update', n, .true.)
 
       ! Apply the Robert-Asselin filter to the surface and bottom state.
       ! Note that RA will be applied to the pelagic tracers within mod_tsavc - no need to do it here!
       ! CAGLAR: Since there is no advection of sediment and surface state, applying a filter here is unnecessary. Setting it to state_m prevents (-) variables for the next time step.
       fabm_surface_state(1:ii, 1:jj, m, :) = fabm_surface_state(1:ii, 1:jj, m, :) + 0.5*ra2fac*(fabm_surface_state_old(1:ii, 1:jj, :)+fabm_surface_state(1:ii, 1:jj, n, :)-2.0*fabm_surface_state(1:ii, 1:jj, m, :))
+      if (do_bottom_sources) then
       fabm_bottom_state(1:ii, 1:jj, m, :) = fabm_bottom_state(1:ii, 1:jj, m, :) + 0.5*ra2fac*(fabm_bottom_state_old(1:ii, 1:jj, :)+fabm_bottom_state(1:ii, 1:jj, n, :)-2.0*fabm_bottom_state(1:ii, 1:jj, m, :))
+      endif
 
     end subroutine hycom_fabm_update
 
