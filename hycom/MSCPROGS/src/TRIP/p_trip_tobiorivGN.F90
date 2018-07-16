@@ -336,22 +336,21 @@ program trip_tobioriv
    end if ! has river flux > 0 test
    end do
    end do
-   
+
    do j_gn=1,GNrivers
- !     print*,rivdist(j_gn)
- !     print*,nutriv_lon(j_gn),nutriv_lat(j_gn)
- !     print*,plon(prindex(1,j_gn),prindex(2,j_gn)),plat(prindex(1,j_gn),prindex(2,j_gn))
- !     pause
+     if (prindex(1,j_gn).NE. 0) then
      ! Nitriver vary with discharge
       mod_nitriv_flux(prindex(1,j_gn),prindex(2,j_gn),:)= &
            mod_nitriv_flux(prindex(1,j_gn),prindex(2,j_gn),:)+ &
            nit_load(j_gn)*riv_flux(prindex(3,j_gn),prindex(4,j_gn),:)/ &
                       sum(riv_flux(prindex(3,j_gn),prindex(4,j_gn),:))
+     print*, 'mod_nitriv_flux succeed!'
      ! DON vary with discharge
       mod_donriv_flux(prindex(1,j_gn),prindex(2,j_gn),:)= &
            mod_donriv_flux(prindex(1,j_gn),prindex(2,j_gn),:)+ &
            don_load(j_gn)*riv_flux(prindex(3,j_gn),prindex(4,j_gn),:)/ &
                       sum(riv_flux(prindex(3,j_gn),prindex(4,j_gn),:))
+     print*, 'mod_donriv_flux succeed!'
      ! Phoriver is constant
 !AS2012       mod_phoriv_flux(prindex(1,j_gn),prindex(2,j_gn),:)= &
 !AS2012            mod_phoriv_flux(prindex(1,j_gn),prindex(2,j_gn),:) + pho_load(j_gn)/12.0
@@ -359,11 +358,14 @@ program trip_tobioriv
            mod_phoriv_flux(prindex(1,j_gn),prindex(2,j_gn),:)+ &
            pho_load(j_gn)*riv_flux(prindex(3,j_gn),prindex(4,j_gn),:)/ &
                       sum(riv_flux(prindex(3,j_gn),prindex(4,j_gn),:))
+     print*, 'mod_phoriv_flux succeed!'
       ! Silriver vary with discharge
       mod_silriv_flux(prindex(1,j_gn),prindex(2,j_gn),:)= &
            mod_silriv_flux(prindex(1,j_gn),prindex(2,j_gn),:)+ &
            sil_load(j_gn)*riv_flux(prindex(3,j_gn),prindex(4,j_gn),:)/ &
                       sum(riv_flux(prindex(3,j_gn),prindex(4,j_gn),:))
+     print*, 'mod_silriv_flux succeed!'
+     end if ! prindex(1,j_gn)=0
    end do
 
    print '(a,i5,a)','Failed to place ',nfailed,' river points dry in model'
