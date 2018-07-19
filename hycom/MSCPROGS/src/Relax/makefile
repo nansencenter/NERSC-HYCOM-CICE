@@ -33,8 +33,9 @@ endif
 
 TARGET = rmunew
 TARGET2 = z_woa2013_bio
+TARGET3 = z_glodap_co2
 
-all: $(TARGET) $(TARGET2)
+all: $(TARGET) $(TARGET2) $(TARGET3)
 
 
 ###############################################################################
@@ -51,11 +52,19 @@ OBJECTS2= z_woa2013_bio.o \
 $(TARGET2):  $(OBJECTS2)  
 	cd ./TMP ; $(LD) $(LINKFLAGS) -o ../$(TARGET2)  $(OBJECTS2) $(LIBS) 
 ###############################################################################
+OBJECTS3= z_glodap_co2.o \
+			zh.o \
+			interp.o
+
+$(TARGET3):  $(OBJECTS3)  
+	cd ./TMP ; $(LD) $(LINKFLAGS) -o ../$(TARGET3)  $(OBJECTS3) $(LIBS) 
+###############################################################################
 
 clean:
-	rm ./TMP/*.o TMP/*.mod  $(TARGET) $(TARGET2) 
+	rm ./TMP/*.o TMP/*.mod  $(TARGET) $(TARGET2) $(TARGET3) 
 
 install : all
 	mkdir -p ../../bin_setup/
 	cp $(TARGET) ../../bin_setup/
 	cp $(TARGET2) ../../bin_setup/
+	cp $(TARGET3) ../../bin_setup/
