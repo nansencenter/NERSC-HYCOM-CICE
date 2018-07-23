@@ -138,10 +138,10 @@ contains
         allocate(kbottom(ii, jj, 2))
         allocate(h(ii, jj, kk))
         allocate(hriver(ii, jj))
-        allocate(fabm_surface_state(1-nbdy:ii+nbdy, 1-nbdy:jj+nbdy, 2, size(fabm_model%surface_state_variables)))
-        allocate(fabm_bottom_state(1-nbdy:ii+nbdy, 1-nbdy:jj+nbdy, 2, size(fabm_model%bottom_state_variables)))
-        allocate(fabm_surface_state_old(1-nbdy:ii+nbdy, 1-nbdy:jj+nbdy, size(fabm_model%surface_state_variables)))
-        allocate(fabm_bottom_state_old(1-nbdy:ii+nbdy, 1-nbdy:jj+nbdy, size(fabm_model%bottom_state_variables)))
+        allocate(fabm_surface_state(1-nbdy:idm+nbdy, 1-nbdy:jdm+nbdy, 2, size(fabm_model%surface_state_variables)))
+        allocate(fabm_bottom_state(1-nbdy:idm+nbdy, 1-nbdy:jdm+nbdy, 2, size(fabm_model%bottom_state_variables)))
+        allocate(fabm_surface_state_old(1-nbdy:idm+nbdy, 1-nbdy:jdm+nbdy, size(fabm_model%surface_state_variables)))
+        allocate(fabm_bottom_state_old(1-nbdy:idm+nbdy, 1-nbdy:jdm+nbdy, size(fabm_model%bottom_state_variables)))
     end subroutine hycom_fabm_allocate
 
     subroutine hycom_fabm_initialize()
@@ -618,7 +618,7 @@ contains
         do i=1,ii
             if (SEA_P) then
                 if (isnan(swflx_fabm(i,j))) then
-                    write (*,*) 'NaN in swflx_fabm:', swflx_fabm(i,j), swflx (i,j,l0),w0,swflx (i,j,l1),w1,swflx (i,j,l2),w2,swflx (i,j,l3),w3
+                    write (*,*) 'NaN in swflx_fabm:', swflx_fabm(i,j), sswflx (i,j)
                     stop
                 end if
             end if
@@ -752,11 +752,8 @@ contains
 
       ! Apply the Robert-Asselin filter to the surface and bottom state.
       ! Note that RA will be applied to the pelagic tracers within mod_tsavc - no need to do it here!
-      ! CAGLAR: Since there is no advection of sediment and surface state, applying a filter here is unnecessary. Setting it to state_m prevents (-) variables for the next time step.
       fabm_surface_state(1:ii, 1:jj, m, :) = fabm_surface_state(1:ii, 1:jj, m, :) + 0.5*ra2fac*(fabm_surface_state_old(1:ii, 1:jj, :)+fabm_surface_state(1:ii, 1:jj, n, :)-2.0*fabm_surface_state(1:ii, 1:jj, m, :))
-      if (do_bottom_sources) then
       fabm_bottom_state(1:ii, 1:jj, m, :) = fabm_bottom_state(1:ii, 1:jj, m, :) + 0.5*ra2fac*(fabm_bottom_state_old(1:ii, 1:jj, :)+fabm_bottom_state(1:ii, 1:jj, n, :)-2.0*fabm_bottom_state(1:ii, 1:jj, m, :))
-      endif
 
     end subroutine hycom_fabm_update
 
@@ -954,11 +951,7 @@ contains
           do j=1,jj
               do i=1,ii
                   if (SEA_P) then
-                      if (natm.eq.2) then
-                        swflx_fabm(i,j)=swflx (i,j,l0)*w0+swflx (i,j,l1)*w1
-                      else
-                        swflx_fabm(i,j)=swflx (i,j,l0)*w0+swflx (i,j,l1)*w1+swflx (i,j,l2)*w2+swflx (i,j,l3)*w3
-                      endif !natm
+                        swflx_fabm(i,j)=sswflx(i,j)
                   end if
               end do
           end do
