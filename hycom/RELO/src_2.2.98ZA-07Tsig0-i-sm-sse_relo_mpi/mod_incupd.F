@@ -461,7 +461,7 @@ c
       endif
 c
       call rd_archive(ubinc, cfield,layer, 925)  !u_btrop or covice or mix_dpth
-      if     (cfield.eq.'mix_dpth') then
+      if     (cfield.eq.'mix_dpth' .or. cfield.eq.'kemix') then
 c ---   archive contains 'steric  '
         call rd_archive(ubinc, cfield,layer, 925)  !u_btrop or covice
       endif
@@ -794,3 +794,8 @@ c> Nov  2012 - bugfix: added xctilr(dpinc to update halo
 c> Dec  2012 - cleaned up printing to .log file
 c> Apr  2012 - added incice and incupd_si_c
 c> May  2014 - use land/sea masks (e.g. ip) to skip land
+
+
+
+
+c> Jul  2017 - bugfix for steric in archive
