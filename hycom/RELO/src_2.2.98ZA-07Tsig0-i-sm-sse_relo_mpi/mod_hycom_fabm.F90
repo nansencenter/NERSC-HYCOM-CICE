@@ -17,6 +17,7 @@ module mod_hycom_fabm
    use fabm
    use fabm_config
    use fabm_types, only: attribute_length, output_none
+   use fabm_standard_variables, only: type_global_standard_variable
 
    use mod_xc         ! HYCOM communication interface
    use mod_cb_arrays  ! HYCOM saved arrays
@@ -159,6 +160,7 @@ contains
         call fabm_model%link_interior_data(standard_variables%cell_thickness, h(1:ii, 1:jj, 1:kk))
         call fabm_model%link_horizontal_data(standard_variables%surface_downwelling_shortwave_flux, swflx_fabm(1:ii, 1:jj))
         call fabm_model%link_horizontal_data(standard_variables%bottom_stress, bottom_stress(1:ii, 1:jj))
+        call fabm_model%link_scalar(type_global_standard_variable(name='time_step', units='s'), delt1)
 
         call update_fabm_data(1, initializing=.true.)  ! initialize the entire column of wet points, including thin layers
 
