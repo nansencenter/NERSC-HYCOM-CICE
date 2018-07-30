@@ -299,7 +299,7 @@ c --- arcend      always write a 3-d archive at the end of the run
 c
       logical, save ::
      &              btrlfr,btrmas,diagno,thermo,windf,mslprf,
-     &              pcipf,epmass,priver,rivera,kparan,
+     &              pcipf,epmass,priver,triver,rivera,kparan,
      &              relax,srelax,trelax,trcrlx,relaxf,relaxs,relaxt,
      &              locsig,vsigma,hybrid,isopyc,icegln,hybraf,isopcm,
      &              mxlkta,mxlktb,mxlkrt,pensol,

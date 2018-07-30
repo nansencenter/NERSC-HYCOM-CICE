@@ -85,6 +85,7 @@ cp $P/blkdat.input blkdat.input || tellerror "No blkdat.input file"
 export LBFLAG=`grep "'lbflag' =" blkdat.input | awk '{printf("%03d", $1)}'`
 export EB=`grep "'iexpt ' =" blkdat.input | awk '{printf("%03d", $1)}'`
 export PRIVER=`grep "'priver' =" blkdat.input | awk '{printf("%1d", $1)}'`
+export TRIVER=`grep "'triver' =" blkdat.input | awk '{printf("%1d", $1)}'`
 export NTRACR=`grep "'ntracr' =" blkdat.input | awk '{printf("%03d", $1)}'`
 export YRFLAG=`grep "'yrflag' =" blkdat.input | awk '{printf("%1d", $1)}'`
 export JERLV=`grep "'jerlv0' =" blkdat.input | awk '{printf("%1d", $1)}'`
@@ -143,6 +144,7 @@ echo "Fetched from blkdat.input:"
 echo "--------------------------"
 echo "EB     is $EB    "
 echo "PRIVER is $PRIVER"
+echo "TRIVER is $TRIVER"
 echo "YRFLAG is $YRFLAG"
 echo "JERLV  is $JERLV "
 echo "SSS    is $SSSRLX"
@@ -295,6 +297,7 @@ fi
 # ---
 echo "**Setting up pre-prepared synoptic forcing from force/synoptic/$E"
 DIR=$BASEDIR/force/synoptic/$E/
+echo $DIR
 #for i in tauewd taunwd wndspd radflx shwflx vapmix \
 #   airtmp precip uwind vwind clouds relhum slp ; do
 for i in radflx shwflx vapmix \
@@ -346,8 +349,12 @@ fi
 # --- river forcing
 # --- KAL: rivers are experiment-dependent
 #
+if [ $PRIVER -eq 0 ] ; then
+echo "**No river forcing. Set the priver to 1 to add river forcing"
+fi
 if [ $PRIVER -eq 1 ] ; then
-   echo "**Setting up river forcing"
+if [ $TRIVER -eq 0 ] ; then
+   echo "**Setting up river forcing  from priver"
    cp $BASEDIR/force/rivers/$E/rivers.a forcing.rivers.a || tellerror "Could not get river .a file"
    cp $BASEDIR/force/rivers/$E/rivers.b forcing.rivers.b || tellerror "Could not get river .b file"
    if [ $NTRACR -ne 0 ] ; then
@@ -360,6 +367,24 @@ if [ $PRIVER -eq 1 ] ; then
       cp $BASEDIR/force/rivers/$E/ECO_pho.b rivers.ECO_pho.b || tellwarn "Could not get PHO river .b file"
    fi
 fi
+fi
+
+
+if [ $TRIVER -eq 1 ] ; then
+   echo "**Setting up (total) triver forcing (including greenland)"
+   cp /cluster/projects/nn2993k/TRIP/triver_Roshin/trivers.a forcing.rivers.a || tellerror "Could not get triver .a file"
+   cp /cluster/projects/nn2993k/TRIP/triver_Roshin/trivers.b forcing.rivers.b || tellerror "Could not get triver .b file"
+   if [ $NTRACR -ne 0 ] ; then
+      echo "**Setting up bio river forcing"
+      cp $BASEDIR/force/rivers/$E/ECO_no3.a rivers.ECO_no3.a || tellwarn "Could not get NO3 river .a file"
+      cp $BASEDIR/force/rivers/$E/ECO_no3.b rivers.ECO_no3.b || tellwarn "Could not get NO3 river .b file"
+      cp $BASEDIR/force/rivers/$E/ECO_sil.a rivers.ECO_sil.a || tellwarn "Could not get SIL river .a file"
+      cp $BASEDIR/force/rivers/$E/ECO_sil.b rivers.ECO_sil.b || tellwarn "Could not get SIL river .b file"
+      cp $BASEDIR/force/rivers/$E/ECO_pho.a rivers.ECO_pho.a || tellwarn "Could not get PHO river .a file"
+      cp $BASEDIR/force/rivers/$E/ECO_pho.b rivers.ECO_pho.b || tellwarn "Could not get PHO river .b file"
+   fi
+fi
+
 
 
 #
@@ -471,7 +496,7 @@ echo "===================================================="
 echo "STDFLG =  $STDFLG"
 if [ $STDFLG -eq 1 ] ; then
  echo "===================================================="
- echo " -------Setting up Wave Stokes Coriolis forcing----"
+ echo " -------Setting up Wave Stokes forcing----"
  for foo in  forcing.stokex.a forcing.stokex.b forcing.stokey.a forcing.stokey.b\
      forcing.transx.a forcing.transx.b forcing.transy.a forcing.transy.b\
      forcing.tauwx.a  forcing.tauwx.b forcing.tauwy.a  forcing.tauwy.b \
@@ -483,7 +508,7 @@ if [ $STDFLG -eq 1 ] ; then
  done
  echo "===================================================="
  else
-    echo "STD=F: No attempt to link to  wave data in SCRATCH" 
+    echo "STD=F: No attempt to link to the Stokes/Wave forcing in SCRATCH" 
 fi
 #read -t 5 
 # Need ports.input file in these cases
