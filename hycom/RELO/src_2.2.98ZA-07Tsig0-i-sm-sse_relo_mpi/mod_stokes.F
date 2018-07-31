@@ -20,6 +20,7 @@ c
 c --- HYCOM Stokes Drift from external data files
 c --- this module include array declarations and data forcing
       logical, parameter, private :: debug_stokes=.true.  !usually .false.
+      logical, parameter, private :: debug_stokesPhl=.false.  !usually .false.
 c
 c     Logical flags for Stokes Drift Effects
 c     The modification of the turbulent viscosity near the surface 
@@ -182,8 +183,6 @@ C$$$$      & d_sx,     ! d/dx (sxx) + d/dy (sxy) - sx. components of the radiati
 C$$$$      & d_sy      ! d/dy (syy) + d/dx (syx) - sy. components of the radiation stress
 C$$$$        
 C$$$$ #endif
-
-
 
 c    Weights for holding values during a barotropic time step.
 
@@ -992,7 +991,6 @@ c
 *            write(6,*)k,usd(1,1,k),vsd(1,1,k)
 *         enddo
 *      endif
-
 c
 c   Now ensure  all Stokes Drift Velocity Fields are properly defined on Halos
 c
@@ -1118,8 +1116,8 @@ C    ---  comp Stokes depth
               kbar=v0sp/(2.0*max(tvsp,epsil))
      $            *(1.0-2.0*betaa/3.0)
 c    --  Now comp layer averaged profile
-         if     (debug_stokes) then    
-          if((i+i0).eq. 430 .and. (j+j0).eq. 500)then
+         if     (debug_stokesPhl) then    
+          if( itest.gt. 0 .and. jtest.gt. 0)then
   103      format (i9,2i5,a)
             write (lp,103) nstep,itest+i0,jtest+j0,
      .      ' stokes_forfun: Phlavgsp  Phlsp  usdz      dpth'
@@ -1172,8 +1170,8 @@ C$$               exit
 C$$             endif
 C$$ C$$           enddo !k
 C$$       endif
-        if     (debug_stokes) then        
-        if((i+i0).eq. 430 .and. (j+j0).eq. 500)then
+        if     (debug_stokesPhl) then        
+        if((i+i0).eq. itest .and. (j+j0).eq. jtest)then
 c  103    format (i9,2i5,a)
   104    format (30x,i3,3f8.4,f9.2)
   105    format (30x,i3,f8.4,f9.2)         
@@ -1202,8 +1200,8 @@ c     .    '  stokes_forfun:  Philavgsp   Philsp  usdz    dpth'
         endif !debugstokes
 c     >-------------------------------------------------------            
           enddo  !k 1:kk
-          if  (debug_stokes) then                
-            if((i+i0).eq. 430 .and. (j+j0).eq. 500)then
+          if  (debug_stokesPhl) then                
+            if((i+i0).eq. itest .and. (j+j0).eq. jtest)then
               write(lp,'(a,2E16.8)')
      $                     '-->>> T_phil_avg=,T_in  ', sum0
      $           ,sqrt(ts1d(1)**2 +ts1d(2)**2 )         

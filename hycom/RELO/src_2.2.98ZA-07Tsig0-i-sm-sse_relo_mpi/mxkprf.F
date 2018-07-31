@@ -481,6 +481,9 @@ c
       use mod_xc         ! HYCOM communication interface
       use mod_cb_arrays  ! HYCOM saved arrays
 c
+#if defined(STOKES)
+      use mod_stokes  ! Stokes Drift Velocity Module
+#endif
 C$RMY if (RMY)
 C$RMY #if defined(STOKES_3D)
 C$RMY       use mod_stokes  ! Stokes Drift Velocity Module
