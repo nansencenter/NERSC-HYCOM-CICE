@@ -1,0 +1,1 @@
+/nird/home/aal069/NERSC-HYCOM-CICE/bin/common_functions.sh
