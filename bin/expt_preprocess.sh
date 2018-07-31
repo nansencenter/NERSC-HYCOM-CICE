@@ -96,6 +96,7 @@ export TRCRLX=`grep "'trcrlx' =" blkdat.input | awk '{printf("%1d", $1)}'`
 export THKDF4=`grep "'thkdf4' =" blkdat.input | awk '{printf("%f", $1)}'`
 export KAPREF=`grep "'kapref' =" blkdat.input | awk '{printf("%f", $1)}'`
 export VSIGMA=`grep "'vsigma' =" blkdat.input | awk '{printf("%1d", $1)}'`
+export FLXOFF=`grep "'flxoff' =" blkdat.input | awk '{printf("%1d", $1)}'`
 export STDFLG=`grep "'stdflg' =" blkdat.input | awk '{printf("%1d", $1)}'`
 export BNSTFQ=$(blkdat_get blkdat.input bnstfq)
 export NESTFQ=$(blkdat_get blkdat.input nestfq)
@@ -151,6 +152,7 @@ echo "SSS    is $SSSRLX"
 echo "SST    is $SSTRLX"
 echo "BNSTFQ is $BNSTFQ"
 echo "NESTFQ is $NESTFQ"
+echo "FLXOFF is $FLXOFF"
 echo "STDFLG is $STDFLG"
 echo "--------------------"
 
@@ -386,7 +388,6 @@ if [ $TRIVER -eq 1 ] ; then
 fi
 
 
-
 #
 # --- kpar forcing
 #
@@ -490,6 +491,19 @@ if [ $tmp -eq 1 -o $tmp2 -eq 1 ] ; then
       tellerror "Nesting dir $nest does not exist"
    fi
 fi
+
+# copy flux off set files if flxoff=1
+echo "FLXOFF =  $FLXOFF"
+if [ $FLXOFF -eq 1 ] ; then
+ echo "===================================================="
+ echo " -------flux off set true: copy flux off set files-"
+   cp $BASEDIR/force/offset/offlux.a forcing.offlux.a || tellerror "Could not get river .a file"
+   cp $BASEDIR/force/offset/offlux.b forcing.offlux.b || tellerror "Could not get river .b file"
+ echo "===================================================="
+ else
+    echo "fLxoff=F: No attempt to use flux offset correction" 
+fi
+
 #export waveSDIR=/work/shared/nersc/msc/STOKES/Globww3/tmp
 #export  waveSDIR=/work/shared/nersc/msc/STOKES/Globww3
 echo "===================================================="
