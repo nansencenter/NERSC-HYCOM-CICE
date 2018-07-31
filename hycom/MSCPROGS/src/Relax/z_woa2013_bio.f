@@ -563,7 +563,7 @@ C
           READ(71) NITSEAIN
                    NITSEAIN = NITSEAIN * 6.625 * 12.01
           READ(72) PHOSEAIN
-                   PHOSEAIN = PHOSEAIN * 30.97 * 12.01 
+                   PHOSEAIN = PHOSEAIN * 106.0 * 12.01 
           READ(73) SILSEAIN
                    SILSEAIN = SILSEAIN * 6.625 * 12.01
           READ(74) OXYSEAIN
