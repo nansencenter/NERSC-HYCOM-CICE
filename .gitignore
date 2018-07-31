@@ -381,6 +381,7 @@ hycom/MSCPROGS/src/Relax/rmunew
 hycom/MSCPROGS/src/Relax/z_woa2013_bio
 hycom/MSCPROGS/src/RelaxToNetCDF/hclimlevels
 hycom/MSCPROGS/src/RelaxToNetCDF/hclimtonc
+hycom/MSCPROGS/src/Relax/z_glodap_co2
 hycom/MSCPROGS/src/River_Forcing/biorivers
 hycom/MSCPROGS/src/River_Forcing/rivers
 hycom/MSCPROGS/src/SSHFromState/ssh_from_restart
