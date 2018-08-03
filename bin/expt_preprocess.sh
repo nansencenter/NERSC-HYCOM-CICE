@@ -85,6 +85,7 @@ cp $P/blkdat.input blkdat.input || tellerror "No blkdat.input file"
 export LBFLAG=`grep "'lbflag' =" blkdat.input | awk '{printf("%03d", $1)}'`
 export EB=`grep "'iexpt ' =" blkdat.input | awk '{printf("%03d", $1)}'`
 export PRIVER=`grep "'priver' =" blkdat.input | awk '{printf("%1d", $1)}'`
+export TRIVER=`grep "'triver' =" blkdat.input | awk '{printf("%1d", $1)}'`
 export NTRACR=`grep "'ntracr' =" blkdat.input | awk '{printf("%03d", $1)}'`
 export YRFLAG=`grep "'yrflag' =" blkdat.input | awk '{printf("%1d", $1)}'`
 export JERLV=`grep "'jerlv0' =" blkdat.input | awk '{printf("%1d", $1)}'`
@@ -95,6 +96,7 @@ export TRCRLX=`grep "'trcrlx' =" blkdat.input | awk '{printf("%1d", $1)}'`
 export THKDF4=`grep "'thkdf4' =" blkdat.input | awk '{printf("%f", $1)}'`
 export KAPREF=`grep "'kapref' =" blkdat.input | awk '{printf("%f", $1)}'`
 export VSIGMA=`grep "'vsigma' =" blkdat.input | awk '{printf("%1d", $1)}'`
+export FLXOFF=`grep "'flxoff' =" blkdat.input | awk '{printf("%1d", $1)}'`
 export STDFLG=`grep "'stdflg' =" blkdat.input | awk '{printf("%1d", $1)}'`
 export BNSTFQ=$(blkdat_get blkdat.input bnstfq)
 export NESTFQ=$(blkdat_get blkdat.input nestfq)
@@ -143,12 +145,14 @@ echo "Fetched from blkdat.input:"
 echo "--------------------------"
 echo "EB     is $EB    "
 echo "PRIVER is $PRIVER"
+echo "TRIVER is $TRIVER"
 echo "YRFLAG is $YRFLAG"
 echo "JERLV  is $JERLV "
 echo "SSS    is $SSSRLX"
 echo "SST    is $SSTRLX"
 echo "BNSTFQ is $BNSTFQ"
 echo "NESTFQ is $NESTFQ"
+echo "FLXOFF is $FLXOFF"
 echo "STDFLG is $STDFLG"
 echo "--------------------"
 
@@ -295,6 +299,7 @@ fi
 # ---
 echo "**Setting up pre-prepared synoptic forcing from force/synoptic/$E"
 DIR=$BASEDIR/force/synoptic/$E/
+echo $DIR
 #for i in tauewd taunwd wndspd radflx shwflx vapmix \
 #   airtmp precip uwind vwind clouds relhum slp ; do
 for i in radflx shwflx vapmix \
@@ -346,18 +351,39 @@ fi
 # --- river forcing
 # --- KAL: rivers are experiment-dependent
 #
+if [ $PRIVER -eq 0 ] ; then
+echo "**No river forcing. Set the priver to 1 to add river forcing"
+fi
 if [ $PRIVER -eq 1 ] ; then
-   echo "**Setting up river forcing"
+if [ $TRIVER -eq 0 ] ; then
+   echo "**Setting up river forcing  from priver"
    cp $BASEDIR/force/rivers/$E/rivers.a forcing.rivers.a || tellerror "Could not get river .a file"
    cp $BASEDIR/force/rivers/$E/rivers.b forcing.rivers.b || tellerror "Could not get river .b file"
    if [ $NTRACR -ne 0 ] ; then
       echo "**Setting up bio river forcing"
-      cp $BASEDIR/force/rivers/$E/ECO_no3.a forcing.ECO_no3.a || tellerror "Could not get NO3 river .a file"
-      cp $BASEDIR/force/rivers/$E/ECO_no3.b forcing.ECO_no3.b || tellerror "Could not get NO3 river .b file"
-      cp $BASEDIR/force/rivers/$E/ECO_sil.a forcing.ECO_sil.a || tellerror "Could not get SIL river .a file"
-      cp $BASEDIR/force/rivers/$E/ECO_sil.b forcing.ECO_sil.b || tellerror "Could not get SIL river .b file"
-      cp $BASEDIR/force/rivers/$E/ECO_pho.a forcing.ECO_pho.a || tellerror "Could not get PHO river .a file"
-      cp $BASEDIR/force/rivers/$E/ECO_pho.b forcing.ECO_pho.b || tellerror "Could not get PHO river .b file"
+      cp $BASEDIR/force/rivers/$E/ECO_no3.a rivers.ECO_no3.a || tellwarn "Could not get NO3 river .a file"
+      cp $BASEDIR/force/rivers/$E/ECO_no3.b rivers.ECO_no3.b || tellwarn "Could not get NO3 river .b file"
+      cp $BASEDIR/force/rivers/$E/ECO_sil.a rivers.ECO_sil.a || tellwarn "Could not get SIL river .a file"
+      cp $BASEDIR/force/rivers/$E/ECO_sil.b rivers.ECO_sil.b || tellwarn "Could not get SIL river .b file"
+      cp $BASEDIR/force/rivers/$E/ECO_pho.a rivers.ECO_pho.a || tellwarn "Could not get PHO river .a file"
+      cp $BASEDIR/force/rivers/$E/ECO_pho.b rivers.ECO_pho.b || tellwarn "Could not get PHO river .b file"
+   fi
+fi
+fi
+
+
+if [ $TRIVER -eq 1 ] ; then
+   echo "**Setting up (total) triver forcing (including greenland)"
+   cp /cluster/projects/nn2993k/TRIP/triver_Roshin/trivers.a forcing.rivers.a || tellerror "Could not get triver .a file"
+   cp /cluster/projects/nn2993k/TRIP/triver_Roshin/trivers.b forcing.rivers.b || tellerror "Could not get triver .b file"
+   if [ $NTRACR -ne 0 ] ; then
+      echo "**Setting up bio river forcing"
+      cp $BASEDIR/force/rivers/$E/ECO_no3.a rivers.ECO_no3.a || tellwarn "Could not get NO3 river .a file"
+      cp $BASEDIR/force/rivers/$E/ECO_no3.b rivers.ECO_no3.b || tellwarn "Could not get NO3 river .b file"
+      cp $BASEDIR/force/rivers/$E/ECO_sil.a rivers.ECO_sil.a || tellwarn "Could not get SIL river .a file"
+      cp $BASEDIR/force/rivers/$E/ECO_sil.b rivers.ECO_sil.b || tellwarn "Could not get SIL river .b file"
+      cp $BASEDIR/force/rivers/$E/ECO_pho.a rivers.ECO_pho.a || tellwarn "Could not get PHO river .a file"
+      cp $BASEDIR/force/rivers/$E/ECO_pho.b rivers.ECO_pho.b || tellwarn "Could not get PHO river .b file"
    fi
 fi
 
@@ -395,21 +421,20 @@ fi
 #
 # --- tracer relaxation
 #
-if [ $TRCRLX -eq 1 ] ; then
+if [ $TRCRLX -ne 0 ] ; then
    echo "**Setting up tracer relaxation"
-   for i in ECO_no3 ECO_pho ECO_sil ; do
-# |CAGLAR| oxygen relax files won't work with TP2, don't know why yet. So no ECO_oxy here. Add it manually
+   for i in ECO_no3 ECO_pho ECO_sil ECO_oxy; do
       j=$(echo $i | head -c7)
-      [ ! -f  $BASEDIR/relax/${E}/relax.$j.a ] && tellerror "$BASEDIR/relax/${E}/relax_$j.a does not exist"
-      [ ! -f  $BASEDIR/relax/${E}/relax.$j.b ] && tellerror "$BASEDIR/relax/${E}/relax_$j.b does not exist"
+      [ ! -f  $BASEDIR/relax/${E}/relax.$j.a ] && tellerror "$BASEDIR/relax/${E}/relax.$j.a does not exist"
+      [ ! -f  $BASEDIR/relax/${E}/relax.$j.b ] && tellerror "$BASEDIR/relax/${E}/relax.$j.b does not exist"
       ln -sf $BASEDIR/relax/${E}/relax.$j.a relax.$i.a  || tellerror "Could not get relax.$i.a"
       ln -sf $BASEDIR/relax/${E}/relax.$j.b relax.$i.b  || tellerror "Could not get relax.$i.b"
    done
    echo "**Setting up tracer relaxation masks"
-   [ ! -f  $BASEDIR/relax/${E}/relax_rmutr.a ] && tellerror "$BASEDIR/relax/${E}/relax_rmutr.a does not exist"
-   [ ! -f  $BASEDIR/relax/${E}/relax_rmutr.b ] && tellerror "$BASEDIR/relax/${E}/relax_rmutr.b does not exist"
-   ln -sf $BASEDIR/relax/${E}/relax_rmutr.a relax.rmutr.a  || tellerror "Could not get relax.rmutr.a"
-   ln -sf $BASEDIR/relax/${E}/relax_rmutr.b relax.rmutr.b  || tellerror "Could not get relax.rmutr.b"
+   [ ! -f  $BASEDIR/relax/${E}/relax_rmu.a ] && tellerror "$BASEDIR/relax/${E}/relax_rmutr.a does not exist"
+   [ ! -f  $BASEDIR/relax/${E}/relax_rmu.b ] && tellerror "$BASEDIR/relax/${E}/relax_rmutr.b does not exist"
+   ln -sf $BASEDIR/relax/${E}/relax_rmu.a relax.rmutr.a  || tellerror "Could not get relax.rmutr.a"
+   ln -sf $BASEDIR/relax/${E}/relax_rmu.b relax.rmutr.b  || tellerror "Could not get relax.rmutr.b"
 fi
 #
 # - thermobaric reference state?
@@ -466,13 +491,26 @@ if [ $tmp -eq 1 -o $tmp2 -eq 1 ] ; then
       tellerror "Nesting dir $nest does not exist"
    fi
 fi
+
+# copy flux off set files if flxoff=1
+echo "FLXOFF =  $FLXOFF"
+if [ $FLXOFF -eq 1 ] ; then
+ echo "===================================================="
+ echo " -------flux off set true: copy flux off set files-"
+   cp $BASEDIR/force/offset/offlux.a forcing.offlux.a || tellerror "Could not get river .a file"
+   cp $BASEDIR/force/offset/offlux.b forcing.offlux.b || tellerror "Could not get river .b file"
+ echo "===================================================="
+ else
+    echo "fLxoff=F: No attempt to use flux offset correction" 
+fi
+
 #export waveSDIR=/work/shared/nersc/msc/STOKES/Globww3/tmp
 #export  waveSDIR=/work/shared/nersc/msc/STOKES/Globww3
 echo "===================================================="
 echo "STDFLG =  $STDFLG"
 if [ $STDFLG -eq 1 ] ; then
  echo "===================================================="
- echo " -------Setting up Wave Stokes Coriolis forcing----"
+ echo " -------Setting up Wave Stokes forcing----"
  for foo in  forcing.stokex.a forcing.stokex.b forcing.stokey.a forcing.stokey.b\
      forcing.transx.a forcing.transx.b forcing.transy.a forcing.transy.b\
      forcing.tauwx.a  forcing.tauwx.b forcing.tauwy.a  forcing.tauwy.b \
@@ -484,7 +522,7 @@ if [ $STDFLG -eq 1 ] ; then
  done
  echo "===================================================="
  else
-    echo "STD=F: No attempt to link to  wave data in SCRATCH" 
+    echo "STD=F: No attempt to link to the Stokes/Wave forcing in SCRATCH" 
 fi
 #read -t 5 
 # Need ports.input file in these cases

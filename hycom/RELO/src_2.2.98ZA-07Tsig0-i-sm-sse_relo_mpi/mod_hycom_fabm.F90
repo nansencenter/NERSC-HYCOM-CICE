@@ -17,6 +17,7 @@ module mod_hycom_fabm
    use fabm
    use fabm_config
    use fabm_types, only: attribute_length, output_none
+   use fabm_standard_variables, only: type_global_standard_variable
 
    use mod_xc         ! HYCOM communication interface
    use mod_cb_arrays  ! HYCOM saved arrays
@@ -40,6 +41,7 @@ module mod_hycom_fabm
    integer :: nbottom
    real :: hbottom
    real, allocatable :: h(:, :, :)
+   real, allocatable :: hriver(:, :)
    real, allocatable, target :: fabm_surface_state(:, :, :, :)
    real, allocatable, target :: fabm_bottom_state(:, :, :, :)
    real, allocatable :: fabm_surface_state_old(:, :, :)
@@ -69,7 +71,7 @@ module mod_hycom_fabm
    integer, parameter :: role_prescribe = 0
    integer, parameter :: role_river = 1
 
-   integer, save :: next_unit = 915
+   integer, save :: next_unit = 940  !ASJUN18 - increased since 218 is reserved in hycom
 
    integer, allocatable :: hycom_fabm_relax(:)
 
@@ -136,10 +138,11 @@ contains
         allocate(mask(ii, jj, kk, 2))
         allocate(kbottom(ii, jj, 2))
         allocate(h(ii, jj, kk))
-        allocate(fabm_surface_state(1-nbdy:ii+nbdy, 1-nbdy:jj+nbdy, 2, size(fabm_model%surface_state_variables)))
-        allocate(fabm_bottom_state(1-nbdy:ii+nbdy, 1-nbdy:jj+nbdy, 2, size(fabm_model%bottom_state_variables)))
-        allocate(fabm_surface_state_old(1-nbdy:ii+nbdy, 1-nbdy:jj+nbdy, size(fabm_model%surface_state_variables)))
-        allocate(fabm_bottom_state_old(1-nbdy:ii+nbdy, 1-nbdy:jj+nbdy, size(fabm_model%bottom_state_variables)))
+        allocate(hriver(ii, jj))
+        allocate(fabm_surface_state(1-nbdy:idm+nbdy, 1-nbdy:jdm+nbdy, 2, size(fabm_model%surface_state_variables)))
+        allocate(fabm_bottom_state(1-nbdy:idm+nbdy, 1-nbdy:jdm+nbdy, 2, size(fabm_model%bottom_state_variables)))
+        allocate(fabm_surface_state_old(1-nbdy:idm+nbdy, 1-nbdy:jdm+nbdy, size(fabm_model%surface_state_variables)))
+        allocate(fabm_bottom_state_old(1-nbdy:idm+nbdy, 1-nbdy:jdm+nbdy, size(fabm_model%bottom_state_variables)))
     end subroutine hycom_fabm_allocate
 
     subroutine hycom_fabm_initialize()
@@ -157,6 +160,7 @@ contains
         call fabm_model%link_interior_data(standard_variables%cell_thickness, h(1:ii, 1:jj, 1:kk))
         call fabm_model%link_horizontal_data(standard_variables%surface_downwelling_shortwave_flux, swflx_fabm(1:ii, 1:jj))
         call fabm_model%link_horizontal_data(standard_variables%bottom_stress, bottom_stress(1:ii, 1:jj))
+        call fabm_model%link_scalar(type_global_standard_variable(name='time_step', units='s'), delt1)
 
         call update_fabm_data(1, initializing=.true.)  ! initialize the entire column of wet points, including thin layers
 
@@ -355,7 +359,7 @@ contains
       allocate(input%data_src(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,size(input%data_ip,3),4))
       input%file_unit = next_unit
       input%next => first_input
-      first_input => input%next
+      first_input => input
       next_unit = next_unit + 1
 
       ! Open binary file (.a)
@@ -368,11 +372,13 @@ contains
         read (uoff+input%file_unit,'(a79)') preambl
       end if !1st tile
       call preambl_print(preambl)
+      input%mrec = 0  !ASJUN18 - initiate value of mrec
 
-      ! ?? Not sure why we are reading here, copying from forfun.F
-      do k=1,size(input%data_ip, 3)
-        call hycom_fabm_rdmonthck(util1, input%file_unit, 0, is_2d)
-      end do
+!ASJUN18 Removed since it is not doing anything.
+!      ! ?? Not sure why we are reading here, copying from forfun.F
+!      do k=1,size(input%data_ip, 3)
+!        call hycom_fabm_rdmonthck(util1, input%file_unit, 0, is_2d)
+!      end do
 
       call read_input(input,m_clim0,l_clim0)
       call read_input(input,m_clim1,l_clim1)
@@ -388,16 +394,18 @@ contains
 
       integer :: irec, k
       logical :: is_2d
+      character preambl(5)*79
 
       if (mrec <= input%mrec) then
         ! Rewind
         if (mnproc.eq.1) then  ! .b file from 1st tile only
           rewind uoff+input%file_unit
-          read  (uoff+input%file_unit,*)
-          read  (uoff+input%file_unit,*)
-          read  (uoff+input%file_unit,*)
-          read  (uoff+input%file_unit,*)
-          read  (uoff+input%file_unit,*)
+          read (uoff+input%file_unit,'(a79)') preambl
+!          read  (uoff+input%file_unit,*)
+!          read  (uoff+input%file_unit,*)
+!          read  (uoff+input%file_unit,*)
+!          read  (uoff+input%file_unit,*)
+!          read  (uoff+input%file_unit,*)
         end if
         call zaiorw(input%file_unit)
         input%mrec = 0
@@ -432,7 +440,6 @@ contains
 
       input => first_input
       do while (associated(input))
-        
         if (imonth.ne.m_clim1) then
           m_clim1=imonth
           m_clim0=mod(m_clim1+10,12)+1
@@ -542,7 +549,7 @@ contains
       end if
       if (mnthck.gt.0 .and. mnth.ne.mnthck) then
         if (mnproc.eq.1) &
-          write(lp,'(/ a,i4,a,a,2i4,a /)') 'error on unit',iunit,' - wrong relaxation month (expected,input =',mnthck,mnth,')'
+          write(lp,'(/ a,i4,a,2i4,a /)') 'error on unit',iunit,' - wrong relaxation month (expected,input =',mnthck,mnth,')'
         call xcstop('(hycom_fabm_rdmonthck)')
         stop '(hycom_fabm_rdmonthck)'
       end if
@@ -613,7 +620,7 @@ contains
         do i=1,ii
             if (SEA_P) then
                 if (isnan(swflx_fabm(i,j))) then
-                    write (*,*) 'NaN in swflx_fabm:', swflx_fabm(i,j), swflx (i,j,l0),w0,swflx (i,j,l1),w1,swflx (i,j,l2),w2,swflx (i,j,l3),w3
+                    write (*,*) 'NaN in swflx_fabm:', swflx_fabm(i,j), sswflx (i,j)
                     stop
                 end if
             end if
@@ -727,15 +734,26 @@ contains
       do while (associated(input))
         if (input%role == role_river) then
           ! River field
-          tracer(1:ii, 1:jj, 1, n, input%ivariable) = tracer(1:ii, 1:jj, 1, n, input%ivariable) + delt1 * input%data_ip(1:ii, 1:jj, 1)/h(1:ii, 1:jj, 1)
+          do i=1,ii
+            do j=1,jj
+              hriver(i, j) = sum ( h(i, j, 1:5) )
+              if (SEA_P) then
+                if ( hriver(i,j) > 0.0 ) then
+                  do k=1,5
+                    tracer(i, j, k, n, input%ivariable) = tracer(i, j, k, n, input%ivariable) + delt1 * input%data_ip(i, j, 1)/hriver(i, j)
+                  end do
+                end if
+              end if
+            end do
+          end do
         end if
         input => input%next
       end do
+
       call check_state('after hycom_fabm_update', n, .true.)
 
       ! Apply the Robert-Asselin filter to the surface and bottom state.
       ! Note that RA will be applied to the pelagic tracers within mod_tsavc - no need to do it here!
-      ! CAGLAR: Since there is no advection of sediment and surface state, applying a filter here is unnecessary. Setting it to state_m prevents (-) variables for the next time step.
       fabm_surface_state(1:ii, 1:jj, m, :) = fabm_surface_state(1:ii, 1:jj, m, :) + 0.5*ra2fac*(fabm_surface_state_old(1:ii, 1:jj, :)+fabm_surface_state(1:ii, 1:jj, n, :)-2.0*fabm_surface_state(1:ii, 1:jj, m, :))
       fabm_bottom_state(1:ii, 1:jj, m, :) = fabm_bottom_state(1:ii, 1:jj, m, :) + 0.5*ra2fac*(fabm_bottom_state_old(1:ii, 1:jj, :)+fabm_bottom_state(1:ii, 1:jj, n, :)-2.0*fabm_bottom_state(1:ii, 1:jj, m, :))
 
@@ -871,15 +889,15 @@ contains
 
     end subroutine vertical_movement
 
-    subroutine get_mask(index, mask, kbottom)
+    subroutine get_mask(index, lmask, lkbottom)
         integer, intent(in)  :: index
-        logical, intent(out) :: mask(:, :, :)
-        integer, intent(out) :: kbottom(:, :)
+        logical, intent(out) :: lmask(:, :, :)
+        integer, intent(out) :: lkbottom(:, :)
 
         real, parameter :: h_min = 0.1
         integer :: i, j, k
 
-        kbottom = 0
+        lkbottom = 0
        ! do j=1,jj
        !     do i=1,ii
        !       if (SEA_P) then
@@ -895,17 +913,17 @@ contains
               if (SEA_P) then
                 do k = 1,kk
                   if (dp(i, j, k, index)/onem <= h_min) exit
-                  kbottom(i, j) = k
+                  lkbottom(i, j) = k
                 end do
-                kbottom(i, j) = max(kbottom(i,j), 2)
+                lkbottom(i, j) = max(lkbottom(i,j), 2)
               end if
             end do
         end do
 
-        mask = .false.
+        lmask = .false.
         do j=1,jj
             do i=1,ii
-                mask(i, j, 1:kbottom(i, j)) = .true.
+                lmask(i, j, 1:lkbottom(i, j)) = .true.
             end do
         end do
     end subroutine get_mask
@@ -935,11 +953,7 @@ contains
           do j=1,jj
               do i=1,ii
                   if (SEA_P) then
-                      if (natm.eq.2) then
-                        swflx_fabm(i,j)=swflx (i,j,l0)*w0+swflx (i,j,l1)*w1
-                      else
-                        swflx_fabm(i,j)=swflx (i,j,l0)*w0+swflx (i,j,l1)*w1+swflx (i,j,l2)*w2+swflx (i,j,l3)*w3
-                      endif !natm
+                        swflx_fabm(i,j)=sswflx(i,j)
                   end if
               end do
           end do

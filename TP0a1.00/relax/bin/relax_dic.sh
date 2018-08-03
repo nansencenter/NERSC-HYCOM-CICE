@@ -82,8 +82,8 @@ for MM in   01 02 03 04 05 06 07 08 09 10 11 12 ; do
 
    touch      fort.71 fort.71A fort.12 fort.12A 
    /bin/rm -f fort.71 fort.71A fort.12 fort.12A 
-   ${pget} ${BASEDIR}/relax/$CLIM/phos_sig${KSIGMA}_m${MM}.b fort.71  || { echo "Couldnt get z-climatology" ; exit 1 ;}
-   ${pget} ${BASEDIR}/relax/$CLIM/phos_sig${KSIGMA}_m${MM}.a fort.71A || { echo "Couldnt get z-climatology" ; exit 1 ;}
+   ${pget} ${BASEDIR}/relax/$CLIM/dicr_sig${KSIGMA}_m${MM}.b fort.71  || { echo "Couldnt get z-climatology" ; exit 1 ;}
+   ${pget} ${BASEDIR}/relax/$CLIM/dicr_sig${KSIGMA}_m${MM}.a fort.71A || { echo "Couldnt get z-climatology" ; exit 1 ;}
    ${pget} ${BASEDIR}/relax/$E/relax_int.b fort.12  || { echo "Couldnt get z-climatology" ; exit 1 ;}
    ${pget} ${BASEDIR}/relax/$E/relax_int.a fort.12A || { echo "Couldnt get z-climatology" ; exit 1 ;}
 
@@ -109,7 +109,6 @@ for MM in   01 02 03 04 05 06 07 08 09 10 11 12 ; do
    touch relax_tracer
    if [ ! -s  relax_tracer ] ; then
     ${pget} ${HYCOM_ALL}/relax/src/relax_tracer .  || { echo "Couldnt get relax_tracer " ; exit 1 ;}
-
    fi
    wait
    chmod a+rx relax_tracer
@@ -130,8 +129,8 @@ for MM in   01 02 03 04 05 06 07 08 09 10 11 12 ; do
    #
    # --- Output.
    #
-   mv fort.10  relax_pho_m${MM}.b
-   mv fort.10A relax_pho_m${MM}.a
+   mv fort.10  relax_dic_m${MM}.b
+   mv fort.10A relax_dic_m${MM}.a
    
    export DAYM=`echo ${MM} | awk '{printf("0000_%3.3d_00\n",30*($1-1)+16)}'`
    #export DAYM=`echo ${MM} | awk '{printf("0000_%3.3d_00\n",30.5*($1-1)+16)}'`
@@ -145,23 +144,23 @@ done
 #
 # --- Merge monthly climatologies into one file.
 #
-cp relax_pho_m01.b relax.ECO_pho.b
+cp relax_dic_m01.b relax.ECO_dic.b
 #
 for  MM  in  02 03 04 05 06 07 08 09 10 11 12 ; do
-  tail -n +6 relax_pho_m${MM}.b >> relax.ECO_pho.b
+  tail -n +6 relax_dic_m${MM}.b >> relax.ECO_dic.b
 done
 #
-cp relax_pho_m01.a relax.ECO_pho.a
+cp relax_dic_m01.a relax.ECO_dic.a
 #
 for MM in  02 03 04 05 06 07 08 09 10 11 12 ; do
-  cat relax_pho_m${MM}.a >> relax.ECO_pho.a
+  cat relax_dic_m${MM}.a >> relax_dic.a
 done
-${pput} relax.ECO_pho.b ${D}/relax.ECO_pho.b
-${pput} relax.ECO_pho.a ${D}/relax.ECO_pho.a
+${pput} relax.ECO_dic.b ${D}/relax.ECO_dic.b
+${pput} relax.ECO_dic.a ${D}/relax.ECO_dic.a
 #
 # --- delete the monthly files
 #
-/bin/rm relax_pho_m??.[ab]
+/bin/rm relax_dic_m??.[ab]
 #C
 #C --- Delete all scratch directory files.
 #C

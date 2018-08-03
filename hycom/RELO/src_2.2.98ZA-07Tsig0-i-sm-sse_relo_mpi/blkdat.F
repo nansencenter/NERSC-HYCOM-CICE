@@ -1991,6 +1991,7 @@ c
       call blkinl(relax, 'relax ')
       call blkinl(trcrlx,'trcrlx')
       call blkinl(priver,'priver')
+      call blkinl(triver,'triver')
       call blkinl(epmass,'epmass')
       if (mnproc.eq.1) then
       write(lp,*)
@@ -2000,6 +2001,27 @@ c
         if (mnproc.eq.1) then
         write(lp,'(/ a /)') 
      &    'error - priver must be .false. for flxflg=0'
+        call flush(lp)
+        endif !1st tile
+        call xcstop('(blkdat)')
+               stop '(blkdat)'
+      endif
+c
+      if     (triver .and. .not.thermo) then
+        if (mnproc.eq.1) then
+        write(lp,'(/ a /)')
+     &    'error - triver must be .false. for flxflg=0'
+        call flush(lp)
+        endif !1st tile
+        call xcstop('(blkdat)')
+               stop '(blkdat)'
+      endif
+c
+      if     (triver .and. .not.priver) then
+        if (mnproc.eq.1) then
+        write(lp,'(/ a /)')
+     &  'error - (for only coding purpose) 
+     &  priver must be true when triver=1'
         call flush(lp)
         endif !1st tile
         call xcstop('(blkdat)')
