@@ -36,7 +36,7 @@ program p_hycave
       print *,'Usage:'
       print *,'hycave filetype file1 file2 file3 ....'
       print *
-      print *,'filetype is either restart, nersc_daily or nersc_weekly'
+      print *,'filetype is either restart, nersc_daily, nersc_weekly or archv'
       print *,'Example:'
       print *,'   hycave nersc_daily TP3DAILY_1990_240_1990_313.a TP3DAILY_1990_240_1990_314.a '
       print *
@@ -75,7 +75,7 @@ program p_hycave
       print *,'Usage:'
       print *,'hycave filetype file1 file2 file3 ....'
       print *
-      print *,'filetype is either restart, nersc_daily or nersc_weekly'
+      print *,'filetype is either restart, nersc_daily, nersc_weekly or archv'
       print *,'Example:'
       print *,'   hycave nersc_daily TP3DAILY_1990_240_1990_313.a TP3DAILY_1990_240_1990_314.a '
       print *
