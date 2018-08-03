@@ -18,9 +18,16 @@ export CLIM=$2
 # Set basedir based on relative paths of script
 # Can be troublesome, but should be less prone to errors
 # than setting basedir directly
-cd $(dirname $0)/../../ 
-export BASEDIR=$(pwd)/  
-cd -
+#cd $(dirname $0)/../../ 
+#export BASEDIR=$(pwd)/  
+#cd -
+if [ -f EXPT.src ] ; then
+   export BASEDIR=$(cd .. && pwd)
+   echo $BASEDIR
+else
+   echo "Could not find EXPT.src. This script must be run in expt dir"
+   exit 1
+fi
 source ${BASEDIR}/REGION.src || { echo "Could not source ${BASEDIR}/REGION.src" ; exit 1 ; }
 source ${BASEDIR}/expt_$X/EXPT.src || { echo "Could not source ${BASEDIR}/expt_$X/EXPT.src" ; exit 1 ; }
 
@@ -59,16 +66,37 @@ S=$D/SCRATCH              # SCRATCH dir
 mkdir -p $S
 cd       $S || { echo " Could not descend scratch dir $S" ; exit 1;}
 
+KSIGMA=$(egrep "'thflag'"  ${BASEDIR}/expt_${X}/blkdat.input  | sed "s/.thflag.*$//" | tr -d "[:blank:]")
+IVERSN=$(egrep "'iversn'"  ${BASEDIR}/expt_${X}/blkdat.input  | sed "s/.iversn.*$//" | tr -d "[:blank:]")
+IVERSN=$(echo $IVERSN | sed "s/^0*//")
+echo "IVERSN = $IVERSN"
+echo "KSIGMA = $KSIGMA"
+echo "SIGVER = $SIGVER"
+tmp=$(expr $SIGVER % 2)
+if [ $KSIGMA -eq 0 -a $tmp -ne 1 ] ; then
+   echo "Recommend SIGVER=1,3,5 or 7 when thflag=0"
+   exit 1
+elif [ $KSIGMA -eq 2 -a $tmp -ne 0 ] ; then
+   echo "Recommend SIGVER=2,4,6 or 8 when thflag=2"
+   exit 1
+fi
+
+# Retrieve blkdat.input and create subset
 touch blkdat.input
 rm    blkdat.input
-${BASEDIR}/relax/bin/blkdat.sh $X
+echo "World Ocean Atlas 2013 Climatology"              > blkdat.input
+echo "  00        'month ' = month of climatology (01 to 12)"            >> blkdat.input
+egrep "'iversn'|'iexpt '|'yrflag'" ${BASEDIR}/expt_${X}/blkdat.input >> blkdat.input
+egrep "'idm   '|'jdm   '"          ${BASEDIR}/expt_${X}/blkdat.input >> blkdat.input
+egrep "'itest '|'jtest '|'kdm   '" ${BASEDIR}/expt_${X}/blkdat.input >> blkdat.input
+egrep "'nhybrd'|'nsigma'"          ${BASEDIR}/expt_${X}/blkdat.input >> blkdat.input
+egrep "'dp00. '|'ds00. '"   ${BASEDIR}/expt_${X}/blkdat.input | egrep -v "'dp00i '"    >> blkdat.input
+egrep "'thflag'|'thbase'|'sigma '" ${BASEDIR}/expt_${X}/blkdat.input >> blkdat.input
+egrep "'thkmin'"                   ${BASEDIR}/expt_${X}/blkdat.input >> blkdat.input
 if [ ! -s  blkdat.input ] ; then
    echo "Couldnt get blkdat.input " ; exit 1 ;
 fi
 
-#get  thflag from blkdat.input
-KSIGMA=$(egrep "'thflag'" blkdat.input | sed "s/.thflag.*$//" | tr -d "[:blank:]")
-echo $KSIGMA
 touch   relax_tracer fort.51 fort.51A
 /bin/rm relax_tracer fort.51 fort.51A
 
@@ -82,8 +110,8 @@ for MM in   01 02 03 04 05 06 07 08 09 10 11 12 ; do
 
    touch      fort.71 fort.71A fort.12 fort.12A 
    /bin/rm -f fort.71 fort.71A fort.12 fort.12A 
-   ${pget} ${BASEDIR}/relax/$CLIM/phos_sig${KSIGMA}_m${MM}.b fort.71  || { echo "Couldnt get z-climatology" ; exit 1 ;}
-   ${pget} ${BASEDIR}/relax/$CLIM/phos_sig${KSIGMA}_m${MM}.a fort.71A || { echo "Couldnt get z-climatology" ; exit 1 ;}
+   ${pget} ${BASEDIR}/relax/$CLIM/oxyg_sig${KSIGMA}_m${MM}.b fort.71  || { echo "Couldnt get z-climatology" ; exit 1 ;}
+   ${pget} ${BASEDIR}/relax/$CLIM/oxyg_sig${KSIGMA}_m${MM}.a fort.71A || { echo "Couldnt get z-climatology" ; exit 1 ;}
    ${pget} ${BASEDIR}/relax/$E/relax_int.b fort.12  || { echo "Couldnt get z-climatology" ; exit 1 ;}
    ${pget} ${BASEDIR}/relax/$E/relax_int.a fort.12A || { echo "Couldnt get z-climatology" ; exit 1 ;}
 
@@ -130,8 +158,8 @@ for MM in   01 02 03 04 05 06 07 08 09 10 11 12 ; do
    #
    # --- Output.
    #
-   mv fort.10  relax_pho_m${MM}.b
-   mv fort.10A relax_pho_m${MM}.a
+   mv fort.10  relax_oxy_m${MM}.b
+   mv fort.10A relax_oxy_m${MM}.a
    
    export DAYM=`echo ${MM} | awk '{printf("0000_%3.3d_00\n",30*($1-1)+16)}'`
    #export DAYM=`echo ${MM} | awk '{printf("0000_%3.3d_00\n",30.5*($1-1)+16)}'`
@@ -145,23 +173,23 @@ done
 #
 # --- Merge monthly climatologies into one file.
 #
-cp relax_pho_m01.b relax.ECO_pho.b
+cp relax_oxy_m01.b relax.ECO_oxy.b
 #
 for  MM  in  02 03 04 05 06 07 08 09 10 11 12 ; do
-  tail -n +6 relax_pho_m${MM}.b >> relax.ECO_pho.b
+  tail -n +6 relax_oxy_m${MM}.b >> relax.ECO_oxy.b
 done
 #
-cp relax_pho_m01.a relax.ECO_pho.a
+cp relax_oxy_m01.a relax.ECO_oxy.a
 #
 for MM in  02 03 04 05 06 07 08 09 10 11 12 ; do
-  cat relax_pho_m${MM}.a >> relax.ECO_pho.a
+  cat relax_oxy_m${MM}.a >> relax.ECO_oxy.a
 done
-${pput} relax.ECO_pho.b ${D}/relax.ECO_pho.b
-${pput} relax.ECO_pho.a ${D}/relax.ECO_pho.a
+${pput} relax.ECO_oxy.b ${D}/relax.ECO_oxy.b
+${pput} relax.ECO_oxy.a ${D}/relax.ECO_oxy.a
 #
 # --- delete the monthly files
 #
-/bin/rm relax_pho_m??.[ab]
+/bin/rm relax_oxy_m??.[ab]
 #C
 #C --- Delete all scratch directory files.
 #C

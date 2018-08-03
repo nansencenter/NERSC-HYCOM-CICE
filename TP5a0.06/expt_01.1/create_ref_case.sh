@@ -1,6 +1,10 @@
 #!/bin/bash
 
 myclim="woa2013" # Climatology to use
+myclim="phc" # Climatology to use
+
+Icore=23
+Jcore=23
 
 # Must be in expt dir to run this script
 if [ -f EXPT.src ] ; then
@@ -13,9 +17,6 @@ EDIR=$(pwd)/                           # Location of this script
 BASEDIR=$(cd $(dirname $0)/.. && pwd)/ # Location of basedir
 source $BASEDIR/REGION.src
 source $EDIR/EXPT.src
-
-KSIGMA=$(egrep "'thflag'"  $EDIR/blkdat.input  | sed "s/.thflag.*$//" | tr -d "[:blank:]")
-export NTRACR=`grep "'ntracr' =" $EDIR/blkdat.input | awk '{printf("%03d", $1)}'`
 
 # Create z-level relaxation files
 cd $EDIR
@@ -35,42 +36,6 @@ res=$?
 [ $res -ne 0 ] && echo "Failure...  Log in  $EDIR/log/ref_hybrid_relax.out"
 echo ".."
 
-if [ $NTRACR -ne 0 ] ; then
-  # Create biology z-relaxation files from WOA2013
-  cd $EDIR
-  echo "bio relax climatology"
-  z_woa2013_bio.sh $KSIGMA > $EDIR/log/ref_bio_relax.out 2>&1
-  res=$?
-  [ $res -eq 0 ] && echo "Success"
-  [ $res -ne 0 ] && echo "Failure... Log in $EDIR/log/ref_bio_relax.out"
-  echo ".."
-
-  # Create biology hybrid-relaxation files from WOA2013
-  cd $EDIR 
-  echo "bio hybrid relax climatology"
-  relax_sil.sh ${X} woa2013 > $EDIR/log/ref_sil_relax.out 2>&1
-  res=$?       
-  [ $res -eq 0 ] && echo "Success"
-  [ $res -ne 0 ] && echo "Failure... Log in $EDIR/log/ref_sil_relax.out"
-
-  relax_pho.sh ${X} woa2013 > $EDIR/log/ref_pho_relax.out 2>&1
-  res=$?
-  [ $res -eq 0 ] && echo "Success"
-  [ $res -ne 0 ] && echo "Failure... Log in $EDIR/log/ref_pho_relax.out"
-
-  relax_nit.sh ${X} woa2013 > $EDIR/log/ref_no3_relax.out 2>&1
-  res=$?
-  [ $res -eq 0 ] && echo "Success"
-  [ $res -ne 0 ] && echo "Failure... Log in $EDIR/log/ref_no3_relax.out"
-
-  relax_oxy.sh ${X} woa2013 > $EDIR/log/ref_oxy_relax.out 2>&1
-  res=$?
-  [ $res -eq 0 ] && echo "Success"
-  [ $res -ne 0 ] && echo "Failure... Log in $EDIR/log/ref_oxy_relax.out"
-
-  echo ".."
-fi
-
 # Create relaxation mask
 echo "relaxation mask"
 cat <<EOF | relax_rmu.sh ${X}  > $EDIR/log/ref_rmu_mask.out 2>&1
@@ -88,14 +53,13 @@ res=$?
 echo ".."
 
 # Create simple river forcing
-cd $EDIR
-echo "river forcing"
-#river_nersc.sh 100 300 $INPUTDIR/rivers.dat > $EDIR/log/ref_river_nersc.out 2>&1
-river_trip_bio.sh erai > $EDIR/log/ref_river_nersc.out 2>&1
-res=$?
-[ $res -eq 0 ] && echo "Success"
-[ $res -ne 0 ] && echo "Failure...  Log in  $EDIR/log/ref_river_nersc.out"
-echo ".."
+#cd $EDIR
+#echo "river forcing"
+#river_nersc.sh 140 300 $INPUTDIR/rivers.dat > $EDIR/log/ref_river_nersc.out 2>&1
+#res=$?
+#[ $res -eq 0 ] && echo "Success"
+#[ $res -ne 0 ] && echo "Failure...  Log in  $EDIR/log/ref_river_nersc.out"
+#echo ".."
 
 # Create kpar file
 echo "kpar forcing"
@@ -107,7 +71,7 @@ echo ".."
 
 # Create tiling. 
 echo "grid tiling"
-tile_grid.sh -2 -2 ${T} > $EDIR/log/ref_tiling.out 2>&1
+tile_grid.sh -${Icore} -${Jcore} ${T} > $EDIR/log/ref_tiling.out 2>&1
 res=$?
 [ $res -eq 0 ] && echo "Success"
 [ $res -ne 0 ] && echo "Failure...  Log in  $EDIR/log/ref_tiling.out" 

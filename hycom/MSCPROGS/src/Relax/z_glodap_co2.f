@@ -8,26 +8,27 @@ C     SETUP FOR 1.0 DEGREE LEVITUS GLOBAL CLIMATOLOGY.
 C
       INTEGER    IWI,JWI,KWI
       REAL       XFIN,YFIN,DXIN,DYIN
-      PARAMETER (IWI=360, JWI=180, KWI=102)
-      PARAMETER (XFIN=-179.5, YFIN=-89.5, DXIN=1.0, DYIN=1.0)
+      PARAMETER (IWI=360, JWI=180, KWI=33)
+      PARAMETER (XFIN=0.5, YFIN=-89.5, DXIN=1.0, DYIN=1.0)
 C
 C     CLIM ARRAYS.
 C
       INTEGER, ALLOCATABLE :: MSK(:,:)
       REAL,    ALLOCATABLE :: PLON(:,:),PLAT(:,:),XAF(:,:),YAF(:,:)
-      REAL,    ALLOCATABLE :: NITM(:,:),PHOM(:,:),SILM(:,:),OXYM(:,:)
+      REAL,    ALLOCATABLE :: DICM(:,:),ALKM(:,:)
+C
+CAS for filling in missing values
+      REAL ::    DICGLOBMEAN, ALKGLOBMEAN, DICCOUNTER, ALKCOUNTER
 C
       REAL      XAMAX,XAMIN,YAMAX,YAMIN
       REAL*4    ZLEV(KWI)
-      REAL*4    NITSEAIN(IWI,JWI),PHOSEAIN(IWI,JWI),
-     +          SILSEAIN(IWI,JWI),OXYSEAIN(IWI,JWI)
-      CHARACTER PREAMBL(5)*79
+      REAL*4    DICSEAIN(IWI,JWI),ALKSEAIN(IWI,JWI)
+      CHARACTER PREAMBL(5)*79, str*35
 C
 C     INTERPOLATION ARRAYS.
 C
       INTEGER IBD(4)
-      REAL    NITSEAI(IWI+4,JWI+4),PHOSEAI(IWI+4,JWI+4),
-     +        SILSEAI(IWI+4,JWI+4),OXYSEAI(IWI+4,JWI+4)
+      REAL    DICSEAI(IWI+4,JWI+4),ALKSEAI(IWI+4,JWI+4)
       REAL    FXI(IWI+4),FYI(JWI+4),
      +        WQSEA3(IWI+4,JWI+4,3),WK(3*(IWI+JWI+8)+1)
 C
@@ -215,10 +216,8 @@ C
       ALLOCATE( PLAT(IDM,JDM) )
       ALLOCATE(  XAF(IDM,JDM) )
       ALLOCATE(  YAF(IDM,JDM) )
-      ALLOCATE(   NITM(IDM,JDM) )
-      ALLOCATE(   PHOM(IDM,JDM) )
-      ALLOCATE(   SILM(IDM,JDM) )
-      ALLOCATE(   OXYM(IDM,JDM) )
+      ALLOCATE(  DICM(IDM,JDM) )
+      ALLOCATE(  ALKM(IDM,JDM) )
 C
 C     NAMELIST INPUT.
 C
@@ -230,7 +229,7 @@ C
       READ( 5,AFTITL)
       WRITE(6,AFTITL)
 C
-      ICTYPE = 1
+      ICTYPE = 2
       IFRZ   = 1
       KSIGMA = 0
       INTERP = 1
@@ -294,13 +293,9 @@ C
 C
       CALL ZAIOPN('NEW', 10)
       CALL ZAIOPN('NEW', 11)
-      CALL ZAIOPN('NEW', 12)
-      CALL ZAIOPN('NEW', 13)
 C
       CALL ZHOPEN(10, 'FORMATTED', 'NEW', 0)
       CALL ZHOPEN(11, 'FORMATTED', 'NEW', 0)
-      CALL ZHOPEN(12, 'FORMATTED', 'NEW', 0)
-      CALL ZHOPEN(13, 'FORMATTED', 'NEW', 0)
 C
       PREAMBL(1) = CTITLE
       PREAMBL(2) = ' '
@@ -310,17 +305,11 @@ C
      +        'i/jdm =',
      +       IDM,JDM
 C
-      PREAMBL(2) = 'Nitrate'
+      PREAMBL(2) = 'TCO2'
       WRITE(10,4101) PREAMBL
 C
-      PREAMBL(2) = 'Phophate'
+      PREAMBL(2) = 'TAlk'
       WRITE(11,4101) PREAMBL
-C
-      PREAMBL(2) = 'Silicate'
-      WRITE(12,4101) PREAMBL
-C
-      PREAMBL(2) = 'Oxygen'
-      WRITE(13,4101) PREAMBL
 
       IF     (KSIGMA.EQ.0) THEN
       ELSEIF (KSIGMA.EQ.2) THEN
@@ -340,7 +329,8 @@ C
       IF     (ICTYPE.EQ.1) THEN
         IUNIT=71
         CALL ZHOPEN(IUNIT, 'UNFORMATTED', 'OLD', 0)
-        READ(IUNIT)
+        READ(IUNIT) str
+
         CCNAME=' '
         READ(IUNIT) IWIT,JWIT,KWIT,XFINT,YFINT,DXINT,DYINT,ZLEV
         IF     (IWIT.NE.IWI .OR.
@@ -370,38 +360,38 @@ C
           CALL ZHFLSH(6)
           STOP
         ENDIF
-        IUNIT=73
-        CALL ZHOPEN(IUNIT, 'UNFORMATTED', 'OLD', 0)
-        READ(IUNIT)
-        CCNAME=' '
-        READ(IUNIT) IWIT,JWIT,KWIT,XFINT,YFINT,DXINT,DYINT,ZLEV
-        IF     (IWIT.NE.IWI .OR.
-     +          JWIT.NE.JWI .OR.
-     +          KWIT.NE.KWI .OR.
-     +          ABS(XFINT-XFIN).GT.0.01 .OR.
-     +          ABS(YFINT-YFIN).GT.0.01 .OR.
-     +          ABS(DXINT-DXIN).GT.0.01 .OR.
-     +          ABS(DYINT-DYIN).GT.0.01     ) THEN
-          WRITE(6,9000) IUNIT,IWI,JWI,KWI,XFIN,YFIN,DXIN,DYIN
-          CALL ZHFLSH(6)
-          STOP
-        ENDIF
-        IUNIT=74
-        CALL ZHOPEN(IUNIT, 'UNFORMATTED', 'OLD', 0)
-        READ(IUNIT)
-        CCNAME=' '
-        READ(IUNIT) IWIT,JWIT,KWIT,XFINT,YFINT,DXINT,DYINT,ZLEV
-        IF     (IWIT.NE.IWI .OR.
-     +          JWIT.NE.JWI .OR.
-     +          KWIT.NE.KWI .OR.
-     +          ABS(XFINT-XFIN).GT.0.01 .OR.
-     +          ABS(YFINT-YFIN).GT.0.01 .OR.
-     +          ABS(DXINT-DXIN).GT.0.01 .OR.
-     +          ABS(DYINT-DYIN).GT.0.01     ) THEN
-          WRITE(6,9000) IUNIT,IWI,JWI,KWI,XFIN,YFIN,DXIN,DYIN
-          CALL ZHFLSH(6)
-          STOP
-        ENDIF
+c        IUNIT=73
+c        CALL ZHOPEN(IUNIT, 'UNFORMATTED', 'OLD', 0)
+c        READ(IUNIT)
+c        CCNAME=' '
+c        READ(IUNIT) IWIT,JWIT,KWIT,XFINT,YFINT,DXINT,DYINT,ZLEV
+c        IF     (IWIT.NE.IWI .OR.
+c     +          JWIT.NE.JWI .OR.
+c     +          KWIT.NE.KWI .OR.
+c     +          ABS(XFINT-XFIN).GT.0.01 .OR.
+c     +          ABS(YFINT-YFIN).GT.0.01 .OR.
+c     +          ABS(DXINT-DXIN).GT.0.01 .OR.
+c     +          ABS(DYINT-DYIN).GT.0.01     ) THEN
+c          WRITE(6,9000) IUNIT,IWI,JWI,KWI,XFIN,YFIN,DXIN,DYIN
+c          CALL ZHFLSH(6)
+c          STOP
+c        ENDIF
+c        IUNIT=74
+c        CALL ZHOPEN(IUNIT, 'UNFORMATTED', 'OLD', 0)
+c        READ(IUNIT)
+c        CCNAME=' '
+c        READ(IUNIT) IWIT,JWIT,KWIT,XFINT,YFINT,DXINT,DYINT,ZLEV
+c        IF     (IWIT.NE.IWI .OR.
+c     +          JWIT.NE.JWI .OR.
+c     +          KWIT.NE.KWI .OR.
+c     +          ABS(XFINT-XFIN).GT.0.01 .OR.
+c     +          ABS(YFINT-YFIN).GT.0.01 .OR.
+c     +          ABS(DXINT-DXIN).GT.0.01 .OR.
+c     +          ABS(DYINT-DYIN).GT.0.01     ) THEN
+c          WRITE(6,9000) IUNIT,IWI,JWI,KWI,XFIN,YFIN,DXIN,DYIN
+c          CALL ZHFLSH(6)
+c          STOP
+c        ENDIF
       ELSEIF (ICTYPE.EQ.2) THEN
         IUNIT=71
         CALL ZHOPEN(IUNIT, 'UNFORMATTED', 'OLD', 0)
@@ -419,7 +409,7 @@ C
           CALL ZHFLSH(6)
           STOP
         ENDIF
-        IUNIT=73
+        IUNIT=72
         CALL ZHOPEN(IUNIT, 'UNFORMATTED', 'OLD', 0)
         READ(IUNIT)
         CCNAME=' '
@@ -560,23 +550,35 @@ C
 C       READ THE INPUT CLIMS.
 C
         IF     (ICTYPE.EQ.1) THEN
-          READ(71) NITSEAIN
-                   NITSEAIN = NITSEAIN * 6.625 * 12.01
-          READ(72) PHOSEAIN
-                   PHOSEAIN = PHOSEAIN * 106.0 * 12.01 
-          READ(73) SILSEAIN
-                   SILSEAIN = SILSEAIN * 6.625 * 12.01
-          READ(74) OXYSEAIN
-                   OXYSEAIN = OXYSEAIN * 32.0
+          READ(71) DICSEAIN
+          READ(72) ALKSEAIN
         ENDIF
 
 C AS17072012: Missing values are negative - set to zero
+C AS20072016: Update: missing values are also in the ocean, so they are set to the global mean for that level:
+        DICGLOBMEAN=0.0
+        DICCOUNTER=0.0
+        ALKGLOBMEAN=0.0
+        ALKCOUNTER=0.0
         DO  J= 1,JWI
           DO  I= 1,IWI
-            if (NITSEAIN(I,J).lt.0.0) NITSEAIN(I,J)=0.0
-            if (PHOSEAIN(I,J).lt.0.0) PHOSEAIN(I,J)=0.0
-            if (SILSEAIN(I,J).lt.0.0) SILSEAIN(I,J)=0.0
-            if (OXYSEAIN(I,J).lt.0.0) OXYSEAIN(I,J)=0.0
+            if (DICSEAIN(I,J).gt.0.0) then
+              DICGLOBMEAN = DICGLOBMEAN + DICSEAIN(I,J)
+              DICCOUNTER = DICCOUNTER + 1.0
+            end if
+            if (ALKSEAIN(I,J).gt.0.0) then
+              ALKGLOBMEAN = ALKGLOBMEAN + ALKSEAIN(I,J)
+              ALKCOUNTER = ALKCOUNTER + 1.0
+            end if
+         end do
+        end do
+        DICGLOBMEAN=DICGLOBMEAN/DICCOUNTER
+        ALKGLOBMEAN=ALKGLOBMEAN/ALKCOUNTER
+        
+        DO  J= 1,JWI
+          DO  I= 1,IWI
+            if (DICSEAIN(I,J).lt.0.0) DICSEAIN(I,J)=DICGLOBMEAN
+            if (ALKSEAIN(I,J).lt.0.0) ALKSEAIN(I,J)=ALKGLOBMEAN
          end do
         end do
 C
@@ -584,10 +586,8 @@ C       COPY INTO THE (LARGER) INTERPOLATION ARRAYS.
 C
         DO 310 J= 1,JWI
           DO 311 I= 1,IWI
-            NITSEAI(I+2,J+2) = dble(NITSEAIN(I,J))
-            PHOSEAI(I+2,J+2) = dble(PHOSEAIN(I,J))
-            SILSEAI(I+2,J+2) = dble(SILSEAIN(I,J))
-            OXYSEAI(I+2,J+2) = dble(OXYSEAIN(I,J))
+            DICSEAI(I+2,J+2) = DICSEAIN(I,J)
+            ALKSEAI(I+2,J+2) = ALKSEAIN(I,J)
   311     CONTINUE
   310   CONTINUE
 C
@@ -596,93 +596,68 @@ C
         IF     (INT(XAMAX).GE.IWI+1) THEN
           IF     (IWIX.GT.IWI) THEN
             DO 320 J= 3,JWI+2
-              NITSEAI(IWI+3,J) = NITSEAI(3,J)
-              NITSEAI(IWI+4,J) = NITSEAI(4,J)
-              PHOSEAI(IWI+3,J) = PHOSEAI(3,J)
-              PHOSEAI(IWI+4,J) = PHOSEAI(4,J)
-              SILSEAI(IWI+3,J) = SILSEAI(3,J)
-              SILSEAI(IWI+4,J) = SILSEAI(4,J)
-              OXYSEAI(IWI+3,J) = OXYSEAI(3,J)
-              OXYSEAI(IWI+4,J) = OXYSEAI(4,J)
+              DICSEAI(IWI+3,J) = DICSEAI(3,J)
+              DICSEAI(IWI+4,J) = DICSEAI(4,J)
+              ALKSEAI(IWI+3,J) = ALKSEAI(3,J)
+              ALKSEAI(IWI+4,J) = ALKSEAI(4,J)
   320       CONTINUE
           ELSE
             DO 325 J= 3,JWI+2
-              NITSEAI(IWI+3,J) = 2.0*NITSEAI(IWI+2,J) -     
-     +                               NITSEAI(IWI+1,J)
-              NITSEAI(IWI+4,J) = 3.0*NITSEAI(IWI+2,J) - 
-     +                           2.0*NITSEAI(IWI+1,J)
-              PHOSEAI(IWI+3,J) = 2.0*PHOSEAI(IWI+2,J) -     
-     +                               PHOSEAI(IWI+1,J)
-              PHOSEAI(IWI+4,J) = 3.0*PHOSEAI(IWI+2,J) - 
-     +                           2.0*PHOSEAI(IWI+1,J)
-              SILSEAI(IWI+3,J) = 2.0*SILSEAI(IWI+2,J) -     
-     +                               SILSEAI(IWI+1,J)
-              SILSEAI(IWI+4,J) = 3.0*SILSEAI(IWI+2,J) - 
-     +                           2.0*SILSEAI(IWI+1,J)
-              OXYSEAI(IWI+3,J) = 2.0*OXYSEAI(IWI+2,J) -     
-     +                               OXYSEAI(IWI+1,J)
-              OXYSEAI(IWI+4,J) = 3.0*OXYSEAI(IWI+2,J) - 
-     +                           2.0*OXYSEAI(IWI+1,J)
+              DICSEAI(IWI+3,J) = 2.0*DICSEAI(IWI+2,J) -     
+     +                               DICSEAI(IWI+1,J)
+              DICSEAI(IWI+4,J) = 3.0*DICSEAI(IWI+2,J) - 
+     +                           2.0*DICSEAI(IWI+1,J)
+              ALKSEAI(IWI+3,J) = 2.0*ALKSEAI(IWI+2,J) -     
+     +                               ALKSEAI(IWI+1,J)
+              ALKSEAI(IWI+4,J) = 3.0*ALKSEAI(IWI+2,J) - 
+     +                           2.0*ALKSEAI(IWI+1,J)
   325       CONTINUE
           ENDIF
         ENDIF
         IF     (INT(XAMIN).LE.3) THEN
           IF     (IWIX.GT.IWI) THEN
             DO 330 J= 3,JWI+2
-              NITSEAI(1,J) = NITSEAI(IWI+1,J)
-              NITSEAI(2,J) = NITSEAI(IWI+2,J)
-              PHOSEAI(1,J) = PHOSEAI(IWI+1,J)
-              PHOSEAI(2,J) = PHOSEAI(IWI+2,J)
-              SILSEAI(1,J) = SILSEAI(IWI+1,J)
-              SILSEAI(2,J) = SILSEAI(IWI+2,J)
-              OXYSEAI(1,J) = OXYSEAI(IWI+1,J)
-              OXYSEAI(2,J) = OXYSEAI(IWI+2,J)
+              DICSEAI(1,J) = DICSEAI(IWI+1,J)
+              DICSEAI(2,J) = DICSEAI(IWI+2,J)
+              ALKSEAI(1,J) = ALKSEAI(IWI+1,J)
+              ALKSEAI(2,J) = ALKSEAI(IWI+2,J)
   330       CONTINUE
           ELSE
             DO 335 J= 3,JWI+2
-              NITSEAI(1,J) = 3.0*NITSEAI(3,J) - 2.0*NITSEAI(4,J)
-              NITSEAI(2,J) = 2.0*NITSEAI(3,J) -     NITSEAI(4,J)
-              PHOSEAI(1,J) = 3.0*PHOSEAI(3,J) - 2.0*PHOSEAI(4,J)
-              PHOSEAI(2,J) = 2.0*PHOSEAI(3,J) -     PHOSEAI(4,J)
-              SILSEAI(1,J) = 3.0*SILSEAI(3,J) - 2.0*SILSEAI(4,J)
-              SILSEAI(2,J) = 2.0*SILSEAI(3,J) -     SILSEAI(4,J)
-              OXYSEAI(1,J) = 3.0*OXYSEAI(3,J) - 2.0*OXYSEAI(4,J)
-              OXYSEAI(2,J) = 2.0*OXYSEAI(3,J) -     OXYSEAI(4,J)
+              DICSEAI(1,J) = 3.0*DICSEAI(3,J) - 2.0*DICSEAI(4,J)
+              DICSEAI(2,J) = 2.0*DICSEAI(3,J) -     DICSEAI(4,J)
+              ALKSEAI(1,J) = 3.0*ALKSEAI(3,J) - 2.0*ALKSEAI(4,J)
+              ALKSEAI(2,J) = 2.0*ALKSEAI(3,J) -     ALKSEAI(4,J)
   335       CONTINUE
           ENDIF
         ENDIF
         IF     (INT(YAMAX).GE.JWI+1) THEN
           DO 340 I= 1,IWI+4
-            NITSEAI(I,JWI+3) = 2.0*NITSEAI(I,JWI+2) -     
-     +                             NITSEAI(I,JWI+1)
-            NITSEAI(I,JWI+4) = 3.0*NITSEAI(I,JWI+2) - 
-     +                         2.0*NITSEAI(I,JWI+1)
-            PHOSEAI(I,JWI+3) = 2.0*PHOSEAI(I,JWI+2) -     
-     +                             PHOSEAI(I,JWI+1)
-            PHOSEAI(I,JWI+4) = 3.0*PHOSEAI(I,JWI+2) - 
-     +                         2.0*PHOSEAI(I,JWI+1)
-            SILSEAI(I,JWI+3) = 2.0*SILSEAI(I,JWI+2) -     
-     +                             SILSEAI(I,JWI+1)
-            SILSEAI(I,JWI+4) = 3.0*SILSEAI(I,JWI+2) - 
-     +                         2.0*SILSEAI(I,JWI+1)
-            OXYSEAI(I,JWI+3) = 2.0*OXYSEAI(I,JWI+2) -     
-     +                             OXYSEAI(I,JWI+1)
-            OXYSEAI(I,JWI+4) = 3.0*OXYSEAI(I,JWI+2) - 
-     +                         2.0*OXYSEAI(I,JWI+1)
+            DICSEAI(I,JWI+3) = 2.0*DICSEAI(I,JWI+2) -     
+     +                             DICSEAI(I,JWI+1)
+            DICSEAI(I,JWI+4) = 3.0*DICSEAI(I,JWI+2) - 
+     +                         2.0*DICSEAI(I,JWI+1)
+            ALKSEAI(I,JWI+3) = 2.0*ALKSEAI(I,JWI+2) -     
+     +                             ALKSEAI(I,JWI+1)
+            ALKSEAI(I,JWI+4) = 3.0*ALKSEAI(I,JWI+2) - 
+     +                         2.0*ALKSEAI(I,JWI+1)
   340     CONTINUE
         ENDIF
         IF     (INT(YAMIN).LE.3) THEN
           DO 350 I= 1,IWI+4
-            NITSEAI(I,1) = 3.0*NITSEAI(I,3) - 2.0*NITSEAI(I,4)
-            NITSEAI(I,2) = 2.0*NITSEAI(I,3) -     NITSEAI(I,4)
-            PHOSEAI(I,1) = 3.0*PHOSEAI(I,3) - 2.0*PHOSEAI(I,4)
-            PHOSEAI(I,2) = 2.0*PHOSEAI(I,3) -     PHOSEAI(I,4)
-            SILSEAI(I,1) = 3.0*SILSEAI(I,3) - 2.0*SILSEAI(I,4)
-            SILSEAI(I,2) = 2.0*SILSEAI(I,3) -     SILSEAI(I,4)
-            OXYSEAI(I,1) = 3.0*OXYSEAI(I,3) - 2.0*OXYSEAI(I,4)
-            OXYSEAI(I,2) = 2.0*OXYSEAI(I,3) -     OXYSEAI(I,4)
+            DICSEAI(I,1) = 3.0*DICSEAI(I,3) - 2.0*DICSEAI(I,4)
+            DICSEAI(I,2) = 2.0*DICSEAI(I,3) -     DICSEAI(I,4)
+            ALKSEAI(I,1) = 3.0*ALKSEAI(I,3) - 2.0*ALKSEAI(I,4)
+            ALKSEAI(I,2) = 2.0*ALKSEAI(I,3) -     ALKSEAI(I,4)
   350     CONTINUE
         ENDIF
+cAS: make sure there are noe negative vaules
+        DO  J= 1,JWI+4
+          DO  I= 1,IWI+4
+            if (DICSEAI(I,J).lt.0.0) DICSEAI(I,J)=0.0
+            if (ALKSEAI(I,J).lt.0.0) ALKSEAI(I,J)=0.0
+         end do
+        end do
 C
 C       INTERPOLATE FROM NATIVE TO MODEL CLIM GRIDS.
 C       ALSO INFORCE A STABLE DENSITY PROFILE.
@@ -696,47 +671,33 @@ C         ASSUME ICE FORMS (I.E. MIN SST) AT -1.8 DEGC.
         ENDIF
         IF     (ICTYPE.EQ.1) THEN
           IF     (INTERP.EQ.0) THEN
-            CALL LINEAR(NITM,XAF,YAF,IDM,IDM,JDM,
-     +                  NITSEAI,IWI+4,IWI+4,JWI+4)
-            CALL LINEAR(PHOM,XAF,YAF,IDM,IDM,JDM,
-     +                  PHOSEAI,IWI+4,IWI+4,JWI+4)
-            CALL LINEAR(SILM,XAF,YAF,IDM,IDM,JDM,
-     +                  SILSEAI,IWI+4,IWI+4,JWI+4)
-            CALL LINEAR(OXYM,XAF,YAF,IDM,IDM,JDM,
-     +                  OXYSEAI,IWI+4,IWI+4,JWI+4)
+            CALL LINEAR(DICM,XAF,YAF,IDM,IDM,JDM,
+     +                  DICSEAI,IWI+4,IWI+4,JWI+4)
+            CALL LINEAR(ALKM,XAF,YAF,IDM,IDM,JDM,
+     +                  ALKSEAI,IWI+4,IWI+4,JWI+4)
           ELSE
-            CALL CUBSPL(NITM,XAF,YAF,IDM,IDM,JDM,
-     +                  NITSEAI,IWI+4,IWI+4,JWI+4, 
+            CALL CUBSPL(DICM,XAF,YAF,IDM,IDM,JDM,
+     +                  DICSEAI,IWI+4,IWI+4,JWI+4, 
      +                  IBD, FXI,FYI,WQSEA3,WK)
-            CALL CUBSPL(PHOM,XAF,YAF,IDM,IDM,JDM,
-     +                  PHOSEAI,IWI+4,IWI+4,JWI+4, 
-     +                  IBD, FXI,FYI,WQSEA3,WK)
-            CALL CUBSPL(SILM,XAF,YAF,IDM,IDM,JDM,
-     +                  SILSEAI,IWI+4,IWI+4,JWI+4, 
-     +                  IBD, FXI,FYI,WQSEA3,WK)
-            CALL CUBSPL(OXYM,XAF,YAF,IDM,IDM,JDM,
-     +                  OXYSEAI,IWI+4,IWI+4,JWI+4, 
+            CALL CUBSPL(ALKM,XAF,YAF,IDM,IDM,JDM,
+     +                  ALKSEAI,IWI+4,IWI+4,JWI+4, 
      +                  IBD, FXI,FYI,WQSEA3,WK)
           ENDIF
         ENDIF
 C
 C       WRITE OUT STATISTICS.
 C
-        CALL MINMAX(NITM,IDM,JDM, XMIN,XMAX)
-        CALL AVERMS(NITM,IDM,JDM, XAVE,XRMS)
-        WRITE(6,8100) 'NITSEA', XMIN,XMAX,XAVE,XRMS
-C
-        CALL MINMAX(PHOM,IDM,JDM, XMIN,XMAX)
-        CALL AVERMS(PHOM,IDM,JDM, XAVE,XRMS)
-        WRITE(6,8100) 'PHOSEA', XMIN,XMAX,XAVE,XRMS
-C
-        CALL MINMAX(SILM,IDM,JDM, XMIN,XMAX)
-        CALL AVERMS(SILM,IDM,JDM, XAVE,XRMS)
-        WRITE(6,8100) 'SILSEA', XMIN,XMAX,XAVE,XRMS
+        CALL MINMAX(DICSEAI,IDM+4,JDM+4, XMIN,XMAX)
+        CALL AVERMS(DICSEAI,IDM+4,JDM+4, XAVE,XRMS)
+        WRITE(6,8100) 'DICSEAIN', XMIN,XMAX,XAVE,XRMS
 
-        CALL MINMAX(OXYM,IDM,JDM, XMIN,XMAX)
-        CALL AVERMS(OXYM,IDM,JDM, XAVE,XRMS)
-        WRITE(6,8100) 'OXYSEA', XMIN,XMAX,XAVE,XRMS
+        CALL MINMAX(DICM,IDM,JDM, XMIN,XMAX)
+        CALL AVERMS(DICM,IDM,JDM, XAVE,XRMS)
+        WRITE(6,8100) 'DICSEA', XMIN,XMAX,XAVE,XRMS
+C
+        CALL MINMAX(ALKM,IDM,JDM, XMIN,XMAX)
+        CALL AVERMS(ALKM,IDM,JDM, XAVE,XRMS)
+        WRITE(6,8100) 'ALKSEA', XMIN,XMAX,XAVE,XRMS
 C
 C       DIAGNOSTIC PRINTOUT.
 C
@@ -745,27 +706,18 @@ C
           WRITE(6,'(A,2I5,I3,A,F8.2,A,3F6.2)')
      +      'I,J,K =',ITEST,JTEST,KREC,
      +      '   ZLEV =',ZLEV(KREC),
-     +      '   NIT,PHO,SIL,OXY =',NITM(ITEST,JTEST),
-     +                             PHOM(ITEST,JTEST),
-     +                             SILM(ITEST,JTEST),
-     +                             OXYM(ITEST,JTEST)
+     +      '   DIC,ALK =',DICM(ITEST,JTEST), ALKM(ITEST,JTEST)
           WRITE(6,*)
           CALL ZHFLSH(6)
         ENDIF
 C
 C       WRITE OUT HYCOM CLIMS.
 C
-        CALL ZAIOWR(NITM,MSK,.FALSE., XMIN,XMAX, 10, .FALSE.)
-        WRITE(10,4102) '              nitrate',ZLEV(KREC),XMIN,XMAX
+        CALL ZAIOWR(DICM,MSK,.FALSE., XMIN,XMAX, 10, .FALSE.)
+        WRITE(10,4102) 'Total C02',ZLEV(KREC),XMIN,XMAX
 C
-        CALL ZAIOWR(PHOM,MSK,.FALSE., XMIN,XMAX, 11, .FALSE.)
-        WRITE(11,4102) '            phosphate',ZLEV(KREC),XMIN,XMAX
-C
-        CALL ZAIOWR(SILM,MSK,.FALSE., XMIN,XMAX, 12, .FALSE.)
-        WRITE(12,4102) '             silicate',ZLEV(KREC),XMIN,XMAX
-C
-        CALL ZAIOWR(OXYM,MSK,.FALSE., XMIN,XMAX, 13, .FALSE.)
-        WRITE(13,4102) '               oxygen',ZLEV(KREC),XMIN,XMAX
+        CALL ZAIOWR(ALKM,MSK,.FALSE., XMIN,XMAX, 11, .FALSE.)
+        WRITE(11,4102) 'Total alkalinity',ZLEV(KREC),XMIN,XMAX
 C
         WRITE(6,6300) KREC,ZLEV(KREC)
         CALL ZHFLSH(6)
@@ -775,10 +727,6 @@ C
       CLOSE( UNIT=10)
       CALL ZAIOCL(11)
       CLOSE( UNIT=11)
-      CALL ZAIOCL(12)
-      CLOSE( UNIT=12)
-      CALL ZAIOCL(13)
-      CLOSE( UNIT=13)
 C
 C     SUMMARY.
 C

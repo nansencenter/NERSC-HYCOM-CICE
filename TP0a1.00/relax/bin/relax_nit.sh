@@ -148,7 +148,7 @@ done
 cp relax_nit_m01.b relax.ECO_no3.b
 #
 for  MM  in  02 03 04 05 06 07 08 09 10 11 12 ; do
-  tail +6 relax_nit_m${MM}.b >> relax.ECO_no3.b
+  tail -n +6 relax_nit_m${MM}.b >> relax.ECO_no3.b
 done
 #
 cp relax_nit_m01.a relax.ECO_no3.a
