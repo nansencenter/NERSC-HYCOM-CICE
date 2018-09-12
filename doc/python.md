@@ -84,5 +84,6 @@ The github packages can also be installed using the pip tool.  Use the following
     pip install --user git+http://github.com/knutalnersc/modeltools
     pip install --user git+http://github.com/knutalnersc/modelgrid
     pip install --user git+http://github.com/knutalnersc/gridxsec
+    pip install --user git+http://github.com/MostafaBakhoda/modeltools
 
 These files will be installed in your home directory under $HOME/.local/lib/python2.7/site-packages/, where python will automatically find them.
