@@ -2150,43 +2150,7 @@ c
         call xcstop('(blkdat)')
                stop '(blkdat)'
       endif
-#endif 
-
-CMOSTAFA: BEGIN
-c ---  s w i t c h e s  for calculating net radiation fluxes  (0=not,
-c ---  1=using black body & input SST, 2=using HYCOM SST)
-c
-c --- 
-      call blkini(nrdflg,'nrdflg')
-      if (nrdflg .lt.0 .or. nrdflg .gt. 8) then
-        if (mnproc.eq.1) then
-        write(lp,'(/ a /)')
-     &  'error - nrdflg  must be between 0 and 3'
-        call flush(lp)
-        endif !1st tile
-        call xcstop('(blkdat)')
-               stop '(blkdat)'
-      endif
-      if (nrdflg .ge.1 .and. lwflag .ne. -1 ) then
-        if (mnproc.eq.1) then
-        write(lp,'(/ a /)')
-     &  'error - nrdflg is not handelled for lwflag <>-1'
-        call flush(lp)
-        endif !1st tile
-        call xcstop('(blkdat)')
-               stop '(blkdat)'
-      endif
-      if (nrdflg .ge.1 .and.lwflag .eq. -1.and.flxflg.lt.5) then
-        if (mnproc.eq.1) then
-        write(lp,'(/ a /)')
-     &  'error - nrdflg is not handelled for flxflg <>6'
-        call flush(lp)
-        endif !1st tile
-        call xcstop('(blkdat)')
-               stop '(blkdat)'
-      endif
-CMOSTAFA: END
- 
+#endif  
 c
       close(unit=uoff+99)  !file='blkdat.input'
 c
