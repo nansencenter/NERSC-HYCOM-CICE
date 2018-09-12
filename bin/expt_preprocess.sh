@@ -109,6 +109,11 @@ export ICEFLG=$(blkdat_get blkdat.input iceflg)
 export MOMTYP=$(blkdat_get blkdat.input momtyp)
 export VISCO2=$(blkdat_get blkdat.input visco2)
 export VELDF2=$(blkdat_get blkdat.input veldf2)
+# MOSTAFA: BEGIN
+export NRDFLG=$(blkdat_get blkdat.input nrdflg)
+export LWFLAG=$(blkdat_get blkdat.input lwflag)
+# MOSTAFA: END
+
 restarti=$(blkdat_get_string blkdat.input nmrsti "restart_in")
 
 # Add period to restart file name if not present...
@@ -300,11 +305,28 @@ fi
 echo "**Setting up pre-prepared synoptic forcing from force/synoptic/$E"
 DIR=$BASEDIR/force/synoptic/$E/
 echo $DIR
+
+# MOSTAFA: BEGIN
+if  [ "$LWFLAG" -eq -1 -a "$NRDFLG" -eq 3 ] ; then
+declare -a arr=("radflx" "shwflx" "nlwrad" "vapmix" "airtmp" "precip" "mslprs" "wndewd" "wndnwd")
+elif  [ "$LWFLAG" -eq -1 -a "$NRDFLG" -eq 4 ] ; then
+declare -a arr=("radflx" "shwflx" "nlwrad" "nswrad"  "vapmix" "airtmp" "precip" "mslprs" "wndewd" "wndnwd")
+elif  [ "$LWFLAG" -eq -1 -a "$NRDFLG" -eq 5 ] ; then
+declare -a arr=("radflx" "shwflx" "nswrad"  "vapmix" "airtmp" "precip" "mslprs" "wndewd" "wndnwd")
+elif  [ "$LWFLAG" -eq -1 -a "$NRDFLG" -eq 6 ] ; then
+declare -a arr=("radflx" "shwflx" "nswrad"  "vapmix" "airtmp" "precip" "mslprs" "wndewd" "wndnwd")
+elif  [ "$LWFLAG" -eq -1 -a "$NRDFLG" -eq 7 ] ; then
+declare -a arr=("radflx" "shwflx" "nswrad"  "vapmix" "airtmp" "precip" "mslprs" "wndewd" "wndnwd")
+else
+declare -a arr=("radflx" "shwflx" "vapmix" "airtmp" "precip" "mslprs" "wndewd" "wndnwd")
+fi
 #for i in tauewd taunwd wndspd radflx shwflx vapmix \
 #   airtmp precip uwind vwind clouds relhum slp ; do
-for i in radflx shwflx vapmix \
-   airtmp precip mslprs \
-   wndewd wndnwd ; do
+
+#for i in radflx shwflx vapmix \
+#   airtmp precip mslprs \
+#   wndewd wndnwd ; do
+for i in "${arr[@]}"; do
    echo "|--> $i"
    [ -f  $DIR/$i.a ] || tellerror "File $DIR/$i.a does not exist"
    [ -f  $DIR/$i.b ] || tellerror "File $DIR/$i.b does not exist"
@@ -328,6 +350,8 @@ for i in radflx shwflx vapmix \
 
 done
 
+
+# MOSTAFA: END
 #
 # --- time-invarent heat flux offset
 #
@@ -346,6 +370,22 @@ if [ "$CLMDIR" != "" ] ; then
    fi 
 fi 
 
+# MOSTAFA: BEGIN
+# For time-invariant offlux
+# copy flux off set files if flxoff=1
+echo "FLXOFF =  $FLXOFF"
+if [ $FLXOFF -eq 1 ] ; then
+ echo "===================================================="
+ echo " -------flux off set true: copy flux off set files-"
+   cp ${D}/../../relax/${E}/offlux.a forcing.offlux.a || tellerror "Could not get offlux .a file"
+   cp ${D}/../../relax/${E}/offlux.b forcing.offlux.b || tellerror "Could not get offlux .b file"
+ echo "===================================================="
+ else
+    echo "fLxoff=F: No attempt to use flux offset correction" 
+fi
+
+
+# MOSTAFA: END
 
 #
 # --- river forcing
@@ -492,6 +532,7 @@ if [ $tmp -eq 1 -o $tmp2 -eq 1 ] ; then
    fi
 fi
 
+# MOSTAFA: BEGIN
 # copy flux off set files if flxoff=1
 echo "FLXOFF =  $FLXOFF"
 if [ $FLXOFF -eq 1 ] ; then
@@ -503,6 +544,8 @@ if [ $FLXOFF -eq 1 ] ; then
  else
     echo "fLxoff=F: No attempt to use flux offset correction" 
 fi
+# TODO!: This part will be improved in furture
+# MOSTAFA
 
 #export waveSDIR=/work/shared/nersc/msc/STOKES/Globww3/tmp
 #export  waveSDIR=/work/shared/nersc/msc/STOKES/Globww3

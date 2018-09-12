@@ -97,7 +97,20 @@ def atmfor(start,end,af,grid_file="regional.grid",blkdat_file="blkdat.input",plo
    yrflag = blkd["yrflag"]
    wndflg = blkd["wndflg"]
    lwflag  = blkd["lwflag"]
-
+# MOSTAFA: BEGIN
+   # TODO: This part will be extended.
+   # nrdflg stands for net radiation flux flag
+   # used to specify different radiation flux configurations
+   # for the HYCOM-CICE thermodynamic forcing. I have provided so far 7 items
+   # for this flag which will be reduced after develoment step to fewer numbers
+   # here three flags are used for nrdflg:
+   # (1) 0: no effects from this flag.
+   # (2) 4: all radiation fluxes from ERA-I.
+   # (3) 6: all downwelling components of radiation fluxes from ERA-I
+   #        except downwelling lwrad which is provided by Bignami et al (1995). 
+   nrdflg  = blkd["nrdflg"]
+   nrdflg  = numpy.int32(nrdflg)
+# MOSTAFA: END
    # Main loop 
    always_calculate_interpolator = False
    always_calculate_rotator = False
@@ -128,8 +141,31 @@ def atmfor(start,end,af,grid_file="regional.grid",blkdat_file="blkdat.input",plo
        else :
           if "vapmix" not in af.known_names_explicit : af.calculate_vapmix()
           if "ssrd"   not in af.known_names_explicit : af.calculate_ssrd()
+
           if lwflag == -1 :
-              if "strd"   not in af.known_names_explicit : af.calculate_strd()
+# MOSTAFA: BEGIN
+             if nrdflg == 0:
+                if "strd"   not in af.known_names_explicit : af.calculate_strd()
+             elif nrdflg == 1 :
+                af.calculate_strd_bignami()
+             elif nrdflg == 2 :
+                if "strd"   not in af.known_names_explicit : af.calculate_strd_bignami()
+             elif nrdflg == 3 :
+                if "strd"   not in af.known_names_explicit : af.calculate_strd_bignami()
+                if "str"   not in af.known_names_explicit : af.calculate_lwrad_budyko()
+             elif nrdflg == 4 :
+                if "strd"   not in af.known_names_explicit : af.calculate_strd_bignami()
+                if "str"   not in af.known_names_explicit : af.calculate_lwrad_budyko()
+             elif nrdflg == 5 :
+                if "strd"   not in af.known_names_explicit : af.calculate_strd_bignami()
+                if "str"   not in af.known_names_explicit : af.calculate_lwrad_budyko()
+             elif nrdflg == 6 :
+                af.calculate_strd_bignami()
+             elif nrdflg == 7 :
+                af.calculate_strd_bignami()
+# TODO: This part will be optimised soon.
+# MOSTAFA: END
+              
           else :
               raise ValueError,"TODO: lwflag<>-1 not supported"
 
