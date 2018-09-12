@@ -111,7 +111,7 @@ export VISCO2=$(blkdat_get blkdat.input visco2)
 export VELDF2=$(blkdat_get blkdat.input veldf2)
 # MOSTAFA: BEGIN
 export NRDFLG=$(blkdat_get blkdat.input nrdflg)
-export LWFLAG=$(blkdat_get blkdat.input lwflag)
+export LWFLAG=`grep "'lwflag' =" blkdat.input | awk '{printf("%1d", $1)}'`
 # MOSTAFA: END
 
 restarti=$(blkdat_get_string blkdat.input nmrsti "restart_in")
