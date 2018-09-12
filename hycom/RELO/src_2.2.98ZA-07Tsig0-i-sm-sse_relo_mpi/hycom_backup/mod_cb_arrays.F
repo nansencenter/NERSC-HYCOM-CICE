@@ -334,13 +334,7 @@ c --- atmospheric forcing fields, natm is 2 or 4
      & swflxdwn,      ! net shortwave radiation
 !KAL
      & surtmp,        ! surface temp. used to calculate input lw radiation
-     & seatmp,         ! best available SST from observations
-CMOSTAFA: BEGIN
-     & nlwrad,          ! related to the net longwave radiation
-     & nswrad          ! related to net shortwave radiation
-
-CMOSTAFA: END
-
+     & seatmp         ! best available SST from observations
 c
 c --- monthly atmospheric forcing fields
 #if defined(RELO)
@@ -729,11 +723,7 @@ c
      &               iversn,iexpt,jerlv0,
      &               iceflg,ishelf,icmflg,wndflg,ustflg,
      &               flxflg,empflg,dswflg,albflg,lwflag,sstflg,sssflg,
-     &               difsmo,disp_count,
-CMOSTAFA: BEGIN
-     &               nrdflg
-CMOSTAFA: END
-
+     &               difsmo,disp_count
 c
       real,    parameter ::
      &  g     =   9.806,      !gravitational acceleration (m/s**2)
@@ -1220,10 +1210,6 @@ c
      &       swflxdwn(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,natm),
 !KAL
      &         surtmp(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,natm),
-CMOSTAFA: BEGIN
-     &         nlwrad(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,natm),
-     &         nswrad(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,natm),
-CMOSTAFA: END
      &         seatmp(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,natm) )
 !KAL  call mem_stat_add( 12*(idm+2*nbdy)*(jdm+2*nbdy)*natm )
       call mem_stat_add( 13*(idm+2*nbdy)*(jdm+2*nbdy)*natm )
@@ -1249,11 +1235,6 @@ CMOSTAFA: END
                seatmp = r_init
                 akpar = r_init
                rivers = r_init
-CMOSTAFA: BEGIN
-               nlwrad = r_init
-               nswrad = r_init
-CMOSTAFA: END
-
 c
 #if defined(RELO)
       allocate(
