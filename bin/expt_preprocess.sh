@@ -532,20 +532,20 @@ if [ $tmp -eq 1 -o $tmp2 -eq 1 ] ; then
    fi
 fi
 
-# MOSTAFA: BEGIN
-# copy flux off set files if flxoff=1
-echo "FLXOFF =  $FLXOFF"
-if [ $FLXOFF -eq 1 ] ; then
- echo "===================================================="
- echo " -------flux off set true: copy flux off set files-"
-   cp $BASEDIR/force/offset/offlux.a forcing.offlux.a || tellerror "Could not get river .a file"
-   cp $BASEDIR/force/offset/offlux.b forcing.offlux.b || tellerror "Could not get river .b file"
- echo "===================================================="
- else
-    echo "fLxoff=F: No attempt to use flux offset correction" 
-fi
-# TODO!: This part will be improved in furture
-# MOSTAFA
+## MOSTAFA: BEGIN
+## copy flux off set files if flxoff=1
+#echo "FLXOFF =  $FLXOFF"
+#if [ $FLXOFF -eq 1 ] ; then
+# echo "===================================================="
+# echo " -------flux off set true: copy flux off set files-"
+#   cp $BASEDIR/force/offset/offlux.a forcing.offlux.a || tellerror "Could not get river .a file"
+#   cp $BASEDIR/force/offset/offlux.b forcing.offlux.b || tellerror "Could not get river .b file"
+# echo "===================================================="
+# else
+#    echo "fLxoff=F: No attempt to use flux offset correction" 
+#fi
+## TODO!: This part will be improved in furture
+## MOSTAFA
 
 #export waveSDIR=/work/shared/nersc/msc/STOKES/Globww3/tmp
 #export  waveSDIR=/work/shared/nersc/msc/STOKES/Globww3
