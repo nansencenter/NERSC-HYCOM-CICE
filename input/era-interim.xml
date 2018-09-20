@@ -69,10 +69,9 @@
          <field known_name="tp"    file="[rootPath]/fcs.6h.%Y.TP.nc"   varname="TP"   units="m"      accumulated="6h"/> <!--6 hour accumulated precip-->
          <field known_name="tcc"   file="[rootPath]/ans.6h.%Y.TCC.nc"  varname="TCC"  units="1"/>
          <field known_name="ssrd"  file="[rootPath]/fcs.6h.%Y.SSRD.nc" varname="SSRD" units="J m**-2" accumulated="6h"/> <!-- 6 hour accumulated flux-->
-         <field known_name="strd"  file="[rootPath]/fcs.6h.%Y.STRD.nc" varname="STRD" units="J m**-2" accumulated="6h"/> <!-- 6 hour accumulated flux-->
          <field known_name="ssr"  file="[rootPath]/fcs.6h.%Y.SSR.nc" varname="SSR" units="J m**-2" accumulated="6h"/> <!-- 6 hour accumulated flux-->
       </forcing_dataset>
-
+    
 
 
 
