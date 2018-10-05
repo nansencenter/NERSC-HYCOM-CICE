@@ -268,11 +268,11 @@ contains
       open(nop,file=trim(df%filebase)//'.b',status='old')
       if (c80(1:5)=='field') then
          !!old-style
-         print*,' '
-         print*,'*******************************'
-         print*,'old style arch[v,m] header file'
-         print*,'*******************************'
-         print*,' '
+      !   print*,' '
+      !   print*,'*******************************'
+      !   print*,'old style arch[v,m] header file'
+      !   print*,'*******************************'
+      !   print*,' '
          read(nop,316) ctitle,df%iversn,df%iexpt,df%yrflag
          !!get dump time from filename
          !!TODO: what if under 1 hour?
