@@ -965,7 +965,9 @@ c ---          positive upward)
           elseif (nrdflg .eq. 5) then
               swr = 0.
 c ---         Here we use net shortwave radiation from ERAI and
-c ---         downwelling longwave radiation from ERAI 
+c ---         downwelling longwave radiation from Bignami (1995).
+c ---         Note that with this flag net shortwave radiation used
+c ---         in the biogeochemisitry model is from ERAI  
               if     (natm.eq.2) then
                 swr=nswrad(i,j,l0)*w0+nswrad(i,j,l1)*w1
               else
@@ -1525,7 +1527,17 @@ c ---   in shallow water this is (dpmixl(i,j,n)/p(i,j,kk+1)  )/rmut
         sstflx(i,j)=sstflx(i,j)+sstrlx
       endif !sstflg
 c --- sswflx = shortwave radiative energy flux (W/m^2) into ocean
-      sswflx(i,j)=swfl
+CMOSTAFA: BEGIN
+      if (nrdflg .eq. 5) then
+c ---    Use net shortwave radiation from ERA-I
+         sswflx(i,j)=swr
+      else
+         sswflx(i,j)=swfl
+
+      endif
+
+CMOSTAFA: END
+
 c --- emnp = evaporation minus precipitation   (m/sec) into atmos.
       if     (.not.pcipf) then
         prcp = 0.0
