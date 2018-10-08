@@ -157,8 +157,9 @@ def atmfor(start,end,af,grid_file="regional.grid",blkdat_file="blkdat.input",plo
                 if "strd"   not in af.known_names_explicit : af.calculate_strd_bignami()
                 if "str"   not in af.known_names_explicit : af.calculate_lwrad_budyko()
              elif nrdflg == 5 :
-                if "strd"   not in af.known_names_explicit : af.calculate_strd_bignami()
-                if "str"   not in af.known_names_explicit : af.calculate_lwrad_budyko()
+                # with this flag, net shortwave radiation in hycom-cice will be
+                # from ERA-I
+                af.calculate_strd_bignami()
              elif nrdflg == 6 :
                 af.calculate_strd_bignami()
              elif nrdflg == 7 :
