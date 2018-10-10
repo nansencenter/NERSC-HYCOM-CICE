@@ -252,6 +252,7 @@ echo "--------------------"
 # --- KAL - we use pget=pput=cp
 export pget=/bin/cp
 export pput=/bin/cp
+export plink='ln -sf'
 
 echo "Initialization complete - now copying necessary files to scratch area"
 echo
@@ -633,12 +634,19 @@ else
 
    #HYCOM restart
    filename=${restarti}${start_year}_${start_oday}_${start_hour}_${start_hsec}
+   echo $D/${filename}_mem001.a
 
    # Try to fetch restart from data dir $D
    if [ -f $D/${filename}.a -a -f $D/${filename}.b ] ; then
       echo "using HYCOM restart files ${filename}.[ab] from data dir $D"
       cp $D/${filename}.a .
       cp $D/${filename}.b .
+
+   elif [ -f $D/${filename}_mem001.a -a -f $D/${filename}_mem001.b ]; then
+      echo "using HYCOM restart files ${filename}_mem???.[ab] from data dir $D"
+      ${plink} $D/${filename}_mem*.a .
+      ${plink} $D/${filename}_mem*.b .
+
    else
       tellerror "Could not find HYCOM restart file ${filename}.[ab] in $D"
    fi
@@ -652,6 +660,12 @@ else
          echo "using CICE restart file ${filenameice} from data dir $D"
          cp $D/${filenameice} ${filenameice}
          echo $filenameice > ${ice_restart_pointer_file}
+
+      elif [ -f $D/${filenameice}_mem001.nc ]; then
+         echo "using CICE restart file ${filenameice}_mem???.nc from data dir $D"
+         ${plink} $D/${filenameice}_mem*.nc cice/.
+         echo ${filenameice}_mem000.nc > ${ice_restart_pointer_file}
+
       else
          tellerror "Could not find CICE restart file ${filenameice} in $D"
       fi
