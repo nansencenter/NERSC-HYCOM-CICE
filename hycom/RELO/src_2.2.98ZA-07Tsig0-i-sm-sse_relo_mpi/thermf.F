@@ -136,6 +136,9 @@ cdiag endif !test
       subroutine thermf(m,n, dtime)
       use mod_xc         ! HYCOM communication interface
       use mod_cb_arrays  ! HYCOM saved arrays
+#ifdef _FABM_
+      use mod_hycom_fabm, only: hycom_fabm_nest_update
+#endif
       implicit none
 c
       integer m,n
@@ -281,6 +284,9 @@ c
         enddo  !i
       enddo  !j
 !$OMP END PARALLEL DO
+#ifdef _FABM_
+      call hycom_fabm_nest_update(n)
+#endif
 c
       endif  !  nestfq.ne.0.0
 c

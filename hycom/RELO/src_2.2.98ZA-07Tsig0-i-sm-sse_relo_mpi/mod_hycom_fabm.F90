@@ -29,6 +29,7 @@ module mod_hycom_fabm
    public hycom_fabm_configure, hycom_fabm_allocate, hycom_fabm_initialize, hycom_fabm_initialize_state, hycom_fabm_update
    public hycom_fabm_relax_init, hycom_fabm_relax_rewind, hycom_fabm_relax_skmonth, hycom_fabm_relax_read, hycom_fabm_relax
    public hycom_fabm_input_init, hycom_fabm_input_update
+   public hycom_fabm_nest_next, hycom_fabm_nest_read, hycom_fabm_nest_update
    public hycom_fabm_allocate_mean_output, hycom_fabm_zero_mean_output, hycom_fabm_increment_mean_output, hycom_fabm_end_mean_output, hycom_fabm_write_mean_output
    public fabm_surface_state, fabm_bottom_state
 
@@ -88,15 +89,25 @@ module mod_hycom_fabm
    end type type_input
    type (type_input), pointer, save :: first_input => null()
 
+   type type_nested_variable
+      character(len=attribute_length) :: name = ''
+      integer :: istate = -1
+      real, allocatable :: data(:,:,:,:)
+      type (type_nested_variable), pointer :: next => null()
+   end type
+   type (type_nested_variable), pointer, save :: first_nested_variable => null()
+
 contains
 
     subroutine hycom_fabm_configure()
       integer :: configuration_method
       logical :: file_exists
       integer, parameter :: namlst = 9000
-      integer :: ios
+      integer :: ios, ivar, istate
       character(len=*), parameter :: path = '../hycom_fabm.nml'
-      namelist /hycom_fabm/ do_interior_sources, do_bottom_sources, do_surface_sources, do_vertical_movement
+      character(len=attribute_length) :: nested_variables(256)
+      type (type_nested_variable), pointer :: nested_variable
+      namelist /hycom_fabm/ do_interior_sources, do_bottom_sources, do_surface_sources, do_vertical_movement, nested_variables
 
       ! Read coupler configuration
       do_interior_sources = .true.
@@ -104,6 +115,7 @@ contains
       do_surface_sources = .true.
       do_vertical_movement = .true.
       do_check_state = .false.
+      nested_variables = ''
       inquire(file='../hycom_fabm.nml', exist=file_exists)
       if (file_exists) then
         write (*,*) 'Reading HYCOM-FABM coupler configuration from '//path
@@ -130,9 +142,26 @@ contains
         allocate(fabm_model)
         call fabm_create_model_from_yaml_file(fabm_model, '../fabm.yaml')
       end select
+
+      do ivar=1, size(nested_variables)
+        if (nested_variables(ivar) == '') cycle
+        allocate(nested_variable)
+        nested_variable%name = nested_variables(ivar)
+        do istate=1, size(fabm_model%state_variables)
+          if (nested_variable%name == fabm_model%state_variables(istate)%name) nested_variable%istate = istate
+        end do
+        if (nested_variable%istate == -1) then
+          if (mnproc.eq.1) write (lp,*) 'Nested variable "'//trim(nested_variable%name)//'" not found in FABM model.'
+          stop 'hycom_fabm_configure'
+        end if
+        nested_variable%next => first_nested_variable
+        first_nested_variable => nested_variable
+      end do
     end subroutine hycom_fabm_configure
 
     subroutine hycom_fabm_allocate()
+        type (type_nested_variable), pointer :: nested_variable
+
         allocate(swflx_fabm(ii, jj))
         allocate(bottom_stress(ii, jj))
         allocate(mask(ii, jj, kk, 2))
@@ -143,6 +172,11 @@ contains
         allocate(fabm_bottom_state(1-nbdy:idm+nbdy, 1-nbdy:jdm+nbdy, 2, size(fabm_model%bottom_state_variables)))
         allocate(fabm_surface_state_old(1-nbdy:idm+nbdy, 1-nbdy:jdm+nbdy, size(fabm_model%surface_state_variables)))
         allocate(fabm_bottom_state_old(1-nbdy:idm+nbdy, 1-nbdy:jdm+nbdy, size(fabm_model%bottom_state_variables)))
+        nested_variable => first_nested_variable
+        do while (associated(nested_variable))
+          allocate(nested_variable%data(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kknest,2))
+          nested_variable => nested_variable%next
+        end do
     end subroutine hycom_fabm_allocate
 
     subroutine hycom_fabm_initialize()
@@ -1151,5 +1185,113 @@ contains
       return
  117  format (a8,' =',i11,f11.3,i3,f7.3,1p2e16.7)
      end subroutine hycom_fabm_write_mean_output
+
+
+    subroutine hycom_fabm_nest_next()
+      type (type_nested_variable), pointer :: nested_variable
+      nested_variable => first_nested_variable
+      do while (associated(nested_variable))
+        nested_variable%data(:,:,:,1) = nested_variable%data(:,:,:,2)
+        nested_variable => nested_variable%next
+      end do
+    end subroutine hycom_fabm_nest_next
+
+    subroutine hycom_fabm_nest_read(iyear,iday,ihour,lslot)
+      integer, intent(in) :: iyear,iday,ihour,lslot
+
+      character(len=27) :: flnm
+      integer :: iline
+      character(len=80) :: cline
+      character(len=6) :: cvarin
+      character(len=8) :: cfield
+      integer :: ios,idmtst,jdmtst,k,layer
+      type (type_nested_variable), pointer :: nested_variable
+
+      write(flnm,'("nest/archm_fabm.",i4.4,"_",i3.3,"_",i2.2)') iyear, iday, ihour
+
+      if (mnproc.eq.1) write (lp,*) 'hycom_fabm_nest_rdnest_in: ', flnm
+
+      call xcsync(flush_lp)
+
+      call zaiopf(flnm//'.a','old', 920)
+      if (mnproc.eq.1) then  ! .b file from 1st tile only
+        open (unit=uoff+920, file=flnm//'.b', form='formatted', status='old', action='read')
+        do iline=1,7
+          read(uoff+920,'(a)') cline
+        end do
+      end if !1st tile
+
+      call zagetc(cline, ios, uoff+920)
+      read(cline,*) idmtst, cvarin
+      if (cvarin.ne.'idm   ') then
+        if (mnproc.eq.1) then
+          write(lp,*)
+          write(lp,*) 'error in hycom_fabm_nest_rdnest_in - input ',cvarin,' but should be idm   '
+          write(lp,*)
+        end if !1st tile
+        call xcstop('(hycom_fabm_nest_rdnest_in)')
+               stop '(hycom_fabm_nest_rdnest_in)'
+      end if
+      call zagetc(cline, ios, uoff+920)
+      read(cline,*) jdmtst, cvarin
+      if (cvarin.ne.'jdm   ') then
+        if (mnproc.eq.1) then
+          write(lp,*)
+          write(lp,*) 'error in hycom_fabm_nest_rdnest_in - input ',cvarin,' but should be jdm   '
+          write(lp,*)
+        end if !1st tile
+        call xcstop('(hycom_fabm_nest_rdnest_in)')
+               stop '(hycom_fabm_nest_rdnest_in)'
+      end if
+
+      if (idmtst.ne.itdm .or. jdmtst.ne.jtdm) then
+        if (mnproc.eq.1) then
+          write(lp,*)
+          write(lp,*) 'error in hycom_fabm_nest_rdnest_in - input idm,jdm not consistent with parameters'
+          write(lp,*) 'idm,jdm = ',itdm,  jtdm,  '  (dimensions.h)'
+          write(lp,*) 'idm,jdm = ',idmtst,jdmtst,'  (input)'
+          write(lp,*)
+        end if !1st tile
+        call xcstop('(hycom_fabm_nest_rdnest_in)')
+               stop '(hycom_fabm_nest_rdnest_in)'
+      end if
+
+      if (mnproc.eq.1) then  ! .b file from 1st tile only
+        read (uoff+920,*)
+      end if
+
+      do k=1,kk
+        call rd_archive(util1, cfield, layer, 920)
+        nested_variable => first_nested_variable
+        do while (associated(nested_variable))
+          if (cfield == nested_variable%name(1:8)) then
+            nested_variable%data(:,:,k,lslot) = util1
+            exit
+          end if
+          nested_variable => nested_variable%next
+        end do
+      end do
+    end subroutine hycom_fabm_nest_read
+
+    subroutine hycom_fabm_nest_update(n)
+      integer, intent(in) :: n
+
+      type (type_nested_variable), pointer :: nested_variable
+      integer :: i, j, k
+
+      nested_variable => first_nested_variable
+      do while (associated(nested_variable))
+        do k=1,kk
+          do j=1,jj
+            do i=1,ii
+              tracer(i,j,k,n,nested_variable%istate)=( tracer(i,j,k,n,nested_variable%istate) + delt1*rmunp(i,j)* &
+                (nested_variable%data(i,j,k,ln0)*wn0 + nested_variable%data(i,j,k,ln1)*wn1) )/(1.0 + delt1*rmunp(i,j))
+              nested_variable => nested_variable%next
+            end do
+          end do
+        end do
+        nested_variable => nested_variable%next
+      end do
+    end subroutine hycom_fabm_nest_update
 #endif
 end module
