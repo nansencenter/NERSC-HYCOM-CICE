@@ -3820,6 +3820,9 @@ c ---   get the next set of fields.
             enddo
           enddo
         enddo
+#ifdef _FABM_
+        call hycom_fabm_nest_next()
+#endif
         dtime0 = dtime1
         iarch  = iarch + 1
         dtime1 = dtimei + dnestf*iarch
@@ -4172,6 +4175,9 @@ c
         call xcsync(flush_lp)
       endif
 c
+#ifdef _FABM_
+      call hycom_fabm_nest_read(iyear,iday,ihour,lslot)
+#endif
       return
       end
 c
