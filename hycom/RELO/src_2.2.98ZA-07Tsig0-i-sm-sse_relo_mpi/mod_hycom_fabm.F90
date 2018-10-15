@@ -1200,13 +1200,12 @@ contains
       use mod_za
       integer, intent(in) :: iyear,iday,ihour,lslot
 
+      integer, parameter :: iunit = 920
       character(len=27) :: flnm
       integer :: iline
       character(len=80) :: cline
       character(len=6) :: cvarin
-      character(len=8) :: cfield
-      integer :: ios,idmtst,jdmtst,k,layer
-      type (type_nested_variable), pointer :: nested_variable
+      integer :: ios,idmtst,jdmtst
 
       write(flnm,'("nest/archm_fabm.",i4.4,"_",i3.3,"_",i2.2)') iyear, iday, ihour
 
@@ -1214,15 +1213,15 @@ contains
 
       call xcsync(flush_lp)
 
-      call zaiopf(flnm//'.a','old', 920)
+      call zaiopf(flnm//'.a','old', iunit)
       if (mnproc.eq.1) then  ! .b file from 1st tile only
-        open (unit=uoff+920, file=flnm//'.b', form='formatted', status='old', action='read')
+        open (unit=uoff+iunit, file=flnm//'.b', form='formatted', status='old', action='read')
         do iline=1,7
-          read(uoff+920,'(a)') cline
+          read(uoff+iunit,'(a)') cline
         end do
       end if !1st tile
 
-      call zagetc(cline, ios, uoff+920)
+      call zagetc(cline, ios, uoff+iunit)
       read(cline,*) idmtst, cvarin
       if (cvarin.ne.'idm   ') then
         if (mnproc.eq.1) then
@@ -1233,7 +1232,7 @@ contains
         call xcstop('(hycom_fabm_nest_rdnest_in)')
                stop '(hycom_fabm_nest_rdnest_in)'
       end if
-      call zagetc(cline, ios, uoff+920)
+      call zagetc(cline, ios, uoff+iunit)
       read(cline,*) jdmtst, cvarin
       if (cvarin.ne.'jdm   ') then
         if (mnproc.eq.1) then
@@ -1258,20 +1257,65 @@ contains
       end if
 
       if (mnproc.eq.1) then  ! .b file from 1st tile only
-        read (uoff+920,*)
+        read (uoff+iunit,*)
       end if
 
-      do k=1,kk
-        call rd_archive(util1, cfield, layer, 920)
+      do while (read_next_field())
+      end do
+
+    contains
+
+      function read_next_field() result(success)
+        logical :: success
+
+        integer :: ios,k,nnstep
+        real :: hmina,hminb,hmaxa,hmaxb,timein,thet
+        type (type_nested_variable), pointer :: nested_variable
+
+        success = .true.
+        call zagetc(cline, ios, uoff+iunit)
+        if (ios < 0) then
+          ! End of file reached
+          success = .false.
+          return
+        elseif (ios > 0) then
+          if (mnproc.eq.1) then
+            write(lp,*)
+            write(lp,*) 'error in mod_hycom_fabm::read_next_field - error reading next field'
+            write(lp,*) 'iunit,ios = ',iunit,ios
+            write(lp,*)
+          end if !1st tile
+          call xcstop('(rd_archive)')
+                 stop '(rd_archive)'
+        end if
+
+        ! Look up FABM variable with the name found in the nesting input.
         nested_variable => first_nested_variable
         do while (associated(nested_variable))
-          if (cfield == nested_variable%name(1:8)) then
-            nested_variable%data(:,:,k,lslot) = util1
-            exit
-          end if
+          if (cline(1:8) == nested_variable%name(1:8)) exit
           nested_variable => nested_variable%next
         end do
-      end do
+        if (.not. associated(nested_variable)) then
+          call zaiosk(iunit)
+          return
+        end if
+
+        i = index(cline,'=')
+        read(cline(i+1:),*) nnstep,timein,k,thet,hminb,hmaxb
+
+        if (hminb.eq.hmaxb) then  !constant field
+          nested_variable%data(:,:,k,lslot) = hminb
+          call zaiosk(iunit)
+        else
+          call zaiord(nested_variable%data(:,:,k,lslot),ip,.false., hmina,hmaxa,iunit)
+          if (abs(hmina-hminb).gt.abs(hminb)*1.e-4 .or. abs(hmaxa-hmaxb).gt.abs(hmaxb)*1.e-4) then
+            if (mnproc.eq.1) write(lp,'(/ a / a,1p3e14.6 / a,1p3e14.6 /)') 'error - .a and .b files not consistent:', &
+                '.a,.b min = ',hmina,hminb,hmina-hminb,'.a,.b max = ',hmaxa,hmaxb,hmaxa-hmaxb
+            ! We could have stopped here, but that is commented out in forfun.F/rd_archive
+        end if
+
+      end function
+
     end subroutine hycom_fabm_nest_read
 
     subroutine hycom_fabm_nest_update(n)
