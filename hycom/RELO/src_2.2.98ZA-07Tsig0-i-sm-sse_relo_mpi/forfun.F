@@ -3715,6 +3715,9 @@ c
       use mod_xc           ! HYCOM communication interface
       use mod_cb_arrays  ! HYCOM saved arrays
       use mod_za           ! HYCOM I/O interface
+#ifdef _FABM_
+      use mod_hycom_fabm
+#endif
       implicit none
 c
       real*8    dtime
@@ -3849,6 +3852,9 @@ c
       use mod_xc         ! HYCOM communication interface
       use mod_cb_arrays  ! HYCOM saved arrays
       use mod_za         ! HYCOM I/O interface
+#ifdef _FABM_
+      use mod_hycom_fabm
+#endif
       implicit none
 c
       real*8    dtime

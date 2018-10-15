@@ -1197,6 +1197,7 @@ contains
     end subroutine hycom_fabm_nest_next
 
     subroutine hycom_fabm_nest_read(iyear,iday,ihour,lslot)
+      use mod_za
       integer, intent(in) :: iyear,iday,ihour,lslot
 
       character(len=27) :: flnm
