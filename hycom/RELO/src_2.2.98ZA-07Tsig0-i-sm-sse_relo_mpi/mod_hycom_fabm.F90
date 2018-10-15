@@ -1268,7 +1268,7 @@ contains
       function read_next_field() result(success)
         logical :: success
 
-        integer :: ios,k,nnstep
+        integer :: ios,k,nnstep,i
         real :: hmina,hminb,hmaxa,hmaxb,timein,thet
         type (type_nested_variable), pointer :: nested_variable
 
@@ -1312,6 +1312,7 @@ contains
             if (mnproc.eq.1) write(lp,'(/ a / a,1p3e14.6 / a,1p3e14.6 /)') 'error - .a and .b files not consistent:', &
                 '.a,.b min = ',hmina,hminb,hmina-hminb,'.a,.b max = ',hmaxa,hmaxb,hmaxa-hmaxb
             ! We could have stopped here, but that is commented out in forfun.F/rd_archive
+          end if
         end if
 
       end function
