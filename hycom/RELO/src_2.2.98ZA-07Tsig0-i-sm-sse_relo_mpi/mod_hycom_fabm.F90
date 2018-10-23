@@ -1207,7 +1207,7 @@ contains
       character(len=6) :: cvarin
       integer :: ios,idmtst,jdmtst
 
-      write(flnm,'("nest/archm_fabm.",i4.4,"_",i3.3,"_",i2.2)') iyear, iday, ihour
+      write(flnm,'("nest/archv_fabm.",i4.4,"_",i3.3,"_",i2.2)') iyear, iday, ihour
 
       if (mnproc.eq.1) write (lp,*) 'hycom_fabm_nest_rdnest_in: ', flnm
 
@@ -1262,6 +1262,11 @@ contains
 
       do while (read_next_field())
       end do
+
+      if     (mnproc.eq.1) then  ! .b file from 1st tile only
+      close( unit=uoff+iunit)
+      endif
+      call zaiocl(iunit)
 
     contains
 
