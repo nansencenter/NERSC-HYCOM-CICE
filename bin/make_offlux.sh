@@ -43,9 +43,6 @@ fi
 source ${BASEDIR}/REGION.src || { echo "Could not source ${BASEDIR}/REGION.src" ; exit 1 ; }
 source EXPT.src || { echo "Could not source ./EXPT.src" ; exit 1 ; }
 
-# create average fields
-files=$(ls $data_files/archm*.a)
-
 prog=${HYCOM_ALL}/bin/hycom_expr
 chmod a+x $prog
 $prog  $sst_model_avg $sst_clim_avg  $idm $jdm 1  -1 offlux_${E}_std.a | head -1 >> offlux_${E}_std.b
