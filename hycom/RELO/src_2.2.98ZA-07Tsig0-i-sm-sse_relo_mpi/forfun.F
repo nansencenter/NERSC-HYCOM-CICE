@@ -2476,7 +2476,7 @@ c --- on exit, dtime0 and dtime1 are the associated times (wind days).
 c
       integer i,j,k
       real    albw,degtorad
-      real*8  dtime(899:910)
+      real*8  dtime(899:980)
 c
       integer, save :: icall = -1
 c
