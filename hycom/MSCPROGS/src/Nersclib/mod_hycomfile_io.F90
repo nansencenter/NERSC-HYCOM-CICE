@@ -1312,6 +1312,38 @@ contains
          limits   = (/-3,50/)
          stdname  = 'sea_water_potential_temperature_at_sea_floor'
          longname = 'Sea floor potential temperature'
+!KAL20181210 - Adding bottom current coponents 
+      case ('butot') 
+         if (.not.gridrotate) then
+            stdname='eastward_current_velocity' 
+         else
+            stdname='sea_current_u_velocity' 
+         end if
+         vname    = 'butot'
+         units    = 'm s-1'
+         limits   = (/-3,3/)
+         stdname  = 'sea_water_u_component_at_sea_floor'
+         longname = 'Sea floor u component'
+
+      case ('bvtot') 
+         if (.not.gridrotate) then
+            stdname='northward_current_velocity' 
+         else
+            stdname='sea_current_v_velocity' 
+         end if
+         vname    = 'bvtot'
+         units    = 'm s-1'
+         limits   = (/-3,3/)
+         stdname  = 'sea_water_v_component_at_sea_floor'
+         longname = 'Sea floor v component'
+
+      case ('bkinet') 
+         vname    = 'bkinett'
+         units    = '(m s-1)^2'
+         limits   = (/-3,3/)
+         stdname  = 'sea_water_kinetic_energy_at_sea_floor'
+         longname = 'Sea floor kinetic energy'
+
 !AS06092011 - adding biological variables for MyOcean
       case ('chla') 
          vname='chla'
