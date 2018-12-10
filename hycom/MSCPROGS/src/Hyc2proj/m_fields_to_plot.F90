@@ -94,9 +94,12 @@ subroutine fields_to_plot(fld,nfld,hfile,kdm)
    ! Special case (and rules) for vectors -
    ! 1) No scalar variables should begin with u,v,taux or tauy
    ! 2) v(tauy)-component must come immediately after u(taux)-component
+   ! 3) butot-component must come immediately after bvtot-component
+
    fld(1:nfld)%vecflag=.false.
    do ifld=1,nfld-1
-      if (fld(ifld)%fextract(1:1)=='u' .or. fld(ifld)%fextract(1:4)=='taux') then
+      if (fld(ifld)%fextract(1:1)=='u' .or. fld(ifld)%fextract(1:4)=='taux' &
+        .or. fld(ifld)%fextract(1:5)=='butot') then
       if (ifld==nfld) then
          print *,'For vectors, the v-component must come immediately after the u-component;'
          print *,'for stresses, the tauy-component must come immediately after the taux-component'
@@ -116,6 +119,13 @@ subroutine fields_to_plot(fld,nfld,hfile,kdm)
          print *,fld(ifld  )%fextract
          print *,fld(ifld+1)%fextract
          stop
+      else if (fld(ifld)%fextract(1:5)=='butot' .and. &
+         ( fld(ifld)%fextract(6:8)/=fld(ifld+1)%fextract(6:8) .or. fld(ifld+1)%fextract(1:5)/='bvtot' )) then
+         print *,'For bottom velocity, the v-component must come immediately after the u-component'
+         print *,fld(ifld)%fextract(1:5)
+         print *,fld(ifld  )%fextract
+         print *,fld(ifld+1)%fextract
+         stop
       end if
       end if
 
@@ -125,7 +135,8 @@ subroutine fields_to_plot(fld,nfld,hfile,kdm)
       ! Flag indicating vector component
       vecflag= &
          (uname(1:1) == 'u'   .and.vname(1:1) == 'v') .or. &
-         (uname(1:4) == 'taux'.and.vname(1:4) == 'tauy')  
+         (uname(1:4) == 'taux'.and.vname(1:4) == 'tauy') .or. & 
+         (uname(1:5) == 'butot'.and.vname(1:5) == 'bvtot')  
       ! Now test that the rest of their names are equal
       if (vecflag) then
          if (uname(1:4) == 'taux') then
@@ -134,6 +145,9 @@ subroutine fields_to_plot(fld,nfld,hfile,kdm)
          elseif (uname(1:1) == 'u' .and. len_trim(uname)>1) then
             vecflag=uname(2:8) == vname(2:8)
             pre=uname(2:8)
+         elseif (uname(1:5) == 'butot') then
+            vecflag=uname(6:8) == vname(6:8)
+            pre='b'//uname(6:8)
          end if
       end if
 
@@ -151,4 +165,25 @@ subroutine fields_to_plot(fld,nfld,hfile,kdm)
    end do
 
 end subroutine fields_to_plot
+
+
+subroutine uv_to_kinetic(u0,v0,idm,jdm,kinet)
+  implicit none
+  real, parameter :: undef=-1e14
+  integer,intent(in) :: idm,jdm
+  real,   intent(in) :: u0(idm,jdm),v0(idm,jdm)
+  real,  intent(out) :: kinet(idm,jdm) 
+  !---------------
+  integer :: i,j
+  kinet=undef
+  do j=2,jdm-1
+    do i=2,idm-1
+       if (abs(u0(i,j))<abs(undef).and.abs(v0(i,j))<abs(undef)) then
+         kinet(i,j)=(u0(i,j)*u0(i,j)+v0(i,j)*v0(i,j))/2
+       end if
+    end do
+  end do
+
+end subroutine uv_to_kinetic
+
 end module m_fields_to_plot
