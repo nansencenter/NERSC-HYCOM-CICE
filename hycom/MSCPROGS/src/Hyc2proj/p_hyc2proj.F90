@@ -86,6 +86,9 @@ program p_hyc2proj
    integer :: nfld, ifld, filestart
    logical :: ex
    logical :: lev
+   integer :: itest, jtest
+   real, allocatable, dimension(:,:)   :: hy2d3, hy2d4   ! used for bottom kinetic energy
+
 #if defined (IARGC)
    integer*4, external :: iargc
 #endif
@@ -162,6 +165,8 @@ program p_hyc2proj
       allocate(regu2d   (nxp,nyp))        ! 2D vars on projection grid
       allocate(depthint (nxp,nyp,kdm))    ! Keeps bottom interface on regu grid
 
+      allocate(hy2d3    (idm,jdm))        ! Holds 2D vars on bottom 
+      allocate(hy2d4    (idm,jdm))        ! Holds 2D vector vars on bottom 
 
       call construct_filename(hfile,ncfil)
 
@@ -231,10 +236,12 @@ program p_hyc2proj
 
                if (trim(cprojection)/='native') then
                   if (gridrotate) then
+                     print *, 'm2l!'
                      do k=1,kdm
                         call rotate_general(hy3d(:,:,k),hy3d2(:,:,k),   yproj,xproj,idm,jdm,'m2l')
                      end do
                   else
+                     print *, 'm2l plon(plat) !'
                      do k=1,kdm
                         call rotate(hy3d(:,:,k),hy3d2(:,:,k),   plat,plon,idm,jdm,'m2l')
                      end do
@@ -265,20 +272,59 @@ program p_hyc2proj
 
             ! 2D vector case
             else 
-               print '(a)','Processing 2D Vector pair '// fld(ifld  )%fextract//' '//fld(ifld  )%fextract
-               call HFReadField(hfile,hy2d ,idm,jdm,fld(ifld  )%fextract,0,1)
-               call HFReadField(hfile,hy2d2,idm,jdm,fld(ifld+1)%fextract,0,1)
-               if (trim(cprojection)/='native') then
-                  if (gridrotate) then 
+               ! adding the bottom velocity
+               if (trim(fld(ifld)%fextract)=='butot') then
+                 itest=295
+                 jtest=681
+                 print '(a)','Processing 2D Vector pair '// fld(ifld  )%fextract//' '//fld(ifld+1 )%fextract
+                 call HFReadField3D(hfile,hy3d ,idm,jdm,kdm,'utot',1)
+                 call HFReadField3D(hfile,hy3d2,idm,jdm,kdm,'vtot',1)
+
+                 do k=2,kdm
+                   where (pres(:,:,k+1)-pres(:,:,k)<.1*onem)
+                     hy3d(:,:,k)=hy3d(:,:,k-1)
+                     hy3d2(:,:,k)=hy3d2(:,:,k-1)
+                   end where
+                 end do
+
+! Vertical interpolation to 10 meter above seabed, same as temperature as a 2D scale field.
+                 call spline_calc(hy3d,pres(:,:,2:kdm+1)/onem,idm,jdm,pres(:,:,kdm+1)/onem>10., hy2d,1,kdm,deepsin=(/-10./))
+                 call spline_calc(hy3d2,pres(:,:,2:kdm+1)/onem,idm,jdm,pres(:,:,kdm+1)/onem>10., hy2d2,1,kdm,deepsin=(/-10./))
+
+                 if (trim(cprojection)/='native') then
+                   if (gridrotate) then 
                      call rotate_general(hy2d,hy2d2,yproj,xproj,idm,jdm,'m2l')
-                  else 
+                   else 
                      call rotate(hy2d,hy2d2,plat,plon,idm,jdm,'m2l')
-                  end if
+                   end if
+                 end if
+
+                 call uv_to_kinetic(hy2d,hy2d2,idm,jdm,hy2d3)
+
+                 call to_proj(hy2d,regu2d)
+                 call putNCVar(ncstate,regu2d,nxp,nyp,1,fld(ifld  )%fextract,3,gridrotate)
+                 call to_proj(hy2d2,regu2d)
+                 call putNCVar(ncstate,regu2d,nxp,nyp,1,fld(ifld+1)%fextract,3,gridrotate)
+
+                 call to_proj(hy2d3,regu2d)
+                 call putNCVar(ncstate,regu2d,nxp,nyp,1,'bkinet',3,gridrotate)
+
+               else
+                 print '(a)','Processing 2D Vector pair '// fld(ifld  )%fextract//' '//fld(ifld  )%fextract
+                 call HFReadField(hfile,hy2d ,idm,jdm,fld(ifld  )%fextract,0,1)
+                 call HFReadField(hfile,hy2d2,idm,jdm,fld(ifld+1)%fextract,0,1)
+                 if (trim(cprojection)/='native') then
+                   if (gridrotate) then 
+                     call rotate_general(hy2d,hy2d2,yproj,xproj,idm,jdm,'m2l')
+                   else 
+                     call rotate(hy2d,hy2d2,plat,plon,idm,jdm,'m2l')
+                   end if
+                 end if
+                 call to_proj(hy2d,regu2d)
+                 call putNCVar(ncstate,regu2d,nxp,nyp,1,fld(ifld  )%fextract,3,gridrotate)
+                 call to_proj(hy2d2,regu2d)
+                 call putNCVar(ncstate,regu2d,nxp,nyp,1,fld(ifld+1)%fextract,3,gridrotate)
                end if
-               call to_proj(hy2d,regu2d)
-               call putNCVar(ncstate,regu2d,nxp,nyp,1,fld(ifld  )%fextract,3,gridrotate)
-               call to_proj(hy2d2,regu2d)
-               call putNCVar(ncstate,regu2d,nxp,nyp,1,fld(ifld+1)%fextract,3,gridrotate)
             end if
 
 
@@ -709,6 +755,9 @@ program p_hyc2proj
      deallocate(hy2d2   )
      deallocate(regu2d  )
      deallocate(depthint)
+
+     deallocate(hy2d3    )
+     deallocate(hy2d4   )
 
      !call zaioempty ! deallocated za - fields - ready for next file
 
