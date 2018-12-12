@@ -16,7 +16,7 @@ if (! -e ../../config/${ARCH}_setup) then
   exit 1
 endif
 #
-foreach m ( sub_topog sub_topog_panam subregion isub_topog isubregion isuba_arche isuba_field isuba_gmapi isuba_topog isubaregion half_topog sub_grid )
+foreach m ( sub_topog sub_topog_panam subregion isub_topog isubregion isuba_arche isuba_field isuba_gmapi isuba_topog isubaregion isubaregion_modified  half_topog sub_grid )
   make ${m} ARCH=${ARCH} >&! Make_${m}
   if ($status) then
     echo "Make failed:" ${m}
