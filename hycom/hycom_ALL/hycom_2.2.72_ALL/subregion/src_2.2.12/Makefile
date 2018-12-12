@@ -43,6 +43,9 @@ MODX = mod_xc.o mod_za.o mod_zb.o wtime.o zh.o mod_scrip.o
 isubaregion:     $(MODS) isubaregion.o        
 	$(LD) $(LDFLAGS) isubaregion.o $(MODS) -o isubaregion
 
+isubaregion_modified:     $(MODS) isubaregion_modified.o
+	$(LD) $(LDFLAGS) isubaregion_modified.o $(MODS) -o isubaregion_modified
+
 isubregion:      $(MODS) isubregion.o        
 	$(LD) $(LDFLAGS) isubregion.o  $(MODS) -o isubregion
 
