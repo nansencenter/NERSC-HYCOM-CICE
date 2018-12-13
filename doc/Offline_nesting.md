@@ -3,6 +3,14 @@
 
 Details about the required procedures to carry out offline nesting can be found in the HYCOM USER GUIDE (Wallcraft, 2003, available at http://hycom.rsmas.miami.edu/hycom-model/ documentation.html). Here, we closely follow the standard HYCOM nesting approach based on the MERCATOR GLOBAL_ANALYSIS_FORECAST_PHY_001_024 product (as outer model data).
 
+Nesting in current version need to be started from source regional directory/experiment (i.e. NEMO folder here NMOa0.08/expt_01.0 for native grids and NMOa0.09 for regular grids); you need to specify your target experiment directory (i.e. TOPAZ experiment directory TP5a0.06/expt_03.0). REGION.src need to possess the paths of NEMO mesh/coordinate and data netcdf files. After runing the following line, for example for native grid, 
+
+../bin/nemo_to_hycom.sh ../../TP5a0.06/expt_03.0/ /nird/projects/nird/NS9481K/MERCATOR_DATA/PHY/2012/ext-GLORYS12V1_1dAV_20120312_20120313_grid2D_R20120314.nc 
+
+You should expect to have your horizontally/vertically interpolated files in the TOPAZ nesting experiment folder, in this case TP5a0.06/030/archv.XXX_XXX.[ab] because you specified target experiment expt_03.0. Please note I link the "bin" directory one back the experiment folder in all region directories for example, if my current directory is TP5a0.06 it would be ln -sf ~/NERSC-CICE/bin .
+
+
+
 #  Quick start
 
 Based on mesh and coordinate MERCATOR netcdf files, the archive data files for grid and bathymetry are reconstructed on the same horizontal grid cells of NEMO model output. Having these files, we need to do following basic steps to create nesting archive files:
