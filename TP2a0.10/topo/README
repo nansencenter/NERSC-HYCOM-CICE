@@ -1,0 +1,5 @@
+
+#  topography for different version
+
+01:  initially interpolated topography from dataset
+02: combination of the initial 01 topograpy and the native NEMO topography using nesting boundary, which is named by depth_TP2a0.10_02.[ab].
