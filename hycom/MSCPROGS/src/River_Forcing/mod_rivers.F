@@ -365,7 +365,7 @@
       real, intent(in), dimension(idm,jdm) :: modlon, modlat
 
       logical riv_active,ex, riv_banned
-      character(len=60) riv_string
+      character(len=80) riv_string
       real riv_annual
       real riv_flux(12)
       real riv_lat,riv_lon
@@ -389,8 +389,9 @@
 
       k=1
       do m=1,10000
-         read(18,'(l1,t3,a60)',end=100,err=100)riv_active,riv_string
-         read(18,'(f10.1,12f8.5)')riv_annual,(riv_flux(i),i=1,12)
+         read(18,'(l1,t3,a80)',end=100,err=100)riv_active,riv_string
+        ! read(18,'(f10.1,12f8.5)')riv_annual,(riv_flux(i),i=1,12)
+         read(18,'(f12.5,12f8.5)')riv_annual,(riv_flux(i),i=1,12)
          read(18,'(2f9.2)')riv_lat,riv_lon
          riv_banned=.false.
 
