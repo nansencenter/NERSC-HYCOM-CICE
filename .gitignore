@@ -342,6 +342,9 @@ hycom/hycom_ALL/hycom_2.2.72_ALL/relax/src_2.2.35/z_woa_tracer
 hycom/hycom_ALL/hycom_2.2.72_ALL/relax/src_2.2.35/nemo_archvz
 hycom/hycom_ALL/hycom_2.2.72_ALL/relax/src_2.2.35/relaxi_archvz
 hycom/hycom_ALL/hycom_2.2.72_ALL/relax/src_2.2.35/z_woa_dynamic
+hycom/hycom_ALL/hycom_2.2.72_ALL/relax/src_2.2.35/Make_nemo_archvz_modified
+hycom/hycom_ALL/hycom_2.2.72_ALL/relax/src_2.2.35/Make_relaxi_nemo
+hycom/hycom_ALL/hycom_2.2.72_ALL/relax/src_2.2.35/nemo_archvz_modified
 hycom/hycom_ALL/hycom_2.2.72_ALL/topo/src_2.2.72/Make_tiles
 hycom/hycom_ALL/hycom_2.2.72_ALL/topo/src_2.2.72/topo_tiles
 hycom/hycom_ALL/hycom_2.2.72_ALL/topo/src_2.2.72/topo_zthin
@@ -762,6 +765,8 @@ hycom/hycom_ALL/hycom_2.2.72_ALL/subregion/src_2.2.12/sub_grid
 hycom/hycom_ALL/hycom_2.2.72_ALL/subregion/src_2.2.12/sub_topog.f
 hycom/hycom_ALL/hycom_2.2.72_ALL/subregion/src_2.2.12/sub_topog_panam.f
 hycom/hycom_ALL/hycom_2.2.72_ALL/subregion/src_2.2.12/subregion.f
+hycom/hycom_ALL/hycom_2.2.72_ALL/subregion/src_2.2.12/Make_isubaregion_modified
+hycom/hycom_ALL/hycom_2.2.72_ALL/subregion/src_2.2.12/isubaregion_modified
 hycom/hycom_ALL/hycom_2.2.72_ALL/topo/src_2.2.72/Make_1d
 hycom/hycom_ALL/hycom_2.2.72_ALL/topo/src_2.2.72/Make_2d
 hycom/hycom_ALL/hycom_2.2.72_ALL/topo/src_2.2.72/Make_bathy_02min
