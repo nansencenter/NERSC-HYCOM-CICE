@@ -1,6 +1,1 @@
-Bathymetry dumped by matlab(modified by addhuge.py)
-
-
-
-
-min,max depth =       6.019   5009.430
+depth_TP2a0.10_02.b
