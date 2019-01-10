@@ -393,11 +393,11 @@ contains
          synrelhum(ix,jy) = synrelhum(ix,jy)+ran1%relhum(ix,jy)
          synslp   (ix,jy) = synslp   (ix,jy)+ran1%slp   (ix,jy)
          !synprecip(ix,jy) = synprecip(ix,jy)+ran1%precip(ix,jy)
+         !synprecip(ix,jy) = max(synprecip(ix,jy),0.0)
          ! replaced with lognormal precip by Jiping 
          synprecip(ix,jy) = synprecip(ix,jy)*exp(ran1%precip(ix,jy) &
                            -0.5*vars%precip**2)  
          synrelhum(ix,jy) = min(max(synrelhum(ix,jy),0.0),1.0)
-         !synprecip(ix,jy) = max(synprecip(ix,jy),0.0)
          synwndspd(ix,jy) = max(synwndspd(ix,jy),0.0)
       end do
       end do
@@ -459,11 +459,11 @@ contains
          synwndspd(ix,jy) = synwndspd(ix,jy)+ran1%wndspd(ix,jy)
          synrelhum(ix,jy) = synrelhum(ix,jy)+ran1%relhum(ix,jy)
          !synprecip(ix,jy) = synprecip(ix,jy)+ran1%precip(ix,jy)
+         !synprecip(ix,jy) = max(synprecip(ix,jy),0.0)
          ! replaced with lognormal precip by Jiping 
          synprecip(ix,jy) = synprecip(ix,jy)*exp(ran1%precip(ix,jy)  &
                            -0.5*vars%precip**2)  
          synrelhum(ix,jy) = min(max(synrelhum(ix,jy),0.0),1.0)
-         !synprecip(ix,jy) = max(synprecip(ix,jy),0.0)
          synwndspd(ix,jy) = max(synwndspd(ix,jy),0.0)
 
       !end if
