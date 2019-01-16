@@ -29,6 +29,7 @@ module mod_hycom_fabm
    public hycom_fabm_configure, hycom_fabm_allocate, hycom_fabm_initialize, hycom_fabm_initialize_state, hycom_fabm_update
    public hycom_fabm_relax_init, hycom_fabm_relax_rewind, hycom_fabm_relax_skmonth, hycom_fabm_relax_read, hycom_fabm_relax
    public hycom_fabm_input_init, hycom_fabm_input_update
+   public hycom_fabm_nest_next, hycom_fabm_nest_read, hycom_fabm_nest_update
    public hycom_fabm_allocate_mean_output, hycom_fabm_zero_mean_output, hycom_fabm_increment_mean_output, hycom_fabm_end_mean_output, hycom_fabm_write_mean_output
    public fabm_surface_state, fabm_bottom_state
 
@@ -88,15 +89,21 @@ module mod_hycom_fabm
    end type type_input
    type (type_input), pointer, save :: first_input => null()
 
+   integer, allocatable :: istate_dev(:)
+   integer :: nested_number
+   character(len=attribute_length), allocatable :: nested_name_dev(:)
+   real, allocatable :: nested_data_dev(:,:,:,:,:) ! i,j,k,mn,state
+   character(len=attribute_length) :: nested_variables(256)
+   logical :: nested_bio
 contains
 
     subroutine hycom_fabm_configure()
       integer :: configuration_method
       logical :: file_exists
       integer, parameter :: namlst = 9000
-      integer :: ios
+      integer :: ios, ivar, istate, nestn
       character(len=*), parameter :: path = '../hycom_fabm.nml'
-      namelist /hycom_fabm/ do_interior_sources, do_bottom_sources, do_surface_sources, do_vertical_movement
+      namelist /hycom_fabm/ do_interior_sources, do_bottom_sources, do_surface_sources, do_vertical_movement, nested_variables
 
       ! Read coupler configuration
       do_interior_sources = .true.
@@ -104,6 +111,7 @@ contains
       do_surface_sources = .true.
       do_vertical_movement = .true.
       do_check_state = .false.
+      nested_variables = ''
       inquire(file='../hycom_fabm.nml', exist=file_exists)
       if (file_exists) then
         write (*,*) 'Reading HYCOM-FABM coupler configuration from '//path
@@ -130,9 +138,27 @@ contains
         allocate(fabm_model)
         call fabm_create_model_from_yaml_file(fabm_model, '../fabm.yaml')
       end select
+
+      nested_number=0
+      do ivar=1, size(nested_variables)
+        if (nested_variables(ivar) .ne. '') nested_number=nested_number+1
+        if (nested_variables(ivar) == '') cycle
+      enddo
+
+      nested_bio = .false. ! by default, biogeochemical nesting is turned off. If "hycom_fabm.nml" passes nested variables, sets .true.
+      if ( nested_number > 0 ) nested_bio = .true.
+
+      allocate(istate_dev(nested_number))
+      do nestn = 1,nested_number
+        do istate=1, size(fabm_model%state_variables)
+        if (nested_variables(nestn) == fabm_model%state_variables(istate)%name) istate_dev(nestn) = istate
+        enddo
+      enddo
+      
     end subroutine hycom_fabm_configure
 
     subroutine hycom_fabm_allocate()
+
         allocate(swflx_fabm(ii, jj))
         allocate(bottom_stress(ii, jj))
         allocate(mask(ii, jj, kk, 2))
@@ -143,6 +169,7 @@ contains
         allocate(fabm_bottom_state(1-nbdy:idm+nbdy, 1-nbdy:jdm+nbdy, 2, size(fabm_model%bottom_state_variables)))
         allocate(fabm_surface_state_old(1-nbdy:idm+nbdy, 1-nbdy:jdm+nbdy, size(fabm_model%surface_state_variables)))
         allocate(fabm_bottom_state_old(1-nbdy:idm+nbdy, 1-nbdy:jdm+nbdy, size(fabm_model%bottom_state_variables)))
+        allocate(nested_data_dev(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kknest,2,nested_number))
     end subroutine hycom_fabm_allocate
 
     subroutine hycom_fabm_initialize()
@@ -627,7 +654,7 @@ contains
         end do
     end do
 #endif
-
+!write (*,*) 'hycom_fabm_after_vertical', nstep, time
       do k=1,kk
         do j=1,jj
           call fabm_get_light_extinction(fabm_model, 1, ii, j, k, extinction)
@@ -646,7 +673,7 @@ contains
             call fabm_get_light(fabm_model, 1, kk, i, j)
         end do
       end do
-
+!write (*,*) 'hycom_fabm_after_light', nstep, time
       ! Compute bottom source terms
       if (do_bottom_sources) then
       do j=1,jj
@@ -656,14 +683,14 @@ contains
         do i=1,ii
           if (kbottom(i, j, n) > 0) then
             fabm_bottom_state(i, j, n, :) = fabm_bottom_state(i, j, n, :) + delt1 * sms_bt(i, :) ! update sediment layer
-            if ( dp(i, j, kbottom(i,j,n), n)/onem >= 6.0 ) then ! check if the bottom layer is thicker than 10 meters, if so, apply the flux as usual (I will decrease the criteria in time)
+            if ( dp(i, j, kbottom(i,j,n), n)/onem >= 5.0 ) then ! check if the bottom layer is thicker than 10 meters, if so, apply the flux as usual (I will decrease the criteria in time)
               tracer(i, j, kbottom(i,j,n), n, :) = tracer(i, j, kbottom(i,j,n), n, :) + delt1 * flux(i, :)/dp(i, j, kbottom(i,j,n), n)*onem
             else ! in case less than 10 meters, to avoid accumulation at the bottom thin layers, distribute the flux into multiple layers that add up to > 10 meters thickness
               hbottom = 0
               nbottom = 0
               do k = kbottom(i,j,n),1,-1
                 hbottom = hbottom + dp(i ,j , k, n)/onem
-                if ( hbottom >= 6.0 ) exit
+                if ( hbottom >= 5.0 ) exit
                 nbottom = nbottom + 1
               end do
               do k = kbottom(i,j,n)-nbottom , kbottom(i,j,n) ! distribute the flux to total height, and to multiple layers
@@ -681,7 +708,7 @@ contains
       end do
       if (do_check_state) call check_state('after bottom sources', n, .false.)
       end if
-
+!write (*,*) 'hycom_fabm_after_bottom', nstep, time
       ! Compute surface source terms
       if (do_surface_sources) then
       do j=1,jj
@@ -703,7 +730,7 @@ contains
       end do
       if (do_check_state) call check_state('after surface sources', n, .false.)
       end if
-
+!write (*,*) 'hycom_fabm_after_surface', nstep, time
       ! Compute source terms and update state
       if (do_interior_sources) then
       do k=1,kk
@@ -729,7 +756,7 @@ contains
       end do
       if (do_check_state) call check_state('after interior sources', n, .false.)
       end if
-
+!write (*,*) 'hycom_fabm_after_interior', nstep, time
       input => first_input
       do while (associated(input))
         if (input%role == role_river) then
@@ -749,14 +776,15 @@ contains
         end if
         input => input%next
       end do
-
+!write (*,*) 'hycom_fabm_after_correct', nstep, time
       call check_state('after hycom_fabm_update', n, .true.)
-
+!write (*,*) 'hycom_fabm_after_check_state', nstep, time
       ! Apply the Robert-Asselin filter to the surface and bottom state.
       ! Note that RA will be applied to the pelagic tracers within mod_tsavc - no need to do it here!
+!write (*,*) 'hycom_fabm_before_assalin', nstep, time
       fabm_surface_state(1:ii, 1:jj, m, :) = fabm_surface_state(1:ii, 1:jj, m, :) + 0.5*ra2fac*(fabm_surface_state_old(1:ii, 1:jj, :)+fabm_surface_state(1:ii, 1:jj, n, :)-2.0*fabm_surface_state(1:ii, 1:jj, m, :))
       fabm_bottom_state(1:ii, 1:jj, m, :) = fabm_bottom_state(1:ii, 1:jj, m, :) + 0.5*ra2fac*(fabm_bottom_state_old(1:ii, 1:jj, :)+fabm_bottom_state(1:ii, 1:jj, n, :)-2.0*fabm_bottom_state(1:ii, 1:jj, m, :))
-
+!write (*,*) 'hycom_fabm_update_after', nstep, time
     end subroutine hycom_fabm_update
 
     subroutine check_state(location, index, repair)
@@ -1151,5 +1179,170 @@ contains
       return
  117  format (a8,' =',i11,f11.3,i3,f7.3,1p2e16.7)
      end subroutine hycom_fabm_write_mean_output
+
+
+    subroutine hycom_fabm_nest_next()
+      integer :: i, j, k, nestn
+    if (nested_bio) then
+      do nestn = 1,nested_number
+        do k= 1,kk
+          do j= 1,jj
+            do i= 1,ii
+!              if (i==itest.and.j==jtest.and.k==1) then
+!                write(*,*)'HEREnext',nestn,nested_number,nested_data_dev(i,j,k,1,nestn),nested_data_dev(i,j,k,2,nestn)
+!              endif
+              nested_data_dev(i,j,k,1,nestn) = nested_data_dev(i,j,k,2,nestn)
+            enddo
+          enddo
+        enddo
+      enddo
+    end if ! nested_bio
+    end subroutine hycom_fabm_nest_next
+
+    subroutine hycom_fabm_nest_read(iyear,iday,ihour,lslot)
+      use mod_za
+      integer, intent(in) :: iyear,iday,ihour,lslot
+
+      integer, parameter :: iunit = 920
+      character(len=27) :: flnm
+      integer :: iline
+      character(len=80) :: cline
+      character(len=6) :: cvarin
+      integer :: ios,idmtst,jdmtst
+      !integer :: nestn,i,j,k
+    if (nested_bio) then
+      write(flnm,'("nest/archv_fabm.",i4.4,"_",i3.3,"_",i2.2)') iyear, iday, ihour
+
+      if (mnproc.eq.1) write (lp,*) 'hycom_fabm_nest_rdnest_in: ', flnm
+
+      call xcsync(flush_lp)
+
+      call zaiopf(flnm//'.a','old', iunit)
+      if (mnproc.eq.1) then  ! .b file from 1st tile only
+        open (unit=uoff+iunit, file=flnm//'.b', form='formatted', status='old', action='read')
+        do iline=1,7
+          read(uoff+iunit,'(a)') cline
+        end do
+      end if !1st tile
+
+      call zagetc(cline, ios, uoff+iunit)
+      read(cline,*) idmtst, cvarin
+      if (cvarin.ne.'idm   ') then
+        if (mnproc.eq.1) then
+          write(lp,*)
+          write(lp,*) 'error in hycom_fabm_nest_rdnest_in - input ',cvarin,' but should be idm   '
+          write(lp,*)
+        end if !1st tile
+        call xcstop('(hycom_fabm_nest_rdnest_in)')
+               stop '(hycom_fabm_nest_rdnest_in)'
+      end if
+      call zagetc(cline, ios, uoff+iunit)
+      read(cline,*) jdmtst, cvarin
+      if (cvarin.ne.'jdm   ') then
+        if (mnproc.eq.1) then
+          write(lp,*)
+          write(lp,*) 'error in hycom_fabm_nest_rdnest_in - input ',cvarin,' but should be jdm   '
+          write(lp,*)
+        end if !1st tile
+        call xcstop('(hycom_fabm_nest_rdnest_in)')
+               stop '(hycom_fabm_nest_rdnest_in)'
+      end if
+
+      if (idmtst.ne.itdm .or. jdmtst.ne.jtdm) then
+        if (mnproc.eq.1) then
+          write(lp,*)
+          write(lp,*) 'error in hycom_fabm_nest_rdnest_in - input idm,jdm not consistent with parameters'
+          write(lp,*) 'idm,jdm = ',itdm,  jtdm,  '  (dimensions.h)'
+          write(lp,*) 'idm,jdm = ',idmtst,jdmtst,'  (input)'
+          write(lp,*)
+        end if !1st tile
+        call xcstop('(hycom_fabm_nest_rdnest_in)')
+               stop '(hycom_fabm_nest_rdnest_in)'
+      end if
+
+      if (mnproc.eq.1) then  ! .b file from 1st tile only
+        read (uoff+iunit,*)
+      end if
+
+      do while (read_next_field())
+      end do
+
+      if     (mnproc.eq.1) then  ! .b file from 1st tile only
+      close( unit=uoff+iunit)
+      endif
+      call zaiocl(iunit)
+    end if ! nested_bio
+    contains
+
+      function read_next_field() result(success)
+        logical :: success
+
+        integer :: ios,k,nnstep,i, nestn
+        real :: hmina,hminb,hmaxa,hmaxb,timein,thet
+
+        success = .true.
+        call zagetc(cline, ios, uoff+iunit)
+        if (ios < 0) then
+          ! End of file reached
+          success = .false.
+          return
+        elseif (ios > 0) then
+          if (mnproc.eq.1) then
+            write(lp,*)
+            write(lp,*) 'error in mod_hycom_fabm::read_next_field - error reading next field'
+            write(lp,*) 'iunit,ios = ',iunit,ios
+            write(lp,*)
+          end if !1st tile
+          call xcstop('(rd_archive)')
+                 stop '(rd_archive)'
+        end if
+
+        ! Look up FABM variable with the name found in the nesting input.
+        do nestn=1,nested_number
+          if (cline(1:8) == nested_variables(nestn)) exit
+        enddo
+        if (nestn > nested_number) then
+          call zaiosk(iunit)
+          return
+        end if
+!          write(*,'(A8,1x,I1,1x,I1,1x,A8)')'HEREread',nestn,nested_number,nested_variables(nestn)
+          i = index(cline,'=')
+          read(cline(i+1:),*) nnstep,timein,k,thet,hminb,hmaxb
+
+          if (hminb.eq.hmaxb) then  !constant field
+            nested_data_dev(:,:,k,lslot,nestn) = hminb
+            call zaiosk(iunit)
+          else
+            call zaiord(nested_data_dev(:,:,k,lslot,nestn),ip,.false.,hmina,hmaxa,iunit)
+            if (abs(hmina-hminb).gt.abs(hminb)*1.e-4 .or.abs(hmaxa-hmaxb).gt.abs(hmaxb)*1.e-4) then
+              if (mnproc.eq.1) write(lp,'(/ a / a,1p3e14.6 / a,1p3e14.6 /)')'error - .a and .b files not consistent:', &
+                  '.a,.b min = ',hmina,hminb,hmina-hminb,'.a,.b max =',hmaxa,hmaxb,hmaxa-hmaxb
+              ! We could have stopped here, but that is commented out in
+              ! forfun.F/rd_archive
+            end if
+          end if
+      end function
+
+    end subroutine hycom_fabm_nest_read
+
+    subroutine hycom_fabm_nest_update(n)
+      integer, intent(in) :: n
+      integer :: i, j, k, nestn
+
+    if (nested_bio) then
+      do nestn=1,nested_number
+        do k=1,kk
+          do j=1,jj
+            do i=1,ii
+!              if (i==itest.and.j==jtest) write(*,*)'HEREupd',k,nestn,(delt1*rmunp(i,j)* &
+!                (nested_data_dev(i,j,k,ln0,nestn)*wn0 +nested_data_dev(i,j,k,ln1,nestn)*wn1) )/(1.0 + delt1*rmunp(i,j))
+              tracer(i,j,k,n,istate_dev(nestn))=(tracer(i,j,k,n,istate_dev(nestn)) + delt1*rmunp(i,j)* &
+                (nested_data_dev(i,j,k,ln0,nestn)*wn0 +nested_data_dev(i,j,k,ln1,nestn)*wn1) )/(1.0 + delt1*rmunp(i,j))
+            end do
+          end do
+        end do
+      enddo
+    end if ! nested_bio
+    end subroutine hycom_fabm_nest_update
 #endif
 end module
