@@ -2476,7 +2476,7 @@ c --- on exit, dtime0 and dtime1 are the associated times (wind days).
 c
       integer i,j,k
       real    albw,degtorad
-      real*8  dtime(899:910)
+      real*8  dtime(899:980)
 c
       integer, save :: icall = -1
 c
@@ -3715,6 +3715,9 @@ c
       use mod_xc           ! HYCOM communication interface
       use mod_cb_arrays  ! HYCOM saved arrays
       use mod_za           ! HYCOM I/O interface
+#ifdef _FABM_
+      use mod_hycom_fabm
+#endif
       implicit none
 c
       real*8    dtime
@@ -3820,6 +3823,9 @@ c ---   get the next set of fields.
             enddo
           enddo
         enddo
+#ifdef _FABM_
+        call hycom_fabm_nest_next()
+#endif
         dtime0 = dtime1
         iarch  = iarch + 1
         dtime1 = dtimei + dnestf*iarch
@@ -3846,6 +3852,9 @@ c
       use mod_xc         ! HYCOM communication interface
       use mod_cb_arrays  ! HYCOM saved arrays
       use mod_za         ! HYCOM I/O interface
+#ifdef _FABM_
+      use mod_hycom_fabm
+#endif
       implicit none
 c
       real*8    dtime
@@ -4172,6 +4181,9 @@ c
         call xcsync(flush_lp)
       endif
 c
+#ifdef _FABM_
+      call hycom_fabm_nest_read(iyear,iday,ihour,lslot)
+#endif
       return
       end
 c

@@ -644,8 +644,9 @@ else
 
    elif [ -f $D/${filename}_mem001.a -a -f $D/${filename}_mem001.b ]; then
       echo "using HYCOM restart files ${filename}_mem???.[ab] from data dir $D"
-      ${plink} $D/${filename}_mem*.a .
-      ${plink} $D/${filename}_mem*.b .
+      for f in ${plink} $D/${filename}_mem*.? ; do
+         ${plink} $f .
+      done
 
    else
       tellerror "Could not find HYCOM restart file ${filename}.[ab] in $D"
@@ -653,17 +654,19 @@ else
 
    #CICE restart
    if [ $ICEFLG -eq 2 ] ; then
-      filenameice="${ice_restart_dir}/${ice_restart_file}.${start_year}-${start_month}-${start_day}-${start_dsec}.nc"
+      filenameice="${ice_restart_dir}/${ice_restart_file}.${start_year}-${start_month}-${start_day}-${start_dsec}"
 
       # Try to fetch restart from data dir $D
-      if [ -f $D/${filenameice} ] ; then
-         echo "using CICE restart file ${filenameice} from data dir $D"
-         cp $D/${filenameice} ${filenameice}
-         echo $filenameice > ${ice_restart_pointer_file}
+      if [ -f $D/${filenameice}.nc ] ; then
+         echo "using CICE restart file ${filenameice}.nc from data dir $D"
+         cp $D/${filenameice}.nc ${filenameice}.nc
+         echo ${filenameice}.nc > ${ice_restart_pointer_file}
 
       elif [ -f $D/${filenameice}_mem001.nc ]; then
          echo "using CICE restart file ${filenameice}_mem???.nc from data dir $D"
-         ${plink} $D/${filenameice}_mem*.nc cice/.
+         for f in $D/${filenameice}_mem*.nc ; do
+            ${plink} $f cice/.
+         done
          echo ${filenameice}_mem000.nc > ${ice_restart_pointer_file}
 
       else

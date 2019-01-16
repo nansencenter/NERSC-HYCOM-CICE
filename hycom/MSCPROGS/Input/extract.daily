@@ -10,6 +10,9 @@ utot    01 01   T
 vtot    01 01   T 
 kinetic 01 01   T
 ssh     00 00   T 
+butot   00 00   T
+bvtot   00 00   T
+btemp   00 00   T
 fice    00 00   T
 hice    00 00   T 
 hsnw    00 00   T 
