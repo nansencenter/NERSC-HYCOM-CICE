@@ -19,15 +19,17 @@
 #
 module load basemap/1.0.7-intel-2017a-Python-2.7.13
 
-options=$(getopt -o g:m  -- "$@")
+options=$(getopt -o b:m  -- "$@")
 maxinc=50
+bio_path=""
 grid_type=native
 eval set -- "$options"
 while true; do
     case "$1" in
-    -g)
+    -b)
        shift;
-       grid_type=$1
+       bio_path=$1
+       #grid_type=$1
         ;;
     --)
         shift
@@ -97,7 +99,11 @@ for source_archv in $@ ; do
    #
    ########################
    if [ ${grid_type} == "native" ] ; then
+      if [[ "${bio_path}" == "" ]] ; then
       ${BASEDIR}/bin/nemo2archvz_native.py $mercator_gridfiles $source_archv --iexpt ${iexpt} --iversn ${iversn} --yrflag ${yrflag}
+      else
+      ${BASEDIR}/bin/nemo2archvz_native.py $mercator_gridfiles $source_archv --bio_path=${bio_path}  --iexpt ${iexpt} --iversn ${iversn} --yrflag ${yrflag}
+      fi
    else
       ${BASEDIR}/bin/nemo2archvz.py $1 $source_archv --iexpt ${iexpt} --iversn ${iversn} --yrflag ${yrflag}      
    fi
