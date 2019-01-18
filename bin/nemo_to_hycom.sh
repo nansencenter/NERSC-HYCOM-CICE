@@ -101,18 +101,34 @@ for source_archv in $@ ; do
    if [ ${grid_type} == "native" ] ; then
       if [[ "${bio_path}" == "" ]] ; then
       ${BASEDIR}/bin/nemo2archvz_native.py $mercator_gridfiles $source_archv --iexpt ${iexpt} --iversn ${iversn} --yrflag ${yrflag}
+      ########################
+      #
+      # (2) Based on generated archive files in (1) the grid and topography files are generated.
+      #
+      ########################
+      ${BASEDIR}/bin/archvz2hycom.sh $nest_expt  $(cat archvname.txt)
+      ########################
+   
       else
       ${BASEDIR}/bin/nemo2archvz_native.py $mercator_gridfiles $source_archv --bio_path=${bio_path}  --iexpt ${iexpt} --iversn ${iversn} --yrflag ${yrflag}
+      ########################
+      #
+      # (2) Based on generated archive files in (1) the grid and topography files are generated.
+      #
+      ########################
+      ${BASEDIR}/bin/archvz2hycom.sh $nest_expt  $(cat archvname.txt) -b 1
+      ########################
+
       fi
    else
       ${BASEDIR}/bin/nemo2archvz.py $1 $source_archv --iexpt ${iexpt} --iversn ${iversn} --yrflag ${yrflag}      
+      ########################
+      #
+      # (2) Based on generated archive files in (1) the grid and topography files are generated.
+      #
+      ########################
+      ${BASEDIR}/bin/archvz2hycom.sh $nest_expt  $(cat archvname.txt)
+      ########################
+
    fi
-   ########################
-   #
-   # (2) Based on generated archive files in (1) the grid and topography files are generated.
-   #
-   ########################
-   ${BASEDIR}/bin/archvz2hycom.sh $nest_expt  $(cat archvname.txt)
-   ########################
-   #
 done
