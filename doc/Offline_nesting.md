@@ -189,4 +189,9 @@ Where "width_of_relax_zone" and "efold_time_in_day" can be set, for example, to 
              └── 030             
                  └── archv.YYYY_ddd_hh.[ab]             
                  └── ports.nest            
-                 └── rmu.[ab]            
+                 └── rmu.[ab]   
+
+
+# Using BIO-NESTING
+Please use following example
+../bin/nemo_to_hycom.sh ../../TP5a0.06/expt_01.1/  /nird/projects/nird/NS9481K/MERCATOR_DATA/PHY/2007/ext-GLORYS12V1_1dAV_20070701_20070702_grid2D_R20070704.nc --bio_path=/nird/projects/nird/NS2993K/MERCATOR_DATA/BIO/2013

@@ -36,10 +36,15 @@ options=$(getopt -o m:u -- "$@")
     echo "Error: Incorrect options provided"
     exit 1
 }
+
 grid_type=native
+bio_flag=0
 eval set -- "$options"
 while true; do
     case "$1" in
+    -b)
+       bio_flag=$1
+        ;;
     -m)
        shift;
        grid_type=$1
@@ -51,6 +56,8 @@ while true; do
     esac
     shift
 done
+
+
 
 # Must be in expt dir to run this script
 #
@@ -137,7 +144,11 @@ export L="_L${target_kdm}"
 if [ "${grid_type}" == "native"  ] ; then
    echo "*******************************************************************************************************"
    prog_subreg=${HYCOM_ALL}/subregion/src/isubaregion_modified
-   prog_nemo=${HYCOM_ALL}/relax/src/nemo_archvz_modified
+   if [[ "${bio_flag}" -gt 0 ]] ; then
+      prog_nemo=${HYCOM_ALL}/relax/src/nemo_archvz_modified_bio
+   else
+      prog_nemo=${HYCOM_ALL}/relax/src/nemo_archvz_modified
+   fi
 else
    prog_subreg=${HYCOM_ALL}/subregion/src/isubaregion
    prog_nemo=${HYCOM_ALL}/relax/src/nemo_archvz
@@ -273,6 +284,7 @@ echo $logfile
 touch ${NEST}/${target_archv}.a
 touch ${NEST}/${target_archv}.b
 rm -rf ${NEST}/${target_archv}.*
+if [[ "${bio_flag}" -gt 0 ]] ; then
 ${prog_nemo}  >> $logfile  <<EOF
 ${N}/${target_archv}${L}.a
 ${NEST}/${target_archv}.a
@@ -284,6 +296,23 @@ T
 T
 T
 EOF
+else
+${prog_nemo}  >> $logfile  <<EOF
+${N}/${target_archv}${L}.a
+${NEST}/${target_archv}.a
+50
+${N}/ZL50.txt
+T
+T
+T
+T
+T
+T
+T
+T
+EOF
+fi
+
 
 fi
 
