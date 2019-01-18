@@ -109,6 +109,8 @@ export ICEFLG=$(blkdat_get blkdat.input iceflg)
 export MOMTYP=$(blkdat_get blkdat.input momtyp)
 export VISCO2=$(blkdat_get blkdat.input visco2)
 export VELDF2=$(blkdat_get blkdat.input veldf2)
+export IDM=$(blkdat_get blkdat.input idm)
+export JDM=$(blkdat_get blkdat.input jdm)
 # MOSTAFA: BEGIN
 export NRDFLG=$(blkdat_get blkdat.input nrdflg)
 export LWFLAG=`grep "'lwflag' =" blkdat.input | awk '{printf("%1d", $1)}'`
@@ -533,21 +535,6 @@ if [ $tmp -eq 1 -o $tmp2 -eq 1 ] ; then
    fi
 fi
 
-## MOSTAFA: BEGIN
-## copy flux off set files if flxoff=1
-#echo "FLXOFF =  $FLXOFF"
-#if [ $FLXOFF -eq 1 ] ; then
-# echo "===================================================="
-# echo " -------flux off set true: copy flux off set files-"
-#   cp $BASEDIR/force/offset/offlux.a forcing.offlux.a || tellerror "Could not get river .a file"
-#   cp $BASEDIR/force/offset/offlux.b forcing.offlux.b || tellerror "Could not get river .b file"
-# echo "===================================================="
-# else
-#    echo "fLxoff=F: No attempt to use flux offset correction" 
-#fi
-## TODO!: This part will be improved in furture
-## MOSTAFA
-
 #export waveSDIR=/work/shared/nersc/msc/STOKES/Globww3/tmp
 #export  waveSDIR=/work/shared/nersc/msc/STOKES/Globww3
 echo "===================================================="
@@ -560,7 +547,7 @@ if [ $STDFLG -eq 1 ] ; then
      forcing.tauwx.a  forcing.tauwx.b forcing.tauwy.a  forcing.tauwy.b \
      forcing.twomx.a  forcing.twomx.b forcing.twomy.a  forcing.twomy.b \
      forcing.t01.a    forcing.t01.b     ; do
- 
+
     echo "|--> linking to $waveSDIR/${foo}"
      ln -sf $waveSDIR/${foo} . ||  tellerror "Could not fetch stokes forcing"
  done
@@ -599,7 +586,8 @@ if [ $tmp2 -eq 1  ] ; then
 #      echo "Using file $nestdir/rmu_nest.[ab] for nesting: $nestdir/rmu_nest.[ab] -> ./rmu.[ab]"
 #      cp $nestdir/rmu_nest.a rmu.a       || tellerror "Could not get port file ${nestdir}/rmu_nest.a for nest relax"
 #      cp $nestdir/rmu_nest.b rmu.b       || tellerror "Could not get port file ${nestdir}/rmu_nest.b for nest relax"
-   if [ -f $nestdir/rmu.a -a -f $nestdir/rmu.b ] ; then
+#   fi
+  if [ -f $nestdir/rmu.a -a -f $nestdir/rmu.b ] ; then
       echo "Using file $nestdir/rmu.[ab] for nesting"
    else 
       tellerror "Could not find files $nestdir/rmu.[ab] for nest relaxation"
