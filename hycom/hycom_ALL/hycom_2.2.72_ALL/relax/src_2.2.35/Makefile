@@ -165,6 +165,8 @@ nemo_archvz:          $(MODS) nemo_archvz.o                 $(LIBS)
 nemo_archvz_modified:          $(MODS) nemo_archvz_modified.o                 $(LIBS)
 	$(LD) $(LDFLAGS) nemo_archvz_modified.o         $(MODS) $(LIBS) -o nemo_archvz_modified
 
+nemo_archvz_modified_bio:          $(MODS) nemo_archvz_modified_bio.o                 $(LIBS)
+	$(LD) $(LDFLAGS) nemo_archvz_modified_bio.o         $(MODS) $(LIBS) -o nemo_archvz_modified_bio
 
 
 zonal_field:     $(MODS) zonal_field.o            $(LIBS)

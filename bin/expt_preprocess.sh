@@ -109,6 +109,8 @@ export ICEFLG=$(blkdat_get blkdat.input iceflg)
 export MOMTYP=$(blkdat_get blkdat.input momtyp)
 export VISCO2=$(blkdat_get blkdat.input visco2)
 export VELDF2=$(blkdat_get blkdat.input veldf2)
+export IDM=$(blkdat_get blkdat.input idm)
+export JDM=$(blkdat_get blkdat.input jdm)
 # MOSTAFA: BEGIN
 export NRDFLG=$(blkdat_get blkdat.input nrdflg)
 export LWFLAG=`grep "'lwflag' =" blkdat.input | awk '{printf("%1d", $1)}'`
@@ -533,21 +535,6 @@ if [ $tmp -eq 1 -o $tmp2 -eq 1 ] ; then
    fi
 fi
 
-## MOSTAFA: BEGIN
-## copy flux off set files if flxoff=1
-#echo "FLXOFF =  $FLXOFF"
-#if [ $FLXOFF -eq 1 ] ; then
-# echo "===================================================="
-# echo " -------flux off set true: copy flux off set files-"
-#   cp $BASEDIR/force/offset/offlux.a forcing.offlux.a || tellerror "Could not get river .a file"
-#   cp $BASEDIR/force/offset/offlux.b forcing.offlux.b || tellerror "Could not get river .b file"
-# echo "===================================================="
-# else
-#    echo "fLxoff=F: No attempt to use flux offset correction" 
-#fi
-## TODO!: This part will be improved in furture
-## MOSTAFA
-
 #export waveSDIR=/work/shared/nersc/msc/STOKES/Globww3/tmp
 #export  waveSDIR=/work/shared/nersc/msc/STOKES/Globww3
 echo "===================================================="
@@ -560,7 +547,7 @@ if [ $STDFLG -eq 1 ] ; then
      forcing.tauwx.a  forcing.tauwx.b forcing.tauwy.a  forcing.tauwy.b \
      forcing.twomx.a  forcing.twomx.b forcing.twomy.a  forcing.twomy.b \
      forcing.t01.a    forcing.t01.b     ; do
- 
+
     echo "|--> linking to $waveSDIR/${foo}"
      ln -sf $waveSDIR/${foo} . ||  tellerror "Could not fetch stokes forcing"
  done
@@ -599,7 +586,8 @@ if [ $tmp2 -eq 1  ] ; then
 #      echo "Using file $nestdir/rmu_nest.[ab] for nesting: $nestdir/rmu_nest.[ab] -> ./rmu.[ab]"
 #      cp $nestdir/rmu_nest.a rmu.a       || tellerror "Could not get port file ${nestdir}/rmu_nest.a for nest relax"
 #      cp $nestdir/rmu_nest.b rmu.b       || tellerror "Could not get port file ${nestdir}/rmu_nest.b for nest relax"
-   if [ -f $nestdir/rmu.a -a -f $nestdir/rmu.b ] ; then
+#   fi
+  if [ -f $nestdir/rmu.a -a -f $nestdir/rmu.b ] ; then
       echo "Using file $nestdir/rmu.[ab] for nesting"
    else 
       tellerror "Could not find files $nestdir/rmu.[ab] for nest relaxation"
@@ -644,8 +632,9 @@ else
 
    elif [ -f $D/${filename}_mem001.a -a -f $D/${filename}_mem001.b ]; then
       echo "using HYCOM restart files ${filename}_mem???.[ab] from data dir $D"
-      ${plink} $D/${filename}_mem*.a .
-      ${plink} $D/${filename}_mem*.b .
+      for f in ${plink} $D/${filename}_mem*.? ; do
+         ${plink} $f .
+      done
 
    else
       tellerror "Could not find HYCOM restart file ${filename}.[ab] in $D"
@@ -653,17 +642,19 @@ else
 
    #CICE restart
    if [ $ICEFLG -eq 2 ] ; then
-      filenameice="${ice_restart_dir}/${ice_restart_file}.${start_year}-${start_month}-${start_day}-${start_dsec}.nc"
+      filenameice="${ice_restart_dir}/${ice_restart_file}.${start_year}-${start_month}-${start_day}-${start_dsec}"
 
       # Try to fetch restart from data dir $D
-      if [ -f $D/${filenameice} ] ; then
-         echo "using CICE restart file ${filenameice} from data dir $D"
-         cp $D/${filenameice} ${filenameice}
-         echo $filenameice > ${ice_restart_pointer_file}
+      if [ -f $D/${filenameice}.nc ] ; then
+         echo "using CICE restart file ${filenameice}.nc from data dir $D"
+         cp $D/${filenameice}.nc ${filenameice}.nc
+         echo ${filenameice}.nc > ${ice_restart_pointer_file}
 
       elif [ -f $D/${filenameice}_mem001.nc ]; then
          echo "using CICE restart file ${filenameice}_mem???.nc from data dir $D"
-         ${plink} $D/${filenameice}_mem*.nc cice/.
+         for f in $D/${filenameice}_mem*.nc ; do
+            ${plink} $f cice/.
+         done
          echo ${filenameice}_mem000.nc > ${ice_restart_pointer_file}
 
       else

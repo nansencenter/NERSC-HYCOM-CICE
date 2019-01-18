@@ -132,6 +132,7 @@ elif [ "${unamen:0:5}" == "alvin" ] ; then
 
 elif [ "${unamen:0:5}" == "elvis" ] ; then
    SITE="elvis"
+   MACROID=$ARCH.$SITE.$compiler
 elif [ "${unamen:0:5}" == "login" ] ; then # fram
    SITE="fram"
    MACROID=$ARCH.$SITE.$compiler

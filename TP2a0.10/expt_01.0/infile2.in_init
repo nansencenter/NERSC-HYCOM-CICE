@@ -9,7 +9,7 @@
   2.5 	'vwind ' = Variance in wind component 
   4.e-2	'vcloud' = Variance in clouds
   9.0 	'vtair ' = Variance in air temperature
-  1     'vprcp ' = Variance in precipitation
+  0.5   'vprcp ' = Variance in precipitation
   0.0 	'vrlhum' = Variance in relative humidity
   25.e4 'scorr ' = Horizontal radius of correlation (meters)
   2.0 	'tcorr ' = Temporal radius of correlation (days)

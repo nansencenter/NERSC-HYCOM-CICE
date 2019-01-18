@@ -15,8 +15,12 @@ import pyproj
 import os.path
 import time
 import cfunits
+import nemo_mesh_to_hycom
 import sys
 import shutil
+import glob
+from matplotlib import pyplot as plt
+
 
 # Hycom-ified NMO files. Approach:
 # 1) Create hycom archv files and topo/region files using this routine
@@ -25,9 +29,9 @@ import shutil
 # 4) Interpolate archive file to new region / experiment
 # 5) Remap archive files vertically
 # 6) Add montgomery potential in 1st layer to file
-#
-# Mostafa Bakhoday-Paskyabi (Mostafa.Bakhoday@nersc.no)
-#
+# 
+# Mostafa Bakhoday-Paskyabi, December 2018
+
 # Set up logger
 _loglevel=logging.INFO
 logger = logging.getLogger(__name__)
@@ -38,6 +42,7 @@ ch.setLevel(_loglevel)
 ch.setFormatter(formatter)
 logger.addHandler(ch)
 logger.propagate=False
+
 
 
 idm=4320
@@ -88,8 +93,10 @@ def u_to_hycom_u(field2d)  :
    return numpy.roll(field2d,1,axis=1)
 
 
+# nemo V at i,j -> HYCOM U at i,j+1. 
 def v_to_hycom_v(field2d,extrapolate="none")  :
    myfield=numpy.copy(field2d)
+   # For now the bottom row is just replicated
    myfield[1:,:] = myfield[:-1,:]
    
    return myfield
@@ -127,7 +134,6 @@ def arctic_patch_shift_down(field,jstep) :
    return field2
 
 
-# Estimate partial steps and layer in u-points
 def depth_u_points(depth,mbathy,gdepw) :
    depthip1  = periodic_i_shift_right(depth ,-1)    # nemo values at cell i+1
    mbathyip1 = periodic_i_shift_right(mbathy,-1)    # nemo values at cell i+1
@@ -135,13 +141,11 @@ def depth_u_points(depth,mbathy,gdepw) :
    mbathy_u=numpy.minimum(mbathy,mbathyip1)
    e3u_ps  =numpy.zeros(depthu.shape)
    J,I= numpy.where(mbathy_u>-1)
-   print mbathy_u.shape
    e3u_ps[J,I] = depthu[J,I] - gdepw[mbathy_u[J,I]]
    return mbathy_u,e3u_ps,depthu
 
 
       
-   # Estimate partial steps and layer in v-points
 def depth_v_points(depth,mbathy,gdepw) :
    depthjp1  = arctic_patch_shift_down(depth ,1)    # nemo values at cell j+1
    mbathyjp1 = arctic_patch_shift_down(mbathy,1)    # nemo values at cell j+1 
@@ -154,6 +158,7 @@ def depth_v_points(depth,mbathy,gdepw) :
 
 def sliced(field2d) :
    return field2d[sj_sel,si_sel]
+
 
 
 def read_mesh(filemesh):
@@ -172,7 +177,12 @@ def read_mesh(filemesh):
    e3w_ps = sliced(ncidz.variables["e3w_ps"] [0,:,:])     # Partial steps of w cell
    mbathy = sliced(ncidz.variables["mbathy"] [0,:,:])     # bathy index
    hdepw  = sliced(ncidz.variables["hdepw"]  [0,:,:])     # Total depth of w points
-   return gdept,gdepw,e3t_ps,e3w_ps,mbathy,hdepw,depth
+   plon = sliced(ncidz.variables["nav_lon"][:,:])     # bathy index
+   plat  = sliced(ncidz.variables["nav_lat"][:,:])     # Total depth of w points
+
+   return gdept,gdepw,e3t_ps,e3w_ps,mbathy,hdepw,depth,plon,plat
+
+
 
 def make_grid(filemesh):
 
@@ -262,7 +272,223 @@ def make_grid(filemesh):
    shutil.move("regional.grid.a","../topo/regional.grid.a")
    shutil.move("regional.grid.b","../topo/regional.grid.b")
 
-def main(filemesh,grid2dfiles,first_j=0,mean_file=False,iexpt=10,iversn=22,yrflag=3,makegrid=None) :
+def search_biofile(bio_path,dt):
+
+   logger.info("BIO")
+   # filename format MERCATOR-BIO-14-2013-01-05-00
+   lst=glob.glob(bio_path+"/MERCATOR-BIO-14-%s*.nc"%str(dt[:-2]))
+   df = numpy.zeros(len(lst))*numpy.nan 
+   for num,myfile in enumerate(lst):
+      tmp = datetime.datetime.strptime(myfile[-16:-6],'%Y-%M-%d')-datetime.datetime.strptime(dt,'%Y-%M-%d')
+      df[num]=tmp.days
+   val, idx = min((val, idx) for (idx, val) in enumerate(numpy.abs(df)))
+   return idx,lst[idx]
+
+def check_inputs(x, y, Z, points, mode, bounds_error):
+    """Check inputs for interpolate2d function
+    """
+
+    msg = 'Only mode "linear" and "constant" are implemented. I got %s' % mode
+    if mode not in ['linear', 'constant']:
+        raise RuntimeError(msg)
+
+    try:
+        x = numpy.array(x)
+    except Exception, e:
+        msg = ('Input vector x could not be converted to numpy array: '
+               '%s' % str(e))
+        raise Exception(msg)
+
+    try:
+        y = numpy.array(y)
+    except Exception, e:
+        msg = ('Input vector y could not be converted to numpy array: '
+               '%s' % str(e))
+        raise Exception(msg)
+
+    msg = ('Input vector x must be monotoneously increasing. I got '
+           'min(x) == %.15f, but x[0] == %.15f' % (min(x), x[0]))
+    if not min(x) == x[0]:
+        raise RuntimeError(msg)
+
+    msg = ('Input vector y must be monotoneously increasing. '
+           'I got min(y) == %.15f, but y[0] == %.15f' % (min(y), y[0]))
+    if not min(y) == y[0]:
+        raise RuntimeError(msg)
+
+    msg = ('Input vector x must be monotoneously increasing. I got '
+           'max(x) == %.15f, but x[-1] == %.15f' % (max(x), x[-1]))
+    if not max(x) == x[-1]:
+        raise RuntimeError(msg)
+
+    msg = ('Input vector y must be monotoneously increasing. I got '
+           'max(y) == %.15f, but y[-1] == %.15f' % (max(y), y[-1]))
+    if not max(y) == y[-1]:
+        raise RuntimeError(msg)
+
+    try:
+        Z = numpy.array(Z)
+        m, n = Z.shape
+    except Exception, e:
+        msg = 'Z must be a 2D numpy array: %s' % str(e)
+        raise Exception(msg)
+
+    Nx = len(x)
+    Ny = len(y)
+    msg = ('Input array Z must have dimensions %i x %i corresponding to the '
+           'lengths of the input coordinates x and y. However, '
+           'Z has dimensions %i x %i.' % (Nx, Ny, m, n))
+    if not (Nx == m and Ny == n):
+        raise RuntimeError(msg)
+
+    # Get interpolation points
+    points = numpy.array(points)
+    xi = points[:, 0]
+    eta = points[:, 1]
+
+    if bounds_error:
+        msg = ('Interpolation point %f was less than the smallest value in '
+               'domain %f and bounds_error was requested.' % (xi[0], x[0]))
+        if xi[0] < x[0]:
+            raise Exception(msg)
+
+        msg = ('Interpolation point %f was greater than the largest value in '
+               'domain %f and bounds_error was requested.' % (xi[-1], x[-1]))
+        if xi[-1] > x[-1]:
+            raise Exception(msg)
+
+        msg = ('Interpolation point %f was less than the smallest value in '
+               'domain %f and bounds_error was requested.' % (eta[0], y[0]))
+        if eta[0] < y[0]:
+            raise Exception(msg)
+
+        msg = ('Interpolation point %f was greater than the largest value in '
+               'domain %f and bounds_error was requested.' % (eta[-1], y[-1]))
+        if eta[-1] > y[-1]:
+            raise Exception(msg)
+
+    return x, y, Z, xi, eta
+
+
+def interpolate2d(x, y, Z, points, mode='linear', bounds_error=False):
+    """Fundamental 2D interpolation routine
+    Input
+        x: 1D array of x-coordinates of the mesh on which to interpolate
+        y: 1D array of y-coordinates of the mesh on which to interpolate
+        Z: 2D array of values for each x, y pair
+        points: Nx2 array of coordinates where interpolated values are sought
+        mode: Determines the interpolation order. Options are
+              'constant' - piecewise constant nearest neighbour interpolation
+              'linear' - bilinear interpolation using the four
+                         nearest neighbours (default)
+        bounds_error: Boolean flag. If True (default) an exception will
+                      be raised when interpolated values are requested
+                      outside the domain of the input data. If False, nan
+                      is returned for those values
+    Output
+        1D array with same length as points with interpolated values
+    Notes
+        Input coordinates x and y are assumed to be monotonically increasing,
+        but need not be equidistantly spaced.
+        Z is assumed to have dimension M x N, where M = len(x) and N = len(y).
+        In other words it is assumed that the x values follow the first
+        (vertical) axis downwards and y values the second (horizontal) axis
+        from left to right.
+        If this routine is to be used for interpolation of raster grids where
+        data is typically organised with longitudes (x) going from left to
+        right and latitudes (y) from left to right then user
+        interpolate_raster in this module
+    """
+
+    # Input checks
+    x, y, Z, xi, eta = check_inputs(x, y, Z, points, mode, bounds_error)
+
+    # Identify elements that are outside interpolation domain or NaN
+    outside = (xi < x[0]) + (eta < y[0]) + (xi > x[-1]) + (eta > y[-1])
+    outside += numpy.isnan(xi) + numpy.isnan(eta)
+
+    inside = ~outside
+    xi = xi[inside]
+    eta = eta[inside]
+
+    # Find upper neighbours for each interpolation point
+    idx = numpy.searchsorted(x, xi, side='left')
+    idy = numpy.searchsorted(y, eta, side='left')
+
+    # Internal check (index == 0 is OK)
+    msg = ('Interpolation point outside domain. This should never happen. '
+           'Please email Ole.Moller.Nielsen@gmail.com')
+    if len(idx) > 0:
+        if not max(idx) < len(x):
+            raise RuntimeError(msg)
+    if len(idy) > 0:
+        if not max(idy) < len(y):
+            raise RuntimeError(msg)
+
+    # Get the four neighbours for each interpolation point
+    x0 = x[idx - 1]
+    x1 = x[idx]
+    y0 = y[idy - 1]
+    y1 = y[idy]
+
+    z00 = Z[idx - 1, idy - 1]
+    z01 = Z[idx - 1, idy]
+    z10 = Z[idx, idy - 1]
+    z11 = Z[idx, idy]
+
+    # Coefficients for weighting between lower and upper bounds
+    oldset = numpy.seterr(invalid='ignore')  # Suppress warnings
+    alpha = (xi - x0) / (x1 - x0)
+    beta = (eta - y0) / (y1 - y0)
+    numpy.seterr(**oldset)  # Restore
+
+    if mode == 'linear':
+        # Bilinear interpolation formula
+        dx = z10 - z00
+        dy = z01 - z00
+        z = z00 + alpha * dx + beta * dy + alpha * beta * (z11 - dx - dy - z00)
+    else:
+        # Piecewise constant (as verified in input_check)
+
+        # Set up masks for the quadrants
+        left = alpha < 0.5
+        right = -left
+        lower = beta < 0.5
+        upper = -lower
+
+        lower_left = lower * left
+        lower_right = lower * right
+        upper_left = upper * left
+
+        # Initialise result array with all elements set to upper right
+        z = z11
+
+        # Then set the other quadrants
+        z[lower_left] = z00[lower_left]
+        z[lower_right] = z10[lower_right]
+        z[upper_left] = z01[upper_left]
+
+    # Self test
+    if len(z) > 0:
+        mz = numpy.nanmax(z)
+        mZ = numpy.nanmax(Z)
+        msg = ('Internal check failed. Max interpolated value %.15f '
+               'exceeds max grid value %.15f ' % (mz, mZ))
+        if not(numpy.isnan(mz) or numpy.isnan(mZ)):
+            if not mz <= mZ:
+                raise RuntimeError(msg)
+
+    # Populate result with interpolated values for points inside domain
+    # and NaN for values outside
+    r = numpy.zeros(len(points))
+    r[inside] = z
+    r[outside] = numpy.nan
+
+    return r
+
+
+
+def main(filemesh,grid2dfiles,first_j=0,mean_file=False,iexpt=10,iversn=22,yrflag=3,makegrid=None,bio_path=None) :
 
    if mean_file :
       fnametemplate="archm.%Y_%j_%H"
@@ -270,11 +496,11 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=False,iexpt=10,iversn=22,yrfla
       fnametemplate="archv.%Y_%j_%H"
    itest=1
    jtest=200
-   gdept,gdepw,e3t_ps,e3w_ps,mbathy,hdepw,depth=read_mesh(filemesh)
+   gdept,gdepw,e3t_ps,e3w_ps,mbathy,hdepw,depth,plon,plat=read_mesh(filemesh)
    if makegrid is not None: 
       logger.info("Making NEMO grid & bathy [ab] files ...")
       make_grid(filemesh)
-
+   print plon.min(),plon.max()
    mbathy = mbathy -1                       # python indexing starts from 0
    nlev   = gdept.size
 
@@ -327,7 +553,41 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=False,iexpt=10,iversn=22,yrfla
       tmp3=cfunits.Units.conform(time,tmp,tmp2)                                       # Transform to new new unit 
       tmp3=int(numpy.round(tmp3))
       mydt = datetime.datetime(refy,refm,refd,0,0,0) + datetime.timedelta(hours=tmp3) # Then calculate dt. Phew!
-
+      if bio_path:
+         jdm,idm=numpy.shape(plon)
+         points = numpy.transpose(((plat.flatten(),plon.flatten())))
+         delta = mydt.strftime( '%Y-%m-%d')
+         # filename format MERCATOR-BIO-14-2013-01-05-00
+         idx,biofname=search_biofile(bio_path,delta)
+         if idx >7: 
+            msg="No available BIO file within a week difference with PHY"
+	    logger.error(msg)
+            raise ValueError,msg
+         logger.info("BIO file %s reading & interpolating to 1/12 deg grid cells ..."%biofname)
+         ncidb=netCDF4.Dataset(biofname,"r")
+         blon=ncidb.variables["longitude"][:];
+         blat=ncidb.variables["latitude"][:]
+         no3=ncidb.variables["NO3"][0,:,:,:];
+         no3[numpy.abs(no3)>1e+10]=numpy.nan
+         po4=ncidb.variables["PO4"][0,:,:,:]
+         si=ncidb.variables["Si"][0,:,:,:]
+         po4[numpy.abs(po4)>1e+10]=numpy.nan
+         si[numpy.abs(si)>1e+10]=numpy.nan
+         # TODO: Ineed to improve this part
+         nz,ny,nx=no3.shape
+         dummy=numpy.zeros((nz,ny,nx+1))
+         dummy[:,:,:nx]=no3;dummy[:,:,-1]=no3[:,:,-1]
+         no3=dummy
+         dummy=numpy.zeros((nz,ny,nx+1))
+         dummy[:,:,:nx]=po4;dummy[:,:,-1]=po4[:,:,-1]
+         po4=dummy
+         dummy=numpy.zeros((nz,ny,nx+1))
+         dummy[:,:,:nx]=si;dummy[:,:,-1]=si[:,:,-1]
+         si=dummy
+         dummy=numpy.zeros((nx+1))
+         dummy[:nx]=blon
+         blon=dummy
+         blon[-1]=-blon[0]
       # Read and calculculate U in hycom U-points. 
       logger.info("gridU, gridV, gridT & gridS  file")
       ncidu=netCDF4.Dataset(fileu,"r")
@@ -372,7 +632,6 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=False,iexpt=10,iversn=22,yrfla
       dsumv[J,I] = dsumv[J,I] + e3v_ps[J,I]
       dsumv=numpy.where(abs(dsumv)<1e-2,0.05,dsumv)
       vbaro=numpy.where(dsumv>.1,vsum/dsumv,0.)
-
       fnametemplate="archv.%Y_%j"
       deltat=datetime.datetime(refy,refm,refd,0,0,0)+datetime.timedelta(hours=tmp3)
       oname=deltat.strftime(fnametemplate)+"_00"
@@ -417,7 +676,20 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=False,iexpt=10,iversn=22,yrfla
       outfile.write_field(ubaro                 ,iu,"u_btrop" ,0,model_day,0,0) # u: nemo in cell i is hycom in cell i+1
       outfile.write_field(vbaro                 ,iv,"v_btrop" ,0,model_day,0,0) # v: nemo in cell j is hycom in cell j+1
       for k in numpy.arange(u.shape[0]) :
-         if k%10==0 : logger.info("Writing 3D variables, level %d of %d"%(k+1,u.shape[0]))
+         if bio_path:
+	    no3k=interpolate2d(blat, blon, no3[k,:,:], points)
+            no3k = maplev(numpy.reshape(no3k,[jdm,idm]))
+            po4k=interpolate2d(blat, blon, po4[k,:,:], points)
+            po4k = maplev(numpy.reshape(po4k,[jdm,idm]))
+            si_k=interpolate2d(blat, blon, si[k,:,:], points)
+            si_k = maplev(numpy.reshape(si_k,[jdm,idm]))
+#            fig = plt.figure(figsize=(16,8));plt.subplot(121);plt.pcolormesh(no3k,vmin=0,vmax=20);plt.colorbar();plt.show();
+#            plt.subplot(122);plt.pcolormesh(no3[0,:,:],vmin=0,vmax=20);plt.colorbar();plt.show();fig.savefig('intrplolated_no3.png')
+#            exit(0)
+         if bio_path :
+            if k%10==0 : logger.info("Writing 3D variables including BIO, level %d of %d"%(k+1,u.shape[0]))
+         else:
+            if k%10==0 : logger.info("Writing 3D variables, level %d of %d"%(k+1,u.shape[0]))
          ul = numpy.squeeze(u[k,:,:]) - ubaro # Baroclinic velocity
          vl = numpy.squeeze(v[k,:,:]) - vbaro # Baroclinic velocity
 
@@ -447,15 +719,21 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=False,iexpt=10,iversn=22,yrfla
 
             tl[K] = tl_above[K]
 
+
          onem=9806.
          outfile.write_field(ul      ,iu,"u-vel.",0,model_day,k+1,0) # u: nemo in cell i is hycom in cell i+1
          outfile.write_field(vl      ,iv,"v-vel.",0,model_day,k+1,0) # v: nemo in cell j is hycom in cell j+1
          outfile.write_field(dtl*onem,ip,"thknss",0,model_day,k+1,0)
          outfile.write_field(tl      ,ip,"temp"  ,0,model_day,k+1,0)
          outfile.write_field(sl      ,ip,"salin" ,0,model_day,k+1,0)
+         if bio_path :
+            outfile.write_field(no3k      ,ip,"Eco_no3"  ,0,model_day,k+1,0)
+            outfile.write_field(po4k      ,ip,"Eco_pho" ,0,model_day,k+1,0)
+            outfile.write_field(si_k      ,ip,"Echo_sil" ,0,model_day,k+1,0)
 
          tl_above=numpy.copy(tl)
          sl_above=numpy.copy(sl)
+         
 
       # TODO: Process ice data
       ncid2d.close()
@@ -464,8 +742,7 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=False,iexpt=10,iversn=22,yrfla
       ncids.close()
       ncidu.close()
       ncidv.close()
-
-      logger.info("Finished writing %s.[ab] "% mydt.strftime(fnametemplate))
+      ncidb.close()
    nemo_mesh = []
 
 
@@ -485,7 +762,7 @@ if __name__ == "__main__" :
    parser.add_argument('--makegrid',    type=int,  help="    ")
    parser.add_argument('--iversn',   type=int,default=22,  help="    ")
    parser.add_argument('--yrflag',   type=int,default=3,   help="    ")
+   parser.add_argument('--bio_path',   type=str,   help="    ")
 
    args = parser.parse_args()
-   main(args.meshfile,args.grid2dfile,first_j=args.first_j,mean_file=args.mean,iexpt=args.iexpt,makegrid=args.makegrid,iversn=args.iversn,yrflag=args.yrflag)
-
+   main(args.meshfile,args.grid2dfile,first_j=args.first_j,mean_file=args.mean,iexpt=args.iexpt,makegrid=args.makegrid,iversn=args.iversn,yrflag=args.yrflag,bio_path=args.bio_path)

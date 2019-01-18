@@ -45,7 +45,8 @@ if [ ! -f $BASEDIR/topo/regional.grid.b ] ; then
 fi
 
 mkdir $BASEDIR/expt_$exptnew
-cp $BASEDIR/expt_$exptold/* $BASEDIR/expt_$exptnew/
+rsync -av --exclude 'data' --exclude 'log' --exclude 'SCRATCH' $BASEDIR/expt_$exptold/* $BASEDIR/expt_$exptnew/
+
 #cp -r $BASEDIR/expt_$exptold/subprogs $BASEDIR/expt_$exptnew/subprogs
 mkdir $BASEDIR/expt_$exptnew/log
 mkdir $BASEDIR/expt_$exptnew/data
