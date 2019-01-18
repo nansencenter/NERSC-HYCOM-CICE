@@ -614,7 +614,9 @@ contains
       real :: sms_sf(ii, size(fabm_model%surface_state_variables))
       type (type_input), pointer :: input
 
-      write (*,*) 'hycom_fabm_update', nstep, time
+            if (mnproc.eq.1) write (lp,*) 'hycom_fabm_update', nstep, time
+            call xcsync(flush_lp)
+
 !
 ! --- leapfrog time step.
 !
