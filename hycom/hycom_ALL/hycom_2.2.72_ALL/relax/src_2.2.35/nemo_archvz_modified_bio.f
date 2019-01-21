@@ -1041,15 +1041,15 @@ C   Write bio [ab] files
 C
         if     (flag_no3.ne."NONE") then
             CALL ZAIOWR(NO3M,  MSK,.TRUE.,  XMIN,XMAX, 211, .FALSE.)
-           WRITE(211,4201) 'Eco_no3    ',MONTH,TIME,K,SIGMA(K),XMIN,XMAX
+           WRITE(211,4201) 'ECO_no3    ',MONTH,TIME,K,SIGMA(K),XMIN,XMAX
         endif
         if     (flag_po4.ne."NONE") then
             CALL ZAIOWR(PO4M,  MSK,.TRUE.,  XMIN,XMAX, 211, .FALSE.)
-           WRITE(211,4201) 'Eco_pho    ',MONTH,TIME,K,SIGMA(K),XMIN,XMAX
+           WRITE(211,4201) 'ECO_pho    ',MONTH,TIME,K,SIGMA(K),XMIN,XMAX
         endif
         if     (flag_si.ne."NONE") then
             CALL ZAIOWR(SIM,  MSK,.TRUE.,  XMIN,XMAX, 211, .FALSE.)
-           WRITE(211,4201) 'Eco_sil    ',MONTH,TIME,K,SIGMA(K),XMIN,XMAX
+           WRITE(211,4201) 'ECO_sil    ',MONTH,TIME,K,SIGMA(K),XMIN,XMAX
         endif
 
 C
@@ -2227,15 +2227,15 @@ C
         endif
 
         if     (flag_no3.ne."NONE") then
-         call FieldArchive(NO1,IDM,JDM,cfld,'Eco_no3    ',
+         call FieldArchive(NO1,IDM,JDM,cfld,'ECO_no3    ',
      &     K,coord,1,tlevel1,nrec,trim(archvfile)//".a")
         endif
         if     (flag_po4.ne."NONE") then
-         call FieldArchive(PO1,IDM,JDM,cfld,'Eco_pho    ',
+         call FieldArchive(PO1,IDM,JDM,cfld,'ECO_pho    ',
      &     K,coord,1,tlevel1,nrec,trim(archvfile)//".a")
         endif
         if     (flag_si.ne."NONE") then
-         call FieldArchive(SI1,IDM,JDM,cfld,'Echo_sil    ',
+         call FieldArchive(SI1,IDM,JDM,cfld,'ECO_sil    ',
      &     K,coord,1,tlevel1,nrec,trim(archvfile)//".a")
         endif
 

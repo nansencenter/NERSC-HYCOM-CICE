@@ -727,9 +727,9 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=False,iexpt=10,iversn=22,yrfla
          outfile.write_field(tl      ,ip,"temp"  ,0,model_day,k+1,0)
          outfile.write_field(sl      ,ip,"salin" ,0,model_day,k+1,0)
          if bio_path :
-            outfile.write_field(no3k      ,ip,"Eco_no3"  ,0,model_day,k+1,0)
-            outfile.write_field(po4k      ,ip,"Eco_pho" ,0,model_day,k+1,0)
-            outfile.write_field(si_k      ,ip,"Echo_sil" ,0,model_day,k+1,0)
+            outfile.write_field(no3k      ,ip,"ECO_no3"  ,0,model_day,k+1,0)
+            outfile.write_field(po4k      ,ip,"ECO_pho" ,0,model_day,k+1,0)
+            outfile.write_field(si_k      ,ip,"ECO_sil" ,0,model_day,k+1,0)
 
          tl_above=numpy.copy(tl)
          sl_above=numpy.copy(sl)

@@ -30,7 +30,7 @@ usage="
    this region grid to find  a sea point for the new region grid points.
 "
 # This will process optional arguments
-options=$(getopt -o m:u -- "$@")
+options=$(getopt -o b:m -- "$@")
 [ $? -eq 0 ] || {
     echo "$usage"
     echo "Error: Incorrect options provided"
@@ -43,7 +43,7 @@ eval set -- "$options"
 while true; do
     case "$1" in
     -b)
-       bio_flag=$1
+       bio_flag=1
         ;;
     -m)
        shift;
@@ -284,7 +284,7 @@ echo $logfile
 touch ${NEST}/${target_archv}.a
 touch ${NEST}/${target_archv}.b
 rm -rf ${NEST}/${target_archv}.*
-if [[ "${bio_flag}" -gt 0 ]] ; then
+if [[ "${bio_flag}" -eq 0 ]] ; then
 ${prog_nemo}  >> $logfile  <<EOF
 ${N}/${target_archv}${L}.a
 ${NEST}/${target_archv}.a
