@@ -15,7 +15,6 @@ import pyproj
 import os.path
 import time
 import cfunits
-import nemo_mesh_to_hycom
 import sys
 import shutil
 import glob
