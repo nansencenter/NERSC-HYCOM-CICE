@@ -194,4 +194,8 @@ Where "width_of_relax_zone" and "efold_time_in_day" can be set, for example, to 
 
 # Using BIO-NESTING
 Please use following example
-../bin/nemo_to_hycom.sh ../../TP5a0.06/expt_01.1/  /nird/projects/nird/NS9481K/MERCATOR_DATA/PHY/2007/ext-GLORYS12V1_1dAV_20070701_20070702_grid2D_R20070704.nc --bio_path=/nird/projects/nird/NS2993K/MERCATOR_DATA/BIO/2013
+
+
+../bin/nemo_to_hycom.sh ../../TP5a0.06/expt_01.2/  /nird/projects/nird/NS9481K/MERCATOR_DATA/PHY/2013/ext-GLORYS12V1_1dAV_20131122_20131123_grid2D_R20131127.nc -b /nird/projects/nird/NS2993K/MERCATOR_DATA/BIO/2013
+
+
