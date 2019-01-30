@@ -572,6 +572,9 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=False,iexpt=10,iversn=22,yrfla
          si=ncidb.variables["Si"][0,:,:,:]
          po4[numpy.abs(po4)>1e+10]=numpy.nan
          si[numpy.abs(si)>1e+10]=numpy.nan
+         po4 = po4 * 106.0 * 12.01
+         si = si * 6.625 * 12.01
+         no3 = no3 * 6.625 * 12.01
          # TODO: Ineed to improve this part
          nz,ny,nx=no3.shape
          dummy=numpy.zeros((nz,ny,nx+1))
@@ -651,9 +654,6 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=False,iexpt=10,iversn=22,yrfla
          iu = depthu  == 0
          iv = depthv  == 0
 
-      flnm = open('archvname.txt', 'w')
-      flnm.write(oname)
-      flnm.close()
 
       # 2D data
       ncid2d=netCDF4.Dataset(file2d,"r")
