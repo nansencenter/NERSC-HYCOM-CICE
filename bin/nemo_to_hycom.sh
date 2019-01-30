@@ -14,7 +14,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 # History
 # (1) December 2018: Mostafa Bakhoday-Paskyabi
-# (2)
+# (2) January 2019: tiny corrections
 #
 #
 module load basemap/1.0.7-intel-2017a-Python-2.7.13
@@ -84,6 +84,28 @@ yrflag=3
 idm=4318   #$(egrep "'idm'"  ${data_path}/archv.  | sed "s/.thflag.*$//" | tr -d "[:blank:]")
 jdm=1186     #$(egrep "'jdm'"  ${data_path}/expt_${X}/blkdat.input  | sed "s/.iversn.*$//" | tr -d "[:blank:]")
 #
+# Reading file name using time field of netcdf file. 
+#
+function model_datetime() {
+fname="$1" python - <<END
+import cfunits
+import datetime
+import numpy
+import netCDF4
+ncid0=netCDF4.Dataset("$1","r")
+time=ncid0.variables["time_counter"][0]
+unit=ncid0.variables["time_counter"].units
+tmp=cfunits.Units(unit)
+refy,refm,refd=(1950,1,1)
+tmp2=cfunits.Units("hours since %d-%d-%d 00:00:00"%(refy,refm,refd))
+tmp3=int(numpy.round(cfunits.Units.conform(time,tmp,tmp2)))
+fnametemplate="archv.%Y_%j"
+deltat=datetime.datetime(refy,refm,refd,0,0,0)+datetime.timedelta(hours=tmp3)
+oname=deltat.strftime(fnametemplate)+"_00"
+print oname
+END
+}
+#
 #
 #
 for source_archv in $@ ; do
@@ -92,8 +114,7 @@ for source_archv in $@ ; do
    [[ $source_archv != *"ext-GLORYS12V1_1dAV_"* ]] && continue
    echo $source_archv
 
-   #echo  $(cat archvname.txt)
-   filename=$source_archv  #"MERCATOR-PHY-24-"$year"-"$month"-"$day".nc"
+   filename=$source_archv 
    #
    # (1) Create archive [ab] files from the MERCATOR netcdf file.
    #
@@ -106,7 +127,7 @@ for source_archv in $@ ; do
       # (2) Based on generated archive files in (1) the grid and topography files are generated.
       #
       ########################
-      ${BASEDIR}/bin/archvz2hycom.sh $nest_expt  $(cat archvname.txt)
+      ${BASEDIR}/bin/archvz2hycom.sh $nest_expt $(model_datetime "$filename")    
       ########################
    
       else
@@ -116,7 +137,7 @@ for source_archv in $@ ; do
       # (2) Based on generated archive files in (1) the grid and topography files are generated.
       #
       ########################
-      ${BASEDIR}/bin/archvz2hycom.sh $nest_expt  $(cat archvname.txt) -b 1
+      ${BASEDIR}/bin/archvz2hycom.sh $nest_expt $(model_datetime "$filename") -b 1  
       ########################
 
       fi
@@ -127,7 +148,7 @@ for source_archv in $@ ; do
       # (2) Based on generated archive files in (1) the grid and topography files are generated.
       #
       ########################
-      ${BASEDIR}/bin/archvz2hycom.sh $nest_expt  $(cat archvname.txt)
+      ${BASEDIR}/bin/archvz2hycom.sh $nest_expt $(model_datetime) "$filename" 
       ########################
 
    fi
