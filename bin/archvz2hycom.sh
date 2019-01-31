@@ -10,7 +10,8 @@
 # --- Author: Mostafa Bakhoday-Paskyabi, Ocean Modeling group, NERSC, Bergen
 # --- Mostafa.Bakhoday@nersc.no
 # --- 9 September 2017.
-#
+# --- December 2018: adding bio-nesting
+# --- January 2019: modification of bio-nesting section (modification)
 
 
 iscan=15
@@ -297,6 +298,16 @@ T
 T
 EOF
 else
+# bio filename convention: archv_fabm.YYYY_DDD_HH.[ab]
+# Please improve the following if the naming convention for bio-file gets changed.
+# Note that this format of naming has been used in $prog_nemo.
+str1=${target_archv:0:5}
+str2=${target_archv:5:16}
+target_bioarchv=${str1}_fabm${str2}
+touch ${NEST}/${target_bioarchv}.a
+touch ${NEST}/${target_bioarchv}.b
+rm -rf ${NEST}/${target_bioarchv}.*
+
 ${prog_nemo}  >> $logfile  <<EOF
 ${N}/${target_archv}${L}.a
 ${NEST}/${target_archv}.a

@@ -129,7 +129,8 @@ C
 C 4)  ALAN J. WALLCRAFT,  NAVAL RESEARCH LABORATORY, MARCH 2001
 C                                                 AND JUNE 2009.
 C     MOSTAFA BAKHODAY-PASKYABI, NERSC, Bergen, Norway, September 2017
-C
+C     Mostafa, including bio-nesting vertical interpolation, December
+C     2018, January 2019.
 C**********
 C
       REAL*4     ZERO,ONE,RADIAN
@@ -154,11 +155,11 @@ C --- MOSTAFA: END
 C
       REAL*4  SIG_V,SOFSIG_V,TOFSIG_V
       CHARACTER*512 archvfile , archvfileo
-      CHARACTER*80 fldname
+      CHARACTER*80 fldname,dummy_name
       real   :: lrdens
 c     INTEGER, EXTERNAL  :: IARGC
       INTEGER, INTRINSIC  :: IARGC
-      INTEGER  aa
+      INTEGER  aa,dummy_index
 
       INTEGER IOS,ISTEP
 C
@@ -855,9 +856,17 @@ c ---   output is in "*.[AB]"
       call zaiopf(trim(archvfileo)//".a",'new', 21)
 
 c ---   bio output is in "*.[AB]"
-      open (unit=211,file=trim(archvfileo)//"_bio.b",form='formatted',
+c ---   if you are using 'archm' for nesting use the following
+cc      dummy_index=index(archvfileo,'archm')   
+c ---
+      dummy_index=index(archvfileo,'archv')
+      dummy_name=archvfileo(dummy_index:dummy_index+4)//"_fabm"
+     +      //archvfileo(dummy_index+5:dummy_index+17)      
+      open (unit=211,file=trim(archvfileo(1:dummy_index-1))//
+     &     trim(dummy_name)//".b",form='formatted',
      &          status='new',action='write')
-      call zaiopf(trim(archvfileo)//"_bio.a",'new', 211)
+      call zaiopf(trim(archvfileo(1:dummy_index-1))//
+     &  trim(dummy_name)//".a",'new', 211)
       WRITE(211,4200) MONTH,PREAMBL(1),PREAMBL(2),
      &               IVERSN,IEXPT,YRFLAG,IDM,JDM
 
