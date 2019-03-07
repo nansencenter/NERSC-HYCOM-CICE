@@ -52,6 +52,7 @@ module mod_forcing_nersc
    real, allocatable, dimension(:,:)  ::                synuwind, &
      synvwind, synwndspd, synairtmp, synrelhum, synprecip, &
      synclouds, syntaux, syntauy, synvapmix,&
+     syndswflx, & 
      synradflx, synshwflx, synslp, synssr, cawdir
 
    ! Logical vars, denote forcing fields read
@@ -63,6 +64,7 @@ module mod_forcing_nersc
      lsynvapmix = .false., &
      lsynradflx = .false., &
      lsynshwflx = .false., &
+     lsyndswflx = .false., &
      lsynslp    = .false.
 
   ! Parameters used in forcing calc
@@ -104,6 +106,7 @@ contains
    allocate(synclouds(idm,jdm))
    allocate(synradflx(idm,jdm))
    allocate(synshwflx(idm,jdm))
+   allocate(syndswflx(idm,jdm))
    allocate(synslp   (idm,jdm))
    allocate(cawdir   (idm,jdm))
    synuwind (:,:)=0.
@@ -118,6 +121,7 @@ contains
    synclouds(:,:)=0.
    synradflx(:,:)=0.
    synshwflx(:,:)=0.
+   syndswflx(:,:)=0.
    synslp   (:,:)=0.
    cawdir   (:,:)=0.
    end subroutine
@@ -184,8 +188,10 @@ contains
       lsynvapmix=.true.
       lsynairtmp=.true.
       lsynprecip=.true.
-      lsynshwflx=.false.
-      lsynradflx=.false.
+!   switch on at 18Jan 2019 for era-i+all
+      lsyndswflx=.true.
+      lsynshwflx=.true.
+      lsynradflx=.true.
       write(lp,'(a)')'Perturbing ERA-I Forcing'
       rdtime=6.d0/24.d0
 
@@ -213,6 +219,7 @@ contains
    lsynairtmp= lsynairtmp .and. lflux
    lsynprecip= lsynprecip .and. lflux
    lsynradflx= lsynradflx .and. lflux
+   lsyndswflx= lsyndswflx .and. lflux
    lsynshwflx= lsynshwflx .and. lflux
    lsynvapmix= lsynvapmix .and. lflux
 

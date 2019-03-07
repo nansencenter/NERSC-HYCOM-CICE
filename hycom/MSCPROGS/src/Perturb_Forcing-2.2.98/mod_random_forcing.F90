@@ -63,6 +63,11 @@ module mod_random_forcing
       real,pointer ::  vwind  (:,:) !  v-component of wind
       real,pointer ::  tauxice(:,:) !  ice stress on water in x dir
       real,pointer ::  tauyice(:,:) !  ice stress on water in y dir
+!    added at 18Jan 2019 for era-i+all
+      real,pointer ::  dswflx(:,:) ! downwelling shortwave flux 
+      real,pointer ::  shwflx(:,:) ! net shortwave flux 
+      real,pointer ::  radflx(:,:) ! net longwave radiation 
+     
    end type forcing_fields
 
    type forcing_variances
@@ -78,6 +83,9 @@ module mod_random_forcing
       real relhum
       real sss
       real sst
+!    added at 18Jan 2019 for era-i+all
+      real shwflx
+      real radflx
    end type forcing_variances
 
 
@@ -190,6 +198,8 @@ contains
       call blkinr(vars%airtmp  ,'vtair ','(a6," =",g10.4," C**2")')
       call blkinr(vars%precip  ,'vprcp ','(a6," =",g10.4," ")')
       call blkinr(vars%relhum  ,'vrlhum','(a6," =",g10.4," []")')
+      call blkinr(vars%shwflx  ,'vshwf ','(a6," =",g10.4," W**2m**-4")')
+      call blkinr(vars%radflx  ,'vradf ','(a6," =",g10.4," W**2m**-4")')
       call blkinr(rf_hradius   ,'scorr ','(a6," =",g10.4," m")')
       call blkinr(rf_tradius   ,'tcorr ','(a6," =",g10.4," days")')
       call blkini(rf_prsflg    ,'prsflg')
@@ -302,8 +312,9 @@ contains
 
          fcor=2*sin(40./radtodeg)*2*pi/86400; ! Constant 
 
-         ! typical pressure gradient
-         wprsfac=100.*sqrt(vars%slp)/(rh*minscpx)
+         ! typical pressure gradient  change it from default mBar in TP4 to Pa
+         wprsfac=sqrt(vars%slp)/(rh*minscpx)
+         !wprsfac=100.*sqrt(vars%slp)/(rh*minscpx)
 
          ! results in this typical wind magnitude
          wprsfac=wprsfac/fcor
@@ -327,10 +338,13 @@ contains
          ! Pressure gradient. Coversion from mBar to Pa
          ! Note that this is in u-point, but is used for a v-point
          ! later 
+         ! change it from default mBar in TP4 to Pa at 19Jan 2019
          if (iu(ix,jy)==1)  then
-            dpresx(ix,jy) = &
-               100.*(ran1%slp(ix,jy) - ran1%slp(ix-1,jy))/ &
-               scpx(ix,jy)
+            !dpresx(ix,jy) = &
+            !   100.*(ran1%slp(ix,jy) - ran1%slp(ix-1,jy))/ &
+            !   scpx(ix,jy)
+            dpresx(ix,jy) = (ran1%slp(ix,jy) - ran1%slp(ix-1,jy))/ &
+                             scpx(ix,jy)
             dpresx(ix,jy)=dpresx(ix,jy)*wprsfac
          else
             dpresx(ix,jy)=0. ! should be extrapolated
@@ -338,10 +352,13 @@ contains
 
          ! Note that this is in v-point, but is used for a u-point
          ! later
+         ! change it from default mBar in TP4 to Pa at 19Jan 2019
          if (iv(ix,jy)==1)  then
-            dpresy(ix,jy) = &
-               100.*(ran1%slp(ix,jy) - ran1%slp(ix,jy-1))/ &
-               scpy(ix,jy)
+         !   dpresy(ix,jy) = &
+         !      100.*(ran1%slp(ix,jy) - ran1%slp(ix,jy-1))/ &
+         !      scpy(ix,jy)
+            dpresy(ix,jy) = (ran1%slp(ix,jy) - ran1%slp(ix,jy-1))/ &
+                             scpy(ix,jy)
             dpresy(ix,jy)=dpresy(ix,jy)*wprsfac
          else
          dpresy(ix,jy)=0. ! should be extrapolated
@@ -399,6 +416,16 @@ contains
                            -0.5*vars%precip**2)  
          synrelhum(ix,jy) = min(max(synrelhum(ix,jy),0.0),1.0)
          synwndspd(ix,jy) = max(synwndspd(ix,jy),0.0)
+!    added at 18Jan 2019 for era-i+all
+         syndswflx(ix,jy) = syndswflx(ix,jy)*(1 + sign(  &
+                     min(1.,abs(ran1%shwflx(ix,jy)))*sqrt(vars%shwflx), &
+                       ran1%shwflx(ix,jy)))
+         synshwflx(ix,jy) = synshwflx(ix,jy)*(1 + sign(  &
+                     min(1.,abs(ran1%shwflx(ix,jy)))*sqrt(vars%shwflx), &
+                       ran1%shwflx(ix,jy)))
+         synradflx(ix,jy) = synradflx(ix,jy)*(1 + sign(  &
+                     min(1.,abs(ran1%radflx(ix,jy)))*sqrt(vars%radflx), &
+                       ran1%radflx(ix,jy)))
       end do
       end do
 !$OMP END PARALLEL DO
@@ -466,6 +493,17 @@ contains
          synrelhum(ix,jy) = min(max(synrelhum(ix,jy),0.0),1.0)
          synwndspd(ix,jy) = max(synwndspd(ix,jy),0.0)
 
+!    added at 18Jan 2019 for era-i+all
+         syndswflx(ix,jy) = syndswflx(ix,jy)*(1 + sign(  &
+                     min(1.,abs(ran1%shwflx(ix,jy)))*sqrt(vars%shwflx), &
+                       ran1%shwflx(ix,jy)))
+         synshwflx(ix,jy) = synshwflx(ix,jy)*(1 + sign(  &
+                     min(1.,abs(ran1%shwflx(ix,jy)))*sqrt(vars%shwflx), &
+                       ran1%shwflx(ix,jy)))
+
+         synradflx(ix,jy) = synradflx(ix,jy)*(1 + sign(  &
+                     min(1.,abs(ran1%radflx(ix,jy)))*sqrt(vars%radflx), &
+                       ran1%radflx(ix,jy)))
       !end if
       end do
       end do
@@ -511,8 +549,8 @@ contains
              ran%taux  (50,80)*sqrt(vars%taux),  &
              ran%tauy  (50,80)*sqrt(vars%tauy), &
              ran%airtmp(50,80)*sqrt(vars%airtmp), &
-             ran%taux(50,80), &
-             ran%tauy(50,80)
+             ran%uwind(50,80), &
+             ran%vwind(50,80)
          close(10)
       end if
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -542,6 +580,10 @@ contains
       call pseudo2D(ranfld%relhum,idm,jdm,1,scorr,fnx,fny)
       call pseudo2D(ranfld%clouds,idm,jdm,1,scorr,fnx,fny)
       call pseudo2D(ranfld%precip,idm,jdm,1,scorr,fnx,fny)
+      call pseudo2D(ranfld%uwind,idm,jdm,1,scorr,fnx,fny)
+      call pseudo2D(ranfld%vwind,idm,jdm,1,scorr,fnx,fny)
+      call pseudo2D(ranfld%shwflx,idm,jdm,1,scorr,fnx,fny)
+      call pseudo2D(ranfld%radflx,idm,jdm,1,scorr,fnx,fny)
       end subroutine ranfields
 
 
@@ -565,6 +607,11 @@ contains
          A%precip(i,j)=C%precip * B%precip(i,j)
          A%sss   (i,j)=C%sss    * B%sss   (i,j)
          A%sst   (i,j)=C%sst    * B%sst   (i,j)
+         A%uwind (i,j)=C%uwind  * B%uwind (i,j)
+         A%vwind (i,j)=C%vwind  * B%vwind (i,j)
+         A%dswflx(i,j)=C%shwflx * B%dswflx(i,j)
+         A%shwflx(i,j)=C%shwflx * B%shwflx(i,j)
+         A%radflx(i,j)=C%radflx * B%radflx(i,j)
       end do
       end do
    end subroutine calc_forc_update
@@ -583,6 +630,10 @@ contains
       var_sqrt%precip= sqrt(A%precip)
       var_sqrt%sss   = sqrt(A%sss   )
       var_sqrt%sst   = sqrt(A%sst   )
+      var_sqrt%uwind = sqrt(A%uwind )
+      var_sqrt%vwind = sqrt(A%vwind )
+      var_sqrt%shwflx= sqrt(A%shwflx)
+      var_sqrt%radflx= sqrt(A%radflx)
    end function var_sqrt
 
    subroutine assign_force(A,r)
@@ -605,6 +656,9 @@ contains
          A%sst    (i,j) = r
          A%uwind  (i,j) = r
          A%vwind  (i,j) = r
+         A%dswflx (i,j) = r
+         A%shwflx (i,j) = r
+         A%radflx (i,j) = r
          A%tauxice(i,j) = r
          A%tauyice(i,j) = r
       end do
@@ -625,6 +679,10 @@ contains
       A%precip = r
       A%sss    = r
       A%sst    = r
+      A%uwind  = r
+      A%vwind  = r
+      A%shwflx = r
+      A%radflx = r
    end subroutine assign_vars
 
 
@@ -647,6 +705,11 @@ contains
          ran%precip(ix,jy)=alpha*ran%precip(ix,jy) + sqrt(1-alpha*alpha)*ran1%precip(ix,jy)
          ran%sss   (ix,jy)=alpha*ran%sss   (ix,jy) + sqrt(1-alpha*alpha)*ran1%sss   (ix,jy)
          ran%sst   (ix,jy)=alpha*ran%sst   (ix,jy) + sqrt(1-alpha*alpha)*ran1%sst   (ix,jy)
+         ran%uwind (ix,jy)=alpha*ran%uwind (ix,jy) + sqrt(1-alpha*alpha)*ran1%uwind (ix,jy)
+         ran%vwind (ix,jy)=alpha*ran%vwind (ix,jy) + sqrt(1-alpha*alpha)*ran1%vwind (ix,jy)
+         ran%dswflx(ix,jy)=alpha*ran%dswflx(ix,jy) + sqrt(1-alpha*alpha)*ran1%dswflx(ix,jy)
+         ran%shwflx(ix,jy)=alpha*ran%shwflx(ix,jy) + sqrt(1-alpha*alpha)*ran1%shwflx(ix,jy)
+         ran%radflx(ix,jy)=alpha*ran%radflx(ix,jy) + sqrt(1-alpha*alpha)*ran1%radflx(ix,jy)
       end do
       end do
    end subroutine
@@ -667,6 +730,9 @@ contains
       allocate(ran%sst    (idm,jdm))
       allocate(ran%uwind  (idm,jdm))
       allocate(ran%vwind  (idm,jdm))
+      allocate(ran%dswflx (idm,jdm))
+      allocate(ran%shwflx (idm,jdm))
+      allocate(ran%radflx (idm,jdm))
       allocate(ran%tauxice(idm,jdm))
       allocate(ran%tauyice(idm,jdm))
    end subroutine
