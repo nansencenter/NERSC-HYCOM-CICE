@@ -15,10 +15,23 @@ import pyproj
 import os.path
 import time
 import cfunits
+import nemo_mesh_to_hycom
 import sys
 import shutil
 import glob
 from matplotlib import pyplot as plt
+from interp_bilinear import FieldInterpolatorBilinear
+
+####
+from netCDF4 import Dataset, MFDataset, num2date,date2num
+import scipy.io as io
+from scipy import ndimage
+import numpy as np
+from scipy.spatial import cKDTree
+#from myfill import fill as fill
+
+####
+
 
 
 # Hycom-ified NMO files. Approach:
@@ -29,7 +42,9 @@ from matplotlib import pyplot as plt
 # 5) Remap archive files vertically
 # 6) Add montgomery potential in 1st layer to file
 # 
+# History:
 # Mostafa Bakhoday-Paskyabi, December 2018
+# Mostafa Bakhoday-Paskyabi, March 2019, bio-nesting (solving interpolation issue)
 
 # Set up logger
 _loglevel=logging.INFO
@@ -57,7 +72,7 @@ spval=2.0**100.
 timeavg_method   = 0             # (1) time average of two consecutive netcdf files; and other values no temporal averaging.
 
 
-def maplev(a):
+def maplev(a,lpp=1):
     # gapfilling method
     jm,im=a.shape
     J,I=numpy.where(~numpy.isnan(a))
@@ -66,7 +81,7 @@ def maplev(a):
     J,I=numpy.where(numpy.isnan(a))
     a[J,I]=av
     b=a
-    lpp=1  # it is better to be set to 100, but for practial reasnon, we keep it very small for now
+    #lpp=1  # it is better to be set to 100, but for practial reasnon, we keep it very small for now
     i=range(1,im-1)
     j=range(1,jm-1)
     ip1=range(2,im)
@@ -486,7 +501,6 @@ def interpolate2d(x, y, Z, points, mode='linear', bounds_error=False):
     return r
 
 
-
 def main(filemesh,grid2dfiles,first_j=0,mean_file=False,iexpt=10,iversn=22,yrflag=3,makegrid=None,bio_path=None) :
 
    if mean_file :
@@ -499,7 +513,6 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=False,iexpt=10,iversn=22,yrfla
    if makegrid is not None: 
       logger.info("Making NEMO grid & bathy [ab] files ...")
       make_grid(filemesh)
-   print plon.min(),plon.max()
    mbathy = mbathy -1                       # python indexing starts from 0
    nlev   = gdept.size
 
@@ -514,7 +527,6 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=False,iexpt=10,iversn=22,yrfla
    e3v_ps  =sliced(v_to_hycom_v(e3v_ps  ))
    depthv  =sliced(v_to_hycom_v(depthv  ))
 
-   # Thickness of t layers (NB: 1 less than gdepw dimension)
    dt = gdepw[1:] - gdepw[:-1]
 
    # Loop over input files. All must be in same directory
@@ -566,16 +578,14 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=False,iexpt=10,iversn=22,yrfla
          ncidb=netCDF4.Dataset(biofname,"r")
          blon=ncidb.variables["longitude"][:];
          blat=ncidb.variables["latitude"][:]
+         minblat=blat.min()
          no3=ncidb.variables["NO3"][0,:,:,:];
-         no3[numpy.abs(no3)>1e+10]=numpy.nan
+         no3[numpy.abs(no3)>1e+5]=numpy.nan
          po4=ncidb.variables["PO4"][0,:,:,:]
          si=ncidb.variables["Si"][0,:,:,:]
-         po4[numpy.abs(po4)>1e+10]=numpy.nan
-         si[numpy.abs(si)>1e+10]=numpy.nan
-         po4 = po4 * 106.0 * 12.01
-         si = si * 6.625 * 12.01
-         no3 = no3 * 6.625 * 12.01
-         # TODO: Ineed to improve this part
+         po4[numpy.abs(po4)>1e+5]=numpy.nan
+         si[numpy.abs(si)>1e+5]=numpy.nan
+         # TODO: The following piece will be optimised and replaced soon. 
          nz,ny,nx=no3.shape
          dummy=numpy.zeros((nz,ny,nx+1))
          dummy[:,:,:nx]=no3;dummy[:,:,-1]=no3[:,:,-1]
@@ -590,6 +600,36 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=False,iexpt=10,iversn=22,yrfla
          dummy[:nx]=blon
          blon=dummy
          blon[-1]=-blon[0]
+# TODO:  Note that the coordinate files are for global configuration while
+#        the data file saved for latitude larger than 30. In the case you change your data file coordinate
+#        configuration you need to modify the following lines
+         bio_coordfile=bio_path[:-4]+"/GLOBAL_ANALYSIS_FORECAST_BIO_001_014_COORD/GLO-MFC_001_014_mask.nc"
+         biocrd=netCDF4.Dataset(bio_coordfile,"r")
+         blat2 = biocrd.variables['latitude'][:]
+         index=numpy.where(blat2>=minblat)[0]
+         depth_lev = biocrd.variables['deptho_lev'][index[0]:,:]
+#
+#
+#
+         dummy=numpy.zeros((ny,nx+1))
+         dummy[:,:nx]=depth_lev;dummy[:,-1]=depth_lev[:,-1]
+         depth_lev=dummy
+	 depth_lev[depth_lev>50]=0
+	 depth_lev=depth_lev.astype('i')
+         dummy_no3=no3
+         dummy_po4=po4
+         dummy_si=si
+
+	 for j in range(ny):
+            for i in range(nx):
+               dummy_no3[depth_lev[j,i]:nz-2,j,i]=no3[depth_lev[j,i]-1,j,i]
+               dummy_po4[depth_lev[j,i]:nz-2,j,i]=po4[depth_lev[j,i]-1,j,i]
+               dummy_si[depth_lev[j,i]:nz-2,j,i]=si[depth_lev[j,i]-1,j,i]
+         no3=dummy_no3
+         po4=dummy_po4
+         si=dummy_si
+
+         field_interpolator=FieldInterpolatorBilinear(blon,blat,plon.flatten(),plat.flatten())
       # Read and calculculate U in hycom U-points. 
       logger.info("gridU, gridV, gridT & gridS  file")
       ncidu=netCDF4.Dataset(fileu,"r")
@@ -654,7 +694,6 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=False,iexpt=10,iversn=22,yrfla
          iu = depthu  == 0
          iv = depthv  == 0
 
-
       # 2D data
       ncid2d=netCDF4.Dataset(file2d,"r")
       ssh          = sliced(ncid2d.variables["sossheig"][0,:,:])
@@ -674,21 +713,20 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=False,iexpt=10,iversn=22,yrfla
       outfile.write_field(numpy.zeros(ssh.shape),ip,"mix_dpth",0,model_day,0,0) # Not used
       outfile.write_field(ubaro                 ,iu,"u_btrop" ,0,model_day,0,0) # u: nemo in cell i is hycom in cell i+1
       outfile.write_field(vbaro                 ,iv,"v_btrop" ,0,model_day,0,0) # v: nemo in cell j is hycom in cell j+1
+      ny=mbathy.shape[0];nx=mbathy.shape[1]
+      error=numpy.zeros((ny,nx))
       for k in numpy.arange(u.shape[0]) :
          if bio_path:
-	    no3k=interpolate2d(blat, blon, no3[k,:,:], points)
-            no3k = maplev(numpy.reshape(no3k,[jdm,idm]))
-            po4k=interpolate2d(blat, blon, po4[k,:,:], points)
-            po4k = maplev(numpy.reshape(po4k,[jdm,idm]))
-            si_k=interpolate2d(blat, blon, si[k,:,:], points)
-            si_k = maplev(numpy.reshape(si_k,[jdm,idm]))
-#            fig = plt.figure(figsize=(16,8));plt.subplot(121);plt.pcolormesh(no3k,vmin=0,vmax=20);plt.colorbar();plt.show();
-#            plt.subplot(122);plt.pcolormesh(no3[0,:,:],vmin=0,vmax=20);plt.colorbar();plt.show();fig.savefig('intrplolated_no3.png')
-#            exit(0)
-         if bio_path :
+	    no3k=interpolate2d(blat, blon, no3[k,:,:], points).reshape((jdm,idm))
+	    no3k = maplev(no3k)
+            po4k=interpolate2d(blat, blon, po4[k,:,:], points).reshape((jdm,idm))
+	    po4k = maplev(po4k)
+            si_k=interpolate2d(blat, blon, si[k,:,:], points).reshape((jdm,idm))
+	    si_k = maplev(si_k)
             if k%10==0 : logger.info("Writing 3D variables including BIO, level %d of %d"%(k+1,u.shape[0]))
          else:
             if k%10==0 : logger.info("Writing 3D variables, level %d of %d"%(k+1,u.shape[0]))
+         #
          ul = numpy.squeeze(u[k,:,:]) - ubaro # Baroclinic velocity
          vl = numpy.squeeze(v[k,:,:]) - vbaro # Baroclinic velocity
 
@@ -741,7 +779,7 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=False,iexpt=10,iversn=22,yrfla
       ncids.close()
       ncidu.close()
       ncidv.close()
-      ncidb.close()
+      if bio_path:ncidb.close()
    nemo_mesh = []
 
 
@@ -762,6 +800,7 @@ if __name__ == "__main__" :
    parser.add_argument('--iversn',   type=int,default=22,  help="    ")
    parser.add_argument('--yrflag',   type=int,default=3,   help="    ")
    parser.add_argument('--bio_path',   type=str,   help="    ")
+   parser.add_argument('--interp_method',   type=int,default=3,   help="    ")
 
    args = parser.parse_args()
    main(args.meshfile,args.grid2dfile,first_j=args.first_j,mean_file=args.mean,iexpt=args.iexpt,makegrid=args.makegrid,iversn=args.iversn,yrflag=args.yrflag,bio_path=args.bio_path)
