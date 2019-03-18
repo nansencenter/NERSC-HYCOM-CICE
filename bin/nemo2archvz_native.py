@@ -15,12 +15,10 @@ import pyproj
 import os.path
 import time
 import cfunits
-import nemo_mesh_to_hycom
 import sys
 import shutil
 import glob
 from matplotlib import pyplot as plt
-from interp_bilinear import FieldInterpolatorBilinear
 
 ####
 from netCDF4 import Dataset, MFDataset, num2date,date2num
@@ -629,7 +627,7 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=False,iexpt=10,iversn=22,yrfla
          po4=dummy_po4
          si=dummy_si
 
-         field_interpolator=FieldInterpolatorBilinear(blon,blat,plon.flatten(),plat.flatten())
+      #   field_interpolator=FieldInterpolatorBilinear(blon,blat,plon.flatten(),plat.flatten())
       # Read and calculculate U in hycom U-points. 
       logger.info("gridU, gridV, gridT & gridS  file")
       ncidu=netCDF4.Dataset(fileu,"r")
