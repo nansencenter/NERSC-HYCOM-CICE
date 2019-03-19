@@ -1048,6 +1048,35 @@ C ---   CONVERT U AND V FROM P-CELL TO U- AND V-CELLS
 C
 C   Write bio [ab] files
 C
+        do i =1,idm
+           do j=1,jdm
+             if (depth(i,j).gt.ZERO.and.depth(i,j)<200.0) then !! loop I
+
+             if(flag_no3.ne."NONE") then
+                no_maxval=maxval(NO3M(max(i-50,1):min(idm,i+50),j))
+             endif
+             if(flag_po4.ne."NONE") then
+                ph_maxval=maxval(PO4M(max(i-50,1):min(idm,i+50),j))
+             endif
+             if(flag_si.ne."NONE") then
+             si_maxval=maxval(SIM(max(i-50,1):min(idm,i+50),j))
+             endif
+             endif !! loop I
+             if (flag_no3.ne."NONE".and. NO3M(i,j)<=.4*no_maxval .and.
+     +       depth(i,j).gt.ZERO .and.  depth(i,j)<200.0) then
+             NO3M(i,j)=.8*no_maxval
+             endif
+             if (flag_po4.ne."NONE".and. PO4M(i,j)<=.4*ph_maxval .and.
+     +       depth(i,j).gt.ZERO .and.  depth(i,j)<200.0) then
+             PO4M(i,j)=.8*ph_maxval
+             endif
+             if (flag_si.ne."NONE".and. SIM(i,j)<=.4*si_maxval .and.
+     +       depth(i,j).gt.ZERO .and.  depth(i,j)<200.0) then
+             SIM(i,j)=.8*si_maxval
+             endif
+           enddo
+        enddo
+
         if     (flag_no3.ne."NONE") then
             CALL ZAIOWR(NO3M,  MSK,.TRUE.,  XMIN,XMAX, 211, .FALSE.)
            WRITE(211,4201) 'ECO_no3    ',MONTH,TIME,K,SIGMA(K),XMIN,XMAX
