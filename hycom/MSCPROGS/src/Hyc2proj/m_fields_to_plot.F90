@@ -31,9 +31,12 @@ subroutine fields_to_plot(fld,nfld,hfile,kdm)
       extrfile='extract.daily'
    else if (trim(hfile%ftype)=='nersc_weekly') then
       extrfile='extract.weekly'
-   else if (trim(hfile%ftype)=='archv'&
-            .or.trim(hfile%ftype)=='archm') then
+   else if (trim(hfile%ftype)=='archv') then
       extrfile='extract.archv'
+   else if (trim(hfile%ftype)=='archm') then
+      extrfile='extract.archm'
+   else if (trim(hfile%ftype)=='archs') then
+      extrfile='extract.archs'
    else if (trim(hfile%ftype)=='archv_wav') then
       extrfile='extract.archv_wav'
    else

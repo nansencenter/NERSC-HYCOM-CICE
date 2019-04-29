@@ -257,7 +257,9 @@ contains
          df%fyear = df%iyear + (df%imonth -1) / 12. + (df%iweek -1. ) /(4.*12.) + 1./96.
          df%iday  = (df%imonth -1) / 12. + (df%iweek -1. ) /(4.*12.)  + 1/96.
          df%iday  = floor(df%iday*365.)
-   else if (trim(df%ftype)=='archv'.or.trim(df%ftype)=='archm') then
+   else if (trim(df%ftype)=='archv'&
+       .or.trim(df%ftype)=='archm'&
+       .or.trim(df%ftype)=='archs') then
       !!check if old-style archive or new type
       do i=1,10
          read(nop,'(a)') c80
@@ -268,17 +270,23 @@ contains
       open(nop,file=trim(df%filebase)//'.b',status='old')
       if (c80(1:5)=='field') then
          !!old-style
-      !   print*,' '
-      !   print*,'*******************************'
-      !   print*,'old style arch[v,m] header file'
-      !   print*,'*******************************'
-      !   print*,' '
+         print*,' '
+         print*,'*******************************'
+         print*,'old style arch[v,m,s] header file'
+         print*,'*******************************'
+         print*,' '
          read(nop,316) ctitle,df%iversn,df%iexpt,df%yrflag
          !!get dump time from filename
          !!TODO: what if under 1 hour?
-         read(df%filebase(7:10),'(i4.4)') df%iyear
-         read(df%filebase(12:14),'(i3.3)') df%iday
-         read(df%filebase(16:17),'(i2.2)') df%ihour
+         !read(df%filebase(7:10),'(i4.4)') df%iyear
+         !read(df%filebase(12:14),'(i3.3)') df%iday
+         !read(df%filebase(16:17),'(i2.2)') df%ihour
+         read(df%filebase(10:13),'(i4.4)') df%iyear
+         read(df%filebase(15:17),'(i3.3)') df%iday
+         read(df%filebase(19:21),'(i2.2)') df%ihour
+         print*,'year is ', df%iyear
+         print*,'day is ',df%iday
+         print*,'hour is ',df%ihour
          df%imin  = 0
          df%isec  = 0
          write(df%ctime,'(i2.2,i2.2,i2.2)') df%ihour,df%imin,df%isec
@@ -416,7 +424,7 @@ contains
     integer :: ios
     if (    trim(ftype)=='nersc_weekly' .or. trim(ftype) == 'nersc_daily' &
         .or.trim(ftype)=='archv'.or.trim(ftype)=='archv_wav'&
-        .or.trim(ftype)=='archm') then
+        .or.trim(ftype)=='archm'.or.trim(ftype)=='archs') then
        ios=0 ; char5=''
        do while (char5/='field' .and. ios==0)
           read(nop,'(a5)',iostat=ios) char5
@@ -498,7 +506,7 @@ contains
        read(nop,117,iostat=ios) cfld,nstep,rday,coord,dens,xmin,xmax
        tlevel=1
     else if (trim(ftype)=="archv".or.trim(ftype)=="archv_wav"&
-             .or.trim(ftype)=="archm") then
+             .or.trim(ftype)=="archm".or.trim(ftype)=="archs") then
        read(nop,118,iostat=ios) cfld,nstep,rday,coord,dens,xmin,xmax
        tlevel=1
     else
@@ -530,7 +538,7 @@ contains
     else if (trim(ftype)=="nersc_daily" .or. trim(ftype)=="nersc_weekly") then
        write(nop,117,iostat=ios) cfld2,0,0.,coord,0.,xmin,xmax
     else if (trim(ftype)=="archv".or.trim(ftype)=="archv_wav"&
-             .or.trim(ftype)=="archm") then
+             .or.trim(ftype)=="archm".or.trim(ftype)=="archs") then
        write(nop,118,iostat=ios) cfld2,0,0.,coord,0.,xmin,xmax
     else
        print *,'writeFieldEntry> unknown file type: '//trim(ftype)
@@ -578,7 +586,9 @@ contains
    else if (trim(df%ftype)=='nersc_weekly') then
       write(nop,216) ctitle,df%iversn,df%iexpt,df%yrflag, &
          idm,jdm,kdm,df%iyear,df%imonth, df%count
-   else if (trim(df%ftype)=='archv'.or.trim(df%ftype)=='archm') then
+   else if (trim(df%ftype)=='archv'&
+       .or.trim(df%ftype)=='archm'&
+       .or.trim(df%ftype)=='archs') then
       !TODO add archv_wav?
       write(nop,316) ctitle,df%iversn,df%iexpt,df%yrflag, &
          idm,jdm
@@ -724,8 +734,8 @@ contains
    elseif (trim(df%ftype)=="nersc_weekly") then
       call HFReadField(df,dp,idm,jdm,'pres    ',coord,tlevel)
       if (trim(units2) == 'pressure') dp=dp*onem
-   elseif (trim(df%ftype)=="archv".or.trim(df%ftype)=="archv_wav"&
-          .or.trim(df%ftype)=="archm") then
+   elseif (trim(df%ftype)=="archv".or.trim(df%ftype)=="archv_wav" .or. &
+           trim(df%ftype)=="archm".or.trim(df%ftype)=="archs") then
       call HFReadField(df,dp,idm,jdm,'thknss  ',coord,tlevel)
       if (trim(units2) == 'meter') dp=dp/onem
    else
@@ -777,7 +787,9 @@ contains
    elseif (trim(df%ftype)=="nersc_weekly") then
       call HFReadField(df,ut,idm,jdm,'utot    ',vlevel,1)
       call HFReadField(df,vt,idm,jdm,'vtot    ',vlevel,1)
-   elseif (trim(df%ftype)=="archv".or.trim(df%ftype)=="archm") then
+   elseif(trim(df%ftype)=="archv"&
+           .or.trim(df%ftype)=="archm"&
+           .or.trim(df%ftype)=="archs") then
       call HFReadField(df,ut,idm,jdm,'u-vel.  ',vlevel,1)
       call HFReadField(df,vt,idm,jdm,'v-vel.  ',vlevel,1)
       call HFReadField(df,ub,idm,jdm,'u_btrop ',0,1)
@@ -847,7 +859,9 @@ contains
    elseif (trim(df%ftype)=="nersc_weekly") then
       call HFReadField(df,ub,idm,jdm,'ubavg   ',0,1)
       call HFReadField(df,vb,idm,jdm,'vbavg   ',0,1)
-   elseif (trim(df%ftype)=="archv".or.trim(df%ftype)=="archm") then
+   elseif (trim(df%ftype)=="archv"&
+           .or.trim(df%ftype)=="archm"&
+           .or.trim(df%ftype)=="archs") then
       call HFReadField(df,ub,idm,jdm,'u_btrop ',0,1)
       call HFReadField(df,vb,idm,jdm,'v_btrop ',0,1)
    elseif (trim(df%ftype)=="archv_wav") then
@@ -1025,7 +1039,9 @@ contains
       isDPVar=trim(cfld)=='dp'
    else if (trim(df%ftype)=='nersc_daily' .or. trim(df%ftype)=='nersc_weekly') then
       isDPVar=trim(cfld)=='pres'
-   elseif (trim(df%ftype)=='archv'.or.trim(df%ftype)=='archm') then
+   elseif (trim(df%ftype)=='archv'&
+           .or.trim(df%ftype)=='archm'&
+           .or.trim(df%ftype)=='archs') then
       isDPVar=trim(cfld)=='tknss'
    elseif (trim(df%ftype)=='archv_wav') then
       isDPVar=trim(cfld)=='tknss'
@@ -1042,7 +1058,9 @@ contains
       vDim=count( df%cfld == 'dp      ' .and. df%tlevel==1 ) 
    else if (trim(df%ftype)=='nersc_daily' .or. trim(df%ftype)=='nersc_weekly') then
       vDim=count( df%cfld == 'pres    ' .and. df%tlevel==1 ) 
-   elseif (trim(df%ftype)=='archv'.or.trim(df%ftype)=='archm') then
+   elseif (trim(df%ftype)=='archv'&
+           .or.trim(df%ftype)=='archm'&
+           .or.trim(df%ftype)=='archs') then
       vDim=count( df%cfld == 'thknss  ' .and. df%tlevel==1 ) 
    elseif (trim(df%ftype)=='archv_wav') then
       vDim=count( df%cfld == 'thknss  ' .and. df%tlevel==1 ) 
@@ -1082,7 +1100,7 @@ contains
    character(len=*), intent(in) :: filename
    character(len=20) :: getfiletype
    integer :: findhdr,findab,finddaily,findweek,findrst              &
-  &   ,findarchv,findarchv_wav,findarchm
+  &   ,findarchv,findarchv_wav,findarchm,findarchs
 
    ! Check for type ...
    findhdr  =index(filename,'.hdr')
@@ -1102,6 +1120,7 @@ contains
       findarchv_wav=index(filename,'archv_wav')
       findarchv=index(filename,'archv.')
       findarchm=index(filename,'archm.')
+      findarchs=index(filename,'archs.')
       if (findrst==4) then
          getfiletype='restart'
       elseif (finddaily==4) then
@@ -1114,6 +1133,8 @@ contains
          getfiletype='archv'
       elseif (findarchm>0) then
          getfiletype='archm'
+      elseif (findarchs>0) then
+         getfiletype='archs'
       elseif (findhdr>0) then
          getfiletype='pak'
          print *,'pak files no longer supported in this version'
@@ -1151,10 +1172,10 @@ contains
          stdname='sea_floor_depth_below_sea_level' ; units='meter'; vname='model_depth'
          limits=(/0.,10001./)
       case ('saln','salin')
-         stdname='sea_water_salinity' ; units='1e-3' ; vname='salinity'
+         stdname='sea_water_salinity' ; units='1e-3' ; vname='so'
          limits=(/0,45/)
       case ('temp') 
-         stdname='sea_water_potential_temperature' ; units='Celsius' ; vname='temperature'
+         stdname='sea_water_potential_temperature' ; units='Celsius' ; vname='theta0'
          limits=(/-3,50/)
       case ('levsaln')
          stdname='sea_water_salinity' ; units='1e-3' ; vname='levitus_salinity'
@@ -1163,7 +1184,7 @@ contains
          stdname='sea_water_potential_temperature' ; units='Celsius' ; vname='levitus_temperature'
          limits=(/-3,50/)
       case ('ssh','srfhgt') 
-         stdname='sea_surface_elevation' ; units='m' ; vname='ssh'
+         stdname='sea_surface_height_above_geoid' ; units='m' ; vname='zos'
       case ('bsf','strmf') 
          stdname='ocean_barotropic_streamfunction' ; units='m3 s-1' ; vname='bsfd'
          limits=(/-1e10,1e10/)
@@ -1171,17 +1192,17 @@ contains
          if (.not.gridrotate) then
             stdname='eastward_sea_water_velocity' 
          else
-            stdname='x_sea_water_velocity' 
+            stdname='sea_water_x_velocity' 
          end if
-         units='m s-1' ; vname='u'
+         units='m s-1' ; vname='vxo'
          limits=(/-3,3/)
       case ('vtot') 
          if (.not.gridrotate) then
             stdname='northward_sea_water_velocity' 
          else
-            stdname='y_sea_water_velocity' 
+            stdname='sea_water_y_velocity' 
          end if
-         units='m s-1' ; vname='v'
+         units='m s-1' ; vname='vyo'
          limits=(/-3,3/)
       case ('u','u-vel.') 
          if (.not.gridrotate) then
@@ -1199,22 +1220,22 @@ contains
          end if
          units='m s-1' ; vname='vbaroclin'
          limits=(/-3,3/)
-      case ('hice','hicem') 
-         stdname='sea_ice_thickness' ; units='m' ; vname='hice'
+      case ('hice','hicem','hi','hi_d') 
+         stdname='sea_ice_thickness' ; units='m' ; vname='sithick'
          cellmethod='area: mean where sea_ice'
          limits=(/0,20/)
-      case ('hsnw','hsnwm','hsnow') 
-         stdname='surface_snow_thickness' ; units='m' ; vname='hsnow'
+      case ('hsnw','hsnwm','hsnow','hs','hs_d') 
+         stdname='surface_snow_thickness' ; units='m' ; vname='sisnthick'
          cellmethod='area: mean where sea_ice'
          limits=(/0,3/)
-      case ('fice','ficem') 
-         stdname='sea_ice_area_fraction' ; units='1' ; vname='fice'
+      case ('fice','ficem','aice','aice_d') 
+         stdname='sea_ice_area_fraction' ; units='1' ; vname='siconc'
          limits=(/0,1/)
-      case ('fy_age')
-          longname='age_of_first_year_ice' ; units='day' ; vname='fy_age'
+      case ('fy_age','iage_d')
+          stdname='age_of_sea_ice' ; units='day' ; vname='siage_fy'
           limits=(/0,365/)
-       case ('fy_frac')
-          longname='fraction_of_first_year_ice' ; units='1' ;  
+       case ('fy_frac','FYarea_d')
+          stdname='fraction_of_first_year_ice' ; units='1' ;  
           vname='fy_frac'
           limits=(/0,1/)
       case ('ubavg','u_btrop') 
@@ -1233,23 +1254,23 @@ contains
          end if
          units='m s-1' ; vname='vbarotrop'
          limits=(/-3,3/)
-      case ('uice') 
+      case ('uice','uvel','uvel_d') 
          if (.not.gridrotate) then
             stdname='eastward_sea_ice_velocity' 
          else
             stdname='sea_ice_x_velocity' 
          end if
          cellmethod='area: mean where sea_ice'
-         units='m s-1' ; vname='uice'
+         units='m s-1' ; vname='vxsi'
          limits=(/-3,3/)
-      case ('vice') 
+      case ('vice','vvel','vvel_d') 
          if (.not.gridrotate) then
             stdname='northward_sea_ice_velocity' 
          else
             stdname='sea_ice_y_velocity' 
          end if
          cellmethod='area: mean where sea_ice'
-         units='m s-1' ; vname='vice'
+         units='m s-1' ; vname='vysi'
          limits=(/-3,3/)
       case ('taux') 
          if (.not.gridrotate) then
@@ -1307,7 +1328,7 @@ contains
          stdname='ocean_mixed_layer_thickness_defined_by_mixing_scheme'
 !KAL20151204 - Adding bottom temperature
       case ('btemp') 
-         vname    = 'btemp'
+         vname    = 'bottomT'
          units    = 'Celsius'
          limits   = (/-3,50/)
          stdname  = 'sea_water_potential_temperature_at_sea_floor'
@@ -1450,8 +1471,8 @@ contains
          limits=(/0.,200./)
          stdname='depth_integrated_chlorophyll_one_optical_depth'
 !AS06092011
-      case ('albedo')
-         vname='albedo'
+      case ('albedo','albice_d')
+         vname='sialb'
          units='1'
          limits=(/0.,1./)
          stdname='sea_ice_albedo'
@@ -1597,7 +1618,9 @@ contains
          rday  = real(hfile%iday) + real(hfile%ihour)/24.0
          call year_day(rday,hfile%iyear,rt,'ecmwf')
          !call year_day(real(hfile%iday),hfile%iyear,rt,'ecmwf')
-      else if (trim(hfile%ftype)=='archv'.or.trim(hfile%ftype)=='archm') then
+      else if (trim(hfile%ftype)=='archv'&
+          .or.trim(hfile%ftype)=='archm'&
+          .or.trim(hfile%ftype)=='archs') then
          !rday  = real(hfile%iday) + real(hfile%ihour)/24.0
          rday  = hfile%iday+(3600*hfile%ihour+60*hfile%imin+hfile%isec)/(24.*3600.)
          call year_day(rday,hfile%iyear,rt,'ecmwf')
@@ -1632,7 +1655,8 @@ contains
 !          - I am very focused on creating outputs that I will leave
 !          this without inspection at the moment
       else if (trim(hfile%ftype)=='archv'&
-               .or.trim(hfile%ftype)=='archm') then
+               .or.trim(hfile%ftype)=='archm'&
+               .or.trim(hfile%ftype)=='archs') then
 
          read(hfile%start_ctime,'(i2.2,i2.2,i2.2)') ihour,imin,isec
          dtime = hfile%start_iday+(3600*ihour+60*imin+isec)/(24.*3600.)
