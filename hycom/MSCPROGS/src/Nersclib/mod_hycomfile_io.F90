@@ -1489,7 +1489,7 @@ contains
          limits=(/0.,100./)
          stdname='mass_concentration_of_chlorophyll_a_in_sea_water'
          case ('nit_fabm')
-         vname='n03'
+         vname='no3'
          units='mmol m-3'
          limits=(/0.,50./)
          stdname='mole_concentration_of_nitrate_in_sea_water'
