@@ -1186,23 +1186,27 @@ contains
       case ('ssh','srfhgt') 
          stdname='sea_surface_height_above_geoid' ; units='m' ; vname='zos'
       case ('bsf','strmf') 
-         stdname='ocean_barotropic_streamfunction' ; units='m3 s-1' ; vname='bsfd'
+         stdname='ocean_barotropic_streamfunction' ; units='m3 s-1' ; vname='stfbaro'
          limits=(/-1e10,1e10/)
       case ('utot') 
          if (.not.gridrotate) then
-            stdname='eastward_sea_water_velocity' 
+            stdname='eastward_sea_water_velocity'
+            vname='uo'
          else
             stdname='sea_water_x_velocity' 
+            vname='vxo'
          end if
-         units='m s-1' ; vname='vxo'
+         units='m s-1' 
          limits=(/-3,3/)
       case ('vtot') 
          if (.not.gridrotate) then
             stdname='northward_sea_water_velocity' 
+            vname='vo'
          else
             stdname='sea_water_y_velocity' 
+            vname='vyo'
          end if
-         units='m s-1' ; vname='vyo'
+         units='m s-1' 
          limits=(/-3,3/)
       case ('u','u-vel.') 
          if (.not.gridrotate) then
@@ -1235,8 +1239,8 @@ contains
           stdname='age_of_sea_ice' ; units='day' ; vname='siage_fy'
           limits=(/0,365/)
        case ('fy_frac','FYarea_d')
-          stdname='fraction_of_first_year_ice' ; units='1' ;  
-          vname='fy_frac'
+          stdname='sea_ice_fraction_of_first_year' ; units='1' ;  
+          vname='siconc_fy'
           limits=(/0,1/)
       case ('ubavg','u_btrop') 
          if (.not.gridrotate) then
@@ -1321,6 +1325,11 @@ contains
          units='m' ; vname='mlp'
          limits=(/0.,5000./)
          stdname='ocean_mixed_layer_thickness'
+!Alfati. More accurate method for computing MLD using density         
+      case ('GS_MLD')
+         units='m' ; vname='mlotst'
+         limits=(/0.,5000./)
+         stdname='ocean_mixed_layer_thickness_defined_by_sigma'
       case ('dpmixl','dp_mixl','dpmix') 
          vname='dpmix'
          units='m'
