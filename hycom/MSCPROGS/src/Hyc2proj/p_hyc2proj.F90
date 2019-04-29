@@ -629,8 +629,8 @@ program p_hyc2proj
                   mqlat=qlat
                   allocate(ub(idm,jdm))
                   allocate(vb(idm,jdm))
-                  call HFReadField(hfile,ub,idm,jdm,'ubavg   ',0,1)
-                  call HFReadField(hfile,vb,idm,jdm,'vbavg   ',0,1)
+                  call HFReadField(hfile,ub,idm,jdm,'u_btrop ',0,1)
+                  call HFReadField(hfile,vb,idm,jdm,'v_btrop ',0,1)
                   !call strmf_eval(idm,jdm,hy2d,ub,vb,depths,mqlat,mqlon)
                   call strmf_eval(idm,jdm,hy2d,ub,vb)
                   deallocate(mqlon,mqlat,ub,vb)

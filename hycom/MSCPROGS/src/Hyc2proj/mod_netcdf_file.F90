@@ -129,7 +129,8 @@ contains
    call handle_err(NF90_PUT_ATT(ncstate%ncid,NF90_GLOBAL,'field_type',  'Files based on file type '//trim(hfile%ftype)))
    call handle_err(NF90_PUT_ATT(ncstate%ncid,NF90_GLOBAL,'Conventions',  'CF-1.4'))
 
-   if (hfile%ftype=='archv'.or.hfile%ftype=='archv_wav') then
+   if (hfile%ftype=='archv'.or.hfile%ftype=='archv_wav'&
+       .or.hfile%ftype=='archm'.or.hfile%ftype=='archs') then
       !put time in field date
       write(c80,'(i2.2,a,i2.2,a,i2.2,a)') hfile%ihour,':',hfile%imin,':',hfile%isec,'Z'
       c80   = rtd%cyy//'-'//rtd%cmm//'-'//rtd%cdm//'T'//trim(c80)
@@ -145,7 +146,8 @@ contains
       call handle_err(NF90_PUT_ATT(ncstate%ncid,NF90_GLOBAL,'field_time',trim(c80)))
    end if
 
-   if (hfile%ftype=='archv'.or.hfile%ftype=='archv_wav') then
+   if (hfile%ftype=='archv'.or.hfile%ftype=='archv_wav'&
+       .or.hfile%ftype=='archm'.or.hfile%ftype=='archs') then
       !put time in bulletin date
       write(c80,'(i2.2,a,i2.2,a,i2.2,a)') hfile%start_ihour,':',hfile%start_imin,':',hfile%start_isec,'Z'
       c80   = rtb%cyy//'-'//rtb%cmm//'-'//rtb%cdm//'T'//trim(c80)
@@ -227,7 +229,7 @@ contains
    call forecastDate(hfile,rtd)
    call startDate(hfile,rtb)
 
-   if (hfile%ftype=='archv') then
+   if (hfile%ftype=='archv'.or.hfile%ftype=='archm'.or.hfile%ftype=='archs') then
       tunits   = 'seconds since 1970-1-1T00:00:00Z'
       year0    = 1970   !reference year
    elseif (hfile%ftype=='archv_wav') then
@@ -244,7 +246,7 @@ contains
    hourval=datetojulian(rtd%iyy,rtd%imm,rtd%idm+1,year0,1,1)*24
    hour_offset=hourval-hourref
 
-   if (hfile%ftype=='archv') then
+   if (hfile%ftype=='archv'.or.hfile%ftype=='archm'.or.hfile%ftype=='archs') then
       !!add "time of day"
       timeval  = 3600*(hourval+hfile%ihour)+60*hfile%imin+hfile%isec
    elseif (hfile%ftype=='archv_wav') then
