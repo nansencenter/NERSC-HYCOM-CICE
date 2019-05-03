@@ -1236,7 +1236,7 @@ contains
          stdname='sea_ice_area_fraction' ; units='1' ; vname='siconc'
          limits=(/0,1/)
       case ('fy_age','iage_d')
-          stdname='age_of_sea_ice' ; units='day' ; vname='siage_fy'
+          stdname='age_of_sea_ice' ; units='year' ; vname='siage'
           limits=(/0,365/)
        case ('fy_frac','FYarea_d')
           stdname='sea_ice_fraction_of_first_year' ; units='1' ;  
