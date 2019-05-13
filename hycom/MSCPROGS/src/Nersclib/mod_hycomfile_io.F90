@@ -1026,6 +1026,9 @@ contains
    else if(cfld=='attcfabm') then
      is3DVar=.true.
 ! _FABM__caglar_
+!-ALFATih option fo total vel.
+   else if(cfld=='utotl' .and. trim(df%ftype)=='archm') then
+     is3DVar=.true.
    else        
      is3DVar=count( df%cfld == char8 .and. df%tlevel==timelevel ) > 1
    end if
@@ -1188,7 +1191,7 @@ contains
       case ('bsf','strmf') 
          stdname='ocean_barotropic_streamfunction' ; units='m3 s-1' ; vname='stfbaro'
          limits=(/-1e10,1e10/)
-      case ('utot') 
+      case ('utot','utotl') 
          if (.not.gridrotate) then
             stdname='eastward_sea_water_velocity'
             vname='uo'
@@ -1198,7 +1201,7 @@ contains
          end if
          units='m s-1' 
          limits=(/-3,3/)
-      case ('vtot') 
+      case ('vtot','vtotl') 
          if (.not.gridrotate) then
             stdname='northward_sea_water_velocity' 
             vname='vo'
