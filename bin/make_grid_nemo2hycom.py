@@ -24,6 +24,11 @@ import numpy as np
 # Code reads mesh filename and then generate both regional and bathy [ab] files.
 # Note that information about native grid netcdffiles (their paths ,etc) can be found in REGION.src
 # I have used hard-coded grid size which you need to change in the case using different subdomains.
+#
+# Usage:
+#
+# ../bin/make_grid_nemo2hycom.py  /nird/projects/nird/NS9481K/MERCATOR_DATA/GRID_COORD/ext-GL12V1_mesh_zgr.nc 
+#
 # Mostafa Bakhoday-Paskyabi, 16 May 2019.
 # History:
 #
