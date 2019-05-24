@@ -479,6 +479,34 @@ c
  14   continue
       kkin=kk
 114   continue
+
+c    correct one bug for mean files: skiping the last two fields about
+c    si_u/si_v at 24th May 2019 
+      if (mntype.eq.1.and.icegln) then
+c
+        read (ni,'(a)',end=6) cline
+        write(lp,'(a)')       cline(1:len_trim(cline))
+        i = index(cline,'=')
+        read (cline(i+1:),*)  nstep,time(3),layer,thet,hminb,hmaxb
+        call getfld(work, ni, hminb,hmaxb, .false.)
+        call extrct(work,idm,jdm,iorign,jorign, 
+     &              si_u,ii,jj)
+c
+        read (ni,'(a)',end=6) cline
+        write(lp,'(a)')       cline(1:len_trim(cline))
+        i = index(cline,'=')
+        read (cline(i+1:),*)  nstep,time(3),layer,thet,hminb,hmaxb
+        call getfld(work, ni, hminb,hmaxb, .false.)
+        call extrct(work,idm,jdm,iorign,jorign, 
+     &              si_v,ii,jj)
+
+      endif
+
+
+
+
+
+
 c
       if     (iweight.eq.0) then
         iweight = nstep  ! mean archive
