@@ -626,7 +626,9 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=False,iexpt=10,iversn=22,yrfla
          no3=dummy_no3
          po4=dummy_po4
          si=dummy_si
-
+         po4 = po4 * 106.0 * 12.01
+         si = si   * 6.625 * 12.01
+         no3 = no3 * 6.625 * 12.01
       #   field_interpolator=FieldInterpolatorBilinear(blon,blat,plon.flatten(),plat.flatten())
       # Read and calculculate U in hycom U-points. 
       logger.info("gridU, gridV, gridT & gridS  file")
