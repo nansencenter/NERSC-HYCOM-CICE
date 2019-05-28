@@ -1,4 +1,4 @@
-VPATH = .:Build/
+VPATH = .:RCS:Build/
 
 .SUFFIXES:
 .SUFFIXES: .o .F90 .f90 .F .f .H .h  .c
@@ -13,7 +13,7 @@ LIBS:= -L../../../lib/ -lhycnersc $(LIBS)
 
 # This is the hycom utility includes (modules)
 # NB: Path is relative to TMP dir
-INCLUDE:= -I../../../include/ -I./ $(INCLUDE)
+INCLUDE:= -I../ -I../../../include/ -I./ $(INCLUDE)
 
 # Set specific flag SOUP is high resolution and frequency wind from oceanweather
 #CPPFLAGS:=$(CPPFLAGS) -USOUP -DKARALIGHT

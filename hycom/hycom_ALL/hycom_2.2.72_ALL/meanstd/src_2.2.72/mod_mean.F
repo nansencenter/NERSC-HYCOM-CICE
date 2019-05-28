@@ -35,7 +35,9 @@ c
      &   ubaro_m,vbaro_m,pbaro_m,kebaro_m,
      &   montg_m,srfht_m,dpbl_m,dpmixl_m,
      &   tmix_m,smix_m,thmix_m,umix_m,vmix_m,kemix_m,
-     &   surflx_m,salflx_m, covice_m,thkice_m,temice_m
+     &   surflx_m,salflx_m, covice_m,thkice_m,temice_m,
+     &   si_u, si_um, si_v, si_vm
+c    add two sea-ice variables for drift
 c
       real,    save, allocatable, dimension (:)     :: 
      &   theta
@@ -106,6 +108,8 @@ c
       allocate( covice(ii,jj) )
       allocate( thkice(ii,jj) )
       allocate( temice(ii,jj) )
+      allocate(   si_u(ii,jj) )
+      allocate(   si_v(ii,jj) )
 c
       allocate(  ubaro_m(ii,jj) );    ubaro_m = 0.0
       allocate(  vbaro_m(ii,jj) );    vbaro_m = 0.0
@@ -126,6 +130,8 @@ c
       allocate( covice_m(ii,jj) );   covice_m = 0.0
       allocate( thkice_m(ii,jj) );   thkice_m = 0.0
       allocate( temice_m(ii,jj) );   temice_m = 0.0
+      allocate(    si_um(ii,jj) );      si_um = 0.0
+      allocate(    si_vm(ii,jj) );      si_vm = 0.0
 c
       allocate(     ip(ii,jj) )
       allocate(     iq(ii,jj) )
@@ -223,6 +229,8 @@ c
             covice_m(i,j)   = covice_m(i,j)   + covice(i,j)   * s
             thkice_m(i,j)   = thkice_m(i,j)   + thkice(i,j)   * s
             temice_m(i,j)   = temice_m(i,j)   + temice(i,j)   * s
+               si_um(i,j)   =    si_um(i,j)   +   si_u(i,j)   * s
+               si_vm(i,j)   =    si_vm(i,j)   +   si_v(i,j)   * s
 c
                       sw(:) =                       dw(i,j,:) * s
 c
@@ -332,6 +340,8 @@ c
             covice_m(i,j)   = covice_m(i,j)   + covice(i,j)**2   * s
             thkice_m(i,j)   = thkice_m(i,j)   + thkice(i,j)**2   * s
             temice_m(i,j)   = temice_m(i,j)   + temice(i,j)**2   * s
+               si_um(i,j)   =    si_um(i,j)   +   si_u(i,j)**2   * s
+               si_vm(i,j)   =    si_vm(i,j)   +   si_v(i,j)**2   * s
 c
                       sw(:) =                       dw(i,j,:)    * s
 c
@@ -499,6 +509,8 @@ c
       covice_m = covice
       thkice_m = thkice
       temice_m = temice
+         si_um =   si_u
+         si_vm =   si_v 
 *
 *     write(6,*) 'mean_copy  -    dp_m = ',   dp_m(54, 1,1),
 *    &                                        dp(  54, 1,1)
@@ -613,6 +625,8 @@ c
             covice_m(i,j) = q*(covice_m(i,j) - covice(i,j))
             thkice_m(i,j) = q*(thkice_m(i,j) - thkice(i,j))
             temice_m(i,j) = q*(temice_m(i,j) - temice(i,j))
+               si_um(i,j) = q*(   si_um(i,j) -   si_u(i,j))
+               si_vm(i,j) = q*(   si_vm(i,j) -   si_v(i,j))
           endif
         enddo !i
       enddo !j
@@ -653,6 +667,8 @@ c
         call mean_box(covice_m,ii,jj, 1,nbox,larctic,lperiod)
         call mean_box(thkice_m,ii,jj, 1,nbox,larctic,lperiod)
         call mean_box(temice_m,ii,jj, 1,nbox,larctic,lperiod)
+        call mean_box(   si_um,ii,jj, 1,nbox,larctic,lperiod)
+        call mean_box(   si_vm,ii,jj, 1,nbox,larctic,lperiod)
       endif !nbox
 *
 *     write(6,*) 'mean_diff  -    dp_m = ',   dp_m(54, 1,1),
@@ -754,6 +770,8 @@ c
             covice_m(i,j)   = covice_m(i,j)   * s
             thkice_m(i,j)   = thkice_m(i,j)   * s
             temice_m(i,j)   = temice_m(i,j)   * s
+               si_um(i,j)   =    si_um(i,j)   * s
+               si_vm(i,j)   =    si_vm(i,j)   * s
 c
             do k= 1,kk
               dw_m(i,j,k) = dw_m(i,j,k) * s
@@ -793,6 +811,8 @@ c
             covice_m(i,j)   = spval
             thkice_m(i,j)   = spval
             temice_m(i,j)   = spval
+               si_um(i,j)   = spval
+               si_vm(i,j)   = spval
 c
                 dw_m(i,j,:) = spval
                 dp_m(i,j,:) = spval
@@ -871,6 +891,8 @@ c
             covice_m(i,j) = std(covice(i,j) - covice_m(i,j)**2)
             thkice_m(i,j) = std(thkice(i,j) - thkice_m(i,j)**2)
             temice_m(i,j) = std(temice(i,j) - temice_m(i,j)**2)
+               si_um(i,j) = std(  si_u(i,j) -    si_um(i,j)**2)
+               si_vm(i,j) = std(  si_v(i,j) -    si_vm(i,j)**2)
           endif
         enddo
       enddo
