@@ -1213,7 +1213,7 @@ contains
       integer :: ios,idmtst,jdmtst
       !integer :: nestn,i,j,k
     if (nested_bio) then
-      write(flnm,'("nest/archv.",i4.4,"_",i3.3,"_",i2.2,"_bio")') iyear, iday, ihour
+      write(flnm,'("nest/archv_fabm.",i4.4,"_",i3.3,"_",i2.2)') iyear, iday, ihour
 
       if (mnproc.eq.1) write (lp,*) 'hycom_fabm_nest_rdnest_in: ', flnm
 

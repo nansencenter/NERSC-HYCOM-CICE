@@ -311,17 +311,17 @@ echo $DIR
 
 # MOSTAFA: BEGIN
 if  [ "$LWFLAG" -eq -1 -a "$NRDFLG" -eq 3 ] ; then
-declare -a arr=("radflx" "shwflx" "nlwrad" "vapmix" "airtmp" "precip" "mslprs" "wndewd" "wndnwd")
+declare -a arr=("radflx" "shwflx" "nlwrad" "vapmix" "airtmp" "precip" "mslprs" "wndewd" "wndnwd" "dewpt")
 elif  [ "$LWFLAG" -eq -1 -a "$NRDFLG" -eq 4 ] ; then
-declare -a arr=("radflx" "shwflx" "nlwrad" "nswrad"  "vapmix" "airtmp" "precip" "mslprs" "wndewd" "wndnwd")
+declare -a arr=("radflx" "shwflx" "nlwrad" "nswrad"  "vapmix" "airtmp" "precip" "mslprs" "wndewd" "wndnwd" "dewpt")
 elif  [ "$LWFLAG" -eq -1 -a "$NRDFLG" -eq 5 ] ; then
-declare -a arr=("radflx" "shwflx" "nswrad"  "vapmix" "airtmp" "precip" "mslprs" "wndewd" "wndnwd")
+declare -a arr=("radflx" "shwflx" "nswrad"  "vapmix" "airtmp" "precip" "mslprs" "wndewd" "wndnwd" "dewpt")
 elif  [ "$LWFLAG" -eq -1 -a "$NRDFLG" -eq 6 ] ; then
-declare -a arr=("radflx" "shwflx" "nswrad"  "vapmix" "airtmp" "precip" "mslprs" "wndewd" "wndnwd")
+declare -a arr=("radflx" "shwflx" "nswrad"  "vapmix" "airtmp" "precip" "mslprs" "wndewd" "wndnwd" "dewpt")
 elif  [ "$LWFLAG" -eq -1 -a "$NRDFLG" -eq 7 ] ; then
-declare -a arr=("radflx" "shwflx" "nswrad"  "vapmix" "airtmp" "precip" "mslprs" "wndewd" "wndnwd")
+declare -a arr=("radflx" "shwflx" "nswrad"  "vapmix" "airtmp" "precip" "mslprs" "wndewd" "wndnwd" "dewpt")
 else
-declare -a arr=("radflx" "shwflx" "vapmix" "airtmp" "precip" "mslprs" "wndewd" "wndnwd")
+declare -a arr=("radflx" "shwflx" "vapmix" "airtmp" "precip" "mslprs" "wndewd" "wndnwd" "dewpt")
 fi
 #for i in tauewd taunwd wndspd radflx shwflx vapmix \
 #   airtmp precip uwind vwind clouds relhum slp ; do
@@ -466,7 +466,7 @@ fi
 #
 if [ $TRCRLX -ne 0 ] ; then
    echo "**Setting up tracer relaxation"
-   for i in ECO_no3 ECO_pho ECO_sil ECO_oxy; do
+   for i in ECO_no3 ECO_pho ECO_sil ECO_oxy CO2_dic CO2_alk; do
       j=$(echo $i | head -c7)
       [ ! -f  $BASEDIR/relax/${E}/relax.$j.a ] && tellerror "$BASEDIR/relax/${E}/relax.$j.a does not exist"
       [ ! -f  $BASEDIR/relax/${E}/relax.$j.b ] && tellerror "$BASEDIR/relax/${E}/relax.$j.b does not exist"
