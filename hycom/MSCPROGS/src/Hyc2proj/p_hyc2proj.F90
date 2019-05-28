@@ -228,11 +228,17 @@ program p_hyc2proj
          if (fld(ifld)%option .and. fld(ifld)%vecflag) then
 
             if (is3DVar(hfile,fld(ifld)%fextract,1)) then
-               call HFReadField3D(hfile,hy3d ,idm,jdm,kdm,fld(ifld  )%fextract,1)
-               call HFReadField3D(hfile,hy3d2,idm,jdm,kdm,fld(ifld+1)%fextract,1)
+!Alfatih 20190510 added option for total velcity
+               if (trim(fld(ifld)%fextract)=='utotl') then
+                  do k=1,kdm
+                    call HFReaduvtot(hfile,hy3d(:,:,k),hy3d2(:,:,k),idm,jdm,k,1)
+                  end do
+               else 
+                  call HFReadField3D(hfile,hy3d ,idm,jdm,kdm,fld(ifld  )%fextract,1)
+                  call HFReadField3D(hfile,hy3d2,idm,jdm,kdm,fld(ifld+1)%fextract,1)
+               end if
 
                print '(a)','Processing 3D Vector pair '// fld(ifld  )%fextract//' '//fld(ifld+1)%fextract
-
 
                if (trim(cprojection)/='native') then
                   if (gridrotate) then
@@ -311,8 +317,13 @@ program p_hyc2proj
 
                else
                  print '(a)','Processing 2D Vector pair '// fld(ifld  )%fextract//' '//fld(ifld  )%fextract
-                 call HFReadField(hfile,hy2d ,idm,jdm,fld(ifld  )%fextract,0,1)
-                 call HFReadField(hfile,hy2d2,idm,jdm,fld(ifld+1)%fextract,0,1)
+                 ! Alfatih: option to compute total surface velocity
+                 if (trim(fld(ifld)%fextract)=='utotl') then
+                    call HFReaduvtot(hfile,hy2d,hy2d2,idm,jdm,0,1)
+                 else 
+                    call HFReadField(hfile,hy2d ,idm,jdm,fld(ifld  )%fextract,0,1)
+                    call HFReadField(hfile,hy2d2,idm,jdm,fld(ifld+1)%fextract,0,1)
+                 end if
                  if (trim(cprojection)/='native') then
                    if (gridrotate) then 
                      call rotate_general(hy2d,hy2d2,yproj,xproj,idm,jdm,'m2l')
@@ -629,8 +640,8 @@ program p_hyc2proj
                   mqlat=qlat
                   allocate(ub(idm,jdm))
                   allocate(vb(idm,jdm))
-                  call HFReadField(hfile,ub,idm,jdm,'ubavg   ',0,1)
-                  call HFReadField(hfile,vb,idm,jdm,'vbavg   ',0,1)
+                  call HFReadField(hfile,ub,idm,jdm,'u_btrop ',0,1)
+                  call HFReadField(hfile,vb,idm,jdm,'v_btrop ',0,1)
                   !call strmf_eval(idm,jdm,hy2d,ub,vb,depths,mqlat,mqlon)
                   call strmf_eval(idm,jdm,hy2d,ub,vb)
                   deallocate(mqlon,mqlat,ub,vb)
