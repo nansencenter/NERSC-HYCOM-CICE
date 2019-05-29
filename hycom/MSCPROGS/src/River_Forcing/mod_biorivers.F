@@ -106,7 +106,7 @@
       print *,'Dumping hycom forcing fields'
       if (mnproc==1) then
          open (unit=87,
-     &   file='forcing.rivnitr.b', 
+     &   file='forcing.ECO_no3.b', 
      &         status='replace', action='write')
          write(87,'(a)') 'River nitrate fluxes '
          write(87,'(a)') ''
@@ -120,7 +120,7 @@
       print *,'Dumping hycom forcing fields'
       if (mnproc==1) then
          open (unit=88,
-     &   file='forcing.rivphos.b', 
+     &   file='forcing.ECO_pho.b', 
      &         status='replace', action='write')
          write(88,'(a)') 'River phosphate fluxes '
          write(88,'(a)') ''
@@ -134,7 +134,7 @@
       print *,'Dumping hycom forcing fields'
       if (mnproc==1) then
          open (unit=89,
-     &   file='forcing.rivsili.b', 
+     &   file='forcing.ECO_sil.b', 
      &         status='replace', action='write')
          write(89,'(a)') 'River silicate fluxes '
          write(89,'(a)') ''
@@ -150,7 +150,7 @@
          ip=0
       endwhere
 
-      call zaiopf('forcing.rivnitr.a', 'replace', 87) 
+      call zaiopf('forcing.ECO_no3.a', 'replace', 87) 
       do mo=1,12
          call zaiowr(nit_flux(:,:,mo),ip,.false.,
      &               hmin,hmax,87,.true.)
@@ -161,7 +161,7 @@
       if (mnproc==1) close(87)
       call zaiocl(87)
 
-      call zaiopf('forcing.rivphos.a', 'replace', 88) 
+      call zaiopf('forcing.ECO_pho.a', 'replace', 88) 
       do mo=1,12
          call zaiowr(pho_flux(:,:,mo),ip,.false.,
      &               hmin,hmax,88,.true.)
@@ -172,7 +172,7 @@
       if (mnproc==1) close(88)
       call zaiocl(88)
 
-      call zaiopf('forcing.rivsili.a', 'replace', 89) 
+      call zaiopf('forcing.ECO_sil.a', 'replace', 89) 
       do mo=1,12
          call zaiowr(sil_flux(:,:,mo),ip,.false.,
      &               hmin,hmax,89,.true.)
@@ -463,14 +463,13 @@
          stop 'Data/biorivers.dat file does not exist'
       end if
       open(18,file=flriver,STATUS='OLD')
-
       k=1
       do m=1,10000
          read(18,'(l1,t3,a60)',end=100,err=100)riv_active,riv_string
          read(18,'(f10.1,12f8.5)')riv_annual,(riv_flux(i),i=1,12)
-         read(18,'(f10.1,12f8.5)')nit_annual,(nit_flux(i),i=1,12)
-         read(18,'(f10.1,12f8.5)')pho_annual,(pho_flux(i),i=1,12)
-         read(18,'(f10.1,12f8.5)')sil_annual,(sil_flux(i),i=1,12)
+         read(18,'(f14.11,12f8.5)')nit_annual,(nit_flux(i),i=1,12)
+         read(18,'(f14.11,12f8.5)')pho_annual,(pho_flux(i),i=1,12)
+         read(18,'(f14.11,12f8.5)')sil_annual,(sil_flux(i),i=1,12)
          read(18,'(2f9.2)')riv_lat,riv_lon
          riv_banned=.false.
 
@@ -534,11 +533,11 @@
 
            ! Convert from km^3/y to m^3/s
            riv_annual=riv_annual*1.e09/(365.*24.*3600.) 
-          ! Convert from mg/m3y to  mg/m3s
-           nit_annual=nit_annual/(365.*24.*3600.)
-           pho_annual=pho_annual/(365.*24.*3600.)
-           sil_annual=sil_annual/(365.*24.*3600.)
-
+          ! Convert from mg/m3y to  mg/m3s ! CAGLAR ! already done in
+          ! python script
+          ! nit_annual=nit_annual/(365.*24.*3600.)
+          ! pho_annual=pho_annual/(365.*24.*3600.)
+          ! sil_annual=sil_annual/(365.*24.*3600.)
            if (mnproc==1) then
               write(lp,*) 'Pivot point for river location       =',
      &             riv_ip,riv_jp
@@ -1012,7 +1011,7 @@
      &         ' km^3 y^-1'
 
             if (mo==1) then
-               print '(a,f10.2,a,f10.2,a)', 
+               print '(a,f16.10,a,f10.2,a)', 
      &     '---- Annual average nitrate flux ---- ',river(k)%annual_nit,     
      &     ' mg/m^3 s^-1, or ', 
      &     river(k)%annual_nit*365*86400, 
@@ -1026,7 +1025,7 @@
      &         ' mg/m^3 y^-1'
 
              if (mo==1) then
-               print '(a,f10.2,a,f10.2,a)', 
+               print '(a,f16.10,a,f10.2,a)', 
      &     '---- Annual average phosph. flux ---- ',river(k)%annual_pho,     
      &     ' mg/m^3 s^-1, or ', 
      &     river(k)%annual_pho*365*86400, 
@@ -1040,7 +1039,7 @@
      &         ' mg/m^3 y^-1'
 
              if (mo==1) then
-               print '(a,f10.2,a,f10.2,a)', 
+               print '(a,f16.10,a,f10.2,a)', 
      &     '---- Annual average silica. flux ---- ',river(k)%annual_sil,     
      &     ' mg/m^3 s^-1, or ', 
      &     river(k)%annual_sil*365*86400, 
