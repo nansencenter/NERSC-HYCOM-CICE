@@ -23,7 +23,8 @@ c
 c     first run isuba_gmap to generate the sub-region grid map.
 c
 c     Alan J. Wallcraft,  NRL,  July 2002 and January 2009.
-c
+c     Mostafa Bakhoday-Paskyabi, June 2018.
+c     Mostafa Bakhoday-Paskyabi, May 2019.
       character*80         :: cline,cline_u,cline_out
       character*128        :: flnm_in, flnm_tin,
      &                        flnm_out,flnm_top,flnm_reg,flnm_map
@@ -265,11 +266,6 @@ cMostafa
           endif
         enddo
       enddo
-cKAL  !KAL
-cKAL  atmp = m_sm
-cKAL  call zaiowr(atmp,m_sm,.false., 
-cKAL &   hmina,hmaxa, 99, .false.)
-cKAL  call zaiocl(99)
 c
       do j= 1,jdm
         iv_sm(j,1) = idm
@@ -402,7 +398,7 @@ c
           exit
         endif
 c       
-        print *,cline,ni
+        !print *,cline,ni
         l = index(cline,'=')
         read (cline(l+1:),*)  itmp,rtmp,itmp,rtmp,hminb,hmaxb
         call zaiord(a_in,m_in,.false., hmina,hmaxa, ni)
@@ -518,8 +514,8 @@ c
           call zbiowr(a_out,m_out,.false., hmina,hmaxa, no, .false.)
           write(no,'(a,1p2e16.7)') cline_u(1:41),hmina,hmaxa
           call flush(no)
-          write(lp,'(a,1p2e16.7)') cline_u(1:41),hmina,hmaxa
-          call flush(lp)
+          !write(lp,'(a,1p2e16.7)') cline_u(1:41),hmina,hmaxa
+c          call flush(lp)
 c
 c         write v-velocity on output v-grid.
 c
@@ -535,8 +531,8 @@ c
           call zbiowr(a_out,m_out,.false., hmina,hmaxa, no, .false.)
           write(no,'(a,1p2e16.7)') cline(1:41),hmina,hmaxa
           call flush(no)
-          write(lp,'(a,1p2e16.7)') cline(1:41),hmina,hmaxa
-          call flush(lp)
+          !write(lp,'(a,1p2e16.7)') cline(1:41),hmina,hmaxa
+c          call flush(lp)
 c
         elseif (cline(1:8).eq.'thknss  ') then
 c
@@ -600,8 +596,8 @@ c
           call zbiowr(a_out,m_out,.true.,  hmina,hmaxa, no, .false.)
           write(no,'(a,1p2e16.7)') cline(1:41),hmina,hmaxa
           call flush(no)
-          write(lp,'(a,1p2e16.7)') cline(1:41),hmina,hmaxa
-          call flush(lp)
+          !write(lp,'(a,1p2e16.7)') cline(1:41),hmina,hmaxa
+c          call flush(lp)
 c
         else
 c
@@ -636,7 +632,8 @@ c
             enddo !j
             if     (ibads.ne.0) then
               write(lp,*)
-              write(lp,*) 'error - wrong bathymetry for this archive'
+              write(lp,*) 
+     &        'CHECK LATER: issue in bathymetry for this archive file'
               write(lp,*) 'number of topo sea  mismatches = ',ibads
               write(lp,*) 'number of topo land mismatches = ',ibadl
               write(lp,*)
@@ -646,7 +643,8 @@ c
             if     (ibadl.ne.0) then
               write(lp,*)
 *             write(lp,*) 'warning - wrong bathymetry for this archive'
-              write(lp,*) 'error - wrong bathymetry for this archive'
+              write(lp,*) 
+     &        'CHECK LATER: issue in bathymetry for this archive file'
               write(lp,*) 'number of topo sea  mismatches = ',ibads
               write(lp,*) 'number of topo land mismatches = ',ibadl
               write(lp,*)
@@ -665,8 +663,8 @@ c
           call zbiowr(a_out,m_out,.true.,  hmina,hmaxa, no, .false.)
           write(no,'(a,1p2e16.7)') cline(1:41),hmina,hmaxa
           call flush(no)
-          write(lp,'(a,1p2e16.7)') cline(1:41),hmina,hmaxa
-          call flush(lp)
+          !write(lp,'(a,1p2e16.7)') cline(1:41),hmina,hmaxa
+c          call flush(lp)
         endif
       enddo  !loop until file ends
 c
@@ -775,12 +773,6 @@ c
 c --- repeated passes of 9-point "smoother" to
 c ---  convert all mask==2 points to mask==1.
 c --- double-buffering mm allows in-place use of a.
-cKAL  !KAL 
-!      call zaiopf("landfill.a",'replace', 99)
-!      atmp = mm(1:m,1:n,0)
-!      call zaiowr(atmp,mm(1:m,1:n,0),.false., 
-!     &   hmina,hmaxa, 99, .false.)
-
 cMostafa
 !      call zaiopf("landfill.a",'replace', 99)
 !      CALL ZHOPNC(99, "landfill.b", 'FORMATTED', 'NEW', 0)
@@ -885,11 +877,11 @@ cMostafa
         mm(if:il,jf:jl,ip0) = mm(if:il,jf:jl,ip1)
       enddo  ! ipass=1,...
       if     (lfirst) then
-        write(6,*)
+!        write(6,*)
         lfirst = .false.
       endif
       if     (nleft.ne.0) then
-        write(6,'(/a,i6,a/a/)')
+!        write(6,'(/a,i6,a/a/)')
 !     &    'error in landfill - ',
 !     &    nleft,' "mask==2" values are not fillable',
 !     &    'probably a mismatch between coarse and fine land masks'
