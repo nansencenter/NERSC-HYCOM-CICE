@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+import warnings
+warnings.filterwarnings("ignore")
 import modeltools.hycom
 import argparse
 import datetime
@@ -15,6 +17,9 @@ import netCDF4
 import logging
 import scipy.ndimage.measurements
 import re
+#  Modified June 2018, Mostafa Bakhoday-Paskyabi
+#  Modified May 2019, Mostafa Bakhoday-Paskyabi
+
 
 # Set up logger
 _loglevel=logging.DEBUG
@@ -132,7 +137,7 @@ def relaxation_mask(rmumask,ifport,ilport,jfport,jlport,kdport,rmu_width) :
       #print "north"
       #distedge[jfport-rmu_width:jfport,ifport:ilport+1] = tmp[::-1]
       #print distedge[jfport-rmu_width-1:jfport-1,ifport:ilport+1].shape, tmp[::-1].shape
-      distedge[jfport-rmu_width-1:jfport-1,ifport:ilport+1] = tmp[::-1]
+      distedge[jfport-rmu_width:jfport,ifport:ilport+1] = tmp[::-1]
    elif kdport == 3 : # East
       #print "east"
       #distedge[jfport:jlport+1,ifport-rmu_width:ifport] = tmp[::-1]
@@ -169,6 +174,7 @@ def check_consistency(ifport,ilport,jfport,jlport,kdport,iu,iv,port_number) :
       for  i2 in range(ifport,ilport+1) :
          if not iv[jfport+1,i2] or not iv[jfport+2,i2]  :
             fatal=True
+            #fatal = False
             # Write using fortran indexes
             logger.error("Port number %d(kdport=%d)  : Point  (i=%5d,j=%5d) has land too close to port"%(port_number,kdport,i2+1,jfport+1))
    elif kdport == 1 :
@@ -369,8 +375,7 @@ def main(infile,rmu_width,rmu_efold,dpi=180):
    if fatal :
       logger.error("Errors were encountered - see errors above, and consult diag files. You may need to modify your topo file")
       raise NameError,"fatal exit"
-
-
+   return rmumask,rmumask_m
 
 
 if __name__ == "__main__" :
