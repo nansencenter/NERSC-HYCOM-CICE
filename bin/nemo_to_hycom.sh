@@ -14,7 +14,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 # History
 # (1) December 2018: Mostafa Bakhoday-Paskyabi
-# (2) January 2019: tiny corrections
+# (2) May 2019: some correction on biophys [ab] files, Mostafa Bakhoday-Paskyabi
 #
 #
 module load basemap/1.0.7-intel-2017a-Python-2.7.13
@@ -54,6 +54,7 @@ if [ $# -lt 2 ] ; then
     echo "Example:"
     echo "   ../bin/nemo_to_hycom.sh ../../TP5a0.06/expt_01.0/ ../MERCATOR-PHY-24-2011-01-02*.nc"
     echo " ../bin/nemo_to_hycom.sh ../../TP5a0.06/expt_01.2/  /nird/projects/nird/NS9481K/MERCATOR_DATA/PHY/2007/ext-GLORYS12V1_1dAV_20070302_20070303_grid2D_R20070307.nc -m native"
+    echo "../bin/nemo_to_hycom.sh ../../TP5a0.06/expt_01.0/ /nird/projects/nird/NS9481K/MERCATOR_DATA/PHY/2013/ext-GLORYS12V1_1dAV_2013110*_grid2D*.nc -b /nird/projects/nird/NS2993K/MERCATOR_DATA/BIO/201"
     echo " NOTE YOU NEED TO RUN THIS SCRIPT WITHIN THE NEMO EXPERIMENT FOLDER"
     exit 1
 fi
@@ -109,7 +110,7 @@ END
 #
 #
 for source_archv in $@ ; do
-   #
+   # TODO: following 2 lines are for native grid. It needs simply to be modified to be general.
    fn=$(echo ${source_archv:${#source_archv}-32})
    [[ $source_archv != *"ext-GLORYS12V1_1dAV_"* ]] && continue
    echo $source_archv
@@ -127,7 +128,7 @@ for source_archv in $@ ; do
       # (2) Based on generated archive files in (1) the grid and topography files are generated.
       #
       ########################
-      ${BASEDIR}/bin/archvz2hycom.sh $nest_expt $(model_datetime "$filename")    
+      ${BASEDIR}/bin/archvz2hycom_biophys.sh $nest_expt $(model_datetime "$filename")
       ########################
    
       else
@@ -137,7 +138,7 @@ for source_archv in $@ ; do
       # (2) Based on generated archive files in (1) the grid and topography files are generated.
       #
       ########################
-      ${BASEDIR}/bin/archvz2hycom.sh $nest_expt $(model_datetime "$filename") -b 1  
+      ${BASEDIR}/bin/archvz2hycom_biophys.sh $nest_expt $(model_datetime "$filename") -b 1  
       ########################
 
       fi
