@@ -2,7 +2,7 @@
 #
 # --- environment variables defining the region and experiment number.
 #
-export R=TP5a0.06
+export R=TP0a1.00
 
 # Consistency check. 
 mydir=$(cd $(dirname ${BASH_SOURCE}) && pwd)
