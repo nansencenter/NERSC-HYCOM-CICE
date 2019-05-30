@@ -1,0 +1,16 @@
+For nesting:
+
+(1)	Link your bin folder to both TP5 and NMO region folders. It is assumed you have your NEMO grid and bathy files in NMOa0.08/topo folder. Furthermore, you have set correct topo file version in TP5a0.06/expt_0.20/EXPT.src.
+(2)	Change your current directory to /NMOa0.08/expt_01.0
+(3)	Create index-map files in /NMOa0.08/expt_01.0 directory: 
+../bin/isuba_gmap.sh TP5a0.06-PATH
+(4)	If everything sets correctly, you need only fire following lines for two cases with and without bio files:
+      With bio
+../bin/nemo_to_hycom.sh  ../../TP5a0.06/expt_01.2/ /nird/projects/nird/NS9481K/MERCATOR_DATA/PHY/2013/ext-GLORYS12V1_1dAV_2013110*_grid2D*.nc -b /nird/projects/nird/NS2993K/MERCATOR_DATA/BIO/2013
+
+
+      Without bio
+../bin/nemo_to_hycom.sh  ../../TP5a0.06/expt_01.2/ /nird/projects/nird/NS9481K/MERCATOR_DATA/PHY/2013/ext-GLORYS12V1_1dAV_2013110*_grid2D*.nc
+
+(5)	Above will generate nesting files in TP5a0.06/nest/012 folder
+
