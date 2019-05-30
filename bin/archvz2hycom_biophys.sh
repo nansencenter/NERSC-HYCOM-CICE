@@ -289,9 +289,9 @@ T
 T
 T
 T
-F
-F
-F
+NONE
+NONE
+NONE
 EOF
 else
 test1=${target_archv:0:5}
