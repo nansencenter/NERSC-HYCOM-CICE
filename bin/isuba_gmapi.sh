@@ -33,6 +33,8 @@ usage="
    c     allowing for periodic and arctic boundaries) for all i and j.
    c     The total run time is proportional to maxinc**2, but if maxinc
    c     is set too small the results will be inaccurate.
+   c History
+   c M. Bakhoday-Paskyabi: Feb. 2019: correcting a bug in optional inputs.
 "
 options=$(getopt -o m:  -- "$@")
 [ $? -eq 0 ] || {
