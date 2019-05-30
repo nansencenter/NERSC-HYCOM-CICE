@@ -9,8 +9,8 @@
 #
 # --- Author: Mostafa Bakhoday-Paskyabi, Ocean Modeling group, NERSC, Bergen
 # --- Mostafa.Bakhoday@nersc.no
-# --- 9 September 2017.
-#
+# --- 9 September 2017. MBP
+# --- 31 May 2019. MBP
 
 
 iscan=15
@@ -289,6 +289,9 @@ T
 T
 T
 T
+F
+F
+F
 EOF
 else
 test1=${target_archv:0:5}
