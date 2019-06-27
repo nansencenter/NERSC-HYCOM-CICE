@@ -68,12 +68,12 @@ Omm=$5
 Odd=$6
 
 # parameters predifined
-T_hycom=600         #  hycom setting
+T_hycom=300         #  hycom setting
 H_yy=1901 
 H_mm=1 
 H_dd=1
 
-T_cice=900          # cice setting
+T_cice=1200          # cice setting
 I_yy=1958  
 I_mm=1 
 I_dd=1
