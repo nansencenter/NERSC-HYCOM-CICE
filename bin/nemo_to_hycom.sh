@@ -122,6 +122,7 @@ for source_archv in $@ ; do
    ########################
    if [ ${grid_type} == "native" ] ; then
       if [[ "${bio_path}" == "" ]] ; then
+      echo "${BASEDIR}/bin/nemo2archvz_native.py $mercator_gridfiles $source_archv --iexpt ${iexpt} --iversn ${iversn} --yrflag ${yrflag}"
       ${BASEDIR}/bin/nemo2archvz_native.py $mercator_gridfiles $source_archv --iexpt ${iexpt} --iversn ${iversn} --yrflag ${yrflag}
       ########################
       #
