@@ -16,6 +16,8 @@ hycom/hycom_ALL/hycom_2.2.72_ALL/relax/src_2.2.35/Make_z_woa_dynamic
 hycom/hycom_ALL/hycom_2.2.72_ALL/relax/src_2.2.35/Make_nemo_archvz_modified_bio
 hycom/hycom_ALL/hycom_2.2.72_ALL/relax/src_2.2.35/nemo_archvz_modified
 hycom/hycom_ALL/hycom_2.2.72_ALL/subregion/src_2.2.12/isubaregion_modified
+hycom/hycom_ALL/hycom_2.2.72_ALL/relax/src_2.2.35/Make_nemo_archvz_biophys
+hycom/hycom_ALL/hycom_2.2.72_ALL/relax/src_2.2.35/nemo_archvz_biophys
 #--------
 #--------
 hycom/hycom_ALL/hycom_2.2.72_ALL/archive/src_2.2.35/Make_archm2ncdf3z

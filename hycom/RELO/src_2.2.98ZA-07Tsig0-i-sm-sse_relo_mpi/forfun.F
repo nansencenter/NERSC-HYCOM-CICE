@@ -354,8 +354,18 @@ c --- and net shortwave radiation respectivelty.
       call preambl_print(preambl)
       call rdmonth(util1, 977)
       endif !tcc (total cloud cover)
-
-
+c     CAGLAR: BEGIN (MAY2019)
+#ifdef _FABM_
+      call zaiopf(flnmfor(1:lgth)//'forcing.dewpt.a', 'old', 926)
+      if     (mnproc.eq.1) then  ! .b file from 1st tile only
+      open (unit=uoff+926,file=flnmfor(1:lgth)//'forcing.dewpt.b',
+     &   status='old', action='read')
+      read (uoff+926,'(a79)') preambl
+      endif !1st tile
+      call preambl_print(preambl)
+      call rdmonth(util1, 926)
+#endif
+c     CAGLAR: END 
 
 CMOSTAFA: END
 
@@ -618,6 +628,12 @@ CMOSTAFA: BEGIN
               nlwrad(i,j,natm)   = 0.0
               nswrad(i,j,natm-1) = 0.0
               nswrad(i,j,natm)   = 0.0
+c     CAGLAR: BEGIN (MAY2019)
+#ifdef _FABM_
+              dewpt(i,j,natm-1) = 0.0
+              dewpt(i,j,natm)   = 0.0
+#endif
+c     CAGLAR: END
 CMOSTAFA: END
 
             enddo
@@ -803,6 +819,17 @@ c ---   and net shortwave radiation, respectively.
           endif !1st tile
           call preambl_print(preambl)
         endif !tcc
+c     CAGLAR: BEGIN (MAY2019)
+#ifdef _FABM_
+          call zaiopf(flnmfor(1:lgth)//'forcing.dewpt.a', 'old', 926)
+          if     (mnproc.eq.1) then  ! .b file from 1st tile only
+          open (unit=uoff+926,file=flnmfor(1:lgth)//'forcing.dewpt.b',
+     &       status='old', action='read')
+          read (uoff+926,'(a79)') preambl
+          endif !1st tile
+          call preambl_print(preambl)
+#endif
+c     CAGLAR: END
 CMOSTAFA: END
 
         if     (sstflg.eq.3) then
@@ -1264,6 +1291,11 @@ c
 CMOSTAFA: BEGIN
             nlwrad(i,j,l) = 0.0
             nswrad(i,j,l) = 0.0
+c     CAGLAR: BEGIN (MAY2019)
+#ifdef _FABM_
+            dewpt(i,j,l) = 0.0
+#endif
+c     CAGLAR: END
 CMOSTAFA: END
           enddo !i
         enddo !j
@@ -2534,13 +2566,25 @@ CMOSTAFA: BEGIN
       if (nrdflg .ge. 3 .and. nrdflg .le.4 .and. lwflag.eq.-1 .and.
      &   flxflg .ge. 5 ) then
          call rdpall1(nlwrad,dtime(917),917,mod(icall,3).eq.2)
+cCAGLAR
+      else
+         dtime(917) = dtime(905)
+cCAGLAR
       endif
 
       if (nrdflg .ge. 4 .and. lwflag.eq.-1 .and.
      &   flxflg .ge. 5 ) then
             call rdpall1(nswrad,dtime(977),977,mod(icall,3).eq.2)
+cCAGLAR
+      else
+         dtime(977) = dtime(905)
+cCAGLAR
       endif
-
+c     CAGLAR: BEGIN (MAY2019)
+#ifdef _FABM_
+            call rdpall1(dewpt,dtime(926),926,mod(icall,3).eq.2)
+#endif
+c     CAGLAR: END
 CMOSTAFA: END
 
       call rdpall1(radflx,dtime(907),907,mod(icall,3).eq.2)

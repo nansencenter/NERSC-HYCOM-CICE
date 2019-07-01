@@ -478,6 +478,9 @@ if [ $TRCRLX -ne 0 ] ; then
    [ ! -f  $BASEDIR/relax/${E}/relax_rmu.b ] && tellerror "$BASEDIR/relax/${E}/relax_rmutr.b does not exist"
    ln -sf $BASEDIR/relax/${E}/relax_rmu.a relax.rmutr.a  || tellerror "Could not get relax.rmutr.a"
    ln -sf $BASEDIR/relax/${E}/relax_rmu.b relax.rmutr.b  || tellerror "Could not get relax.rmutr.b"
+
+   [ ! -f  $INPUTDIR/pCO2a_1948_2018 ] && tellerror "$INPUTDIR/pCO2a_1948_2018 does not exist"
+   ln -sf $INPUTDIR/pCO2a_1948_2018 pCO2a_1948_2018 || tellerror "Could not get pCO2a_1948_2018"
 fi
 #
 # - thermobaric reference state?

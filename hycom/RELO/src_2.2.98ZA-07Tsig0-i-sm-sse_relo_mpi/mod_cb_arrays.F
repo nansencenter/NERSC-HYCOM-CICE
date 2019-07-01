@@ -336,9 +336,13 @@ c --- atmospheric forcing fields, natm is 2 or 4
      & surtmp,        ! surface temp. used to calculate input lw radiation
      & seatmp,         ! best available SST from observations
 CMOSTAFA: BEGIN
+c     !CAGLAR: BEGIN (MAY2019)
+#ifdef _FABM_
+     & dewpt,          ! dew point temperature, used for CO2 formulations
+#endif
+c     !CAGLAR: END
      & nlwrad,          ! related to the net longwave radiation
      & nswrad          ! related to net shortwave radiation
-
 CMOSTAFA: END
 
 c
@@ -1223,6 +1227,11 @@ c
 CMOSTAFA: BEGIN
      &         nlwrad(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,natm),
      &         nswrad(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,natm),
+c     !CAGLAR: BEGIN (MAY2019)
+#ifdef _FABM_
+     &         dewpt(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,natm),
+#endif
+c     !CAGLAR: END
 CMOSTAFA: END
      &         seatmp(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,natm) )
 !KAL  call mem_stat_add( 12*(idm+2*nbdy)*(jdm+2*nbdy)*natm )
@@ -1252,6 +1261,11 @@ CMOSTAFA: END
 CMOSTAFA: BEGIN
                nlwrad = r_init
                nswrad = r_init
+c     !CAGLAR: BEGIN (MAY2019)
+#ifdef _FABM_
+               dewpt = r_init
+#endif
+c     !CAGLAR: END
 CMOSTAFA: END
 
 c
