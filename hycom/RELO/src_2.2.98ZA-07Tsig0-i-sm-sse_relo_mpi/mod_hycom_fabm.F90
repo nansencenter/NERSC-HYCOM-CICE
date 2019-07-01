@@ -21,7 +21,6 @@ module mod_hycom_fabm
 
    use mod_xc         ! HYCOM communication interface
    use mod_cb_arrays  ! HYCOM saved arrays
-
    implicit none
 
    private
@@ -35,13 +34,16 @@ module mod_hycom_fabm
 
    class (type_model), pointer, save, public :: fabm_model => null()
    real, allocatable :: swflx_fabm(:, :)
+   real, allocatable :: wspd_fabm(:,:)
    real, allocatable :: bottom_stress(:, :)
+   real, allocatable :: atmco2(:), atmco2_fabm(:,:)
    real :: bottom_stress_keep 
    logical, allocatable :: mask(:, :, :, :)
    integer, allocatable :: kbottom(:, :, :)
    integer :: nbottom
    real :: hbottom
-   real, allocatable :: h(:, :, :)
+   real :: wndstr,strspd
+   real, allocatable :: h(:, :,:),delZ(:),codepth(:,:,:),cotemp(:,:,:),cosal(:,:,:),codens(:,:,:)
    real, allocatable :: hriver(:, :)
    real, allocatable, target :: fabm_surface_state(:, :, :, :)
    real, allocatable, target :: fabm_bottom_state(:, :, :, :)
@@ -71,7 +73,6 @@ module mod_hycom_fabm
 
    integer, parameter :: role_prescribe = 0
    integer, parameter :: role_river = 1
-
    integer, save :: next_unit = 940  !ASJUN18 - increased since 218 is reserved in hycom
 
    integer, allocatable :: hycom_fabm_relax(:)
@@ -81,7 +82,7 @@ module mod_hycom_fabm
    type type_input
       integer :: file_unit = -1
 
-      integer :: role = role_prescribe
+      integer :: roleriver = role_prescribe
       integer :: ivariable = -1           ! state variable index (only used if role is role_river)
       real, allocatable :: data_ip(:,:,:), data_src(:,:,:,:)
       type (type_input), pointer :: next => null()
@@ -95,6 +96,10 @@ module mod_hycom_fabm
    real, allocatable :: nested_data_dev(:,:,:,:,:) ! i,j,k,mn,state
    character(len=attribute_length) :: nested_variables(256)
    logical :: nested_bio
+
+   integer :: pCO2unit, yCO2init, nyearCO2,modelyear,modelmonth
+   real    :: co2_seasonality(12),modelday,modeltime,pair
+   real    :: dew,atmco2_0,atmco2_1,atmco2_2,atmco2_3
 contains
 
     subroutine hycom_fabm_configure()
@@ -154,22 +159,36 @@ contains
         if (nested_variables(nestn) == fabm_model%state_variables(istate)%name) istate_dev(nestn) = istate
         enddo
       enddo
+
+    ! read atmospheric CO2 time-series
+    pCO2unit = 2640
+    yCO2init = 1948
+    nyearCO2 = 71 ! last data year = 2018
+    co2_seasonality = [1.8552,2.7411,3.7847,4.6522,4.2706,1.1206,-4.3468,-8.6286,-7.9663,-3.7896,1.8954,3.0054]
       
     end subroutine hycom_fabm_configure
 
     subroutine hycom_fabm_allocate()
 
         allocate(swflx_fabm(ii, jj))
+        allocate(wspd_fabm(ii,jj))
         allocate(bottom_stress(ii, jj))
         allocate(mask(ii, jj, kk, 2))
         allocate(kbottom(ii, jj, 2))
         allocate(h(ii, jj, kk))
+        allocate(delZ(kk))
+        allocate(codepth(ii,jj,kk))
+        allocate(cotemp(ii,jj,kk))
+        allocate(cosal(ii,jj,kk))
+        allocate(codens(ii,jj,kk))
         allocate(hriver(ii, jj))
         allocate(fabm_surface_state(1-nbdy:idm+nbdy, 1-nbdy:jdm+nbdy, 2, size(fabm_model%surface_state_variables)))
         allocate(fabm_bottom_state(1-nbdy:idm+nbdy, 1-nbdy:jdm+nbdy, 2, size(fabm_model%bottom_state_variables)))
         allocate(fabm_surface_state_old(1-nbdy:idm+nbdy, 1-nbdy:jdm+nbdy, size(fabm_model%surface_state_variables)))
         allocate(fabm_bottom_state_old(1-nbdy:idm+nbdy, 1-nbdy:jdm+nbdy, size(fabm_model%bottom_state_variables)))
         allocate(nested_data_dev(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kknest,2,nested_number))
+        allocate(atmco2(nyearCO2))
+        allocate(atmco2_fabm(ii, jj))
     end subroutine hycom_fabm_allocate
 
     subroutine hycom_fabm_initialize()
@@ -177,6 +196,8 @@ contains
       integer :: j, k, ivar
       type (type_interior_output),   pointer :: last_interior_output
       type (type_horizontal_output), pointer :: last_horizontal_output
+
+      integer :: yCO2
 
         ! Provide extents of the spatial domain (number of layers nz for a 1D column)
         call fabm_set_domain(fabm_model, ii, jj, kk, baclin)
@@ -186,6 +207,8 @@ contains
 
         call fabm_model%link_interior_data(standard_variables%cell_thickness, h(1:ii, 1:jj, 1:kk))
         call fabm_model%link_horizontal_data(standard_variables%surface_downwelling_shortwave_flux, swflx_fabm(1:ii, 1:jj))
+        call fabm_model%link_horizontal_data(standard_variables%wind_speed,wspd_fabm(1:ii, 1:jj))
+        call fabm_model%link_horizontal_data(standard_variables%mole_fraction_of_carbon_dioxide_in_air,atmco2_fabm(1:ii,1:jj))
         call fabm_model%link_horizontal_data(standard_variables%bottom_stress, bottom_stress(1:ii, 1:jj))
         call fabm_model%link_scalar(type_global_standard_variable(name='time_step', units='s'), delt1)
 
@@ -219,6 +242,11 @@ contains
             last_horizontal_output%data2d => fabm_get_horizontal_diagnostic_data(fabm_model, ivar)
         end do
 
+        open(unit=pCO2unit, file='pCO2a_1948_2018',form='formatted')
+        do yCO2=1,nyearCO2
+          read(pCO2unit,*) atmco2(yCO2)
+        end do
+        close(pCO2unit) 
     contains
 
       function add_interior_output(variable) result(saved)
@@ -337,6 +365,8 @@ contains
       logical :: file_exists
       type (type_input), pointer :: input
 
+      modeltime=dtime
+      call fabm_gettime()
       ! Months and slot indices for monthly climatological forcing
       ! (shared between all inputs that are defined on monthly climatological time scales)
       m_clim1=1.+mod(dtime+dyear0,dyear)/dmonth
@@ -357,7 +387,7 @@ contains
           if (mnproc.eq.1) write (lp,*) '  - '//trim(fabm_model%state_variables(ivar)%name)//': ON, ' &
             //trim(flnmforw)//'rivers.'//trim(fabm_model%state_variables(ivar)%name)//'.a was found.'
           input => add_input(trim(flnmforw)//'rivers.'//trim(fabm_model%state_variables(ivar)%name)//'.a', .true.)
-          input%role = role_river
+          input%roleriver = role_river
           input%ivariable = ivar
         else
           ! Disable river input for this tracer
@@ -460,6 +490,7 @@ contains
       real :: month, x, x1, w0, w1, w2, w3
       integer :: lt
 
+      modeltime=dtime
       month=1.+mod(dtime+dyear0,dyear)/dmonth
       imonth=int(month)
       if (mnproc.eq.1) write(lp,*) 'update_inputs - month = ',month,imonth
@@ -761,7 +792,7 @@ contains
 !write (*,*) 'hycom_fabm_after_interior', nstep, time
       input => first_input
       do while (associated(input))
-        if (input%role == role_river) then
+        if (input%roleriver == role_river) then
           ! River field
           do i=1,ii
             do j=1,jj
@@ -964,9 +995,7 @@ contains
 
         integer :: i, j, k
         integer :: ivar
-
         real, parameter :: rho_0 = 1025.   ! [kg/m3]
-
         ! Update cell thicknesses (m)
         h(:, :, :) = dp(1:ii, 1:jj, 1:kk, index)/onem
 
@@ -978,31 +1007,77 @@ contains
 
         if (.not.initializing) then
           call fabm_update_time(fabm_model, real(nstep))
+          call fabm_gettime() 
 
-          ! Compute downwelling shortwave (from thermf.F)
+
+          ! Update surface forcing and internal variables for biology 
           do j=1,jj
               do i=1,ii
-                  if (SEA_P) then
-                        swflx_fabm(i,j)=sswflx(i,j)
-                  end if
+   !               if (SEA_P) then
+                       bottom_stress(i, j) = ustarb(i, j)*ustarb(i, j)*rho_0 !
+                       swflx_fabm(i,j)= sswflx(i,j) ! ice-corrected downwelling shortwave flux
+
+                       if     (flxflg.eq.6) then ! wind speed (taken from therm.F)
+                          wspd_fabm(i,j) = wndocn(i,j)
+                       else if (natm.eq.2) then
+                          wspd_fabm(i,j) = wndspd(i,j,l0)*w0+wndspd(i,j,l1)*w1
+                       else
+                          wspd_fabm(i,j) =wndspd(i,j,l0)*w0+wndspd(i,j,l1)*w1+wndspd(i,j,l2)*w2+wndspd(i,j,l3)*w3    
+                       end if
+
+                       if     (mslprf .or. flxflg.eq.6) then
+                          if     (natm.eq.2) then
+                             pair=mslprs(i,j,l0)*w0 + mslprs(i,j,l1)*w1
+                          else
+                             pair=mslprs(i,j,l0)*w0 + mslprs(i,j,l1)*w1 + mslprs(i,j,l2) * w2+mslprs(i,j,l3)*w3
+                          endif 
+                       else
+                          pair = 1013.0*100.0
+                       endif
+                       pair = pair * 0.01 ! convert Pa --> mBar (hPa) (result is of magnitude 1E+3) 
+
+                       if     (natm.eq.2) then
+                          dew = dewpt(i,j,l0)*w0 + dewpt(i,j,l1)*w1
+                       else
+                          dew = dewpt(i,j,l0)*w0 + dewpt(i,j,l1)*w1 + dewpt(i,j,l2)*w2 + dewpt(i,j,l3)*w3
+                       end if
+                       dew = dew - 273.15 ! Kelvin --> degC
+
+                       atmco2_0 = atmco2( min(modelyear - yCO2init + 1 , nyearCO2 ) ) + co2_seasonality( modelmonth )
+                       atmco2_1 = ( 10.**( (7.5*dew)/(237.3+dew) ) )
+                       atmco2_2 = atmco2_1 / 9.81 * 10.**(-4.0)
+                       atmco2_3 = pair / 9.81 * 10.**(-2.0)
+                       atmco2_fabm(i,j) = atmco2_0 * (atmco2_3 - atmco2_2) * 0.997                     
+
+!                       if (i==itest.and.j==jtest) write(*,*)'DEWPT',dewpt(i,j,l0),dewpt(i,j,l1),dewpt(i,j,l2),dewpt(i,j,l3)
+                       if (i==itest.and.j==jtest) write(*,'(A4,4(1x,F8.3))')'PCO2',dew,pair,atmco2_0,atmco2_fabm(i,j)
+!write(*,'(A4,4(1x,F8.3))')'PCO2',dew,pair,atmco2_0,atmco2_fabm(i,j)
+                       do k=1,kk
+                          delZ(k) = dp(i,j,k,index)/onem                    !
+                          if(k.eq.1)then                                    !
+                             codepth(i,j,k) = delZ(k)                       !
+                          else                                              !
+                             codepth(i,j,k) = codepth(i,j,k-1)+delZ(k)      ! water depth
+                          end if                                            !
+                          cotemp(i,j,k) = max(-3.999,temp(i, j, k, index))  ! water temparature
+                          cosal(i,j,k)  = saln(i, j, k, index)              ! salinity
+                          codens(i,j,k) = th3d(i, j, k, index)+thbase+1000. ! water density
+
+                       end do
+    !              end if
               end do
           end do
-
-          ! Compute bottom stress (Pa)
-          do j=1,jj
-            do i=1,ii
-              if (SEA_P) then
-                bottom_stress(i, j) = ustarb(i, j)*ustarb(i, j)*rho_0
-              end if
-            end do
-          end do
         end if
-
         ! Transfer pointer to environmental data
         ! Do this for all variables on FABM's standard variable list that the model can provide.
         ! For this list, visit http://fabm.net/standard_variables
-        call fabm_model%link_interior_data(standard_variables%temperature, temp(1:ii, 1:jj, 1:kk, index))
-        call fabm_model%link_interior_data(standard_variables%practical_salinity, saln(1:ii, 1:jj, 1:kk, index))
+!        call fabm_model%link_interior_data(standard_variables%temperature, temp(1:ii, 1:jj, 1:kk, index))
+!        call fabm_model%link_interior_data(standard_variables%practical_salinity, saln(1:ii, 1:jj, 1:kk, index))
+        call fabm_model%link_interior_data(standard_variables%temperature,cotemp(1:ii,1:jj, 1:kk))
+        call fabm_model%link_interior_data(standard_variables%practical_salinity,cosal(1:ii,1:jj,1:kk))
+!        call fabm_model%link_interior_data(standard_variables%density, th3d(1:ii,1:jj, 1:kk, index)+thbase+1000.)
+        call fabm_model%link_interior_data(standard_variables%density,codens(1:ii,1:jj, 1:kk))
+        call fabm_model%link_interior_data(standard_variables%pressure,codepth(1:ii,1:jj, 1:kk))
 
         call update_fabm_state(index)
     end subroutine update_fabm_data
@@ -1346,5 +1421,89 @@ contains
       enddo
     end if ! nested_bio
     end subroutine hycom_fabm_nest_update
+
+    subroutine fabm_gettime()!(modeltime,yrflag)
+
+        integer :: i,dayy,iyr, nleap,days_in_year,days_in_month(12)
+        real*8  :: dtim1, day
+
+        iyr   = (modeltime-1.d0)/365.25d0
+        nleap = iyr/4
+        dtim1 = 365.d0*iyr + nleap + 1.d0
+        day   = modeltime - dtim1 + 1.d0
+        if     (dtim1.gt.modeltime) then
+          iyr = iyr - 1
+        elseif (day.ge.367.d0) then
+          iyr = iyr + 1
+        elseif (day.ge.366.d0 .and. mod(iyr,4).ne.3) then
+          iyr = iyr + 1
+        endif
+        nleap = iyr/4
+        dtim1 = 365.d0*iyr + nleap + 1.d0
+
+        modelyear =  1901 + iyr
+        modelday  =  modeltime - dtim1 + 1.001d0
+        !ihour = (dtime - dtim1 + 1.001d0 - iday)*24.d0
+        days_in_year =daysinyear  (modelyear,yrflag)
+        days_in_month=monthsofyear(modelyear,yrflag)
+        dayy = int(modelday-1)
+        do i=1,12
+           if (dayy >= days_in_month(i)) then
+              dayy=dayy-days_in_month(i)
+           else
+              modelmonth=i
+              exit
+           endif
+        enddo
+!        write(*,*)'GETTIME',modelyear, modelday, modelmonth
+
+    end subroutine fabm_gettime
+
+    integer function daysinyear(year,yrflag)
+        implicit none
+        integer,intent(in) :: year,yrflag
+        if (yrflag==0) then
+           daysinyear=360
+        elseif (yrflag==1) then
+           daysinyear=365
+        elseif (yrflag==2) then
+           daysinyear=366
+        elseif (yrflag==3) then
+           if (mod(year,4)/=0 .or. (mod(year,100)==0.and.mod(year,400)/=0)) then
+              daysinyear=365
+           else
+              daysinyear=366
+           end if
+        end if
+    end function daysinyear
+
+function monthsofyear(year,yrflag)
+        implicit none
+        integer, dimension(12),parameter :: months_standard = &
+           (/31,28,31,30,31,30,31,31,30,31,30,31/)
+        integer, dimension(12),parameter :: months_leapyear = &
+           (/31,29,31,30,31,30,31,31,30,31,30,31/)
+        integer, dimension(12),parameter :: months_360 = &
+           (/30,30,30,30,30,30,30,30,30,30,30,30/)
+        integer, dimension(12),parameter :: months_365 = &
+           (/31,28,31,30,31,30,31,31,30,31,30,31/)
+        integer, dimension(12),parameter :: months_366 = &
+           (/31,29,31,30,31,30,31,31,30,31,30,31/)
+        integer :: monthsofyear(12)
+        integer, intent(in) :: year,yrflag
+        if (yrflag==0) then
+           monthsofyear=months_360
+        elseif (yrflag==1) then
+           monthsofyear=months_365
+        elseif (yrflag==2) then
+           monthsofyear=months_366
+        elseif (yrflag==3) then
+           if (daysinyear(year,3)==366) then
+              monthsofyear=months_leapyear
+           else
+              monthsofyear=months_standard
+           end if
+        end if
+end function
 #endif
 end module
