@@ -86,4 +86,10 @@ The github packages can also be installed using the pip tool.  Use the following
     pip install --user git+http://github.com/knutalnersc/gridxsec
     pip install --user git+http://github.com/MostafaBakhoda/modeltools
 
+We have currently moved all python tools from github to our NERSC-HYCOM-CICE repository (pythonlibs)
+   pip install --user git+https://github.com/nansencenter/NERSC-HYCOM-CICE/tree/develop/pythonlibs/modeltools 
+   pip install --user git+https://github.com/nansencenter/NERSC-HYCOM-CICE/tree/develop/pythonlibs/modelgrid     
+   pip install --user git+https://github.com/nansencenter/NERSC-HYCOM-CICE/tree/develop/pythonlibs/gridxsec     
+   pip install --user git+https://github.com/nansencenter/NERSC-HYCOM-CICE/tree/develop/pythonlibs/abfile     
+
 These files will be installed in your home directory under $HOME/.local/lib/python2.7/site-packages/, where python will automatically find them.
