@@ -64,9 +64,13 @@ if __name__ == "__main__" :
   # parser.add_argument('--window',     action=WindowParseAction, help='firsti,firstj,lasti,lastj', default=None)
    parser.add_argument('Trip_river_afile',  help='Trip_river_afile')
    parser.add_argument('Hype_river_afile',  help='Hype_river_afile')
+   parser.add_argument('griver_afile',  help='greenland_glacier_river_afile')
+
    #parser.add_argument('filename', help="")
    #parser.add_argument('records',  nargs="+",    type=int)
    #examplie
+   # The first input is from ETRIP and the second one is from HYPE
+   # we have added the third input corresponding to griver (Green land Glacier from /cluster/projects/nn2993k/TRIP/triver_Roshin/)
    #python ./merge_TRIP_Hype_abfile_4Greenlnad.py ./SCRATCH_ERAI-TRIP/rivers.a ./SCRATCH_hype_rev2/rev2_rivers.a
 
    args = parser.parse_args()
@@ -145,7 +149,20 @@ if __name__ == "__main__" :
       ahy_afil_total_riverflux=ahy_afil_total_riverflux+ahyfld*scpx*scpy
       countr=countr+1
    
+   #-------------- Read from griver
    
+   file_griver=args.griver_afile
+   afile_gr = abfile.AFile(800,760,file_griver,"r")
+    # compute monthly flux:
+   tot_griverflux=np.zeros((12,760,800))
+   for record in range(12) :
+      grfld = afile_gr.read_record(record)
+      tot_griverflux[record,:,:]=grfld
+
+
+
+  
+ 
    
    print "Number of records=", countr
    
@@ -254,7 +271,8 @@ if __name__ == "__main__" :
    bf.write("\n")
    bf.write("i/jdm =  %5d %5d\n"%(lons.shape[1],lons.shape[0]))
    for recrd in range(12) : 
-      hmin,hmax = af.writerecord(tot_hyp_trip_riverflux[recrd,:,:],None,record=recrd)
+      dummy_sum=tot_griverflux[recrd,:,:]+tot_hyp_trip_riverflux[recrd,:,:]
+      hmin,hmax = af.writerecord(dummy_sum,None,record=recrd)
       bf.write(" rivers:month,range = %2.2i%16.8e%16.8e\n"%((recrd+1),hmin,hmax))
    af.close()
    bf.close()
