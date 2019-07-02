@@ -1,0 +1,11 @@
+   70.0 100.0     ! Position of pole N (lattitude, longitude):
+  -10.0  -30.0    ! Position of pole S (lattitude, longitude):
+  -26.0  14.0 275 ! Longitude interval West lon,   East lon, idim
+   40.0  80.0 325 ! Lattitude interval south limit, north limit, jdim
+.true.            ! Generate topography
+.true.            ! dump teclatlon.dat
+.true.            ! dump micom latlon.dat
+.true.            ! mercator grid (true, false)
+   03.0 .false.   ! merc fac
+.false.           ! Smoothing, Shapiro filter
+ 8   2            ! Order of Shapiro filter,  number of passes

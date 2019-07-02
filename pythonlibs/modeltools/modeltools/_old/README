@@ -1,0 +1,37 @@
+Code - model independent version. Old code moved to migrate
+  
+Routines in Code dir
+grid               - creates model grid (regional.depths, regional.grid, 
+                     latlon.dat, depthsXXXXXX.uf and newpos.uf) - gebco is subaveraged to two
+                     minutes resolution (for computer memory reasons).
+                     See also README in Code dir
+
+You need the following data files:
+grid.info          - specifies conformal mapping
+grid.bathy         - specifies bathymetry to use
+grid.topofix       - specifies grid topography corrections to be done - 
+                     this file is actually optional, but stronly recommended ;-)
+
+Example data files (grid.*) can be found  in this directory. 
+
+There is also some data file info for the different topo datasets in these directories:
+BODC  
+ETOPO5
+GEBCO 
+IBCAO
+Met.no  (CONMAN grid option)
+
+
+
+A note on grid.topofix:
+-----------------------
+The format for grid.topofix
+is that each line contains 5 numbers: first and last i-point, then first and last
+j-point. Finally the depth value is given. the depth within the block:
+(first i:last i,first j:last j) wil be set to this depth. Ex: This sets the block
+i=1:20, j=1:20 to zero depths:
+1 20 1 20 0.
+
+Commented lines are ignored in grid.topofix, this line would be ignored:
+#2 2 1 100 0.
+
