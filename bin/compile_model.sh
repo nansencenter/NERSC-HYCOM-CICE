@@ -299,14 +299,27 @@ fi
 
 # Mostafa: add new folder named "mysource" when you aim for standalone HYCOM
 # Files from this folder will be copied onto appropriate paths. This is under construction ...
-if [ ! -f $EDIR/mysource/ ] ; then
+#if [ ! -f $EDIR/mysource/ ] ; then
+#        echo "############# copy from  $EDIR/mysource to build folder"
+#	cp $EDIR/mysource/mod_hycom.F $targetdir/        
+#	cp $EDIR/mysource/hycom.F $targetdir/
+#else
+#	echo "You need to use correct mod_hycom and hycom files"
+#	exit 0
+#fi
+if [[ !  -f $EDIR/mysource/ ]] && [[ $ICEFLG -eq 0 ]] ; then
         echo "############# copy from  $EDIR/mysource to build folder"
-	cp $EDIR/mysource/mod_hycom.F $targetdir/        
-	cp $EDIR/mysource/hycom.F $targetdir/
+        rm $targetdir/mod_hycom.F
+        rm $targetdir/hycom.F
+        rm $targetdir/mod_cpl_oasis.*
+        cp $EDIR/mysource/mod_hycom.F $targetdir/
+        cp $EDIR/mysource/hycom.F $targetdir/
+        cp $EDIR/mysource/mod_cpl_oasis.f* $targetdir/
 else
-	echo "You need to use correct mod_hycom and hycom files"
-	exit 0
+        echo "You need to use correct mod_hycom and hycom files"
+#       exit 0
 fi
+
 
 # Copy hycom feature flag in expt dir if present
 [ -f $EDIR/hycom_feature_flags  ] && cp $EDIR/hycom_feature_flags $targetdir

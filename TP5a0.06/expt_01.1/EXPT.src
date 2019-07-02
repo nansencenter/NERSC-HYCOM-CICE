@@ -20,7 +20,7 @@ mydir=$(cd $(dirname ${BASH_SOURCE}) && pwd)
 unset -v X E T V K P D S
 X="01.1"                # X based on dir name (expt_01.1)
 E="011"                 # E is X without "."
-T="05"                                                           # Topography version
+T="08"                                                           # Topography version
 export V=2.2.98                                                  # hycom version              
 #export K=`grep "'kdm   ' =" blk* | awk '{printf("%03d", $1)}'`   # get kdm from blkdat
 export K=`grep "'kdm   ' =" $mydir/blkdat.input | awk '{printf("%03d", $1)}'`   # get kdm from blkdat
