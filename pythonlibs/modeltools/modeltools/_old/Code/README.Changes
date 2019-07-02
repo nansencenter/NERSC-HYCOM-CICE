@@ -1,0 +1,15 @@
+Knut -- 05072003 : Added gebco bathymetry support          
+Knut -- 13012004 : Moved a lot of old stuff into "OldStuff" Catalogue 
+Knut -- 13012004 : Added CONMAN bathymetry (supplied by Met.No for CONMAN Project)
+Knut -- 06012005 : Added support for large grids (grid dimensions > 1000). The depths
+                   file is encoded with 5 digits for x and y directions. (3 before)
+Knut -- 02082005 : Fixed "Initconfmap" for certain grid setups. See m_initconfmap.F90
+                   Affects old Barents Sea grid, Pacific grid, more?
+Knut -- XXXX2005 : "Model-independent" version - no need to re-compile 
+Knut -- 02082005 : bigrid changed - allows for periodic domains
+Knut -- 23112005 : Added warning when boundaries are open
+Knut -- 18112008 : Changed main routine to fit into new code setup. It now uses
+                   the libconfmap.a library as all other routines using libconfmap
+                   are. This should prevent issues occuring with inconsistency between
+                   grid confmap and confmap used by other routines (none so far). It also
+                   uses the "single makefile include" approach for easier setup on new machines

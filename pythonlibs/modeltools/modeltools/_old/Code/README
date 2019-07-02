@@ -1,0 +1,44 @@
+This directory contains routines for generating a bathymetry
+for various data sets. Currently supported bathymetries are:
+GEBCO  (global)
+ETOPO5 (global)
+BODC   (regional)
+IBCAO  (regional)
+CONMAN (regional)
+
+This version of conf_grid need you to specify the location of 
+topographies through environment variables. If the grid routine 
+cant find the files you will get some clues as you run the routine.
+These environment variables point to bathymetry dataset paths
+GEBCO_PATH 
+ETOPO5_PATH
+BODC_PATH  
+IBCAO_PATH 
+CONMAN_PATH
+
+To use these bathymetries you must set them in the infile 
+grid.bathy (an example can be found in the directory above 
+this one.
+
+To specify the region you want a bathymetry for you must
+edit the file grid.info. It uses the conformal mapping 
+routines of Bentsen et al (1999) to calculate the spatial
+location of grid nodes.
+
+Finally the topography must be hand-corrected to modify
+the final topography (remove isolated basins, correct 
+depth in critical locations etc ).
+
+The matlab routine "showconfmap" can be of some assistance 
+for setting up a new grid. It is located in the Matlab directory.
+Set the "grid.info" routine to not dump a topography(so that grid 
+runs faster), then run showconfmap to visualize the bathymetry 
+(mainly meant for rough placement of the model grid). When the 
+bathymetry has roughly the correct placement, switch on the topo flag
+in grid.info, and fine tune through other means. A netcdf and a tecplot
+diagnostic file is available for this purpose (confgrid.tec/nc).
+
+
+TODO: add topofix matlab routine
+TODO: install option not yet in makefile
+Knut Liseter, 20081118

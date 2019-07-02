@@ -1,0 +1,402 @@
+#if defined(AIX)
+#define DTIME dtime_
+#else
+#define DTIME dtime
+#endif
+
+module m_topography
+contains
+subroutine topography(depths,modlon,modlat,dbodc, detopo5, dibcao,dgebco,dconman,nx,ny,path0)
+! Interpolate the ETOPO5 data set, the BODC data set and the IBCAO data set to the model grid
+   use mod_etopo5
+   use mod_bodc
+   use mod_ibcao
+   use mod_gebco
+   use mod_conman
+   use m_bilin
+   use m_bilinibcao
+   use m_ibcao_median
+   use m_invdistibcao4
+   use m_bilinibcao
+   use m_tecfld
+   use m_ncfld
+   use m_avecell
+   ! use m_gebco_fix65N moved to mod_gebco
+   implicit none
+
+   integer, intent(in) :: nx,ny
+   real,    intent(in)  :: modlon(nx,ny)        ! model longitudes (p-point)
+   real,    intent(in)  :: modlat(nx,ny)        ! model latitudes
+   real,    intent(out) :: depths(nx,ny)        ! final model depths
+   real,    intent(out) :: dbodc(nx,ny)         ! model depths based on BODC data
+   real,    intent(out) :: detopo5(nx,ny)       ! model depths based on ETOPO5 data
+   real,    intent(out) :: dibcao(nx,ny)        ! model depths based on IBCAO data
+   real,    intent(out) :: dgebco(nx,ny)        ! model depths based on IBCAO data
+   real,    intent(out) :: dconman(nx,ny)        ! model depths based on IBCAO data
+   character(len=*), intent(in) :: path0
+
+! Local variables
+   integer i,j,im,jm
+
+! Variables related to model grid
+   real minlon,maxlon,minlat,maxlat  ! extension of model domain
+   integer nland(nx,ny)              ! number of land points per grid point
+   integer nocean(nx,ny)             ! number of land points per grid point
+   real wibcao(nx,ny)                ! ibcao weights on model grid
+   real wbodc(nx,ny)                 ! bodc  weights on model grid
+   real wconman(nx,ny)                 ! bodc  weights on model grid
+
+
+! timing variables
+   real*4 DTIME
+   real*4 t0, t1, t2, tarray(2)
+
+   integer :: ilatf,ilatl
+   logical :: l_etopo5, l_bodc, l_avecell, l_ibcao, l_gebco, l_conman
+   logical :: ex
+   real    :: cutoff
+   integer :: ios
+
+
+   dbodc=0.0
+   dibcao=0.0
+   detopo5=0.0
+   dgebco=0.0
+   dconman=0.
+   wibcao=0.0
+   wbodc=0.0
+   wconman=0.
+   nocean=0
+   nland=0
+   cutoff=10. ! Default depth cutoff value
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Layout of model grid
+   minlon=minval(modlon); print *,'Minimum longitude is: ',minlon
+   maxlon=maxval(modlon); print *,'Maximum longitude is: ',maxlon
+   minlat=minval(modlat); print *,'Minimum latitude  is: ',minlat
+   maxlat=maxval(modlat); print *,'Maximum latitude  is: ',maxlat
+!   print '(a,f8.2,a)'    ,'     #--------- ',maxlat,' -----------#'
+!   print '(a)'           ,'     |                              |'
+!   print '(a)'           ,'     |                              |'
+!   print '(a)'           ,'     |                              |'
+!   print '(a)'           ,'     |                              |'
+!   print '(a)'           ,'     |                              |'
+!   print '(f8.2,a,f8.2)' ,minlon,'                       ',maxlon
+!   print '(a)'           ,'     |                              |'
+!   print '(a)'           ,'     |                              |'
+!   print '(a)'           ,'     |                              |'
+!   print '(a)'           ,'     |                              |'
+!   print '(a)'           ,'     |                              |'
+!   print '(a,f8.2,a)'    ,'     #--------- ',minlat,' -----------#'
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Bathy selection time...
+inquire(exist=ex,file='grid.bathy')
+if (.not.ex) then
+   print *,'Need file "grid.bathy"'
+   stop  '(topography)'
+end if
+open(10,file='grid.bathy')
+read(10,*) l_avecell
+read(10,*) l_etopo5
+read(10,*) l_bodc
+read(10,*) l_ibcao
+read(10,*) l_gebco
+read(10,*) l_conman
+read(10,*,iostat=ios) cutoff
+if (ios/=0) then
+   print *,'no cutoff value specified - using default value of', cutoff
+end if
+close(10)
+
+print *,               '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+if (l_avecell) Print *,'Using Cell averaging for coarse grids'
+if (l_etopo5 ) Print *,'Using ETOPO5 (global)'
+if (l_gebco  ) Print *,'Using GEBCO  (global)'
+if (l_bodc   ) Print *,'Using BODC   (local)'
+if (l_ibcao  ) Print *,'Using IBCAO  (local)'
+if (l_conman ) Print *,'Using CONMAN (local)'
+print *,               '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+
+
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Read ETOPO5 data set
+if (l_etopo5 .or. l_gebco ) then
+   call read_etopo5()
+   call ncfld('ETOPO5',etopo5_nx,etopo5_ny,etopo5%lon,etopo5%lat,etopo5%deep,6)
+   write(*,*)'ETOPO5 is read' ; print *
+end if
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Read BODC data set
+if (l_bodc) then
+   call read_bodc()
+   call ncfld('BODC',bodc_nx,bodc_ny,bodc%lon,bodc%lat,bodc%deep,6)
+   write(*,*)'BODC grid is read' ; print *
+end if
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Read IBCAO data set
+if (l_ibcao) then
+   call read_ibcao()
+   call ncfld('IBCAO',ibcao_nx,ibcao_ny,ibcao_lon,ibcao_lat,ibcao_depth,1,ibcao_weight)
+   print *,'Dumped netcdf'
+   write(*,*)'IBCAO grid is read' ; print *
+   print *,'depth min/max', minval(ibcao_depth),maxval(ibcao_depth)
+   print *,'lon   min/max', minval(ibcao_lon),maxval(ibcao_lon)
+   print *,'lat   min/max', minval(ibcao_lat),maxval(ibcao_lat)
+   print *,'weight min/max', minval(ibcao_weight),maxval(ibcao_weight)
+endif
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Read GEBCO one minute data set
+if (l_gebco) then
+   call read_gebco()
+   call ncfld('GEBCO',gebco_nx,gebco_ny,gebco_lon,gebco_lat,gebco_depth,10)
+   write(*,*)'GEBCO grid is read' ; print *
+   open(67,file='gebco.test',form='formatted',status='replace')
+   do j=1,gebco_ny
+     write(67,*) nx,j,gebco_lat(nx,j),gebco_depth(nx,j)
+   end do
+   close(67)
+
+   print *,'NB - ETOPO 5 is now used to correct Gebco bathymetry (65N)'
+
+   ! Modify gebco in problematic regions
+   call gebco_fix65N(gebco_lon,gebco_lat,gebco_depth,gebco_nx,gebco_ny,         &
+                     etopo5%deep,etopo5%minlon,etopo5%minlat,five_min, &
+                     etopo5_nx,etopo5_ny)
+endif
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Read Met.No Felt file for nordic regions -- Modified ETOPO5 data set 
+if (l_conman) then
+   call read_felt()
+   call ncfld('CONMAN',conman_nx,conman_ny,conman%lon,conman%lat,conman%deep,1)
+   write(*,*)'CONMAN grid is read' ; print *
+endif
+
+   
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Interpolation of GEBCO data to model grid
+if (l_gebco) then
+   print '(a)','GEBCO: bilin'
+   t1 = DTIME(tarray)
+   t1 = DTIME(tarray)
+   call bilin(dgebco,modlon,modlat,nocean,nland,nx,ny, &
+              gebco_depth,gebco_lat,gebco_lon,gebco_nx,gebco_ny,&
+              gebco_minlon,gebco_minlat,gebco_maxlon,gebco_maxlat,gebco_dlon,gebco_dlat,.true.)
+   t2 = DTIME(tarray)
+   !write(*,'(A,F8.3,A)')'GEBCO bilin computation used ', t2-t1, ' secs'
+   print '(a,2f10.2)','GEBCO depths min,max',minval(dgebco),maxval(dgebco)
+
+   ! Map GEBCO to the new grid for coarse model grids
+   if (l_avecell) then
+      print '(a)','GEBCO: avecell'
+      t1 = DTIME(tarray)
+      ilatf=1; ilatl=gebco_ny
+      call avecell(dgebco,modlon,modlat,nocean,nland,&
+                   gebco_depth,gebco_lat,gebco_lon,gebco_nx,gebco_ny,ilatf,ilatl,nx,ny)
+      t2 = DTIME(tarray)
+   endif
+   print '(a,2f10.2)','GEBCO depths min,max',minval(dgebco),maxval(dgebco)
+   print *
+   print *
+end if
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Interpolation of ETOPO5 data to model grid
+if (l_etopo5) then
+   print '(a)','ETOPO5: Start interpolation'
+   print '(a)','ETOPO5: bilin'
+   print *,'min/max lon lat', etopo5%minlon, etopo5%maxlon, etopo5%minlat, etopo5%maxlat
+   t1 = DTIME(tarray)
+   t1 = DTIME(tarray)
+   call bilin(detopo5,modlon,modlat,nocean,nland,nx,ny, &
+              etopo5%deep,etopo5%lat,etopo5%lon,etopo5_nx,etopo5_ny,&
+              etopo5%minlon,etopo5%minlat,etopo5%maxlon,etopo5%maxlat,five_min,five_min,.true.)
+   t2 = DTIME(tarray)
+   write(*,'(A,F8.3,A)')'ETOPO5 bilin computation used ', t2-t1, ' secs'
+   print '(a,2f10.2)','ETOPO5 depths min,max',minval(detopo5),maxval(detopo5)
+
+! Select latitude range for ETOPO5 
+   ilatf=nint((90.0+minlat)/five_min)+1; ilatf=max(1,ilatf-20)
+   ilatl=nint((90.0+maxlat)/five_min)+1; ilatl=min(etopo5_ny,ilatl+20)
+   print '(2(a,i6))','ETOPO5: Latitude index range: ',ilatf,' => ',ilatl
+
+! Map ETOPO5 to the new grid for coarse model grids
+   if (l_AVECELL) then
+      print '(a)','ETOPO5: avecell'
+      t1 = DTIME(tarray)
+      call avecell(detopo5,modlon,modlat,nocean,nland,&
+                   etopo5%deep,etopo5%lat,etopo5%lon,etopo5_nx,etopo5_ny,ilatf,ilatl,nx,ny)
+      t2 = DTIME(tarray)
+      write(*,'(A,F8.3,A)')'ETOPO5 avecell computation used ', t2-t1, ' secs'
+   endif
+   print '(a,2f10.2)','ETOPO5 depths min,max',minval(detopo5),maxval(detopo5)
+   print '(a)','ETOPO5: done' ; print *
+endif
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! BODC
+if (l_BODC) then
+   print *,'BODC  : Start interpolation'
+
+   print *,'BODC  : bilin - interpolate depths'
+   t1 = DTIME(tarray)
+   call bilin(dbodc,modlon,modlat,nocean,nland,nx,ny, &
+              bodc%deep,bodc%lat,bodc%lon,bodc_nx,bodc_ny,&
+              bodc%minlon,bodc%minlat,bodc%maxlon,bodc%maxlat,dlonb,dlatb,.false.)
+   t2 = DTIME(tarray)
+   write(*,'(A,F8.3,A)')'BODC bilin computation used ', t2-t1, ' secs'
+   print '(a,2f10.2)','BODC   depths min,max',minval(dbodc),maxval(dbodc)
+
+   print *,'BODC  : bilin - interpolate weights'
+   t1 = DTIME(tarray)
+   call bilin(wbodc,modlon,modlat,nocean,nland,nx,ny, &
+              bodc%weight,bodc%lat,bodc%lon,bodc_nx,bodc_ny,&
+              bodc%minlon,bodc%minlat,bodc%maxlon,bodc%maxlat,dlonb,dlatb,.false.)
+   t2 = DTIME(tarray)
+   write(*,'(A,F8.3,A)')'BODC bilin computation used ', t2-t1, ' secs'
+   print '(a,2f10.2)','BODC   weight min,max',minval(wbodc),maxval(wbodc)
+
+   if  (l_AVECELL)then
+      print *,'BODC  : avecell - interpolate depths'
+      t1 = DTIME(tarray)
+      call avecell(dbodc,modlon,modlat,nocean,nland,&
+                   bodc%deep,bodc%lat,bodc%lon,bodc_nx,bodc_ny,1,bodc_ny,nx,ny)
+      t2 = DTIME(tarray)
+      write(*,'(A,F8.3,A)')'BODC avecell computation used ', t2-t1, ' secs'
+   endif
+   print '(a,2f10.2)','BODC   depths min,max',minval(dbodc),maxval(dbodc)
+   print *
+endif
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+if (l_ibcao) then
+   if (maxlat > ibcao_minlat) then
+      print *,'IBCAO : Start interpolation'
+
+      print *,'IBCAO : invdistibcao3 - interpolate depths'
+      t1 = DTIME(tarray)
+      call ibcao_median(dibcao,modlon,modlat,nocean,nland,nx,ny, &
+                 ibcao_depth,ibcao_lat,ibcao_lon,ibcao_nx,ibcao_ny,&
+                 ibcao_minlon,ibcao_minlat,ibcao_maxlon,ibcao_maxlat,.5,.5)
+      t2 = DTIME(tarray)
+      write(*,'(A,F8.3,A)')'IBCAO ibcao_median computation used ', t2-t1, ' secs'
+      print '(a,2f10.2)','IBCAO  depths min,max',minval(dibcao),maxval(dibcao)
+
+
+      print *,'IBCAO : invdistibcao3 - interpolate weights'
+      t1 = DTIME(tarray)
+      call ibcao_median(wibcao,modlon,modlat,nocean,nland,nx,ny, &
+                 ibcao_weight,ibcao_lat,ibcao_lon,ibcao_nx,ibcao_ny,&
+                 ibcao_minlon,ibcao_minlat,ibcao_maxlon,ibcao_maxlat,.5,.5)
+      print *,'Finished ? '
+      t2 = DTIME(tarray)
+      write(*,'(A,F8.3,A)')'IBCAO invdistibcao3 computation used ', t2-t1, ' secs'
+      print '(a,2f10.2)','IBCAO  weight min,max',minval(wibcao),maxval(wibcao)
+!Fanf : The average option seems to work but is not tested, so we leave it aside
+!      if (l_avecell) then
+!         print *,'IBCAO : avecell - interpolate depths'
+!         t1 = DTIME(tarray)
+!         call avecell(dibcao,modlon,modlat,nocean,nland,&
+!                      ibcao_depth,ibcao_lat,ibcao_lon,ibcao_nx,ibcao_ny,1,ibcao_ny,nx,ny)
+!         t2 = DTIME(tarray)
+!         write(*,'(A,F8.3,A)')'IBCAO avecell computation used ', t2-t1, ' secs'
+!      endif
+
+      print '(a,2f10.2)','IBCAO   depths min,max',minval(dibcao),maxval(dibcao)
+      print *,'IBCAO: done'
+   endif
+endif
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+if (l_CONMAN) then
+   print *,'CONMAN : Start interpolation'
+
+   print *,'CONMAN : invdistibcao3 - interpolate depths'
+   t1 = DTIME(tarray)
+   call ibcao_median(dconman,modlon,modlat,nocean,nland,nx,ny, &
+              conman%deep,conman%lat,conman%lon,conman_nx,conman_ny,&
+              conman%minlon,conman%minlat,conman%maxlon,conman%maxlat,2.5,2.5)
+   t2 = DTIME(tarray)
+   write(*,'(A,F8.3,A)')'CONMAN invdistibcao3 computation used ', t2-t1, ' secs'
+   print '(a,2f10.2)','CONMAN  depths min,max',minval(dconman),maxval(dconman)
+
+
+   print *,'CONMAN : invdistibcao3 - interpolate weights'
+   t1 = DTIME(tarray)
+   call ibcao_median(wconman,modlon,modlat,nocean,nland,nx,ny, &
+              conman%weight,conman%lat,conman%lon,conman_nx,conman_ny,&
+              conman%minlon,conman%minlat,conman%maxlon,conman%maxlat,2.5,2.5)
+   t2 = DTIME(tarray)
+   write(*,'(A,F8.3,A)')'CONMAN invdistibcao3 computation used ', t2-t1, ' secs'
+   print '(a,2f10.2)','CONMAN  weight min,max',minval(wconman),maxval(wconman)
+
+   if (l_AVECELL) then
+      print *,'CONMAN : avecell - interpolate depths'
+      t1 = DTIME(tarray)
+      call avecell(dconman,modlon,modlat,nocean,nland,&
+                   conman%deep,conman%lat,conman%lon,conman_nx,conman_ny,1,conman_ny,nx,ny)
+      t2 = DTIME(tarray)
+      write(*,'(A,F8.3,A)')'CONMAN avecell computation used ', t2-t1, ' secs'
+   endif
+   print '(a,2f10.2)','CONMAN   depths min,max',minval(dbodc),maxval(dbodc)
+   print *,'CONMAN: done'
+endif
+
+
+
+
+
+
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+if (l_etopo5) &
+  print '(a,2f10.2)','ETOPO5 depths min,max',minval(detopo5),maxval(detopo5)
+if (l_BODC) then
+  print '(a,2f10.2)','IBCAO  depths min,max',minval(dibcao),maxval(dibcao)
+  print '(a,2f10.2)','BODC   depths min,max',minval(dbodc),maxval(dbodc)
+endif
+if (l_IBCAO) then
+  print '(a,2f10.2)','BODC   weight min,max',minval(wibcao),maxval(wbodc)
+  print '(a,2f10.2)','IBCAO  weight min,max',minval(wibcao),maxval(wibcao)
+endif
+if (l_CONMAN) &
+  print '(a,2f10.2)','BODC   weight min,max',minval(wconman),maxval(wconman)
+
+
+
+  do j=1,ny
+  do i=1,nx
+     if (l_etopo5)    depths(i,j)=detopo5(i,j)
+     if (l_GEBCO)  depths(i,j)=dgebco (i,j)
+     if (l_IBCAO)  depths(i,j)=(1.0-wibcao (i,j))*depths(i,j) + wibcao (i,j)*dibcao (i,j)
+     if (l_BODC )  depths(i,j)=(1.0-wbodc  (i,j))*depths(i,j) + wbodc  (i,j)*dbodc  (i,j)
+     if (l_CONMAN) depths(i,j)=(1.0-wconman(i,j))*depths(i,j) + wconman(i,j)*dconman(i,j)
+  enddo
+  enddo
+
+!#ifdef GEBCO
+!     print *,'GEBCO Trick!'
+!     where (depths <= 10.0 .and. depths > 0.5) depths=10.1
+!#endif
+  !where (depths <= 10.0) depths=0.0
+  where (depths <= cutoff) depths=0.0
+  !where (10.0 < depths .and. depths <  20.0) depths=20.0
+  print '(a,2f10.2)','FINAL  depths min,max For depths>0)',&
+     minval(depths,depths>1e-4),maxval(depths,depths>1e-4)
+
+
+end subroutine topography
+end module m_topography
