@@ -1,7 +1,7 @@
 #!/bin/bash
 
 myclim="woa2013" # Climatology to use
-myclim="phc" # Climatology to use
+#myclim="phc" # Climatology to use
 
 Icore=23
 Jcore=23
