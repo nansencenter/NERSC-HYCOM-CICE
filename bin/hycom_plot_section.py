@@ -167,17 +167,17 @@ def main(lon1,lat1,lon2,lat2,variable,files,filetype="archive",clim=None,section
       #figure = matplotlib.pyplot.figure()
       #ax=figure.add_subplot(111)
       #P=ax.pcolormesh(dist/1000.,-intfsec,datasec)
-      P=ax.pcolormesh(x,-intfsec,datasec)
+      P=ax.pcolormesh(x,-intfsec,datasec,cmap="jet")
       if clim is not None : P.set_clim(clim)
 
       # Plot layer interfaces
       for k in range(1,kdm+1) :
          if k%10 == 0 : 
-            PL=ax.plot(x,-intfsec[k,:],"-",color="k")
+            PL=ax.plot(x,-intfsec[k,:],"--",color="k",lw=.5)
          elif k%5 == 0 : 
-            PL=ax.plot(x,-intfsec[k,:],"--",color="k")
+            PL=ax.plot(x,-intfsec[k,:],"--",color="k",lw=.5)
          else :
-            PL=ax.plot(x,-intfsec[k,:],"-",color=".5")
+            PL=ax.plot(x,-intfsec[k,:],"--",color=".5",lw=.5)
 
          textx = x[i_maxd]
          texty = -0.5*(intfsec[k-1,i_maxd] + intfsec[k,i_maxd])
