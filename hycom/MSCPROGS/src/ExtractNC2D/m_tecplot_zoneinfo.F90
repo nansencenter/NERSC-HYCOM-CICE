@@ -53,7 +53,7 @@ subroutine tecplot_zoneinfo(nx,ny,nz,plot_time,qlon,qlat,dx,dy,depths,sphere,lte
 
       ! netcdf file
       ! This also creates the netcdf file
-      if (NF90_CREATE('tmp1.nc',NF90_CLOBBER,ncid) /= NF90_NOERR) then
+      if (NF90_CREATE('tmp1.nc',NF90_NETCDF4,ncid) /= NF90_NOERR) then
          print *,'An error occured when opening the netcdf file'
          stop '(restart2netcdf)'
       end if
