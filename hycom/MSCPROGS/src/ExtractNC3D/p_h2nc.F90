@@ -133,7 +133,7 @@ program tecconv
       if ( first) then
 
          ! Start dumping to netcdf file
-         if (NF90_create('tmp1.nc',NF90_CLOBBER,ncid) /= NF90_NOERR) then
+         if (NF90_create('tmp1.nc',NF90_NETCDF4,ncid) /= NF90_NOERR) then
             print *,'An error occured when opening the netcdf file'
             stop '(restart2netcdf)'
          end if

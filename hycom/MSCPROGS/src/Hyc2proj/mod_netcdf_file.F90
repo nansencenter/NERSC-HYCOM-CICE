@@ -24,7 +24,7 @@ contains
       print *,'Only one netcdf file open at a time'
       stop '(OpenNCFile)'
    end if
-   if (NF90_CREATE(ncstate%ncfil,NF90_CLOBBER,ncstate%ncid) /= NF90_NOERR) then
+   if (NF90_CREATE(ncstate%ncfil,NF90_NETCDF4,ncstate%ncid) /= NF90_NOERR) then
       print *,'An error occured when opening the netcdf file'
       stop '(openNCFile)'
    end if
@@ -119,8 +119,7 @@ contains
    call forecastDate(hfile,rtd)
    call startDate(hfile,rtb)
 
-   call handle_err(NF90_PUT_ATT(ncstate%ncid,NF90_GLOBAL,'title', 'Pilot MyOcean reanalysis by TOPAZ4 (2003-2008)'))
-   !call handle_err(NF90_PUT_ATT(ncstate%ncid,NF90_GLOBAL,'comment', trim(comment)))
+   call handle_err(NF90_PUT_ATT(ncstate%ncid,NF90_GLOBAL,'title', 'Arctic Ocean Physics Reanalysis'))
    call handle_err(NF90_PUT_ATT(ncstate%ncid,NF90_GLOBAL,'institution',  'NERSC, Thormoehlens gate 47, N-5006 Bergen, Norway'))
    call date_and_time(date=dateinfo)
    call handle_err(NF90_PUT_ATT(ncstate%ncid,NF90_GLOBAL,'history', dateinfo(1:8)//':Created by program hyc2proj, version '//cver))
