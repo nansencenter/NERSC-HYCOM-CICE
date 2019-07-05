@@ -32,7 +32,7 @@ c
 c --- 'lhycom' -- hycom (vs micom) input file
 c --- 'trcout' -- tracer input
       logical   lhycom,trcout
-      data      lhycom/.false./, trcout/.false./
+      data      lhycom/.true./, trcout/.false./
 c
       real      tenm,onem,temcm,onecm,onemm
       data      tenm/10./,onem/1./,tencm/.1/,onecm/.01/,onemm/.001/
