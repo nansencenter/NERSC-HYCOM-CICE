@@ -702,6 +702,11 @@ class ABFileArchv(ABFile) :
       self._fileb.write(fmtstr%(fieldname,time_step,model_day,k,dens,hmin,hmax))
 
 
+# Mostafa
+   def get_fields(self):
+      return self._fields
+
+
    @property
    def fieldlevels(self) :
       return set([elem["k"] for elem in self._fields.values()])
