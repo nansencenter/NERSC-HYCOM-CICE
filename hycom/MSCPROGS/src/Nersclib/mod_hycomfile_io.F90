@@ -278,12 +278,9 @@ contains
          read(nop,316) ctitle,df%iversn,df%iexpt,df%yrflag
          !!get dump time from filename
          !!TODO: what if under 1 hour?
-         !read(df%filebase(7:10),'(i4.4)') df%iyear
-         !read(df%filebase(12:14),'(i3.3)') df%iday
-         !read(df%filebase(16:17),'(i2.2)') df%ihour
-         read(df%filebase(10:13),'(i4.4)') df%iyear
-         read(df%filebase(15:17),'(i3.3)') df%iday
-         read(df%filebase(19:21),'(i2.2)') df%ihour
+         read(df%filebase(7:10),'(i4.4)') df%iyear
+         read(df%filebase(12:14),'(i3.3)') df%iday
+         read(df%filebase(16:17),'(i2.2)') df%ihour
          print*,'year is ', df%iyear
          print*,'day is ',df%iday
          print*,'hour is ',df%ihour
