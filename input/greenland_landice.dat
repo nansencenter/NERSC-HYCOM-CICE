@@ -1,0 +1,93 @@
+F  AMAZONAS                          Annual mean:(Dai & Trenberth 2002); Monthly var: (Dumenil at al, 1993)
+    5330.0 0.06470 0.07708 0.09213 0.10441 0.11312 0.11327 0.10729 0.09414 0.07402 0.05515 0.05039 0.05430
+     0.5    -48.35   
+T  Petermann Gletscher       Annual mean:(https://data1.geo.tu-dresden.de/gis_gmb/index.html#grid);(Section S1; 50% of 23.5GT/yr= 11.75GT/yr);Monthly var: equal (1/12)
+    11.75  0.08330 0.08330 0.08330 0.08330 0.08330 0.08370 0.08330 0.08330 0.08330 0.08330 0.08330 0.08330
+    80.57   -60.1
+T  Humboldt Gletscher        Annual mean:(https://data1.geo.tu-dresden.de/gis_gmb/index.html#grid);(Section S1; 10% of 23.5GT/yr= 2.35GT/yr);Monthly var: equal (1/12)
+     2.35  0.08330 0.08330 0.08330 0.08330 0.08330 0.08370 0.08330 0.08330 0.08330 0.08330 0.08330 0.08330
+    79.71   -64.27
+T  Ryder Gletscher           Annual mean:(https://data1.geo.tu-dresden.de/gis_gmb/index.html#grid);(Section S1; 10% of 23.5GT/yr= 2.35GT/yr);Monthly var: equal (1/12)
+     2.35  0.08330 0.08330 0.08330 0.08330 0.08330 0.08370 0.08330 0.08330 0.08330 0.08330 0.08330 0.08330
+    81.47   -50.28
+T  C.H. Ostenfeld Gletscher   Annual mean:(https://data1.geo.tu-dresden.de/gis_gmb/index.html#grid);(Section S1; 10% of 23.5GT/yr= 2.35GT/yr);Monthly var: equal (1/12)
+     2.35  0.08330 0.08330 0.08330 0.08330 0.08330 0.08370 0.08330 0.08330 0.08330 0.08330 0.08330 0.08330
+    81.58   -45.20
+T  Hager Brae               Annual mean:(https://data1.geo.tu-dresden.de/gis_gmb/index.html#grid);(Section S1; 10% of 23.5GT/yr= 2.35GT/yr);Monthly var: equal (1/12)
+     2.35  0.08330 0.08330 0.08330 0.08330 0.08330 0.08370 0.08330 0.08330 0.08330 0.08330 0.08330 0.08330
+    81.45   -27.62
+T  Academy Glacier      Annual mean:(https://data1.geo.tu-dresden.de/gis_gmb/index.html#grid);(Section S1; 10% of 23.5GT/yr= 2.35GT/yr);Monthly var: equal (1/12)
+     2.35  0.08330 0.08330 0.08330 0.08330 0.08330 0.08370 0.08330 0.08330 0.08330 0.08330 0.08330 0.08330
+    81.63   -32.38
+T  NIOghalvfjerdsfjorden   Annual mean:(https://data1.geo.tu-dresden.de/gis_gmb/index.html#grid);(Section S2; 40% of 2.9GT/yr= 1.16GT/yr);Monthly var: equal (1/12)
+     1.16  0.08330 0.08330 0.08330 0.08330 0.08330 0.08370 0.08330 0.08330 0.08330 0.08330 0.08330 0.08330
+    79.33   -22.59
+T  zachariae isstrøm    Annual mean:(https://data1.geo.tu-dresden.de/gis_gmb/index.html#grid);(Section S2; 40% of 2.9GT/yr= 1.16GT/yr);Monthly var: equal (1/12)
+     1.16  0.08330 0.08330 0.08330 0.08330 0.08330 0.08370 0.08330 0.08330 0.08330 0.08330 0.08330 0.08330
+    78.92   -20.54
+T  Storstrømmen     Annual mean:(https://data1.geo.tu-dresden.de/gis_gmb/index.html#grid);(Section S2; 20% of 2.9GT/yr= 0.58GT/yr);Monthly var: equal (1/12)
+     0.58  0.08330 0.08330 0.08330 0.08330 0.08330 0.08370 0.08330 0.08330 0.08330 0.08330 0.08330 0.08330
+    76.72   -22.34 
+T  Kangerlussuaq Gl    Annual mean:(https://data1.geo.tu-dresden.de/gis_gmb/index.html#grid);(Section S3; 35% of 45.3GT/yr= 15.86GT/yr);Monthly var: equal (1/12)
+    15.86  0.08330 0.08330 0.08330 0.08330 0.08330 0.08370 0.08330 0.08330 0.08330 0.08330 0.08330 0.08330
+    68.61   -32.97 
+T  kong christian 1V glacier   Annual mean:(https://data1.geo.tu-dresden.de/gis_gmb/index.html#grid);(Section S3; 30% of 45.3GT/yr= 13.59GT/yr);Monthly var: equal (1/12)
+    13.59  0.08330 0.08330 0.08330 0.08330 0.08330 0.08370 0.08330 0.08330 0.08330 0.08330 0.08330 0.08330
+    68.38   -30.08 
+T  Daugaard-Jensen Glacier    Annual mean:(https://data1.geo.tu-dresden.de/gis_gmb/index.html#grid);(Section S3; 25% of 45.3GT/yr= 11.32GT/yr);Monthly var: equal (1/12)
+    11.32  0.08330 0.08330 0.08330 0.08330 0.08330 0.08370 0.08330 0.08330 0.08330 0.08330 0.08330 0.08330
+    71.91   -28.62
+T  Waltershausen Gletscher    Annual mean:(https://data1.geo.tu-dresden.de/gis_gmb/index.html#grid);(Section S3; 10% of 45.3GT/yr= 4.53GT/yr);Monthly var: equal (1/12)
+     4.53  0.08330 0.08330 0.08330 0.08330 0.08330 0.08370 0.08330 0.08330 0.08330 0.08330 0.08330 0.08330
+    73.81   -24.24
+T  Helheimgletscher     Annual mean:(https://data1.geo.tu-dresden.de/gis_gmb/index.html#grid);(Section S4; 35% of 36.2GT/yr= 12.67GT/yr);Monthly var: equal (1/12)
+    12.67  0.08330 0.08330 0.08330 0.08330 0.08330 0.08370 0.08330 0.08330 0.08330 0.08330 0.08330 0.08330
+    66.37   -38.21
+T  Ikertivaq Glacier    Annual mean:(https://data1.geo.tu-dresden.de/gis_gmb/index.html#grid);(Section S4; 25% of 36.2GT/yr= 9.05GT/yr);Monthly var: equal (1/12)
+     9.05  0.08330 0.08330 0.08330 0.08330 0.08330 0.08370 0.08330 0.08330 0.08330 0.08330 0.08330 0.08330
+    65.63   -39.73
+T  Gyldenløve Fjord    Annual mean:(https://data1.geo.tu-dresden.de/gis_gmb/index.html#grid);(Section S4; 25% of 36.2GT/yr= 9.05GT/yr);Monthly var: equal (1/12)
+     9.05  0.08330 0.08330 0.08330 0.08330 0.08330 0.08370 0.08330 0.08330 0.08330 0.08330 0.08330 0.08330
+    64.25   -41.59
+T  Tingmiarmiut Fjord   Annual mean:(https://data1.geo.tu-dresden.de/gis_gmb/index.html#grid);(Section S4; 15% of 36.2GT/yr= 5.43GT/yr);Monthly var: equal (1/12)
+     5.43  0.08330 0.08330 0.08330 0.08330 0.08330 0.08370 0.08330 0.08330 0.08330 0.08330 0.08330 0.08330
+    62.74   -43.34
+T  Eqalorutsit Killiit Sermiat    Annual mean:(https://data1.geo.tu-dresden.de/gis_gmb/index.html#grid);(Section S5; 15% of 22.7GT/yr= 3.40GT/yr);Monthly var: equal (1/12)
+     3.40  0.08330 0.08330 0.08330 0.08330 0.08330 0.08370 0.08330 0.08330 0.08330 0.08330 0.08330 0.08330
+    61.29   -46.19
+T  Sermiligaarssuk    Annual mean:(https://data1.geo.tu-dresden.de/gis_gmb/index.html#grid);(Section S5; 35% of 22.7GT/yr= 7.95GT/yr);Monthly var: equal (1/12)
+     7.95  0.08330 0.08330 0.08330 0.08330 0.08330 0.08370 0.08330 0.08330 0.08330 0.08330 0.08330 0.08330
+    61.59   -48.32
+T  Ukaasorsuaq     Annual mean:(https://data1.geo.tu-dresden.de/gis_gmb/index.html#grid);(Section S5; 50% of 22.7GT/yr= 11.35GT/yr);Monthly var: equal (1/12)
+    11.35  0.08330 0.08330 0.08330 0.08330 0.08330 0.08370 0.08330 0.08330 0.08330 0.08330 0.08330 0.08330
+    61.96   -48.72 
+T  Narsap Sermia    Annual mean:(https://data1.geo.tu-dresden.de/gis_gmb/index.html#grid);(Section S6; 30% of 38.4GT/yr= 11.52GT/yr);Monthly var: equal (1/12)
+    11.52  0.08330 0.08330 0.08330 0.08330 0.08330 0.08370 0.08330 0.08330 0.08330 0.08330 0.08330 0.08330
+    64.64   -50.02
+T  Kangiata Nunaata Sermia    Annual mean:(https://data1.geo.tu-dresden.de/gis_gmb/index.html#grid);(Section S6; 50% of 38.4GT/yr= 19.2GT/yr);Monthly var: equal (1/12)
+    19.20  0.08330 0.08330 0.08330 0.08330 0.08330 0.08370 0.08330 0.08330 0.08330 0.08330 0.08330 0.08330
+    64.26   -49.56
+T  Frederikshåb Isblink   Annual mean:(https://data1.geo.tu-dresden.de/gis_gmb/index.html#grid);(Section S6; 20% of 38.4GT/yr= 7.68GT/yr);Monthly var: equal (1/12)
+     7.68  0.08330 0.08330 0.08330 0.08330 0.08330 0.08370 0.08330 0.08330 0.08330 0.08330 0.08330 0.08330
+    62.75   -49.49
+T  Jakobshavn Isbrae     Annual mean:(https://data1.geo.tu-dresden.de/gis_gmb/index.html#grid);(Section S7; 40% of 30.7GT/yr= 12.28GT/yr);Monthly var: equal (1/12)
+    12.28  0.08330 0.08330 0.08330 0.08330 0.08330 0.08370 0.08330 0.08330 0.08330 0.08330 0.08330 0.08330
+    69.16   -49.66
+T  sermeq kujalleq glacier    Annual mean:(https://data1.geo.tu-dresden.de/gis_gmb/index.html#grid);(Section S7; 25% of 30.7GT/yr= 7.67GT/yr);Monthly var: equal (1/12)
+     7.67  0.08330 0.08330 0.08330 0.08330 0.08330 0.08370 0.08330 0.08330 0.08330 0.08330 0.08330 0.08330
+    69.99   -50.18
+T  RINK ISBRAE Gl      Annual mean:(https://data1.geo.tu-dresden.de/gis_gmb/index.html#grid);(Section S7; 35% of 30.7GT/yr= 10.75GT/yr);Monthly var: equal (1/12)
+    10.75  0.08330 0.08330 0.08330 0.08330 0.08330 0.08370 0.08330 0.08330 0.08330 0.08330 0.08330 0.08330
+    71.76   -51.61
+T  Upernavik Isstrøm  Annual mean:(https://data1.geo.tu-dresden.de/gis_gmb/index.html#grid);(Section S8; 25% of 52.7GT/yr= 13.18GT/yr);Monthly var: equal (1/12)
+    13.18  0.08330 0.08330 0.08330 0.08330 0.08330 0.08370 0.08330 0.08330 0.08330 0.08330 0.08330 0.08330
+    72.94   -54.29
+T  Kong Oscar Gletscher   Annual mean:(https://data1.geo.tu-dresden.de/gis_gmb/index.html#grid);(Section S8; 30% of 52.7GT/yr= 15.80GT/yr);Monthly var: equal (1/12)
+    15.80  0.08330 0.08330 0.08330 0.08330 0.08330 0.08370 0.08330 0.08330 0.08330 0.08330 0.08330 0.08330
+    76.02   -59.70
+T  Hayes Gletscher     Annual mean:(https://data1.geo.tu-dresden.de/gis_gmb/index.html#grid);(Section S8; 25% of 52.7GT/yr= 13.18GT/yr);Monthly var: equal (1/12)
+    13.18  0.08330 0.08330 0.08330 0.08330 0.08330 0.08370 0.08330 0.08330 0.08330 0.08330 0.08330 0.08330
+    74.94   -57.06
+T  Heilprin Gletscher   Annual mean:(https://data1.geo.tu-dresden.de/gis_gmb/index.html#grid);(Section S8; 20% of 52.7GT/yr= 10.54GT/yr);Monthly var: equal (1/12)
+    10.54  0.08330 0.08330 0.08330 0.08330 0.08330 0.08370 0.08330 0.08330 0.08330 0.08330 0.08330 0.08330
+    77.54   -66.03
