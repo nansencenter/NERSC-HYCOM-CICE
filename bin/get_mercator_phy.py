@@ -93,7 +93,7 @@ DownloadString = motu_client_name+ ' -u '+usr+' -p '+password+' -m '+mercator_mo
 def extract_data(DownloadString,VarString,StartDate,StopDate,SaveFileName):
     extract_data = 'python '+DownloadString+' -t "'+StartDate+' 12:00:00" -T "'+StopDate+ ' 12:00:00" '+VarString+' -o ./ -f '+SaveFileName
     return extract_data
-
+opath="./"
 
 for iyear in range(StartYear,StopYear,1):
     Year = str(iyear)
