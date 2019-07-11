@@ -15,25 +15,33 @@
 # History
 # (1) December 2018: Mostafa Bakhoday-Paskyabi
 # (2) May 2019: some correction on biophys [ab] files, Mostafa Bakhoday-Paskyabi
-#
-#
+# (3) July 9 2019, accounting for both bio & phy nesting.
+# (4) July 11 2019, further imporvment.
+
 module load basemap/1.0.7-intel-2017a-Python-2.7.13
 
-options=$(getopt -o b:m  -- "$@")
+options=$(getopt -o b:m -- "$@")
+[ $? -eq 0 ] || {
+    echo "$usage"
+    echo "Error: Incorrect options provided"
+    exit 1
+}
+grid_type=native
 maxinc=50
 bio_path=""
-grid_type=native
 eval set -- "$options"
 while true; do
     case "$1" in
     -b)
-       shift;
+       shift;  
        bio_path=$1
-       #grid_type=$1
+        ;;
+    -m) 
+       grid_type=regular
         ;;
     --)
         shift
-        break
+        break 
         ;;
     esac
     shift
@@ -52,9 +60,9 @@ if [ $# -lt 2 ] ; then
     echo "when running this script"
     echo ""
     echo "Example:"
-    echo "   ../bin/nemo_to_hycom.sh ../../TP5a0.06/expt_01.0/ ../MERCATOR-PHY-24-2011-01-02*.nc"
+    echo "   ../bin/nemo_to_hycom.sh ../../TP5a0.06/expt_01.0/ ../MERCATOR-PHY-24-2011-01-02*.nc -m regular"
     echo " ../bin/nemo_to_hycom.sh ../../TP5a0.06/expt_01.2/  /nird/projects/nird/NS9481K/MERCATOR_DATA/PHY/2007/ext-GLORYS12V1_1dAV_20070302_20070303_grid2D_R20070307.nc -m native"
-    echo "../bin/nemo_to_hycom.sh ../../TP5a0.06/expt_01.0/ /nird/projects/nird/NS9481K/MERCATOR_DATA/PHY/2013/ext-GLORYS12V1_1dAV_2013110*_grid2D*.nc -b /nird/projects/nird/NS2993K/MERCATOR_DATA/BIO/201"
+    echo "../bin/nemo_to_hycom.sh ../../TP5a0.06/expt_01.0/ /nird/projects/nird/NS9481K/MERCATOR_DATA/PHY/2013/ext-GLORYS12V1_1dAV_2013110*_grid2D*.nc -b /nird/projects/nird/NS2993K/MERCATOR_DATA/BIO/2013"
     echo " NOTE YOU NEED TO RUN THIS SCRIPT WITHIN THE NEMO EXPERIMENT FOLDER"
     exit 1
 fi
@@ -69,6 +77,7 @@ else
 fi
 source ${BASEDIR}/REGION.src || { echo "Could not source ${BASEDIR}/REGION.src" ; exit 1 ; }
 source EXPT.src || { echo "Could not source ./EXPT.src" ; exit 1 ; }
+source ${BINDIR}/common_functions.sh || { echo "Could not source ${BINDIR}/common_functions.sh" ; exit 1 ; }
 #
 N="depth_${R}_${T}"
 export CDF_NEMO=$1
@@ -78,15 +87,19 @@ data_path=$expt_path/data
 export nest_expt=$1
 export ncfiles=$2
 export mercator_gridfiles=${MERCATOR_NATIVE_MESH}   #${MERCATOR_OLD_PATH}/GRID/GLO_MFC_001_24_MESH.nc
+export mercator_regular_mesh=${MERCATOR_REGULAR_MESH}   #${MERCATOR_OLD_PATH}/GRID/GLO_MFC_001_24_MESH.nc
+
+
 #
 iexpt=01        #$T
 iversn=22
 yrflag=3
-idm=4318   #$(egrep "'idm'"  ${data_path}/archv.  | sed "s/.thflag.*$//" | tr -d "[:blank:]")
-jdm=1186     #$(egrep "'jdm'"  ${data_path}/expt_${X}/blkdat.input  | sed "s/.iversn.*$//" | tr -d "[:blank:]")
+idm=$(blkdat_get blkdat.input idm)
+jdm=$(blkdat_get blkdat.input jdm)
 #
 # Reading file name using time field of netcdf file. 
 #
+if [ ${grid_type} == "native" ] ; then
 function model_datetime() {
 fname="$1" python - <<END
 import cfunits
@@ -106,15 +119,41 @@ oname=deltat.strftime(fnametemplate)+"_00"
 print oname
 END
 }
+else
+function model_datetime() {
+fname="$1" python - <<END
+import cfunits
+import datetime
+import numpy
+import netCDF4
+ncid0=netCDF4.Dataset("$1","r")
+time=ncid0.variables["time"][0]
+unit=ncid0.variables["time"].units
+tmp=cfunits.Units(unit)
+refy,refm,refd=(1950,1,1)
+tmp2=cfunits.Units("hours since %d-%d-%d 00:00:00"%(refy,refm,refd))
+tmp3=int(numpy.round(cfunits.Units.conform(time,tmp,tmp2)))
+fnametemplate="archv.%Y_%j"
+deltat=datetime.datetime(refy,refm,refd,0,0,0)+datetime.timedelta(hours=tmp3)
+oname=deltat.strftime(fnametemplate)+"_00"
+print oname
+END
+}
+
+fi
 #
 #
 #
 for source_archv in $@ ; do
    # TODO: following 2 lines are for native grid. It needs simply to be modified to be general.
+   if [ ${grid_type} == "native" ] ; then
    fn=$(echo ${source_archv:${#source_archv}-32})
    [[ $source_archv != *"ext-GLORYS12V1_1dAV_"* ]] && continue
    echo $source_archv
-
+   else
+   fn=$(echo ${source_archv:${#source_archv}-29})
+   [[ $source_archv != *"MERCATOR-PHY-24"* ]] && continue
+   fi
    filename=$source_archv 
    #
    # (1) Create archive [ab] files from the MERCATOR netcdf file.
@@ -122,7 +161,6 @@ for source_archv in $@ ; do
    ########################
    if [ ${grid_type} == "native" ] ; then
       if [[ "${bio_path}" == "" ]] ; then
-      echo "${BASEDIR}/bin/nemo2archvz_native.py $mercator_gridfiles $source_archv --iexpt ${iexpt} --iversn ${iversn} --yrflag ${yrflag}"
       ${BASEDIR}/bin/nemo2archvz_native.py $mercator_gridfiles $source_archv --iexpt ${iexpt} --iversn ${iversn} --yrflag ${yrflag}
       ########################
       #
@@ -144,14 +182,26 @@ for source_archv in $@ ; do
 
       fi
    else
-      ${BASEDIR}/bin/nemo2archvz.py $1 $source_archv --iexpt ${iexpt} --iversn ${iversn} --yrflag ${yrflag}      
+      if [[ "${bio_path}" == "" ]] ; then
+      ${BASEDIR}/bin/nemo2archvz_regular.py $mercator_regular_mesh $source_archv --iexpt ${iexpt} --iversn ${iversn} --yrflag ${yrflag}      
       ########################
       #
       # (2) Based on generated archive files in (1) the grid and topography files are generated.
       #
       ########################
-      ${BASEDIR}/bin/archvz2hycom.sh $nest_expt $(model_datetime) "$filename" 
+      ${BASEDIR}/bin/archvz2hycom_biophys.sh $nest_expt $(model_datetime "$filename")
+      ########################
+      else
+
+      ${BASEDIR}/bin/nemo2archvz_regular.py $mercator_regular_mesh $source_archv --bio_path=${bio_path}  --iexpt ${iexpt} --iversn ${iversn} --yrflag ${yrflag}
+      ########################
+      #
+      # (2) Based on generated archive files in (1) the grid and topography files are generated.
+      #
+      ########################
+      ${BASEDIR}/bin/archvz2hycom_biophys.sh $nest_expt $(model_datetime "$filename") -b 1
       ########################
 
    fi
+  fi
 done
