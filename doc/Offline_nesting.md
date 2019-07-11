@@ -25,6 +25,21 @@ Based on mesh and coordinate MERCATOR netcdf files, the archive data files for g
 
 (5) Build port files.
 
+#  How to run without bio on native MERCATOR grid:
+../bin/nemo_to_hycom.sh ../../TP5a0.06/expt_01.2/ /nird/projects/nird/NS9481K/MERCATOR_DATA/PHY/2013/ext-GLORYS12V1_1dAV_20131122_20131123_grid2D_R20131127.nc 
+
+#  How to run with bio on native MERCATOR grid:
+
+../bin/nemo_to_hycom.sh ../../TP5a0.06/expt_01.2/ /nird/projects/nird/NS9481K/MERCATOR_DATA/PHY/2013/ext-GLORYS12V1_1dAV_20131122_20131123_grid2D_R20131127.nc -b /nird/projects/nird/NS2993K/MERCATOR_DATA/BIO/2013
+
+#  How to run without bio on regular MERCATOR grid:
+../bin/nemo_to_hycom.sh ../../TP5a0.06/expt_01.0 PATH/MERCATOR-PHY-24-2018-01-01-12.nc -m regular
+
+#  How to run with bio on regular MERCATOR grid:
+
+../bin/nemo_to_hycom.sh ../../TP5a0.06/expt_01.0 PATH/MERCATOR-PHY-24-2018-01-01-12.nc -m regular -b BIO-FILE-ONLY-PATH
+
+
 #  Directory structure
 
 Following is the general structure of HYCOM-CICE directory:
