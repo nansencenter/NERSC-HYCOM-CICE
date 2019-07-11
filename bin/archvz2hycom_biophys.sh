@@ -9,8 +9,8 @@
 #
 # --- Author: Mostafa Bakhoday-Paskyabi, Ocean Modeling group, NERSC, Bergen
 # --- Mostafa.Bakhoday@nersc.no
-# --- 9 September 2017. MBP
-# --- 31 May 2019. MBP
+# --- M. Bakhoday-Paskyabi, 9 September 2017.
+# --- M. Bakhoday-Paskyabi, 11 July 2019
 
 
 iscan=15
@@ -29,6 +29,9 @@ usage="
    Optional argument 'iscan' has default value of 15. This is the distance that will be scanned on
    this region grid to find  a sea point for the new region grid points.
 "
+grid_type=native
+bio_flag=0
+
 # This will process optional arguments
 options=$(getopt -o b:m -- "$@")
 [ $? -eq 0 ] || {
@@ -36,17 +39,15 @@ options=$(getopt -o b:m -- "$@")
     echo "Error: Incorrect options provided"
     exit 1
 }
-grid_type=native
-bio_flag=0
 eval set -- "$options"
 while true; do
     case "$1" in
     -b)
-       bio_flag=1
+        shift;
+        bio_flag=1
         ;;
     -m)
-       shift;
-       grid_type=$1
+        grid_type=$1
         ;;
     --)
         shift
@@ -55,7 +56,7 @@ while true; do
     esac
     shift
 done
-
+echo "1"
 # Must be in expt dir to run this script
 #
 if [ -f EXPT.src ] ; then
@@ -142,8 +143,9 @@ if [ "${grid_type}" == "native"  ] ; then
    prog_subreg=${HYCOM_ALL}/subregion/src/isubaregion_modified
    prog_nemo=${HYCOM_ALL}/relax/src/nemo_archvz_biophys
 else
+#   prog_subreg=${HYCOM_ALL}/subregion/src/isubaregion_modified
    prog_subreg=${HYCOM_ALL}/subregion/src/isubaregion
-   prog_nemo=${HYCOM_ALL}/relax/src/nemo_archvz
+   prog_nemo=${HYCOM_ALL}/relax/src/nemo_archvz_biophys
 fi
 #
 #
@@ -158,12 +160,10 @@ chmod a+rx ${prog_nemo}
 #
 echo
 source_archv_i=$2
-
 if [ ! -f ${source_archv_i}.a -o ! -f ${source_archv_i}.b ] ; then
     echo "Source file ${source_archv_i}.[ab] does not exist"
     continue
 fi
-
 
 
 target_archv=${source_archv_i}
@@ -187,8 +187,8 @@ touch $logfile && rm $logfile
 echo ${N}/regional.depth.a
 echo "Processing ${N}/${target_archv}"
 
-#${prog_subreg} >> $logfile  <<EOF
-${prog_subreg}   <<EOF
+##${prog_subreg}   <<EOF
+${prog_subreg} >> $logfile  <<EOF
 ${N}/regional.grid.a
 ${N}/regional.gmap.a
 ${N}/regional.depth.a
@@ -277,6 +277,8 @@ echo $logfile
 touch ${NEST}/${target_archv}.a
 touch ${NEST}/${target_archv}.b
 rm -rf ${NEST}/${target_archv}.*
+
+
 if [[ "${bio_flag}" -eq 0 ]] ; then
 
 ${prog_nemo}  >> $logfile  <<EOF
@@ -332,8 +334,8 @@ else
     touch ${N}/${target_archv}${L}.b
     touch ${D}/${source_archv_i}.a
     touch ${D}/${source_archv_i}.b
-    rm -rf ${N}/${target_archv}${L}.*
-    rm -rf ${D}/${source_archv_i}.*
+#    rm -rf ${N}/${target_archv}${L}.*
+#    rm -rf ${D}/${source_archv_i}.*
     echo "Succesfully created archive file: $2"
 fi
 echo
