@@ -9,8 +9,9 @@
 #
 # --- Author: Mostafa Bakhoday-Paskyabi, Ocean Modeling group, NERSC, Bergen
 # --- Mostafa.Bakhoday@nersc.no
-# --- M. Bakhoday-Paskyabi, 9 September 2017.
-# --- M. Bakhoday-Paskyabi, 11 July 2019
+# --- M. Bakhoday-Paskyabi 9 September 2017.
+# --- M. Bakhoday-Paskyabi 11 July 2019.
+#
 
 
 iscan=15
@@ -47,7 +48,7 @@ while true; do
         bio_flag=1
         ;;
     -m)
-        grid_type=$1
+        grid_type=regular
         ;;
     --)
         shift
@@ -56,7 +57,7 @@ while true; do
     esac
     shift
 done
-echo "1"
+echo $grid_type
 # Must be in expt dir to run this script
 #
 if [ -f EXPT.src ] ; then
@@ -334,8 +335,8 @@ else
     touch ${N}/${target_archv}${L}.b
     touch ${D}/${source_archv_i}.a
     touch ${D}/${source_archv_i}.b
-#    rm -rf ${N}/${target_archv}${L}.*
-#    rm -rf ${D}/${source_archv_i}.*
+    rm -rf ${N}/${target_archv}${L}.*
+    rm -rf ${D}/${source_archv_i}.*
     echo "Succesfully created archive file: $2"
 fi
 echo
