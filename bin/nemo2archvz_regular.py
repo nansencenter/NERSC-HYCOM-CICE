@@ -280,7 +280,8 @@ def interpolate2d(x, y, Z, points, mode='linear', bounds_error=False):
                'exceeds max grid value %.15f ' % (mz, mZ))
         if not(numpy.isnan(mz) or numpy.isnan(mZ)):
             if not mz <= mZ:
-                raise RuntimeError(msg)
+                print "warning"
+                #raise RuntimeError(msg)
 
     # Populate result with interpolated values for points inside domain
     # and NaN for values outside
@@ -548,15 +549,13 @@ def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_path=None) :
        ncidb=netCDF4.Dataset(biofname,"r")
        blon=ncidb.variables["longitude"][:];
        blat=ncidb.variables["latitude"][:]
+       minblat=blat.min()
        no3=ncidb.variables["NO3"][0,:,:,:];
        no3[numpy.abs(no3)>1e+10]=numpy.nan
        po4=ncidb.variables["PO4"][0,:,:,:]
        si=ncidb.variables["Si"][0,:,:,:]
        po4[numpy.abs(po4)>1e+10]=numpy.nan
        si[numpy.abs(si)>1e+10]=numpy.nan
-       po4 = po4 * 106.0 * 12.01
-       si = si * 6.625 * 12.01
-       no3 = no3 * 6.625 * 12.01
        # TODO: Ineed to improve this part
        nz,ny,nx=no3.shape
        dummy=numpy.zeros((nz,ny,nx+1))
@@ -572,12 +571,40 @@ def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_path=None) :
        dummy[:nx]=blon
        blon=dummy
        blon[-1]=-blon[0]
+# TODO:  Note that the coordinate files are for global configuration while
+#        the data file saved for latitude larger than 30. In the case you change your data file coordinate
+#        configuration you need to modify the following lines
+       bio_coordfile=bio_path[:-4]+"/GLOBAL_ANALYSIS_FORECAST_BIO_001_014_COORD/GLO-MFC_001_014_mask.nc"
+       biocrd=netCDF4.Dataset(bio_coordfile,"r")
+       blat2 = biocrd.variables['latitude'][:]
+       index=numpy.where(blat2>=minblat)[0]
+       depth_lev = biocrd.variables['deptho_lev'][index[0]:,:]
+#
+#
+#
+       dummy=numpy.zeros((ny,nx+1))
+       dummy[:,:nx]=depth_lev;dummy[:,-1]=depth_lev[:,-1]
+       depth_lev=dummy
+       depth_lev[depth_lev>50]=0
+       depth_lev=depth_lev.astype('i')
+       dummy_no3=no3
+       dummy_po4=po4
+       dummy_si=si
+       for j in range(ny):
+          for i in range(nx):
+             dummy_no3[depth_lev[j,i]:nz-2,j,i]=no3[depth_lev[j,i]-1,j,i]
+             dummy_po4[depth_lev[j,i]:nz-2,j,i]=po4[depth_lev[j,i]-1,j,i]
+             dummy_si[depth_lev[j,i]:nz-2,j,i]=si[depth_lev[j,i]-1,j,i]
+       no3=dummy_no3
+       po4=dummy_po4
+       si=dummy_si
+
+#
+       po4 = po4 * 106.0 * 12.01
+       si = si   * 6.625 * 12.01
+       no3 = no3 * 6.625 * 12.01
 
 
-
-
-    logger.debug("filename prefix is {}".format(oname))
-    logger.debug("Hours = {}".format(tmp3))
     logger.info("Read, trim, rotate NEMO velocities.")
     u=numpy.zeros((nlev,mbathy.shape[0],mbathy.shape[1]))
     v=numpy.zeros((nlev,mbathy.shape[0],mbathy.shape[1]))
@@ -627,12 +654,15 @@ def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_path=None) :
        logger.info("Calculate baroclinic velocities, temperature, and salinity data.")
     for k in numpy.arange(u.shape[0]) :
         if bio_path:
-           no3k=interpolate2d(blat, blon, no3[k,:,:], points)
-           no3k = maplev(numpy.reshape(no3k,[jdm,idm]))
-           po4k=interpolate2d(blat, blon, po4[k,:,:], points)
-           po4k = maplev(numpy.reshape(po4k,[jdm,idm]))
-           si_k=interpolate2d(blat, blon, si[k,:,:], points)
-           si_k = maplev(numpy.reshape(si_k,[jdm,idm]))
+           no3k=interpolate2d(blat, blon, no3[k,:,:], points).reshape((jdm,idm))
+           no3k = maplev(no3k)
+           po4k=interpolate2d(blat, blon, po4[k,:,:], points).reshape((jdm,idm))
+           po4k = maplev(po4k)
+           si_k=interpolate2d(blat, blon, si[k,:,:], points).reshape((jdm,idm))
+           si_k = maplev(si_k)
+           if k%10==0 : logger.info("Writing 3D variables including BIO, level %d of %d"%(k+1,u.shape[0]))
+        else:
+           if k%10==0 : logger.info("Writing 3D variables, level %d of %d"%(k+1,u.shape[0]))
         #
 
         #
@@ -691,8 +721,6 @@ def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_path=None) :
                 K= numpy.where(dtl < 1e-4)
             sl[K] = sl_above[K]
             tl[K] = tl_above[K]
-            if k%10==0:
-                logger.info("Save to the output %s at level %s"%(deltat.strftime(fnametemplate),str(k)))
         #
         sl[ip]=spval
         tl[ip]=spval
