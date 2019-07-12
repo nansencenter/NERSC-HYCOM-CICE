@@ -189,7 +189,7 @@ for source_archv in $@ ; do
       # (2) Based on generated archive files in (1) the grid and topography files are generated.
       #
       ########################
-      ${BASEDIR}/bin/archvz2hycom_biophys.sh $nest_expt $(model_datetime "$filename")
+      ${BASEDIR}/bin/archvz2hycom_biophys.sh $nest_expt $(model_datetime "$filename") -m regular
       ########################
       else
 
@@ -199,7 +199,7 @@ for source_archv in $@ ; do
       # (2) Based on generated archive files in (1) the grid and topography files are generated.
       #
       ########################
-      ${BASEDIR}/bin/archvz2hycom_biophys.sh $nest_expt $(model_datetime "$filename") -b 1
+      ${BASEDIR}/bin/archvz2hycom_biophys.sh $nest_expt $(model_datetime "$filename") -b 1 -m regular
       ########################
 
    fi
