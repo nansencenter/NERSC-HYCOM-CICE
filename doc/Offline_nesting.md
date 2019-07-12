@@ -25,17 +25,29 @@ Based on mesh and coordinate MERCATOR netcdf files, the archive data files for g
 
 (5) Build port files.
 
-#  How to run without bio on native MERCATOR grid:
+#  How to run model on native grid:
+Please change path to NMOa0.08 (for more information look at REGION.src for path of an example, i.e., NEMO_EXAMPLE_NATIVE_FOLDER=/nird/projects/nird/NS9481K/MERCATOR_DATA/NMa0.08). 
+After applying isuba_gmap once, run following line:
+
+
+(1)  Without bioligy:
+
 ../bin/nemo_to_hycom.sh ../../TP5a0.06/expt_01.2/ /nird/projects/nird/NS9481K/MERCATOR_DATA/PHY/2013/ext-GLORYS12V1_1dAV_20131122_20131123_grid2D_R20131127.nc 
 
-#  How to run with bio on native MERCATOR grid:
+(2)  With biology:
 
 ../bin/nemo_to_hycom.sh ../../TP5a0.06/expt_01.2/ /nird/projects/nird/NS9481K/MERCATOR_DATA/PHY/2013/ext-GLORYS12V1_1dAV_20131122_20131123_grid2D_R20131127.nc -b /nird/projects/nird/NS2993K/MERCATOR_DATA/BIO/2013
 
-#  How to run without bio on regular MERCATOR grid:
+#  How to run on regular MERCATOR grid:
+Please change path to NMOb0.08 (for more information look at REGION.src for path of an example, i.e., NEMO_EXAMPLE_REGULAR_FOLDER=/nird/projects/nird/NS9481K/MERCATOR_DATA/NMb0.08). 
+After applying isuba_gmap once, run following line:
+
+
+(1) Without biology:
+
 ../bin/nemo_to_hycom.sh ../../TP5a0.06/expt_01.0 PATH/MERCATOR-PHY-24-2018-01-01-12.nc -m regular
 
-#  How to run with bio on regular MERCATOR grid:
+(2) With biology:
 
 ../bin/nemo_to_hycom.sh ../../TP5a0.06/expt_01.0 PATH/MERCATOR-PHY-24-2018-01-01-12.nc -m regular -b BIO-FILE-ONLY-PATH
 
