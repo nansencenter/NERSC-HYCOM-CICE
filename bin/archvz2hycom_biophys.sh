@@ -1,5 +1,4 @@
 #!/bin/bash
-
 #
 # --- This code mapping 2D horizontal mapping between outer and inner regions
 # --- for a nesting scenario. The script use two steps:
@@ -338,6 +337,10 @@ else
     rm -rf ${N}/${target_archv}${L}.*
     rm -rf ${D}/${source_archv_i}.*
     echo "Succesfully created archive file: $2"
+
+    cd $newexptpath
+    python ${BINDIR}/fix_montg1.py ${NEST}/${target_archv}.a ${INPUTDIR}montg_regress.pckl ./ 
+    cd $BASEDIR
 fi
 echo
 #
