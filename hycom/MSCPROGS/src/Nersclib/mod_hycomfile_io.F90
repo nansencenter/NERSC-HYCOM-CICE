@@ -1023,7 +1023,6 @@ contains
    else if(cfld=='attcfabm') then
      is3DVar=.true.
 ! _FABM__caglar_
-!-ALFATih option fo total vel.
    else if(cfld=='utotl' .and. trim(df%ftype)=='archm') then
      is3DVar=.true.
    else        
@@ -1631,7 +1630,9 @@ contains
           .or.trim(hfile%ftype)=='archm'&
           .or.trim(hfile%ftype)=='archs') then
          !rday  = real(hfile%iday) + real(hfile%ihour)/24.0
-         rday  = hfile%iday+(3600*hfile%ihour+60*hfile%imin+hfile%isec)/(24.*3600.)
+         !rday  = hfile%iday+(3600*hfile%ihour+60*hfile%imin+hfile%isec)/(24.*3600.)
+!Alfati   substract 1 to fix the date fro TOPAZ5         
+         rday  = hfile%iday+(3600*hfile%ihour+60*hfile%imin+hfile%isec)/(24.*3600.)-1
          call year_day(rday,hfile%iyear,rt,'ecmwf')
       else if (trim(hfile%ftype)=='archv_wav') then
          read(hfile%start_ctime,'(i2.2,i2.2,i2.2)') ihour,imin,isec
@@ -1668,7 +1669,9 @@ contains
                .or.trim(hfile%ftype)=='archs') then
 
          read(hfile%start_ctime,'(i2.2,i2.2,i2.2)') ihour,imin,isec
-         dtime = hfile%start_iday+(3600*ihour+60*imin+isec)/(24.*3600.)
+         !dtime = hfile%start_iday+(3600*ihour+60*imin+isec)/(24.*3600.)
+!Alfati   substract 1 to fix the date fro TOPAZ5         
+         dtime = hfile%start_iday+(3600*ihour+60*imin+isec)/(24.*3600.)-1
          call year_day(dtime,hfile%start_iyear,rt,'ecmwf')
          !call forecastDate(hfile,rt)
 
