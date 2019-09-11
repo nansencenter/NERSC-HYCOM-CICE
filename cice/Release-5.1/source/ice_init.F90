@@ -1324,7 +1324,7 @@
                                 aicen,    trcrn, &
                                 vicen,    vsnon)
 
-      use ice_constants, only: c0, c1, c2, c3, p2, p5, rhoi, rhos, Lfresh, &
+      use ice_constants, only: c0, c1, c2, c2p5, c3, p2, p5, rhoi, rhos, Lfresh, &
            cp_ice, cp_ocn, Tsmelt, Tffresh, rad_to_deg, puny
       use ice_domain_size, only: nilyr, nslyr, nx_global, ny_global, max_ntrcr, ncat
       use ice_state, only: nt_Tsfc, nt_qice, nt_qsno, nt_sice, &
