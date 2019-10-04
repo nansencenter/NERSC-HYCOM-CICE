@@ -1184,6 +1184,7 @@ contains
          limits=(/-3,50/)
       case ('ssh','srfhgt') 
          stdname='sea_surface_height_above_geoid' ; units='m' ; vname='zos'
+         limits=(/-5,5/)
       case ('bsf','strmf') 
          stdname='ocean_barotropic_streamfunction' ; units='m3 s-1' ; vname='stfbaro'
          limits=(/-1e10,1e10/)
