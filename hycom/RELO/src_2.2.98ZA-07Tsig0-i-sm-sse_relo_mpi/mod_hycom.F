@@ -1334,6 +1334,8 @@ C#endif
 C      call ESMF_LogFlush(rc=rc)
 c
 C --- KAL: NB: si_u and si_v are on p-grid and are used like this in mod_momtum
+C --- AS: si_u and si_v are ok on the p-grid since they are added to 
+C --- 'usur' and 'vsur', which are the surface velocities interpolated to the p-grid 
 C --- KAL: si_tx and si_ty are not presently used...
       end subroutine Import_ESMF
 
