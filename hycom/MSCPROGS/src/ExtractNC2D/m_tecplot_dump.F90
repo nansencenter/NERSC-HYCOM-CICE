@@ -97,7 +97,7 @@ subroutine tecplot_dump(depths,nx,ny,nz,fld,nfld,normal,n_ncrec,ltecplot,hfile)
             call handle_err(Nf90_inq_varid(ncid, trim(vartitle), varid))
          end if
          if (is3DVar(hfile,fld(i)%fextract,1)) then
-            where (abs(dplayer)<1) twod1=undef
+            where (abs(dplayer)<0.5) twod1=undef
          end if
          where (depths<.1 .or. depths > 1e20) twod1=undef
          call handle_err(NF90_PUT_VAR(ncid,varid,twod1,start=(/1,1,n_ncrec/)))

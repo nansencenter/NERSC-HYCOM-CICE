@@ -29,6 +29,12 @@ subroutine fields_to_plot(sphere,rotate,normal,fld,nfld,hfile,kdm)
       extrfile='extract.weekly'
    else if (trim(hfile%ftype)=='archv') then
       extrfile='extract.archv'
+   else if (trim(hfile%ftype)=='archm') then
+      extrfile='extract.archm'
+   else if (trim(hfile%ftype)=='archs') then
+      extrfile='extract.archs'
+   else if (trim(hfile%ftype)=='archv_wav') then
+      extrfile='extract.archv_wav'
    else
       print *,'Unknown filetype '//trim(hfile%ftype)
       print *,'(m_fields_to_plot)'
