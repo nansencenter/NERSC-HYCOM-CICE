@@ -162,7 +162,7 @@ contains
    df%filebase=filename(1:ind-1)
    df%ftype=ftype
 
-   !print *, 'Read Header',df%filebase,df%ftype
+   print *, 'Read Header',df%filebase,df%ftype
    ! Read header
    call ReadHeader(df)
    !print *, 'Read var',df%iyear
@@ -1025,6 +1025,8 @@ contains
 ! _FABM__caglar_
    else if(cfld=='utotl' .and. trim(df%ftype)=='archm') then
      is3DVar=.true.
+   else if(cfld=='utotl' .and. trim(df%ftype)=='archv') then
+     is3DVar=.true.
    else        
      is3DVar=count( df%cfld == char8 .and. df%tlevel==timelevel ) > 1
    end if
@@ -1328,7 +1330,7 @@ contains
 !Alfati. More accurate method for computing MLD using density         
       case ('GS_MLD')
          units='m' ; vname='mlotst'
-         limits=(/0.,5000./)
+         limits=(/0.,3500./)
          stdname='ocean_mixed_layer_thickness_defined_by_sigma'
       case ('dpmixl','dp_mixl','dpmix') 
          vname='dpmix'
@@ -1417,7 +1419,7 @@ contains
       case ('sil_eco')
          vname='silicate'
          units='mole m-3'
-         limits=(/0.,1e-1/)
+         limits=(/0.,100./)
          stdname='mole_concentration_of_silicate_in_sea_water'
       case ('pbiomass')
          vname='pbiomass'
@@ -1482,8 +1484,8 @@ contains
 !AS06092011
       case ('albedo','albice_d')
          vname='sialb'
-         units='1'
-         limits=(/0.,1./)
+         units='%'
+         limits=(/0.,100./)
          stdname='sea_ice_albedo'
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
