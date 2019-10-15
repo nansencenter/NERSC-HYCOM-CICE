@@ -448,7 +448,7 @@ contains
    integer :: shuffle, deflate, deflate_level !AA Needed for netCDF4 compression
    integer :: varid, countlo, counthi 
    character(len=85) :: stdname, longname, units, vnamenc, cellmethod
-   integer :: fillval
+   real :: fillval
    real    :: scale_factor, add_offset, limits(2)
 
 
@@ -505,9 +505,10 @@ contains
                                                      shuffle = 1,      &
                                                      deflate = 1,      &
                                                      deflate_level = 5))
+    fillval=-1.0e12                                            
    !Set attributes 
-   call handle_err(NF90_PUT_ATT(ncstate%ncid,varid,'_FillValue'   ,real(undef,kind=4)))
-   call handle_err(NF90_PUT_ATT(ncstate%ncid,varid,'missing_value'   ,real(undef,kind=4)))
+   call handle_err(NF90_PUT_ATT(ncstate%ncid,varid,'_FillValue'   ,real(fillval,kind=4)))
+   call handle_err(NF90_PUT_ATT(ncstate%ncid,varid,'missing_value'   ,real(fillval,kind=4)))
    if (trim(units)/='')  &
       call handle_err(NF90_PUT_ATT(ncstate%ncid,varid,'units' ,     trim(Units)))
    if (trim(StdName)/='')  &
@@ -522,7 +523,6 @@ contains
    call handle_err(nf90_enddef(ncstate%ncid))
 
 
-   call handle_err(NF90_PUT_VAR(ncstate%ncid,varid,real(field,kind=4)))
    ! Check for over/undershoot
    if (limits(2)-limits(1) /=0 ) then
       counthi=count(limits(2)<field.and.abs(field-undef)>1e-4)
@@ -533,7 +533,15 @@ contains
             minval(field,mask=abs(undef-field)>1e-4),maxval(field,mask=abs(undef-field)>1e-4), &
             countlo,counthi
       end if
+      where (field/=undef)
+         !fieldint = min(max(fillval,nint((field - add_offset)/scale_factor)),-fillval)
+         field = max(min(field,-fillval),fillval)
+         field = max(min(field,limits(2)),limits(1))
+      elsewhere
+         field=fillval
+      endwhere
    endif
+   call handle_err(NF90_PUT_VAR(ncstate%ncid,varid,real(field,kind=4)))
    end subroutine putNCVar
 
 
