@@ -15,6 +15,9 @@
       use mod_xc         ! HYCOM communication interface
       use mod_cb_arrays  ! HYCOM saved arrays
       use mod_pipe       ! HYCOM debugging interface
+#ifdef _FABM_
+      use mod_hycom_fabm
+#endif
       implicit none
 c
       integer mnth
@@ -33,6 +36,11 @@ c
      &          prij(kk+1),trcij(kk,ntracr)
       real      chl,swfrac(kdm+1)
 c
+#ifdef _FABM_
+      nbio = ntracr
+      trcflg(1) = 906
+      trcflg(2:nbio) = -906
+#else
       if (ntracr.eq.0) then
         return  ! no tracer
       endif
@@ -128,6 +136,7 @@ c ---       unknown standard biology.
           endif
         endif
       enddo
+#endif
 c
       if (mnproc.eq.1) then
       write(lp,*)
@@ -154,6 +163,11 @@ c ---       NPZD
 *         elseif (trcflg(ktr).eq.909) then
 * ---       Chai 9-component.
 *           call trcupd_909(1,2, -ktr)
+#ifdef _FABM_
+          elseif (trcflg(ktr).eq.906) then
+c ---       FABM
+            call hycom_fabm_initialize()
+#endif
           endif
         enddo
         close(unit=uoff+99)
@@ -163,6 +177,13 @@ c
         return  ! tracer from restart
       endif
 c
+#ifdef _FABM_
+c     Analytic [spatially homeogeneous] initialization, even when using
+c     climatology, because climatological fields may be available for a
+c     subset of tracers only.
+      call hycom_fabm_initialize_state()
+#endif
+
       if     (iniflg.eq.2) then  ! use climatology
         call rdrlax(mnth,1)
 !$OMP   PARALLEL DO PRIVATE(j,i,k,ktr,pwij,trwij,prij,trcij)
@@ -185,6 +206,9 @@ c
      &                    trcij,prij,kk        )
               do k=1,kk
                 do ktr= 1,ntracr
+#ifdef _FABM_
+                  if (hycom_fabm_relax(ktr) == -1) cycle
+#endif
                   tracer(i,j,k,1,ktr)=trcij(k,ktr)
                   tracer(i,j,k,2,ktr)=trcij(k,ktr)
                 enddo !ktr
@@ -194,6 +218,7 @@ c
         enddo !j
 !$OMP   END PARALLEL DO
       else ! analytic inititalization
+#ifndef _FABM_
 !$OMP   PARALLEL DO PRIVATE(j,i,k,ktr,prij,chl,swfrac,zk,bio_n,bio_p)
 !$OMP&           SCHEDULE(STATIC,jblk)
         do j=1,jj
@@ -274,6 +299,7 @@ c
           enddo !i
         enddo !j
 !$OMP   END PARALLEL DO
+#endif
       endif !iniflg.eq.2:else
 c
       if     (lpipe .and. lpipe_initrc) then
@@ -313,6 +339,9 @@ c
       subroutine trcupd(m,n)
       use mod_xc         ! HYCOM communication interface
       use mod_cb_arrays  ! HYCOM saved arrays
+#ifdef _FABM_
+      use mod_hycom_fabm
+#endif
       implicit none
 c
       integer m,n
@@ -396,9 +425,14 @@ c ---     NPZ
         elseif (trcflg(ktr).eq.904) then
 c ---     NPZD
           call trcupd_904(m,n, ktr)
+#ifdef _FABM_
+        elseif (trcflg(ktr).eq.906) then
+c ---     FABM
+          call hycom_fabm_update(m, n, ktr)
 *       elseif (trcflg(ktr).eq.909) then
 * ---     Chai 9-component.
 *         call trcupd_909(m,n, ktr)
+#endif
         endif
       enddo !ktr
       return

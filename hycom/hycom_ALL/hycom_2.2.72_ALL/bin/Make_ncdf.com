@@ -14,8 +14,8 @@ source ../Make_ncdf.src
 /bin/rm -f netcdf.mod libnetcdf.a
 /bin/rm -f typesizes.mod
 #
-ln -s ${NCDF}/include/*.mod   .
-ln -s ${NCDF}/lib/libnetcdf.a .
+#ln -s ${NCDF}/include/*.mod   .
+#ln -s ${NCDF}/lib/libnetcdf.a .
 #
 setenv OS `/bin/uname`
 if ($OS == "Linux") then
@@ -25,8 +25,8 @@ if ($OS == "Linux") then
   if (`/bin/uname -m` == "x86_64") then
 	setenv OS Linux64
   endif
-# setenv OS LinuxIFC
-# setenv OS LinuxICE
+# setenv OS Linux_Fram
+ setenv OS LinuxGF_NC
 # setenv OS XT5
 endif
 #if ($OS == "SunOS") then
@@ -110,6 +110,23 @@ case 'unicosmk':
 	setenv CC	"cc"
 	setenv CFLAGS	""
 	breaksw
+case 'LinuxGF_NC':
+#       compile for gfortran
+	setenv FC	"gfortran"
+	#setenv FFLAGS	"-I/cluster/software/easybuild/software/netCDF-Fortran/4.4.4-foss-2016b/include -fPIC -fno-second-underscore -fconvert=big-endian -O"
+	setenv FFLAGS	"-I/cluster/software/GCCcore/6.3.0/include/c++/6.3.0 -fPIC -fno-second-underscore -fconvert=big-endian -O"
+	setenv FLIBS	"-L/cluster/software/netCDF-Fortran/4.4.4-foss-2017a-HDF5-1.8.18/lib -lfftw3 -lnetcdff -lnetcdf "
+	setenv CC	"gcc"
+	setenv CFLAGS	"-fPIC -fno-second-underscore -O"
+	breaksw
+case 'Linux_Fram':
+#       compile for gfortran 
+	setenv FC	"gfortran"
+	setenv FFLAGS	"-I/cluster/software/GCCcore/6.3.0/include/c++/6.3.0 -fPIC -fno-second-underscore -fconvert=big-endian -O"
+	setenv FLIBS	"-lfftw3 -lnetcdff -lnetcdf "
+	setenv CC	"icc"
+	setenv CFLAGS	"-fPIC -fno-second-underscore -O"
+	breaksw
 default:
 	echo 'Unknown Operating System: ' $OS
 	exit (1)
@@ -117,9 +134,9 @@ endsw
 #
 foreach f ( hycom_binning_nc hycom_scrip_nc )
   if ( ! -e ${f}_${OS} ) then
-    $FC $FFLAGS ${f}.F hycom_endian_io.o parse.o libnetcdf.a ${EXTRANCDF} -o ${f}_${OS}
+    $FC $FFLAGS ${f}.F hycom_endian_io.o parse.o ${FLIBS} ${EXTRANCDF} -o ${f}_${OS}
   else if ( -f `find ${f}.F -prune -newer ${f}_${OS}` ) then
-    $FC $FFLAGS ${f}.F hycom_endian_io.o parse.o libnetcdf.a ${EXTRANCDF} -o ${f}_${OS}
+    $FC $FFLAGS ${f}.F hycom_endian_io.o parse.o ${FLIBS} ${EXTRANCDF} -o ${f}_${OS}
   else
     echo "${f}_${OS} is already up to date"
   endif
@@ -131,9 +148,9 @@ end
 #
 foreach f ( hycom_profile2z_nc hycom_profile2s_nc hycom_seaice_nc )
   if ( ! -e ${f}_${OS} ) then
-    $FC $FFLAGS ${f}.F hycom_profile_lib.o hycom_endian_io.o parse.o libnetcdf.a ${EXTRANCDF} -o ${f}_${OS}
+    $FC $FFLAGS ${f}.F hycom_profile_lib.o hycom_endian_io.o parse.o ${FLIBS} ${EXTRANCDF} -o ${f}_${OS}
   else if ( -f `find ${f}.F -prune -newer ${f}_${OS}` ) then
-    $FC $FFLAGS ${f}.F hycom_profile_lib.o hycom_endian_io.o parse.o libnetcdf.a ${EXTRANCDF} -o ${f}_${OS}
+    $FC $FFLAGS ${f}.F hycom_profile_lib.o hycom_endian_io.o parse.o ${FLIBS} ${EXTRANCDF} -o ${f}_${OS}
   else
     echo "${f}_${OS} is already up to date"
   endif
@@ -145,9 +162,9 @@ end
 #
 foreach f ( wind_stat_nc wind_stat_range_nc )
   if ( ! -e ${f}_${OS} ) then
-    $FC $FFLAGS ${f}.f libnetcdf.a ${EXTRANCDF} -o ${f}_${OS}
+    $FC $FFLAGS ${f}.f ${FLIBS} ${EXTRANCDF} -o ${f}_${OS}
   else if ( -f `find ${f}.f -prune -newer ${f}_${OS}` ) then
-    $FC $FFLAGS ${f}.f libnetcdf.a ${EXTRANCDF} -o ${f}_${OS}
+    $FC $FFLAGS ${f}.f ${FLIBS} ${EXTRANCDF} -o ${f}_${OS}
   else
     echo "${f}_${OS} is already up to date"
   endif

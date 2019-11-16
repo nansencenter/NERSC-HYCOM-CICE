@@ -14,6 +14,9 @@
 #if defined(STOKES)
       use mod_stokes     ! HYCOM Stokes Drift effects from Wave fields
 #endif
+#ifdef _FABM_
+      use mod_hycom_fabm
+#endif
       implicit none
 c
       real      day1,hybrlx,cplifq,frzifq
@@ -1144,8 +1147,13 @@ c
       endif !1st tile
       call blkini(ntracr,'ntracr')
       trcrin = ntracr.gt.0  ! positive from restart, otherwise initialize
-      trcout = ntracr.ne.0
+#ifdef _FABM_
+      call hycom_fabm_configure()
+      ntracr = size(fabm_model%state_variables)
+#else
       ntracr = abs(ntracr)
+#endif
+      trcout = ntracr.ne.0
 c
       if (ntracr.gt.mxtrcr) then
         if (mnproc.eq.1) then
@@ -1159,6 +1167,9 @@ c
       endif
 c
       call blkini(trcflg1,'trcflg')
+#ifdef _FABM_
+      trcflg = 9
+#else
       do k= 1,ntracr
         trcflg(k) = mod(trcflg1,10)  ! least significant decimal digit
         if     (trcflg1.ge.10) then
@@ -1179,6 +1190,7 @@ c
                  stop '(blkdat)'
         endif
       enddo !k
+#endif
 c
 c --- 'tsofrq' = number of time steps between anti-drift offset calcs
 c --- 'tofset' = temperature anti-drift offset (degC/century)
@@ -1979,6 +1991,7 @@ c
       call blkinl(relax, 'relax ')
       call blkinl(trcrlx,'trcrlx')
       call blkinl(priver,'priver')
+      call blkinl(triver,'triver')
       call blkinl(epmass,'epmass')
       if (mnproc.eq.1) then
       write(lp,*)
@@ -1988,6 +2001,27 @@ c
         if (mnproc.eq.1) then
         write(lp,'(/ a /)') 
      &    'error - priver must be .false. for flxflg=0'
+        call flush(lp)
+        endif !1st tile
+        call xcstop('(blkdat)')
+               stop '(blkdat)'
+      endif
+c
+      if     (triver .and. .not.thermo) then
+        if (mnproc.eq.1) then
+        write(lp,'(/ a /)')
+     &    'error - triver must be .false. for flxflg=0'
+        call flush(lp)
+        endif !1st tile
+        call xcstop('(blkdat)')
+               stop '(blkdat)'
+      endif
+c
+      if     (triver .and. .not.priver) then
+        if (mnproc.eq.1) then
+        write(lp,'(/ a /)')
+     &  'error - (for only coding purpose) 
+     &  priver must be true when triver=1'
         call flush(lp)
         endif !1st tile
         call xcstop('(blkdat)')
@@ -2043,13 +2077,25 @@ c
      &          .or. relaxt
       relaxs = .not. relax
      &         .and. relaxf
+cKAL  Read filenames. NB: This can get overwritten below 
+      call blkins(flnmrsi ,'nmrsti','restart_in'       ,.true.)
+      call blkins(flnmrso ,'nmrsto','restart_out'      ,.true.)
+      call blkins(flnmarcs,'nmarcs','archs.0000_000_00',.true.)
+      call blkins(flnmarc ,'nmarcv','archv.0000_000_00',.true.)
+      call blkins(flnmarcm,'nmarcm','archm.0000_000_00',.true.)
+cKAL
+c      
 #if defined(STOKES)
 c
 c ---  s w i t c h e s  for Stokes Drift effects  (0=F, 1=T)
 c
 c --- 'stdflg'  = STOKES: add Stokes Drift velocities to kinematics and dynamics
+c --- 'stdcrf'  = STOKES: add Stokes Coriolis force  to dnamics
 c --- 'stdsur'  = STOKES: add Stokes Drift Surface Stresses  to dynamics
+c --- 'stdtau'  = Remov from the tot wind stress the part lost to wave : (0=F,1=T) 
+c --- 'stdwom'  = Add wave-to-ocean momentum flux due to wave diss/breaking : (0=F,1=T)  
 c --- 'stdbot'  = STOKES: add Stokes Waves Field bottom friction drag
+c --- 'stdarc'  = STOKES: Stokes Drift Velocities in Archive
 c
 c ---  s w i t c h e s  for Stokes Drift effects  (Integers)
 c
@@ -2059,8 +2105,13 @@ c --- since they are at the end of blkdat.input they can optionally be
 c --- present even if the macro STOKES is not defined at compile time.
 c
       call blkinl(stdflg,'stdflg')
-      call blkinl(stdsur,'stdsur') 
+c      call blkinl(stdcrf,'stdcrf')
+      call blkinl(stdsur,'stdsur')
+      call blkinl(stdtau,'stdtau')
+      call blkinl(stdwom,'stdwom')      
       call blkinl(stdbot,'stdbot')
+      call blkinl(stdarc,'stdarc')
+      call blkinl(altrlangmr,'altlng')
       call blkini(nsdzi ,'nsdzi ')
 c
       if (nsdzi .lt.0) then
@@ -2099,14 +2150,43 @@ c
         call xcstop('(blkdat)')
                stop '(blkdat)'
       endif
-#endif   
-cKAL  Read filenames. NB: This can get overwritten below 
-      call blkins(flnmrsi ,'nmrsti','restart_in'       ,.true.)
-      call blkins(flnmrso ,'nmrsto','restart_out'      ,.true.)
-      call blkins(flnmarcs,'nmarcs','archs.0000_000_00',.true.)
-      call blkins(flnmarc ,'nmarcv','archv.0000_000_00',.true.)
-      call blkins(flnmarcm,'nmarcm','archm.0000_000_00',.true.)
-cKAL
+#endif 
+
+CMOSTAFA: BEGIN
+c ---  s w i t c h e s  for calculating net radiation fluxes  (0=not,
+c ---  1=using black body & input SST, 2=using HYCOM SST)
+c
+c --- 
+      call blkini(nrdflg,'nrdflg')
+      if (nrdflg .lt.0 .or. nrdflg .gt. 8) then
+        if (mnproc.eq.1) then
+        write(lp,'(/ a /)')
+     &  'error - nrdflg  must be between 0 and 3'
+        call flush(lp)
+        endif !1st tile
+        call xcstop('(blkdat)')
+               stop '(blkdat)'
+      endif
+      if (nrdflg .ge.1 .and. lwflag .ne. -1 ) then
+        if (mnproc.eq.1) then
+        write(lp,'(/ a /)')
+     &  'error - nrdflg is not handelled for lwflag <>-1'
+        call flush(lp)
+        endif !1st tile
+        call xcstop('(blkdat)')
+               stop '(blkdat)'
+      endif
+      if (nrdflg .ge.1 .and.lwflag .eq. -1.and.flxflg.lt.5) then
+        if (mnproc.eq.1) then
+        write(lp,'(/ a /)')
+     &  'error - nrdflg is not handelled for flxflg <>6'
+        call flush(lp)
+        endif !1st tile
+        call xcstop('(blkdat)')
+               stop '(blkdat)'
+      endif
+CMOSTAFA: END
+ 
 c
       close(unit=uoff+99)  !file='blkdat.input'
 c

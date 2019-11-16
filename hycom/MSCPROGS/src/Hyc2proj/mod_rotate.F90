@@ -1,4 +1,7 @@
 module mod_rotate
+
+real, parameter, private :: undef=-1e14
+
 contains
 SUBROUTINE rotate(ud,vd,mlat,mlon,nx,ny,dir)
 ! Rotates a vector field from a grid in geographical coordinates
@@ -97,12 +100,39 @@ SUBROUTINE rotate(ud,vd,mlat,mlon,nx,ny,dir)
             if(dlon.GT.180.)dlon=dlon-360.0
             theta_vp = atan2(dlat,dlon*cos(radinv*.5*(mlat(i,j-1)+mlat(i,j+1))) )
 
+
 !Unrotated vel. in p-point
-            up=.5*(ud(i,j)+ud(i+1,j))
-            vp=.5*(vd(i,j)+vd(i,j+1))
-    
-            urot(i,j)= up*cos(theta_up)+ vp*cos(theta_vp)
-            vrot(i,j)= up*sin(theta_up)+ vp*sin(theta_vp)
+            if (abs(ud(i,j))>=abs(undef).and.abs(ud(i+1,j))>=abs(undef)) then
+               urot(i,j)= undef
+               vrot(i,j)= undef
+            else if (abs(vd(i,j))>=abs(undef).and.abs(vd(i,j+1))>=abs(undef)) then
+               urot(i,j)= undef
+               vrot(i,j)= undef
+            else if (abs(ud(i,j))>=abs(undef).or.abs(ud(i+1,j))>=abs(undef)) then
+               up=max(ud(i,j),ud(i+1,j))
+               if (abs(vd(i,j))>=abs(undef).or.abs(vd(i,j+1))>=abs(undef)) then
+                  vp=max(vd(i,j),vd(i,j+1))
+               else
+                  vp=.5*(vd(i,j)+vd(i,j+1))
+               end if
+               urot(i,j)= up*cos(theta_up)+ vp*cos(theta_vp)
+               vrot(i,j)= up*sin(theta_up)+ vp*sin(theta_vp)
+            else if (abs(vd(i,j))>=abs(undef).or.abs(vd(i,j+1))>=abs(undef)) then
+               vp=max(vd(i,j),vd(i,j+1))
+               if (abs(ud(i,j))>=abs(undef).or.abs(ud(i+1,j))>=abs(undef)) then
+                  up=max(ud(i,j),ud(i+1,j))
+               else
+                  up=.5*(ud(i,j)+ud(i+1,j))
+               end if
+               urot(i,j)= up*cos(theta_up)+ vp*cos(theta_vp)
+               vrot(i,j)= up*sin(theta_up)+ vp*sin(theta_vp)
+            else
+               up=.5*(ud(i,j)+ud(i+1,j))
+               vp=.5*(vd(i,j)+vd(i,j+1))
+
+               urot(i,j)= up*cos(theta_up)+ vp*cos(theta_vp)
+               vrot(i,j)= up*sin(theta_up)+ vp*sin(theta_vp)
+            end if
          enddo 
       enddo
    else

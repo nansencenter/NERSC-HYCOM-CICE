@@ -83,6 +83,7 @@ subroutine get_grid()
 
      where (depths > 0.5*huge) depths=0.
 
+     write(*,*)'finished Load depths from file: regional.depth.a'
 
    ! Try getting from latlon.dat and depths file. Old, deprecated
    else 
@@ -220,6 +221,7 @@ subroutine get_grid()
    end do
 
 
+   write(*,*)'finished Loading grid/depth from file: regional.depth/grid.a'
 
 
 end subroutine get_grid

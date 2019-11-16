@@ -24,7 +24,7 @@ contains
       print *,'Only one netcdf file open at a time'
       stop '(OpenNCFile)'
    end if
-   if (NF90_CREATE(ncstate%ncfil,NF90_CLOBBER,ncstate%ncid) /= NF90_NOERR) then
+   if (NF90_CREATE(ncstate%ncfil,NF90_NETCDF4,ncstate%ncid) /= NF90_NOERR) then
       print *,'An error occured when opening the netcdf file'
       stop '(openNCFile)'
    end if
@@ -119,8 +119,7 @@ contains
    call forecastDate(hfile,rtd)
    call startDate(hfile,rtb)
 
-   call handle_err(NF90_PUT_ATT(ncstate%ncid,NF90_GLOBAL,'title', 'Pilot MyOcean reanalysis by TOPAZ4 (2003-2008)'))
-   !call handle_err(NF90_PUT_ATT(ncstate%ncid,NF90_GLOBAL,'comment', trim(comment)))
+   call handle_err(NF90_PUT_ATT(ncstate%ncid,NF90_GLOBAL,'title', 'Arctic Ocean Physics Reanalysis'))
    call handle_err(NF90_PUT_ATT(ncstate%ncid,NF90_GLOBAL,'institution',  'NERSC, Thormoehlens gate 47, N-5006 Bergen, Norway'))
    call date_and_time(date=dateinfo)
    call handle_err(NF90_PUT_ATT(ncstate%ncid,NF90_GLOBAL,'history', dateinfo(1:8)//':Created by program hyc2proj, version '//cver))
@@ -129,7 +128,8 @@ contains
    call handle_err(NF90_PUT_ATT(ncstate%ncid,NF90_GLOBAL,'field_type',  'Files based on file type '//trim(hfile%ftype)))
    call handle_err(NF90_PUT_ATT(ncstate%ncid,NF90_GLOBAL,'Conventions',  'CF-1.4'))
 
-   if (hfile%ftype=='archv'.or.hfile%ftype=='archv_wav') then
+   if (hfile%ftype=='archv'.or.hfile%ftype=='archv_wav'&
+       .or.hfile%ftype=='archm'.or.hfile%ftype=='archs') then
       !put time in field date
       write(c80,'(i2.2,a,i2.2,a,i2.2,a)') hfile%ihour,':',hfile%imin,':',hfile%isec,'Z'
       c80   = rtd%cyy//'-'//rtd%cmm//'-'//rtd%cdm//'T'//trim(c80)
@@ -145,7 +145,8 @@ contains
       call handle_err(NF90_PUT_ATT(ncstate%ncid,NF90_GLOBAL,'field_time',trim(c80)))
    end if
 
-   if (hfile%ftype=='archv'.or.hfile%ftype=='archv_wav') then
+   if (hfile%ftype=='archv'.or.hfile%ftype=='archv_wav'&
+       .or.hfile%ftype=='archm'.or.hfile%ftype=='archs') then
       !put time in bulletin date
       write(c80,'(i2.2,a,i2.2,a,i2.2,a)') hfile%start_ihour,':',hfile%start_imin,':',hfile%start_isec,'Z'
       c80   = rtb%cyy//'-'//rtb%cmm//'-'//rtb%cdm//'T'//trim(c80)
@@ -227,7 +228,7 @@ contains
    call forecastDate(hfile,rtd)
    call startDate(hfile,rtb)
 
-   if (hfile%ftype=='archv') then
+   if (hfile%ftype=='archv'.or.hfile%ftype=='archm'.or.hfile%ftype=='archs') then
       tunits   = 'seconds since 1970-1-1T00:00:00Z'
       year0    = 1970   !reference year
    elseif (hfile%ftype=='archv_wav') then
@@ -244,7 +245,7 @@ contains
    hourval=datetojulian(rtd%iyy,rtd%imm,rtd%idm+1,year0,1,1)*24
    hour_offset=hourval-hourref
 
-   if (hfile%ftype=='archv') then
+   if (hfile%ftype=='archv'.or.hfile%ftype=='archm'.or.hfile%ftype=='archs') then
       !!add "time of day"
       timeval  = 3600*(hourval+hfile%ihour)+60*hfile%imin+hfile%isec
    elseif (hfile%ftype=='archv_wav') then
@@ -444,9 +445,10 @@ contains
 
    integer :: var_dims(ndims)
    integer :: fieldint(nx,ny,nz)
+   integer :: shuffle, deflate, deflate_level !AA Needed for netCDF4 compression
    integer :: varid, countlo, counthi 
-   character(len=80) :: stdname, longname, units, vnamenc, cellmethod
-   integer :: fillval
+   character(len=85) :: stdname, longname, units, vnamenc, cellmethod
+   real :: fillval
    real    :: scale_factor, add_offset, limits(2)
 
 
@@ -495,23 +497,18 @@ contains
    ! Retrieve variable info in CF formulation
    call  netcdfInfo(vname,gridrotate,stdname,longname,units,vnamenc,cellmethod,limits)
 
-   ! No variable packing in this case
-   if (limits(2)-limits(1) ==0 ) then
-      call handle_err(NF90_DEF_VAR(ncstate%ncid,trim(vnamenc),NF90_FLOAT,var_dims,varid))
-      call handle_err(NF90_PUT_ATT(ncstate%ncid,varid,'_FillValue'   ,real(undef,kind=4)))
-      call handle_err(NF90_PUT_ATT(ncstate%ncid,varid,'missing_value'   ,real(undef,kind=4)))
-
-   ! Variable packing
-   else
-      add_offset  =(limits(2)+limits(1))/2.
-      scale_factor=(limits(2)-limits(1))/(2**16-10)
-      fillval     =-(2**16-2)/2
-      call handle_err(NF90_DEF_VAR(ncstate%ncid,trim(vnamenc),NF90_SHORT,var_dims,varid))
-      call handle_err(NF90_PUT_ATT(ncstate%ncid,varid,'_FillValue'   ,int(fillval,kind=2)))
-      call handle_err(NF90_PUT_ATT(ncstate%ncid,varid,'missing_value',int(fillval,kind=2)))
-      call handle_err(NF90_PUT_ATT(ncstate%ncid,varid,'add_offset'   ,add_offset))
-      call handle_err(NF90_PUT_ATT(ncstate%ncid,varid,'scale_factor' ,scale_factor))
-   end if
+   ! Define variable and set netCDF4 compression
+   call handle_err(NF90_DEF_VAR(ncstate%ncid,trim(vnamenc),NF90_FLOAT,var_dims,varid))
+   !If needed, one may set chunksizes, currently disabled 
+   !call handle_err(NF90_DEF_VAR_CHUNKING(ncstate%ncid,varid,NF90_CHUNKED,chunksizes))
+   call handle_err(NF90_DEF_VAR_DEFLATE(ncstate%ncid,varid,            &
+                                                     shuffle = 1,      &
+                                                     deflate = 1,      &
+                                                     deflate_level = 5))
+    fillval=-1.0e12                                            
+   !Set attributes 
+   call handle_err(NF90_PUT_ATT(ncstate%ncid,varid,'_FillValue'   ,real(fillval,kind=4)))
+   call handle_err(NF90_PUT_ATT(ncstate%ncid,varid,'missing_value'   ,real(fillval,kind=4)))
    if (trim(units)/='')  &
       call handle_err(NF90_PUT_ATT(ncstate%ncid,varid,'units' ,     trim(Units)))
    if (trim(StdName)/='')  &
@@ -526,10 +523,8 @@ contains
    call handle_err(nf90_enddef(ncstate%ncid))
 
 
-   if (limits(2)-limits(1) ==0 ) then
-      call handle_err(NF90_PUT_VAR(ncstate%ncid,varid,real(field,kind=4)))
-   else
-      ! Check for over/undershoot
+   ! Check for over/undershoot
+   if (limits(2)-limits(1) /=0 ) then
       counthi=count(limits(2)<field.and.abs(field-undef)>1e-4)
       countlo=count(limits(1)>field.and.abs(field-undef)>1e-4)
       if (counthi>0 .and. countlo>0. ) then
@@ -539,13 +534,14 @@ contains
             countlo,counthi
       end if
       where (field/=undef)
-         !fieldint = floor((max(min(field,limits(2)),limits(1)) - add_offset) / scale_factor)
-         fieldint = min(max(fillval,nint((field - add_offset)/scale_factor)),-fillval)
+         !fieldint = min(max(fillval,nint((field - add_offset)/scale_factor)),-fillval)
+         field = max(min(field,-fillval),fillval)
+         field = max(min(field,limits(2)),limits(1))
       elsewhere
-         fieldint=fillval
+         field=fillval
       endwhere
-      call handle_err(NF90_PUT_VAR(ncstate%ncid,varid,fieldint))
-   end if
+   endif
+   call handle_err(NF90_PUT_VAR(ncstate%ncid,varid,real(field,kind=4)))
    end subroutine putNCVar
 
 

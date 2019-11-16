@@ -20,9 +20,9 @@ c
      & montg          ! montgomery potential
 
 #if defined(RELO)
-      real, save, allocatable, dimension(:,:,:,:,:) ::
+      real, save, target, allocatable, dimension(:,:,:,:,:) ::
 #else
-      real, save,
+      real, save, target,
      &      dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kdm,2,mxtrcr) ::
 #endif
      & tracer         ! inert tracers
@@ -299,7 +299,7 @@ c --- arcend      always write a 3-d archive at the end of the run
 c
       logical, save ::
      &              btrlfr,btrmas,diagno,thermo,windf,mslprf,
-     &              pcipf,epmass,priver,rivera,kparan,
+     &              pcipf,epmass,priver,triver,rivera,kparan,
      &              relax,srelax,trelax,trcrlx,relaxf,relaxs,relaxt,
      &              locsig,vsigma,hybrid,isopyc,icegln,hybraf,isopcm,
      &              mxlkta,mxlktb,mxlkrt,pensol,
@@ -334,7 +334,17 @@ c --- atmospheric forcing fields, natm is 2 or 4
      & swflxdwn,      ! net shortwave radiation
 !KAL
      & surtmp,        ! surface temp. used to calculate input lw radiation
-     & seatmp         ! best available SST from observations
+     & seatmp,         ! best available SST from observations
+CMOSTAFA: BEGIN
+c     !CAGLAR: BEGIN (MAY2019)
+#ifdef _FABM_
+     & dewpt,          ! dew point temperature, used for CO2 formulations
+#endif
+c     !CAGLAR: END
+     & nlwrad,          ! related to the net longwave radiation
+     & nswrad          ! related to net shortwave radiation
+CMOSTAFA: END
+
 c
 c --- monthly atmospheric forcing fields
 #if defined(RELO)
@@ -723,7 +733,11 @@ c
      &               iversn,iexpt,jerlv0,
      &               iceflg,ishelf,icmflg,wndflg,ustflg,
      &               flxflg,empflg,dswflg,albflg,lwflag,sstflg,sssflg,
-     &               difsmo,disp_count
+     &               difsmo,disp_count,
+CMOSTAFA: BEGIN
+     &               nrdflg
+CMOSTAFA: END
+
 c
       real,    parameter ::
      &  g     =   9.806,      !gravitational acceleration (m/s**2)
@@ -1210,6 +1224,15 @@ c
      &       swflxdwn(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,natm),
 !KAL
      &         surtmp(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,natm),
+CMOSTAFA: BEGIN
+     &         nlwrad(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,natm),
+     &         nswrad(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,natm),
+c     !CAGLAR: BEGIN (MAY2019)
+#ifdef _FABM_
+     &         dewpt(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,natm),
+#endif
+c     !CAGLAR: END
+CMOSTAFA: END
      &         seatmp(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,natm) )
 !KAL  call mem_stat_add( 12*(idm+2*nbdy)*(jdm+2*nbdy)*natm )
       call mem_stat_add( 13*(idm+2*nbdy)*(jdm+2*nbdy)*natm )
@@ -1235,6 +1258,16 @@ c
                seatmp = r_init
                 akpar = r_init
                rivers = r_init
+CMOSTAFA: BEGIN
+               nlwrad = r_init
+               nswrad = r_init
+c     !CAGLAR: BEGIN (MAY2019)
+#ifdef _FABM_
+               dewpt = r_init
+#endif
+c     !CAGLAR: END
+CMOSTAFA: END
+
 c
 #if defined(RELO)
       allocate(

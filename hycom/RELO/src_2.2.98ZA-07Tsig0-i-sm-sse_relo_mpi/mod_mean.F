@@ -17,6 +17,9 @@
 #if defined(STOKES)
       use mod_stokes     ! HYCOM Stokes drift
 #endif
+#ifdef _FABM_
+      use mod_hycom_fabm
+#endif
 c
       implicit none
 c
@@ -32,13 +35,18 @@ c
       real,    save, private :: 
      &   snmean   ! mean sum counter
 c
+#ifndef _FABM_
       real,    allocatable, dimension(:,:,:,:),
      &         save, private ::
      &   tracer_m
+#endif
 c
       real,    allocatable, dimension(:,:,:),
      &         save, private ::
      &   u_m,v_m,ke_m,temp_m,saln_m,th3d_m,dp_m
+#if defined(STOKES)
+     &  ,usdp_m,vsdp_m
+#endif
 c
       real,    allocatable, dimension(:,:),
      &         save, private ::
@@ -55,10 +63,15 @@ c
 c
 c --- Allocate mean fields.
 c
+#ifdef _FABM_
+      call mem_stat_add(
+     &  hycom_fabm_allocate_mean_output(idm, jdm, kdm))
+#else
       if     (ntracr.gt.0) then
         allocate( tracer_m(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kdm,ntracr) )
         call mem_stat_add(       (idm+2*nbdy)*(jdm+2*nbdy)*kdm*ntracr )
       endif
+#endif
 c
       allocate(      u_m(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kdm) )
       allocate(      v_m(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kdm) )
@@ -68,6 +81,13 @@ c
       allocate(   th3d_m(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kdm) )
       allocate(     dp_m(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kdm) )
       call mem_stat_add(     7*(idm+2*nbdy)*(jdm+2*nbdy)*kdm )
+#if defined(STOKES)
+      if     (stdarc) then
+        allocate(   usdp_m(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kdm) )
+        allocate(   vsdp_m(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kdm) )
+        call mem_stat_add(     2*(idm+2*nbdy)*(jdm+2*nbdy)*kdm )
+      endif !stdarc
+#endif
 c
       allocate(  ubaro_m(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy) )
       allocate(  vbaro_m(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy) )
@@ -125,6 +145,7 @@ c
            si_v_m(i,j) = 0.0
 #endif
         enddo !i
+#ifndef _FABM_
         do k= 1,kk
           do i=1,ii
               dp_m(i,j,k) = 0.0
@@ -137,9 +158,19 @@ c
             do ktr= 1,ntracr
               tracer_m(i,j,k,ktr) = 0.0
             enddo !ktr
+#if defined(STOKES)
+            if     (stdarc) then
+              usdp_m(i,j,k) = 0.0
+              vsdp_m(i,j,k) = 0.0
+            endif !stdarc
+#endif
           enddo !i
         enddo !k
+#endif
       enddo !j
+#ifdef _FABM_
+      call hycom_fabm_zero_mean_output()
+#endif
 c
       return
       end subroutine mean_zero
@@ -170,17 +201,10 @@ c
       do j=1,jj
         do i=1,ii
           if (SEA_P) then
-#if defined(STOKES)
-       ke = 0.5*((0.5*(ubavg(i,  j,n) + usdbavg(i,j) +
-     &                 ubavg(i+1,j,n) + usdbavg(i+1,j)  ))**2 +
-     &           (0.5*(vbavg(i,j,  n) + vsdbavg(i,j) +
-     &                 vbavg(i,j+1,n) + vsdbavg(i,j+1) ))**2  )
-#else
                        ke = 0.5*((0.5*(ubavg(i,  j,n) +
      &                                 ubavg(i+1,j,n)  ))**2 +
      &                           (0.5*(vbavg(i,j,  n) +
      &                                 vbavg(i,j+1,n)  ))**2  )
-#endif
             kebaro_m(i,j) = kebaro_m(i,j) + s*ke
              montg_m(i,j) =  montg_m(i,j) + s*montg1(i,j)
             steric_m(i,j) = steric_m(i,j) + s*steric(i,j)
@@ -198,38 +222,19 @@ c
 #endif
           endif !ip
           if (SEA_U) then
-#if defined(STOKES)
-        ubaro_m(i,j)=ubaro_m(i,j)+s*(ubavg(i,j,n)+usdbavg(i,j))
-#else
             ubaro_m(i,j) = ubaro_m(i,j) + s*ubavg(i,j,n)
-#endif
           endif !iu
           if (SEA_V) then
-#if defined(STOKES)
-        vbaro_m(i,j)=vbaro_m(i,j)+s*(vbavg(i,j,n)+vsdbavg(i,j))
-#else
             vbaro_m(i,j) = vbaro_m(i,j) + s*vbavg(i,j,n)
-#endif
           endif !ip
         enddo !i
         do k= 1,kk
           do i=1,ii
             if (SEA_P) then
-#if defined(STOKES)
-        ke = 0.5*((0.5*(u(i,  j,k,n) + usd(i,j,k) +
-     &             ubavg(i,  j,n) + usdbavg(i,j) +
-     &    u(i+1,j,k,n) + usd(i+1,j,k) +
-     &             ubavg(i+1,j,n) + usdbavg(i+1,j) ))**2 +
-     &            (0.5*(v(i,j  ,k,n) + vsd(i,j,k) + 
-     &             vbavg(i,j,  n) + vsdbavg(i,j) +
-     &    v(i,j+1,k,n) + vsd(i,j+1,k) + 
-     &             vbavg(i,j+1,n) + vsdbavg(i,j+1) ))**2  )
-#else
               ke = 0.5*((0.5*(u(i,  j,k,n) + ubavg(i,  j,n) +
      &                        u(i+1,j,k,n) + ubavg(i+1,j,n)  ))**2 +
      &                  (0.5*(v(i,j  ,k,n) + vbavg(i,j,  n) +
      &                        v(i,j+1,k,n) + vbavg(i,j+1,n)  ))**2  )
-#endif
 c
                           q =                   s*dp(i,j,k,n)
                 dp_m(i,j,k) =   dp_m(i,j,k) +                   q
@@ -237,33 +242,33 @@ c
               saln_m(i,j,k) = saln_m(i,j,k) +   saln(i,j,k,n) * q
               th3d_m(i,j,k) = th3d_m(i,j,k) +   th3d(i,j,k,n) * q
                 ke_m(i,j,k) =   ke_m(i,j,k) +     ke          * q
+#ifndef _FABM_
               do ktr= 1,ntracr
                 tracer_m(i,j,k,ktr) = tracer_m(i,j,k,  ktr) +
      &                                  tracer(i,j,k,n,ktr) * q
               enddo !ktr
+#endif
+#if defined(STOKES)
+              if     (stdarc) then
+                usdp_m(i,j,k) = usdp_m(i,j,k) +   usdp(i,j,k) * q
+                vsdp_m(i,j,k) = vsdp_m(i,j,k) +   vsdp(i,j,k) * q
+              endif !stdarc
+#endif
             endif !ip
             if (SEA_U) then
                        q = s*dpu(i,j,k,n)
-#if defined(STOKES)
-         u_m(i,j,k) = u_m(i,j,k) + q*(u(i,j,k,n) + usd(i,j,k) + 
-     &               ubavg(i,j,n) + usdbavg(i,j))
-
-#else
               u_m(i,j,k) = u_m(i,j,k) + q*(u(i,j,k,n) + ubavg(i,j,n))
-#endif
             endif !iu
             if (SEA_V) then
                        q = s*dpv(i,j,k,n)
-#if defined(STOKES)
-              v_m(i,j,k) = v_m(i,j,k) + q*(v(i,j,k,n) + vsd(i,j,k) + 
-     &               vbavg(i,j,n) + vsdbavg(i,j))
-#else
               v_m(i,j,k) = v_m(i,j,k) + q*(v(i,j,k,n) + vbavg(i,j,n))
-#endif
             endif !iv
           enddo !i
         enddo !k
       enddo !j
+#ifdef _FABM_
+      call hycom_fabm_increment_mean_output(n, s)
+#endif
 c
       return
       end subroutine mean_add
@@ -342,18 +347,34 @@ c
                 saln_m(i,j,k) = saln_m(i,j,k) * qdp
                 th3d_m(i,j,k) = th3d_m(i,j,k) * qdp
                   ke_m(i,j,k) =   ke_m(i,j,k) * qdp
+#ifndef _FABM_
                 do ktr= 1,ntracr
                   tracer_m(i,j,k,ktr) = tracer_m(i,j,k,  ktr) * qdp
                 enddo !ktr
+#endif
+#if defined(STOKES)
+                if     (stdarc) then
+                  usdp_m(i,j,k) = usdp_m(i,j,k) * qdp
+                  vsdp_m(i,j,k) = vsdp_m(i,j,k) * qdp
+                endif !stdarc
+#endif
               else  !project into zero thickness layers
                 temp_m(i,j,k) = temp_m(i,j,k-1)
                 saln_m(i,j,k) = saln_m(i,j,k-1)
                 th3d_m(i,j,k) = th3d_m(i,j,k-1)
                   ke_m(i,j,k) =   ke_m(i,j,k-1)
+#ifndef _FABM_
                 do ktr= 1,ntracr
                   tracer_m(i,j,k,ktr) = tracer_m(i,j,k-1,ktr)
                 enddo !ktr
-              endif
+#endif
+#if defined(STOKES)
+                if     (stdarc) then
+                  usdp_m(i,j,k) = usdp_m(i,j,k-1)
+                  vsdp_m(i,j,k) = vsdp_m(i,j,k-1)
+                endif !stdarc
+#endif
+              endif !dpthin:else
             endif !ip
             if (SEA_U) then
               qdp = min(depthu(i,j), 0.5*(p(i,j,k+1)+p(i-1,j,k+1))) -
@@ -378,6 +399,9 @@ c
           enddo !i
         enddo !k
       enddo !j
+#ifdef _FABM_
+      call hycom_fabm_end_mean_output(q, dp_m(1:ii, 1:jj, 1:kk), dpthin)
+#endif
 c
       return
       end subroutine mean_end
@@ -401,6 +425,9 @@ c
       integer      i,j,k,ktr,ldot,nop,nopa
       integer      itst1,jtst1
       real         ssha,sshn,sshs,sssc,sstc,ubpnt,upnt,vbpnt,vpnt
+#if defined(STOKES)
+      real         ustk,vstk
+#endif
       real         coord,xmin,xmax
 
 c
@@ -620,6 +647,7 @@ c
       write (nop,117) 'density ',nmean,time_ave,k,coord,xmin,xmax
       call flush(nop)
       endif !1st tile
+#ifndef _FABM_
       do ktr= 1,ntracr
         call zaiowr(tracer_m(1-nbdy,1-nbdy,k,ktr),ip,.true.,
      &              xmin,xmax, nopa, .false.)
@@ -628,7 +656,29 @@ c
         call flush(nop)
         endif !1st tile
       enddo !ktr
+#endif
+#if defined(STOKES)
+      if     (stdarc) then
+        call zaiowr(usdp_m(1-nbdy,1-nbdy,k),ip,.true.,
+     &              xmin,xmax, nopa, .false.)
+        if     (mnproc.eq.1) then
+C$Alfatih     write (nop,117) 'tracer  ',nmean,time_ave,k,coord,xmin,xmax
+          write (nop,117) 'usdp_m  ',nmean,time_ave,k,coord,xmin,xmax
+        call flush(nop)
+        endif !1st tile
+        call zaiowr(vsdp_m(1-nbdy,1-nbdy,k),ip,.true.,
+     &              xmin,xmax, nopa, .false.)
+        if     (mnproc.eq.1) then
+C$Alfatih   write (nop,117) 'tracer  ',nmean,time_ave,k,coord,xmin,xmax
+        write (nop,117) 'vsdp_m  ',nmean,time_ave,k,coord,xmin,xmax           
+        call flush(nop)
+        endif !1st tile
+      endif !stdarc
+#endif
  75   continue
+#ifdef _FABM_
+      call hycom_fabm_write_mean_output(nop, nopa, nmean, time_ave)
+#endif
 #if defined(NERSC_HYCOM_CICE)
 C --- Moved here to not interfere with nesting etc
       if     (iceflg.ne.0) then
@@ -747,6 +797,26 @@ c ---   which only includes the fields up to vbaro (or up to nsterc)
      &      0.0,  !fswice_m(itest,jtest),                            !W/m**2
      &      0.0   !sflice_m(itest,jtest)*thref*8.64E7/saln_m(itest,jtest,1) !mm/day
         endif !iceflg
+#if defined(STOKES)
+        if     (ntracr.eq.0) then
+          write(cformat,'(a)')      '(4a)'
+        else
+          write(cformat,'(a,i2,a)') '(4a,', ntracr, 'a)'
+        endif
+        write (nop,cformat)
+     &      '#  k',
+     &      '    utot    vtot  p.temp    saln  p.dens',
+     &      '    thkns      dpth  viscty  t-diff  s-diff',
+     &      '  usdtot  vsdtot',
+     &      ('  tracer',ktr=1,ntracr)
+        if     (ntracr.eq.0) then
+          write(cformat,'(a)')
+     &      '(i4,2f8.2,3f8.4,f9.3,f10.3,3f8.2,2f8.2)'
+        else
+          write(cformat,'(a,i2,a)')
+     &      '(i4,2f8.2,3f8.4,f9.3,f10.3,3f8.2,2f8.2,', ntracr, 'f8.3)'
+        endif
+#else
         if     (ntracr.eq.0) then
           write(cformat,'(a)')      '(3a)'
         else
@@ -764,9 +834,19 @@ c ---   which only includes the fields up to vbaro (or up to nsterc)
           write(cformat,'(a,i2,a)')
      &      '(i4,2f8.2,3f8.4,f9.3,f10.3,3f8.2,', ntracr, 'f8.3)'
         endif
+#endif
         do k= 1,kk
           upnt  = 0.5*(u_m(itest,jtest,k)+u_m(itst1,jtest,k))
           vpnt  = 0.5*(v_m(itest,jtest,k)+v_m(itest,jtst1,k))
+#if defined(STOKES)
+          if     (stdarc) then
+            ustk = usdp_m(itest,jtest,k)
+            vstk = vsdp_m(itest,jtest,k)
+          else
+            ustk = 0.0
+            vstk = 0.0
+          endif
+#endif
           write (nop,cformat)
      &       k,
      &       max(-999.99,min(999.99,upnt*100.0)),                    !cm/s
@@ -778,8 +858,14 @@ c ---   which only includes the fields up to vbaro (or up to nsterc)
      &           (p(itest,jtest,k+1)+p(itest,jtest,k))*0.5*qonem,    !m
      &       0.0, !vcty(itest,jtest,k+1)*1.e4,                       !cm**2/s
      &       0.0, !dift(itest,jtest,k+1)*1.e4,                       !cm**2/s
-     &       0.0, !difs(itest,jtest,k+1)*1.e4,                       !cm**2/s
-     &       (tracer_m(itest,jtest,k,ktr),ktr=1,ntracr)              !0-999?
+     &       0.0 !difs(itest,jtest,k+1)*1.e4,                       !cm**2/s
+#if defined(STOKES)
+     &       ,max(-999.99,min(999.99,ustk*100.0))                    !cm/s
+     &       ,max(-999.99,min(999.99,vstk*100.0))                    !cm/s
+#endif
+#ifndef _FABM_
+     &       ,(tracer_m(itest,jtest,k,ktr),ktr=1,ntracr)              !0-999?
+#endif
         enddo !k
         close (unit=nop)
       endif !test point tile
@@ -883,10 +969,12 @@ C --- 2D fields
      &                 trim(c_arch_nc(26)),k,1,1)
          call write_nc(th3d_m(1-nbdy,1-nbdy,k),ip,ncid,
      &                 trim(c_arch_nc(27)),k,1,1)
+#ifndef _FABM_
          do ktr= 1,ntracr
             call write_nc(tracer_m(1-nbdy,1-nbdy,k,ktr),ip,ncid,
      &                    trim(c_arch_nc(28)),k,1,ktr)
          end do
+#endif
       end do
       call close_nc(ncid)
       end subroutine

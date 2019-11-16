@@ -120,31 +120,31 @@ field2data:         $(MODB) field2data.o    $(DATAH_OBJ)
 	$(LD) $(LDFLAGS) -o field2data    field2data.o    $(MODB) $(DATAH_OBJ)
 
 field2ncdf:         $(MODB) field2data.o    $(NCDFH_OBJ)
-	$(LD) $(LDFLAGS) -o field2ncdf    field2data.o    $(MODB) $(NCDFH_OBJ) libnetcdf.a $(EXTRANCDF)
+	$(LD) $(LDFLAGS) -o field2ncdf    field2data.o    $(MODB) $(NCDFH_OBJ) $(EXTRANCDF)
 
 archv2ncdf2d:       $(MODB) archv2data2d.o  $(NCDFH_OBJ)
-	$(LD) $(LDFLAGS) -o archv2ncdf2d  archv2data2d.o  $(MODB) $(NCDFH_OBJ) libnetcdf.a $(EXTRANCDF)
+	$(LD) $(LDFLAGS) -o archv2ncdf2d  archv2data2d.o  $(MODB) $(NCDFH_OBJ)  $(EXTRANCDF)
 
 archm2ncdf2d:       $(MODB) archm2data2d.o  $(NCDFH_OBJ)
-	$(LD) $(LDFLAGS) -o archm2ncdf2d  archm2data2d.o  $(MODB) $(NCDFH_OBJ) libnetcdf.a $(EXTRANCDF)
+	$(LD) $(LDFLAGS) -o archm2ncdf2d  archm2data2d.o  $(MODB) $(NCDFH_OBJ)   $(EXTRANCDF)
 
 archv2ncdf2t:       $(MODB) archv2data2t.o  $(NCDFH_OBJ)
-	$(LD) $(LDFLAGS) -o archv2ncdf2t  archv2data2t.o  $(MODB) $(NCDFH_OBJ) libnetcdf.a $(EXTRANCDF)
+	$(LD) $(LDFLAGS) -o archv2ncdf2t  archv2data2t.o  $(MODB) $(NCDFH_OBJ)   $(EXTRANCDF)
 
 archv2ncdf3z:       $(MODZ) archv2data3z.o  $(NCDFZ_OBJ)
-	$(LD) $(LDFLAGS) -o archv2ncdf3z  archv2data3z.o  $(MODZ) $(NCDFZ_OBJ) libnetcdf.a $(EXTRANCDF)
+	$(LD) $(LDFLAGS) -o archv2ncdf3z  archv2data3z.o  $(MODZ) $(NCDFZ_OBJ)   $(EXTRANCDF)
 
 archm2ncdf3z:       $(MODZ) archm2data3z.o  $(NCDFZ_OBJ)
-	$(LD) $(LDFLAGS) -o archm2ncdf3z  archm2data3z.o  $(MODZ) $(NCDFZ_OBJ) libnetcdf.a $(EXTRANCDF)
+	$(LD) $(LDFLAGS) -o archm2ncdf3z  archm2data3z.o  $(MODZ) $(NCDFZ_OBJ)   $(EXTRANCDF)
 
 archv2ncdfsf:       $(MODB) archv2datasf.o  $(NCDFZ_OBJ)
-	$(LD) $(LDFLAGS) -o archv2ncdfsf  archv2datasf.o  $(MODB) $(NCDFZ_OBJ) libnetcdf.a $(EXTRANCDF)
+	$(LD) $(LDFLAGS) -o archv2ncdfsf  archv2datasf.o  $(MODB) $(NCDFZ_OBJ)   $(EXTRANCDF)
 
 archv2ncdfsfl:      $(MODB) archv2datasfl.o $(NCDFZ_OBJ)
-	$(LD) $(LDFLAGS) -o archv2ncdfsfl archv2datasfl.o $(MODB) $(NCDFZ_OBJ) libnetcdf.a $(EXTRANCDF)
+	$(LD) $(LDFLAGS) -o archv2ncdfsfl archv2datasfl.o $(MODB) $(NCDFZ_OBJ)   $(EXTRANCDF)
 
 archv2ncdfsfz:     $(MODB) archv2datasfz.o $(NCDFZ_OBJ)
-	$(LD) $(LDFLAGS) -o archv2ncdfsfz archv2datasfz.o $(MODB) $(NCDFZ_OBJ) libnetcdf.a $(EXTRANCDF)
+	$(LD) $(LDFLAGS) -o archv2ncdfsfz archv2datasfz.o $(MODB) $(NCDFZ_OBJ)   $(EXTRANCDF)
 
 archv2ncombc:       $(MODB) archv2ncombc.o  $(DATAH_OBJ)
 	$(LD) $(LDFLAGS) -o archv2ncombc  archv2ncombc.o  $(MODB) $(DATAH_OBJ)

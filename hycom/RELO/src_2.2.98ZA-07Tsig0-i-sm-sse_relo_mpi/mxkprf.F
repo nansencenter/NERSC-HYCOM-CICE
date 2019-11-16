@@ -481,6 +481,15 @@ c
       use mod_xc         ! HYCOM communication interface
       use mod_cb_arrays  ! HYCOM saved arrays
 c
+#if defined(STOKES)
+      use mod_stokes  ! Stokes Drift Velocity Module
+#endif
+C$RMY if (RMY)
+C$RMY #if defined(STOKES_3D)
+C$RMY       use mod_stokes  ! Stokes Drift Velocity Module
+C$RMY #endif
+C$RMY end if (RMY)
+c
 c --- hycom version 1.0
       implicit none
 c
@@ -508,6 +517,16 @@ c
       real, parameter :: cv_max =    2.1     !maximum cv
       real, parameter :: cv_min =    1.7     !minimum cv
       real, parameter :: cv_bfq =  200.0     !cv scale factor
+C$RMY if (RMY)
+C$RMY #if defined(STOKES_3D)
+C$RMY c surface wave turbulence derived from Craig & Banner (1994): 
+C$RMY       real, parameter :: sm_my = 0.39, ! eq. 10
+C$RMY      &                   b_cg  = 2.5,  ! eq. 24
+C$RMY      &                   n_cg  = 2.4,  ! eq. 28
+C$RMY      &                   a_x = 5., a_m = 4., a_s = 8.
+C$RMY       real ::  facteur_a0a1, a0_kpp, a1m_kpp, a1s_kpp, aa1m, aa1s
+C$RMY #endif
+C$RMY end if (RMY)
 c
 c local variables for kpp mixing
       real delta               ! fraction hbl lies beteen zgrid neighbors
@@ -1007,6 +1026,28 @@ c --- compute the turbulent shear contribution to rib
           else
             vtsq=0.0
           endif !bfq>0:else
+C$RMY if (RMY)
+C$RMY #if defined(STOKES_3D)
+C$RMY           if (stmxsr.eq.1.or.stmxsr.eq.2) then
+C$RMY              if (stalfa.eq.0) then
+C$RMY                 if (stustr) then
+C$RMY                    q = ustarw3(i,j) * alpha(i,j)**0.333 * b_cg * 
+C$RMY      .                 ( z0top(i,j) / (z0top(i,j) - zgrid(i,j,k)) )
+C$RMY      .                 **(0.333*n_cg)
+C$RMY                             else
+C$RMY                    q = ustar(i,j) * alpha(i,j)**0.333 * b_cg * 
+C$RMY      .                 ( z0top(i,j) / (z0top(i,j) - zgrid(i,j,k)) )
+C$RMY      .                 **(0.333*n_cg)
+C$RMY                 endif
+C$RMY                               else
+C$RMY                 q = (phi_oc(i,j) *thref)**0.333 * b_cg * 
+C$RMY      .              ( z0top(i,j) / (z0top(i,j) - zgrid(i,j,k)) )
+C$RMY      .              **(0.333*n_cg)
+C$RMY              endif
+C$RMY              vtsq = vtsq + q * q
+C$RMY           end if
+C$RMY #endif
+C$RMY end if (RMY)
 c
 c --- compute bulk richardson number at new level
           rib(kdn)=ritop(k)/(dvsq(k)+vtsq+epsil)
@@ -1190,13 +1231,52 @@ c --- compute boundary layer diffusivities at the interfaces
             blmc(k,1)=hbl*wm*sigg*(1.+sigg*gm)
             blmc(k,2)=hbl*ws*sigg*(1.+sigg*gs)
             blmc(k,3)=hbl*ws*sigg*(1.+sigg*gt)
+C$RMY if (RMY)
+C$RMY #if defined(STOKES_3D)
+C$RMY             else
+C$RMY c --- compute the dimensionless shape functions at the interfaces
+C$RMY               facteur_a0a1 = alpha(i,j)**0.333 * b_cg * sm_my ! typiquement 4.5 (pour alpha~100)
+C$RMY               a0_kpp = facteur_a0a1 * z0top(i,j) / hbl     ! 0 en l'absence de vagues (KPP d'origine) i.e. alpha=0
+C$RMY               a1m_kpp = facteur_a0a1 * (1. - n_cg/3.) ! 1 en l'absence de vagues (KPP d'origine), typiquement 0.9 avec
+C$RMY               a1s_kpp = a1m_kpp
+C$RMY 
+C$RMY               if (stmxsr.eq.2) then
+C$RMY                 if (hmonob(i,j).ge.0.) then
+C$RMY                   a1m_kpp = a1m_kpp + a_x * a0_kpp * hbl / hmonob(i,j)
+C$RMY                   a1s_kpp = a1m_kpp
+C$RMY                 else
+C$RMY                   a1m_kpp = a1m_kpp + a_m * a0_kpp * hbl / hmonob(i,j)
+C$RMY                   a1s_kpp = a1s_kpp + a_s * a0_kpp * hbl / hmonob(i,j)
+C$RMY                 end if
+C$RMY               end if
+C$RMY 
+C$RMY               aa1m = - (3.*a0_kpp + 2.*a1m_kpp) + (2.*a0_kpp + a1m_kpp) * sigg
+C$RMY               aa1s = - (3.*a0_kpp + 2.*a1s_kpp) + (2.*a0_kpp + a1s_kpp) * sigg
+C$RMY               aa2=3.-2.*sigg
+C$RMY               aa3=sigg-1.
+C$RMY 
+C$RMY               gm=aa1m+aa2*gat1(1)+aa3*dat1(1)
+C$RMY               gs=aa1s+aa2*gat1(2)+aa3*dat1(2)
+C$RMY               gt=aa1s+aa2*gat1(3)+aa3*dat1(3)
+C$RMY 
+C$RMY c --- compute boundary layer diffusivities at the interfaces
+C$RMY               blmc(k,1) = hbl * wm * ( a0_kpp + sigg * (a1m_kpp + sigg * gm) )
+C$RMY               blmc(k,2) = hbl * ws * ( a0_kpp + sigg * (a1s_kpp + sigg * gs) )
+C$RMY               blmc(k,3) = hbl * ws * ( a0_kpp + sigg * (a1s_kpp + sigg * gt) )
+C$RMY             end if
+C$RMY #endif
+C$RMY end if (RMY)
 c
 c --- compute nonlocal transport forcing term = ghats * <ws>o
             if (nonloc) then
 #if defined(STOKES)
 c ---         To include Langmuir turbulence effects, multiply ghats
 c ---         by a factor of Lgam (McWilliam & Sullivan 2001)
-              ghats(i,j,k)=1.04 * (1.-stable)*cg/(ws*hbl+epsil)
+              if (langmr.ne.0) then
+                 ghats(i,j,k)=1.04 * (1.-stable)*cg/(ws*hbl+epsil)
+                             else
+                 ghats(i,j,k)=       (1.-stable)*cg/(ws*hbl+epsil)
+              endif
 #else
               ghats(i,j,k)=       (1.-stable)*cg/(ws*hbl+epsil)
 #endif
@@ -1213,6 +1293,12 @@ c
         call wscale(i,j,hbl,dnorm,bfsfc,wm,ws,1)
 c
         sigg=-zgrid(i,j,nbl-1)/hbl
+c
+C$RMY if (RMY)
+C$RMY #if defined(STOKES_3D)
+C$RMY         if (stmxsr.eq.0.or.stmxsr.eq.3.or.stmxsr.eq.4) then
+C$RMY #endif
+C$RMY end if (RMY)
         aa1=sigg-2.
         aa2=3.-2.*sigg
         aa3=sigg-1.
@@ -1222,6 +1308,35 @@ c
         dkm1(1)=hbl*wm*sigg*(1.+sigg*gm)
         dkm1(2)=hbl*ws*sigg*(1.+sigg*gs)
         dkm1(3)=hbl*ws*sigg*(1 +sigg*gt)
+C$RMY if (RMY)
+C$RMY #if defined(STOKES_3D)
+C$RMY         else
+C$RMY           facteur_a0a1 = alpha(i,j)**0.333 * b_cg * sm_my ! typiquement 4.5 (pour alpha~100)
+C$RMY           a0_kpp = facteur_a0a1 * z0top(i,j) / hbl     ! 0 en l'absence de vagues (KPP d'origine) i.e. alpha=0
+C$RMY           a1m_kpp = facteur_a0a1 * (1. - n_cg/3.) ! 1 en l'absence de vagues (KPP d'origine), typiquement 0.9 avec
+C$RMY           a1s_kpp = a1m_kpp
+C$RMY           if (stmxsr.eq.2) then
+C$RMY             if (hmonob(i,j).ge.0.) then
+C$RMY               a1m_kpp = a1m_kpp + a_x * a0_kpp * hbl / hmonob(i,j)
+C$RMY               a1s_kpp = a1m_kpp
+C$RMY             else
+C$RMY               a1m_kpp = a1m_kpp + a_m * a0_kpp * hbl / hmonob(i,j)
+C$RMY               a1s_kpp = a1s_kpp + a_s * a0_kpp * hbl / hmonob(i,j)
+C$RMY             end if
+C$RMY           end if
+C$RMY           aa1m = - (3.*a0_kpp + 2.*a1m_kpp) + (2.*a0_kpp + a1m_kpp) * sigg
+C$RMY           aa1s = - (3.*a0_kpp + 2.*a1s_kpp) + (2.*a0_kpp + a1s_kpp) * sigg
+C$RMY           aa2=3.-2.*sigg
+C$RMY           aa3=sigg-1.
+C$RMY           gm=aa1m+aa2*gat1(1)+aa3*dat1(1)
+C$RMY           gs=aa1s+aa2*gat1(2)+aa3*dat1(2)
+C$RMY           gt=aa1s+aa2*gat1(3)+aa3*dat1(3)
+C$RMY           dkm1(1) = hbl * wm * ( a0_kpp + sigg * (a1m_kpp + sigg * gm) )
+C$RMY           dkm1(2) = hbl * ws * ( a0_kpp + sigg * (a1s_kpp + sigg * gs) )
+C$RMY           dkm1(3) = hbl * ws * ( a0_kpp + sigg * (a1s_kpp + sigg * gt) )
+C$RMY         end if
+C$RMY #endif
+C$RMY end if (RMY)
 c
 c --- now enhance diffusivity at interface nbl
 c
@@ -1255,6 +1370,59 @@ c
         if (nonloc) then
           ghats(i,j,ka)=(1.-case)*ghats(i,j,ka)
         endif
+C$RMY if (RMY)
+C$RMY #if defined(STOKES_3D)
+C$RMY         if (stmxsr.eq.3) then
+C$RMY            if (.not.bblkpp) then
+C$RMY              do k=2,nbl
+C$RMY                vcty(i,j,k)=max(vcty(i,j,k),
+C$RMY      .                     min(blmc(k,1)+difx_wave(i,j,k),difmax))
+C$RMY                difs(i,j,k)=max(difs(i,j,k),
+C$RMY      .                     min(blmc(k,2)+difx_wave(i,j,k),difmax))
+C$RMY                dift(i,j,k)=max(dift(i,j,k),
+C$RMY      .                     min(blmc(k,3)+difx_wave(i,j,k),difmax))
+C$RMY              enddo
+C$RMY              do k=nbl+1,klist(i,j)
+C$RMY                ghats(i,j,k)=0.0
+C$RMY              enddo
+C$RMY              do k=klist(i,j)+1,kk+1
+C$RMY                vcty(i,j,k)=dflmiw+dflbot(k)+difx_wave(i,j,k)
+C$RMY                difs(i,j,k)=dflsiw+dflbot(k)+difx_wave(i,j,k)
+C$RMY                dift(i,j,k)=dflsiw+dflbot(k)+difx_wave(i,j,k)
+C$RMY                ghats(i,j,k)=0.0
+C$RMY              enddo
+C$RMY              vcty(i,j,1) = difx_wave(i,j,1)
+C$RMY              difs(i,j,1) = difx_wave(i,j,1)
+C$RMY              dift(i,j,1) = difx_wave(i,j,1)
+C$RMY            endif !.not.bblkpp
+C$RMY c
+C$RMY            elseif (stmxsr.eq.4) then
+C$RMY              do k = 1, kk+1
+C$RMY                 vcty(i,j,k) = difx_wave(i,j,k)
+C$RMY                 difs(i,j,k) = difx_wave(i,j,k)
+C$RMY                 dift(i,j,k) = difx_wave(i,j,k)
+C$RMY              enddo
+C$RMY                          else ! stmxsr=/3,4
+C$RMY c
+C$RMY c --- combine interior and boundary layer coefficients and nonlocal term
+C$RMY            if (.not.bblkpp) then
+C$RMY              do k=2,nbl
+C$RMY                vcty(i,j,k)=max(vcty(i,j,k),min(blmc(k,1),difmax))
+C$RMY                difs(i,j,k)=max(difs(i,j,k),min(blmc(k,2),difmax))
+C$RMY                dift(i,j,k)=max(dift(i,j,k),min(blmc(k,3),difmax))
+C$RMY              enddo
+C$RMY              do k=nbl+1,klist(i,j)
+C$RMY                ghats(i,j,k)=0.0
+C$RMY              enddo
+C$RMY              do k=klist(i,j)+1,kk+1
+C$RMY                vcty(i,j,k)=dflmiw+dflbot(k)
+C$RMY                difs(i,j,k)=dflsiw+dflbot(k)
+C$RMY                dift(i,j,k)=dflsiw+dflbot(k)
+C$RMY                ghats(i,j,k)=0.0
+C$RMY              enddo
+C$RMY            endif !.not.bblkpp
+C$RMY         endif
+C$RMY #else
 c
 c --- combine interior and boundary layer coefficients and nonlocal term
         if (.not.bblkpp) then
@@ -1273,6 +1441,8 @@ c --- combine interior and boundary layer coefficients and nonlocal term
             ghats(i,j,k)=0.0
           enddo
         endif !.not.bblkpp
+C$RMY #endif
+C$RMY end if (RMY)
 c
 cdiag   if (i.eq.itest.and.j.eq.jtest) then
 cdiag     write (lp,103) (nstep,iter,i+i0,j+j0,k,
@@ -1585,6 +1755,59 @@ c --- save array dpbbl=onem*hbbl for output and diagnosis, and for momtum.f
         dpbbl(i,j)=onem*hbbl
 c
 c --- select maximum viscosity/diffusivity at all interfaces
+C$RMY if (RMY)
+C$RMY #if defined(STOKES_3D)
+C$RMY         if (stmxsr.eq.3) then
+C$RMY            do k=2,klist(i,j)
+C$RMY              if (k.le.klist(i,j)) then
+C$RMY                vcty(i,j,k)=min(difmax,
+C$RMY      &                       max(vcty(i,j,k),
+C$RMY      &                           blmc(k,1)+difx_wave(i,j,k),bblmc(k,1)))
+C$RMY                difs(i,j,k)=min(difmax,
+C$RMY      &                       max(difs(i,j,k),
+C$RMY      &                           blmc(k,2)+difx_wave(i,j,k),bblmc(k,2)))
+C$RMY                dift(i,j,k)=min(difmax,
+C$RMY      &                       max(dift(i,j,k),
+C$RMY      &                           blmc(k,3)+difx_wave(i,j,k),bblmc(k,3)))
+C$RMY              else
+C$RMY                vcty(i,j,k)=dflmiw+dflbot(k)+difx_wave(i,j,k)
+C$RMY                difs(i,j,k)=dflsiw+dflbot(k)+difx_wave(i,j,k)
+C$RMY                dift(i,j,k)=dflsiw+dflbot(k)+difx_wave(i,j,k)
+C$RMY              endif
+C$RMY              if (k.ge.nbl+1) then
+C$RMY                ghats(i,j,k)=0.0
+C$RMY              endif
+C$RMY            enddo
+C$RMY            vcty(i,j,1) = difx_wave(i,j,1)
+C$RMY            difs(i,j,1) = difx_wave(i,j,1)
+C$RMY            dift(i,j,1) = difx_wave(i,j,1)
+C$RMY c
+C$RMY            elseif (stmxsr.eq.4) then
+C$RMY              do k = 1, kk+1
+C$RMY                 vcty(i,j,k) = difx_wave(i,j,k)
+C$RMY                 difs(i,j,k) = difx_wave(i,j,k)
+C$RMY                 dift(i,j,k) = difx_wave(i,j,k)
+C$RMY              enddo
+C$RMY                             else ! stmxsr =/ 3, 4
+C$RMY            do k=2,klist(i,j)
+C$RMY              if (k.le.klist(i,j)) then
+C$RMY                vcty(i,j,k)=min(difmax,
+C$RMY      &                         max(vcty(i,j,k),blmc(k,1),bblmc(k,1)))
+C$RMY                difs(i,j,k)=min(difmax,
+C$RMY      &                         max(difs(i,j,k),blmc(k,2),bblmc(k,2)))
+C$RMY                dift(i,j,k)=min(difmax,
+C$RMY      &                         max(dift(i,j,k),blmc(k,3),bblmc(k,3)))
+C$RMY              else
+C$RMY                vcty(i,j,k)=dflmiw+dflbot(k)
+C$RMY                difs(i,j,k)=dflsiw+dflbot(k)
+C$RMY                dift(i,j,k)=dflsiw+dflbot(k)
+C$RMY              endif
+C$RMY              if (k.ge.nbl+1) then
+C$RMY                ghats(i,j,k)=0.0
+C$RMY              endif
+C$RMY            enddo
+C$RMY         endif
+C$RMY #else
         do k=2,klist(i,j)
           if (k.le.klist(i,j)) then
             vcty(i,j,k)=min(difmax,
@@ -1602,6 +1825,8 @@ c --- select maximum viscosity/diffusivity at all interfaces
             ghats(i,j,k)=0.0
           endif
         enddo
+C$RMY #endif
+C$RMY end if (RMY)
 c
 cdiag   if (i.eq.itest.and.j.eq.jtest) then
 cdiag     write (lp,103) (nstep,iter,i+i0,j+j0,k,
@@ -1793,6 +2018,11 @@ c
      &     chl,wt,wq,wz0,wz1,wz2
 c
       real buoyfl,buoyfs,buoysw,dsgdt,smn,tmn,swfrml
+C$RMY if (RMY)
+C$RMY #if defined(STOKES_3D)
+C$RMY       real u_star, flux_q2, kz_surf
+C$RMY #endif
+C$RMY end if (RMY)
 c
       integer k,ka,k1,khy1,khy2,kmy1,kmy2,jrlv
 c
@@ -1974,6 +2204,18 @@ c --- surface and bottom stress boundary conditions
       wvbot=-0.5*thkbot*onem*v1d(kmy1)*drag(i,j)*thref/g
       ee(1)=0.0
       gg(1)=const1*sqrt(wusurf*wusurf+wvsurf*wvsurf)
+C$RMY if (RMY)
+C$RMY #if defined(STOKES_3D)
+C$RMY ccc Perenne et al.: To be checked later
+C$RMY       if (stmxsr.eq.1.or.stmxsr.eq.2) then
+C$RMY         u_star = sqrt(gg(1) / const1)
+C$RMY         flux_q2 = alpha(i,j) * u_star**3. ! Craig & Banner (1994), eq.14
+C$RMY         kz_surf = maxval( difqmy(i,j,min(1,kkmy25+1):min(3,kkmy25+1)) ) ! pour Ãªtre moins dÃ©pendant d'Ã©ventuelles oscillations de q2 prÃ¨s de la surface... 
+C$RMY !       k=1 dans la boucle [*]... 
+C$RMY         gg(1) = gg(1) + q2(i,j,min(1,kkmy25+1),m) + flux_q2 * dz(1) * dh / max(kz_surf, dflsiw)
+C$RMY       endif
+C$RMY #endif
+C$RMY end if (RMY)
       q2(i,j,kmy1,n)=const1*sqrt(wubot*wubot+wvbot*wvbot)
 c
 c --- calculate vertical buoyancy gradient at interfaces
@@ -3347,7 +3589,7 @@ c
       presu=0.
       do k=1,kk
         if (presu.lt.depthu(i,j)-tencm) then
-          diffm(k+1)=.5*(vcty(i,j,k+1)+vcty(i-1,j,k+1))
+          diffm(k+1)=max(vcty(i,j,k+1),vcty(i-1,j,k+1))
           u1do(k)=u(i,j,k,n)
           hm(k)=max(onemm,dpu(i,j,k,n))*qonem
           if (k.eq.1) then
@@ -3397,6 +3639,7 @@ c --- homogenize the bottom 10 cm
           dpbot   = dpbot + dpu(i,j,k,n)
            ubot   =  ubot + dpu(i,j,k,n)*u(i,j,k,n)
           u1do(k) =                      u(i,j,k,n)
+          diffm(k+1) = 0.0
         enddo !k
         if     (dpbot.gt.onemm) then  !always true?
           ubot = ubot / dpbot
@@ -3450,7 +3693,7 @@ c
       presv=0.
       do k=1,kk
         if (presv.lt.depthv(i,j)-tencm) then
-          diffm(k+1)=.5*(vcty(i,j,k+1)+vcty(i,j-1,k+1))
+          diffm(k+1)=max(vcty(i,j,k+1),vcty(i,j-1,k+1))
           v1do(k)=v(i,j,k,n)
           hm(k)=max(onemm,dpv(i,j,k,n))*qonem
           if (k.eq.1) then
@@ -3501,6 +3744,7 @@ c --- homogenize the bottom 10 cm
           dpbot   = dpbot + dpv(i,j,k,n)
            vbot   =  vbot + dpv(i,j,k,n)*v(i,j,k,n)
           v1do(k) =                      v(i,j,k,n)
+          diffm(k+1) = 0.0
         enddo !k
         if     (dpbot.gt.onemm) then  !always true?
           vbot = vbot / dpbot
@@ -3617,6 +3861,7 @@ c ---   Langmuir turbulence enhancement factor
             ucube=ust**3
 c ---   note: surface density increases (column is destabilized) if bflux > 0
             wcube=-vonk*bflux*zlevel
+C$Alfatih   wcube=max(0,vonk*bflux*zlevel)
             cw   =0.15*(ucube/max(ucube + 0.6*wcube, epsil))**2
             flang=sqrt(1+cw*ustk2/(ust*ust + epsil))
             flang=max(1.0, flang)
@@ -3688,3 +3933,4 @@ c> Oct. 2013 - added jerlv0=-1 and calls to swfrac_ij and swfrml_ij
 c> Jan. 2014 - homogenize the bottom 10 cm velocities
 c> May  2014 - use land/sea masks (e.g. ip) to skip land
 c> Sep  2014 - added 3 new options for langmr
+c> Jun  2016 - use max (not average) to interpolate vcty to u/v grids

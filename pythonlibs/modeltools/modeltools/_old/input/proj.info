@@ -1,0 +1,8 @@
+File Version         : 1.0
+Proj4 String         : +proj=stere +lon_0=0 +lat_0=60 +lat_ts=60 +ellps=sphere
+Lower Left Longitude :   -20.0000000000
+Lower Left Latitude  :    60.0000000000
+Projection Delta X   :             4000
+Projection Delta Y   :             4000
+Projection Nodes X   :    500
+Projection Nodes Y   :    300

@@ -6,9 +6,11 @@ pput=cp
 
 # Experiment  needs experiment number
 if [ $# -ne 3 ] ; then
+ if [ $# -ne 4 ] ; then  
    echo 
    echo "Usage:"
    echo "   $(basename $0) normal_radius alongshore_radius rivers.dat-file"
+   echo "   $(basename $0) normal_radius alongshore_radius rivers.dat-file biorivers.dat-file"
    echo 
    echo "This script will set up river forcing files used by HYCOM. You will"
    echo "need to have a \"rivers.dat\" file. There should be one present in GITROOT/input."
@@ -16,16 +18,24 @@ if [ $# -ne 3 ] ; then
    echo "The two first are used to place river discharge, along and normal to the coase. "
    echo 
    echo "Example:"
-   echo "   $(basename $0)h 100 300" ../../inputdir/rivers.dat
+   echo "   $(basename $0)h 100 300 ../../inputdir/rivers.dat"
+   echo "If biology river forcing needs to be activated:"
+   echo "   $(basename $0)h 100 300 ../../inputdir/rivers.dat ../../inputdir/biorivers.dat"
    echo "Will place rivers at most 100 km from land, and at most 300 km along the land "
    echo "contour."
+   echo "biorivers.dat is created by glodapBIO_to_hycom.py" 
    exit 1
+ else
+   echo "river biology forcing is active"
+ fi
 fi
 
 # Full path 
 riverfile=$(readlink -f $3)
-
-
+if [ "$#" = 4 ]; then
+   bio=true
+   bioriverfile=$(readlink -f $4)
+fi
 # Set basedir based on relative paths of script
 # Can be troublesome, but should be less prone to errors
 # than setting basedir directly
@@ -77,11 +87,17 @@ copy_topo_files $S
 copy_grid_files $S
 ${pget} ${BASEDIR}/expt_${X}/blkdat.input blkdat.input  || { echo "Could not get file blkdat.input " ; exit 1 ; }
 ${pget} $riverfile Data/rivers.dat || { echo "Could not get file rivers.dat " ; exit 1 ; }
-${pget} ${BASEDIR}/topo/grid.info grid.info  || { echo "Could not get file rivers.dat " ; exit 1 ; }
+if [ "$bio" = true ]; then
+   ${pget} $bioriverfile Data/biorivers.dat || { echo "Could not get file biorivers.dat " ; exit 1 ; }
+fi
+${pget} ${BASEDIR}/topo/grid.info grid.info  || { echo "Could not get file grid.info " ; exit 1 ; }
 
 
 
 $MSCPROGS/bin_setup/rivers $1 $2 || { echo "Error when running rivers (see errors above)" ; exit 1 ; }
+if [ "$bio" = true ]; then
+    $MSCPROGS/bin_setup/biorivers $1 $2 || { echo "Error when running biorivers (see errors above)" ; exit 1 ; }
+fi
 
 # For now the river forcing is  experiment-dependent
 mkdir -p $D/${E}

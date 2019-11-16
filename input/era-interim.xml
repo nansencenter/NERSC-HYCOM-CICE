@@ -42,6 +42,38 @@
          <field known_name="tcc"   file="[rootPath]/ans.6h.%Y.TCC.nc"  varname="TCC"  units="1"/>
       </forcing_dataset>
 
+   <!-- As above, but includes strd (surface thermal downwelling radiation) as well-->
+      <forcing_dataset name="erai+all" rootPath="/work/shared/nersc/ERA-I/" format="netcdf" timestep="6h">
+<!--     <field name="internal name known by routine"   file="path to file"  varname="name of variable in netcdf file" unit="udunit"/> -->
+         <field known_name="10u"   file="[rootPath]/ans.6h.%Y.10U.nc"  varname="10U"  units="m s**-1"/>
+         <field known_name="10v"   file="[rootPath]/ans.6h.%Y.10V.nc"  varname="10V"  units="m s**-1"/>
+         <field known_name="2t"    file="[rootPath]/ans.6h.%Y.2T.nc"   varname="2T"   units="K"/>
+         <field known_name="2d"    file="[rootPath]/ans.6h.%Y.2D.nc"   varname="2D"   units="K"/>
+         <field known_name="msl"   file="[rootPath]/ans.6h.%Y.MSL.nc"  varname="MSL"  units="Pa"/>
+         <field known_name="tp"    file="[rootPath]/fcs.6h.%Y.TP.nc"   varname="TP"   units="m"      accumulated="6h"/> <!--6 hour accumulated precip-->
+         <field known_name="tcc"   file="[rootPath]/ans.6h.%Y.TCC.nc"  varname="TCC"  units="1"/>
+         <field known_name="ssrd"  file="[rootPath]/fcs.6h.%Y.SSRD.nc" varname="SSRD" units="J m**-2" accumulated="6h"/> <!-- 6 hour accumulated flux-->
+         <field known_name="strd"  file="[rootPath]/fcs.6h.%Y.STRD.nc" varname="STRD" units="J m**-2" accumulated="6h"/> <!-- 6 hour accumulated flux-->
+         <field known_name="ssr"  file="[rootPath]/fcs.6h.%Y.SSR.nc" varname="SSR" units="J m**-2" accumulated="6h"/> <!-- 6 hour accumulated flux-->
+         <field known_name="str"  file="[rootPath]/fcs.6h.%Y.STR.nc" varname="STR" units="J m**-2" accumulated="6h"/> <!-- 6 hour accumulated flux-->
+      </forcing_dataset>
+         
+   <!-- As above, but includes strd (surface thermal downwelling radiation) as well-->
+      <forcing_dataset name="erai+ssr" rootPath="/work/shared/nersc/ERA-I/" format="netcdf" timestep="6h">
+<!--     <field name="internal name known by routine"   file="path to file"  varname="name of variable in netcdf file" unit="udunit"/> -->
+         <field known_name="10u"   file="[rootPath]/ans.6h.%Y.10U.nc"  varname="10U"  units="m s**-1"/>
+         <field known_name="10v"   file="[rootPath]/ans.6h.%Y.10V.nc"  varname="10V"  units="m s**-1"/>
+         <field known_name="2t"    file="[rootPath]/ans.6h.%Y.2T.nc"   varname="2T"   units="K"/>
+         <field known_name="2d"    file="[rootPath]/ans.6h.%Y.2D.nc"   varname="2D"   units="K"/>
+         <field known_name="msl"   file="[rootPath]/ans.6h.%Y.MSL.nc"  varname="MSL"  units="Pa"/>
+         <field known_name="tp"    file="[rootPath]/fcs.6h.%Y.TP.nc"   varname="TP"   units="m"      accumulated="6h"/> <!--6 hour accumulated precip-->
+         <field known_name="tcc"   file="[rootPath]/ans.6h.%Y.TCC.nc"  varname="TCC"  units="1"/>
+         <field known_name="ssrd"  file="[rootPath]/fcs.6h.%Y.SSRD.nc" varname="SSRD" units="J m**-2" accumulated="6h"/> <!-- 6 hour accumulated flux-->
+         <field known_name="ssr"  file="[rootPath]/fcs.6h.%Y.SSR.nc" varname="SSR" units="J m**-2" accumulated="6h"/> <!-- 6 hour accumulated flux-->
+      </forcing_dataset>
+    
+
+
 
    </forcing_datasets>
 </xml>

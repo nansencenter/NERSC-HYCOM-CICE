@@ -1,0 +1,7 @@
+T         # Use Cell averaging for coarse grids
+T         # Use ETOPO5
+F         # Use BODC
+F         # Use IBCAO
+F         # Use GEBCO
+F         # Use Conman (Met no) bathymetry
+10.       # Bathymetry cutoff value (everything below is set to zero)

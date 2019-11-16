@@ -37,8 +37,8 @@ touch   PIPE_DEBUG
 restarto=$(blkdat_get_string blkdat.input nmrsto "restart_out")
 restarti=$(blkdat_get_string blkdat.input nmrsti "restart_in")
 nmarcv=$(blkdat_get_string blkdat.input nmarcv "archv.")
-nmarcs=$(blkdat_get_string blkdat.input nmarcv "archs.")
-nmarcm=$(blkdat_get_string blkdat.input nmarcv "archm.")
+nmarcs=$(blkdat_get_string blkdat.input nmarcs "archs.")
+nmarcm=$(blkdat_get_string blkdat.input nmarcm "archm.")
 #echo $restarto
 #echo $restarti
 #echo "test"
@@ -53,6 +53,7 @@ do
     then
        rm $i
     else 
+       echo "Moving $i to $D"
        mv $i $D
   fi
 done
@@ -60,14 +61,26 @@ done
 # Move archive files
 for i in $(ls ${nmarcv}*.[ab] ${nmarcs}*.[ab] ${nmarcm}*.[ab]) 
 do
-   echo "Moving $i to  $D"
-   mv $i $D
+  if [ -L "${i}" ]
+    then
+       echo "$i is a sympolic link, I am removing it"
+       rm $i
+    else
+       echo "Moving $i to  $D"
+       mv $i $D
+   fi
 done
 
 # Move cice archive files 
 for i in $(ls -- cice/)  ; do
-   echo $i
-   mv cice/$i $D/cice/
+   if [ -L "cice/${i}" ]
+     then
+        echo "cice/$i is a sympolic link, I am removing it"
+        rm cice/$i
+     else
+        echo "Moving cice/$i  to $D/cice/"
+        mv cice/$i $D/cice/
+   fi
 done
 [ -f summary.out ] && cp summary_out $D/
 
