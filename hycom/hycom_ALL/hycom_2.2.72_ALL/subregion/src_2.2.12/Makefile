@@ -43,6 +43,9 @@ MODX = mod_xc.o mod_za.o mod_zb.o wtime.o zh.o mod_scrip.o
 isubaregion:     $(MODS) isubaregion.o        
 	$(LD) $(LDFLAGS) isubaregion.o $(MODS) -o isubaregion
 
+isubaregion_modified:     $(MODS) isubaregion_modified.o
+	$(LD) $(LDFLAGS) isubaregion_modified.o $(MODS) -o isubaregion_modified
+
 isubregion:      $(MODS) isubregion.o        
 	$(LD) $(LDFLAGS) isubregion.o  $(MODS) -o isubregion
 
@@ -59,10 +62,10 @@ isubm_field:     $(MODS) isubm_field.o
 	$(LD) $(LDFLAGS) isubm_field.o $(MODS) -o isubm_field
 
 isubs_count:     $(MODX) isubs_count.o        
-	$(LD) $(LDFLAGS) isubs_count.o $(MODX) libnetcdf.a $(EXTRANCDF) -o isubs_count
+	$(LD) $(LDFLAGS) isubs_count.o $(MODX)   $(EXTRANCDF) -o isubs_count
 
 isubs_field:     $(MODX) isubs_field.o        
-	$(LD) $(LDFLAGS) isubs_field.o $(MODX) libnetcdf.a $(EXTRANCDF) -o isubs_field
+	$(LD) $(LDFLAGS) isubs_field.o $(MODX)   $(EXTRANCDF) -o isubs_field
 
 isuba_gmap:      $(MODS) isuba_gmap.o        
 	$(LD) $(LDFLAGS) isuba_gmap.o  $(MODS) -o isuba_gmap

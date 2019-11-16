@@ -48,8 +48,13 @@ if [ ${forcing:0:4} == "erai" ] ; then
    if [[ -n $ERAI_PATH ]] ; then
       ROOTPATH=$ERAI_PATH
    fi
+elif [ ${forcing:0:5} == "ec_op" ] ; then
+	xmlfile=${INPUTDIR}/ec_op.xml
+	if [[ -n $ECNC_PATH ]] ; then
+		ROOTPATH=$ECNC_PATH
+	fi	
 else 
-   tellerror "Forcing option is erai only..."
+   tellerror "Forcing option is erai or ec_op..."
    exit 1
 fi
 

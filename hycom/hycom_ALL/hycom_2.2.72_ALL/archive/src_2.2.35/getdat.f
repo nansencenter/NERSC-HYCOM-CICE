@@ -909,21 +909,6 @@ c ---   std. thickness. is next, put in dpsd
 c
 cKAL  Swapped temp and salinity input . Also added check to make sure
 cKAL  this doesnt happen again ...
-      read (ni,'(a)',end=6) cline
-      write(lp,'(a)')       cline(1:len_trim(cline))
-      i = index(cline,'=')
-      read (cline(i+1:),*)  nstep,timedum,layer,thet,hminb,hmaxb
-cKAL
-      if (trim(cline(1:8)) /= "salin") then 
-         write(lp,'("error in input. Should be salin,but is ",a8)')
-     &      trim(cline(1:8))
-         call exit(1)
-      end if
-cKAL
-      call getfld(  work, ni, hminb,hmaxb, .false.,lrange)
-      call extrct_p(work,idm,jdm,iorign,jorign, 
-     &              saln(1,1,k),ii,jj)
-      write(lp,'("input  ",a," into ",a,i3)') cline(1:8),'saln    ',k
 c
       read (ni,'(a)',end=6) cline
       write(lp,'(a)')       cline(1:len_trim(cline))
@@ -940,7 +925,42 @@ cKAL
       call extrct_p(work,idm,jdm,iorign,jorign, 
      &              temp(1,1,k),ii,jj)
       write(lp,'("input  ",a," into ",a,i3)') cline(1:8),'temp    ',k
-cKAL  END Swapped temp and salinity input . 
+
+
+      read (ni,'(a)',end=6) cline
+      write(lp,'(a)')       cline(1:len_trim(cline))
+      i = index(cline,'=')
+      read (cline(i+1:),*)  nstep,timedum,layer,thet,hminb,hmaxb
+cKAL
+      if (trim(cline(1:8)) /= "salin") then 
+         write(lp,'("error in input. Should be salin,but is ",a8)')
+     &      trim(cline(1:8))
+         call exit(1)
+      end if
+cKAL
+      call getfld(  work, ni, hminb,hmaxb, .false.,lrange)
+      call extrct_p(work,idm,jdm,iorign,jorign, 
+     &              saln(1,1,k),ii,jj)
+      write(lp,'("input  ",a," into ",a,i3)') cline(1:8),'saln    ',k
+
+
+c
+!      read (ni,'(a)',end=6) cline
+!      write(lp,'(a)')       cline(1:len_trim(cline))
+!      i = index(cline,'=')
+!      read (cline(i+1:),*)  nstep,timedum,layer,thet,hminb,hmaxb
+!cKAL
+!      if (trim(cline(1:8)) /= "temp") then 
+!         write(lp,'("error in input. Should be temp,but is ",a8)')
+!     &      trim(cline(1:8))
+!         call exit(1)
+!      end if
+!cKAL
+!      call getfld(  work, ni, hminb,hmaxb, .false.,lrange)
+!      call extrct_p(work,idm,jdm,iorign,jorign, 
+!     &              temp(1,1,k),ii,jj)
+!      write(lp,'("input  ",a," into ",a,i3)') cline(1:8),'temp    ',k
+!cKAL  END Swapped temp and salinity input . 
 c
 
 c

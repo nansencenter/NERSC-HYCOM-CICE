@@ -34,7 +34,7 @@ clean:
 	/bin/rm *.o *.mod M*log *hgram *min *1d *2d *2h *ppmX *sea *oth *clip *ff *flat *fill *mask *set *shrink *sub *map *nam *sby *trop *tor *rge *fy *it *noshrink *son *ude *zcells *zthin *arctic _test *_ns *1deg  *lat *ts *ed *pe *gh *ip *es*30sec *pi *sea-b *360 *island
 
 MODS = mod_xc.o mod_za.o wtime.o
-MODN = mod_xc.o mod_za.o wtime.o libnetcdf.a $(EXTRANCDF)
+MODN = mod_xc.o mod_za.o wtime.o   $(EXTRANCDF)
 MODG = $(MODS) spherdist.o rotang.o
 
 # update ARCH in Make_all.com and 

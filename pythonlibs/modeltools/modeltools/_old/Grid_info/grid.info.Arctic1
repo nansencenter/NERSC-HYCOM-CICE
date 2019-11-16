@@ -1,0 +1,11 @@
+ -65.0 135.0      ! Position of pole A (lattitude, longitude):
+ -85.0 135.0      ! Position of pole B (lattitude, longitude):
+ 177.5 183.0   125   ! Longitude interval in new grid (west limit, east limit, gridsize):
+  -3.4   4.5   155  ! Lattitude interval in new grid (south limit, north limit, gridsize):
+.true.            ! Generate topography
+.true.            ! dump teclatlon.dat
+.true.            ! dump micom latlon.dat
+.true.             ! mercator grid (true, false)
+ -3.4 .false.     ! merc fac
+.false.           ! Smoothing, Shapiro filter
+ 8   2            ! Order of Shapiro filter,  number of passes

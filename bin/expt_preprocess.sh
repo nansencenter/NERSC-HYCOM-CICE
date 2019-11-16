@@ -85,14 +85,19 @@ cp $P/blkdat.input blkdat.input || tellerror "No blkdat.input file"
 export LBFLAG=`grep "'lbflag' =" blkdat.input | awk '{printf("%03d", $1)}'`
 export EB=`grep "'iexpt ' =" blkdat.input | awk '{printf("%03d", $1)}'`
 export PRIVER=`grep "'priver' =" blkdat.input | awk '{printf("%1d", $1)}'`
+export TRIVER=`grep "'triver' =" blkdat.input | awk '{printf("%1d", $1)}'`
+export NTRACR=`grep "'ntracr' =" blkdat.input | awk '{printf("%03d", $1)}'`
 export YRFLAG=`grep "'yrflag' =" blkdat.input | awk '{printf("%1d", $1)}'`
 export JERLV=`grep "'jerlv0' =" blkdat.input | awk '{printf("%1d", $1)}'`
 export SSSRLX=`grep "'sssflg' =" blkdat.input | awk '{printf("%1d", $1)}'`
 export SSTRLX=`grep "'sstflg' =" blkdat.input | awk '{printf("%1d", $1)}'`
 export RLX=`grep "'relax ' =" blkdat.input | awk '{printf("%1d", $1)}'`
+export TRCRLX=`grep "'trcrlx' =" blkdat.input | awk '{printf("%1d", $1)}'`
 export THKDF4=`grep "'thkdf4' =" blkdat.input | awk '{printf("%f", $1)}'`
 export KAPREF=`grep "'kapref' =" blkdat.input | awk '{printf("%f", $1)}'`
 export VSIGMA=`grep "'vsigma' =" blkdat.input | awk '{printf("%1d", $1)}'`
+export FLXOFF=`grep "'flxoff' =" blkdat.input | awk '{printf("%1d", $1)}'`
+export STDFLG=`grep "'stdflg' =" blkdat.input | awk '{printf("%1d", $1)}'`
 export BNSTFQ=$(blkdat_get blkdat.input bnstfq)
 export NESTFQ=$(blkdat_get blkdat.input nestfq)
 export THKDF2=$(blkdat_get blkdat.input thkdf2)
@@ -104,6 +109,13 @@ export ICEFLG=$(blkdat_get blkdat.input iceflg)
 export MOMTYP=$(blkdat_get blkdat.input momtyp)
 export VISCO2=$(blkdat_get blkdat.input visco2)
 export VELDF2=$(blkdat_get blkdat.input veldf2)
+export IDM=$(blkdat_get blkdat.input idm)
+export JDM=$(blkdat_get blkdat.input jdm)
+# MOSTAFA: BEGIN
+export NRDFLG=$(blkdat_get blkdat.input nrdflg)
+export LWFLAG=`grep "'lwflag' =" blkdat.input | awk '{printf("%1d", $1)}'`
+# MOSTAFA: END
+
 restarti=$(blkdat_get_string blkdat.input nmrsti "restart_in")
 
 # Add period to restart file name if not present...
@@ -140,12 +152,15 @@ echo "Fetched from blkdat.input:"
 echo "--------------------------"
 echo "EB     is $EB    "
 echo "PRIVER is $PRIVER"
+echo "TRIVER is $TRIVER"
 echo "YRFLAG is $YRFLAG"
 echo "JERLV  is $JERLV "
 echo "SSS    is $SSSRLX"
 echo "SST    is $SSTRLX"
 echo "BNSTFQ is $BNSTFQ"
 echo "NESTFQ is $NESTFQ"
+echo "FLXOFF is $FLXOFF"
+echo "STDFLG is $STDFLG"
 echo "--------------------"
 
 # Check baroclinic time step 
@@ -239,6 +254,7 @@ echo "--------------------"
 # --- KAL - we use pget=pput=cp
 export pget=/bin/cp
 export pput=/bin/cp
+export plink='ln -sf'
 
 echo "Initialization complete - now copying necessary files to scratch area"
 echo
@@ -291,11 +307,29 @@ fi
 # ---
 echo "**Setting up pre-prepared synoptic forcing from force/synoptic/$E"
 DIR=$BASEDIR/force/synoptic/$E/
+echo $DIR
+
+# MOSTAFA: BEGIN
+if  [ "$LWFLAG" -eq -1 -a "$NRDFLG" -eq 3 ] ; then
+declare -a arr=("radflx" "shwflx" "nlwrad" "vapmix" "airtmp" "precip" "mslprs" "wndewd" "wndnwd" "dewpt")
+elif  [ "$LWFLAG" -eq -1 -a "$NRDFLG" -eq 4 ] ; then
+declare -a arr=("radflx" "shwflx" "nlwrad" "nswrad"  "vapmix" "airtmp" "precip" "mslprs" "wndewd" "wndnwd" "dewpt")
+elif  [ "$LWFLAG" -eq -1 -a "$NRDFLG" -eq 5 ] ; then
+declare -a arr=("radflx" "shwflx" "nswrad"  "vapmix" "airtmp" "precip" "mslprs" "wndewd" "wndnwd" "dewpt")
+elif  [ "$LWFLAG" -eq -1 -a "$NRDFLG" -eq 6 ] ; then
+declare -a arr=("radflx" "shwflx" "nswrad"  "vapmix" "airtmp" "precip" "mslprs" "wndewd" "wndnwd" "dewpt")
+elif  [ "$LWFLAG" -eq -1 -a "$NRDFLG" -eq 7 ] ; then
+declare -a arr=("radflx" "shwflx" "nswrad"  "vapmix" "airtmp" "precip" "mslprs" "wndewd" "wndnwd" "dewpt")
+else
+declare -a arr=("radflx" "shwflx" "vapmix" "airtmp" "precip" "mslprs" "wndewd" "wndnwd" "dewpt")
+fi
 #for i in tauewd taunwd wndspd radflx shwflx vapmix \
 #   airtmp precip uwind vwind clouds relhum slp ; do
-for i in radflx shwflx vapmix \
-   airtmp precip mslprs \
-   wndewd wndnwd ; do
+
+#for i in radflx shwflx vapmix \
+#   airtmp precip mslprs \
+#   wndewd wndnwd ; do
+for i in "${arr[@]}"; do
    echo "|--> $i"
    [ -f  $DIR/$i.a ] || tellerror "File $DIR/$i.a does not exist"
    [ -f  $DIR/$i.b ] || tellerror "File $DIR/$i.b does not exist"
@@ -319,6 +353,8 @@ for i in radflx shwflx vapmix \
 
 done
 
+
+# MOSTAFA: END
 #
 # --- time-invarent heat flux offset
 #
@@ -337,15 +373,61 @@ if [ "$CLMDIR" != "" ] ; then
    fi 
 fi 
 
+# MOSTAFA: BEGIN
+# For time-invariant offlux
+# copy flux off set files if flxoff=1
+echo "FLXOFF =  $FLXOFF"
+if [ $FLXOFF -eq 1 ] ; then
+ echo "===================================================="
+ echo " -------flux off set true: copy flux off set files-"
+   cp ${D}/../../relax/${E}/offlux.a forcing.offlux.a || tellerror "Could not get offlux .a file"
+   cp ${D}/../../relax/${E}/offlux.b forcing.offlux.b || tellerror "Could not get offlux .b file"
+ echo "===================================================="
+ else
+    echo "fLxoff=F: No attempt to use flux offset correction" 
+fi
+
+
+# MOSTAFA: END
 
 #
 # --- river forcing
 # --- KAL: rivers are experiment-dependent
 #
+if [ $PRIVER -eq 0 ] ; then
+echo "**No river forcing. Set the priver to 1 to add river forcing"
+fi
 if [ $PRIVER -eq 1 ] ; then
-   echo "**Setting up river forcing"
+if [ $TRIVER -eq 0 ] ; then
+   echo "**Setting up river forcing  from priver"
    cp $BASEDIR/force/rivers/$E/rivers.a forcing.rivers.a || tellerror "Could not get river .a file"
    cp $BASEDIR/force/rivers/$E/rivers.b forcing.rivers.b || tellerror "Could not get river .b file"
+   if [ $NTRACR -ne 0 ] ; then
+      echo "**Setting up bio river forcing"
+      cp $BASEDIR/force/rivers/$E/ECO_no3.a rivers.ECO_no3.a || tellwarn "Could not get NO3 river .a file"
+      cp $BASEDIR/force/rivers/$E/ECO_no3.b rivers.ECO_no3.b || tellwarn "Could not get NO3 river .b file"
+      cp $BASEDIR/force/rivers/$E/ECO_sil.a rivers.ECO_sil.a || tellwarn "Could not get SIL river .a file"
+      cp $BASEDIR/force/rivers/$E/ECO_sil.b rivers.ECO_sil.b || tellwarn "Could not get SIL river .b file"
+      cp $BASEDIR/force/rivers/$E/ECO_pho.a rivers.ECO_pho.a || tellwarn "Could not get PHO river .a file"
+      cp $BASEDIR/force/rivers/$E/ECO_pho.b rivers.ECO_pho.b || tellwarn "Could not get PHO river .b file"
+   fi
+fi
+fi
+
+
+if [ $TRIVER -eq 1 ] ; then
+   echo "**Setting up (total) triver forcing (including greenland)"
+   cp /cluster/projects/nn2993k/TRIP/triver_Roshin/trivers.a forcing.rivers.a || tellerror "Could not get triver .a file"
+   cp /cluster/projects/nn2993k/TRIP/triver_Roshin/trivers.b forcing.rivers.b || tellerror "Could not get triver .b file"
+   if [ $NTRACR -ne 0 ] ; then
+      echo "**Setting up bio river forcing"
+      cp $BASEDIR/force/rivers/$E/ECO_no3.a rivers.ECO_no3.a || tellwarn "Could not get NO3 river .a file"
+      cp $BASEDIR/force/rivers/$E/ECO_no3.b rivers.ECO_no3.b || tellwarn "Could not get NO3 river .b file"
+      cp $BASEDIR/force/rivers/$E/ECO_sil.a rivers.ECO_sil.a || tellwarn "Could not get SIL river .a file"
+      cp $BASEDIR/force/rivers/$E/ECO_sil.b rivers.ECO_sil.b || tellwarn "Could not get SIL river .b file"
+      cp $BASEDIR/force/rivers/$E/ECO_pho.a rivers.ECO_pho.a || tellwarn "Could not get PHO river .a file"
+      cp $BASEDIR/force/rivers/$E/ECO_pho.b rivers.ECO_pho.b || tellwarn "Could not get PHO river .b file"
+   fi
 fi
 
 
@@ -379,8 +461,27 @@ if [ $RLX -eq 1 ] ; then
    ln -sf $BASEDIR/relax/${E}/relax_rmu.a relax.rmu.a  || tellerror "Could not get relax.rmu.a"
    ln -sf $BASEDIR/relax/${E}/relax_rmu.b relax.rmu.b  || tellerror "Could not get relax.rmu.b"
 fi
+#
+# --- tracer relaxation
+#
+if [ $TRCRLX -ne 0 ] ; then
+   echo "**Setting up tracer relaxation"
+   for i in ECO_no3 ECO_pho ECO_sil ECO_oxy CO2_dic CO2_alk; do
+      j=$(echo $i | head -c7)
+      [ ! -f  $BASEDIR/relax/${E}/relax.$j.a ] && tellerror "$BASEDIR/relax/${E}/relax.$j.a does not exist"
+      [ ! -f  $BASEDIR/relax/${E}/relax.$j.b ] && tellerror "$BASEDIR/relax/${E}/relax.$j.b does not exist"
+      ln -sf $BASEDIR/relax/${E}/relax.$j.a relax.$i.a  || tellerror "Could not get relax.$i.a"
+      ln -sf $BASEDIR/relax/${E}/relax.$j.b relax.$i.b  || tellerror "Could not get relax.$i.b"
+   done
+   echo "**Setting up tracer relaxation masks"
+   [ ! -f  $BASEDIR/relax/${E}/relax_rmu.a ] && tellerror "$BASEDIR/relax/${E}/relax_rmutr.a does not exist"
+   [ ! -f  $BASEDIR/relax/${E}/relax_rmu.b ] && tellerror "$BASEDIR/relax/${E}/relax_rmutr.b does not exist"
+   ln -sf $BASEDIR/relax/${E}/relax_rmu.a relax.rmutr.a  || tellerror "Could not get relax.rmutr.a"
+   ln -sf $BASEDIR/relax/${E}/relax_rmu.b relax.rmutr.b  || tellerror "Could not get relax.rmutr.b"
 
-
+   [ ! -f  $INPUTDIR/pCO2a_1948_2018 ] && tellerror "$INPUTDIR/pCO2a_1948_2018 does not exist"
+   ln -sf $INPUTDIR/pCO2a_1948_2018 pCO2a_1948_2018 || tellerror "Could not get pCO2a_1948_2018"
+fi
 #
 # - thermobaric reference state?
 # 
@@ -437,6 +538,27 @@ if [ $tmp -eq 1 -o $tmp2 -eq 1 ] ; then
    fi
 fi
 
+#export waveSDIR=/work/shared/nersc/msc/STOKES/Globww3/tmp
+#export  waveSDIR=/work/shared/nersc/msc/STOKES/Globww3
+echo "===================================================="
+echo "STDFLG =  $STDFLG"
+if [ $STDFLG -eq 1 ] ; then
+ echo "===================================================="
+ echo " -------Setting up Wave Stokes forcing----"
+ for foo in  forcing.stokex.a forcing.stokex.b forcing.stokey.a forcing.stokey.b\
+     forcing.transx.a forcing.transx.b forcing.transy.a forcing.transy.b\
+     forcing.tauwx.a  forcing.tauwx.b forcing.tauwy.a  forcing.tauwy.b \
+     forcing.twomx.a  forcing.twomx.b forcing.twomy.a  forcing.twomy.b \
+     forcing.t01.a    forcing.t01.b     ; do
+
+    echo "|--> linking to $waveSDIR/${foo}"
+     ln -sf $waveSDIR/${foo} . ||  tellerror "Could not fetch stokes forcing"
+ done
+ echo "===================================================="
+ else
+    echo "STD=F: No attempt to link to the Stokes/Wave forcing in SCRATCH" 
+fi
+#read -t 5 
 # Need ports.input file in these cases
 if [ $tmp -eq 1 -a $LBFLAG -ne 2 -a $LBFLAG -ne 4 ] ; then
       tellerror "Must have lbflag = 2 or 4 when bnstfq <> 0.0 "
@@ -467,7 +589,8 @@ if [ $tmp2 -eq 1  ] ; then
 #      echo "Using file $nestdir/rmu_nest.[ab] for nesting: $nestdir/rmu_nest.[ab] -> ./rmu.[ab]"
 #      cp $nestdir/rmu_nest.a rmu.a       || tellerror "Could not get port file ${nestdir}/rmu_nest.a for nest relax"
 #      cp $nestdir/rmu_nest.b rmu.b       || tellerror "Could not get port file ${nestdir}/rmu_nest.b for nest relax"
-   if [ -f $nestdir/rmu.a -a -f $nestdir/rmu.b ] ; then
+#   fi
+  if [ -f $nestdir/rmu.a -a -f $nestdir/rmu.b ] ; then
       echo "Using file $nestdir/rmu.[ab] for nesting"
    else 
       tellerror "Could not find files $nestdir/rmu.[ab] for nest relaxation"
@@ -502,25 +625,41 @@ else
 
    #HYCOM restart
    filename=${restarti}${start_year}_${start_oday}_${start_hour}_${start_hsec}
+   echo $D/${filename}_mem001.a
 
    # Try to fetch restart from data dir $D
    if [ -f $D/${filename}.a -a -f $D/${filename}.b ] ; then
       echo "using HYCOM restart files ${filename}.[ab] from data dir $D"
       cp $D/${filename}.a .
       cp $D/${filename}.b .
+
+   elif [ -f $D/${filename}_mem001.a -a -f $D/${filename}_mem001.b ]; then
+      echo "using HYCOM restart files ${filename}_mem???.[ab] from data dir $D"
+      for f in ${plink} $D/${filename}_mem*.? ; do
+         ${plink} $f .
+      done
+
    else
       tellerror "Could not find HYCOM restart file ${filename}.[ab] in $D"
    fi
 
    #CICE restart
    if [ $ICEFLG -eq 2 ] ; then
-      filenameice="${ice_restart_dir}/${ice_restart_file}.${start_year}-${start_month}-${start_day}-${start_dsec}.nc"
+      filenameice="${ice_restart_dir}/${ice_restart_file}.${start_year}-${start_month}-${start_day}-${start_dsec}"
 
       # Try to fetch restart from data dir $D
-      if [ -f $D/${filenameice} ] ; then
-         echo "using CICE restart file ${filenameice} from data dir $D"
-         cp $D/${filenameice} ${filenameice}
-         echo $filenameice > ${ice_restart_pointer_file}
+      if [ -f $D/${filenameice}.nc ] ; then
+         echo "using CICE restart file ${filenameice}.nc from data dir $D"
+         cp $D/${filenameice}.nc ${filenameice}.nc
+         echo ${filenameice}.nc > ${ice_restart_pointer_file}
+
+      elif [ -f $D/${filenameice}_mem001.nc ]; then
+         echo "using CICE restart file ${filenameice}_mem???.nc from data dir $D"
+         for f in $D/${filenameice}_mem*.nc ; do
+            ${plink} $f cice/.
+         done
+         echo ${filenameice}_mem000.nc > ${ice_restart_pointer_file}
+
       else
          tellerror "Could not find CICE restart file ${filenameice} in $D"
       fi

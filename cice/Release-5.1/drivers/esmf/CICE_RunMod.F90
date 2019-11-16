@@ -273,7 +273,7 @@
           albpnd, albcnt, apeff_ai, coszen, fpond, fresh, l_mpond_fresh, &
           alvdf_ai, alidf_ai, alvdr_ai, alidr_ai, fhocn_ai, &
           fresh_ai, fsalt_ai, fsalt, &
-          fswthru_ai, fhocn, fswthru, scale_factor, &
+          fswthru_ai, fhocn, fswthru, scale_factor, fsw, &
           swvdr, swidr, swvdf, swidf, Tf, Tair, Qa, strairxT, strairyt, &
           fsens, flat, fswabs, flwout, evap, Tref, Qref, faero_ocn, &
           fsurfn_f, flatn_f, scale_fluxes, frzmlt_init, frzmlt
@@ -405,6 +405,12 @@
                      + swidr(i,j,iblk)*(c1 - alidr_ai(i,j,iblk)) &
                      + swidf(i,j,iblk)*(c1 - alidf_ai(i,j,iblk))
 
+      ! downwelling shortwave radiation also for diagnosing
+      ! ice_forcing.F
+            fsw(i,j,iblk) = &
+                       swvdr(i,j,iblk) + swvdf(i,j,iblk) &
+                     + swidr(i,j,iblk) + swidf(i,j,iblk)
+            
          enddo
          enddo
 

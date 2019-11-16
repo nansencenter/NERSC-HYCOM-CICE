@@ -47,6 +47,7 @@ def main(start_time,end_time,init,nmpi,fnml) :
       nml["setup_nml"]["runtype"]="initial"
       nml["setup_nml"]["restart"]=False
       nml["setup_nml"]["use_restart_time"]=False
+      nml["setup_nml"]["ice_ic"]="default"
    else :
       nml["setup_nml"]["runtype"]="continue"
       nml["setup_nml"]["restart"]=True

@@ -29,10 +29,13 @@
 #   IK: version running on Fimm 
 #  KAL: Mild cleanup of Inti's version - moved fes routines and library 
 #       Out of this directory. This is cleaner when the database is updated
-#  KAL 201612. Modified for FES 2014. Needs external library, see  https://knutal@bitbucket.org/cnes_aviso/fes.git
+#  KAL 201612. Modified for FES 2014. Needs external library, see   https://knutal@bitbucket.org/cnes_aviso/fes.git
 #              FES_DIR below must point to the root of the external library
 #              For now this program only works with the gcc compiler. Mainly because the 
 #              version of the fes library I used was compiled with gcc..
+#  Alfatih: when config fes, specify the prefix to be used as FES_DIR
+              #e.g cd to fes and  ./configure --prefix=/home/sm_alfal/opt/fes/fes_local/
+#                
 # #####################################################################
 
 # --------------------------------------------------------------------
@@ -40,22 +43,26 @@
 # 
 # on hexagon, cc works when PrgEnv-gnu is loaded. Otherwise use gcc (but you may have to modify stoff below)
 # CC = gcc
-CC		= cc
+CC		= gcc
 
 #CFLAGS=-march=pentium4 -mfpmath=sse -msse2 -mmmx -O3 -pipe -fomit-frame-pointer -Wall -Wpointer-arith -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations -Werror
 # CFLAGS=-g
 CFLAGS= -g    -Wall #-Wpointer-arith -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations -Werror
 
-
+# determines whether to move or copy executable
+pput = mv
 
 # Set these appropriately for your systemn (if needed)
 #NETCDF_LIB=-L/local/netcdf-3.6.2-gnu/lib -lnetcdf 
 #NETCDF_INC=-I/local/netcdf-3.6.2-gnu/include
-NETCDF_LIB=-lnetcdf 
-NETCDF_INC=
+NETCDF_LIB =-L/software/apps/netcdf/4.3.2/i1402-hdf5-1.8.14/lib -lnetcdf
+NETCDF_INC =-I/software/apps/netcdf/4.3.2/i1402-hdf5-1.8.14/include
+#NETCDF_LIB=-lnetcdf 
+#NETCDF_INC=
 
 # Location of fes 
-FES_DIR=/home/nersc/knutali/opt/fes-2.7.4/
+#FES_DIR=/home/nersc/knutali/opt/fes-2.7.4/
+FES_DIR=/home/sm_alfal/opt/fes/fes_local/
 
 # End of TO BE MODIFIED IF NEEDED !!!
 # --------------------------------------------------------------------

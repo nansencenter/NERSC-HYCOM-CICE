@@ -52,7 +52,7 @@ cice2archv:         $(MODS) cice2archv.o   $(ARCHV_OBJ)
 	$(LD) $(LDFLAGS) -o cice2archv  cice2archv.o  $(ARCHV_OBJ) $(MODS)
 
 cice2hycom:         $(MODS) cice2hycom.o   $(GRID_OBJ)
-	$(LD) $(LDFLAGS) -o cice2hycom  cice2hycom.o  $(GRID_OBJ) $(MODS) libnetcdf.a $(EXTRANCDF)
+	$(LD) $(LDFLAGS) -o cice2hycom  cice2hycom.o  $(GRID_OBJ) $(MODS)   $(EXTRANCDF)
 
 cice_tiles:         $(MODS) cice_tiles.o   blkin.o
 	$(LD) $(LDFLAGS) -o cice_tiles  cice_tiles.o  blkin.o

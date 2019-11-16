@@ -39,10 +39,18 @@ c
                 surflx(i,j) = (1.0-covice(i,j))*surflx(i,j) +
      &                                          flxice(i,j)   !cell average
                 sstflx(i,j) = (1.0-covice(i,j))*sstflx(i,j)   !relax over ocean
-                salflx(i,j) = (1.0-covice(i,j))*salflx(i,j) +
+                if     (rivers(i,j,1).eq.0.0) then  !usual case
+                  salflx(i,j) = 
+     &                        (1.0-covice(i,j))*salflx(i,j) +
      &                                          sflice(i,j) + !cell average
      &                                          rivflx(i,j) + !rivers everywhere
      &                                          sssflx(i,j)   !relax  everywhere
+                else !a river point
+                  salflx(i,j) =                 salflx(i,j) + !might be a river
+     &                                          sflice(i,j) + !cell average
+     &                                          rivflx(i,j) + !rivers evrywhere
+     &                                          sssflx(i,j)   !relax  evrywhere
+                endif !rivers
               else  !under an ice shelf
                 sswflx(i,j) = 0.0
                 surflx(i,j) = 0.0
@@ -61,10 +69,18 @@ c
               surflx(i,j) = (1.0-covice(i,j))*surflx(i,j) +
      &                                        flxice(i,j)   !cell average
               sstflx(i,j) = (1.0-covice(i,j))*sstflx(i,j)   !relax over ocean
-              salflx(i,j) = (1.0-covice(i,j))*salflx(i,j) +
+              if     (rivers(i,j,1).eq.0.0) then  !usual case
+                salflx(i,j) =
+     &                      (1.0-covice(i,j))*salflx(i,j) +
      &                                        sflice(i,j) + !cell average
      &                                        rivflx(i,j) + !rivers everywhere
      &                                        sssflx(i,j)   !relax  everywhere
+              else !a river point
+                salflx(i,j) =                 salflx(i,j) + !might be a river
+     &                                        sflice(i,j) + !cell average
+     &                                        rivflx(i,j) + !rivers evrywhere
+     &                                        sssflx(i,j)   !relax  evrywhere
+              endif !rivers
                util1(i,j) = surflx(i,j)*scp2(i,j)
                util2(i,j) = salflx(i,j)*scp2(i,j)
             endif !ip
@@ -120,6 +136,9 @@ cdiag endif !test
       subroutine thermf(m,n, dtime)
       use mod_xc         ! HYCOM communication interface
       use mod_cb_arrays  ! HYCOM saved arrays
+#ifdef _FABM_
+      use mod_hycom_fabm, only: hycom_fabm_nest_update
+#endif
       implicit none
 c
       integer m,n
@@ -265,6 +284,9 @@ c
         enddo  !i
       enddo  !j
 !$OMP END PARALLEL DO
+#ifdef _FABM_
+      call hycom_fabm_nest_update(n)
+#endif
 c
       endif  !  nestfq.ne.0.0
 c
@@ -653,7 +675,7 @@ c
 c --- thermal forcing of ocean surface, for row j.
 c
       integer i,ihr,it_a,ilat
-      real    radfl,swfl,sstrlx,wind,airt,vpmx,prcp,xtau,ytau,
+      real    radfl,swfl,swflc,sstrlx,wind,airt,vpmx,prcp,xtau,ytau,
      &        evap,evape,emnp,esst,sssf,
      &        snsibl,dsgdt,sssc,sssdif,sstdif,rmus,rmut
       real    cd0,clh,cl0,cl1,csh,
@@ -779,6 +801,12 @@ c
 c --- parameters primarily for flxflg=4
       real, parameter :: vonkar=0.4         !Von Karmann constant
       real, parameter :: cpcore=1000.5      !specific heat of air (j/kg/deg)
+CMOSTAFA: BEGIN
+      real     lwr,swr
+      real     xa0,xa1,xb1,xa2 ,xb2,xw,doy,wght_oflx 
+      integer  iyear,iday,ihour
+CMOSTAFA: END
+
 c
       real satvpr,qsatur6,qsatur,qsatur5,t6,p6,f6,qra
       include 'stmt_fns.h'  !declares t
@@ -854,7 +882,7 @@ c ---     daily to diurnal shortwave correction to swfl and radfl.
      &            (1.0-xhr)*     xlat *diurnl(ihr,  ilat+1) +
      &                 xhr *(1.0-xlat)*diurnl(ihr+1,ilat  ) +
      &                 xhr *     xlat *diurnl(ihr+1,ilat+1)
-          radfl = (swscl-1.0)*swfl  !diurnal correction only
+          swflc = (swscl-1.0)*swfl  !diurnal correction only
           swfl  =  swscl     *swfl
 cdiag         if     (i.eq.itest.and.j.eq.jtest) then
 cdiag           write(lp,'(i9,a,2i5,2f8.5)')
@@ -867,21 +895,135 @@ cdiag.                                     diurnl(ihr+1,ilat+1)
 cdiag           call flush(lp)
 cdiag         endif !test
         else
-          radfl = 0.0 !no diurnal correction
+           swflc = 0.0 !no diurnal correction
         endif !dswflg
 c ---   radfl= net       radiative thermal flux (W/m^2) +ve into ocean/ice
 c ---        = Qsw+Qlw across the atmosphere to ocean or sea-ice interface
 c ---   existing radfl is the diurnal Qsw correction only
         if     (natm.eq.2) then
-          radfl=radfl + (radflx(i,j,l0)*w0+radflx(i,j,l1)*w1)
+          radfl= (radflx(i,j,l0)*w0+radflx(i,j,l1)*w1)
         else
-          radfl=radfl + (radflx(i,j,l0)*w0+radflx(i,j,l1)*w1
-     &                  +radflx(i,j,l2)*w2+radflx(i,j,l3)*w3)
+          radfl= (radflx(i,j,l0)*w0+radflx(i,j,l1)*w1
+     &            +radflx(i,j,l2)*w2+radflx(i,j,l3)*w3)
         endif !natm
         if     (lwflag.eq.-1) then
-c ---     input radflx is Qlwdn, convert to Qlw + Qsw
-          radfl = radfl - sb_cst*(temp(i,j,1,n)+tzero)**4 + swfl
-          sstflx(i,j) = 0.0
+CMOSTAFA: BEGIN
+          if (nrdflg .eq. 0) then
+c ---         input radflx is Qlwdn, convert to Qlw + Qsw
+              radfl = radfl - sb_cst*(temp(i,j,1,n)+tzero)**4 + swfl
+              sstflx(i,j) = 0.0
+              if     (i.eq.itest.and.j.eq.jtest) then 
+                 print *,'nradflg == 0'
+              endif 
+          elseif (nrdflg .eq. 1) then
+              radfl = radfl-0.98*sb_cst*(temp(i,j,1,n)+tzero)**4 + swfl
+              sstflx(i,j) = 0.0
+              if     (i.eq.itest.and.j.eq.jtest) then
+                 print *,'nradflg == 1'
+              endif
+          elseif (nrdflg .eq. 3) then
+              if     (natm.eq.2) then
+                airt=airtmp(i,j,l0)*w0+airtmp(i,j,l1)*w1
+                lwr=nlwrad(i,j,l0)*w0+nlwrad(i,j,l1)*w1
+              else
+c ---           airt = air temperature (C)
+                airt=airtmp(i,j,l0)*w0+airtmp(i,j,l1)*w1
+     &            +airtmp(i,j,l2)*w2+airtmp(i,j,l3)*w3
+c ---           First term in Budyko (1974) (W/m^2). I have
+c ---           redistributed the original formulation
+                lwr=nlwrad(i,j,l0)*w0+nlwrad(i,j,l1)*w1
+     &            +nlwrad(i,j,l2)*w2+nlwrad(i,j,l3)*w3
+              endif !natm
+              tsur = temp(i,j,1,n)
+              tdif = airt - tsur
+c ---         negative sign for lwrad is to make it positive downward
+              radfl=-(lwr-4.0*0.98*sb_cst*(airt+tzero)**3.0*tdif) +swfl
+              sstflx(i,j) = 0.0
+              if     (i.eq.itest.and.j.eq.jtest) then
+                  print *,'nrdflg is ',nrdflg,radfl
+              endif
+          elseif (nrdflg .eq. 4) then
+              radfl =  0.0
+c ---         Here swrad and lwrad are net longwave and net shortwave
+c ---         radiations.
+c ---         Conventions:
+c ---         Net shortwave radiation is positive downward and
+c ---         net longwave radiation is positive upward from ERA-I 
+              if     (natm.eq.2) then
+                swr=nswrad(i,j,l0)*w0+nswrad(i,j,l1)*w1
+                lwr=nlwrad(i,j,l0)*w0+nlwrad(i,j,l1)*w1
+              else
+c ---           Net shortwave radiation
+                swr=nswrad(i,j,l0)*w0+nswrad(i,j,l1)*w1
+     &            +nswrad(i,j,l2)*w2+nswrad(i,j,l3)*w3
+c ---           First term in Budyko (1974) (W/m^2). I have
+c ---           redistributed the original formulation
+                lwr=nlwrad(i,j,l0)*w0+nlwrad(i,j,l1)*w1
+     &            +nlwrad(i,j,l2)*w2+nlwrad(i,j,l3)*w3
+              endif !natm
+c ---         if both swr and lwr and + downward 
+c ---         (both positive downward, note that the averaged lwrad is
+c ---          positive upward)             
+              radfl = swr - lwr
+              if     (i.eq.itest.and.j.eq.jtest) then
+                  print *,'nrdflg is ',nrdflg,radfl
+              endif
+          elseif (nrdflg .eq. 5) then
+              swr = 0.
+c ---         Here we use net shortwave radiation from ERAI and
+c ---         downwelling longwave radiation from Bignami (1995).
+c ---         Note that with this flag net shortwave radiation used
+c ---         in the biogeochemisitry model is from ERAI  
+              if     (natm.eq.2) then
+                swr=nswrad(i,j,l0)*w0+nswrad(i,j,l1)*w1
+              else
+c ---           Net shortwave radiation
+                swr=nswrad(i,j,l0)*w0+nswrad(i,j,l1)*w1
+     &            +nswrad(i,j,l2)*w2+nswrad(i,j,l3)*w3
+              endif !natm
+              radfl = radfl + swr - sb_cst*(temp(i,j,1,n)+tzero)**4  
+              if     (i.eq.itest.and.j.eq.jtest) then
+                  print *,'nrdflg is ',nrdflg,radfl
+              endif
+          elseif (nrdflg .eq. 6) then
+              swr = 0.
+c ---         Here we use net shortwave radiation from ERAI and
+c ---         downwelling longwave radiation from Bignami (1995)
+              if     (natm.eq.2) then
+                swr=nswrad(i,j,l0)*w0+nswrad(i,j,l1)*w1
+              else
+c ---           Net shortwave radiation
+                swr=nswrad(i,j,l0)*w0+nswrad(i,j,l1)*w1
+     &            +nswrad(i,j,l2)*w2+nswrad(i,j,l3)*w3
+              endif !natm
+              radfl = radfl + swr - sb_cst*(temp(i,j,1,n)+tzero)**4
+              if     (i.eq.itest.and.j.eq.jtest) then
+                  print *,'nrdflg is ',nrdflg,radfl
+              endif
+          elseif (nrdflg .eq. 7) then
+c ---         This segment is the same as nrdflg == 6, except that
+c ---         we use a new offlux formulation which is time-dependent
+              swr = 0.
+c ---         Here we use net shortwave radiation from ERAI and
+c ---         downwelling longwave radiation from Bignami (1995)
+              if     (natm.eq.2) then
+                swr=nswrad(i,j,l0)*w0+nswrad(i,j,l1)*w1
+              else
+c ---           Net shortwave radiation
+                swr=nswrad(i,j,l0)*w0+nswrad(i,j,l1)*w1
+     &            +nswrad(i,j,l2)*w2+nswrad(i,j,l3)*w3
+              endif !natm
+              radfl = radfl + swr - sb_cst*(temp(i,j,1,n)+tzero)**4
+              if     (i.eq.itest.and.j.eq.jtest) then
+                  print *,'nrdflg is ',nrdflg,radfl
+              endif
+          else
+              if     (i.eq.itest.and.j.eq.jtest) then
+                 print *,'nradflg is not valid '
+              endif
+
+          endif
+CMOSTAFA: END
         elseif (lwflag.gt.0) then
 c ---     over-ocean longwave correction to radfl (Qsw+Qlw).
           tsur = temp(i,j,1,n)
@@ -903,8 +1045,12 @@ c ---     over-ocean longwave correction to radfl (Qsw+Qlw).
           radfl = radfl - (4.506+0.0554*tsur) * tdif
           !count the correction as a relaxation term
           sstflx(i,j) = - (4.506+0.0554*tsur) * tdif
+          !allow for any diurnal correction
+          radfl =  radfl + swflc
         else
           sstflx(i,j) = 0.0
+          !allow for any diurnal correction
+          radfl = radfl + swflc
         endif
         if     (pcipf) then
 c ---     prcp = precipitation (m/sec; positive into ocean)
@@ -976,6 +1122,9 @@ c ---   ustar = U* (sqrt(N.m/kg))
       else !flxlfg==0, i.e. no flux
         swfl=0.0
         sstflx(i,j)=0.0
+        mixflx(i,j)=0.0
+        buoflx(i,j)=0.0
+        bhtflx(i,j)=0.0
         ustar( i,j)=0.0
         hekman(i,j)=0.0
       endif !flxflg
@@ -1328,9 +1477,31 @@ c
       endif  ! flxflg
 c
 c --- add a time-invarient net heat flux offset
+CMOSTAFA: BEGIN
       if     (flxoff) then
-        surflx(i,j)=surflx(i,j)+offlux(i,j)
-      endif
+        if (nrdflg .ne. 7) then
+           surflx(i,j)=surflx(i,j)+offlux(i,j)
+        else
+           xa0 =       6.146 
+           xa1 =      -1.852
+           xb1 =      -2.153 
+           xa2 =      0.2617 
+           xb2 =      0.7784 
+           xw  =     0.01718
+           call  forday(dtime,yrflag,iyear,iday,ihour) 
+           if (i .eq. itest .and. j .eq. jtest) print *,'here**',iday
+           doy=iday+ihour/24.0
+           wght_oflx=xa0+xa1*cos(doy*xw)+xb1*sin(doy*xw)+
+     &          xa2*cos(2.0*doy*xw)+ xb2*sin(2.0*doy*xw)
+c ---      Normalise the weight
+           wght_oflx=wght_oflx/9.7643
+           if (i .eq. itest .and. j .eq. jtest) then
+              print *,'weight offlux,iday,doy: ', wght_oflx,iday,doy
+           endif
+           surflx(i,j)=surflx(i,j)+wght_oflx*offlux(i,j)
+        endif!nrdflg
+      endif!flxoff
+CMOSTAFA: END
 c
 c --- relax to surface temperature
       if     (sstflg.ge.1) then 
@@ -1362,7 +1533,17 @@ c ---   in shallow water this is (dpmixl(i,j,n)/p(i,j,kk+1)  )/rmut
         sstflx(i,j)=sstflx(i,j)+sstrlx
       endif !sstflg
 c --- sswflx = shortwave radiative energy flux (W/m^2) into ocean
-      sswflx(i,j)=swfl
+CMOSTAFA: BEGIN
+      if (nrdflg .eq. 5) then
+c ---    Use net shortwave radiation from ERA-I
+         sswflx(i,j)=swr
+      else
+         sswflx(i,j)=swfl
+
+      endif
+
+CMOSTAFA: END
+
 c --- emnp = evaporation minus precipitation   (m/sec) into atmos.
       if     (.not.pcipf) then
         prcp = 0.0

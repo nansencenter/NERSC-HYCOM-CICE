@@ -1,0 +1,97 @@
+instances:
+  light:
+   model: gotm/light
+  ecosmo:    # any name you like - it'll be the variable prefix in all output
+   model: hzg_ecosmo
+   parameters:
+      muPl       : 1.30     # max growth rate for Pl          1/day
+      muPs       : 1.10     # max growth rate for Ps          1/day
+      aa         : 0.04     # photosynthesis ef-cy            m**2/W
+      EXw        : 0.041    # light extinction                1/m
+      EXphy      : 0.04     # phyto self-shading              m**2/mmolN
+      rNH4       : 0.20     # NH4 half saturation             mmolN/m**3
+      rNO3       : 0.50     # NO3 half saturation             mmolN/m**3
+      psi        : 3.00     # NH4 inhibition                  m**3/mmolN
+      mPl        : 0.04     # Pl mortality rate               1/day
+      mPs        : 0.08     # Ps mortality rate               1/day
+      GrZlP      : 0.80     # Grazing rate Zl on Phyto        1/day
+      GrZsP      : 1.00     # Grazing rate Zs on Phyto        1/day
+      GrZlZ      : 0.50     # Grazing rate Zl on Zs           1/day
+      Rg         : 0.50     # Zs, Zl half saturation          mmolN/m**3
+      mZl        : 0.10     # Zl mortality rate               1/day
+      mZs        : 0.20     # Zs mortality rate               1/day
+      excZl      : 0.06     # Zl excretion rate               1/day
+      excZs      : 0.08     # Zs excretion rate               1/day
+      gammaZlp   : 0.75     # Zl assim. eff. on plankton      1
+      gammaZsp   : 0.75     # Zs assim. eff. on plankton      1
+      gammaZd    : 0.75     # Zl & Zs assim. eff. on det      1
+      reminD     : 0.003    # Detritus remineralization rate  1/day
+      sinkDet    : 5.00     # Detritus sinking rate           m/day
+      Wa         : 1.00     # Don't know what this is yet     m/day
+      rPO4       : 0.05     # PO4 half saturation             mmolP/m**3
+      rSi        : 0.50     # SiO2 half saturation            mmolSi/m**3
+      regenSi    : 0.015    # Si regeneration rate            1/day
+      muBG       : 1.00     # max growth rate for BG          1/day
+      TctrlBG    : 1.00     # BG T control beta               1/degC
+      TrefBG     : 0.00     # BG reference temperature        degC
+      GrBG       : 0.30     # BG max grazing rate             1/day
+      mBG        : 0.08     # BG mortality rate               1/day
+      upliftBG   : 0.10     # BG uplifting rate               m/day
+      crBotStr   : 0.007    # critic. bot. stress for resusp. N/m**2
+      resuspRt   : 25.00    # resuspension rate               1/day
+      sedimRt    : 3.50     # sedimentation rate              m/day
+      burialRt   : 0.00001  # burial rate                     1/day
+      reminSED   : 0.001    # sediment remineralization rate  1/day
+      TctrlDenit : 0.15     # temp. control denitrification   1/degC
+      RelSEDp1   : 0.15     # P sedim. rel. p1
+      RelSEDp2   : 0.10     # P sedim. rel. p1
+      reminSEDsi : 0.0002   # sed. remineralization rate Si   1/day
+      sinkOPAL   : 5.00     # OPAL sinking rate               m/day
+      sinkBG     : -1.00    # BG sinking rate                 m/day
+      sinkDia    : 0.00     # Diatom sinking rate             m/day
+      prefZsPs   : 0.70     # Grazing preference Zs on Ps     Shouldn't these add up to 1.00 for each Zoo ????
+      prefZsPl   : 0.25     # Grazing preference Zs on Pl
+      #prefZsZs   : 0.00     # Grazing preference Zs on Zs    This is not called in ecosmo.F90
+      #prefZsZl   : 0.00     # Grazing preference Zs on Zl    This is not called in ecosmo.F90
+      prefZsD    : 0.00     # Grazing preference Zs on Detritus
+      prefZsBG   : 0.30     # Grazing preference Zs on BG
+      prefZlPs   : 0.10     # Grazing preference Zl on Ps
+      prefZlPl   : 0.85     # Grazing preference Zl on Pl
+      prefZlZs   : 0.15     # Grazing preference Zl on Zs
+      #prefZlZl   : 0.00     # Grazing preference Zl on Zl    This is not called in ecosmo.F90
+      prefZlD    : 0.00     # Grazing preference Zl on Detritus
+      prefZlBG   : 0.30     # Grazing preference Zl on BG
+      zpr        : 0.001    # longname ???
+      frr        : 0.4      # fraction of dissolved from detritus ???
+      surface_deposition_no3      : 0.35
+      surface_deposition_nh4      : 0.32
+      surface_deposition_pho      : 0.045
+      surface_deposition_sil      : 0.50
+      bg_growth_minimum_daily_rad : 120.0
+      nfixation_minimum_daily_par : 35.0
+      MINchl2nPs : 0.5     # minimum Chl to N ratio Ps       mgChl/mmolN
+      MAXchl2nPs : 3.83    # maximum Chl to N ratio Ps       mgChl/mmolN
+      MINchl2nPl : 0.5     # minimum Chl to N ratio Pl       mgChl/mmolN
+      MAXchl2nPl : 2.94    # maximum Chl to N ratio Pl       mgChl/mmolN
+      MINchl2nBG : 0.5     # minimum Chl to N ratio BG       mgChl/mmolN
+      MAXchl2nBG : 2.94    # maximum Chl to N ratio BG       mgChl/mmolN
+      alfaPs     : 0.0393  # initial slope P-I curve Ps      mmolN m2/(mgChl day W)**-1
+      alfaPl     : 0.0531  # initial slope P-I curve Pl      mmolN m2/(mgChl day W)**-1
+      alfaBG     : 0.0393  # initial slope P-I curve BG      mmolN m2/(mgChl day W)**-1
+   initialization:
+      no3        : 5.0     # initial nitrate mmolN/m**3
+      nh4        : 0.1     # initial ammonium mmolN/m**3
+      oxy        : 85.0    # initial oxygen mmolO2/m**3
+      pho        : 0.3     # initial phosphate mmolP/m**3
+      det        : 2.0     # initial detritus mmolN/m**3
+      dom        : 3.0     # initial dom mmolN/m**3
+      sil        : 5.0     # initial silicate mmolSi/m**3
+      opa        : 2.0     # initial opal mmolSi/m**3
+      dia        : 1e-4  # initial diatoms mmolN/m**3
+      fla        : 1e-4  # initial flagellates mmolN/m**3
+      mesozoo    : 1e-6  # initial mesozooplankton mmolN/m**3
+      microzoo   : 1e-6  # initial microzooplankton mmolN/m**3
+      bg         : 1e-4  # initial cyanobacteria mmolN/m**3
+      diachl     : 2e-6  # initial diatom chlorophyll mmolN/m**3
+      flachl     : 2e-6  # initial flagellate chlorophyll mmolN/m**3
+      bgchl      : 2e-6  # initial cyanobacteria chlorophyll mmolN/m**3

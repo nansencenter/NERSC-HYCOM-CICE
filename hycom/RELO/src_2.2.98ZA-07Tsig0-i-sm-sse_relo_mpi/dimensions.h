@@ -6,18 +6,18 @@ c --- itdm  = total grid dimension in i direction
 c --- jtdm  = total grid dimension in j direction
 c --- kdm   =       grid dimension in k direction
       integer    itdm,jtdm,kdm
-      parameter (itdm=500,jtdm=382,kdm=32)  ! GLBT0.72
+      parameter (itdm=800,jtdm=760,kdm=50)  ! TP5a0.06
 c
 c --- iqr   = maximum number of tiles in i direction
 c --- jqr   = maximum number of tiles in j direction
       integer    iqr,jqr
-      parameter (iqr=10,jqr=10)  ! multiple tiles (TYPE=ompi or mpi or shmem)
+      parameter (iqr=15,jqr=13)  ! multiple tiles (TYPE=ompi or mpi or shmem)
 c
 c --- idm   = maximum single tile grid dimension in i direction
 c --- jdm   = maximum single tile grid dimension in j direction
       integer    idm,jdm
 *     parameter (idm=itdm,jdm=jtdm)  ! always works if enough memory
-      parameter (idm= 250,jdm= 191)  ! NMPI=4,8,16,24,32,40,47,64
+      parameter (idm= 54,jdm= 59)  ! NMPI=4,8,16,24,32,40,47,64
 c
 c --- mxthrd= maximum number of OpenMP threads
       integer    mxthrd
@@ -43,7 +43,7 @@ c --- mxtrcr= maximum number of tracers
 c
 c --- natm  = number of saved atmospheric fields
       integer    natm
-      parameter (natm=2)      ! must be 2 (high freq.) or 4 (monthly)
+      parameter (natm=4)      ! must be 2 (high freq.) or 4 (monthly)
 c
 c ---   END OF REGION AND TILING SPECIFIC PARAMETERS
 c-----------------------------------------------------------------------------

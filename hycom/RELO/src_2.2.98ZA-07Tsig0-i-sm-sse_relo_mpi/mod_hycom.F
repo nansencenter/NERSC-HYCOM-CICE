@@ -42,6 +42,9 @@
       use ccsm3_global_reductions                ! ccsm3 ocean mpi comms
       use shr_timer_mod                          ! ccsm3 shared timing routine
 #endif
+#ifdef _FABM_
+      use mod_hycom_fabm
+#endif
 c
 c --- -----------------------------------------
 c --- MICOM-based HYbrid Coordinate Ocean Model
@@ -898,41 +901,25 @@ c --------- average currents over top thkcdw meters
             psur2  = 0.0
             do k= 1,kk
               dp1   = min( dp(i,j,k,1), max( 0.0, thksur-psur1 ) )
-#if defined(STOKES)
-              usur1=usur1+dp1*(
-     &           u(i,j,k,1)+u(i+1,j,k,1)+usd(i,j,k)+usd(i+1,j,k))
-              vsur1=vsur1+dp1*(
-     &           v(i,j,k,1)+v(i,j+1,k,1)+vsd(i,j,k)+vsd(i,j+1,k))
-#else
               usur1 = usur1 + dp1*(u(i,j,k,1)+u(i+1,j,k,1))
               vsur1 = vsur1 + dp1*(v(i,j,k,1)+v(i,j+1,k,1))
+#if defined(STOKES)
+              usur1 = usur1 + dp1*(usd(i,j,k)+usd(i+1,j,k))
+              vsur1 = vsur1 + dp1*(vsd(i,j,k)+vsd(i,j+1,k))
 #endif
               psur1 = psur1 + dp1
               dp2   = min( dp(i,j,k,2), max( 0.0, thksur-psur2 ) )
-#if defined(STOKES)
-              usur2=usur2+dp2*(
-     &           u(i,j,k,1)+u(i+1,j,k,2)+usd(i,j,k)+usd(i+1,j,k))
-              vsur2=vsur2+dp2*(
-     &           v(i,j,k,1)+v(i,j+1,k,2)+vsd(i,j,k)+vsd(i,j+1,k))
-#else
               usur2 = usur2 + dp2*(u(i,j,k,2)+u(i+1,j,k,2))
               vsur2 = vsur2 + dp2*(v(i,j,k,2)+v(i,j+1,k,2))
+#if defined(STOKES)
+              usur2 = usur2 + dp2*(usd(i,j,k)+usd(i+1,j,k))
+              vsur2 = vsur2 + dp2*(vsd(i,j,k)+vsd(i,j+1,k))
 #endif
               psur2 = psur2 + dp2
               if     (min(psur1,psur2).ge.thksur) then
                 exit
               endif
             enddo
-#if defined(STOKES)
-            umxl  = 0.25*( usur1/psur1+ubavg(i,j,1) + usdbavg(i,j) +
-     &                         ubavg(i+1,j,1)  + usdbavg(i+1,j) +
-     &           usur2/psur2 + ubavg(i,  j,2) + usdbavg(i,j) +
-     &                         ubavg(i+1,j,2) + usdbavg(i+1,j) )
-            vmxl  = 0.25*( vsur1/psur1+vbavg(i,j,1) + vsdbavg(i,j) +
-     &                         vbavg(i,j+1,1) +  vsdbavg(i,j+1) +
-     &           vsur2/psur2 + vbavg(i,j,  2) + vsdbavg(i,j) +
-     &                         vbavg(i,j+1,2) + vadbavg(i,j+1) )
-#else
             umxl  = 0.25*( usur1/psur1 + ubavg(i,  j,1) +
      &                                   ubavg(i+1,j,1) +
      &                     usur2/psur2 + ubavg(i,  j,2) +
@@ -941,7 +928,6 @@ c --------- average currents over top thkcdw meters
      &                                   vbavg(i,j+1,1) +
      &                     vsur2/psur2 + vbavg(i,j,  2) +
      &                                   vbavg(i,j+1,2)  )
-#endif
             util2(i,j)              = umxl
             util3(i,j)              = vmxl
             expData(1)%p(i+i0,j+j0) = tmxl                           !in C
@@ -1064,10 +1050,17 @@ c --------- and pass it to CICE.
             end if
             expData(21)%p(i+i0,j+j0) = radfl
             if (albflg.gt.0) then
-               expData(17)%p(i+i0,j+j0) = qswdwn
-               expData(18)%p(i+i0,j+j0) = 0.
-               expData(19)%p(i+i0,j+j0) = 0.
-               expData(20)%p(i+i0,j+j0) = 0.
+c ----------  divided the downward shortwave into four components
+c ----------  reference to ice_forcing.F90 -----       
+               expData(17)%p(i+i0,j+j0) = qswdwn*.28
+               expData(18)%p(i+i0,j+j0) = qswdwn*.24
+               expData(19)%p(i+i0,j+j0) = qswdwn*.31
+               expData(20)%p(i+i0,j+j0) = qswdwn*.17
+
+!               expData(17)%p(i+i0,j+j0) = qswdwn
+!               expData(18)%p(i+i0,j+j0) = 0.
+!               expData(19)%p(i+i0,j+j0) = 0.
+!               expData(20)%p(i+i0,j+j0) = 0.
             else 
                call xchalt('Setup_ESMF: unhandled albflg=0')
                stop 'Setup_ESMF: unhandled albflg=0'
@@ -1100,16 +1093,16 @@ c --------- We dont handle cases where input is E-P.
         enddo !i
       enddo !j
 cKAL
-!      if (mnproc==1) 
-!     &   print *,"WARN: Make sure treatment of wind components is ok"
-!      if (mnproc==1) 
-!     &   print *,"WARN: Make sure treatment of tilt components is ok"
-!      if (mnproc==1) 
-!     &   print *,"WARN: Make sure treatment of sw rad is ok"
-!      if (mnproc==1) 
-!     &   print *,"WARN: Make sure treatment of lw rad is ok"
-!      if (mnproc==1) 
-!     &   print *,"WARN: must match CICE thermodynamics freezing point"
+c      if (mnproc==1) 
+c     &   print *,"WARN: Make sure treatment of wind components is ok"
+c      if (mnproc==1) 
+c     &   print *,"WARN: Make sure treatment of tilt components is ok"
+c      if (mnproc==1) 
+c     &   print *,"WARN: Make sure treatment of sw rad is ok"
+c      if (mnproc==1) 
+c     &   print *,"WARN: Make sure treatment of lw rad is ok"
+c      if (mnproc==1) 
+c     &   print *,"WARN: must match CICE thermodynamics freezing point"
 cKAL
 c
 c --- Smooth surface ocean velocity fields
@@ -1341,6 +1334,8 @@ C#endif
 C      call ESMF_LogFlush(rc=rc)
 c
 C --- KAL: NB: si_u and si_v are on p-grid and are used like this in mod_momtum
+C --- AS: si_u and si_v are ok on the p-grid since they are added to 
+C --- 'usur' and 'vsur', which are the surface velocities interpolated to the p-grid 
 C --- KAL: si_tx and si_ty are not presently used...
       end subroutine Import_ESMF
 
@@ -1765,6 +1760,9 @@ c
       if (mnproc.eq.1) then
         call mem_stat_print('  cb_allocate:')
       endif !1st tile
+#ifdef _FABM_
+      call hycom_fabm_allocate()
+#endif
 c
 c --- initiate named-pipe comparison utility
       call pipe_init
@@ -2175,18 +2173,10 @@ c
           if (isopyc .or. mxlkrt) then
             do i=1,ii
               if (SEA_U) then
-#if defined(STOKES) 
-                umix(i,j)=u(i,j,1,n) + usd(i,j,1)
-#else
                 umix(i,j)=u(i,j,1,n)
-#endif
               endif !iu
               if (SEA_V) then
-#if defined(STOKES)
-                vmix(i,j)=v(i,j,1,n) + vsd(i,j,1)
-#else
                 vmix(i,j)=v(i,j,1,n)
-#endif
               endif !iv
             enddo !i
           endif !isopyc.or.mxlkrt
@@ -2660,6 +2650,11 @@ c
         wn1=-99.0
         call rdnest(dtime0)
       endif
+
+#ifdef _FABM_
+      call hycom_fabm_input_init(dtime, dyear0, dyear, dmonth)
+#endif
+
 #endif /* USE_CCSM3:else */
 c
 c --- initialize incremental update.
@@ -3036,13 +3031,13 @@ c ---   pressure can be the only atmospheric forcing,
 c ---   set weights and fields for high frequency pressure forcing.
         call forfunhp(dtime)
       endif
-#if defined(STOKES)
-c
-c --- set weights and input fields for Stokes Drift
-      if     (nsdzi.gt.0) then
-        call stokes_forfun(dtime,n)
-      endif !nsdzi
-#endif
+C$$$ALF  #if defined(STOKES)
+C$$$ALF  c
+C$$$ALF  c --- set weights and input fields for Stokes Drift
+C$$$ALF        if     (nsdzi.gt.0) then
+C$$$ALF          call stokes_forfun(dtime,n)
+C$$$ALF        endif !nsdzi
+C$$$ALF  #endif
 c
 c --- set weights for quasi-hermite time interpolation for kpar.
       if     (jerlv0.le.0) then
@@ -3141,6 +3136,9 @@ cdiag if (mnproc.eq.1) then
 cdiag write (lp,'(i9,'' relax time interpolation: months'',4i3,
 cdiag.  '',  weights '',4f6.3)') nstep,lc0,lc1,lc2,lc3,wc0,wc1,wc2,wc3
 cdiag endif !1st tile
+#ifdef _FABM_
+      call hycom_fabm_input_update(dtime, dyear0, dyear, dmonth)
+#endif
 #endif /* USE_CCSM3:else */
 c
 #if defined(USE_ESMF)
@@ -3467,14 +3465,13 @@ c
                   vtotp=0.5*( v(i,j,  k,n)+vbavg(i,j,  n) +
      &                        v(i,j+1,k,n)+vbavg(i,j+1,n)  )
 #if defined(STOKES)
+                  utotp=utotp+0.5*( usd(i,  j,k) +
+     &                              usd(i+1,j,k)  )
+                  vtotp=vtotp+0.5*( vsd(i,j,  k) +
+     &                              vsd(i,j+1,k)  )
                   util6(i,j)=dp(i,j,k,n)*scp2(i,j)*
-     &                      0.5*(1000.0+th3d(i,j,k,n)+thbase)*
+     &                      0.5*(qthref+th3d(i,j,k,n)+thbase)*
      &                          (utotp**2+vtotp**2)
-c
-                  utotp=utotp+0.5*( usd(i,  j,k)+usdbavg(i,  j) +
-     &                              usd(i+1,j,k)+usdbavg(i+1,j)  )
-                  vtotp=vtotp+0.5*( vsd(i,j,  k)+vsdbavg(i,j) +
-     &                              vsd(i,j+1,k)+vsdbavg(i,j+1)  )
 #endif
                   util4(i,j)=dp(i,j,k,n)*scp2(i,j)*
      &                      0.5*(1000.0+th3d(i,j,k,n)+thbase)*
@@ -3491,7 +3488,7 @@ c
             dskea=dskea+dske
           enddo !k
 #if defined(STOKES)
-          smx=(dskea-dskesa)/(area*onem)
+          smx=(dskesa-dskea)/(area*onem)
 #endif
           sum=dskea/(area*onem)
           if (mnproc.eq.1) then
@@ -3971,19 +3968,19 @@ c
      &                        u(i+1,j,k,n)+ubavg(i+1,j,n)  )
                   vtotp=0.5*( v(i,j,  k,n)+vbavg(i,j,  n) +
      &                        v(i,j+1,k,n)+vbavg(i,j+1,n)  )
-#if defined(STOKES)
-                  util6(i,j)=dp(i,j,k,n)*scp2(i,j)*
-     &                      0.5*(1000.0+th3d(i,j,k,n)+thbase)*
-     &                          (utotp**2+vtotp**2)
-c
-                  utotp=utotp+0.5*( usd(i,  j,k)+usdbavg(i,  j) +
-     &                              usd(i+1,j,k)+usdbavg(i+1,j)  )
-                  vtotp=vtotp+0.5*( vsd(i,j,  k)+vsdbavg(i,j) +
-     &                              vsd(i,j+1,k)+vsdbavg(i,j+1)  )
-#endif
                 util4(i,j)=dp(i,j,k,n)*scp2(i,j)*
-     &                    0.5*(1000.0+th3d(i,j,k,n)+thbase)*
+     &                    0.5*(qthref+th3d(i,j,k,n)+thbase)*
      &                        (utotp**2+vtotp**2)
+c
+#if defined(STOKES)
+                  utotp=utotp+0.5*( usd(i,  j,k) +
+     &                              usd(i+1,j,k)  )
+                  vtotp=vtotp+0.5*( vsd(i,j,  k) +
+     &                              vsd(i,j+1,k)  )
+                  util6(i,j)=dp(i,j,k,n)*scp2(i,j)*
+     &                      0.5*(qthref+th3d(i,j,k,n)+thbase)*
+     &                          (utotp**2+vtotp**2)
+#endif
 c
                 util1(i,j)=dp(i,j,k,n)*scp2(i,j)
                 util2(i,j)=dp(i,j,k,n)*scp2(i,j)*temp(i,j,k,n)
@@ -4034,7 +4031,7 @@ c
           endif !1st tile
         enddo !k
 #if defined(STOKES)
-        smx=(dskea-dskesa)/(area*onem)
+        smx=(dskesa-dskea)/(area*onem)
 #endif
         sum=dskea/(area*onem)
         smt=dsmta/dsuma
@@ -4130,6 +4127,7 @@ c ---     NaN detection, for each tracer.
             endif !1st tile
             lfatal = .true.  !delay exit to allow archive output
           endif !NaN
+#ifndef _FABM_
           if     (ktr.ge.3 .and. trcflg(ktr-2).eq.903) then !NPZ
             smt=(dsumtr(ktr)+dsumtr(ktr-1)+dsumtr(ktr-2))/dsuma
             if (mnproc.eq.1) then
@@ -4160,6 +4158,7 @@ c ---     NaN detection, for each tracer.
             call flush(nod)
             endif !1st tile
           endif !NPZ:NPZD
+#endif
         enddo !ktr
       endif  !diagno ...
 c
@@ -4454,6 +4453,13 @@ c
       if (incflg.ne.0) then
         call incupd_rd(dtime)
       endif
+#if defined(STOKES)
+c
+c --- calculate Stokes Drift for the next time step
+      if     (nsdzi.gt.0) then
+        call stokes_forfun(dtime,n)
+      endif !nsdzi
+#endif
 c
       delt1=baclin+baclin
 c

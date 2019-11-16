@@ -14,6 +14,30 @@ subdirectories
 The HYCOM input file is 
 
     blkdat.input
+    
+    Specifications about heat flux options in blkdat:
+    c --- 'flxflg' = thermal forcing flag (0=none,3=net_flux,1-2,4-6=sst-based)
+    c --- (=1 MICOM bulk parameterization)
+    c --- (=2 Kara bulk parameterization)
+    c --- (=4 COARE bulk parameterization, approx.)
+    c --- (=5 L&Y bulk parameterization)
+    c --- (=6 COARE bulk parameterization, approx., better pressure)
+
+    flxflg=3 is using the net flux (say, from ERA-Interim) but traditionally we rather 
+    use the formulas that use the model variables (SST, ice etc). 
+
+    flxflg=5 is the real CORE2 described by Large and Yeager 2009 (L&Y): 
+    https://rda.ucar.edu/datasets/ds260.2/docs/OSGC-000-000-003-157.pdf
+
+    flxflg 4 and 6 are two versions of COARE (Fairall et al.  2003) 
+    
+    flxflg=6 takes sea level pressure as input to the drag coefficient and uses wind-ocean 
+    speed  http://journals.ametsoc.org/doi/abs/10.1175/1520-0442(2003)016%3C0571%3ABPOASF%3E2.0.CO%3B2 
+
+    empflg = 4,5,6 are all sst-based because they use the model SST to calculate evaporation. 
+    Evaporation is not big in the Arctic, but still we should use consistent flags for empflg 
+    and flxflg (and wndflg as well!) for the sake of consistency (except that flxflg=6 implies 
+    wndflg=4, its the same).
 
 The CICE input file is
  

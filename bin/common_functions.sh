@@ -49,9 +49,11 @@ function blkdat_get {
       return 1
    fi
 
-
-   integers=("iexpt" "priver" "yrflag" "jerlv0" "sssflg" "sstflg" "relax" "vsigma" "idm" "jdm" "kdm" "nhybrd" "nsigma" "lbflag" "thflag" "iceflg" "momtyp")
-   floats=("thkdf4","kapref" "sigma" "dp00" "dp00x" "dp00f" "ds00" "ds00x" "ds00f" "dp0k" "ds0k" "skmap" "nestfq" "bnstfq" "thkdf2" "baclin" "batrop" "cplifq" "visco2" "veldf2")
+# MOSTAFA: BEGIN
+# I have added two flags here: triver; and nrdflg
+   integers=("iexpt" "priver" "triver"  "nrdflg"   "yrflag" "jerlv0" "sssflg" "sstflg" "relax" "vsigma" "idm" "jdm" "kdm" "nhybrd" "nsigma" "lbflag" "thflag" "iceflg" "momtyp" "ahype")
+# MOSTAFA: END
+   floats=("thkdf4" "kapref" "thbase" "sigma" "dp00" "dp00x" "dp00f" "ds00" "ds00x" "ds00f" "dp0k" "ds0k" "skmap" "nestfq" "bnstfq" "thkdf2" "baclin" "batrop" "cplifq" "visco2" "veldf2")
 
    param=$(printf %-6s $par)
    if    array_contains "$par" ${integers[@]}  ; then

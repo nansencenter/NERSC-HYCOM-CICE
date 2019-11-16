@@ -1243,7 +1243,7 @@ subroutine cice_get_import(import_state)
          jhi = this_block%jhi
 
          ! Assign array values to relevant target arrays. For now 
-         !print *,my_task,iblk,trim(impFieldName(ifld)),impData(ifld,iblk)%p(10,10)
+         !print *,'JP debug: ',my_task,iblk,trim(impFieldName(ifld)),impData(ifld,iblk)%p(10,10)
          if (trim(impFieldName(ifld)) == "ssfi") then
             do j=jlo,jhi
             do i=ilo,ihi
@@ -1362,17 +1362,51 @@ subroutine cice_get_import(import_state)
                Qa(i,j,iblk) = impData(ifld,iblk)%p(ig,jg)
             end do
             end do
+!         shortwave radiation downwell divided into four parts see ice_forcing.F
+!         elseif (trim(impFieldName(ifld)) == "swvdr") then
+!            do j=jlo,jhi
+!            do i=ilo,ihi
+!               ig  = this_block%i_glob(i)
+!               jg  = this_block%j_glob(j)
+!               swvdr(i,j,iblk) = impData(ifld,iblk)%p(ig,jg)
+!               swvdf(i,j,iblk) = 0._dbl_kind    ! shortwave radiation (W/m^2)
+!               swidr(i,j,iblk) = 0._dbl_kind    ! shortwave radiation (W/m^2)
+!               swidf(i,j,iblk) = 0._dbl_kind    ! shortwave radiation (W/m^2)
+!            end do
+!            end do
          elseif (trim(impFieldName(ifld)) == "swvdr") then
             do j=jlo,jhi
             do i=ilo,ihi
                ig  = this_block%i_glob(i)
                jg  = this_block%j_glob(j)
                swvdr(i,j,iblk) = impData(ifld,iblk)%p(ig,jg)
-               swvdf(i,j,iblk) = 0._dbl_kind    ! shortwave radiation (W/m^2)
-               swidr(i,j,iblk) = 0._dbl_kind    ! shortwave radiation (W/m^2)
-               swidf(i,j,iblk) = 0._dbl_kind    ! shortwave radiation (W/m^2)
             end do
             end do
+         elseif (trim(impFieldName(ifld)) == "swvdf") then
+            do j=jlo,jhi
+            do i=ilo,ihi
+               ig  = this_block%i_glob(i)
+               jg  = this_block%j_glob(j)
+               swvdf(i,j,iblk) = impData(ifld,iblk)%p(ig,jg)
+            end do
+            end do
+         elseif (trim(impFieldName(ifld)) == "swidr") then
+            do j=jlo,jhi
+            do i=ilo,ihi
+               ig  = this_block%i_glob(i)
+               jg  = this_block%j_glob(j)
+               swidr(i,j,iblk) = impData(ifld,iblk)%p(ig,jg)
+            end do
+            end do
+         elseif (trim(impFieldName(ifld)) == "swidf") then
+            do j=jlo,jhi
+            do i=ilo,ihi
+               ig  = this_block%i_glob(i)
+               jg  = this_block%j_glob(j)
+               swidf(i,j,iblk) = impData(ifld,iblk)%p(ig,jg)
+            end do
+            end do
+
          elseif (trim(impFieldName(ifld)) == "flw") then
             do j=jlo,jhi
             do i=ilo,ihi

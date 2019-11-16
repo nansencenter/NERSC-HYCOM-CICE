@@ -37,7 +37,7 @@ clean:
 
 MODS = mod_xc.o mod_za.o wtime.o
 LIBS = zh.o
-LIBN = zh.o libnetcdf.a $(EXTRANCDF)
+LIBN = zh.o   $(EXTRANCDF)
 
 # select one of the programs to make,
 #  e.g. make roms2grid ARCH=sun >& Make_roms2grid

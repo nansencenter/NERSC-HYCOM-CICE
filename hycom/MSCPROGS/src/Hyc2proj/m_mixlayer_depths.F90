@@ -89,6 +89,76 @@ contains
       end do
 
    end subroutine
+   !-----------------------------------------------
+   subroutine gs_mld(treshf,dpth,mld,idm,jdm,kdm,treshv)
+   !!!!!!!!compute mixed layer depth: m
+        implicit none
+       
+        integer, intent(in) :: idm,jdm,kdm
+        real :: treshv
+        real, dimension(idm,jdm,kdm)  , intent(in)  ::treshf 
+        real, dimension(idm,jdm,kdm+1), intent(in)  ::dpth
+        real, dimension(idm,jdm)      , intent(out) ::mld
+       
+        integer :: i,j,k,k1,m_min_depth,mlf
+       
+        real, dimension(kdm) :: tt
+        real, dimension(kdm) :: zzmid,dpl
+        real, dimension(kdm+1) :: zz
+        real tvsz,t_min_depth, tmp
+        real, parameter :: min_depth=3.0 !3.0  !10.0
+       
+        do j=1,jdm
+          do i=1,idm
+            if (dpth(i,j,kdm+1)>min_depth) then
+              !
+              zz=dpth(i,j,1:kdm+1)
+              zzmid(:)=(dpth(i,j,2:kdm+1)+dpth(i,j,1:kdm))/2
+              tt=treshf(i,j,1:kdm)
+              do k=1,kdm
+                dpl (k)=zz(k+1)-zz(k)
+              end do
+       
+              ! MLD
+              k=1
+              do while ( zz(k)<min_depth .and. k<=kdm-1)
+                m_min_depth=k
+                k=k+1
+              end do
+              t_min_depth=(tt(m_min_depth)*(zzmid(k)-min_depth)&
+              + tt(k)*(min_depth-zzmid(m_min_depth)))/(zzmid(k)-zzmid(m_min_depth))
+              mlf=0
+              k=2
+              do while (mlf==0 .and. k<=kdm-1)
+                if (tt(k)<t_min_depth-treshv .and. tt(k-1)> t_min_depth-treshv) then
+                  mlf=1
+                else
+                  k=k+1
+                endif
+              end do
+              k1=k
+       
+              if (k<kdm) then
+                tmp=0.0
+                tmp=t_min_depth-treshv
+                tmp=tmp*(zzmid(k)-zzmid(k-1))
+                tmp=tmp-zzmid(k)*tt(k-1)+zzmid(k-1)*tt(k)
+                tmp=tmp/(tt(k)-tt(k-1))
+                if (abs(zzmid(k)-zzmid(k-1)) < 1e-6) then
+       
+                  mld(i,j) = zz(k1)
+                else
+                  mld(i,j)=tmp
+                endif
+              else
+                mld(i,j) = zz(kdm)
+              endif
+            end if
+          end do
+        end do
+     end subroutine gs_mld
+!!!!!!!!------------------------------------------------
+
 end module
 
 

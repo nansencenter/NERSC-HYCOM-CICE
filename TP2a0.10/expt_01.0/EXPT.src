@@ -1,0 +1,40 @@
+#!/bin/bash
+#
+# Sets environment for this experiment, also makes the scratch (S) and
+# data (D) directories if not already present
+
+#
+#
+# --- R is region name.
+# --- V is source code version number.
+# --- T is topography number.
+# --- K is number of layers.
+# --- E is expt number.
+# --- P is primary path.
+# --- D is permanent directory.
+# --- S is scratch   directory, must not be the permanent directory.
+#
+# hycom executable will be retrieved from Build_V${V}_X${X}. ex: Build_V2.2.12_X01.0
+#
+mydir=$(cd $(dirname ${BASH_SOURCE}) && pwd)
+unset -v X E T V K P D S
+X="02.0"                # X based on dir name (expt_02.0)
+E="020"                 # E is X without "."
+T="01"                                                           # Topography version
+export V=2.2.98                                                  # hycom version              
+#export K=`grep "'kdm   ' =" blk* | awk '{printf("%03d", $1)}'`   # get kdm from blkdat
+export K=`grep "'kdm   ' =" $mydir/blkdat.input | awk '{printf("%03d", $1)}'`   # get kdm from blkdat
+export P=$mydir                                                  #  ---""---
+export D=$P/data                                                 # Where data ends up
+export S=$P/SCRATCH                  # Scratch area 
+
+export SIGVER=1   # Version of equation of state (this is 7-term sigma 2). Must not cause conflict with thflag in blkdat.input
+export NMPI=120
+
+# Consistency check. Ensures expt dir ends in expt_X
+#echo $tmp
+tmp=$(basename $P)
+if [ "$tmp" != "expt_${X}" ] ;then
+   echo "Error: Mismatch between path of experiment $P and assumed name expt_${X}"
+   exit 1
+fi

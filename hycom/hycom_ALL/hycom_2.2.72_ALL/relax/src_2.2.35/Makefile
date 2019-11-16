@@ -37,7 +37,7 @@ clean:
 
 MODS = mod_xc.o mod_za.o wtime.o
 LIBS = blkdat.o interp.o zh.o
-LIBN = blkdat.o interp.o zh.o libnetcdf.a $(EXTRANCDF)
+LIBN = blkdat.o interp.o zh.o   $(EXTRANCDF)
 
 # select one of the programs to make,
 #  e.g. make z_levitus ARCH=sun >& Make_z_levitus
@@ -152,8 +152,13 @@ relaxv:          $(MODS) relaxv.o                 $(LIBS)
 relaxi:          $(MODS) relaxi.o                 $(LIBS)
 	$(LD) $(LDFLAGS) relaxi.o         $(MODS) $(LIBS) -o relaxi
 
+
 relaxi_archvz:          $(MODS) relaxi_archvz.o                 $(LIBS)
 	$(LD) $(LDFLAGS) relaxi_archvz.o         $(MODS) $(LIBS) -o relaxi_archvz
+
+nemo_archvz_biophys:          $(MODS) nemo_archvz_biophys.o                 $(LIBS)
+	$(LD) $(LDFLAGS) nemo_archvz_biophys.o         $(MODS) $(LIBS) -o nemo_archvz_biophys
+
 
 zonal_field:     $(MODS) zonal_field.o            $(LIBS)
 	$(LD) $(LDFLAGS) zonal_field.o    $(MODS) $(LIBS) -o zonal_field
