@@ -7,6 +7,7 @@ This repository contains the source code necessary to run the coupled HYCOM-CICE
 *NB: Throughout this documentation there will be references to $NHCROOT, Experiment directory, Region directory, etc
 etc. A Brief explanation of these concepts can be found in [doc/Naming.md](doc/Naming.md).*
 
+* Anew release is created from develop branch and merged with master on 15-11-2019*
 # Prerequisites
 
 The following tools are necessary 
