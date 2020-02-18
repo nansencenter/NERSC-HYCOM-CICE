@@ -1156,6 +1156,8 @@ contains
         do k=1,kk
           do j=1,jj
             do i=1,ii
+              if (associated(interior_output%data3d) .and. pdata3d(i, j, k) .lt. -1E18) pdata3d(i, j, k) = 0.0 ! the intention here is to remove the mask (-2E20) from fabm 
+!              if (i==itest .and. j==jtest .and. associated(interior_output%data3d)) write(*,*)'HERE',interior_output%mean(i, j, k),k, pdata3d(i, j, k)
               if (SEA_P) interior_output%mean(i, j, k) = interior_output%mean(i, j, k) + s * dp(i, j, k, n) * pdata3d(i, j, k)
             end do
           end do
