@@ -7,6 +7,7 @@ module m_bio_conversions
    real, parameter :: C2SIL=6.625    ! redfield C:Si mol ratio.
    real, parameter :: C2PHO=106.0    ! redfield C:P mol ratio
    real, parameter :: kd_water=0.041 ! light attenuation coeff. for Arctic sea water 
+   real, parameter :: srdet_eco=5.0  ! Sinking rate of detritus
 ! _FABM__caglar_
    contains
 
@@ -430,6 +431,23 @@ module m_bio_conversions
       end do
 
    end subroutine integrated_chlorophyll_eco
+!------------------------------------------------
+
+   subroutine det_bottom_flux(det,bot_flux,onem,idm,jdm,kdm)
+      implicit none
+
+      integer, intent(in) :: idm,jdm,kdm
+      real, intent(in) :: onem
+      real, dimension(idm,jdm,kdm)  , intent(in)  :: det
+      real, dimension(idm,jdm,kdm)      , intent(out) :: bot_flux
+
+      integer :: i,j,k
+
+! compute flux of detritus to the seafloor mg N m-2 day-1                                                                                           
+      bot_flux=det*srdet_eco
+
+   end subroutine det_bottom_flux
+
 !------------------------------------------------
 
 ! _FABM__caglar_

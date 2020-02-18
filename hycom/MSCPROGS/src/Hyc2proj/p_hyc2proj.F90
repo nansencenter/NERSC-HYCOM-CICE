@@ -71,7 +71,7 @@ program p_hyc2proj
       hy3d2,pres, levint, temp, sal, dens
 !AS06092011 - adding biological variables for MyOcean
    real, allocatable, dimension(:,:,:) :: fla, dia, nit, pho, oxy, pp, biovar,s1000
-   real, allocatable, dimension(:,:,:) :: micro, meso, sil,dic,ph
+   real, allocatable, dimension(:,:,:) :: micro, meso, sil,dic,ph,det
    real, allocatable, dimension(:,:)   :: biovar2d
    real, allocatable, dimension(:,:)   :: hy2d, hy2d2, regu2d, strmf, &
       mld1, mld2, dplayer, meanssh, sla, ub, vb, mqlon, mqlat
@@ -496,6 +496,14 @@ program p_hyc2proj
                   s1000=sal/1000.0
                   hy3d=s1000
                   deallocate(sal,s1000)
+                else if (trim(fld(ifld)%fextract)=='detvflux') then
+                  ! Compute detritus flux (mg C m-2 day-1)   
+                  allocate(det(idm,jdm,kdm))
+                  allocate(biovar(idm,jdm,kdm))
+                  call HFReadField3D(hfile,det,idm,jdm,kdm,'ECO_det ',1)
+                  call det_bottom_flux(det,biovar,onem,idm,jdm,kdm)
+                  hy3d=biovar
+                  deallocate(det,biovar)
 ! _FABM__caglar_
                else if (trim(fld(ifld)%fextract)=='chla') then
                   ! Compute chlorophyll a (mg m-3)
