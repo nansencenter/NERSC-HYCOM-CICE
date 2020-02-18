@@ -1003,6 +1003,8 @@ contains
      is3DVar=.true.
    else if(cfld=='salt1000') then
      is3DVar=.true.
+   else if(cfld=='detvflux') then
+     is3DVar=.true.
 ! _FABM__caglar_
    else if(cfld=='chla') then
      is3DVar=.true.
@@ -1460,6 +1462,11 @@ contains
          units='psu / 1000'
          limits=(/0.,0.045/)
          stdname='standard_salinity_divideby_1000'
+      case ('detvflux')
+         vname='detvflux'
+         units='mg C/m**2 day'
+         limits=(/0.0,1500.0/)
+         stdname='vertical_flux_of_detritus'
       case ('pp_d_nor')
          vname='pp_depth'
          units='kg m-2 s-1'
