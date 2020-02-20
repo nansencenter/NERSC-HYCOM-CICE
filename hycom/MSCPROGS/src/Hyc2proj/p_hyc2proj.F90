@@ -256,18 +256,19 @@ program p_hyc2proj
 
                ! NB - this prevents horizontal interpolation to thin layers
                ! TODO: This may mess up calculations near the sea floor
-               do k=1,kdm
+!               do k=1,kdm
+!                  where (pres(:,:,k+1)-pres(:,:,k)<.1*onem)
+!                     hy3d(:,:,k)=undef
+!                     hy3d2(:,:,k)=undef
+!                  end where
+!               end do
+!KAL 20151111  Fill up thin layers with data from above. Better, but not implemented yet (may influence mask)
+               do k=2,kdm
                   where (pres(:,:,k+1)-pres(:,:,k)<.1*onem)
-                     hy3d(:,:,k)=undef
-                     hy3d2(:,:,k)=undef
+                     hy3d(:,:,k)=hy3d(:,:,k-1)
+                     hy3d2(:,:,k)=hy3d2(:,:,k-1)
                   end where
                end do
-!KAL 20151111  Fill up thin layers with data from above. Better, but not implemented yet (may influence mask)
-!               do k=2,kdm
-!                  where (pres(:,:,k+1)-pres(:,:,k)<.1*onem)
-!                     hy3d(:,:,k)=hy3d(:,:,k-1)
-!                     hy3d2(:,:,k)=hy3d2(:,:,k-1)
-!               end do
 
                call to_proj(hy3d (:,:,1:kdm),regu3d,kdm)
                call spline_calc(regu3d,depthint,nxp,nyp,ongrid,regusp3d,ndeep,kdm)
@@ -496,14 +497,6 @@ program p_hyc2proj
                   s1000=sal/1000.0
                   hy3d=s1000
                   deallocate(sal,s1000)
-                else if (trim(fld(ifld)%fextract)=='detvflux') then
-                  ! Compute detritus flux (mg C m-2 day-1)   
-                  allocate(det(idm,jdm,kdm))
-                  allocate(biovar(idm,jdm,kdm))
-                  call HFReadField3D(hfile,det,idm,jdm,kdm,'ECO_det ',1)
-                  call det_bottom_flux(det,biovar,onem,idm,jdm,kdm)
-                  hy3d=biovar
-                  deallocate(det,biovar)
 ! _FABM__caglar_
                else if (trim(fld(ifld)%fextract)=='chla') then
                   ! Compute chlorophyll a (mg m-3)
@@ -599,6 +592,14 @@ program p_hyc2proj
                   call HFReadField3D(hfile,biovar,idm,jdm,kdm,'CO2_pH     ',1)
                   hy3d=biovar
                   deallocate(biovar)
+                else if (trim(fld(ifld)%fextract)=='detvflux') then
+                  ! Compute detritus flux (mg C m-2 day-1)   
+                  allocate(det(idm,jdm,kdm))
+                  allocate(biovar(idm,jdm,kdm))
+                  call HFReadField3D(hfile,det,idm,jdm,kdm,'ECO_det ',1)
+                  call det_bottom_flux(det,biovar,onem,idm,jdm,kdm)
+                  hy3d=biovar
+                  deallocate(det,biovar)
 ! _FABM__caglar_
                else  ! LB normal case 
                   call HFReadField3D(hfile,hy3d,idm,jdm,kdm,fld(ifld)%fextract,1)
@@ -606,13 +607,13 @@ program p_hyc2proj
 
                ! NB - this prevents horizontal interpolation to thin layers
                ! TODO: This may mess up calculations near the sea floor
-               do k=1,kdm
-                  where (pres(:,:,k+1)-pres(:,:,k)<.1*onem) hy3d(:,:,k)=undef
-               end do
-!KAL 20151111  Fill up thin layers with data from above. Better, but not implemented yet (may influence mask)
-!               do k=2,kdm
-!                  where (pres(:,:,k+1)-pres(:,:,k)<.1*onem) hy3d(:,:,k)=hy3d(:,:,k-1)
+!               do k=1,kdm
+!                  where (pres(:,:,k+1)-pres(:,:,k)<.1*onem) hy3d(:,:,k)=undef
 !               end do
+!KAL 20151111  Fill up thin layers with data from above. Better, but not implemented yet (may influence mask)
+               do k=2,kdm
+                  where (pres(:,:,k+1)-pres(:,:,k)<.1*onem) hy3d(:,:,k)=hy3d(:,:,k-1)
+               end do
 
                call to_proj(hy3d(:,:,1:kdm),regu3d,kdm)
                call spline_calc(regu3d,depthint,nxp,nyp,ongrid,regusp3d,ndeep,kdm)
