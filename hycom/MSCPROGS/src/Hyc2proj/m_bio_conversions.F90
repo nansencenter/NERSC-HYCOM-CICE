@@ -237,7 +237,7 @@ module m_bio_conversions
    end subroutine primary_production_eco
 
    subroutine primary_production(primprod,pres,gpp_depthint,onem,idm,jdm,kdm)
-!compute gross primary production: mgC m-2 d-1
+!compute net primary production: mgC m-2 d-1
       implicit none
 
       integer, intent(in) :: idm,jdm,kdm
@@ -250,7 +250,7 @@ module m_bio_conversions
       integer :: i,j,k
       real, dimension(idm,jdm,kdm)                ::gpp
 
-! original primprod unit unit: mg C m-3 s-1
+! original primprod unit unit: mg C m-3 s-1 (gross pp)
       gpp=primprod*86400. !now in mg C m-3 d-1
 ! calculate layer depth in meters
       do i=1,kdm
@@ -263,6 +263,7 @@ module m_bio_conversions
         do j=1,jdm
 !          do k=1,kdm
           gpp_depthint(i,j)=dot_product(gpp(i,j,:),dplayer(i,j,:))
+          gpp_depthint(i,j)=gpp_depthint(i,j) * 0.9 ! assumed 10% respiration
 !       gpp_depthint(i,j)=gpp_depthint(i,j)+gpp(i,j,k)*dplayer(i,j,k)
 !          end do
         end do
@@ -443,8 +444,8 @@ module m_bio_conversions
 
       integer :: i,j,k
 
-! compute flux of detritus to the seafloor mg N m-2 day-1                                                                                           
-      bot_flux=det*srdet_eco
+! compute flux of detritus to the seafloor mgC m-2 day-1 --> mol m-2 s-1                                                                                           
+      bot_flux=det * srdet_eco / ccar / 1000. / 86400. 
 
    end subroutine det_bottom_flux
 

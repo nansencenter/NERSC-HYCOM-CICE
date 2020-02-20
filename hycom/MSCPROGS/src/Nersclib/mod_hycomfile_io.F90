@@ -1463,10 +1463,10 @@ contains
          limits=(/0.,0.045/)
          stdname='standard_salinity_divideby_1000'
       case ('detvflux')
-         vname='detvflux'
-         units='mg C/m**2 day'
-         limits=(/0.0,1500.0/)
-         stdname='vertical_flux_of_detritus'
+         vname='expc'
+         units='mol m-2 s-1'
+         limits=(/0.0,1E-5/)
+         stdname='sinking_mole_flux_of_particulate_organic_matter_expressed_as_carbon_in_sea_water'
       case ('pp_d_nor')
          vname='pp_depth'
          units='kg m-2 s-1'
