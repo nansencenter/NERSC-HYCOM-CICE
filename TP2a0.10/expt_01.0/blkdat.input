@@ -3,7 +3,7 @@ Sigma0; GDEM3 init; KPP mixed layer; SeaWiFS mon KPAR; nested in ATLd0.08 2.6;
 S-Z(15-11): dp00/f/x/i=3m/1.125/12m/1m; ds=1m/1.125/4m; src_2.2.12;
 12345678901234567890123456789012345678901234567890123456789012345678901234567890
   22	  'iversn' = hycom version number x10
- 020	  'iexpt ' = experiment number x10
+ 030	  'iexpt ' = experiment number x10
  400	  'idm   ' = longitudinal array size
  380	  'jdm   ' = latitudinal  array size
   -1	  'itest ' = grid point where detailed diagnostics are desired
@@ -205,7 +205,7 @@ S-Z(15-11): dp00/f/x/i=3m/1.125/12m/1m; ds=1m/1.125/4m; src_2.2.12;
   -1	  'lwflag' = longwave (SST) flag (0=none,1=clim,2=atmos)
    0	  'sstflg' = SST relaxation flag (0=none,1=clim,2=atmos,3=observed)
    0	  'icmflg' = ice mask       flag (0=none,1=clim,2=atmos,3=obs/coupled)
-1.e5      'prsbas' = msl pressure is input field + prsbas (Pa)
+1.e0      'prsbas' = msl pressure is input field + prsbas (Pa)
    0      'mslprf' = msl pressure forcing flag            (0=F,1=T)
    0      'stroff' = net stress offset flag               (0=F,1=T)
    0      'flxoff' = net flux offset flag                 (0=F,1=T)
@@ -213,9 +213,11 @@ S-Z(15-11): dp00/f/x/i=3m/1.125/12m/1m; ds=1m/1.125/4m; src_2.2.12;
    1	  'relax ' = activate lateral boundary nudging    (0=F,1=T)
    0	  'trcrlx' = activate lat. bound. tracer nudging  (0=F,1=T)
    1	  'priver' = rivers as a precipitation bogas      (0=F,1=T)
-   0     'epmass' = treat evap-precip as a mass exchange (0=F,1=T)
-   0     'nmrsti' = 'restart'  Restart filename. Dot and date appended. Empty: use old hycom name.
-   0     'nmrsto' = 'restart'  Restart filename. Dot and date appended. Empty: use old hycom name.
-   0     'nmarcs' = '' Surface archive filename. Dot and date appended. Empty: use old hycom name.
-   0     'nmarcv' = '' Full    archive filename. Dot and date appended. Empty: use old hycom name.
-   0     'nmarcm' = '' Mean    archive filename. Dot and date appended. Empty: use old hycom name.
+   0      'triver' = total river including Greenland      (0=F,1=T)
+   0      'epmass' = treat evap-precip as a mass exchange (0=F,1=T)
+   0      'nmrsti' = 'restart'  Restart filename. Dot and date appended. Empty: use old hycom name.
+   0      'nmrsto' = 'restart'  Restart filename. Dot and date appended. Empty: use old hycom name.
+   0      'nmarcs' = '' Surface archive filename. Dot and date appended. Empty: use old hycom name.
+   0      'nmarcv' = '' Full    archive filename. Dot and date appended. Empty: use old hycom name.
+   0      'nmarcm' = '' Mean    archive filename. Dot and date appended. Empty: use old hycom name.
+   6      'nrdflg' =     (0,1,...,7) options for the radiation heat fluxes
