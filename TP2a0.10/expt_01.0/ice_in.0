@@ -6,11 +6,11 @@
   , dt             = 1200.0
   , npt            = 99999 
   , ndtd           = 1
-  , runtype        = 'continue'
+  , runtype        = 'initial'
   , ice_ic         = './cice/iced_gx1_v5.nc'
-  , restart        = .true.
+  , restart        = .false.
   , restart_ext    = .false.
-  , use_restart_time = .true.
+  , use_restart_time = .false.
   , restart_format = 'nc'
   , lcdf64         = .false.
   , restart_dir    = './cice/'
@@ -82,7 +82,7 @@
     kitd              = 1
 !KAL  , ktherm            = 1        !KAL BL99
   , ktherm            = 1  
-!  , ktherm            = 2  
+! , ktherm            = 2  
   , conduct           = 'bubbly'
   , a_rapid_mode      =  0.5e-3
   , Rac_rapid_mode    =    10.0
@@ -229,8 +229,8 @@
   , f_alidr        = 'x'
   , f_alvdf        = 'x'
   , f_alidf        = 'x'
-  , f_albice       = 'x'
-  , f_albsno       = 'x'
+  , f_albice       = 'd'
+  , f_albsno       = 'd'
   , f_albpnd       = 'x'
   , f_coszen       = 'x'
   , f_flat         = 'x' 
@@ -336,10 +336,10 @@
   , f_hpond        = 'm'
   , f_ipond        = 'm'
   , f_apeff        = 'm'
-  , f_apond_ai     = 'd'
-  , f_hpond_ai     = 'd'
-  , f_ipond_ai     = 'd'
-  , f_apeff_ai     = 'd'
+  , f_apond_ai     = 'm'
+  , f_hpond_ai     = 'm'
+  , f_ipond_ai     = 'm'
+  , f_apeff_ai     = 'm'
 /
 
 &icefields_bgc_nml
