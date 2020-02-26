@@ -1,4 +1,18 @@
+Updation for compiling the HYCOM_CICE and hycom_all programs at 26th Feb 2020:
 
+Recommendation for the newly modules on Fram as the environomental setting in .bash_profile:
+
+module restore system
+module load NCL/6.6.2-intel-2018b
+module load ESMF/7.1.0r-intel-2018b
+module load FFTW/3.3.8-intel-2018b
+module swap Python/3.6.6-intel-2018b Python/2.7.15-intel-2018b
+module load ncview/2.1.7-intel-2018b
+module load NCO/4.7.9-intel-2018b
+
+
+
+!+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 Currently, the compiler environoment on fram has a good consistence using intel-Fortran.
 
 1) The basic modules for compiling are listed as following:
