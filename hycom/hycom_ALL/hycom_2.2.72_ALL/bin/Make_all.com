@@ -10,9 +10,7 @@ if ($OS == "Linux") then
 	setenv OS Linux64
 	#setenv OS Linux64gfortran
   endif
-# setenv OS LinuxIFC
 setenv OS Linux_Fram
-# setenv OS LinuxGF_NC
 # setenv OS XT5
 endif
 #if ($OS == "SunOS") then
