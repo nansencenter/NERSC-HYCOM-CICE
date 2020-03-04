@@ -926,7 +926,14 @@ c ---       otherwise, must start after wind day 1462.0, 01/01/1905.
           read (uoff+901,'(a79)') preambl
         endif
 c
-        do iunit= 901,908
+        do iunit= 899,908
+          if     (iunit.eq.899 .and.  
+     &            .not.(mslprf .or. flxflg.eq.6)) then
+            cycle  !no mslprs
+          endif
+          if     (iunit.eq.900 .and. ustflg.ne.3) then
+            cycle  !no ustar 
+          endif
           if     (iunit.eq.903 .and. wndflg.ge.3) then
             cycle  !no wndspd
           endif
@@ -2644,7 +2651,7 @@ c
       dtime1 = dtime(901)
 c
 c --- check the input times.
-      do k= 902,910
+      do k= 899,910
         if     (dtime(k).ne.dtime1) then
           if     (mnproc.eq.1) then
           write(lp,*)
