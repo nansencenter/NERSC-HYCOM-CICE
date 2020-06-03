@@ -464,7 +464,7 @@ fi
 #
 # --- tracer relaxation
 #
-if [ $TRCRLX -ne 0 ] ; then
+if [ $TRCRLX -ne 0 -o $NTRACR -eq -1 ] ; then
    echo "**Setting up tracer relaxation"
    for i in ECO_no3 ECO_pho ECO_sil ECO_oxy CO2_dic CO2_alk; do
       j=$(echo $i | head -c7)
