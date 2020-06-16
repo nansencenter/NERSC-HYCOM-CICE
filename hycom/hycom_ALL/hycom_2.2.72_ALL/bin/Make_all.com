@@ -10,9 +10,7 @@ if ($OS == "Linux") then
 	setenv OS Linux64
 	#setenv OS Linux64gfortran
   endif
-# setenv OS LinuxIFC
-# setenv OS LinuxICE
- setenv OS LinuxGF_NC
+setenv OS Linux_Fram
 # setenv OS XT5
 endif
 #if ($OS == "SunOS") then
@@ -41,12 +39,12 @@ case 'Linux64gfortran':
 	setenv CC	"gcc"
 	setenv CFLAGS	"-O -m64 -mcmodel=medium"
 	breaksw
-case 'LinuxICE':
-#       compile for SGI Altix ICE, Intel compiler
+case 'Linux_Fram':
+#       compile for Fram, Intel compiler
 	setenv FC	"ifort"
-	setenv FFLAGS	"-g -O3 -fp-model source -convert big_endian"
-	setenv FLIBS	"-shared-intel"
-	setenv CC	"icc"
+	setenv FFLAGS	"-g -O3 -convert big_endian"
+	setenv FLIBS	"-lfftw3 -lnetcdff -lnetcdf "
+	setenv CC	"cc"
 	setenv CFLAGS	"-O"
 	breaksw
 case 'LinuxGF_NC':

@@ -51,7 +51,7 @@ function blkdat_get {
 
 # MOSTAFA: BEGIN
 # I have added two flags here: triver; and nrdflg
-   integers=("iexpt" "priver" "triver"  "nrdflg"   "yrflag" "jerlv0" "sssflg" "sstflg" "relax" "vsigma" "idm" "jdm" "kdm" "nhybrd" "nsigma" "lbflag" "thflag" "iceflg" "momtyp" "ahype")
+   integers=("iexpt" "priver" "triver"  "nrdflg"   "yrflag" "jerlv0" "sssflg" "sstflg" "relax" "vsigma" "idm" "jdm" "kdm" "nhybrd" "nsigma" "lbflag" "thflag" "iceflg" "momtyp")
 # MOSTAFA: END
    floats=("thkdf4" "kapref" "thbase" "sigma" "dp00" "dp00x" "dp00f" "ds00" "ds00x" "ds00f" "dp0k" "ds0k" "skmap" "nestfq" "bnstfq" "thkdf2" "baclin" "batrop" "cplifq" "visco2" "veldf2")
 
