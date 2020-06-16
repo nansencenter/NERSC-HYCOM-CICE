@@ -21,6 +21,9 @@ module mod_hycom_fabm
 
    use mod_xc         ! HYCOM communication interface
    use mod_cb_arrays  ! HYCOM saved arrays
+#ifdef CPL_OASIS_HYCOM
+   use mod_cpl_oasis_init
+#endif
    implicit none
 
    private
@@ -1017,6 +1020,9 @@ contains
                        bottom_stress(i, j) = ustarb(i, j)*ustarb(i, j)*rho_0 !
                        swflx_fabm(i,j)= sswflx(i,j) ! ice-corrected downwelling shortwave flux
 
+#ifdef CPL_OASIS_HYCOM
+                       wspd_fabm(i,j) = cplts_recv(i,j,i2o_wspd)
+#else
                        if     (flxflg.eq.6) then ! wind speed (taken from therm.F)
                           wspd_fabm(i,j) = wndocn(i,j)
                        else if (natm.eq.2) then
@@ -1024,7 +1030,11 @@ contains
                        else
                           wspd_fabm(i,j) =wndspd(i,j,l0)*w0+wndspd(i,j,l1)*w1+wndspd(i,j,l2)*w2+wndspd(i,j,l3)*w3    
                        end if
+#endif
 
+#ifdef CPL_OASIS_HYCOM
+                       pair = cplts_recv(i,j,i2o_mslp)
+#else
                        if     (mslprf .or. flxflg.eq.6) then
                           if     (natm.eq.2) then
                              pair=mslprs(i,j,l0)*w0 + mslprs(i,j,l1)*w1
@@ -1035,6 +1045,7 @@ contains
                           pair = 1013.0*100.0
                        endif
                        pair = pair * 0.01 ! convert Pa --> mBar (hPa) (result is of magnitude 1E+3) 
+#endif
 
                        if     (natm.eq.2) then
                           dew = dewpt(i,j,l0)*w0 + dewpt(i,j,l1)*w1
@@ -1067,6 +1078,8 @@ contains
     !              end if
               end do
           end do
+        if (mnproc.eq.1) write(lp,*) 'call update_fabm_state ', &
+                                    minval(atmco2_fabm), maxval(atmco2_fabm)
         end if
         ! Transfer pointer to environmental data
         ! Do this for all variables on FABM's standard variable list that the model can provide.
@@ -1156,6 +1169,8 @@ contains
         do k=1,kk
           do j=1,jj
             do i=1,ii
+              if (associated(interior_output%data3d) .and. pdata3d(i, j, k) .lt. -1E18) pdata3d(i, j, k) = 0.0 ! the intention here is to remove the mask (-2E20) from fabm 
+!              if (i==itest .and. j==jtest .and. associated(interior_output%data3d)) write(*,*)'HERE',interior_output%mean(i, j, k),k, pdata3d(i, j, k)
               if (SEA_P) interior_output%mean(i, j, k) = interior_output%mean(i, j, k) + s * dp(i, j, k, n) * pdata3d(i, j, k)
             end do
           end do
