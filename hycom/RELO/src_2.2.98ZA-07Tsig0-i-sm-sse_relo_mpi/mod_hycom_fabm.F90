@@ -1078,8 +1078,6 @@ contains
     !              end if
               end do
           end do
-        if (mnproc.eq.1) write(lp,*) 'call update_fabm_state ', &
-                                    minval(atmco2_fabm), maxval(atmco2_fabm)
         end if
         ! Transfer pointer to environmental data
         ! Do this for all variables on FABM's standard variable list that the model can provide.
