@@ -145,7 +145,7 @@ c
            si_v_m(i,j) = 0.0
 #endif
         enddo !i
-#ifndef _FABM_
+
         do k= 1,kk
           do i=1,ii
               dp_m(i,j,k) = 0.0
@@ -155,9 +155,11 @@ c
               ke_m(i,j,k) = 0.0
                u_m(i,j,k) = 0.0
                v_m(i,j,k) = 0.0
+#ifndef _FABM_
             do ktr= 1,ntracr
               tracer_m(i,j,k,ktr) = 0.0
             enddo !ktr
+#endif
 #if defined(STOKES)
             if     (stdarc) then
               usdp_m(i,j,k) = 0.0
@@ -166,7 +168,6 @@ c
 #endif
           enddo !i
         enddo !k
-#endif
       enddo !j
 #ifdef _FABM_
       call hycom_fabm_zero_mean_output()

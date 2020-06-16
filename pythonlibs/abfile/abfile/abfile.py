@@ -854,9 +854,9 @@ class ABFileRestart(ABFile) :
          else :
             raise BFileError,"ABFileBathy opened as read, but idm and jdm not provided"
       elif self._action == "w" :
-         # Need to test if idm, jdm, etc is set at this stage
-         raise NotImplementedError,"ABFileRestart writing not implemented"
-
+##         # Need to test if idm, jdm, etc is set at this stage
+##         raise NotImplementedError,"ABFileRestart writing not implemented"
+           pass
 
    def read_header(self) :
       #RESTART2: iexpt,iversn,yrflag,sigver =    990    22     3     2
@@ -873,9 +873,9 @@ class ABFileRestart(ABFile) :
       self._yrflag=int(m.group(3))
       self._sigver=int(m.group(4))
       m2=re.match("RESTART2: nstep,dtime,thbase[ ]*=[ ]*([^ ]+)[ ]+([^ ]+)[ ]+([^ ]+)",self._header[1])
-      self._nstep=int(m.group(1))
-      self._dtime=float(m.group(2))
-      self._thbase=float(m.group(2))
+      self._nstep=int(m2.group(1))
+      self._dtime=float(m2.group(2))
+      self._thbase=float(m2.group(3))
 
    def read_field_info(self) :
       #u       : layer,tlevel,range =   1  1    -9.2374402E-01   6.0595530E-01
@@ -883,7 +883,7 @@ class ABFileRestart(ABFile) :
       line=self.readline().strip()
       i=0
       while line :
-         m = re.match("^([a-z_ ]+): layer,tlevel,range =[ ]*([^ ]+)[ ]+([^ ]+)[ ]+([^ ]+)[ ]+([^ ]+)",line)
+         m = re.match("^([a-zA-Z0-9_ ]+): layer,tlevel,range =[ ]*([^ ]+)[ ]+([^ ]+)[ ]+([^ ]+)[ ]+([^ ]+)",line)
          if m :
             self._fields[i] = {}
             self._fields[i]["field"] = m.group(1).strip()
@@ -911,6 +911,31 @@ class ABFileRestart(ABFile) :
          w = None
       return w
 
+# THE RESTART WRITING - a later addition to KAL's original abfile.py 
+#  caglar: other classes in abfile.py code call 'write_header' within 'write_field'.
+#          Because of many inputs in the header, I decided to do it separately.
+#          Make sure that you call 'write_header' only once before calling the rest of 'write_field'    
+#
+#  example lines:
+#
+#  newfile = 'merged'
+#  new_abfile = abfile.ABFileRestart(newfile,"w",idm=I2,jdm=I1)
+#  new_abfile.write_header(iexpt,iversn,yrflag,sigver,nstep,dtime,thbase)
+#  ~~ for loop for variables
+#     new_abfile.write_field(field,None,fieldname,k,t)  # None stands for mask
+#  new_abfile.close() 
+
+   def write_header(self,iexpt,iversn,yrflag,sigver,nstep,dtime,thbase) :
+      self._fileb.write("RESTART2: iexpt,iversn,yrflag,sigver = %6d%6d%6d%6d\n"%(iexpt,iversn,yrflag,sigver))
+      self._fileb.write("RESTART2: nstep,dtime,thbase = %12d%19.10f%24.13f\n"%(nstep,dtime,thbase))
+
+   def write_field(self,field,mask,fieldname,k,time) :
+      self._open_filea_if_necessary(field)
+      self.check_dimensions(field)
+      hmin,hmax = self._filea.writerecord(field,mask)
+      fmtstr="%-8s: layer,tlevel,range = %3d%3d%18.7E%16.7E\n"
+      self._fileb.write(fmtstr%(fieldname,k,time,hmin,hmax))
+###
 
    @property
    def fieldlevels(self) :

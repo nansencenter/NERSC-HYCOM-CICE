@@ -174,8 +174,6 @@ elif [ "$SITE" == "hexagon" ] ; then
    if [[ -z "${ESMF_DIR}" ]] ; then
       # use as default
        export ESMF_DIR=/homeappl/home/pr2n0112/HYCOM_TOOLS/esmf/ESMF.6.3.0rp1
-      #export ESMF_DIR=/home/nersc/knutali/opt/esmf_5_2_0rp3-nonetcdf/
-      #export ESMF_DIR=/home/nersc/knutali/opt/esmf_6_3_0rp1/
       #export ESMF_DIR=/home/nersc/knutali/opt/esmf_7_0_0/
    fi
    export ESMF_MOD_DIR=${ESMF_DIR}/mod/modO/Unicos.$compiler.64.mpi.default/
@@ -204,7 +202,8 @@ elif [ "$SITE" == "alvin" ] || [ "$SITE" == "elvis" ] ; then
 
 elif [ "$SITE" == "fram" ] ; then 
    echo "hardcoded settings for $SITE"
-   export ESMF_DIR=/cluster/software/ESMF/6.3.0rp1-intel-2017a-HDF5-1.8.18/
+   export ESMF_DIR=/cluster/software/ESMF/7.1.0r-intel-2018b/
+   #export ESMF_DIR=/cluster/software/ESMF/6.3.0rp1-intel-2017a-HDF5-1.8.18/
    export ESMF_MOD_DIR=${ESMF_DIR}mod/
    export ESMF_LIB_DIR=${ESMF_DIR}lib/
    

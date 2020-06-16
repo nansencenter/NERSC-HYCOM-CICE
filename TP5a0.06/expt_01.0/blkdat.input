@@ -10,15 +10,15 @@ S-Z(15-11): dp00/f/x/i=3m/1.125/12m/1m; ds=1m/1.125/4m; src_2.2.12;
   -1      'jtest ' = grid point where detailed diagnostics are desired
   50      'kdm   ' = number of layers
   50      'nhybrd' = number of hybrid levels (0=all isopycnal)
-  0      'nsigma' = number of sigma  levels (nhybrd-nsigma z-levels)
-   3.0    'dp00  ' = deep    z-level spacing minimum thickness (m)
- 450.0    'dp00x ' = deep    z-level spacing maximum thickness (m)
-   1.125   'dp00f ' = deep    z-level spacing stretching factor (1.0=const.space)
-   1.0    'ds00  ' = shallow z-level spacing minimum thickness (m)
-  450.0    'ds00x ' = shallow z-level spacing maximum thickness (m)
-   1.18   'ds00f ' = shallow z-level spacing stretching factor (1.0=const.space)
+   0      'nsigma' = number of sigma  levels (nhybrd-nsigma z-levels)
+  1.0     'dp00  ' = deep    z-level spacing minimum thickness (m)
+150.0     'dp00x ' = deep    z-level spacing maximum thickness (m)
+  1.15    'dp00f ' = deep    z-level spacing stretching factor (1.0=const.space)
+  1.0     'ds00  ' = shallow z-level spacing minimum thickness (m)
+ 75.0     'ds00x ' = shallow z-level spacing maximum thickness (m)
+  1.15    'ds00f ' = shallow z-level spacing stretching factor (1.0=const.space)
   1.0     'dp00i ' = deep iso-pycnal spacing minimum thickness (m)
- 6.0      'isotop' = shallowest depth for isopycnal layers     (m, <0 from file)
+  6.0     'isotop' = shallowest depth for isopycnal layers     (m, <0 from file)
   35.0    'saln0 ' = initial salinity value (psu), only used for iniflg<2
    0      'locsig' = locally-referenced pot. density for stability (0=F,1=T)
    0      'kapref' = thermobaric ref. state (-1=input,0=none,1,2,3=constant)

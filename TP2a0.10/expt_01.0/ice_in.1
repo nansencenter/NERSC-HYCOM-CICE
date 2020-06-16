@@ -2,8 +2,8 @@
     days_per_year  = 365
   , use_leap_years = .true.
   , year_init      = 1958
-  , istep0         = 1542144
-  , dt             = 900.0
+  , istep0         = 1087104
+  , dt             = 1200.0
   , npt            = 99999 
   , ndtd           = 1
   , runtype        = 'continue'
@@ -17,7 +17,7 @@
   , restart_file   = 'iced'
   , pointer_file   = './cice/ice.restart_file'
   , dumpfreq       = 'd'
-  , dumpfreq_n     = 20 
+  , dumpfreq_n     = 30 
   , dump_last      = .true.
   , bfbflag        = .false.
   , diagfreq       = 96 
@@ -81,7 +81,8 @@
 &thermo_nml
     kitd              = 1
 !KAL  , ktherm            = 1        !KAL BL99
-  , ktherm            = 2  
+  , ktherm            = 1  
+!  , ktherm            = 2  
   , conduct           = 'bubbly'
   , a_rapid_mode      =  0.5e-3
   , Rac_rapid_mode    =    10.0
@@ -96,7 +97,7 @@
   , ndte            = 120
   , revised_evp     = .false.
   , advection       = 'remap'
-  , kstrength       = 1
+  , kstrength       = 0
   , krdg_partic     = 1
   , krdg_redist     = 1
   , mu_rdg          = 3
@@ -111,9 +112,9 @@
   , albsnowv        = 0.98
   , albsnowi        = 0.70 
   , ahmax           = 0.3
-  , R_ice           = 0.
-  , R_pnd           = 0.
-  , R_snw           = 1.5
+  , R_ice           = 0.4
+  , R_pnd           = 0.4
+  , R_snw           = 1.2
   , dT_mlt          = 1.5
   , rsnw_mlt        = 1500.
   , kalg            = 0.6

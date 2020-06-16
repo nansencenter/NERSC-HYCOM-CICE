@@ -7,10 +7,11 @@ module m_bio_conversions
    real, parameter :: C2SIL=6.625    ! redfield C:Si mol ratio.
    real, parameter :: C2PHO=106.0    ! redfield C:P mol ratio
    real, parameter :: kd_water=0.041 ! light attenuation coeff. for Arctic sea water 
+   real, parameter :: srdet_eco=5.0  ! Sinking rate of detritus
 ! _FABM__caglar_
    contains
 
-   subroutine chlorophyll(dia,fla,chl_a,idm,jdm,kdm)
+   subroutine chlorophyll_nor(dia,fla,chl_a,idm,jdm,kdm)
 !compute chlorophyll: kg m-3
       implicit none
       
@@ -22,7 +23,7 @@ module m_bio_conversions
 
       chl_a=1.0e-6/N2CHLA*(dia+fla)
 
-   end subroutine chlorophyll
+   end subroutine chlorophyll_nor
 
    subroutine chlorophyll_eco(dia,fla,chl_a,idm,jdm,kdm)
 !compute chlorophyll: kg m-3
@@ -38,7 +39,7 @@ module m_bio_conversions
 
    end subroutine chlorophyll_eco
 !------------------------------------------------
-   subroutine attenuation(dia,fla,attencoef,idm,jdm,kdm)
+   subroutine attenuation_nor(dia,fla,attencoef,idm,jdm,kdm)
 !compute the attenuation coefficient: m-1
       implicit none
       
@@ -48,7 +49,7 @@ module m_bio_conversions
     
       attencoef=b2+ny/N2CHLA*(dia+fla)
 
-   end subroutine attenuation
+   end subroutine attenuation_nor
 
    subroutine attenuation_eco(dia,fla,attencoef,idm,jdm,kdm)
 !compute the attenuation coefficient: m-1
@@ -62,7 +63,7 @@ module m_bio_conversions
 
    end subroutine attenuation_eco
 !------------------------------------------------
-   subroutine nitrate_conv(nit,nitrate,idm,jdm,kdm)
+   subroutine nitrate_conv_nor(nit,nitrate,idm,jdm,kdm)
 !compute nitrate: mole m-3
       implicit none
       
@@ -72,7 +73,7 @@ module m_bio_conversions
 
       nitrate=1e-3/cnit*nit
 
-   end subroutine nitrate_conv
+   end subroutine nitrate_conv_nor
 
    subroutine nitrate_conv_eco(nit,nitrate,idm,jdm,kdm)
 !compute nitrate: mole m-3
@@ -86,7 +87,7 @@ module m_bio_conversions
 
    end subroutine nitrate_conv_eco
 !------------------------------------------------
-   subroutine phosphate_conv(pho,phosphate,idm,jdm,kdm)
+   subroutine phosphate_conv_nor(pho,phosphate,idm,jdm,kdm)
 !compute phosphate: mole m-3
       implicit none
       
@@ -96,7 +97,7 @@ module m_bio_conversions
     
       phosphate=1e-3/cpho*pho
 
-   end subroutine phosphate_conv
+   end subroutine phosphate_conv_nor
 
    subroutine phosphate_conv_eco(pho,phosphate,idm,jdm,kdm)
 !compute phosphate: mole m-3
@@ -122,7 +123,7 @@ module m_bio_conversions
 
    end subroutine silicate_conv_eco
 !------------------------------------------------
-   subroutine pbiomass(dia,fla,biomass,idm,jdm,kdm)
+   subroutine pbiomass_nor(dia,fla,biomass,idm,jdm,kdm)
 !compute phytoplankton biomass: mole m-3
       implicit none
       
@@ -132,7 +133,7 @@ module m_bio_conversions
     
       biomass=1e-3/cnit*(fla+dia)
 
-   end subroutine pbiomass
+   end subroutine pbiomass_nor
 
    subroutine pbiomass_eco(dia,fla,biomass,idm,jdm,kdm)
 !compute phytoplankton biomass: mole m-3
@@ -146,7 +147,7 @@ module m_bio_conversions
 
    end subroutine pbiomass_eco
 !------------------------------------------------
-   subroutine oxygen_conv(oxy,kg_oxy,idm,jdm,kdm)
+   subroutine oxygen_conv_nor(oxy,kg_oxy,idm,jdm,kdm)
 !compute dissolved oxygen: kg m-3
       implicit none
       
@@ -156,7 +157,7 @@ module m_bio_conversions
 ! original oxygen unit mg/m3
       kg_oxy=1e-6*oxy
 
-   end subroutine oxygen_conv
+   end subroutine oxygen_conv_nor
 
    subroutine oxygen_conv_eco(oxy,kg_oxy,idm,jdm,kdm)
 !compute dissolved oxygen: kg m-3
@@ -171,7 +172,7 @@ module m_bio_conversions
    end subroutine oxygen_conv_eco
 
 !------------------------------------------------
-   subroutine primary_production(primprod,pres,gpp_depthint,onem,idm,jdm,kdm)
+   subroutine primary_production_nor(primprod,pres,gpp_depthint,onem,idm,jdm,kdm)
 !compute gross primary production: kg m-2 s-1
       implicit none
       
@@ -199,7 +200,7 @@ module m_bio_conversions
         end do
       end do
 
-   end subroutine primary_production
+   end subroutine primary_production_nor
 
    subroutine primary_production_eco(primprod,pres,gpp_depthint,onem,idm,jdm,kdm)
 !compute gross primary production: kg m-2 s-1
@@ -234,6 +235,43 @@ module m_bio_conversions
       end do
 
    end subroutine primary_production_eco
+
+   subroutine primary_production(primprod,pres,gpp_depthint,onem,idm,jdm,kdm)
+!compute net primary production: mgC m-2 d-1
+      implicit none
+
+      integer, intent(in) :: idm,jdm,kdm
+      real, intent(in) :: onem
+      real, dimension(idm,jdm,kdm)  , intent(in)  ::primprod, pres
+      real, dimension(idm,jdm)      , intent(out) ::gpp_depthint
+
+      real, dimension(idm,jdm,kdm)   :: dplayer
+
+      integer :: i,j,k
+      real, dimension(idm,jdm,kdm)                ::gpp
+
+! original primprod unit unit: mg C m-3 s-1 (gross pp)
+      gpp=primprod*86400. !now in mg C m-3 d-1
+! calculate layer depth in meters
+      do i=1,kdm
+       dplayer(:,:,i)=(pres(:,:,i+1)-pres(:,:,i))/onem
+      end do
+
+       gpp_depthint = 0.0
+!intergarte over depth
+      do i=1,idm
+        do j=1,jdm
+!          do k=1,kdm
+          gpp_depthint(i,j)=dot_product(gpp(i,j,:),dplayer(i,j,:))
+          gpp_depthint(i,j)=gpp_depthint(i,j) * 0.9 ! assumed 10% respiration
+!       gpp_depthint(i,j)=gpp_depthint(i,j)+gpp(i,j,k)*dplayer(i,j,k)
+!          end do
+        end do
+      end do
+
+   end subroutine primary_production
+
+
 !------------------------------------------------
    subroutine net_primary_production(netpp,dia,fla,pres,npp_euphd,onem,idm,jdm,kdm)
 !compute net primary production: g m-2 day-1
@@ -396,6 +434,23 @@ module m_bio_conversions
    end subroutine integrated_chlorophyll_eco
 !------------------------------------------------
 
+   subroutine det_bottom_flux(det,bot_flux,onem,idm,jdm,kdm)
+      implicit none
+
+      integer, intent(in) :: idm,jdm,kdm
+      real, intent(in) :: onem
+      real, dimension(idm,jdm,kdm)  , intent(in)  :: det
+      real, dimension(idm,jdm,kdm)      , intent(out) :: bot_flux
+
+      integer :: i,j,k
+
+! compute flux of detritus to the seafloor mgC m-2 day-1 --> mol m-2 s-1                                                                                           
+      bot_flux=det * srdet_eco / ccar / 1000. / 86400. 
+
+   end subroutine det_bottom_flux
+
+!------------------------------------------------
+
 ! _FABM__caglar_
       subroutine chlorophyll_fabm(dia,fla,chl_a,idm,jdm,kdm)
       !compute chlorophyll: mg m-3
@@ -411,7 +466,22 @@ module m_bio_conversions
 
      end subroutine chlorophyll_fabm
 
-     subroutine nitrate_conv_fabm(nit,nitrate,idm,jdm,kdm)
+     subroutine chlorophyll(dia,fla,chl_a,idm,jdm,kdm)
+!compute chlorophyll: mg m-3
+      implicit none
+
+      integer, intent(in) :: idm,jdm,kdm
+      real, dimension(idm,jdm,kdm)  , intent(in)  ::dia, fla
+      real, dimension(idm,jdm,kdm)  , intent(out) ::chl_a
+      real, dimension(idm,jdm,kdm)  ::boss
+      integer :: i,j,k
+
+      chl_a=(dia+fla)
+
+     end subroutine chlorophyll
+
+
+     subroutine nitrate_conv(nit,nitrate,idm,jdm,kdm)
      !compute nitrate: mmole m-3
       implicit none
 
@@ -421,9 +491,9 @@ module m_bio_conversions
 
       nitrate=nit/ccar/C2NIT
 
-     end subroutine nitrate_conv_fabm
+     end subroutine nitrate_conv
 
-     subroutine silicate_conv_fabm(sil,silicate,idm,jdm,kdm)
+     subroutine silicate_conv(sil,silicate,idm,jdm,kdm)
      !compute silicate: mmole m-3
       implicit none
 
@@ -433,9 +503,9 @@ module m_bio_conversions
 
       silicate=sil/ccar/C2SIL
 
-     end subroutine silicate_conv_fabm
+     end subroutine silicate_conv
 
-     subroutine phosphate_conv_fabm(pho,phosphate,idm,jdm,kdm)
+     subroutine phosphate_conv(pho,phosphate,idm,jdm,kdm)
      !compute phosphate: mmole m-3
       implicit none
 
@@ -445,9 +515,9 @@ module m_bio_conversions
 
       phosphate=pho/ccar/C2PHO
 
-     end subroutine phosphate_conv_fabm
+     end subroutine phosphate_conv
 
-     subroutine pbiomass_fabm(dia,fla,biomass,idm,jdm,kdm)
+     subroutine pbiomass(dia,fla,biomass,idm,jdm,kdm)
      !compute phytoplankton biomass: mmoleC m-3
       implicit none
 
@@ -457,9 +527,9 @@ module m_bio_conversions
 
       biomass=(fla+dia)/ccar
 
-     end subroutine pbiomass_fabm
+     end subroutine pbiomass
 
-     subroutine oxygen_conv_fabm(oxy,mmol_oxy,idm,jdm,kdm)
+     subroutine oxygen_conv(oxy,mmol_oxy,idm,jdm,kdm)
 !compute dissolved oxygen: mmol m-3
       implicit none
 
@@ -469,9 +539,9 @@ module m_bio_conversions
 ! original oxygen unit mmol/m3
       mmol_oxy=oxy
 
-     end subroutine oxygen_conv_fabm
+     end subroutine oxygen_conv
 
-     subroutine pp_conv_fabm(pp,pp_daily,idm,jdm,kdm)
+     subroutine pp_conv(pp,pp_daily,idm,jdm,kdm)
 !compute gross primary production (we distribute to CMEMS as net pp): mg m-3 d-1
       implicit none
 
@@ -481,9 +551,9 @@ module m_bio_conversions
 
       pp_daily=pp*24.*60.*60.
 
-     end subroutine pp_conv_fabm
+     end subroutine pp_conv
 
-     subroutine attenuation_fabm(dia,fla,attencoef,idm,jdm,kdm)
+     subroutine attenuation(dia,fla,attencoef,idm,jdm,kdm)
 !compute the attenuation coefficient: m-1
       implicit none
 
@@ -493,7 +563,20 @@ module m_bio_conversions
 
       attencoef=kd_water+kd_fabm*(dia+fla)
 
-   end subroutine attenuation_fabm
+     end subroutine attenuation
+
+     subroutine dic_conv(dic,dissic,idm,jdm,kdm)
+     !compute dic: mole m-3
+      implicit none
+
+      integer, intent(in) :: idm,jdm,kdm
+      real, dimension(idm,jdm,kdm)  , intent(in)  ::dic !mmol m-3
+      real, dimension(idm,jdm,kdm)  , intent(out) ::dissic
+
+      dissic=dic/1000.
+
+     end subroutine dic_conv
+
 
 ! _FABM__caglar_
 end module

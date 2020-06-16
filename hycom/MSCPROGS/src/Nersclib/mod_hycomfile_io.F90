@@ -971,56 +971,62 @@ contains
    character(len=8) char8
    char8=adjustl(cfld)
    !print *,count( df%cfld == char8 .and. df%tlevel==timelevel ) 
-   if (cfld=='chla') then
+   if (cfld=='chla_nor') then
      is3DVar=.true.
    else if (cfld=='chla_eco') then
      is3DVar=.true.
-   else if(cfld=='attcoef') then
+   else if(cfld=='attc_nor') then
      is3DVar=.true.
    else if(cfld=='attc_eco') then
      is3DVar=.true.
-   else if(cfld=='nitrate') then
+   else if(cfld=='nit_nor') then
      is3DVar=.true.
    else if(cfld=='nit_eco') then
      is3DVar=.true.
-   else if(cfld=='phosphat') then
+   else if(cfld=='pho_nor') then
      is3DVar=.true.
    else if(cfld=='sil_eco') then
      is3DVar=.true.
    else if(cfld=='pho_eco') then
      is3DVar=.true.
-   else if(cfld=='pbiomass') then
+   else if(cfld=='pbio_nor') then
      is3DVar=.true.
    else if(cfld=='pbio_eco') then
      is3DVar=.true.
-   else if(cfld=='zbiomass') then
+   else if(cfld=='zbio_nor') then
      is3DVar=.true.
    else if(cfld=='zbio_eco') then
      is3DVar=.true.
-   else if(cfld=='oxygen') then
+   else if(cfld=='oxy_nor') then
      is3DVar=.true.
    else if(cfld=='oxy_eco') then
      is3DVar=.true.
    else if(cfld=='salt1000') then
      is3DVar=.true.
+   else if(cfld=='detvflux') then
+     is3DVar=.true.
 ! _FABM__caglar_
-   else if(cfld=='chl_fabm') then
+   else if(cfld=='chla') then
      is3DVar=.true.
-   else if(cfld=='nit_fabm') then
+   else if(cfld=='nitrate') then
      is3DVar=.true.
-   else if(cfld=='sil_fabm') then
+   else if(cfld=='silicate') then
      is3DVar=.true.
-   else if(cfld=='pho_fabm') then
+   else if(cfld=='phosphat') then
      is3DVar=.true.
-   else if(cfld=='pbiofabm') then
+   else if(cfld=='pbiomass') then
      is3DVar=.true.
-   else if(cfld=='zbiofabm') then
+   else if(cfld=='zbiomass') then
      is3DVar=.true.
-   else if(cfld=='oxy_fabm') then
+   else if(cfld=='oxygen') then
      is3DVar=.true.
-   else if(cfld=='prmpfabm') then
+   else if(cfld=='primprod') then
      is3DVar=.true.
-   else if(cfld=='attcfabm') then
+   else if(cfld=='attcoeff') then
+     is3DVar=.true.
+   else if(cfld=='dic') then
+     is3DVar=.true.
+   else if(cfld=='ph') then
      is3DVar=.true.
 ! _FABM__caglar_
    else if(cfld=='utotl' .and. trim(df%ftype)=='archm') then
@@ -1377,7 +1383,7 @@ contains
          longname = 'Sea floor kinetic energy'
 
 !AS06092011 - adding biological variables for MyOcean
-      case ('chla') 
+      case ('chla_nor') 
          vname='chla'
          units='kg m-3'
          limits=(/0.,1.e-4/)
@@ -1387,7 +1393,7 @@ contains
          units='kg m-3'
          limits=(/0.,1.e-4/)
          stdname='mass_concentration_of_chlorophyll_a_in_sea_water'
-      case ('attcoef')
+      case ('attc_nor')
          vname='attcoef'
          units='m-1'
          limits=(/0.,0.5/)
@@ -1397,7 +1403,7 @@ contains
          units='m-1'
          limits=(/0.,0.5/)
          stdname='volume_attenuation_coefficient_of_downwelling_radiative_flux_in_sea_water'
-      case ('nitrate')
+      case ('nit_nor')
          vname='nitrat'
          units='mole m-3'
          limits=(/0.,5.e-2/)
@@ -1406,7 +1412,7 @@ contains
          units='mole m-3'
          limits=(/0.,5.e-2/)
          stdname='mole_concentration_of_nitrate_in_sea_water'
-      case ('phosphat')
+      case ('pho_nor')
          vname='phosphat'
          units='mole m-3'
          limits=(/0.,1e-2/)
@@ -1421,7 +1427,7 @@ contains
          units='mole m-3'
          limits=(/0.,100./)
          stdname='mole_concentration_of_silicate_in_sea_water'
-      case ('pbiomass')
+      case ('pbio_nor')
          vname='pbiomass'
          units='mole m-3'
          limits=(/0.,0.01/)
@@ -1431,7 +1437,7 @@ contains
          units='mole m-3'
          limits=(/0.,0.01/)
          stdname='mole_concentration_of_phytoplankton_expressed_as_nitrogen_in_sea_water'
-      case ('zbiomass')
+      case ('zbio_nor')
          vname='zbiomass'
          units='mole m-3'
          limits=(/0.,0.01/)
@@ -1441,7 +1447,7 @@ contains
          units='mole m-3'
          limits=(/0.,0.01/)
          stdname='mole_concentration_of_zooplankton_expressed_as_nitrogen_in_sea_water'
-      case ('oxygen')
+      case ('oxy_nor')
          vname='oxygen'
          units='kg m-3'
          limits=(/0.,0.05/)
@@ -1456,7 +1462,12 @@ contains
          units='psu / 1000'
          limits=(/0.,0.045/)
          stdname='standard_salinity_divideby_1000'
-      case ('pp_depth')
+      case ('detvflux')
+         vname='expc'
+         units='mol m-2 s-1'
+         limits=(/0.0,1E-5/)
+         stdname='sinking_mole_flux_of_particulate_organic_matter_expressed_as_carbon_in_sea_water'
+      case ('pp_d_nor')
          vname='pp_depth'
          units='kg m-2 s-1'
          limits=(/0.,1.e-7/)
@@ -1515,51 +1526,66 @@ contains
          stdname='mean_wave_from_direction'
          cellmethod='area: mean'
 ! _FABM__caglar_
-         case ('chl_fabm')
+         case ('chla')
          vname='chl'
          units='mg m-3'
          limits=(/0.,100./)
          stdname='mass_concentration_of_chlorophyll_a_in_sea_water'
-         case ('nit_fabm')
+         case ('nitrate')
          vname='no3'
          units='mmol m-3'
          limits=(/0.,50./)
          stdname='mole_concentration_of_nitrate_in_sea_water'
-         case ('sil_fabm')
+         case ('silicate')
          vname='si'
          units='mmol m-3'
          limits=(/0.,100./)
          stdname='mole_concentration_of_silicate_in_sea_water'
-         case ('pho_fabm')
+         case ('phosphat')
          vname='po4'
          units='mmol m-3'
          limits=(/0.,10./)
          stdname='mole_concentration_of_phosphate_in_sea_water'
-         case ('pbiofabm')
+         case ('pbiomass')
          vname='phyc'
          units='mmol m-3'
-         limits=(/0.,100./)
+         limits=(/0.,200./)
          stdname='mole_concentration_of_phytoplankton_expressed_as_carbon_in_sea_water'
-         case ('zbiofabm')
+         case ('zbiomass')
          vname='zooc'
          units='mmol m-3'
-         limits=(/0.,100./)
+         limits=(/0.,200./)
          stdname='mole_concentration_of_zooplankton_expressed_as_carbon_in_sea_water' 
-         case ('oxy_fabm')
+         case ('oxygen')
          vname='o2'
          units='mmol m-3'
          limits=(/0.,500./)
          stdname='mole_concentration_of_dissolved_molecular_oxygen_in_sea_water'
-         case ('prmpfabm')
+         case ('pp_depth')
+         vname='npp'
+         units='mg m-2 d-1'
+         limits=(/0.,8460./)
+         stdname='net_primary_productivity_of_biomass_expressed_as_carbon'
+         case ('primprod')
          vname='nppv'
          units='mg m-3 d-1'
-         limits=(/0.,250./)
+         limits=(/0.,1000./)
          stdname='net_primary_production_of_biomass_expressed_as_carbon_per_unit_volume_in_sea_water'
-         case ('attcfabm')
+         case ('attcoeff')
          vname='kd'
          units='m-1'
          limits=(/0.,1./)
          stdname='volume_attenuation_coefficient_of_downwelling_radiative_flux_in_sea_water'
+         case ('dic')
+         vname='dissic'
+         units='mole m-3'
+         limits=(/0.,3./)
+         stdname='mole_concentration_of_dissolved_inorganic_carbon_in_sea_water'
+         case ('ph')
+         vname='ph'
+         units='1'
+         limits=(/0.,14./)
+         stdname='sea_water_ph_reported_on_total_scale'
 ! _FABM__caglar_
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

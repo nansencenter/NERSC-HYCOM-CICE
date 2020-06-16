@@ -2,7 +2,7 @@
 # Makefile macros for "conejo," Linux cluster at LANL
 #==============================================================================
 
-INCLDIR    := -I/cluster/software/netCDF-Fortran/4.4.4-intel-2017a-HDF5-1.8.18/include 
+#INCLDIR    := -I/cluster/software/netCDF-Fortran/4.4.4-intel-2017a-HDF5-1.8.18/include 
 SLIBS      := 
 ULIBS      := 
 

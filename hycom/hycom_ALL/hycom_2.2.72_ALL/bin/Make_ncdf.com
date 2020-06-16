@@ -25,8 +25,7 @@ if ($OS == "Linux") then
   if (`/bin/uname -m` == "x86_64") then
 	setenv OS Linux64
   endif
-# setenv OS Linux_Fram
- setenv OS LinuxGF_NC
+setenv OS Linux_Fram
 # setenv OS XT5
 endif
 #if ($OS == "SunOS") then
@@ -120,12 +119,12 @@ case 'LinuxGF_NC':
 	setenv CFLAGS	"-fPIC -fno-second-underscore -O"
 	breaksw
 case 'Linux_Fram':
-#       compile for gfortran 
-	setenv FC	"gfortran"
-	setenv FFLAGS	"-I/cluster/software/GCCcore/6.3.0/include/c++/6.3.0 -fPIC -fno-second-underscore -fconvert=big-endian -O"
+#       compile for Intel compiler
+	setenv FC	"ifort"
+	setenv FFLAGS	"-g -O3 -convert big_endian"
 	setenv FLIBS	"-lfftw3 -lnetcdff -lnetcdf "
-	setenv CC	"icc"
-	setenv CFLAGS	"-fPIC -fno-second-underscore -O"
+	setenv CC	"cc"
+	setenv CFLAGS	"-O"
 	breaksw
 default:
 	echo 'Unknown Operating System: ' $OS
