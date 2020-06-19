@@ -38,11 +38,12 @@
       INTEGER, PARAMETER, PUBLIC  ::   i2o_lwlh   =  4            ! Total non soler heat flux
       INTEGER, PARAMETER, PUBLIC  ::   i2o_swra   =  5            ! Totol short wave radiation
       INTEGER, PARAMETER, PUBLIC  ::   i2o_saln   =  6            ! Salt flux [kg/m^2] 
-      INTEGER, PARAMETER, PUBLIC  ::   i2o_taut   =  7            ! Wind stress module
+      INTEGER, PARAMETER, PUBLIC  ::   i2o_wspd   =  7            ! Wind speed module
       INTEGER, PARAMETER, PUBLIC  ::   i2o_sico   =  8            ! Sea ice cover
+      INTEGER, PARAMETER, PUBLIC  ::   i2o_mslp   =  9            ! Sea ice cover
  
-      INTEGER, PUBLIC, PARAMETER ::         nrcv=8         ! total number of fields received 
-      INTEGER, PUBLIC, parameter ::         nsnd=6         ! total number of fields sent 
+      INTEGER, PUBLIC, PARAMETER ::         nrcv=9         ! total number of fields received 
+      INTEGER, PUBLIC, parameter ::         nsnd=7         ! total number of fields sent 
       INTEGER, PUBLIC                    ::   ncplmodel    ! Maximum number of models to/from which HYCOM is potentialy sending/receiving data
       INTEGER, PUBLIC, PARAMETER ::   nmaxfld=10   ! Maximum number of coupling fields
       INTEGER, PUBLIC, PARAMETER ::   nmaxcat=5    ! Maximum number of coupling categories
@@ -62,6 +63,8 @@
 
       TYPE(FLD_CPL), DIMENSION(nmaxfld), PUBLIC ::   flds_recv, flds_send   !: Coupling fields
 
+      !EM Copy of incoming field from previous coupling time step
+      REAL*8, public, allocatable, dimension(:,:,:) ::   cplts_recv
       !!----------------------------------------------------------------------
       CONTAINS
 
@@ -120,8 +123,9 @@
       flds_recv(i2o_lwlh)%var_name = 'O_QnsOce'  
       flds_recv(i2o_swra)%var_name = 'O_QsrOce'  
       flds_recv(i2o_saln)%var_name = 'O_SFLX'  
-      flds_recv(i2o_taut)%var_name = 'O_TauMod'  
+      flds_recv(i2o_wspd)%var_name = 'O_Wind10'  
       flds_recv(i2o_sico)%var_name = 'RIceFrc'  
+      flds_recv(i2o_mslp)%var_name = 'O_MSLP'  
        
       print*, 'Finnished setting the field names: ' 
       print*,  flds_send(1:nsnd)%var_name
