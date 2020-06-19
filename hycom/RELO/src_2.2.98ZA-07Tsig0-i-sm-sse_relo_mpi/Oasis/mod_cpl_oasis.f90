@@ -89,6 +89,7 @@
       !!
       INTEGER ::   ios  ! Local integer output status for namelist read
       INTEGER ::   lwp  ! Local integer output status for namelist read
+      INTEGER ::   maxrcv 
 
 
       !  Define the partition 
@@ -125,12 +126,20 @@
          allocate(flds_send(ifld)%var(idm,jdm))
       end do
 
-      do ifld=1,nrcv 
+      maxrcv = nrcv
+
+      ! One coupling less (MSLP) if no BGC model
+      IF ( ntracr == 0 ) maxrcv = nrcv - 1
+
+      do ifld=1,maxrcv 
          flds_recv(ifld)%var_actual_shape=(/1,il_paral(4),1,il_paral(4)/)
          CALL oasis_def_var(flds_recv(ifld)%var_id,flds_recv(ifld)%var_name,il_part_id,flds_recv(ifld)%var_nodims, &
                             OASIS_In,flds_recv(ifld)%var_actual_shape,OASIS_Real,ierror)     
          allocate(flds_recv(ifld)%var(idm,jdm))
       end do
+
+      !EM Copy of incoming field from previous coupling time step
+      allocate(cplts_recv(idm,jdm,nrcv))
 
       END SUBROUTINE cpl_define
 
@@ -146,6 +155,9 @@
       do ifld=1,nrcv
          deallocate(flds_recv(ifld)%var)
       end do
+
+      !EM Copy of incoming field from previous coupling time step
+      deallocate(cplts_recv)
 
       CALL oasis_terminate (ierror)
 
@@ -207,35 +219,39 @@
       INTEGER                   , INTENT(out) ::   info     ! OASIS3 info argument
       INTEGER                   , INTENT(in ) :: time     ! ocean time-step in seconds
       !!
-      INTEGER    :: ifld
+      INTEGER    :: ifld, maxrcv
       !!--------------------------------------------------------------------
 
-      do ifld=1,nrcv 
+      maxrcv = nrcv
+
+      ! One coupling less (MSLP) if no BGC model
+      IF ( ntracr == 0 ) maxrcv = nrcv - 1
+
+      do ifld=1, maxrcv
+
          CALL oasis_get(flds_recv(ifld)%var_id,time,flds_recv(ifld)%var(1:ii,1:jj),&
          flds_recv(ifld)%info)     
+
+         ! EM: if coupling field actually received at current time step,
+         !     save into cplts_recv array to be use in the model until
+         !     the next update by oasis_get call
+         if (flds_recv(ifld)%info>0) &
+            cplts_recv(1:ii,1:jj,ifld)=flds_recv(ifld)%var(1:ii,1:jj)
+
+         ! halo filling
+
       end do
 !AS If receives put variables to the hycom variables if they were received from nextsim
-      if (flds_recv(i2o_taux)%info==3.or.flds_recv(i2o_taux)%info==12) then
+!      if (flds_recv(i2o_taux)%info>0) then
 !          surtx(1:ii,1:jj)=flds_recv(i2o_taux)%var(1:ii,1:jj)
-      end if
-      if (flds_recv(i2o_tauy)%info==3.or.flds_recv(i2o_tauy)%info==12) then
+!      end if
+!      if (flds_recv(i2o_tauy)%info==3.or.flds_recv(i2o_tauy)%info==12) then
 !          surty(1:ii,1:jj)=flds_recv(i2o_tauy)%var(1:ii,1:jj)
-      end if
-      if (flds_recv(i2o_fwfl)%info==3.or.flds_recv(i2o_fwfl)%info==12) then
-      end if
-      if (flds_recv(i2o_lwlh)%info==3.or.flds_recv(i2o_fwfl)%info==12) then
-      end if
-      if (flds_recv(i2o_swra)%info==3.or.flds_recv(i2o_fwfl)%info==12) then
-      end if
-      if (flds_recv(i2o_saln)%info==3.or.flds_recv(i2o_fwfl)%info==12) then
-      end if
-      if (flds_recv(i2o_taut)%info==3.or.flds_recv(i2o_fwfl)%info==12) then
-      end if
-      if (flds_recv(i2o_sico)%info==3.or.flds_recv(i2o_fwfl)%info==12) then
-      end if
+!      end if
+
 ! for filling the halos: - look at the cice coupling:
- !     call xctilr(surtx,1,1,nbdy,nbdy,halo_pv) 
- !     call xctilr(surty,1,1,nbdy,nbdy,halo_pv) 
+!     call xctilr(surtx,1,1,nbdy,nbdy,halo_pv) 
+!     call xctilr(surty,1,1,nbdy,nbdy,halo_pv) 
 
       END SUBROUTINE cpl_rcv
 
