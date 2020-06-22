@@ -58,10 +58,17 @@ OBJS =	         barotp.o  bigrid.o blkdat.o  cnuity.o convec.o \
 ifneq (,$(findstring -D_FABM_,$(CPPFLAGS)))
   MODS  := $(MODS) mod_hycom_fabm.o
   MODD  := $(MODD) mod_hycom_fabm.o
+# Annette: for standalone HYCOM with FABM
+  MODS_HYCOM  := $(MODS_HYCOM) mod_hycom_fabm.o
 endif
 # CAGLAR ----------------------
 
 # Mostafa --------------------
+ifneq (,$(findstring -DCPL_OASIS_HYCOM,$(CPPFLAGS)))
+  MODS_HYCOM := $(MODS_HYCOM) mod_cpl_oasis_init.o mod_cpl_oasis.o
+  MODD_HYCOM := $(MODD_HYCOM) mod_cpl_oasis_init.o mod_cpl_oasis.o
+endif
+
 hycom:	$(MODS_HYCOM) $(OBJS) hycom.o
 	$(LD)  $(LDFLAGS) -o hycom  hycom.o $(MODS_HYCOM) $(OBJS) $(EXTRALIBS)
 
@@ -155,7 +162,7 @@ mod_incupd.o: \
         mod_incupd.F mod_xc.o mod_cb_arrays.o            mod_za.o
 mod_floats.o: \
         mod_floats.F mod_xc.o mod_cb_arrays.o            mod_za.o mod_pipe.o \
-	                                                          mod_stokes.o
+	                                                          mod_stokes.o 
 mod_pipe.o: \
         mod_pipe.F   mod_xc.o mod_cb_arrays.o                     mod_stokes.o
 mod_stokes.o: \
@@ -195,3 +202,13 @@ mod_archiv.o: mod_hycom_fabm.o
 
 endif
 # CAGLAR ----------------------
+# Annette ---- OASIS COUPLER
+ifneq (,$(findstring -DCPL_OASIS_HYCOM,$(CPPFLAGS)))
+mod_cpl_oasis_init.o:  mod_cpl_oasis_init.f90 mod_cb_arrays.o mod_dimensions.o
+mod_xc.o:         mod_cpl_oasis_init.o
+mod_cpl_oasis.o:  mod_cpl_oasis.f90 mod_cpl_oasis_init.o mod_xc.o
+mod_hycom.o:      mod_cpl_oasis_init.o mod_cpl_oasis.o
+mxkprf.o:         mod_cpl_oasis_init.o mod_cpl_oasis.o
+mod_momtum.o:     mod_cpl_oasis_init.o mod_cpl_oasis.o
+endif
+# Annette ---- OASIS COUPLER
