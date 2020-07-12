@@ -1,5 +1,8 @@
       module mod_xc
       use mod_dimensions  !include 'dimensions.h'
+#ifdef CPL_OASIS_HYCOM
+      use mod_cpl_oasis_init, only: localComm
+#endif
       implicit none
 c
 c --- HYCOM communication interface.
