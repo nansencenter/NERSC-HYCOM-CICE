@@ -702,9 +702,13 @@ echo "SIGVER      = $SIGVER .There are $TERMS terms in equation of state"
 # Set up rel path and stmt fnc
 compdir=$(source_dir $V $TERMS $THFLAG)
 compdir=$P/build/${compdir}
-echo "Retrieving  hycom_cice from $compdir"
-/bin/cp $compdir/hycom_cice  . || tellerror "Could not get hycom_cice executable at "
-
+if [ $ICEFLG -eq 2 ] ; then
+  echo "Retrieving  hycom_cice from $compdir"
+  /bin/cp $compdir/hycom_cice  . || tellerror "Could not get hycom_cice executable at "
+elif [ $ICEFLG -eq 0 ] ; then
+  echo "Retrieving  hycom_oasis from $compdir"
+  /bin/cp $compdir/hycom_oasis  . || tellerror "Could not get hycom_oasis executable at "
+fi
 
 
 #
