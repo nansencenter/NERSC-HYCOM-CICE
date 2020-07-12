@@ -1735,10 +1735,10 @@ c
         call xcstop('(blkdat)')
                stop '(blkdat)'
       endif
-      if (wndflg.lt.0 .or. wndflg.gt.5) then
+      if (wndflg.lt.0 .or. wndflg.gt.7) then
         if (mnproc.eq.1) then
         write(lp,'(/ a /)') 
-     &    'error - wndflg must be between 0 and 5'
+     &    'error - wndflg must be between 0 and 7'
         call flush(lp)
         endif !1st tile
         call xcstop('(blkdat)')
