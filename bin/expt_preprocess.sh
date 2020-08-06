@@ -479,8 +479,8 @@ if [ $TRCRLX -ne 0 -o $NTRACR -eq -1 ] ; then
    ln -sf $BASEDIR/relax/${E}/relax_rmu.a relax.rmutr.a  || tellerror "Could not get relax.rmutr.a"
    ln -sf $BASEDIR/relax/${E}/relax_rmu.b relax.rmutr.b  || tellerror "Could not get relax.rmutr.b"
 
-   [ ! -f  $INPUTDIR/pCO2a_1948_2018 ] && tellerror "$INPUTDIR/pCO2a_1948_2018 does not exist"
-   ln -sf $INPUTDIR/pCO2a_1948_2018 pCO2a_1948_2018 || tellerror "Could not get pCO2a_1948_2018"
+   [ ! -f  $INPUTDIR/co2_annmean_gl.txt ] && tellerror "$INPUTDIR/co2_annmean_gl.txt does not exist"
+   ln -sf $INPUTDIR/co2_annmean_gl.txt co2_annmean_gl.txt || tellerror "Could not get co2_annmean_gl.txt"
 fi
 #
 # - thermobaric reference state?
