@@ -101,6 +101,7 @@ module mod_hycom_fabm
    logical :: nested_bio
 
    integer :: pCO2unit, yCO2init, nyearCO2,modelyear,modelmonth
+   character(len=80)  :: co2str
    real    :: co2_seasonality(12),modelday,modeltime,pair
    real    :: dew,atmco2_0,atmco2_1,atmco2_2,atmco2_3
 contains
@@ -166,7 +167,7 @@ contains
     ! read atmospheric CO2 time-series
     pCO2unit = 2640
     yCO2init = 1948
-    nyearCO2 = 71 ! last data year = 2018
+    nyearCO2 = 72 ! last data year = 2019
     co2_seasonality = [1.8552,2.7411,3.7847,4.6522,4.2706,1.1206,-4.3468,-8.6286,-7.9663,-3.7896,1.8954,3.0054]
       
     end subroutine hycom_fabm_configure
@@ -200,7 +201,7 @@ contains
       type (type_interior_output),   pointer :: last_interior_output
       type (type_horizontal_output), pointer :: last_horizontal_output
 
-      integer :: yCO2
+      integer :: yCO2,tmpyear
 
         ! Provide extents of the spatial domain (number of layers nz for a 1D column)
         call fabm_set_domain(fabm_model, ii, jj, kk, baclin)
@@ -245,11 +246,22 @@ contains
             last_horizontal_output%data2d => fabm_get_horizontal_diagnostic_data(fabm_model, ivar)
         end do
 
-        open(unit=pCO2unit, file='pCO2a_1948_2018',form='formatted')
-        do yCO2=1,nyearCO2
-          read(pCO2unit,*) atmco2(yCO2)
+        open(unit=pCO2unit, file='co2_annmean_gl.txt',form='formatted')                                                 
+!AS skip the fist lines starting with #
+        read(pCO2unit,*) co2str
+        print*, 'str', co2str
+        do while (co2str(1:1).eq.'#')
+           read(pCO2unit,*) co2str
         end do
-        close(pCO2unit) 
+        
+!AS read the data
+        backspace(pCO2unit)
+        do yCO2=1,nyearCO2 
+            read(pCO2unit,*) tmpyear, atmco2(yCO2)
+        end do
+
+        close(pCO2unit)  
+
     contains
 
       function add_interior_output(variable) result(saved)
