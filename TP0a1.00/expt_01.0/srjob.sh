@@ -1,26 +1,27 @@
 #!/bin/bash -l
 
-#SBATCH --account=nn2993k
+#SBATCH --qos=devel
+#SBATCH --account=nn9481k
 #SBATCH --job-name=TP0a10
 #SBATCH -t 00:20:00
-#SBATCH -N 4   # number of nodes
-#SBATCH -n 7 # number of cores
+#SBATCH -N 1   # number of nodes
+#SBATCH -n 4 # number of cores
 #SBATCH  --mail-type=END
-#SBATCH --mail-user=jiping.xie@nersc.no
+#SBATCH --mail-user=achref.othmani@nersc.no
 
-#SBATCH -o log/HY_CICE%J.out
-#SBATCH -e log/HY_CICE%J.err
+#SBATCH -o log/HY_CICE.out
+#SBATCH -e log/HY_CICE.err
 
 #
 #  Give the job a name
 #
 #         
 module restore system
-module load NCL/6.4.0-intel-2017a
-module load FFTW/3.3.6-intel-2017a
+module load NCL/6.6.2-intel-2018b
+module load FFTW/3.3.8-intel-2018b
+module load Python/2.7.15-intel-2018b
 
-
-export NMPI=28
+export NMPI=4
 export SLURM_SUBMIT_DIR=$(pwd)
 # Enter directory from where the job was submitted
 cd $SLURM_O_WORKDIR       ||  { echo "Could not go to dir $SLURM_O_WORKDIR  "; exit 1; }
@@ -49,7 +50,7 @@ INITFLG="--init"
 echo "Start time in pbsjob.sh: $START"
 echo "End   time in pbsjob.sh: $END"
 # Generate atmospheric forcing :
-atmo_synoptic.sh erai $START $END 
+atmo_synoptic.sh erai+all $START $END 
 
 # Transfer data files to scratch - must be in "expt_XXX" dir for this script
 expt_preprocess.sh $START $END $INITFLG        ||  { echo "Preprocess had fatal errors "; exit 1; }
