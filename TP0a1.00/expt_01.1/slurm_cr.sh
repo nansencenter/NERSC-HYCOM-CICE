@@ -139,7 +139,7 @@ cp SCRATCH/forcing.* $SLURM_SUBMIT_DIR/SCRATCH/
 cp SCRATCH/blkdat.input $SLURM_SUBMIT_DIR/SCRATCH/ 
 cp SCRATCH/patch.input $SLURM_SUBMIT_DIR/SCRATCH/ 
 cp SCRATCH/limits $SLURM_SUBMIT_DIR/SCRATCH/ 
-cp SCRATCH/pCO2a_1948_2018 $SLURM_SUBMIT_DIR/SCRATCH/ 
+cp SCRATCH/co2_annmean_gl.txt $SLURM_SUBMIT_DIR/SCRATCH/ 
 cp SCRATCH/hycom_oasis $SLURM_SUBMIT_DIR/SCRATCH/ 
 
 # Enter directory from where the job was submitted                                                                                                
