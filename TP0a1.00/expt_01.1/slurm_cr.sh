@@ -12,10 +12,10 @@
 ## Set OMP_NUM_THREADS
 #SBATCH --cpus-per-task=1
 ## uncomment for debug queue
-#SBATCH --qos=preproc
+#SBATCH --qos=devel
 
 #SBATCH --mail-type=END                       # Mail events (NONE, BEGIN, END, FAIL, ALL)
-#SBATCH --mail-user=eric@cerfacs.fr # email to the user
+#SBATCH --mail-user= # email to the user
 #SBATCH --output=run.%j.out         # Stdout
 #SBATCH --error=run.%j.err          # Stderr
 
@@ -40,6 +40,8 @@ function usage {
     echo "-t|--test"
     echo "   don't launch the model"
 }
+
+source /cluster/home/annettes/HYCOM-CICE/NERSC-HYCOM-CICE/bin/common_functions.sh
 
 npseaice=4
 npocean=4
@@ -113,7 +115,7 @@ echo "Start time in pbsjob.sh: $START"
 echo "End   time in pbsjob.sh: $END"
 echo "Initialization flag is: $INITFLG"
 
-hycom_dir=/cluster/home/maisonnave/Sources/HYCOM/TP0a1.00
+hycom_dir=/cluster/work/users/annettes/TP0a1.00
 hycom_exp=$hycom_dir/expt_01.3
 
 # Initialize environment (sets Scratch dir ($S), Data dir $D ++ )                                                                                  
@@ -195,12 +197,14 @@ cp -a $CONFIG $SCRATCH
 #cp -a $OID/namcouple.fabm $SCRATCH/namcouple
 # update total simulation time
 (( DURSEC = $DURATION * 86400 ))
-sed s/_totaltime_/$DURSEC/ $OID/namcouple.fabm > $SCRATCH/namcouple 
+sed s/_totaltime_/$DURSEC/ $OID/namcouple.fabm > $OID/namcouple.tmp
+BACLIN=$(blkdat_get $SCRATCH/blkdat.input baclin)
+sed s/_baclin_/${BACLIN%%.*}/ $OID/namcouple.tmp > $SCRATCH/namcouple
 cp -a $OID/ocean.nc $SCRATCH
 cp -a $OID/ice.fabm.nc $SCRATCH/ice.nc
 cp -a $log $SCRATCH
 #cp -a $SLURM_SUBMIT_DIR/bin/nextsim.exec $progdir
-cp -a /cluster/home/maisonnave/Sources/NEXTSIM/model/bin/nextsim.exec $progdir/nextsim.exec
+cp -a /cluster/home/annettes/Progs/NeXtSIM/nextsim/model/bin/nextsim.exec $progdir/nextsim.exec
 cp -a $NEXTSIM_DATA_DIR/* $NEXTSIMDIR/data/* $SCRATCH/data
 cp -a $NEXTSIM_MESH_DIR/* $NEXTSIMDIR/mesh/* $SCRATCH/mesh
 
