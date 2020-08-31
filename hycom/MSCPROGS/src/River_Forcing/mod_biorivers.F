@@ -387,10 +387,10 @@
       biorivernr=0
       do k=1,biorivermax
          read(18,'(l1,a60)',end=100,err=100)active,string
-         read(18,'(f10.1,12f8.5)')dummy
-         read(18,'(f10.1,12f8.5)')dummy
-         read(18,'(f10.1,12f8.5)')dummy
-         read(18,'(f10.1,12f8.5)')dummy
+         read(18,'(f12.5,12f8.5)')dummy
+         read(18,'(f11.2,12f8.5)')dummy
+         read(18,'(f11.2,12f8.5)')dummy
+         read(18,'(f11.2,12f8.5)')dummy
          read(18,'(2f9.2)')dummy2
          if (active) biorivernr=biorivernr+1
       enddo
@@ -424,10 +424,10 @@
       ! --- ------------------------------------------------------------------
       ! --- Include river data. 6 lines are specifying each river.
       ! --- Line 1.: Active, Name and other info (l1,t3,a60)
-      ! --- Line 2.: Annual mean (km^3/year), monthly weights (f10.1,12f8.5)
-      ! --- Line 3.: Annual mean nitrate   (mg/m^3y), monthly weights (f10.1,12f8.5)
-      ! --- Line 4.: Annual mean phosphate (mg/m^3y), monthly weights (f10.1,12f8.5)
-      ! --- Line 5.: Annual mean silicate  (mg/m^3y), monthly weights (f10.1,12f8.5)
+      ! --- Line 2.: Annual mean (km^3/year), monthly weights (f12.5,12f8.5)
+      ! --- Line 3.: Annual mean nitrate   (mgC/s), monthly weights (f11.2,12f8.5)
+      ! --- Line 4.: Annual mean phosphate (mgC/s), monthly weights (f11.2,12f8.5)
+      ! --- Line 5.: Annual mean silicate  (mgC/s), monthly weights (f11.2,12f8.5)
       ! --- Line 6.: Lat, Lon position , lat,lon (2f9.1)
       ! --- ------------------------------------------------------------------
       use mod_xc
@@ -467,9 +467,9 @@
       do m=1,10000
          read(18,'(l1,t3,a60)',end=100,err=100)riv_active,riv_string
          read(18,'(f10.1,12f8.5)')riv_annual,(riv_flux(i),i=1,12)
-         read(18,'(f14.11,12f8.5)')nit_annual,(nit_flux(i),i=1,12)
-         read(18,'(f14.11,12f8.5)')pho_annual,(pho_flux(i),i=1,12)
-         read(18,'(f14.11,12f8.5)')sil_annual,(sil_flux(i),i=1,12)
+         read(18,'(f11.2,12f8.5)')nit_annual,(nit_flux(i),i=1,12)
+         read(18,'(f11.2,12f8.5)')pho_annual,(pho_flux(i),i=1,12)
+         read(18,'(f11.2,12f8.5)')sil_annual,(sil_flux(i),i=1,12)
          read(18,'(2f9.2)')riv_lat,riv_lon
          riv_banned=.false.
 
@@ -533,11 +533,8 @@
 
            ! Convert from km^3/y to m^3/s
            riv_annual=riv_annual*1.e09/(365.*24.*3600.) 
-          ! Convert from mg/m3y to  mg/m3s ! CAGLAR ! already done in
-          ! python script
-          ! nit_annual=nit_annual/(365.*24.*3600.)
-          ! pho_annual=pho_annual/(365.*24.*3600.)
-          ! sil_annual=sil_annual/(365.*24.*3600.)
+          ! Convert from Mg/y to  mgC/s ! CAGLAR ! already done in glodapBIO_to_hycom.py
+
            if (mnproc==1) then
               write(lp,*) 'Pivot point for river location       =',
      &             riv_ip,riv_jp
@@ -665,10 +662,11 @@
 !  
 ! Output:
 !   -river_flux -- Monthly river fluxes (m/s)
-!   -nit_flux   -- Monthly river fluxes (mg/m^3s)
-!   -pho_flux   -- Monthly river fluxes (mg/m^3s)
-!   -sil_flux   -- Monthly river fluxes (mg/m^3s)
-!
+!   -nit_flux   -- Monthly river fluxes (mg/m^2 s)
+!   -pho_flux   -- Monthly river fluxes (mg/m^2 s)
+!   -sil_flux   -- Monthly river fluxes (mg/m^2 s)
+!   -HYCOM-FABM river load to tracer --> tracer (mgC/m3) + delt1 (s) * input / depth (m)
+!   -thus input from here should have mgC/s --> mgC/s m2 conversion
 !
 ! KAL : New: let river flux be weighted by distance from origin
 
@@ -941,9 +939,9 @@
             q_sil=river(k)%silflux(mo)
 
             tmpriver=q*weight/(scpx*scpy)
-            tmpriver_nit=q_nit*weight!/(scpx*scpy)
-            tmpriver_pho=q_pho*weight!/(scpx*scpy)
-            tmpriver_sil=q_sil*weight!/(scpx*scpy)
+            tmpriver_nit=q_nit*weight/(scpx*scpy)
+            tmpriver_pho=q_pho*weight/(scpx*scpy)
+            tmpriver_sil=q_sil*weight/(scpx*scpy)
 
             ! Add river contribution to final field
             river_flux(:,:,mo)=river_flux(:,:,mo)+tmpriver
@@ -953,9 +951,9 @@
 
             ! Double check - this should be equal to the volume flux from the river
             tmpriver=tmpriver*scpx*scpy
-            tmpriver_nit=tmpriver_nit!*scpx*scpy
-            tmpriver_pho=tmpriver_pho!*scpx*scpy
-            tmpriver_sil=tmpriver_sil!*scpx*scpy
+            tmpriver_nit=tmpriver_nit*scpx*scpy
+            tmpriver_pho=tmpriver_pho*scpx*scpy
+            tmpriver_sil=tmpriver_sil*scpx*scpy
 
             !call xcsum(wsum,tmpriver,ip)
             wsum=sum(tmpriver,ip==1)
