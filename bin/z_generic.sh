@@ -69,6 +69,9 @@ elif [ ${CLIM_CHOICE} == "levitus" ] ; then
 elif [ ${CLIM_CHOICE} == "woa2013" ] ; then
    CLIM_PATH=${WOA2013_PATH}
    CLIM_TITLE="WOA2013 Climatology (monthly)"
+elif [ ${CLIM_CHOICE} == "woa2018" ] ; then
+   CLIM_PATH=${WOA2018_PATH}
+   CLIM_TITLE="WOA2018 Climatology (monthly)"
 else 
    echo "Unknown climatology ${CLIM_CHOICE}"
    exit 2
