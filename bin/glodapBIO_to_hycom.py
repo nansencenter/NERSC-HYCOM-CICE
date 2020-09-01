@@ -36,12 +36,12 @@ def distance_on_unit_sphere(lat1, long1, lat2, long2):
   return arc
 
 searchradius = 20. # kilometers
-river_volume_flux_file   = open("/cluster/home/cagyum/DEVELOP/NERSC-HYCOM-CICE/input/rivers_ahype-ehype_clim_rev2.dat")
-river_nutrient_flux_file = open("/cluster/home/cagyum/DEVELOP/NERSC-HYCOM-CICE/input/globalNEWS_2012.dat")
+river_volume_flux_file   = open("/cluster/home/cagyum/DEVEL/NERSC-HYCOM-CICE/input/rivers_ahype-ehype_clim_rev2.dat")
+river_nutrient_flux_file = open("/cluster/home/cagyum/DEVEL/NERSC-HYCOM-CICE/input/globalNEWS_2012.dat")
 
 fflux      = river_volume_flux_file.readlines()
 nfluxlines = len(fflux)/3 # calculates number of rivers in flux file
-river_volume_flux_file   = open("/cluster/home/cagyum/DEVELOP/NERSC-HYCOM-CICE/input/rivers_ahype-ehype_clim_rev2.dat") # open again for colocation
+river_volume_flux_file   = open("/cluster/home/cagyum/DEVEL/NERSC-HYCOM-CICE/input/rivers_ahype-ehype_clim_rev2.dat") # open again for colocation
 
 class DataFlux:
       name    = ["" for x in range(nfluxlines)]
@@ -81,7 +81,7 @@ class DataLoad:
       don  = numpy.zeros(nloadlines)
 
 k=0 # read in nutrient information
-with open("/cluster/home/cagyum/DEVELOP/NERSC-HYCOM-CICE/input/globalNEWS_2012.dat","r") as river_nutrient_flux_file:
+with open("/cluster/home/cagyum/DEVEL/NERSC-HYCOM-CICE/input/globalNEWS_2012.dat","r") as river_nutrient_flux_file:
      first_line = river_nutrient_flux_file.readline()
      for line in river_nutrient_flux_file:
          DataLoad.name[k] = line.split()[1]
@@ -89,8 +89,8 @@ with open("/cluster/home/cagyum/DEVELOP/NERSC-HYCOM-CICE/input/globalNEWS_2012.d
          DataLoad.lat[k]  = float( line.split()[5] )
          DataLoad.nit[k]  = float( line.split()[17] )
          DataLoad.pho[k]  = float( line.split()[18] )
-         DataLoad.sil[k]  = float( line.split()[19] )
-         DataLoad.don[k]  = float( line.split()[30] ) / 1000.
+         DataLoad.don[k]  = float( line.split()[19] )
+         DataLoad.sil[k]  = float( line.split()[30] ) / 1000.
          k=k+1
 
 class Colocated:
@@ -107,7 +107,7 @@ class Colocated:
       loadsil  = numpy.zeros(nfluxlines)
       loaddon  = numpy.zeros(nfluxlines)
 
-outfile = open("/cluster/home/cagyum/DEVELOP/NERSC-HYCOM-CICE/input/biorivers.dat","w") 
+outfile = open("/cluster/home/cagyum/DEVEL/NERSC-HYCOM-CICE/input/biorivers.dat","w") 
 for x in range(nfluxlines):
       distance = numpy.zeros(nloadlines)
       for y in range(nloadlines):
@@ -123,10 +123,10 @@ for x in range(nfluxlines):
          Colocated.fluxann[x]    = DataFlux.annual[x]
          Colocated.loadlon[x]  = numpy.mean( DataLoad.lon[found] )
          Colocated.loadlat[x]  = numpy.mean( DataLoad.lat[found] )
-         Colocated.loadnit[x]  = numpy.max( DataLoad.nit[found] ) * (6.625*12.01/14.01) / (365.25*24.0*60.0*60.0) # mgN/yr  --> mgC/s 
-         Colocated.loadpho[x]  = numpy.max( DataLoad.pho[found] ) * (106.0*12.01/30.97) / (365.25*24.0*60.0*60.0) # mgP/yr  --> mgC/s
-         Colocated.loadsil[x]  = numpy.max( DataLoad.sil[found] ) * (6.625*12.01/28.09) / (365.25*24.0*60.0*60.0) # mgSi/yr --> mgC/s
-         Colocated.loaddon[x]  = numpy.max( DataLoad.don[found] ) * (6.625*12.01/14.01) / (365.25*24.0*60.0*60.0) # mgN/yr  --> mgC/s
+         Colocated.loadnit[x]  = numpy.max( DataLoad.nit[found] ) * 1E9 * (6.625*12.01/14.01) / (365.25*24.0*60.0*60.0) # MgN/yr  --> mgC/s 
+         Colocated.loadpho[x]  = numpy.max( DataLoad.pho[found] ) * 1E9 * (106.0*12.01/30.97) / (365.25*24.0*60.0*60.0) # MgP/yr  --> mgC/s
+         Colocated.loadsil[x]  = numpy.max( DataLoad.sil[found] ) * 1E9 * (6.625*12.01/28.09) / (365.25*24.0*60.0*60.0) # MgSi/yr --> mgC/s
+         Colocated.loaddon[x]  = numpy.max( DataLoad.don[found] ) * 1E9 * (6.625*12.01/14.01) / (365.25*24.0*60.0*60.0) # MgN/yr  --> mgC/s
       else :
          Colocated.fluxlat[x]  = DataFlux.lat[x]
          Colocated.fluxlon[x]  = DataFlux.lon[x]
@@ -146,17 +146,17 @@ for x in range(nfluxlines):
                                                                      + str( '{:8.5f}'.format(DataFlux.monthly[x][6])  ) + str( '{:8.5f}'.format(DataFlux.monthly[x][7])  ) + str( '{:8.5f}'.format(DataFlux.monthly[x][8])  ) \
                                                                      + str( '{:8.5f}'.format(DataFlux.monthly[x][9])  ) + str( '{:8.5f}'.format(DataFlux.monthly[x][10])  ) + str( '{:8.5f}'.format(DataFlux.monthly[x][11])  ) \
                                                                      + os.linesep)
-      outfile.write(str( '{:14.11f}'.format(Colocated.loadnit[x])  ) + str( '{:8.5f}'.format(DataFlux.monthly[x][0])  ) + str( '{:8.5f}'.format(DataFlux.monthly[x][1])  ) + str( '{:8.5f}'.format(DataFlux.monthly[x][2])  ) \
+      outfile.write(str( '{:11.2f}'.format(Colocated.loadnit[x])  ) + str( '{:8.5f}'.format(DataFlux.monthly[x][0])  ) + str( '{:8.5f}'.format(DataFlux.monthly[x][1])  ) + str( '{:8.5f}'.format(DataFlux.monthly[x][2])  ) \
                                                                      + str( '{:8.5f}'.format(DataFlux.monthly[x][3])  ) + str( '{:8.5f}'.format(DataFlux.monthly[x][4])  ) + str( '{:8.5f}'.format(DataFlux.monthly[x][5])  ) \
                                                                      + str( '{:8.5f}'.format(DataFlux.monthly[x][6])  ) + str( '{:8.5f}'.format(DataFlux.monthly[x][7])  ) + str( '{:8.5f}'.format(DataFlux.monthly[x][8])  ) \
                                                                      + str( '{:8.5f}'.format(DataFlux.monthly[x][9])  ) + str( '{:8.5f}'.format(DataFlux.monthly[x][10])  ) + str( '{:8.5f}'.format(DataFlux.monthly[x][11])  ) \
                                                                      + os.linesep)
-      outfile.write(str( '{:14.11f}'.format(Colocated.loadpho[x])  ) + str( '{:8.5f}'.format(DataFlux.monthly[x][0])  ) + str( '{:8.5f}'.format(DataFlux.monthly[x][1])  ) + str( '{:8.5f}'.format(DataFlux.monthly[x][2])  ) \
+      outfile.write(str( '{:11.2f}'.format(Colocated.loadpho[x])  ) + str( '{:8.5f}'.format(DataFlux.monthly[x][0])  ) + str( '{:8.5f}'.format(DataFlux.monthly[x][1])  ) + str( '{:8.5f}'.format(DataFlux.monthly[x][2])  ) \
                                                                      + str( '{:8.5f}'.format(DataFlux.monthly[x][3])  ) + str( '{:8.5f}'.format(DataFlux.monthly[x][4])  ) + str( '{:8.5f}'.format(DataFlux.monthly[x][5])  ) \
                                                                      + str( '{:8.5f}'.format(DataFlux.monthly[x][6])  ) + str( '{:8.5f}'.format(DataFlux.monthly[x][7])  ) + str( '{:8.5f}'.format(DataFlux.monthly[x][8])  ) \
                                                                      + str( '{:8.5f}'.format(DataFlux.monthly[x][9])  ) + str( '{:8.5f}'.format(DataFlux.monthly[x][10])  ) + str( '{:8.5f}'.format(DataFlux.monthly[x][11])  ) \
                                                                      + os.linesep)
-      outfile.write(str( '{:14.11f}'.format(Colocated.loadsil[x])  ) + str( '{:8.5f}'.format(DataFlux.monthly[x][0])  ) + str( '{:8.5f}'.format(DataFlux.monthly[x][1])  ) + str( '{:8.5f}'.format(DataFlux.monthly[x][2])  ) \
+      outfile.write(str( '{:11.2f}'.format(Colocated.loadsil[x])  ) + str( '{:8.5f}'.format(DataFlux.monthly[x][0])  ) + str( '{:8.5f}'.format(DataFlux.monthly[x][1])  ) + str( '{:8.5f}'.format(DataFlux.monthly[x][2])  ) \
                                                                      + str( '{:8.5f}'.format(DataFlux.monthly[x][3])  ) + str( '{:8.5f}'.format(DataFlux.monthly[x][4])  ) + str( '{:8.5f}'.format(DataFlux.monthly[x][5])  ) \
                                                                      + str( '{:8.5f}'.format(DataFlux.monthly[x][6])  ) + str( '{:8.5f}'.format(DataFlux.monthly[x][7])  ) + str( '{:8.5f}'.format(DataFlux.monthly[x][8])  ) \
                                                                      + str( '{:8.5f}'.format(DataFlux.monthly[x][9])  ) + str( '{:8.5f}'.format(DataFlux.monthly[x][10])  ) + str( '{:8.5f}'.format(DataFlux.monthly[x][11])  ) \
