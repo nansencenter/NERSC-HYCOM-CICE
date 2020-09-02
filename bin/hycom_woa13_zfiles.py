@@ -307,7 +307,7 @@ def main(path,sigma,months,resolution) :
             depth= ncid["month"]["s"][month].variables["depth"][k]
 
             s_out = ncid["month"]["s"][month].variables["s_an"][0,k,:]
-            t_out = ncid["month"]["t"][month].variables["t_an"][0,k,:]
+            t_out_insitu = ncid["month"]["t"][month].variables["t_an"][0,k,:]
          else  :
             myfile="season"
             depth= ncid["season"]["s"][i0].variables["depth"][k]
@@ -317,8 +317,8 @@ def main(path,sigma,months,resolution) :
 
             t_out_0 = ncid["season"]["t"][i0].variables["t_an"][0,k,:]
             t_out_1 = ncid["season"]["t"][i1].variables["t_an"][0,k,:]
-            s_out=s_out_0*w0 + s_out_1*w1
-            t_out=t_out_0*w0 + t_out_1*w1
+            s_out = s_out_0*w0 + s_out_1*w1
+            t_out_insitu = t_out_0*w0 + t_out_1*w1
 
          meter_to_decibar = 1.006931  
          t_out = theta(s_out,t_out_insitu,depth * meter_to_decibar,0.) # convert WOA in situ temperature to pot. temperature

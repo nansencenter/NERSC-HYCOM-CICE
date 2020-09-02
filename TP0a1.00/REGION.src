@@ -50,6 +50,7 @@ export LEVITUS_PATH=${Sysdir}/ModelInput/clim/levitus/
 export PHC_PATH=${Sysdir}/ModelInput/clim/PHC/
 export WOA2013_PATH=${Sysdir}/ModelInput/clim/WOA2013/hycom_0.25/sigma-0/
 export WOA2013BIO_PATH=${Sysdir}/ModelInput/clim/WOA2013/Nutrients
+export WOA2018_PATH=${Sysdir}/ModelInput/clim/WOA2018/hycom_0.25/sigma-0/
 export GLODAPCO2_PATH=${Sysdir}/ModelInput/GLODAPV2/
 #export WOA2013_PATH=$mydir/../input/data/WOA2013/sigma-0/
 
