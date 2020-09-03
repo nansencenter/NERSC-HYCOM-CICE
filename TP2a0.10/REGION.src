@@ -48,7 +48,10 @@ export Sysdir=/cluster/projects/nn2993k
 # PATHS to hycom-supplied ocean climatologies, on specially formatted input files
 export LEVITUS_PATH=${Sysdir}/ModelInput/clim/levitus/   
 export PHC_PATH=${Sysdir}/ModelInput/clim/PHC/
-export WOA2013_PATH=${Sysdir}/ModelInput/clim/WOA2013/hycom_0.25
+export WOA2013_PATH=${Sysdir}/ModelInput/clim/WOA2013/hycom_0.25/sigma-0/
+export WOA2013BIO_PATH=${Sysdir}/ModelInput/clim/WOA2013/Nutrients
+export WOA2018_PATH=${Sysdir}/ModelInput/clim/WOA2018/hycom_0.25/sigma-0/
+export GLODAPCO2_PATH=${Sysdir}/ModelInput/GLODAPV2/
 #export WOA2013_PATH=$mydir/../input/data/WOA2013/sigma-0/
 
 export SEAWIFS=${Sysdir}/ModelInput/clim/seawifs/
@@ -67,7 +70,7 @@ export GEBCO_PATH=${Sysdir}/ModelInput/bathymetry/GEBCO/
 export IBCAO_PATH=${Sysdir}/ModelInput/bathymetry/IBCAO_v3/
 export FES_PATH=/work/shared/nersc/msc/ModelInput/tides/FES2004/
 export CSR_PATH=/work/shared/nersc/msc/ModelInput/tides/CSR/
-export TRIP_PATH=/work/shared/nersc/TRIP/
+export TRIP_PATH=/cluster/projects/nn2993k/TRIP/
 export WAM_PATH=/work/shared/nersc/msc/WAM
 export WAMNSEA_PATH=/work/shared/nersc/msc/WAMNSEA/
 export BACKUP_PATH=/migrate/${USER}
