@@ -12,7 +12,7 @@ S-Z(15-11): dp00/f/x/i=3m/1.125/12m/1m; ds=1m/1.125/4m; src_2.2.12;
   50      'nhybrd' = number of hybrid levels (0=all isopycnal)
    0      'nsigma' = number of sigma  levels (nhybrd-nsigma z-levels)
    1.0    'dp00  ' = deep    z-level spacing minimum thickness (m)
- 150.0    'dp00x ' = deep    z-level spacing maximum thickness (m)
+ 250.0    'dp00x ' = deep    z-level spacing maximum thickness (m)
    1.15   'dp00f ' = deep    z-level spacing stretching factor (1.0=const.space)
    1.0    'ds00  ' = shallow z-level spacing minimum thickness (m)
   75.0    'ds00x ' = shallow z-level spacing maximum thickness (m)
@@ -205,7 +205,7 @@ S-Z(15-11): dp00/f/x/i=3m/1.125/12m/1m; ds=1m/1.125/4m; src_2.2.12;
   -1	  'lwflag' = longwave (SST) flag (0=none,1=clim,2=atmos)
    0	  'sstflg' = SST relaxation flag (0=none,1=clim,2=atmos,3=observed)
    0	  'icmflg' = ice mask       flag (0=none,1=clim,2=atmos,3=obs/coupled)
-1.e0      'prsbas' = msl pressure is input field + prsbas (Pa)
+   0      'prsbas' = msl pressure is input field + prsbas (Pa)
    0      'mslprf' = msl pressure forcing flag            (0=F,1=T)
    0      'stroff' = net stress offset flag               (0=F,1=T)
    0      'flxoff' = net flux offset flag                 (0=F,1=T)
@@ -220,4 +220,4 @@ S-Z(15-11): dp00/f/x/i=3m/1.125/12m/1m; ds=1m/1.125/4m; src_2.2.12;
    0      'nmarcs' = '' Surface archive filename. Dot and date appended. Empty: use old hycom name.
    0      'nmarcv' = '' Full    archive filename. Dot and date appended. Empty: use old hycom name.
    0      'nmarcm' = '' Mean    archive filename. Dot and date appended. Empty: use old hycom name.
-   6      'nrdflg' =     (0,1,...,7) options for the radiation heat fluxes
+   0      'nrdflg' =     (0,1,...,7) options for the radiation heat fluxes
