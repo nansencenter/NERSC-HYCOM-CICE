@@ -36,7 +36,88 @@ def plot_test(fld,filename) :
    ax.figure.colorbar(P)
    figure.canvas.print_figure(filename)
 
+def atg(s,t,p):
+   '''
+   DESCRIPTION:  adiabatic temperature gradient (deg C per decibar)
 
+   REFERENCES:   Bryden, H. (1973), Deep-Sea Res., 20, 401-408
+
+   UNITS:        pressure         p0        decibars
+               temperature      to        deg celsius (ipts-68)
+               salinity         s         (ipss-78)
+               reference prs    pr        decibars
+               potential tmp    theta     deg celsius
+
+   CHECK VALUE:  atg = 3.255976e-4 deg C/dbar for
+               s = 40 (ipss-78), t=40 deg C, p = 10000 decibars
+
+   PARAMETERS:
+      Name        Type        Usage           Description
+   ----------   ---------    -------    -------------------------
+       p          real        input     pressure in decibars
+       t          real        input     temperature (celsius)
+       s          real        input     salinity (pss-78)
+   '''
+
+   ds = s - 35.
+   atg_calculated = (((-2.1687e-16 * t + 1.8676e-14) * t - 4.6206e-13) * \
+          p + ((2.7759e-12 * t - 1.1351e-10) * ds + ((-5.4481e-14 * \
+          t + 8.733e-12) * t - 6.7795e-10) * t + 1.8741e-8)) * \
+          p + (-4.2393e-8 * t + 1.8932e-6) * ds + ((6.6228e-10 * \
+          t - 6.836e-8) * t + 8.5258e-6) * t + 3.5803e-5
+   return atg_calculated
+
+def theta(s,t0,p0,pr):
+   '''
+   DESCRIPTION:  computes local potential temperature at "pr" using
+              Bryden 1973 polynomial for adiabatic lapse rate
+              and Runge-Kutta 4th order integration algorithm
+
+   REFERENCES:   Bryden, H. (1973), Deep-Sea Res., 20, 401-408
+              Fofonoff, N. (1977), Deep-Sea Res., 24, 489-491
+
+   UNITS:        pressure         p0        decibars
+              temperature      to        deg celsius (ipts-68)
+              salinity         s         (ipss-78)
+              reference prs    pr        decibars
+              potential tmp    theta     deg celsius
+
+   CHECK VALUE:  theta = 36.89073 deg C for
+              s = 40 (ipss-78), t0 = 40 deg C,
+              p0 = 10000 decibars, pr = 0 decibars
+
+
+   PARAMETERS:
+      Name        Type        Usage           Description
+   ----------   ---------    -------    -------------------------
+      p0          real        input     pressure in decibars
+      t0          real        input     temperature (celsius)
+       s          real        input     salinity (pss-78)
+      pr          real        input     reference pressure (decibars)
+   '''
+   # ..set up intermediate temperature and pressure variables
+
+   p = p0
+   t = t0
+
+   #    ..solve for potential temperature
+
+   h = pr - p
+   xk = h * atg(s, t, p)
+   t = t + 0.5 * xk
+   q = xk
+   p = p + 0.5 * h
+   xk = h * atg(s, t, p)
+   t = t + 0.29289322 * (xk - q)
+   q = 0.58578644 * xk + 0.121320344 * q
+   xk = h * atg(s, t, p)
+   t = t + 1.707106781 * (xk - q)
+   q = 3.414213562 * xk - 4.121320344 * q
+   p = p + 0.5 * h
+   xk = h * atg(s, t, p)
+   theta_calculated = t + (xk - 2. * q) / 6.
+
+   return theta_calculated
 
 
 def main(path,sigma,months,resolution) :
@@ -226,7 +307,7 @@ def main(path,sigma,months,resolution) :
             depth= ncid["month"]["s"][month].variables["depth"][k]
 
             s_out = ncid["month"]["s"][month].variables["s_an"][0,k,:]
-            t_out = ncid["month"]["t"][month].variables["t_an"][0,k,:]
+            t_out_insitu = ncid["month"]["t"][month].variables["t_an"][0,k,:]
          else  :
             myfile="season"
             depth= ncid["season"]["s"][i0].variables["depth"][k]
@@ -236,8 +317,11 @@ def main(path,sigma,months,resolution) :
 
             t_out_0 = ncid["season"]["t"][i0].variables["t_an"][0,k,:]
             t_out_1 = ncid["season"]["t"][i1].variables["t_an"][0,k,:]
-            s_out=s_out_0*w0 + s_out_1*w1
-            t_out=t_out_0*w0 + t_out_1*w1
+            s_out = s_out_0*w0 + s_out_1*w1
+            t_out_insitu = t_out_0*w0 + t_out_1*w1
+
+         meter_to_decibar = 1.006931  
+         t_out = theta(s_out,t_out_insitu,depth * meter_to_decibar,0.) # convert WOA in situ temperature to pot. temperature
 
          # write nc file
          if dump_netcdf :
