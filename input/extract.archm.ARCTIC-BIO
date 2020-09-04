@@ -1,0 +1,14 @@
+4                          # Version of tecconv program     
+pres     intf          # Field used to determine layer interfaces
+2 F F F                # 2-D, sphere, rotate, index velocities   
+1 800 1 760       # section plot ia:ib ja:jb
+1 1   XX XX   X     # extracted layers for 3-d fields (not used for 2-d)
+prmpfabm 01 50   T
+chl_fabm 01 50   T 
+attcfabm 01 50   T 
+nit_fabm 01 50   T 
+pho_fabm 01 50   T 
+pbiofabm 01 50   T 
+zbiofabm 01 50   T
+oxy_fabm 01 50   T 
+sil_fabm 01 50   T
