@@ -9,6 +9,7 @@ if [ $# -ne 1 ] ; then
    echo "HYCOM."
    echo
    echo "The only input is ksigma (0 or 2)"
+   echo ".d files to be read are created by bin/hycom_woa2013_zfiles.py"
    exit
 fi
 export KSIGMA=$1
