@@ -744,9 +744,11 @@ program p_hyc2proj
 
                ! Convention/unit issue for evaporation minus precipitation
                if (trim(fld(ifld)%fextract)=='emnp') hy2d=-hy2d*1000
-               !scale srfhgt by 'zos=zos/(thref*onem)' 
+!Alfati13.09.2020.. start convert srfhgt unit to "m" by 'zos=zos/(thref*onem)' 
                if (trim(fld(ifld)%fextract)=='srfhgt') hy2d=hy2d/9.806
-
+               ! and scale albdsni_d by 'albsni_d=albsni_d/100.0',now unit="1" 
+               if (trim(fld(ifld)%fextract)=='albsni_d') hy2d=hy2d/100.0
+!Alfati13.09.2020. end convert
                call to_proj(hy2d,regu2d)
                call putNCVar(ncstate,regu2d,nxp,nyp,1,fld(ifld)%fextract,3,.false.)
             end if
