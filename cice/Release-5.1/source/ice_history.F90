@@ -847,9 +847,14 @@
       ! Tracers
 
       ! Ice Age
-         call define_hist_field(n_iage,"iage","years",tstr2D, tcstr, &
+      !Alfati.   call define_hist_field(n_iage,"iage","years",tstr2D, tcstr, &
+      !Alfati.      "sea ice age",                                        &
+      !Alfati.       "none", c1/(secday*days_per_year), c0,                &
+      !Alfati.     ns1, f_iage)
+      !Alfati. use unit=day for iage as required by CMEMS
+         call define_hist_field(n_iage,"iage","days",tstr2D, tcstr, &
              "sea ice age",                                        &
-             "none", c1/(secday*days_per_year), c0,                &
+             "none", c1/secday, c0,                &
              ns1, f_iage)
 
       ! First Year Ice Area
