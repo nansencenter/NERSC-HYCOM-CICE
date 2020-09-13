@@ -23,5 +23,6 @@ vvel_d   00 00  T
 hs_d     00 00  T
 iage_d   00 00  T
 FYarea_d 00 00  T
-albice_d 00 00  T
+albice_d 00 00  F
+albsni_d 00 00  T
 
