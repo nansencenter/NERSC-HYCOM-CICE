@@ -567,7 +567,7 @@ C
           READ(73) SILSEAIN
                    SILSEAIN = SILSEAIN * 6.625 * 12.01
           READ(74) OXYSEAIN
-                   OXYSEAIN = OXYSEAIN * 32.0
+                   OXYSEAIN = OXYSEAIN * 44.661
         ENDIF
 
 C AS17072012: Missing values are negative - set to zero
