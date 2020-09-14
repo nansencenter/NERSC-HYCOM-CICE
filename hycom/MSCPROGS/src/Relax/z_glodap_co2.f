@@ -690,9 +690,6 @@ C         ASSUME ICE FORMS (I.E. MIN SST) AT -1.8 DEGC.
 C
 C       WRITE OUT STATISTICS.
 C
-        !CALL MINMAX(DICSEAI,IDM,JDM, XMIN,XMAX)  ! CAGLAR: these lines
-        !CALL AVERMS(DICSEAI,IDM,JDM, XAVE,XRMS)  ! cause segmentatin
-                                                  ! fault, investigate
         WRITE(6,8100) 'DICSEAIN', XMIN,XMAX,XAVE,XRMS
         CALL MINMAX(DICM,IDM,JDM, XMIN,XMAX)
         CALL AVERMS(DICM,IDM,JDM, XAVE,XRMS)
