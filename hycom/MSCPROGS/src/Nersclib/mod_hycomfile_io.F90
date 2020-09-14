@@ -1182,7 +1182,7 @@ contains
          stdname='sea_water_salinity' ; units='1e-3' ; vname='so'
          limits=(/0,45/)
       case ('temp') 
-         stdname='sea_water_potential_temperature' ; units='degrees C' ; vname='theta0'
+         stdname='sea_water_potential_temperature' ; units='degrees C' ; vname='thetao'
          limits=(/-3,50/)
       case ('levsaln')
          stdname='sea_water_salinity' ; units='1e-3' ; vname='levitus_salinity'
