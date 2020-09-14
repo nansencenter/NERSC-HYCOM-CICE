@@ -1182,13 +1182,13 @@ contains
          stdname='sea_water_salinity' ; units='1e-3' ; vname='so'
          limits=(/0,45/)
       case ('temp') 
-         stdname='sea_water_potential_temperature' ; units='degrees C' ; vname='thetao'
+         stdname='sea_water_potential_temperature' ; units='degrees_C' ; vname='thetao'
          limits=(/-3,50/)
       case ('levsaln')
          stdname='sea_water_salinity' ; units='1e-3' ; vname='levitus_salinity'
          limits=(/0,45/)
       case ('levtemp') 
-         stdname='sea_water_potential_temperature' ; units='degrees C' ; vname='levitus_temperature'
+         stdname='sea_water_potential_temperature' ; units='degrees_C' ; vname='levitus_temperature'
          limits=(/-3,50/)
       case ('ssh','srfhgt') 
          stdname='sea_surface_height_above_geoid' ; units='m' ; vname='zos'
@@ -1247,7 +1247,7 @@ contains
           stdname='age_of_sea_ice' ; units='day' ; vname='siage'
           limits=(/0,36500/)
        case ('fy_frac','FYarea_d')
-          stdname='sea_ice_area_fraction_of_first_year_ice' ; units='1' ;  
+          stdname='sea_ice_area_fraction' ; units='1' ;  
           vname='siconc_fy'
           limits=(/0,1/)
       case ('ubavg','u_btrop') 
@@ -1346,7 +1346,7 @@ contains
 !KAL20151204 - Adding bottom temperature
       case ('btemp') 
          vname    = 'bottomT'
-         units    = 'degrees C'
+         units    = 'degrees_C'
          limits   = (/-3,50/)
          stdname  = 'sea_water_potential_temperature_at_sea_floor'
          longname = 'Sea floor potential temperature'
