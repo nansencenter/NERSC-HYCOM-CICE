@@ -551,7 +551,11 @@ C       READ THE INPUT CLIMS.
 C
         IF     (ICTYPE.EQ.1) THEN
           READ(71) DICSEAIN
+          DICSEAIN = DICSEAIN * 1.025 ! convert micromoles/kg to mmol/m3
+                                      ! assuming 1L seawater = 1.025kg
+                                      ! seawater
           READ(72) ALKSEAIN
+          ALKSEAIN = ALKSEAIN * 1.025
         ENDIF
 
 C AS17072012: Missing values are negative - set to zero
@@ -574,7 +578,6 @@ C AS20072016: Update: missing values are also in the ocean, so they are set to t
         end do
         DICGLOBMEAN=DICGLOBMEAN/DICCOUNTER
         ALKGLOBMEAN=ALKGLOBMEAN/ALKCOUNTER
-        
         DO  J= 1,JWI
           DO  I= 1,IWI
             if (DICSEAIN(I,J).lt.0.0) DICSEAIN(I,J)=DICGLOBMEAN
@@ -687,10 +690,7 @@ C         ASSUME ICE FORMS (I.E. MIN SST) AT -1.8 DEGC.
 C
 C       WRITE OUT STATISTICS.
 C
-        CALL MINMAX(DICSEAI,IDM+4,JDM+4, XMIN,XMAX)
-        CALL AVERMS(DICSEAI,IDM+4,JDM+4, XAVE,XRMS)
         WRITE(6,8100) 'DICSEAIN', XMIN,XMAX,XAVE,XRMS
-
         CALL MINMAX(DICM,IDM,JDM, XMIN,XMAX)
         CALL AVERMS(DICM,IDM,JDM, XAVE,XRMS)
         WRITE(6,8100) 'DICSEA', XMIN,XMAX,XAVE,XRMS
