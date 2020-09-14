@@ -48,6 +48,12 @@ if [ ${forcing:0:4} == "erai" ] ; then
    if [[ -n $ERAI_PATH ]] ; then
       ROOTPATH=$ERAI_PATH
    fi
+elif [ ${forcing:0:4} == "era5" ] ; then
+   xmlfile=$INPUTDIR/era5.xml
+   # if ERA5_PATH is set, it will override rootPath in xml file
+   if [[ -n $ERA5_PATH ]] ; then
+      ROOTPATH=$ERA5_PATH
+   fi
 elif [ ${forcing:0:5} == "ec_op" ] ; then
 	xmlfile=${INPUTDIR}/ec_op.xml
 	if [[ -n $ECNC_PATH ]] ; then
