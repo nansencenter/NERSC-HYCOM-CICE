@@ -33,6 +33,8 @@ use mod_hycomfile_io
       extrfile='extract.weekly'
    else if (trim(hfile%ftype)=='archv') then
       extrfile='extract.archv'
+   else if (trim(hfile%ftype)=='archm') then
+      extrfile='extract.archm'
    else
       print *,'Unknown filetype '//trim(hfile%ftype)
       print *,'(fields_to_plot)'
