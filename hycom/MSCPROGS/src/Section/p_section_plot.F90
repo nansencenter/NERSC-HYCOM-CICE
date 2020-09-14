@@ -30,9 +30,12 @@ program section_plot
    ! parse arguments can be found at the end of this file
    call parse_arguments()
 
+   write(6,'(a)') 'Test 0'
    ! What file is this? (daily? weekly? restart? pak?)
    ftype=getfiletype(trim(fnamein))
-
+   print *, ftype
+   
+   write(6,'(a)') 'Test 1'
    ! Inits file type
    call initHF(hfile,fnamein,trim(ftype))
 
@@ -45,7 +48,9 @@ program section_plot
 
    ! Get model grid & Depths
    call get_grid()
-
+   
+   write(6,'(a)') 'Test 2'
+   
    ! Read nodes along section -- this assumes "section_intersect" is already run
    call read_section_nodes()
 
@@ -84,7 +89,6 @@ program section_plot
          else 
             write(6,'(a,2a8,x,i1)',advance='no') '3D Vector Var: ',fld(j)%fextract,fld(j+1)%fextract
          end if
-
          do k=1,kdm
             write(6,'(a1)',advance='no') '.' ; call flush(6)
             if (k==kdm) write(6,'(i2)',advance='yes') kdm ; call flush(6)
