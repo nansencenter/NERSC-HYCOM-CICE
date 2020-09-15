@@ -30,12 +30,12 @@ program section_plot
    ! parse arguments can be found at the end of this file
    call parse_arguments()
 
-   write(6,'(a)') 'Test 0'
+   write(6,'(a)')
    ! What file is this? (daily? weekly? restart? pak?)
    ftype=getfiletype(trim(fnamein))
    print *, ftype
    
-   write(6,'(a)') 'Test 1'
+   write(6,'(a)')
    ! Inits file type
    call initHF(hfile,fnamein,trim(ftype))
 
@@ -49,7 +49,7 @@ program section_plot
    ! Get model grid & Depths
    call get_grid()
    
-   write(6,'(a)') 'Test 2'
+   write(6,'(a)')
    
    ! Read nodes along section -- this assumes "section_intersect" is already run
    call read_section_nodes()

@@ -18,7 +18,6 @@ CPPARCH = -DIA32 -DREA8 -DMPI -DSERIA_IO -DTIMER -DIARGC -DFFTW -DLAPACK
 F90FLG= -free
 F77FLG = -nofree
 
-##### NETCDF_INCLUDE_OPTS=/cluster/software/netCDF-Fortran/4.4.4-intel-2017a/include
 NETCDF_INCLUDE_OPTS=/cluster/software/netCDF-Fortran/4.4.4-intel-2018b/include
 
 # Compiler flags - real*8 version 
