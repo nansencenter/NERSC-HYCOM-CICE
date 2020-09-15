@@ -1,6 +1,6 @@
 #!/bin/bash
 
-myclim="woa2013" # Climatology to use
+myclim="woa2018" # Climatology to use
 #myclim="phc" # Climatology to use
 
 Icore=23
@@ -75,7 +75,7 @@ if [ $NTRACR -ne 0 ] ; then
   # Create CO2 z-relaxation files from GLODAPV2
   cd $EDIR
   echo "co2 relax climatology"
-  z_glodap_co2.sh $KSIGMA > $EDIR/log/ref_bio_relax.out 2>&1
+  z_glodap_co2.sh $KSIGMA > $EDIR/log/ref_co2_relax.out 2>&1
   res=$?
   [ $res -eq 0 ] && echo "Success"
   [ $res -ne 0 ] && echo "Failure... Log in $EDIR/log/ref_co2_relax.out"
