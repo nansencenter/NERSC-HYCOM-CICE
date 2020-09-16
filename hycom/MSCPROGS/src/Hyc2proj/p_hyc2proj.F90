@@ -622,7 +622,7 @@ program p_hyc2proj
             ! 2D Scalar case
             else 
                print '(a)','Processing 2D Scalar  '// fld(ifld  )%fextract
-               if (trim(fld(ifld)%fextract)=='mld1' .or. trim(fld(ifld)%fextract)=='mld2') then 
+               if (trim(fld(ifld)%fextract)=='stepmldT' .or. trim(fld(ifld)%fextract)=='stepmld') then 
                   ! Compute mix layer depths
                   allocate(temp(idm,jdm,kdm))
                   allocate(sal(idm,jdm,kdm))
@@ -632,10 +632,10 @@ program p_hyc2proj
                   ! LB, pressure is expected in meters
                   call mixlayer_depths(temp,sal,pres/onem,mld1,mld2,idm,jdm,kdm)
                   deallocate(temp,sal)
-                  if (trim(fld(ifld)%fextract)=='mld1') hy2d=mld1
-                  if (trim(fld(ifld)%fextract)=='mld2') hy2d=mld2
+                  if (trim(fld(ifld)%fextract)=='stepmldT') hy2d=mld1
+                  if (trim(fld(ifld)%fextract)=='stepmld') hy2d=mld2
                   
-               elseif (trim(fld(ifld)%fextract)=='GS_MLD') then 
+               elseif (trim(fld(ifld)%fextract)=='mld') then 
                   ! Compute the mixed layer depth interpolated
                   allocate(temp(idm,jdm,kdm))
                   allocate(sal(idm,jdm,kdm))

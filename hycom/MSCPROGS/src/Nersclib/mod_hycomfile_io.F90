@@ -1326,16 +1326,16 @@ contains
          units='kg m-2 s-1' ; vname='fwflux'
          limits=(/-1e-3,1e-3/)
          stdname='water_flux_into_ocean'
-      case ('mld1','mld')
-         units='m' ; vname='mld'
+      case ('stepmldT')
+         units='m' ; vname='stepmldT'
          limits=(/0.,5000./)
          stdname='ocean_mixed_layer_thickness_defined_by_sigma_theta'
-      case ('mld2','mlp')
-         units='m' ; vname='mlp'
+      case ('stepmld')
+         units='m' ; vname='stepmld'
          limits=(/0.,5000./)
          stdname='ocean_mixed_layer_thickness_defined_by_sigma_theta'
 !Alfati. More accurate method for computing MLD using density         
-      case ('GS_MLD')
+      case ('mld')
          units='m' ; vname='mlotst'
          limits=(/0.,3500./)
          stdname='ocean_mixed_layer_thickness_defined_by_sigma_theta'
