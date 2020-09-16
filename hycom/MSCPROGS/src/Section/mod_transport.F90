@@ -332,8 +332,8 @@ end subroutine
       call HFReaduvbaro(hfile,ubavg,vbavg,idm,jdm,1)
 
       ! Get ice velocities
-         call HFReadField(hfile,uice,idm,jdm,'uice    ',0,1)
-         call HFReadField(hfile,vice,idm,jdm,'vice    ',0,1)
+         call HFReadField(hfile,uice,idm,jdm,'si_u    ',0,1)
+         call HFReadField(hfile,vice,idm,jdm,'si_v    ',0,1)
       if (trim(hfile%ftype)=='nersc_daily') then
          call HFReadField(hfile,hice,idm,jdm,'hice    ',0,1)
          call HFReadField(hfile,fice,idm,jdm,'fice    ',0,1)
