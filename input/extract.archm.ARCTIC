@@ -4,18 +4,19 @@ pres     intf          # Field used to determine layer interfaces
 1 270 1 210            # section plot ia:ib ja:jb
 1 1   XX XX   X        # extracted layers for 3-d fields (not used for 2-d)
 salin   01 50   T
-temp    01 50   T 
+temp    01 50   T
 utotl   01 50   T
 vtotl   01 50   T
 u-vel.  01 50   F
 v-vel.  01 50   F
-u_btrop  00 00   F
-v_btrop  00 00   F
-btemp    00 00   T 
-bsf     00 00   T
-mld2    00 00   F
-GS_MLD  00 00   T
-srfhgt  00 00   T
+u_btrop  00 00  F
+v_btrop  00 00  F
+btemp    00 00  T 
+bsf      00 00  T
+stepmldT 00 00  F
+stepmld  00 00  F
+mld      00 00  T
+srfhgt   00 00  T
 hi_d     00 00  T
 aice_d   00 00  T
 uvel_d   00 00  T
