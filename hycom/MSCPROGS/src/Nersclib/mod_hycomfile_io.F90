@@ -1247,7 +1247,8 @@ contains
           stdname='age_of_sea_ice' ; units='day' ; vname='siage'
           limits=(/0,36500/)
        case ('fy_frac','FYarea_d')
-          stdname='sea_ice_area_fraction' ; units='1' ;  
+          stdname='sea_ice_classification' ; units='1' ; 
+          longname = 'sea ice area fraction of first year ice'
           vname='siconc_fy'
           limits=(/0,1/)
       case ('ubavg','u_btrop') 
