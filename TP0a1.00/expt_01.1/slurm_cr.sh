@@ -48,7 +48,7 @@ npocean=4
 
 #defaults for options
 MUMPS_MEM=1000 # Reserved memory for the solver
-ENV_FILE=$HOME/nextsim2017a.src
+ENV_FILE=$HOME/HYCOM-CICE/NERSC-HYCOM-CICE/hycom/RELO/config/nextsim_configuration.src
 DEBUG=true
 TEST=false
 
