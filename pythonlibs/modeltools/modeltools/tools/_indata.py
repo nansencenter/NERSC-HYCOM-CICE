@@ -169,7 +169,10 @@ class NetcdfFieldReader(FieldReader) :
 
    def open_if_needed(self,dt) :
       # Open file if necessary
-      tmpdt=dt-self._time_offset
+      if self._filenametemplate.find('/ERA5/') > 0 :
+         tmpdt=dt
+      else :
+         tmpdt=dt-self._time_offset
       newfilename=tmpdt.strftime(self._filenametemplate)
       if not self.file_is_open(newfilename) : 
          if self._filename is not None : self._nc.close()
@@ -227,7 +230,12 @@ class ForcingField(object) :
          logger.info("Converting accumulated field (varname=%s) to flux"%self._varname)
          self._units        = self._units+ " s**-1"
          tmp= self._accumulation_time
-         self._accumulation_scale_factor = 1./(tmp.days*86400. + tmp.seconds)
+         if self._filenametemplate.find('/ERA5/') > 0 :
+             # Downloaded ERA5 at current using the hourly averaged precipitation
+             # future it could be 3-hoursly
+            self._accumulation_scale_factor = 1./(tmp.days*86400. + tmp.seconds/6)
+         else :
+            self._accumulation_scale_factor = 1./(tmp.days*86400. + tmp.seconds)
       else :
          self._accumulation_scale_factor = 1.
          self._accumulation_time=datetime.timedelta(0)
