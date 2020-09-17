@@ -1182,13 +1182,13 @@ contains
          stdname='sea_water_salinity' ; units='1e-3' ; vname='so'
          limits=(/0,45/)
       case ('temp') 
-         stdname='sea_water_potential_temperature' ; units='Celsius' ; vname='theta0'
+         stdname='sea_water_potential_temperature' ; units='degrees_C' ; vname='thetao'
          limits=(/-3,50/)
       case ('levsaln')
          stdname='sea_water_salinity' ; units='1e-3' ; vname='levitus_salinity'
          limits=(/0,45/)
       case ('levtemp') 
-         stdname='sea_water_potential_temperature' ; units='Celsius' ; vname='levitus_temperature'
+         stdname='sea_water_potential_temperature' ; units='degrees_C' ; vname='levitus_temperature'
          limits=(/-3,50/)
       case ('ssh','srfhgt') 
          stdname='sea_surface_height_above_geoid' ; units='m' ; vname='zos'
@@ -1244,10 +1244,11 @@ contains
          stdname='sea_ice_area_fraction' ; units='1' ; vname='siconc'
          limits=(/0,1/)
       case ('fy_age','iage_d')
-          stdname='age_of_sea_ice' ; units='year' ; vname='siage'
-          limits=(/0,365/)
+          stdname='age_of_sea_ice' ; units='day' ; vname='siage'
+          limits=(/0,36500/)
        case ('fy_frac','FYarea_d')
-          stdname='sea_ice_fraction_of_first_year' ; units='1' ;  
+          stdname='sea_ice_classification' ; units='1' ; 
+          longname = 'sea ice area fraction of first year ice'
           vname='siconc_fy'
           limits=(/0,1/)
       case ('ubavg','u_btrop') 
@@ -1325,19 +1326,19 @@ contains
          units='kg m-2 s-1' ; vname='fwflux'
          limits=(/-1e-3,1e-3/)
          stdname='water_flux_into_ocean'
-      case ('mld1','mld')
-         units='m' ; vname='mld'
+      case ('stepmldT')
+         units='m' ; vname='stepmldT'
          limits=(/0.,5000./)
-         stdname='ocean_mixed_layer_thickness'
-      case ('mld2','mlp')
-         units='m' ; vname='mlp'
+         stdname='ocean_mixed_layer_thickness_defined_by_sigma_theta'
+      case ('stepmld')
+         units='m' ; vname='stepmld'
          limits=(/0.,5000./)
-         stdname='ocean_mixed_layer_thickness'
+         stdname='ocean_mixed_layer_thickness_defined_by_sigma_theta'
 !Alfati. More accurate method for computing MLD using density         
-      case ('GS_MLD')
+      case ('mld')
          units='m' ; vname='mlotst'
          limits=(/0.,3500./)
-         stdname='ocean_mixed_layer_thickness_defined_by_sigma'
+         stdname='ocean_mixed_layer_thickness_defined_by_sigma_theta'
       case ('dpmixl','dp_mixl','dpmix') 
          vname='dpmix'
          units='m'
@@ -1346,7 +1347,7 @@ contains
 !KAL20151204 - Adding bottom temperature
       case ('btemp') 
          vname    = 'bottomT'
-         units    = 'Celsius'
+         units    = 'degrees_C'
          limits   = (/-3,50/)
          stdname  = 'sea_water_potential_temperature_at_sea_floor'
          longname = 'Sea floor potential temperature'
@@ -1493,10 +1494,10 @@ contains
          limits=(/0.,200./)
          stdname='depth_integrated_chlorophyll_one_optical_depth'
 !AS06092011
-      case ('albedo','albice_d')
+      case ('albedo','albsni_d')
          vname='sialb'
-         units='%'
-         limits=(/0.,100./)
+         units='1'
+         limits=(/0.,1./)
          stdname='sea_ice_albedo'
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
