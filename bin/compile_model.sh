@@ -117,6 +117,8 @@ echo "$(basename $0) : ARCH=$ARCH"
 # SITE deduced from hostname. 
 unames=$(uname -s)
 unamen=$(uname -n)
+
+echo $unamen
 # Hardcoded cases - hexagon
 if [ "${unamen:0:7}" == "hexagon" ] ; then
    SITE="hexagon"
@@ -124,6 +126,10 @@ if [ "${unamen:0:7}" == "hexagon" ] ; then
 
 elif [ "${unamen:0:4}" == "sisu" ] ; then
    SITE="sisu"
+   MACROID=$ARCH.$SITE.$compiler
+
+elif [ "${unamen:5:5}" == "bullx" ] ; then
+   SITE="surfsara"
    MACROID=$ARCH.$SITE.$compiler
 
 elif [ "${unamen:0:5}" == "alvin" ] ; then
@@ -174,6 +180,8 @@ elif [ "$SITE" == "hexagon" ] ; then
    if [[ -z "${ESMF_DIR}" ]] ; then
       # use as default
        export ESMF_DIR=/homeappl/home/pr2n0112/HYCOM_TOOLS/esmf/ESMF.6.3.0rp1
+      #export ESMF_DIR=/home/nersc/knutali/opt/esmf_5_2_0rp3-nonetcdf/
+      #export ESMF_DIR=/home/nersc/knutali/opt/esmf_6_3_0rp1/
       #export ESMF_DIR=/home/nersc/knutali/opt/esmf_7_0_0/
    fi
    export ESMF_MOD_DIR=${ESMF_DIR}/mod/modO/Unicos.$compiler.64.mpi.default/
@@ -203,12 +211,18 @@ elif [ "$SITE" == "alvin" ] || [ "$SITE" == "elvis" ] ; then
 elif [ "$SITE" == "fram" ] ; then 
    echo "hardcoded settings for $SITE"
    export ESMF_DIR=/cluster/software/ESMF/7.1.0r-intel-2018b/
-   #export ESMF_DIR=/cluster/software/ESMF/6.3.0rp1-intel-2017a-HDF5-1.8.18/
+   export ESMF_MOD_DIR=${ESMF_DIR}mod/
+   export ESMF_LIB_DIR=${ESMF_DIR}lib/
+   
+elif [ "$SITE" == "surfsara" ] ; then 
+   echo "hardcoded settings for $SITE"
+   export ESMF_DIR=/sw/arch/RedHatEnterpriseServer7/EB_production/2019/software/ESMF/7.1.0r-intel-2018b/
    export ESMF_MOD_DIR=${ESMF_DIR}mod/
    export ESMF_LIB_DIR=${ESMF_DIR}lib/
    
 elif [[ "${unames:0:5}" == "Linux" ]] && [[ "$SITE" == "fram" ]] ; then
-   export ESMF_DIR=/cluster/software/ESMF/6.3.0rp1-intel-2017a-HDF5-1.8.18/
+   #export ESMF_DIR=/cluster/software/ESMF/6.3.0rp1-intel-2017a-HDF5-1.8.18/
+   export ESMF_DIR=/cluster/software/ESMF/7.1.0r-intel-2018b/
    export ESMF_MOD_DIR=${ESMF_DIR}mod/
    export ESMF_LIB_DIR=${ESMF_DIR}lib/
 
@@ -310,12 +324,10 @@ if [[ !  -f $EDIR/mysource/ ]] && [[ $ICEFLG -eq 0 ]] ; then
         echo "############# copy from  $EDIR/mysource to build folder"
         rm $targetdir/mod_hycom.F
         rm $targetdir/hycom.F
-        rm $targetdir/mod_cpl_oasis.f90
-        rm $targetdir/mod_cpl_oasis_init.f90
+        rm $targetdir/mod_cpl_oasis.*
         cp $EDIR/mysource/mod_hycom.F $targetdir/
         cp $EDIR/mysource/hycom.F $targetdir/
-        cp $EDIR/mysource/mod_cpl_oasis.f90 $targetdir/
-        cp $EDIR/mysource/mod_cpl_oasis_init.f90 $targetdir/
+        cp $EDIR/mysource/mod_cpl_oasis.f* $targetdir/
 else
         echo "You need to use correct mod_hycom and hycom files"
 #       exit 0
