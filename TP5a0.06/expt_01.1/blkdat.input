@@ -208,7 +208,7 @@ S-Z(15-11): dp00/f/x/i=3m/1.125/12m/1m; ds=1m/1.125/4m; src_2.2.12;
    0      'prsbas' = msl pressure is input field + prsbas (Pa)
    0      'mslprf' = msl pressure forcing flag            (0=F,1=T)
    0      'stroff' = net stress offset flag               (0=F,1=T)
-   1      'flxoff' = net flux offset flag                 (0=F,1=T)
+   0      'flxoff' = net flux offset flag                 (0=F,1=T)
    0      'flxsmo' = smooth surface fluxes                (0=F,1=T)
    1	  'relax ' = activate lateral boundary nudging    (0=F,1=T)
    0	  'trcrlx' = activate lat. bound. tracer nudging  (0=F,1=T)
