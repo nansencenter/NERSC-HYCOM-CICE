@@ -124,10 +124,6 @@ if [ "${unamen:0:7}" == "hexagon" ] ; then
    SITE="hexagon"
    MACROID=$ARCH.$SITE.$compiler
 
-elif [ "${unamen:0:4}" == "sisu" ] ; then
-   SITE="sisu"
-   MACROID=$ARCH.$SITE.$compiler
-
 elif [ "${unamen:5:5}" == "bullx" ] ; then
    SITE="surfsara"
    MACROID=$ARCH.$SITE.$compiler
@@ -171,34 +167,6 @@ if [[ -n "${ESMF_DIR}" ]] &&  [[ -n "${ESMF_MOD_DIR}" ]] && [[ -n "${ESMF_LIB_DI
    echo "Using preset ESMF_LIB_DIR=$ESMF_DIR"
 
 # If site is given, use hardcoded settings for this machine
-elif [ "$SITE" == "hexagon" ] ; then
-
-   module unload craype-barcelona
-   module unload craype-istanbul
-   module load craype-interlagos
-
-   if [[ -z "${ESMF_DIR}" ]] ; then
-      # use as default
-       export ESMF_DIR=/homeappl/home/pr2n0112/HYCOM_TOOLS/esmf/ESMF.6.3.0rp1
-      #export ESMF_DIR=/home/nersc/knutali/opt/esmf_5_2_0rp3-nonetcdf/
-      #export ESMF_DIR=/home/nersc/knutali/opt/esmf_6_3_0rp1/
-      #export ESMF_DIR=/home/nersc/knutali/opt/esmf_7_0_0/
-   fi
-   export ESMF_MOD_DIR=${ESMF_DIR}/mod/modO/Unicos.$compiler.64.mpi.default/
-   export ESMF_LIB_DIR=${ESMF_DIR}/lib/libO/Unicos.$compiler.64.mpi.default/
-
-   ## system-wide module, only for pgi
-   ## TODO: Let admins set up INCLUDE opts 
-   #export ESMF_MOD_DIR=${ESMF_DIR}/mod
-   #export ESMF_LIB_DIR=${ESMF_DIR}/lib
-elif [ "$SITE" == "sisu" ] ; then  
-	if [[ -z "${ESMF_DIR}" ]] ; then
-          # use as default
-          export ESMF_DIR=/appl/climate/esmf/6_3_0rp1/INTEL/16.0
-	fi
-        export ESMF_MOD_DIR=${ESMF_DIR}/mod/modO/Unicos.$compiler.64.mpi.default/
-	export ESMF_LIB_DIR=${ESMF_DIR}/lib/libO/Unicos.$compiler.64.mpi.default/
-
 elif [ "$SITE" == "alvin" ] || [ "$SITE" == "elvis" ] ; then
     echo "hardcoded settings for $SITE"
     if [[ -z "${ESMF_DIR}" ]] ; then
