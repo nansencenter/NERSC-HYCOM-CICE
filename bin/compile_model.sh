@@ -291,10 +291,12 @@ if [[ !  -f $EDIR/mysource/ ]] && [[ $ICEFLG -eq 0 ]] ; then
         echo "############# copy from  $EDIR/mysource to build folder"
         rm $targetdir/mod_hycom.F
         rm $targetdir/hycom.F
-        rm $targetdir/mod_cpl_oasis.*
+        rm $targetdir/mod_cpl_oasis.f90
+        rm $targetdir/mod_cpl_oasis_init.f90
         cp $EDIR/mysource/mod_hycom.F $targetdir/
         cp $EDIR/mysource/hycom.F $targetdir/
-        cp $EDIR/mysource/mod_cpl_oasis.f* $targetdir/
+        cp $EDIR/mysource/mod_cpl_oasis.f90 $targetdir/
+        cp $EDIR/mysource/mod_cpl_oasis_init.f90 $targetdir/
 else
         echo "You need to use correct mod_hycom and hycom files"
 #       exit 0
