@@ -43,4 +43,6 @@ to compiling hycom_cice:
 
 export SURFSARA_NETCDFF_ROOT=/sw/arch/RedHatEnterpriseServer7/EB_production/2019/software/netCDF/4.6.1-intel-2018b
 
+N.B.: The shared project directory is /projects/0/bhao2 which should be difined in the related REGION.src
+
 
