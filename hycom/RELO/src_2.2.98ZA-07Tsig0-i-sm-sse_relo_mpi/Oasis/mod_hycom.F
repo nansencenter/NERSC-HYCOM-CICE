@@ -1464,10 +1464,10 @@ cdiag endif !1st tile
 c
 #if defined(CPL_OASIS_HYCOM)
 !AS receiving files from NeXtSIM to HYCOM 
-      print*, 'Receiving 1',oasis_info
+      if (mnproc==1) print*, 'Receiving 1',oasis_info
 !EM correct time stepping
       CALL cpl_rcv(int((nstep-nstep1-1)*baclin),oasis_info)
-      print*, 'Receiving 2',oasis_info
+      if (mnproc==1) print*, 'Receiving 2',oasis_info
 #endif
       if     (bnstfq.ne.0.0) then  ! new fields for baro nesting
         call rdbaro(dtime)
@@ -2747,10 +2747,10 @@ c
       endif !synflt+end_of_run
 #if defined(CPL_OASIS_HYCOM)
 !AS sendign fields from HYCOM to NeXtSIM
-      print*, 'Sending 1',oasis_info
+      if (mnproc==1) print*, 'Sending 1',oasis_info
 !EM correct time stepping
       CALL cpl_snd(int((nstep-nstep1-1)*baclin),n,oasis_info)
-      print*, 'Sending 2',oasis_info
+      if (mnproc==1) print*, 'Sending 2',oasis_info
 #endif
       end subroutine HYCOM_Run
 

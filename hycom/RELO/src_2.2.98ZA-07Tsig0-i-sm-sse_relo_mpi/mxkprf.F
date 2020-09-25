@@ -481,6 +481,9 @@ c
       use mod_xc         ! HYCOM communication interface
       use mod_cb_arrays  ! HYCOM saved arrays
 c
+#ifdef CPL_OASIS_HYCOM
+      use mod_cpl_oasis
+#endif
 #if defined(STOKES)
       use mod_stokes  ! Stokes Drift Velocity Module
 #endif
@@ -691,6 +694,11 @@ c ---   shortwave flux penetration depends on kpar or chl or jerlov water type.
         swfrac(1)  = 1.0
         swfrac(2:) = 0.0
       endif
+c
+#ifdef CPL_OASIS_HYCOM
+!AS save the fraction of solar radiation here, for sending to NeXtSIM via oasis
+      flds_send(o2i_frr)%var(i,j)=swfrac(1)-swfrac(2)
+#endif
 c
       do k=1,kk
         if (thermo .or. sstflg.gt.0 .or. srelax) then
@@ -1975,6 +1983,9 @@ c
       subroutine mxmyaij(m,n, i,j)
       use mod_xc         ! HYCOM communication interface
       use mod_cb_arrays  ! HYCOM saved arrays
+#ifdef CPL_OASIS_HYCOM
+      use mod_cpl_oasis
+#endif
 c
 c --- hycom version 2.1
       implicit none
@@ -2388,6 +2399,10 @@ c ---   shortwave flux penetration depends on kpar or chl or jerlov water type.
         swfrac(1)  = 1.0
         swfrac(2:) = 0.0
       endif
+#ifdef CPL_OASIS_HYCOM
+!AS save the fraction of solar radiation here, for sending to NeXtSIM via oasis
+      flds_send(o2i_frr)%var(i,j)=swfrac(1)
+#endif
 c
       do k=1,khy1
         if (thermo .or. sstflg.gt.0 .or. srelax) then
@@ -2445,6 +2460,9 @@ c
       subroutine mxgissaij(m,n, i,j)
       use mod_xc         ! HYCOM communication interface
       use mod_cb_arrays  ! HYCOM saved arrays
+#ifdef CPL_OASIS_HYCOM
+      use mod_cpl_oasis
+#endif
 c
 c --- hycom version 2.1
       implicit none
@@ -2607,6 +2625,10 @@ c ---   shortwave flux penetration depends on kpar or chl or jerlov water type.
         swfrac(1)  = 1.0
         swfrac(2:) = 0.0
       endif
+#ifdef CPL_OASIS_HYCOM
+!AS save the fraction of solar radiation here, for sending to NeXtSIM via oasis
+      flds_send(o2i_frr)%var(i,j)=swfrac(1)
+#endif
 c
       tmn=.5*(temp(i,j,1,m)+temp(i,j,1,n))
       smn=.5*(saln(i,j,1,m)+saln(i,j,1,n))
