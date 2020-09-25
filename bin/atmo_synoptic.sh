@@ -85,7 +85,7 @@ eval $cmd   ||  { echo "Error running $cmd " ; exit 1 ; }
 for i in forcing.*.[ab] ; do
    new=$(echo $i | sed "s/^forcing\.//")
    mv $i $D/$new
-   echo "Created  $D/$new"
+   echo "Created  $D$new"
 done
 
 
