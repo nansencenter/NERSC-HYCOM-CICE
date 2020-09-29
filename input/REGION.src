@@ -1,8 +1,7 @@
 #!/bin/bash
 #
-# --- environment variables defining the region and experiment number.
-#
-export R=NMOb0.08
+# Set the Environment Variables defining the Region and Experiment Number
+export R=TP0a1.00
 
 # Consistency check. 
 mydir=$(cd $(dirname ${BASH_SOURCE}) && pwd)
@@ -13,9 +12,8 @@ if [ "$tmp" != "${R}" ] ;then
    exit 1
 fi
 
-# Point to the location of the ALL routines from hycom. Assumed to be in repo location
-#export NHCROOT=$(cd $mydir/../ && pwd)                         # Set this to a different location if necessary (eg out of work)
-export NHCROOT=~/NERSC-HYCOM-CICE       # Set this if necessary (eg out of work)
+# Set the Path Here
+export NHCROOT=/cluster/home/cagyum/DEVELOP/NERSC-HYCOM-CICE       # Set this if necessary (eg out of work)
 
 export HYCOM_ALL=$NHCROOT/hycom/hycom_ALL/hycom_2.2.72_ALL/    # follows NHCROOT, but can be set differently
 export INPUTDIR=$NHCROOT/input/                                # follows NHCROOT, but can be set differently
@@ -37,19 +35,18 @@ for var in "NHCROOT" "HYCOM_ALL" "INPUTDIR" "BINDIR" "MSCPROGS" "HYCOM_PYTHON_RO
 done
 
 
-
 # Update path
 export PATH=$BINDIR/:$PATH
-#export Sysdir=/nird/projects/fram/nn2993k
 export Sysdir=/cluster/projects/nn2993k
-
-
 
 # PATHS to hycom-supplied ocean climatologies, on specially formatted input files
 export LEVITUS_PATH=${Sysdir}/ModelInput/clim/levitus/   
 export PHC_PATH=${Sysdir}/ModelInput/clim/PHC/
-export WOA2013_PATH=${Sysdir}/ModelInput/clim/WOA2013/hycom_0.25
-#export WOA2013_PATH=$mydir/../input/data/WOA2013/sigma-0/
+export WOA2013_PATH=${Sysdir}/ModelInput/clim/WOA2013/hycom_0.25/sigma-0/
+export WOA2013BIO_PATH=${Sysdir}/ModelInput/clim/WOA2013/Nutrients
+export WOA2018_PATH=${Sysdir}/ModelInput/clim/WOA2018/hycom_0.25/sigma-0/
+export GLODAPCO2_PATH=${Sysdir}/ModelInput/GLODAPV2/
+
 
 export SEAWIFS=${Sysdir}/ModelInput/clim/seawifs/
 export COADSWIND=/work/shared/nersc/msc/ModelInput/force/wind_ieee/coads/
@@ -59,6 +56,7 @@ export NCEP_CLIM_PATH=/work/shared/nersc/NCEP_Clim/
 export ERA40_CLIM_PATH=${Sysdir}/ERA40-Clim/
 export ERA40_PATH=${Sysdir}/ERA40/
 export ERAI_PATH=${Sysdir}/ERA-I/
+export ERA5_PATH=${Sysdir}/ERA5/
 export WOA2005_PATH=${Sysdir}/ModelInput/WOA2005/
 export ECNC_PATH=/work/shared/nersc/ECMWFR_T799/
 export NCEP_PATH=/work/shared/nersc/NCEP/
@@ -67,12 +65,11 @@ export GEBCO_PATH=${Sysdir}/ModelInput/bathymetry/GEBCO/
 export IBCAO_PATH=${Sysdir}/ModelInput/bathymetry/IBCAO_v3/
 export FES_PATH=/work/shared/nersc/msc/ModelInput/tides/FES2004/
 export CSR_PATH=/work/shared/nersc/msc/ModelInput/tides/CSR/
-export TRIP_PATH=/work/shared/nersc/TRIP/
+export TRIP_PATH=/cluster/projects/nn2993k/TRIP/
 export WAM_PATH=/work/shared/nersc/msc/WAM
 export WAMNSEA_PATH=/work/shared/nersc/msc/WAMNSEA/
 export BACKUP_PATH=/migrate/${USER}
 
-export MERCATOR_OLD_PATH=/cluster/work/users/mostafab/MERCATOR_OLD/
 export MERCATOR_NATIVE_MESH=/nird/projects/nird/NS9481K/MERCATOR_DATA/GRID_COORD/ext-GL12V1_mesh_zgr.nc
 export MERCATOR_NATIVE_PATH=/nird/projects/nird/NS9481K/MERCATOR_DATA
 export MERCATOR_BIO_PATH=/nird/projects/nird/NS2993K/MERCATOR_DATA/BIO
@@ -94,3 +91,4 @@ export PO=""  # precipitation offset
 export FO=""  # flux offset
 #export FS=$FN # KAL FS is uhm..
 export OF=""  # Time-invariant flux offset
+
