@@ -56,6 +56,7 @@ export NCEP_CLIM_PATH=/work/shared/nersc/NCEP_Clim/
 export ERA40_CLIM_PATH=${Sysdir}/ERA40-Clim/
 export ERA40_PATH=${Sysdir}/ERA40/
 export ERAI_PATH=${Sysdir}/ERA-I/
+export ERA5_PATH=${Sysdir}/ERA5/
 export WOA2005_PATH=${Sysdir}/ModelInput/WOA2005/
 export ECNC_PATH=/work/shared/nersc/ECMWFR_T799/
 export NCEP_PATH=/work/shared/nersc/NCEP/
