@@ -34,9 +34,9 @@
 ##(( ncores = SLURM_NNODES * 24 ))
 ##(( ncores = SLURM_NNODES * 32 ))  #on Fram
 
-module restore system
-module load NCL/6.4.0-intel-2017a
-module load FFTW/3.3.6-intel-2017a
+module load NCL/6.6.2-intel-2018b
+module load FFTW/3.3.8-intel-2018b
+module load Python/2.7.15-intel-2018b
 
 
 export NMPI=220
