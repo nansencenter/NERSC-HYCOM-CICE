@@ -16,7 +16,26 @@ ch.setLevel(_loglevel)
 ch.setFormatter(formatter)
 logger.addHandler(ch)
 logger.propagate=False
+"""
+Ex:
+Converting ['2020-03-01T00:00:00'] from datetime to ordinal
+python ../bin/hycom_date.py datetime ordinal 2020-03-01T00:00:00
+(2020, 61, 0)
 
+Ex:
+Converting ['2020', '299', '00'] from ordinal to datetime
+python ../bin/hycom_date.py ordinal datetime 2020 299 00
+43763.0
+2020 299 0
+2020-10-25T00:00:00
+
+Ex:
+Converting ['43726'] from dtime to datetime   
+python ../bin/hycom_date.py dtime datetime  43726
+43726.0
+2020 262 0
+2020-09-18T00:00:00
+"""
 
 def main(input,output,value) :
 
@@ -67,9 +86,9 @@ if __name__ == "__main__" :
 
    parser = argparse.ArgumentParser(description='')
    parser.add_argument('input',       type=str, 
-      help="Input format; dtime (hycom), datetime (actual date), ordinal (year month day)")
+      help="Input format; dtime (hycom), datetime (actual date), ordinal (year ddd hh)")
    parser.add_argument('output',     type=str,
-      help="Output format; dtime (hycom), datetime (actual date), ordinal (year month day)")
+      help="Output format; dtime (hycom), datetime (actual date), ordinal (year ddd hh)")
    parser.add_argument('value',nargs="+")
    args = parser.parse_args()
 
