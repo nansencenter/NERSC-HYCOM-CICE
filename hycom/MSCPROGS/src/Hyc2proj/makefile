@@ -15,7 +15,7 @@ LIBS:= -L../../../lib/ -lhycnersc -lconfmap $(LIBS)
 INCLUDE:= -I../../../include/ -I../ $(INCLUDE)
 
 
-CPPFLAGS:= $(CPPFLAGS) -UMULT_GRP_PER_FILE
+CPPFLAGS:= $(CPPFLAGS) -UMULT_GRP_PER_FILE 
 #CPPFLAGS:= $(CPPFLAGS) 
 
 # AIX (xlf) peculiarities. NB: Only necessary for Fortran files
@@ -26,10 +26,10 @@ endif
 
 # Rules for running cpp and updating files in TMP directory
 .F90.o:
-	cd ./TMP ; $(CF90) -c $(CPPFLAGS) $(FFLAGS) $(F90FLG) $(INCLUDE) -o $*.o ../$<
+	cat MODEL.CPP $*.F90 | $(CPP) $(CPPFLAGS) > ./TMP/$*.f90; cd ./TMP ; $(CF90) -c $(FFLAGS) $(F90FLG) $(INCLUDE) -o $*.o $*.f90
 
 .F.o:
-	cd ./TMP ; $(CF77) -c $(CPPFLAGS) $(FFLAGS) $(F77FLG) $(INCLUDE) -o $*.o ../$<
+	cat MODEL.CPP $*.F | $(CPP) $(CPPFLAGS) > ./TMP/$*.f; cd ./TMP ; $(CF77) -c $(FFLAGS) $(F77FLG) $(INCLUDE) -o $*.o $*.f
 
 
 

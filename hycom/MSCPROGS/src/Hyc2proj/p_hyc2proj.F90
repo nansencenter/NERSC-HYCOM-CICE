@@ -493,7 +493,11 @@ program p_hyc2proj
                   ! Compute salinity as parts psu/1000 (for the oil drift sumlations
                   allocate(sal(idm,jdm,kdm))
                   allocate(s1000(idm,jdm,kdm))
-                  call HFReadField3D(hfile,sal,idm,jdm,kdm,'saln    ',1)
+#if defined (TP4)  
+                  call HFReadField3D(hfile,sal ,idm,jdm,kdm,'saln    ',1)
+#else
+                  call HFReadField3D(hfile,sal ,idm,jdm,kdm,'salin    ',1)
+#endif
                   s1000=sal/1000.0
                   hy3d=s1000
                   deallocate(sal,s1000)
@@ -627,8 +631,11 @@ program p_hyc2proj
                   allocate(temp(idm,jdm,kdm))
                   allocate(sal(idm,jdm,kdm))
                   call HFReadField3D(hfile,temp,idm,jdm,kdm,'temp    ',1)
-                 !call HFReadField3D(hfile,sal ,idm,jdm,kdm,'saln    ',1)
+#if defined (TP4)  
+                  call HFReadField3D(hfile,sal ,idm,jdm,kdm,'saln    ',1)
+#else
                   call HFReadField3D(hfile,sal ,idm,jdm,kdm,'salin    ',1)
+#endif
                   ! LB, pressure is expected in meters
                   call mixlayer_depths(temp,sal,pres/onem,mld1,mld2,idm,jdm,kdm)
                   deallocate(temp,sal)
@@ -642,8 +649,11 @@ program p_hyc2proj
                   allocate(dens(idm,jdm,kdm))
                   allocate(biovar2D(idm,jdm))
                   call HFReadField3D(hfile,temp,idm,jdm,kdm,'temp',1)
-                  call HFReadField3D(hfile,sal,idm,jdm,kdm,'salin',1)
-                  !call HFReadField3D(hfile,sal,idm,jdm,kdm,'saln',1)
+#if defined (TP4)  
+                  call HFReadField3D(hfile,sal ,idm,jdm,kdm,'saln',1)
+#else
+                  call HFReadField3D(hfile,sal ,idm,jdm,kdm,'salin    ',1)
+#endif
                   do i=1,idm
                     do j=1,jdm
                       do k=1,kdm
@@ -663,8 +673,13 @@ program p_hyc2proj
                   mqlat=qlat
                   allocate(ub(idm,jdm))
                   allocate(vb(idm,jdm))
+#if defined (TP4)
+                  call HFReadField(hfile,ub,idm,jdm,'ubavg ',0,1)
+                  call HFReadField(hfile,vb,idm,jdm,'vbavg ',0,1)
+#else
                   call HFReadField(hfile,ub,idm,jdm,'u_btrop ',0,1)
                   call HFReadField(hfile,vb,idm,jdm,'v_btrop ',0,1)
+#endif
                   !call strmf_eval(idm,jdm,hy2d,ub,vb,depths,mqlat,mqlon)
                   call strmf_eval(idm,jdm,hy2d,ub,vb)
                   deallocate(mqlon,mqlat,ub,vb)
@@ -735,7 +750,11 @@ program p_hyc2proj
                   call HFReadField3D(hfile,hy3d,idm,jdm,kdm,'temp    ',1)
                   call spline_calc(hy3d,pres(:,:,2:kdm+1)/onem,idm,jdm,pres(:,:,kdm+1)/onem>10., hy2d,1,kdm,deepsin=(/-10./))
               else if (trim(fld(ifld)%fextract)=='bsaln') then 
+#if defined (TP4)  
                   call HFReadField3D(hfile,hy3d,idm,jdm,kdm,'saln    ',1)
+#else
+                  call HFReadField3D(hfile,hy3d,idm,jdm,kdm,'salin    ',1)
+#endif
                   call spline_calc(hy3d,pres(:,:,2:kdm+1)/onem,idm,jdm,pres(:,:,kdm+1)/onem>10., hy2d,1,kdm,deepsin=(/-10./))
 !KAL20151109 - End adding bottom temperature
                else  ! LB normal case 
