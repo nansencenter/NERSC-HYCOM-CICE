@@ -8,7 +8,7 @@ This directory contains routines for processing and plotting model output.
 |hycom_convert_daily2monthly_means.sh| compute monthly mean and the mean squire from daily archm files |
 |interpolate_ostia_SST_to_TOPAZgrid.py| quick interpolation from OSTIA SST to TOPAZ grid; it takes as input the OSTIA filename and outputs the interpolated SST in a netCDF file |
 
-# Plotting in this directory 
+# Plotting scripts in this directory 
 
 |executable     | purpose|
 |-------- | -------------|
@@ -16,7 +16,7 @@ This directory contains routines for processing and plotting model output.
 |hycom_plot_topaz_ts_from_ncfile.py | plotting  time series of spatially-averaged of 2D field from netCDF files   |
 |hycom_plot_topaz_ts_from_abfile.py | plotting  time series of spatially-averaged of 2D field from ab files     |
 |hycom_plot_archive_topaz_Avg |      ploting 2D  from a given ab file, and it will plot the averaged if the input are ab muliple files|
-
+|hycom_plot_TOPAZ_vs_clim.py  | compare model to climaelogy, plot bias map, RMS errors, and domain-wide average timeseries |
 
 # Othe plotting tools in NERSC-HYCOM-CICE/bin
 
