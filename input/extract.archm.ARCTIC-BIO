@@ -12,3 +12,4 @@ pbiomass 01 50   T
 zbiomass 01 50   T
 oxygen   01 50   T 
 silicate 01 50   T
+detvflux 01 50   T
