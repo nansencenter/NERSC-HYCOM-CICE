@@ -1465,7 +1465,7 @@ contains
          stdname='standard_salinity_divideby_1000'
       case ('detvflux')
          vname='expc'
-         units='mol m-2 s-1'
+         units='mol m-2 d-1'
          limits=(/0.0,1E-5/)
          stdname='sinking_mole_flux_of_particulate_organic_matter_expressed_as_carbon_in_sea_water'
       case ('pp_d_nor')
@@ -1569,7 +1569,7 @@ contains
          stdname='net_primary_productivity_of_biomass_expressed_as_carbon'
          case ('primprod')
          vname='nppv'
-         units='mg m-3 d-1'
+         units='mg m-3 day-1'
          limits=(/0.,1000./)
          stdname='net_primary_production_of_biomass_expressed_as_carbon_per_unit_volume_in_sea_water'
          case ('attcoeff')
