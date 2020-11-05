@@ -1052,15 +1052,15 @@ c --------- and pass it to CICE.
             if (albflg.gt.0) then
 c ----------  divided the downward shortwave into four components
 c ----------  reference to ice_forcing.F90 -----       
-               expData(17)%p(i+i0,j+j0) = qswdwn*.28
-               expData(18)%p(i+i0,j+j0) = qswdwn*.24
-               expData(19)%p(i+i0,j+j0) = qswdwn*.31
-               expData(20)%p(i+i0,j+j0) = qswdwn*.17
+!               expData(17)%p(i+i0,j+j0) = qswdwn*.28
+!               expData(18)%p(i+i0,j+j0) = qswdwn*.24
+!               expData(19)%p(i+i0,j+j0) = qswdwn*.31
+!               expData(20)%p(i+i0,j+j0) = qswdwn*.17
 
-!               expData(17)%p(i+i0,j+j0) = qswdwn
-!               expData(18)%p(i+i0,j+j0) = 0.
-!               expData(19)%p(i+i0,j+j0) = 0.
-!               expData(20)%p(i+i0,j+j0) = 0.
+               expData(17)%p(i+i0,j+j0) = qswdwn
+               expData(18)%p(i+i0,j+j0) = 0.
+               expData(19)%p(i+i0,j+j0) = 0.
+               expData(20)%p(i+i0,j+j0) = 0.
             else 
                call xchalt('Setup_ESMF: unhandled albflg=0')
                stop 'Setup_ESMF: unhandled albflg=0'
@@ -1130,7 +1130,7 @@ C      call ESMF_LogWrite("HYCOM Export routine returned",
 C     &     ESMF_LOG_INFO, rc=rc)
 C#endif
 C      call ESMF_LogFlush(rc=rc)
-c
+!c
       end subroutine Export_ESMF
 
       subroutine Import_ESMF()
