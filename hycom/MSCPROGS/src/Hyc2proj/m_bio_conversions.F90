@@ -444,8 +444,8 @@ module m_bio_conversions
 
       integer :: i,j,k
 
-! compute flux of detritus to the seafloor mgC m-2 day-1 --> mol m-2 s-1                                                                                           
-      bot_flux=det * srdet_eco / ccar / 1000. / 86400. 
+! compute flux of detritus to the seafloor mgC m-2 d-1 --> mmolC m-2 d-1                                                                                           
+      bot_flux=det * srdet_eco / ccar 
 
    end subroutine det_bottom_flux
 
