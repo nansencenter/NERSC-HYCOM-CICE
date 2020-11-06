@@ -1466,7 +1466,7 @@ contains
       case ('detvflux')
          vname='expc'
          units='mol m-2 d-1'
-         limits=(/0.0,1E-5/)
+         limits=(/0.0,50.0/)
          stdname='sinking_mole_flux_of_particulate_organic_matter_expressed_as_carbon_in_sea_water'
       case ('pp_d_nor')
          vname='pp_depth'
