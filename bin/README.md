@@ -132,6 +132,7 @@ the hycom setup files (grid and bathymetry) to be present.
 | nest_setup_ports.sh  | Generates a ports.input file and rmu file suitable for nesting for an experiment (wrapper around hycom_topo_ports.py)|
 | nest_check_ports.sh  |Checks a port setup for errors |
 | nemo_mesh_to_hycom.py | Converts NEMO grid to hycom file types (regional.grid and regional.depths)|
+| nemo_to_hycom.py  | Converts NEMO input files  to hycom archv files  (also calls nemo_mesh_to_hycom)|
 | nest_rmu_linear.csh | This can be used to create nest rum with linearly increasing e-fold time, more stable nesting. need
 to modfiy the ports indices|
 
