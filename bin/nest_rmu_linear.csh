@@ -1,11 +1,27 @@
 #!/bin/csh
-# Create rmu_nest files with variant e-folding time 
+# Create rmu_nest files with a varying e-folding time
+# For the coordinates (if,il,jf,jl) consult ports.nest
+# Every relaxation zone can be split into multiple boxes
+# IF,IL,JF,JL - ARRAY BOX WHERE EFOLD RELAXATION IS APPLIED
+# The cuurent script is configured for TP5:
+#ports.nest for TP5: 
+#    2  'nports' = Number of ports 
+#    1  'kdport' = port orientation (1=N, 2=S, 3=E, 4=W)
+#   17  'ifport' = first i-index
+#  206  'ilport' = last  i-index (=ifport for N or S orientation)
+#  760  'jfport' = first j-index
+#  760  'jlport' = last  j-index (=jfport for E or W orientation)
+#    2  'kdport' = port orientation (1=N, 2=S, 3=E, 4=W)
+#  345  'ifport' = first i-index
+#  694  'ilport' = last  i-index (=ifport for N or S orientation)
+#    2  'jfport' = first j-index
+#    2  'jlport' = last  j-index (=jfport for E or W orientation)
+
 set echo
 set time = 1
 #
 
 setenv TOOLS /home/sm_alfal/sea/TOPAZ5/NERSC-HYCOM-CICE/hycom/hycom_ALL/hycom_2.2.72_ALL
-setenv TOOLS ~/HYCOM-tools
 set path = ( ${path} ${TOOLS}/bin )
 C
 C --- Generate HYCOM nest rmu e-folding time, nest_rmu.a
@@ -86,56 +102,40 @@ setenv FOR051A fort.51A
 C
 #234567890123456789012345678901234567890123456789012345678901234567890123456789
 cat <<'E-o-D' >! fort.99
-S,N boundaries: 20 grid pts with 3-15 day e-folding time
- 345      'if    ' = first i point of sub-region (<=0 to end)
- 694      'il    ' = last  i point of sub-region
-   2      'jf    ' = first j point of sub-region
-   5      'jl    ' = last  j point of sub-region
-   3.0    'efoldA' = bottom left  e-folding time in days
-   3.0    'efoldB' = bottom right e-folding time in days
-   9.0    'efoldC' = top    right e-folding time in days
-   9.0    'efoldD' = top    left  e-folding time in days
- 345      'if    ' = first i point of sub-region (<=0 to end)
- 694      'il    ' = last  i point of sub-region
-   5      'jf    ' = first j point of sub-region
-  11      'jl    ' = last  j point of sub-region
-   9.0    'efoldA' = bottom left  e-folding time in days
-   9.0    'efoldB' = bottom right e-folding time in days
-  12.0    'efoldC' = top    right e-folding time in days
-  12.0    'efoldD' = top    left  e-folding time in days
- 345      'if    ' = first i point of sub-region (<=0 to end)
- 694      'il    ' = last  i point of sub-region
-  11      'jf    ' = first j point of sub-region
-  20      'jl    ' = last  j point of sub-region
-  12.0    'efoldA' = bottom left  e-folding time in days
-  12.0    'efoldB' = bottom right e-folding time in days
-  15.0    'efoldC' = top    right e-folding time in days
-  15.0    'efoldD' = top    left  e-folding time in days
- 17       'if    ' = first i point of sub-region (<=0 to end)
- 206      'il    ' = last  i point of sub-region
- 756      'jf    ' = first j point of sub-region
- 759      'jl    ' = last  j point of sub-region
-   9.0    'efoldA' = bottom left  e-folding time in days
-   9.0    'efoldB' = bottom right e-folding time in days
-   3.0    'efoldC' = top    right e-folding time in days
-   3.0    'efoldD' = top    left  e-folding time in days
- 17      'if    ' = first i point of sub-region (<=0 to end)
- 206      'il    ' = last  i point of sub-region
- 750       'jf    ' = first j point of sub-region
- 756      'jl    ' = last  j point of sub-region
-  12.0    'efoldA' = bottom left  e-folding time in days
-  12.0    'efoldB' = bottom right e-folding time in days
-   9.0    'efoldC' = top    right e-folding time in days
-   9.0    'efoldD' = top    left  e-folding time in days
- 17      'if    ' = first i point of sub-region (<=0 to end)
- 206      'il    ' = last  i point of sub-region
- 740       'jf    ' = first j point of sub-region
- 750      'jl    ' = last  j point of sub-region
-  15.0    'efoldA' = bottom left  e-folding time in days
-  15.0    'efoldB' = bottom right e-folding time in days
-  12.0    'efoldC' = top    right e-folding time in days
-  12.0    'efoldD' = top    left  e-folding time in days
-  -1      'if    ' = first i point of sub-region (<=0 to end)
+S,N boundaries: 20 grid pts with 3.1-15.1 day e-folding time       #-------------------------
+ 345      'if    ' = first i point of sub-region (<=0 to end)  #----Southern boundary coordinates
+ 694      'il    ' = last  i point of sub-region               #  (first box) with efold=(3.1,10.1)
+   2      'jf    ' = first j point of sub-region               #             jl=8    
+   8      'jl    ' = last  j point of sub-region               #              |
+   3.1    'efoldA' = bottom left  e-folding time in days       #  if= 345 <---|----> il=694       
+   3.1    'efoldB' = bottom right e-folding time in days       #              |
+  10.1    'efoldC' = top    right e-folding time in days       #             jf=2
+  10.1    'efoldD' = top    left  e-folding time in days       #
+ 345      'if    ' = first i point of sub-region (<=0 to end)  #  (second box) with efold=(10.1,15.1)
+ 694      'il    ' = last  i point of sub-region               #             jl=20    
+   8      'jf    ' = first j point of sub-region               #              |
+  20      'jl    ' = last  j point of sub-region               #  if= 345 <---|----> il=694
+  10.1    'efoldA' = bottom left  e-folding time in days       #              |
+  10.1    'efoldB' = bottom right e-folding time in days       #             jf=8
+  15.1    'efoldC' = top    right e-folding time in days       #
+  15.1    'efoldD' = top    left  e-folding time in days       #
+ 17       'if    ' = first i point of sub-region (<=0 to end)  #-----Northern boundary coordinates
+ 206      'il    ' = last  i point of sub-region               #  (first box) with efold=(3.1,10.1)
+ 752      'jf    ' = first j point of sub-region               #             jl=759   
+ 759      'jl    ' = last  j point of sub-region               #              |
+  10.1    'efoldA' = bottom left  e-folding time in days       #   if= 17 <---|----> il=206
+  10.1    'efoldB' = bottom right e-folding time in days       #              |
+   3.1    'efoldC' = top    right e-folding time in days       #             jf=762
+   3.1    'efoldD' = top    left  e-folding time in days       #
+ 17      'if    ' = first i point of sub-region (<=0 to end)   # (second box) with efold=(10.1,15.1)
+ 206      'il    ' = last  i point of sub-region               #            jl=762         
+ 740       'jf    ' = first j point of sub-region              #             |
+ 753      'jl    ' = last  j point of sub-region               #  if= 17 <---|----> il=206
+  15.1    'efoldA' = bottom left  e-folding time in days       #             |
+  15.1    'efoldB' = bottom right e-folding time in days       #            jf=740
+  10.1    'efoldC' = top    right e-folding time in days       #
+  10.1    'efoldD' = top    left  e-folding time in days       #
+  -1      'if    ' = first i point of sub-region (<=0 to end)  #
 'E-o-D'
 ./rmu_linear
 C
