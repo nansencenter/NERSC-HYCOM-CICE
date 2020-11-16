@@ -187,7 +187,7 @@ contains
             polar_stereographic_central_lon))
       call handle_err(NF90_PUT_ATT(ncstate%ncid,var_id,'scale_factor_at_projection_origin', 1.))
       call handle_err(NF90_PUT_ATT(ncstate%ncid,var_id,'straight_vertical_longitude_from_pole',-45.))
-      call handle_err(NF90_PUT_ATT(ncstate%ncid,var_id,'earth_redius',6378273.))
+      call handle_err(NF90_PUT_ATT(ncstate%ncid,var_id,'earth_radius',6378273.))
       call handle_err(NF90_PUT_ATT(ncstate%ncid,var_id,'proj4',"+proj=stere +lon_0=-45 +lat_0=90 +k=1 +R=6378273 +no_defs"))
       call handle_err(NF90_PUT_ATT(ncstate%ncid,var_id,'false_easting', 0.))
       call handle_err(NF90_PUT_ATT(ncstate%ncid,var_id,'false_northing', 0.))
