@@ -111,8 +111,8 @@ class AFile(object) :
          hmin=h[I].min()
          J=numpy.where(mask.flatten())
          w[J] = self._spval
-         #print "writerecord w mask:",numpy.count_nonzero(mask),mask.size
-         #print "writerecord w mask:",hmin,hmax,w[0:self._idm*self._jdm].min(),w[0:self._idm*self._jdm].max()
+        # print "writerecord w mask:",numpy.count_nonzero(mask),mask.size
+        # print "writerecord w mask:",hmin,hmax,w[0:self._idm*self._jdm].min(),w[0:self._idm*self._jdm].max()
       else :
          hmax=h.max()
          hmin=h.min()
@@ -323,8 +323,8 @@ class ABFile(object) :
       testmin = numpy.abs(w.min()-mydict["min"]) > numpy.abs(mydict["min"])*1.e-4 
       testmax = numpy.abs(w.max()-mydict["max"]) > numpy.abs(mydict["max"])*1.e-4 
       if testmin or testmax :
-         msg="File %s a b values inconsistent: Field %s at %d, .a min/max: %12.6g %12.6g  .a min/max: %12.6g  %12.6g " %(
-            w.min(),w,max(),mydict["min"],mydict["max"])
+         msg="File a b values inconsistent: Field %s at %d, .a min/max: %12.6g %12.6g  .a min/max: %12.6g  %12.6g " %(
+            mydict["field"],mydict["k"],w.min(),w.max(),mydict["min"],mydict["max"])
          logger.error(msg)
          raise ValueError,msg
 
@@ -836,6 +836,39 @@ class ABFileForcing(ABFile) :
    @property
    def field_times(self) :
       return set([elem["dtime1"] for elem in self._fields.values()])
+
+class ABFileRiver(ABFile) :
+   """ Class for doing input/output on pairs of hycom .a and .b files. This is for river forcing files"""
+   """ At the moment, only write river function is implemented. You can read it by using 'loada' subroutines """
+   fieldkeys=["field","min","max"]
+   def __init__(self,basename,action,mask=False,real4=True,endian="big", idm=None,jdm=None,
+                cline1="",cline2=""):
+
+      super(ABFileRiver,self).__init__(basename,action,mask=mask,real4=real4,endian=endian)
+      self._idm=idm
+      self._jdm=jdm
+      self._cline1=cline1
+      self._cline2=cline2
+      if action == "w" :
+         pass
+      else :
+         quit()
+
+
+   def write_header(self) :
+      self._fileb.write(self._cline1.strip()+"\n")
+      self._fileb.write(self._cline2.strip()+"\n")
+      self._fileb.write("\n")
+      self._fileb.write("\n")
+      self._fileb.write("i/jdm =%5d %5d\n"%(self._idm,self._jdm))
+
+
+   def write_field(self,field,mask,fieldname,month) :
+      self._open_filea_if_necessary(field)
+      self.check_dimensions(field)
+      hmin,hmax = self._filea.writerecord(field,mask)
+      self._fileb.write(" %s: month,range = %s%14.6E%14.6E\n"%(fieldname,str(month).zfill(2),hmin,hmax))
+
 
 class ABFileRestart(ABFile) :
    """ Class for doing input/output on pairs of hycom .a and .b files. This is for restart files"""
