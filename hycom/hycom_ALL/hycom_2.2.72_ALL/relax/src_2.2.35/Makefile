@@ -128,6 +128,9 @@ rmu2:            $(MODS) rmu2.o         zh.o
 rmus:            $(MODS) rmus.o         zh.o
 	$(LD) $(LDFLAGS) rmus.o $(MODS) zh.o -o rmus
 
+rmu_linear:      $(MODS)   rmu_linear.o                $(LIBS)
+	$(LD) $(LDFLAGS)   rmu_linear.o        $(MODS) $(LIBS) -o rmu_linear
+
 zncoda_density:   $(MODS)  zncoda_density.o            $(LIBS)
 	$(LD) $(LDFLAGS)   zncoda_density.o    $(MODS) $(LIBS) -o zncoda_density
 
