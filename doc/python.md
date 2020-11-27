@@ -78,7 +78,10 @@ These files will be installed in your home directory under $HOME/.local/lib/pyth
 
 # Installing the python modules from github
 
-We have currently moved all python tools from github to our NERSC-HYCOM-CICE repository (pythonlibs). Replace "path-to-NERSC-HYCOM-CICE" with you local NERSC-HYCOM-CICE git folder path:
+We have currently moved all python tools to our NERSC-HYCOM-CICE repository (pythonlibs). Replace "path-to-NERSC-HYCOM-CICE" with your local NERSC-HYCOM-CICE git folder path:
+
+e.g. pip install --user file:/cluster/home/cagyum/NERSC-HYCOM-CICE/pythonlibs/modeltools
+
 ```
    pip install --user file:path-to-NERSC-HYCOM-CICE/pythonlibs/modeltools
    pip install --user file:path-to-NERSC-HYCOM-CICE/pythonlibs/modelgrid
