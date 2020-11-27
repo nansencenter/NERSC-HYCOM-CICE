@@ -86,5 +86,7 @@ We have currently moved all python tools from github to our NERSC-HYCOM-CICE rep
    pip install --user file:path-to-NERSC-HYCOM-CICE/pythonlibs/abfile 
 ```
 To upgrade the libraries after a change in these libraries, just call the same install commands with the extra option: "--upgrade"
+
 e.g. pip install --user file:path-to-NERSC-HYCOM-CICE/pythonlibs/gridxsec --upgrade
+
 These files will be installed in your home directory under $HOME/.local/lib/python2.7/site-packages/, where python will automatically find them.
