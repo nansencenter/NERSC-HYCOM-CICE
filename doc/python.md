@@ -78,21 +78,18 @@ These files will be installed in your home directory under $HOME/.local/lib/pyth
 
 # Installing the python modules from github
 
-The github packages can also be installed using the pip tool.  Use the following command to install them:
+We have currently moved all python tools to our NERSC-HYCOM-CICE repository (pythonlibs). Replace "path-to-NERSC-HYCOM-CICE" with your local NERSC-HYCOM-CICE git folder path:
 
-    pip install --user git+http://github.com/knutalnersc/abfile
-    pip install --user git+http://github.com/knutalnersc/modeltools
-    pip install --user git+http://github.com/knutalnersc/modelgrid
-    pip install --user git+http://github.com/knutalnersc/gridxsec
-    pip install --user git+http://github.com/MostafaBakhoda/modeltools
+e.g. pip install --user file:/cluster/home/cagyum/NERSC-HYCOM-CICE/pythonlibs/modeltools
 
-We have currently moved all python tools from github to our NERSC-HYCOM-CICE repository (pythonlibs) and replace "path-to-NERSC-HYCOM-CICE":
 ```
    pip install --user file:path-to-NERSC-HYCOM-CICE/pythonlibs/modeltools
    pip install --user file:path-to-NERSC-HYCOM-CICE/pythonlibs/modelgrid
    pip install --user file:path-to-NERSC-HYCOM-CICE/pythonlibs/gridxsec 
    pip install --user file:path-to-NERSC-HYCOM-CICE/pythonlibs/abfile 
 ```
-To upgrade the libraries, just call the same install commands with the extra option: "--upgrade"
+To upgrade the libraries after a change in these libraries, just call the same install commands with the extra option: "--upgrade"
+
+e.g. pip install --user file:path-to-NERSC-HYCOM-CICE/pythonlibs/gridxsec --upgrade
 
 These files will be installed in your home directory under $HOME/.local/lib/python2.7/site-packages/, where python will automatically find them.
