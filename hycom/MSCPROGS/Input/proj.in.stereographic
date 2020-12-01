@@ -8,4 +8,4 @@ polar_stereographic
 -45.0               # Central longitude of projection 
  90.0               # Central latitude  of projection 
  0.01               # Conversion factor 
- F                  # Rotate vectors to output grid (T=use East/North components)
+ F                  # Rotate vectors to output grid (F=use East/North components, T=along the grid)
