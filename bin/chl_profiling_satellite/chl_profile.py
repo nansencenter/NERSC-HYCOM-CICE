@@ -59,7 +59,12 @@ def main(region,experiment,year,day,workdir,satdir,debug):
                  str(timecal.month).zfill(2)+'-'+str(timecal.day).zfill(2)+'.nc'
        nckd = NetCDFFile(kdfile)
        kd = nckd.variables['KD490'][0,:,:]
-       
+    
+    # mask out high latitudes ( >=70 ) from mid September to avoid artificial high CHL due to angle of the sun
+    if int(day)>=259:
+        satchl = np.ma.masked_where(satlat>=70.,satchl)
+        kd     = np.ma.masked_where(satlat>=70.,kd)
+        
     # load restart file
     oldfile = workdir + user + "/" + \
         region + "/" + experiment + "/data/"+region[0:3]+"restart."+year+"_"+day.zfill(3)+"_00_0000.a"
