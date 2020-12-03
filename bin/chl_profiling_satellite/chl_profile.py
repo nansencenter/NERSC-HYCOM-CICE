@@ -62,8 +62,8 @@ def main(region,experiment,year,day,workdir,satdir,debug):
     
     # mask out high latitudes ( >=70 ) from mid September to avoid artificial high CHL due to angle of the sun
     if int(day)>=259:
-        satchl = np.ma.masked_where(satlat>=70.,satchl)
-        kd     = np.ma.masked_where(satlat>=70.,kd)
+        satchl = np.ma.masked_where(np.repeat(satlat[np.newaxis,:], satlon.shape[0], 0).T>=70.,satchl)
+        kd     = np.ma.masked_where(np.repeat(satlat[np.newaxis,:], satlon.shape[0], 0).T>=70.,kd)
         
     # load restart file
     oldfile = workdir + user + "/" + \
