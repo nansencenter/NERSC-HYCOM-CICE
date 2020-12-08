@@ -1585,6 +1585,9 @@ c
       rmu(   :,:) = 0.0  !needed for thermf
       rmutra(:,:) = 0.0
       rmunp( :,:) = 0.0
+#ifdef _FABM_
+      rmunp_trc( :,:) = 0.0
+#endif
       rmunv( :,:) = 0.0  !needed for thermf
 c
       lgth = len_trim(flnmforw)
@@ -3828,6 +3831,26 @@ c
         close (unit=uoff+915)
         endif !1st tile
         call zaiocl(915)
+c
+#ifdef _FABM_
+        call zaiopf('nest/rmutr.a', 'old', 915)
+        if     (mnproc.eq.1) then  ! .b file from 1st tile only
+        open (unit=uoff+915,file='nest/rmutr.b',
+     &        status='old',action='read')
+        endif !1st tile
+        call zagetc(cline,ios, uoff+915)  !1st line of the header on all tiles
+        if     (mnproc.eq.1) then  ! .b file from 1st tile only
+        rewind uoff+915
+        read  (uoff+915,'(a79)') preambl
+        endif !1st tile
+        call preambl_print(preambl)
+        call rdmonth(rmunp_trc, 915)
+        call xctilr(rmunp_trc,1,1, nbdy,nbdy, halo_ps)
+        if     (mnproc.eq.1) then  ! .b file from 1st tile only
+        close (unit=uoff+915)
+        endif !1st tile
+        call zaiocl(915)
+#endif
 c
         dnestf = abs(nestfq)
         if     (dnestf.lt.1.0) then
