@@ -1436,10 +1436,10 @@ contains
         do k=1,kk
           do j=1,jj
             do i=1,ii
-!              if (i==itest.and.j==jtest) write(*,*)'HEREupd',k,nestn,(delt1*rmunp(i,j)* &
-!                (nested_data_dev(i,j,k,ln0,nestn)*wn0 +nested_data_dev(i,j,k,ln1,nestn)*wn1) )/(1.0 + delt1*rmunp(i,j))
-              tracer(i,j,k,n,istate_dev(nestn))=(tracer(i,j,k,n,istate_dev(nestn)) + delt1*rmunp(i,j)* &
-                (nested_data_dev(i,j,k,ln0,nestn)*wn0 +nested_data_dev(i,j,k,ln1,nestn)*wn1) )/(1.0 + delt1*rmunp(i,j))
+!              if (i==itest.and.j==jtest) write(*,*)'HEREupd',k,nestn,(delt1*rmunp_trc(i,j)* &
+!                (nested_data_dev(i,j,k,ln0,nestn)*wn0 +nested_data_dev(i,j,k,ln1,nestn)*wn1) )/(1.0 + delt1*rmunp_trc(i,j))
+              tracer(i,j,k,n,istate_dev(nestn))=(tracer(i,j,k,n,istate_dev(nestn)) + delt1*rmunp_trc(i,j)* &
+                (nested_data_dev(i,j,k,ln0,nestn)*wn0 +nested_data_dev(i,j,k,ln1,nestn)*wn1) )/(1.0 + delt1*rmunp_trc(i,j))
             end do
           end do
         end do
