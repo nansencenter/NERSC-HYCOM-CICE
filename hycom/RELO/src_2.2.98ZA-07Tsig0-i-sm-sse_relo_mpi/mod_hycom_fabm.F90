@@ -702,7 +702,7 @@ contains
         end do
     end do
 #endif
-!write (*,*) 'hycom_fabm_after_vertical', nstep, time
+
       do k=1,kk
         do j=1,jj
           call fabm_get_light_extinction(fabm_model, 1, ii, j, k, extinction)
@@ -721,9 +721,38 @@ contains
             call fabm_get_light(fabm_model, 1, kk, i, j)
         end do
       end do
-!write (*,*) 'hycom_fabm_after_light', nstep, time
+
       ! Compute bottom source terms
       if (do_bottom_sources) then
+! BELOW IS A TEMPORARY FIX TO KEEP SEDIMENT VALUES AT AN UPPER THRESHOLD
+! THE VALUES ARE DETERMINED BASED ON A 3-YEAR SPINUP 99TH PERCENTILE OF EACH
+! VARIABLE INDIVIDUALLY
+! HIGH VALUES ARE SET TO A BIT LOWER VALUES TO KEEP THE MODEL REPEATEDLY
+! EXCEEDING THE 99TH PERCENTILE
+! THE SAME THING IS ALSO DONE AFTER THE BOTTOM EXCHANGE
+      do ivar=1,size(fabm_model%bottom_state_variables)
+        if (trim(fabm_model%bottom_state_variables(ivar)%name) == 'ECO_sed1') then
+           if ( maxval(fabm_bottom_state(:, :, 2, ivar)) .gt. 50000. ) then
+              do j=1,jj
+                 do i=1,ii
+                    fabm_bottom_state(i, j, 2, ivar) = min( fabm_bottom_state(i, j, 2, ivar), 40000. )
+                    fabm_bottom_state(i, j, 1, ivar) = min( fabm_bottom_state(i, j, 1, ivar), 40000. )
+                 enddo
+              enddo
+           endif
+        endif
+        if (trim(fabm_model%bottom_state_variables(ivar)%name) == 'ECO_sed2') then
+           if ( maxval(fabm_bottom_state(:, :, 2, ivar)) .gt. 13000. ) then
+              do j=1,jj
+                 do i=1,ii
+                    fabm_bottom_state(i, j, 2, ivar) = min( fabm_bottom_state(i, j, 2, ivar), 10000. )
+                    fabm_bottom_state(i, j, 1, ivar) = min( fabm_bottom_state(i, j, 1, ivar), 10000. )
+                 enddo
+              enddo
+           endif
+        endif
+      enddo
+!!
       do j=1,jj
         flux = 0
         sms_bt = 0
@@ -754,9 +783,38 @@ contains
           end if
         end do
       end do
+! BELOW IS A TEMPORARY FIX TO KEEP SEDIMENT VALUES AT AN UPPER THRESHOLD
+! THE VALUES ARE DETERMINED BASED ON A 3-YEAR SPINUP 99TH PERCENTILE OF EACH
+! VARIABLE INDIVIDUALLY
+! HIGH VALUES ARE SET TO A BIT LOWER VALUES TO KEEP THE MODEL REPEATEDLY
+! EXCEEDING THE 99TH PERCENTILE
+! THE SAME THING IS ALSO DONE BEFORE THE EXCHANGE
+      do ivar=1,size(fabm_model%bottom_state_variables)
+        if (trim(fabm_model%bottom_state_variables(ivar)%name) == 'ECO_sed1') then
+           if ( maxval(fabm_bottom_state(:, :, 2, ivar)) .gt. 50000. ) then
+              do j=1,jj
+                 do i=1,ii
+                    fabm_bottom_state(i, j, 2, ivar) = min( fabm_bottom_state(i, j, 2, ivar), 40000. )
+                    fabm_bottom_state(i, j, 1, ivar) = min( fabm_bottom_state(i, j, 1, ivar), 40000. )
+                 enddo
+              enddo
+           endif
+        endif
+        if (trim(fabm_model%bottom_state_variables(ivar)%name) == 'ECO_sed2') then
+           if ( maxval(fabm_bottom_state(:, :, 2, ivar)) .gt. 13000. ) then
+              do j=1,jj
+                 do i=1,ii
+                    fabm_bottom_state(i, j, 2, ivar) = min( fabm_bottom_state(i, j, 2, ivar), 10000. )
+                    fabm_bottom_state(i, j, 1, ivar) = min( fabm_bottom_state(i, j, 1, ivar), 10000. )
+                 enddo
+              enddo
+           endif
+        endif
+      enddo
+!!
       if (do_check_state) call check_state('after bottom sources', n, .false.)
       end if
-!write (*,*) 'hycom_fabm_after_bottom', nstep, time
+
       ! Compute surface source terms
       if (do_surface_sources) then
       do j=1,jj
@@ -778,7 +836,7 @@ contains
       end do
       if (do_check_state) call check_state('after surface sources', n, .false.)
       end if
-!write (*,*) 'hycom_fabm_after_surface', nstep, time
+
       ! Compute source terms and update state
       if (do_interior_sources) then
       do k=1,kk
