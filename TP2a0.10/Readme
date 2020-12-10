@@ -1,0 +1,11 @@
+[toc]
+This is the region directory. Here is the typical content of this directory:
+    ├── expt_01.0     # Experiment directory (for coupled HYCOM-CICE model)
+    └── topo          # Topography and domain input data for experiments
+
+The directory will contain input and output files for different experiments.
+All experiments inside this directory will have the same model domain
+(described by the regional.grid files in the topo subdirectory), but may have different bathymetries.
+
+It is worth noting that you have to run the first year from climatology
+and then introduce the nesting from a restart file .
