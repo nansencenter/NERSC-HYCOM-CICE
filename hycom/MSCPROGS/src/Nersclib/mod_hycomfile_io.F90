@@ -1593,7 +1593,7 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !TW: surface currents - if don't want to dump full 3d velocities
       case ('usurf') 
-         if (.not.g0ridrotate) then
+         if (.not.gridrotate) then
             stdname='surface_eastward_sea_water_velocity' 
             longname='eastward_sea_water_velocity_at_3m_depth' 
             ! TODO
