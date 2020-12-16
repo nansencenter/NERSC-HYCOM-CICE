@@ -13,3 +13,5 @@ zbiomass 01 50   T
 oxygen   01 50   T 
 silicate 01 50   T
 detvflux 01 50   T
+ph       01 50   T
+dic      01 50   T
