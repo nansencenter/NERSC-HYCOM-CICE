@@ -54,6 +54,8 @@ def main(region,experiment,year,day,workdir,satdir,debug):
     satlat = nc.variables['lat'][:]
     satlon = nc.variables['lon'][:]
     satchl = nc.variables['CHL'][0,:,:]
+    #
+    satlon_2d,satlat_2d=np.meshgrid(satlon,satlat)
     if debug:
        kdfile = satdir[:-4]+'kd/'+year+'/'+year+'-'+\
                  str(timecal.month).zfill(2)+'-'+str(timecal.day).zfill(2)+'.nc'
@@ -62,8 +64,9 @@ def main(region,experiment,year,day,workdir,satdir,debug):
     
     # mask out high latitudes ( >=70 ) from mid September to avoid artificial high CHL due to angle of the sun
     if int(day)>=259:
-        satchl = np.ma.masked_where(satlat>=70.,satchl)
-        kd     = np.ma.masked_where(satlat>=70.,kd)
+        satchl = np.ma.masked_where(satlat_2d>=70.,satchl)
+        if debug:
+           kd  = np.ma.masked_where(satlat_2d>=70.,kd)
         
     # load restart file
     oldfile = workdir + user + "/" + \
