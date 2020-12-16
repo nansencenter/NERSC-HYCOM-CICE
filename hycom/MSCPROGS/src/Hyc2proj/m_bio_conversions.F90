@@ -542,14 +542,14 @@ module m_bio_conversions
      end subroutine oxygen_conv
 
      subroutine pp_conv(pp,pp_daily,idm,jdm,kdm)
-!compute gross primary production (we distribute to CMEMS as net pp): mg m-3 d-1
+!compute net primary production (gross PP * 0.9 as net pp): mg m-3 d-1
       implicit none
 
       integer, intent(in) :: idm,jdm,kdm
       real, dimension(idm,jdm,kdm)  , intent(in)  ::pp ! mg m-3 s-1
       real, dimension(idm,jdm,kdm)  , intent(out) ::pp_daily
 
-      pp_daily=pp*24.*60.*60.
+      pp_daily=pp*24.*60.*60.*0.9
 
      end subroutine pp_conv
 

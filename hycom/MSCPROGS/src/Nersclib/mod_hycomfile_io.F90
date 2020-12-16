@@ -1466,7 +1466,7 @@ contains
       case ('detvflux')
          vname='expc'
          units='mol m-2 d-1'
-         limits=(/0.0,50.0/)
+         limits=(/0.0,1500.0/)
          stdname='sinking_mole_flux_of_particulate_organic_matter_expressed_as_carbon_in_sea_water'
       case ('pp_d_nor')
          vname='pp_depth'
@@ -1540,7 +1540,7 @@ contains
          case ('silicate')
          vname='si'
          units='mmol m-3'
-         limits=(/0.,100./)
+         limits=(/0.,250./)
          stdname='mole_concentration_of_silicate_in_sea_water'
          case ('phosphat')
          vname='po4'
@@ -1550,17 +1550,17 @@ contains
          case ('pbiomass')
          vname='phyc'
          units='mmol m-3'
-         limits=(/0.,200./)
+         limits=(/0.,500./)
          stdname='mole_concentration_of_phytoplankton_expressed_as_carbon_in_sea_water'
          case ('zbiomass')
          vname='zooc'
          units='mmol m-3'
-         limits=(/0.,200./)
+         limits=(/0.,500./)
          stdname='mole_concentration_of_zooplankton_expressed_as_carbon_in_sea_water' 
          case ('oxygen')
          vname='o2'
          units='mmol m-3'
-         limits=(/0.,500./)
+         limits=(/0.,1000./)
          stdname='mole_concentration_of_dissolved_molecular_oxygen_in_sea_water'
          case ('pp_depth')
          vname='npp'
@@ -1570,7 +1570,7 @@ contains
          case ('primprod')
          vname='nppv'
          units='mg m-3 day-1'
-         limits=(/0.,1000./)
+         limits=(/0.,2000./)
          stdname='net_primary_production_of_biomass_expressed_as_carbon_per_unit_volume_in_sea_water'
          case ('attcoeff')
          vname='kd'
@@ -1580,12 +1580,12 @@ contains
          case ('dic')
          vname='dissic'
          units='mole m-3'
-         limits=(/0.,3./)
+         limits=(/1.,3./)
          stdname='mole_concentration_of_dissolved_inorganic_carbon_in_sea_water'
          case ('ph')
          vname='ph'
          units='1'
-         limits=(/0.,14./)
+         limits=(/7.,10./)
          stdname='sea_water_ph_reported_on_total_scale'
 ! _FABM__caglar_
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

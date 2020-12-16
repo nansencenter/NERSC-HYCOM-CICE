@@ -732,7 +732,8 @@ contains
 ! THE SAME THING IS ALSO DONE AFTER THE BOTTOM EXCHANGE
       do ivar=1,size(fabm_model%bottom_state_variables)
         if (trim(fabm_model%bottom_state_variables(ivar)%name) == 'ECO_sed1') then
-           if ( maxval(fabm_bottom_state(:, :, 2, ivar)) .gt. 50000. ) then
+           if ( (maxval(fabm_bottom_state(:, :, 2, ivar)) .gt. 50000. ) &
+                 .or. (maxval(fabm_bottom_state(:, :, 1, ivar)) .gt. 50000. ) ) then
               do j=1,jj
                  do i=1,ii
                     fabm_bottom_state(i, j, 2, ivar) = min( fabm_bottom_state(i, j, 2, ivar), 40000. )
@@ -742,7 +743,8 @@ contains
            endif
         endif
         if (trim(fabm_model%bottom_state_variables(ivar)%name) == 'ECO_sed2') then
-           if ( maxval(fabm_bottom_state(:, :, 2, ivar)) .gt. 13000. ) then
+           if ( (maxval(fabm_bottom_state(:, :, 2, ivar)) .gt. 13000. ) &
+                .or. (maxval(fabm_bottom_state(:, :, 1, ivar)) .gt. 13000. ) ) then
               do j=1,jj
                  do i=1,ii
                     fabm_bottom_state(i, j, 2, ivar) = min( fabm_bottom_state(i, j, 2, ivar), 10000. )
@@ -791,7 +793,8 @@ contains
 ! THE SAME THING IS ALSO DONE BEFORE THE EXCHANGE
       do ivar=1,size(fabm_model%bottom_state_variables)
         if (trim(fabm_model%bottom_state_variables(ivar)%name) == 'ECO_sed1') then
-           if ( maxval(fabm_bottom_state(:, :, 2, ivar)) .gt. 50000. ) then
+           if ( (maxval(fabm_bottom_state(:, :, 2, ivar)) .gt. 50000. ) &
+                .or. (maxval(fabm_bottom_state(:, :, 1, ivar)) .gt. 50000. ) ) then
               do j=1,jj
                  do i=1,ii
                     fabm_bottom_state(i, j, 2, ivar) = min( fabm_bottom_state(i, j, 2, ivar), 40000. )
@@ -801,7 +804,8 @@ contains
            endif
         endif
         if (trim(fabm_model%bottom_state_variables(ivar)%name) == 'ECO_sed2') then
-           if ( maxval(fabm_bottom_state(:, :, 2, ivar)) .gt. 13000. ) then
+           if ( (maxval(fabm_bottom_state(:, :, 2, ivar)) .gt. 13000. ) &
+                .or. (maxval(fabm_bottom_state(:, :, 2, ivar)) .gt. 13000. ) ) then
               do j=1,jj
                  do i=1,ii
                     fabm_bottom_state(i, j, 2, ivar) = min( fabm_bottom_state(i, j, 2, ivar), 10000. )
