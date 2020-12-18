@@ -805,7 +805,7 @@ contains
         endif
         if (trim(fabm_model%bottom_state_variables(ivar)%name) == 'ECO_sed2') then
            if ( (maxval(fabm_bottom_state(:, :, 2, ivar)) .gt. 13000. ) &
-                .or. (maxval(fabm_bottom_state(:, :, 2, ivar)) .gt. 13000. ) ) then
+                .or. (maxval(fabm_bottom_state(:, :, 1, ivar)) .gt. 13000. ) ) then
               do j=1,jj
                  do i=1,ii
                     fabm_bottom_state(i, j, 2, ivar) = min( fabm_bottom_state(i, j, 2, ivar), 10000. )
