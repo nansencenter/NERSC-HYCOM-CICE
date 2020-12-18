@@ -1,3 +1,7 @@
+! Usage comment:
+! Only used for the continue running in CICE with a specific restart file
+! Please to copy this file into ice_in which is used by the afterwards routines in HYCOM_CICE
+
 &setup_nml
     days_per_year  = 365
   , use_leap_years = .true.

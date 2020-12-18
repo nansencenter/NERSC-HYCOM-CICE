@@ -1,3 +1,7 @@
+! Usage comment:
+! Only used for the initialization of ice statement when the model starts without ice restart file
+! Please to copy this file into ice_in which is used by the afterwards routines in HYCOM_CICE
+
 &setup_nml
     days_per_year  = 365
   , use_leap_years = .true.
