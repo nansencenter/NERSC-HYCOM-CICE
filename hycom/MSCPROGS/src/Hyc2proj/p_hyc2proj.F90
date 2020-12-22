@@ -71,7 +71,7 @@ program p_hyc2proj
       hy3d2,pres, levint, temp, sal, dens
 !AS06092011 - adding biological variables for MyOcean
    real, allocatable, dimension(:,:,:) :: fla, dia, nit, pho, oxy, pp, biovar,s1000
-   real, allocatable, dimension(:,:,:) :: micro, meso, sil,dic,ph,det
+   real, allocatable, dimension(:,:,:) :: micro, meso, sil,dic,ph,det, pco2
    real, allocatable, dimension(:,:)   :: biovar2d
    real, allocatable, dimension(:,:)   :: hy2d, hy2d2, regu2d, strmf, &
       mld1, mld2, dplayer, meanssh, sla, ub, vb, mqlon, mqlat
@@ -604,6 +604,14 @@ program p_hyc2proj
                   call det_bottom_flux(det,biovar,onem,idm,jdm,kdm)
                   hy3d=biovar
                   deallocate(det,biovar)
+                else if (trim(fld(ifld)%fextract)=='spco2') then
+                  ! Compute surface partial pressure of CO2 in water (Pa)
+                  allocate(pco2(idm,jdm,kdm))
+                  allocate(biovar(idm,jdm,kdm))
+                  call HFReadField3D(hfile,pco2,idm,jdm,kdm,'CO2_pCO2 ',1)
+                  call pco2_conv(pco2,biovar,idm,jdm,kdm)
+                  hy3d=biovar
+                  deallocate(pco2,biovar)
 ! _FABM__caglar_
                else  ! LB normal case 
                   call HFReadField3D(hfile,hy3d,idm,jdm,kdm,fld(ifld)%fextract,1)
