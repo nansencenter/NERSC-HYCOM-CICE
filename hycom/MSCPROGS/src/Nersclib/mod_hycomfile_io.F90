@@ -1028,6 +1028,8 @@ contains
      is3DVar=.true.
    else if(cfld=='ph') then
      is3DVar=.true.
+   else if(cfld=='spco2') then
+     is3DVar=.true.
 ! _FABM__caglar_
    else if(cfld=='utotl' .and. trim(df%ftype)=='archm') then
      is3DVar=.true.
@@ -1587,6 +1589,11 @@ contains
          units='1'
          limits=(/7.,10./)
          stdname='sea_water_ph_reported_on_total_scale'
+         case ('spco2')
+         vname='spco2'
+         units='Pa'
+         limits=(/0.,100./)
+         stdname='surface_partial_pressure_of_carbon_dioxide_in_sea_water'
 ! _FABM__caglar_
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

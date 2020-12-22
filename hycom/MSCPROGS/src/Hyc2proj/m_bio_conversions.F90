@@ -577,6 +577,19 @@ module m_bio_conversions
 
      end subroutine dic_conv
 
+     subroutine pco2_conv(spco2_ppm,spco2,idm,jdm,kdm)
+     !compute dic: mole m-3
+      implicit none
+
+      integer, intent(in) :: idm,jdm,kdm
+      real, dimension(idm,jdm,kdm)  , intent(in)  ::spco2_ppm !micromol mol-1 (ppm)
+      real, dimension(idm,jdm,kdm)  , intent(out) ::spco2 ! Pa
+      ! conversion taken from:
+      ! https://acsess.onlinelibrary.wiley.com/doi/pdfdirect/10.2134/asaspecpub53.appendix2
+
+      spco2=spco2_ppm/10.1325
+
+     end subroutine pco2_conv
 
 ! _FABM__caglar_
 end module
