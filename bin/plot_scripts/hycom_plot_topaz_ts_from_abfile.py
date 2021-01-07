@@ -1,4 +1,4 @@
-#/busr/bin/env python
+#!/busr/bin/env python
 from netCDF4 import Dataset
 import modeltools.hycom
 import argparse
@@ -13,9 +13,6 @@ import re
 import scipy.interpolate
 import os.path
 import matplotlib.pyplot as plt
-#import mod_HYCOM_utils as mhu
-#import mod_reading as mr
-#import myMOD
 import matplotlib.dates as mdates
 from dateutil.relativedelta import relativedelta
 from matplotlib.dates import YearLocator, MonthLocator, DateFormatter
@@ -175,9 +172,9 @@ def main(myfiles,fieldname,fieldlevel,
    Labl1="CNTL SST"
    #Labl1="CNTL: prsbas=0"
    Labl1=myfiles[0][:28]
-   yyyy1=myfiles[0][-9:-5]
+   yyyy1=myfiles[0][22:26]
    if "archv." in  myfiles[0]:
-      yyyy1=myfiles[0][-13:-9]
+      yyyy1=myfiles[0][6:10]
    print "myfiles[0]=",myfiles[0]
    print "yyy1=", yyyy1
    if filename2:
@@ -286,7 +283,7 @@ def main(myfiles,fieldname,fieldlevel,
    Clim_arr=numpy.zeros((plon.shape[0],plon.shape[1],12))
    if 'tem' in fieldname:
       counter=0
-      rlxfile0="/home/sm_alfal/sea/TOPAZ6/NERSC-HYCOM-CICE/TP6a0.03/relax/070/relax_tem.a"
+      rlxfile0="/cluster/work/users/achoth/TP2a0.10/relax/010/relax_tem.a"
       rlx_afile = abfile.AFile(ab.idm,ab.jdm,rlxfile0,"r")
       lyr=fieldlevel
       record_num=lyr
@@ -334,7 +331,7 @@ def main(myfiles,fieldname,fieldlevel,
    nplts=1  
    ax.plot_date(tid, dt_cnl, '-o',color='g',ms=3,  label=Labl1)
    if 'tem' in fieldname:
-      ax.plot_date(tid[0:len(dt_cnl)], dt_clim_cat[:],':' ,color='black', label='Phc-Clim.')
+      ax.plot_date(tid[0:len(dt_cnl)], dt_clim_cat[:],':' ,color='black', label='WOA2018')
    if filename2:
       ax.plot_date(tid_2, dt_2, '-v',color='orange',ms=3,  label=Labl2)
    ax.xaxis.set_major_locator(years)

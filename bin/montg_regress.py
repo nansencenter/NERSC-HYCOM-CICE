@@ -39,16 +39,20 @@ def plthycom(varib,title,figx,figy,cmin,cmax,types) :
 # calculate mean dt and ssh anomaly
 # regress anomaly and montg1
 day=0
-directory = '/cluster/work/users/annettes/TP5a0.06/expt_01.1/data/'
-ndays = numpy.size(sorted(fnmatch.filter(os.listdir(directory), 'archm.%s*.b' %('201[01123456]') ) ))
-NX = 760; NY = 800
+#directory = '/cluster/work/users/annettes/TP5a0.06/expt_01.1/data/'
+#ndays = numpy.size(sorted(fnmatch.filter(os.listdir(directory), 'archm.%s*.b' %('201[01123456]') ) ))
+
+directory = '/cluster/work/users/achoth/TP2a0.10/expt_01.0/data/'
+ndays = numpy.size(sorted(fnmatch.filter(os.listdir(directory), 'archm.%s*.b' %('201[01234]') ) ))
+
+NX = 380; NY = 400
 montg = numpy.zeros((ndays,NX,NY))
 ssh   = numpy.zeros((ndays,NX,NY))
 a     = numpy.zeros((NX,NY))
 b     = numpy.zeros((NX,NY))
 
 
-for f1 in sorted(fnmatch.filter(os.listdir(directory), 'archm.%s*.b' %('201[01123456]') ) ) :
+for f1 in sorted(fnmatch.filter(os.listdir(directory), 'archm.%s*.b' %('201[01234]') ) ) :
  print(day)
  f = abfile.ABFileArchv('%s%s' %(directory,f1),"r")
 
@@ -83,7 +87,7 @@ del montg,ssh,mon,srf,ssh1
 
 # get nemo archive files interpolated to hycom grid ##########
 # calculate mean dt
-nestdir = '/cluster/projects/nn2993k/nest/011/'
+nestdir = '/cluster/work/users/achoth/TP2a0.10/nest/010/'
 nestdays = numpy.size(sorted(fnmatch.filter(os.listdir(nestdir), 'archv*.a') ))
 nest = 0
 nestmean = 0.
@@ -97,33 +101,34 @@ for f1 in sorted(fnmatch.filter(os.listdir(nestdir), 'archv*.a') ) :
    nest = nest + 1
    f.close
 ##############################################################
-f = open("/cluster/work/users/cagyum/model_output/montg_regress.pckl","wb")
+#f = open("/cluster/work/users/cagyum/model_output/montg_regress.pckl","wb")
+f = open("/cluster/work/users/achoth/TP2a0.10/TP2_montg_regress.pckl","wb")
 pickle.dump([a,b,nestmean],f)
 f.close()
 
 # test
-file = '%s%s' %(directory,'archm.2013_250_12.b')
-file = abfile.ABFileArchv(file,"r")
+#file = '%s%s' %(directory,'archm.2013_250_12.b')
+#file = abfile.ABFileArchv(file,"r")
 
-mont_test = getvarib(file,'montg1',0)
-ssh_test  = getvarib(file,'srfhgt',0)
-anom_test = ssh_test - meanssh
+#mont_test = getvarib(file,'montg1',0)
+#ssh_test  = getvarib(file,'srfhgt',0)
+#anom_test = ssh_test - meanssh
 
-mont_regr = anom_test * a + b
-cmin = numpy.min([mont_test.min(),mont_regr.min()])
-cmax = numpy.max([mont_test.max(),mont_regr.max()])
+#mont_regr = anom_test * a + b
+#cmin = numpy.min([mont_test.min(),mont_regr.min()])
+#cmax = numpy.max([mont_test.max(),mont_regr.max()])
 
-plthycom(mont_test,'from model',7,6,cmin,cmax,'')
-plthycom(mont_regr,'calculated',7,6,cmin,cmax,'')
+#plthycom(mont_test,'from model',7,6,cmin,cmax,'')
+#plthycom(mont_regr,'calculated',7,6,cmin,cmax,'')
 
-cmin = numpy.min([mont_test[0:20,300:720].min(),mont_regr[0:20,300:720].min()])
-cmax = numpy.max([mont_test[0:20,300:720].max(),mont_regr[0:20,300:720].max()])
+#cmin = numpy.min([mont_test[0:20,300:720].min(),mont_regr[0:20,300:720].min()])
+#cmax = numpy.max([mont_test[0:20,300:720].max(),mont_regr[0:20,300:720].max()])
 
-plthycom(mont_test[0:20,300:720],'south from model',7,6,cmin,cmax,'')
-plthycom(mont_regr[0:20,300:720],'south calculated',7,6,cmin,cmax,'')
+#plthycom(mont_test[0:20,300:720],'south from model',7,6,cmin,cmax,'')
+#plthycom(mont_regr[0:20,300:720],'south calculated',7,6,cmin,cmax,'')
 
-cmin = numpy.min([mont_test[740:759,0:210].min(),mont_regr[740:759,0:210].min()])
-cmax = numpy.max([mont_test[740:759,0:210].max(),mont_regr[740:759,0:210].max()])
+#cmin = numpy.min([mont_test[740:759,0:210].min(),mont_regr[740:759,0:210].min()])
+#cmax = numpy.max([mont_test[740:759,0:210].max(),mont_regr[740:759,0:210].max()])
 
-plthycom(mont_test[740:759,0:210],'east from model',7,6,cmin,cmax,'')
-plthycom(mont_regr[740:759,0:210],'east calculated',7,6,cmin,cmax,'')
+#plthycom(mont_test[740:759,0:210],'east from model',7,6,cmin,cmax,'')
+#plthycom(mont_regr[740:759,0:210],'east calculated',7,6,cmin,cmax,'')

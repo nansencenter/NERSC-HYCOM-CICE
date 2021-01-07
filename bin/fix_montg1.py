@@ -33,13 +33,17 @@ logger.propagate=False
 
 cline1="HYCOM nested archive files"
 cline2="NEMO fields on hycom grid with corrected montg1 variable"
-cline3="Expt 01.1  nhybrd=50 nsigma= 0 ds00= 1.00 dp00= 1.00 dp00x= 450.0 dp00f=1.150"
+cline3="Expt 01.0  nhybrd=50 nsigma= 0 ds00= 1.00 dp00= 1.00 dp00x= 450.0 dp00f=1.150"
 
 
 def main(archv_files,regress_file,opath,header_line1=cline1,header_line2=cline2,header_line3=cline3 ) :
 
    regr = open(regress_file,'rb')
+   print(regr)
    slope,intercept,nemomeandt = pickle.load(regr)
+   #print(slope)
+   #print(intercept)
+   #print(nemomeandt)
 
    bp=modeltools.hycom.BlkdatParser("blkdat.input")
    idm    = bp["idm"]
@@ -48,7 +52,12 @@ def main(archv_files,regress_file,opath,header_line1=cline1,header_line2=cline2,
    iversn = bp["iversn"]
    yrflag = bp["yrflag"]
    iexpt  = bp["iexpt"]
-   
+   #print(idm)
+   #print(jdm)
+   #print(iversn)
+   #print(yrflag)
+   #print(iexpt)
+      
 
    for archv_file in archv_files :
 
@@ -56,6 +65,7 @@ def main(archv_files,regress_file,opath,header_line1=cline1,header_line2=cline2,
       arcfile=abfile.ABFileArchv(archv_file,"r")
       
       srfhgt=arcfile.read_field("srfhgt",0)
+      #print(srfhgt)
       montg1=(srfhgt-nemomeandt) * slope + intercept
 #      logger.info("Estimated montg1 ")
       fnameout = opath+str(archv_file[-19:])

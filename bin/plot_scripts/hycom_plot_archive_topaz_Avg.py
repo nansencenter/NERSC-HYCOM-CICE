@@ -209,7 +209,11 @@ def main(myfiles,fieldname,fieldlevel,
       else :
          P=bm.pcolormesh(x[J,I],y[J,I],fld_Avg[J,I],cmap=cmap)
          if 'temp' in fieldname:
-            P1=bm.contour(x[J,I],y[J,I],fld_Avg[J,I],levels=[-1.,1,4.0,8], \
+            P1=bm.contour(x[J,I],y[J,I],fld_Avg[J,I],levels=[-1,1,4,8], \
+                       colors=('w',),linestyles=('-',),linewidths=(1.5,))
+            matplotlib.pyplot.clabel(P1, fmt = '%2.1d', colors = 'w', fontsize=10) #contour line labels
+         elif 'salin' in fieldname:
+            P1=bm.contour(x[J,I],y[J,I],fld_Avg[J,I],levels=[34.5,35,35.5,36], \
                        colors=('w',),linestyles=('-',),linewidths=(1.5,))
             matplotlib.pyplot.clabel(P1, fmt = '%2.1d', colors = 'w', fontsize=10) #contour line labels
       
@@ -219,8 +223,9 @@ def main(myfiles,fieldname,fieldlevel,
       bm.drawparallels(numpy.arange(-80.,81.,40.),linewidth=0.2)
       bm.drawmeridians(numpy.arange(-180.,181.,40.),linewidth=0.2)
       bm.drawmapboundary(linewidth=0.2) #fill_color='aqua')
+
    if vector: 
-      skip=10
+      skip=6
       logger.info("ploting quiver .......>>> %s"%vector)
       I2=I[::skip,::skip]
       J2=J[::skip,::skip]

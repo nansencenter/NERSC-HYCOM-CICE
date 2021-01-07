@@ -339,7 +339,8 @@ else
     echo "Succesfully created archive file: $2"
 
     cd $newexptpath
-    python ${BINDIR}/fix_montg1.py ${NEST}/${target_archv}.a ${INPUTDIR}montg_regress.pckl ./ 
+   ## python ${BINDIR}/fix_montg1.py ${NEST}/${target_archv}.a ${INPUTDIR}montg_regress.pckl ./ 
+    python ${BINDIR}/fix_montg1.py ${NEST}/${target_archv}.a ${INPUTDIR}TP2_montg_regress.pckl ./ 
     cd $BASEDIR
 fi
 echo

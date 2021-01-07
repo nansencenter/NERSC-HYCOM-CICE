@@ -132,7 +132,8 @@ def main(myfiles,fieldname,fieldlevel,
 
    #cmap=matplotlib.pyplot.get_cmap("jet")
    #cmap=matplotlib.pyplot.get_cmap(cmap)
-   LinDic=mod_hyc2plot.cmap_dict('sawtooth_0-1.txt')
+   #LinDic=mod_hyc2plot.cmap_dict('sawtooth_0-1.txt')
+   LinDic=mod_hyc2plot.cmap_dict('sawtooth_fc100.txt')
    if 'temp' or 'sal' in fieldname:
       cmap= matplotlib.colors.LinearSegmentedColormap('my_colormap',LinDic)
    else:
@@ -186,9 +187,9 @@ def main(myfiles,fieldname,fieldlevel,
    if 'tem' or 'sal' in fieldname:
       counter=0
       if 'tem' in fieldname:
-         rlxfile0="/home/sm_alfal/sea/TOPAZ6/NERSC-HYCOM-CICE/TP6a0.03/relax/070/relax_tem.a"
+         rlxfile0="/cluster/work/users/achoth/TP2a0.10/relax/010/relax_tem.a"
       if 'sal' in fieldname:
-         rlxfile0="/home/sm_alfal/sea/TOPAZ6/NERSC-HYCOM-CICE/TP6a0.03/relax/070/relax_sal.a"
+         rlxfile0="/cluster/work/users/achoth/TP2a0.10/relax/010/relax_sal.a"
       rlx_afile = abfile.AFile(ab.idm,ab.jdm,rlxfile0,"r")
       lyr=fieldlevel
       record_num=1

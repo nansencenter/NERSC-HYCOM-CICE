@@ -5,7 +5,6 @@ import matplotlib.pyplot
 import matplotlib
 import cmocean
 import abfile
-import numpy
 import datetime
 import re
 import scipy.interpolate
@@ -298,9 +297,9 @@ def plot_hycom_func(lon,lat,fld,fig_tit,uu=None,vv=None, \
 def gearth_fig(llcrnrlon, llcrnrlat, urcrnrlon, urcrnrlat, pixels=1024):
     """Return a Matplotlib `fig` and `ax` handles for a Google-Earth Image."""
     # https://ocefpaf.github.io/python4oceanographers/blog/2014/03/10/gearth/
-    aspect = numpy.cos(numpy.mean([llcrnrlat, urcrnrlat]) * numpy.pi/180.0)
-    xsize = numpy.ptp([urcrnrlon, llcrnrlon]) * aspect
-    ysize = numpy.ptp([urcrnrlat, llcrnrlat])
+    aspect = np.cos(np.mean([llcrnrlat, urcrnrlat]) * np.pi/180.0)
+    xsize = np.ptp([urcrnrlon, llcrnrlon]) * aspect
+    ysize = np.ptp([urcrnrlat, llcrnrlat])
     aspect = ysize / xsize
 
     if aspect > 1.0:
@@ -322,16 +321,16 @@ def gearth_fig(llcrnrlon, llcrnrlat, urcrnrlon, urcrnrlat, pixels=1024):
 
 
 def interpolate_to_latlon(lon,lat,data,res=0.1) :
-   lon2 = numpy.mod(lon+360.,360.)
+   lon2 = np.mod(lon+360.,360.)
    # New grid
-   minlon=numpy.floor((numpy.min(lon2)/res))*res
-   minlat=max(-90.,numpy.floor((numpy.min(lat)/res))*res)
-   maxlon=numpy.ceil((numpy.max(lon2)/res))*res
-   maxlat=min(90.,numpy.ceil((numpy.max(lat)/res))*res)
+   minlon=np.floor((np.min(lon2)/res))*res
+   minlat=max(-90.,np.floor((np.min(lat)/res))*res)
+   maxlon=np.ceil((np.max(lon2)/res))*res
+   maxlat=min(90.,np.ceil((np.max(lat)/res))*res)
    #maxlat=90.
-   lo1d = numpy.arange(minlon,maxlon+res,res)
-   la1d = numpy.arange(minlat,maxlat,res)
-   lo2d,la2d=numpy.meshgrid(lo1d,la1d)
+   lo1d = np.arange(minlon,maxlon+res,res)
+   la1d = np.arange(minlat,maxlat,res)
+   lo2d,la2d=np.meshgrid(lo1d,la1d)
    print minlon,maxlon,minlat,maxlat
 
    if os.path.exists("grid.info") :
@@ -349,32 +348,32 @@ def interpolate_to_latlon(lon,lat,data,res=0.1) :
 
       # Mask out points not on grid
       K=J<data.shape[0]-1
-      K=numpy.logical_and(K,I<data.shape[1]-1)
-      K=numpy.logical_and(K,J>=0)
-      K=numpy.logical_and(K,I>=0)
+      K=np.logical_and(K,I<data.shape[1]-1)
+      K=np.logical_and(K,J>=0)
+      K=np.logical_and(K,I>=0)
 
       # Pivot point 
       Ii=I.astype('i')
       Ji=J.astype('i')
 
       # Takes into account data mask
-      tmp =numpy.logical_and(K[K],~data.mask[Ji[K],Ii[K]])
+      tmp =np.logical_and(K[K],~data.mask[Ji[K],Ii[K]])
       K[K]=tmp
       
       tmp=data[Ji[K],Ii[K]]
-      a,b=numpy.where(K) 
-      z=numpy.zeros(K.shape)
+      a,b=np.where(K) 
+      z=np.zeros(K.shape)
       z[a,b] = tmp
-      z=numpy.ma.masked_where(~K,z)
+      z=np.ma.masked_where(~K,z)
 
    # Brute force ...
    else  :
-      K=numpy.where(~data.mask)
+      K=np.where(~data.mask)
       z=scipy.interpolate.griddata( (lon2[K],lat[K]),data[K],(lo2d,la2d),'cubic')
-      z=numpy.ma.masked_invalid(z)
+      z=np.ma.masked_invalid(z)
       z2=scipy.interpolate.griddata( (lon2.flatten(),lat.flatten()),data.mask.flatten(),(lo2d,la2d),'nearest')
       z2=z2>.1
-      z=numpy.ma.masked_where(z2,z)
+      z=np.ma.masked_where(z2,z)
 
    return lo2d,la2d,z
 
@@ -459,3 +458,21 @@ def cmap_dict(cmapfile):
 #        [0.9763, 0.9235, 0.9955], 
 #             [0.9567, 0.8603, 0.9918]])
 
+
+# Rotate u & v velocity fields
+def rotate_vector(fld1,fld2,plon,plat):
+ radian=np.pi/180
+ NX=plon.shape
+ dlon=np.zeros(NX)
+ dlat=np.zeros(NX)
+ dlon[1:-1,:]=(plon[2:,:] - plon[:-2,:])*np.cos(radian*.5*(plat[2:,:]+plat[1:-1,:]))
+ dlat[1:-1,:]=plat[2:,:] - plat[:-2,:]  
+ dlon[-1,:]=dlon[-2,:]
+ dlat[-1,:]=dlat[-2,:]
+ dlon[0,:]=dlon[1,:]
+ dlat[0,:]=dlat[1,:]
+ theta_ip=np.arctan2(dlat,dlon)
+ theta_jp=(theta_ip+90)*radian
+ urot=fld1*np.cos(theta_ip)+fld2*np.cos(theta_jp)
+ vrot=fld1*np.sin(theta_ip)+fld2*np.sin(theta_jp)
+ return urot,vrot
