@@ -127,7 +127,7 @@ def reproj_mod2obs(X1,Y1,Z1,X2,Y2,method='nearest',mask=None):
     mask2 = np.isnan(Z2)
     if mask is not None:
         # apply union of mask and model nans
-        mask2 = np.logical_or(mask1, mask)
+       mask2 = np.logical_or(mask1, mask)
 
     Z2 = np.ma.array(Z2, mask=mask2)
     return(Z2)
@@ -161,7 +161,11 @@ def reduce_grid(X, Y, Z, bbox):
     jmin = id[1].min()
     imax = id[0].max() +1
     jmax = id[1].max() +1
-    Z_ = Z.filled(np.nan).astype(float)
+    #Z_ = Z.filled(np.nan).astype(float)
+    if hasattr(Z, 'mask'):
+	Z_ = Z.filled(np.nan).astype(float)
+    else:
+	Z_ = Z
     return(
             X[imin: imax, jmin: jmax],
             Y[imin: imax, jmin: jmax],
@@ -223,7 +227,7 @@ if __name__ == "__main__" :
       for ncfile0 in args.filename :
             #nci = mr.nc_getinfo(ncfile0)
             ncfile1 = Dataset(ncfile0,'r',format="NETCDF4")
-            logger.info("ncof sst data: Now processing  %s"%ncfile0)
+            logger.info("ostia sst data: Now processing  %s"%ncfile0)
             # interpolate ncof_sst in tp5 grid
 ###             ncfile1 = Dataset(ncfile0,'r',format="NETCDF4")
 ###             glon = ncfile1.variables['lon'][:] 
@@ -237,7 +241,7 @@ if __name__ == "__main__" :
 ###             print 'mask=',gl_mask.shape
 ###             print 'plon=', plon.shape
 ###             print 'plat=', plat.shape
-            start_time = ttimm.time()
+           #start_time = ttimm.time()
             #print 'start time=', start_time
 ###         #    newMask=scipy.interpolate.griddata( (glonn.flatten(),glatt.flatten()),gl_mask.flatten(),(plon,plat),'nearest')
 ###         #    newMask=np.ma.masked_where(np.ma.getmask(depth),newMask)
@@ -249,7 +253,7 @@ if __name__ == "__main__" :
             sst_anlys = interp2points(ncfile1,'analysed_sst',target_lonlats,mapping=None)
             print 'elapsed time=',start_time - ttimm.time()
             # Create scalar field for vectors
-            fld=sst_anlys - 273.15
+            fld=sst_anlys - 273.1
             fld=np.ma.masked_where(np.ma.getmask(depth),fld)
             fld=np.ma.masked_invalid(fld)
             #fld=np.ma.masked_where(fld<-1.8,fld)
@@ -260,7 +264,7 @@ if __name__ == "__main__" :
             file_count=file_count+1
             # write to nc file
             suff=os.path.basename(ncfile0)
-            ncfilename='TP6_out_'+suff #.replace('.nc','')
+            ncfilename='TOPAZ_'+suff #.replace('.nc','')
             rootgrp = Dataset(ncfilename, "w", format="NETCDF4")
             logger.info("output to ncfile in  %s"%ncfilename)
             #dimension
@@ -269,13 +273,13 @@ if __name__ == "__main__" :
             time = rootgrp.createDimension("time", None)
             #variable
             times = rootgrp.createVariable("time","f8",("time",))
-            ncof_sst = rootgrp.createVariable("analysed_sst","f4",("time","lat","lon",))
-            sst_mask = rootgrp.createVariable("ncof_mask","f4",("time","lat","lon",))
-            print 'ncof_sst.shape=',ncof_sst.shape
+            ostia_sst = rootgrp.createVariable("analysed_sst","f4",("time","lat","lon",))
+            sst_mask = rootgrp.createVariable("ostia_mask","f4",("time","lat","lon",))
+            print 'ostia_sst.shape=',ostia_sst.shape
             print 'sst_mask.shape=',sst_mask.shape
             times[:] = 1
-            ncof_sst[0,:,:]=fld[:,:]
-            sst_mask[0,:,:]=newMask[:,:]
+            ostia_sst[0,:,:]=fld[:,:]
+            sst_mask[0,:,:]=np.array(newMask[:,:])
 
             rootgrp.close()
             ### End file_intloop
