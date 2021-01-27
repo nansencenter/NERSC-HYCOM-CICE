@@ -106,7 +106,7 @@ class AFile(object) :
       # Calc min and mask
       #print self._mask
       if self._mask :
-         I=numpy.where(mask!=False)
+         I=numpy.where(mask!=True)
          hmax=h[I].max()
          hmin=h[I].min()
          J=numpy.where(mask.flatten())
