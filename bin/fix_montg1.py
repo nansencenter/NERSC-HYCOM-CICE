@@ -1,7 +1,10 @@
+"""
+Replace NaN values to Zeros for the Montgomery potential AO
+"""
 #!/usr/bin/env python
 import argparse
 import abfile
-import numpy
+import numpy as np
 import modeltools.hycom
 import logging
 import re
@@ -15,7 +18,7 @@ import pickle
 # regress_file. Use the scripts as (in experiment folder):
 #
 # source ../REGION.src
-# python ../bin/fix_montg1.py ../nest/011/archv.2016_001_00.a ${INPUTDIR}montg_regress.pckl ./
+# python ../bin/fix_montg1.py ../nest/011/archv.2016_001_00.a ${INPUTDIR}montg_regress.pckl ./  ../topo/regional.depth.a
 #
 # this code works standalone, so you can use it on existing archive nest files
 # no need to do this if you're creating a new archive file since the code is already embedded to bin/archvz2hycom_biophys.sh
@@ -36,7 +39,7 @@ cline2="NEMO fields on hycom grid with corrected montg1 variable"
 cline3="Expt 01.1  nhybrd=50 nsigma= 0 ds00= 1.00 dp00= 1.00 dp00x= 450.0 dp00f=1.150"
 
 
-def main(archv_files,regress_file,opath,header_line1=cline1,header_line2=cline2,header_line3=cline3 ) :
+def main(archv_files,regress_file,opath,depth_file,header_line1=cline1,header_line2=cline2,header_line3=cline3 ) :
 
    regr = open(regress_file,'rb')
    slope,intercept,nemomeandt = pickle.load(regr)
@@ -48,7 +51,11 @@ def main(archv_files,regress_file,opath,header_line1=cline1,header_line2=cline2,
    iversn = bp["iversn"]
    yrflag = bp["yrflag"]
    iexpt  = bp["iexpt"]
-   
+
+   # get domain depth
+   abdepth = abfile.ABFileBathy(depth_file, \
+            "r",idm=idm,jdm=jdm)
+   depthm=abdepth.read_field("depth")   
 
    for archv_file in archv_files :
 
@@ -56,7 +63,15 @@ def main(archv_files,regress_file,opath,header_line1=cline1,header_line2=cline2,
       arcfile=abfile.ABFileArchv(archv_file,"r")
       
       srfhgt=arcfile.read_field("srfhgt",0)
+      montg1=arcfile.read_field("montg1",0)
       montg1=(srfhgt-nemomeandt) * slope + intercept
+      montg1=np.where(np.isnan(montg1), 0, montg1)
+      dummy = arcfile.read_field("temp",1)
+      dummy[~depthm.mask] = montg1[~depthm.mask] # your fixed montg1
+      logger.info("Montg Minimum")
+      print(dummy.min())
+      logger.info("Montg Maximum")
+      print(dummy.max())
 #      logger.info("Estimated montg1 ")
       fnameout = opath+str(archv_file[-19:])
       arcfile_out=abfile.ABFileArchv(fnameout,"w",iversn=iversn,yrflag=yrflag,iexpt=iexpt,mask=False,cline1=header_line1,cline2=header_line2,cline3=header_line3)
@@ -71,7 +86,7 @@ def main(archv_files,regress_file,opath,header_line1=cline1,header_line2=cline2,
 
           if fieldname == "montg1" :
             logger.info("Writing field %10s at level %3d to %s (modified)"%(fieldname,k,fnameout))
-            arcfile_out.write_field(montg1,None,fieldname,time_step,model_day,k,dens)
+            arcfile_out.write_field(dummy,None,fieldname,time_step,model_day,k,dens)
           else :
             arcfile_out.write_field(fld   ,None,fieldname,time_step,model_day,k,dens)
 
@@ -95,5 +110,7 @@ if __name__ == "__main__" :
    parser.add_argument('archive_file',     type=str, help='Files to add montg1 to',nargs="+")
    parser.add_argument('opath',     type=str, help='Output files path')
    parser.add_argument('regress_file', type=str, help='regression file path')
+   parser.add_argument('depth_file', type=str, help='path to regional_depth.a file')
    args = parser.parse_args()
-   main(args.archive_file,args.opath,args.regress_file,header_line1=args.header_line1,header_line2=args.header_line2,header_line3=args.header_line3)
+   main(args.archive_file,args.opath,args.regress_file,args.depth_file,header_line1=args.header_line1,header_line2=args.header_line2,header_line3=args.header_line3)
+
