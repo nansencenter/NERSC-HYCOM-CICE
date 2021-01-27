@@ -111,7 +111,7 @@ def main(region,experiment,tracer,month,cmap,clim,workdir):
     abdepth = abfile.ABFileBathy(workdir + user + "/" + \
         region + "/force/rivers/SCRATCH/regional.depth.b","r",idm=idm,jdm=jdm)
     depthm=abdepth.read_field("depth")
-    river = np.ma.masked_where(depthm<10.,river)
+    river = np.ma.masked_where(depthm.mask,river)
 
     # now plot
     fig=plt.figure(figsize=(6,5),facecolor='w')
