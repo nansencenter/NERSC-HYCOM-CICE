@@ -1644,7 +1644,7 @@ c
         if     (mnproc.eq.1) then
         write (lp,*) 'No sss relaxation limiter.'
         endif !1st tile
-        sssrmx(:,:) = 99.9  !needed for thermf, set to no limit
+        sssrmx(:,:) = 0.5  !needed for thermf, set to no limit
       endif
 c
       if     (relax) then  ! boundary thermal relaxation
