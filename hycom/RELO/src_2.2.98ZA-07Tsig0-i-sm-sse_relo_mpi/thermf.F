@@ -1603,6 +1603,8 @@ c
      &           +swall(i,j,1,lc2)*wc2+swall(i,j,1,lc3)*wc3
         sssdif = sssc - saln(i,j,1,n)
 
+! 19022021: This has been commented out to avoid relaxation back to climatological salinity
+!           below the sea ice in the central Arctic where the climatology is of low quality
 !        if     (saln(i,j,1,n).gt.0.5*sssc .and.
 !     &          abs(sssdif).gt.abs(sssrmx(i,j))) then  !large sss anomaly
 !          if     (sssrmx(i,j).lt.0.0) then
