@@ -609,13 +609,13 @@ c
       call zaiowr(u_m(1-nbdy,1-nbdy,k),iu,.true.,
      &            xmin,xmax, nopa, .false.)
       if     (mnproc.eq.1) then
-      write (nop,117) 'u-vel.  ',nmean,time_ave,k,coord,xmin,xmax
+      write (nop,117) 'utotl   ',nmean,time_ave,k,coord,xmin,xmax
       call flush(nop)
       endif !1st tile
       call zaiowr(v_m(1-nbdy,1-nbdy,k),iv,.true.,
      &            xmin,xmax, nopa, .false.)
       if     (mnproc.eq.1) then
-      write (nop,117) 'v-vel.  ',nmean,time_ave,k,coord,xmin,xmax
+      write (nop,117) 'vtotl   ',nmean,time_ave,k,coord,xmin,xmax
       call flush(nop)
       endif !1st tile
       call zaiowr(ke_m(1-nbdy,1-nbdy,k),ip,.true.,
