@@ -1,1 +1,6 @@
-depth_TP2a0.10_02.b
+Bathymetry prepared by python modeltools package
+
+
+
+
+min,max depth =         6.01852      5009.42969
