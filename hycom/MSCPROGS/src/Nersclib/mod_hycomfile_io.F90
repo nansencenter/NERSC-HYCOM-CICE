@@ -785,12 +785,14 @@ contains
       call HFReadField(df,ut,idm,jdm,'utot    ',vlevel,1)
       call HFReadField(df,vt,idm,jdm,'vtot    ',vlevel,1)
    elseif(trim(df%ftype)=="archv"&
-           .or.trim(df%ftype)=="archm"&
            .or.trim(df%ftype)=="archs") then
       call HFReadField(df,ut,idm,jdm,'u-vel.  ',vlevel,1)
       call HFReadField(df,vt,idm,jdm,'v-vel.  ',vlevel,1)
       call HFReadField(df,ub,idm,jdm,'u_btrop ',0,1)
       call HFReadField(df,vb,idm,jdm,'v_btrop ',0,1)
+   elseif(trim(df%ftype)=="archm") then
+      call HFReadField(df,ut,idm,jdm,'utotl  ',vlevel,1)
+      call HFReadField(df,vt,idm,jdm,'vtotl  ',vlevel,1)
    elseif (trim(df%ftype)=="archv_wav") then
       call HFReadField(df,ut,idm,jdm,'u-vel.  ',vlevel,1)
       call HFReadField(df,vt,idm,jdm,'v-vel.  ',vlevel,1)
