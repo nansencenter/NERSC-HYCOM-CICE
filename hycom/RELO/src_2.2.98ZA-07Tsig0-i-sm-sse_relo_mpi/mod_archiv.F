@@ -28,6 +28,10 @@ c
       logical,     save,  private :: l_arch(nfields) !field output flags
 c
       private archiv_prof_out
+#ifdef OFFICEField
+      ! Shielding the output of ice fields
+      logical, save, private :: Toffice=.true. 
+#endif
 
       contains
 
@@ -280,7 +284,11 @@ c
       call flush(nop)
       endif !1st tile
       endif !l_arch
+#ifdef OFFICEField
+      if     (iceflg.ne.0 .and. Toffice==.false.) then
+#else
       if     (iceflg.ne.0) then
+#endif
         if     (kkout.gt.1 .or. l_arch(8)) then
         call zaiowr(covice,ip,.true., xmin,xmax, nopa, .false.)
         if     (mnproc.eq.1) then
@@ -488,7 +496,11 @@ c
 c
 #if defined(NERSC_HYCOM_CICE)
 C --- Placed here not to interfere with reading of nest files etc etc
+#ifdef OFFICEField
+      if     (iceflg.ne.0 .and. Toffice==.false.) then
+#else
       if     (iceflg.ne.0) then
+#endif
         if     (kkout.gt.1 .or. l_arch(20)) then
         call zaiowr(si_u,ip,.true., xmin,xmax, nopa, .false.)
         if     (mnproc.eq.1) then
@@ -865,7 +877,11 @@ c ---   which only includes the fields up to vbavg (or up to nsterc)
      &    min(hekman(ipnt,jpnt),         9999.999),            !m
      &    min( dpbbl(ipnt,jpnt)  *qonem, 9999.999)             !m
 #endif
+#ifdef OFFICEField
+        if     (iceflg.ne.0 .and. Toffice==.false.) then
+#else
         if     (iceflg.ne.0) then
+#endif
           write (nop,'(2a / a,f11.4, 3f8.2,2f8.1,f9.2)')
      &    '## model-day',
      &    '  covice  thkice  temice  flxice  fswice   iceE-P',
@@ -1061,7 +1077,11 @@ c
      &            xmin,xmax, nopa, .false.)
       write (nop,117) 'mix_dpth',nstep,time,0,coord,xmin,xmax
       call flush(nop)
+#ifdef OFFICEField
+      if     (iceflg.ne.0 .and. Toffice==.false.) then
+#else
       if     (iceflg.ne.0) then
+#endif
         call ztiowr(covice,ip,.true., xmin,xmax, nopa, .false.)
         write (nop,117) 'covice  ',nstep,time,0,coord,xmin,xmax
         call flush(nop)

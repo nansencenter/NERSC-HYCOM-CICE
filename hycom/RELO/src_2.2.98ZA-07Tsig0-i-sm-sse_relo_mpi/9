@@ -1,0 +1,71 @@
+barotp.F:            iceth=.5*(thkice(i,j)+thkice(i-1,j))
+barotp.F:            iceth=.5*(thkice(i,j)+thkice(i,j-1))
+barotp.F:CKAL &   pbudel_seaice(i-1,j,ml),covice(i-1,j),thkice(i-1,j),si_u(i-1,j)
+barotp.F:CKAL &   pbudel_seaice(i,j,ml),covice(i,j),thkice(i,j),si_u(i,j)
+barotp.F:CKAL &   pbudel_seaice(i+1,j,ml),covice(i+1,j),thkice(i+1,j),si_u(i+1,j)
+forfun.F:          call zaiosk(920) !skip thkice
+forfun.F:          call zaiosk(920) !skip thkice
+icloan.F:c --- thkice = average ice thickness, i.e. hice x covice (m)
+icloan.F:            thkice(i,j)=hicemx
+icloan.F:              thkice(i,j)=thkice(i,j)+flxice(i,j)*
+icloan.F:            elseif (thkice(i,j).gt.0.0) then  !tmxl > tfrz
+icloan.F:     &                    thkice(i,j)*(fusion*rhoice/delt1) )
+icloan.F:              thkice(i,j)=thkice(i,j)-paybak*(delt1/(fusion*rhoice))
+icloan.F:            else !tmxl > tfrz & thkice(i,j) == 0.0
+icloan.F:            util1(i,j)=max(thkice(i,j)-hicemx,0.0)  !icex = ice exceeding hicemx
+icloan.F:            thkimxy(j)=max(thkimxy(j),thkice(i,j))
+icloan.F:            thkice(i,j)=hicemx
+icloan.F:            thkice(i,j)=util1(i,j)+min(thkice(i,j),hicemx) !icex_sm+rest
+icloan.F:            if (thkice(i,j).lt.1.e-5*hicemn) then
+icloan.F:              covice(i,j)=min(1.0,thkice(i,j)*(1.0/hicemn))
+icloan.F:              hice=thkice(i,j)/covice(i,j)  !minimum of hicemn
+icloan.F:              thkice(i,j)=covice(i,j)*hicemn
+inicon.F:      thkice(i,j) = 0.0
+mod_archiv.F:      c_arch( 9) = 'thkice'
+mod_archiv.F:        call zaiowr(thkice,ip,.true., xmin,xmax, nopa, .false.)
+mod_archiv.F:        write (nop,117) 'thkice  ',nstep,time,k,coord,xmin,xmax
+mod_archiv.F:     &    '  covice  thkice  temice  flxice  fswice   iceE-P',
+mod_archiv.F:     &      thkice(ipnt,jpnt),                                   !m
+mod_archiv.F:        call ztiowr(thkice,ip,.true., xmin,xmax, nopa, .false.)
+mod_archiv.F:        write (nop,117) 'thkice  ',nstep,time,0,coord,xmin,xmax
+mod_archiv_nc.F:      c_arch( 9) = 'thkice'  ; dim_arch( 9) = 2
+mod_archiv_nc.F:             call write_abfld(thkice,ip,nop,nopa,'thkice  ',k,coord)
+mod_archiv_nc.F:     &    '  covice  thkice  temice  flxice  fswice   iceE-P',
+mod_archiv_nc.F:     &      thkice(ipnt,jpnt),                                   !m
+mod_archiv_nc.F:        call ztiowr(thkice,ip,.true., xmin,xmax, nopa, .false.)
+mod_archiv_nc.F:        write (nop,117) 'thkice  ',nstep,time,0,coord,xmin,xmax
+mod_cb_arrays.F:     & thkice,        ! grid-cell avg. ice thknss (m)
+mod_cb_arrays.F:     &        thkice(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy),
+mod_cb_arrays.F:              thkice = r_init
+mod_hycom.F:                thkice(i,j) =  impData( 9)%p(i+i0,j+j0) !Sea Ice Thickness
+mod_hycom.F:                thkice(i,j) = 0.0
+mod_hycom.F:        call xctilr(thkice,1,1,nbdy,nbdy,halo_ps)  !Sea Ice Thickness
+mod_hycom.F:        call xctila(thkice,1,1,halo_ps)  !Sea Ice Thickness
+mod_hycom.F:        thkice=0.
+mod_hycom.F:            si_h(:,:) = thkice(:,:)
+mod_incupd.F:c --- directly insert the input covice and thkice (if they exist).
+mod_incupd.F:c ---   directly insert covice and thkice.
+mod_incupd.F:        call rd_archive(util5, cfield,layer, 925)  !thkice
+mod_incupd.F:              thkice(i,j)=util5(i,j)
+mod_incupd.F:c --- directly insert si_c into covice and thkice.
+mod_incupd.F:c ---   directly insert covice and thkice.
+mod_incupd.F:              thkice(i,j)=covice(i,j)*hicemn
+mod_mean.F:     &   surflx_m,salflx_m, covice_m,thkice_m,temice_m
+mod_mean.F:      allocate( thkice_m(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy) )
+mod_mean.F:          thkice_m(i,j) = 0.0
+mod_mean.F:            thkice_m(i,j) = thkice_m(i,j) + s*thkice(i,j)
+mod_mean.F:            thkice_m(i,j) = thkice_m(i,j) * q
+mod_mean.F:        call zaiowr(thkice_m,ip,.true., xmin,xmax, nopa, .false.)
+mod_mean.F:        write (nop,117) 'thkice  ',nmean,time_ave,0,coord,xmin,xmax
+mod_mean.F:     &    '  covice  thkice  temice  flxice  fswice   iceE-P',
+mod_mean.F:     &      thkice_m(itest,jtest),                                   !m
+mod_mean.F:      c_arch_nc(15) = 'thkice'
+mod_mean.F:      call write_nc(thkice_m,ip,ncid,trim(c_arch_nc(15)),1,1,1)
+mod_netcdf_util.F:      c_arch_nc( 9) = 'thkice'
+mod_netcdf_util.F:      if (l_arch_nc(9)) call write_nc(thkice,ip,ncid,
+restart.F:              thkice(i,j) = 0.0
+restart.F:          call restart_in3d(thkice,    1, ip, 'thkice  ')
+restart.F:        call zaiowr3(thkice,     1, ip,.false., xmin,xmax, iunta,.true.)
+restart.F:        call xctilr( thkice,   1,1, nbdy,nbdy, halo_ps)
+restart.F:            write(iunit,4100) 'thkice  ',k,l,  xmin(l),xmax(l)
+restart.F:      call restart_zero3d(thkice,    1, ip, 'thkice  ')

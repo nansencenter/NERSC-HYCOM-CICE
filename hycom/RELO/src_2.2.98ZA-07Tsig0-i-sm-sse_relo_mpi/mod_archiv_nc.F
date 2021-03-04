@@ -26,6 +26,12 @@ c
       logical,     save,  private :: l_arch(nfields) !field output flags
 c
       private archiv_prof_out
+#if defined(OFFICEField)
+      logical, save, private :: Toffice=.true. ! Shielding the outputtt 
+      ! Shielding the output of ice fields
+
+#endif
+
 
       contains
 
@@ -271,7 +277,11 @@ c
          k    =0
          coord=0.0
       endif !l_arch
+#if defined(OFFICEField)
+      if     (iceflg.ne.0 .and. Toffice==.false.) then
+#else
       if     (iceflg.ne.0) then
+#endif
         if     (kkout.gt.1 .or. l_arch(8)) then
           if (netcdf_archv) then
              !TODO
@@ -778,7 +788,11 @@ c ---   which only includes the fields up to vbavg (or up to nsterc)
      &    min(hekman(ipnt,jpnt),         9999.999),            !m
      &    min( dpbbl(ipnt,jpnt)  *qonem, 9999.999)             !m
 #endif
-        if     (iceflg.ne.0) then
+#if defined(OFFICEField)
+      if     (iceflg.ne.0 .and. Toffice==.false.) then
+#else
+      if     (iceflg.ne.0) then
+#endif
           write (nop,'(2a / a,f11.4, 3f8.2,2f8.1,f9.2)')
      &    '## model-day',
      &    '  covice  thkice  temice  flxice  fswice   iceE-P',
@@ -962,7 +976,11 @@ c
      &            xmin,xmax, nopa, .false.)
       write (nop,117) 'mix_dpth',nstep,time,0,coord,xmin,xmax
       call flush(nop)
+#if defined(OFFICEField)
+      if     (iceflg.ne.0 .and. Toffice==.false.) then
+#else
       if     (iceflg.ne.0) then
+#endif
         call ztiowr(covice,ip,.true., xmin,xmax, nopa, .false.)
         write (nop,117) 'covice  ',nstep,time,0,coord,xmin,xmax
         call flush(nop)
