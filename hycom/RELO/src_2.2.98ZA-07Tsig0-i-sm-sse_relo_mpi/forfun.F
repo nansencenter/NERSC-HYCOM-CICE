@@ -1642,7 +1642,7 @@ c
         call zaiocl(915)
       else
         if     (mnproc.eq.1) then
-        write (lp,*) 'No sss relaxation limiter.'
+        write (lp,*) 'sss relaxation is limited (less than 0.5).'
         endif !1st tile
         sssrmx(:,:) = 0.5  !needed for thermf, set to a limit of 0.5 psu
       endif
