@@ -27,7 +27,7 @@ c
 c
       private archiv_prof_out
 #if defined(OFFICEField)
-      logical, save, private :: Toffice=.true. ! Shielding the outputtt 
+      logical, save, private :: Toffice=.true. 
       ! Shielding the output of ice fields
 
 #endif

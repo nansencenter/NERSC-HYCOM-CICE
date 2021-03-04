@@ -56,7 +56,7 @@ c
 #if defined(NERSC_HYCOM_CICE)
      &   ,si_u_m, si_v_m
 #if defined(OFFICEField)
-      logical, save, private :: Toffice=.true. ! Shielding the outputtt 
+      logical, save, private :: Toffice=.true.  
       ! Shielding the output of ice fields
 #endif
 #endif
