@@ -55,6 +55,10 @@ c
      &   surflx_m,salflx_m, covice_m,thkice_m,temice_m
 #if defined(NERSC_HYCOM_CICE)
      &   ,si_u_m, si_v_m
+#if defined(OFFICEField)
+      logical, save, private :: Toffice=.true.  
+      ! Shielding the output of ice fields
+#endif
 #endif
 
       contains
@@ -563,7 +567,11 @@ c
       write (nop,117) 'kemix   ',nmean,time_ave,0,thbase,xmin,xmax
       call flush(nop)
       endif !1st tile
+#if defined(OFFICEField)
+      if     (iceflg.ne.0 .and. Toffice==.false.) then
+#else
       if     (iceflg.ne.0) then
+#endif
         call zaiowr(covice_m,ip,.true., xmin,xmax, nopa, .false.)
         if     (mnproc.eq.1) then
         write (nop,117) 'covice  ',nmean,time_ave,0,coord,xmin,xmax
@@ -682,7 +690,11 @@ C$Alfatih   write (nop,117) 'tracer  ',nmean,time_ave,k,coord,xmin,xmax
 #endif
 #if defined(NERSC_HYCOM_CICE)
 C --- Moved here to not interfere with nesting etc
+#if defined(OFFICEField)
+      if     (iceflg.ne.0 .and. Toffice==.false.) then
+#else
       if     (iceflg.ne.0) then
+#endif
         call zaiowr(si_u_m,ip,.true., xmin,xmax, nopa, .false.)
         if     (mnproc.eq.1) then
         write (nop,117) 'si_u    ',nmean,time_ave,0,coord,xmin,xmax
@@ -786,7 +798,11 @@ c ---   which only includes the fields up to vbaro (or up to nsterc)
      &    0.0,                                                     !W/m**2
      &    0.0,                                                     !W/m**2
      &    salflx_m(itest,jtest)*thref*8.64E7/saln_m(itest,jtest,1) !mm/day
+#if defined(OFFICEField)
+        if     (iceflg.ne.0 .and. Toffice==.false.) then
+#else
         if     (iceflg.ne.0) then
+#endif
           write (nop,'(2a / a,f11.4, 3f8.2,2f8.1,f9.2)')
      &    '## model-day',
      &    '  covice  thkice  temice  flxice  fswice   iceE-P',
