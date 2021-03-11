@@ -6,15 +6,15 @@ S-Z(15-11): dp00/f/x/i=3m/1.125/12m/1m; ds=1m/1.125/4m; src_2.2.12;
  010	  'iexpt ' = experiment number x10
  100	  'idm   ' = longitudinal array size
  110	  'jdm   ' = latitudinal  array size
-  -1	  'itest ' = grid point where detailed diagnostics are desired
-  -1	  'jtest ' = grid point where detailed diagnostics are desired
-  32      'kdm   ' = number of layers
-  32      'nhybrd' = number of hybrid levels (0=all isopycnal)
+  -1 	  'itest ' = grid point where detailed diagnostics are desired
+  -1      'jtest ' = grid point where detailed diagnostics are desired
+  28      'kdm   ' = number of layers
+  28      'nhybrd' = number of hybrid levels (0=all isopycnal)
   14      'nsigma' = number of sigma  levels (nhybrd-nsigma z-levels)
    3.0    'dp00  ' = deep    z-level spacing minimum thickness (m)
  450.0    'dp00x ' = deep    z-level spacing maximum thickness (m)
    1.18   'dp00f ' = deep    z-level spacing stretching factor (1.0=const.space)
-   0.5    'ds00  ' = shallow z-level spacing minimum thickness (m)
+   1.0    'ds00  ' = shallow z-level spacing minimum thickness (m)
   75.0    'ds00x ' = shallow z-level spacing maximum thickness (m)
    1.18   'ds00f ' = shallow z-level spacing stretching factor (1.0=const.space)
    1.0	  'dp00i ' = deep iso-pycnal spacing minimum thickness (m)
@@ -23,55 +23,51 @@ S-Z(15-11): dp00/f/x/i=3m/1.125/12m/1m; ds=1m/1.125/4m; src_2.2.12;
    1	  'locsig' = locally-referenced pot. density for stability (0=F,1=T)
    0	  'kapref' = thermobaric ref. state (-1=input,0=none,1,2,3=constant)
    0	  'thflag' = reference pressure flag (0=Sigma-0, 2=Sigma-2)
-  34.0	  'thbase' = reference density (sigma units)
+  25.0	  'thbase' = reference density (sigma units)
    0	  'vsigma' = spacially varying isopycnal target densities (0=F,1=T)
-  28.10   'sigma ' = layer  1 isopycnal target density (sigma units)
-  28.90   'sigma ' = layer  2 isopycnal target density (sigma units)
-  29.70   'sigma ' = layer  3 isopycnal target density (sigma units)
-  30.50   'sigma ' = layer  4 isopycnal target density (sigma units)
-  30.95   'sigma ' = layer  5 isopycnal target density (sigma units)
-  31.50   'sigma ' = layer  6 isopycnal target density (sigma units)
-  32.05   'sigma ' = layer  7 isopycnal target density (sigma units)
-  32.60   'sigma ' = layer  8 isopycnal target density (sigma units)
-  33.15   'sigma ' = layer  9 isopycnal target density (sigma units)
-  33.70   'sigma ' = layer 10 isopycnal target density (sigma units)
-  34.25   'sigma ' = layer 11 isopycnal target density (sigma units)
-  34.75   'sigma ' = layer 12 isopycnal target density (sigma units)
-  35.15   'sigma ' = layer 13 isopycnal target density (sigma units)
-  35.50   'sigma ' = layer 14 isopycnal target density (sigma units)
-  35.80   'sigma ' = layer 15 isopycnal target density (sigma units)
-  36.04   'sigma ' = layer 16 isopycnal target density (sigma units)
-  36.20   'sigma ' = layer 17 isopycnal target density (sigma units)
-  36.38   'sigma ' = layer 18 isopycnal target density (sigma units)
-  36.52   'sigma ' = layer 19 isopycnal target density (sigma units)
-  36.62   'sigma ' = layer 20 isopycnal target density (sigma units)
-  36.70   'sigma ' = layer 21 isopycnal target density (sigma units)
-  36.77   'sigma ' = layer 22 isopycnal target density (sigma units)
-  36.83   'sigma ' = layer 23 isopycnal target density (sigma units)
-  36.89   'sigma ' = layer 24 isopycnal target density (sigma units)
-  36.97   'sigma ' = layer 25 isopycnal target density (sigma units)
-  37.02   'sigma ' = layer 26 isopycnal target density (sigma units)
-  37.06   'sigma ' = layer 27 isopycnal target density (sigma units)
-  37.10   'sigma ' = layer 28 isopycnal target density (sigma units)
-  37.17   'sigma ' = layer 29 isopycnal target density (sigma units)
-  37.30   'sigma ' = layer 30 isopycnal target density (sigma units)
-  37.42   'sigma ' = layer 31 isopycnal target density (sigma units)
-  37.48   'sigma ' = layer 32 isopycnal target density (sigma units)
+  00.10   'sigma ' = layer  1 isopycnal target density (sigma units)
+  00.20   'sigma ' = layer  2 isopycnal target density (sigma units)
+  00.30   'sigma ' = layer  3 isopycnal target density (sigma units)
+  00.40   'sigma ' = layer  4 isopycnal target density (sigma units)
+  00.50   'sigma ' = layer  5 isopycnal target density (sigma units)
+  24.05   'sigma ' = layer  6 isopycnal target density (sigma units)
+  24.96   'sigma ' = layer  7 isopycnal target density (sigma units)
+  25.68   'sigma ' = layer  8 isopycnal target density (sigma units)
+  26.05   'sigma ' = layer  9 isopycnal target density (sigma units)
+  26.30   'sigma ' = layer 10 isopycnal target density (sigma units)
+  26.60   'sigma ' = layer 11 isopycnal target density (sigma units)
+  26.83   'sigma ' = layer 12 isopycnal target density (sigma units)
+  27.03   'sigma ' = layer 13 isopycnal target density (sigma units)
+  27.20   'sigma ' = layer 14 isopycnal target density (sigma units)
+  27.33   'sigma ' = layer 15 isopycnal target density (sigma units)
+  27.46   'sigma ' = layer 16 isopycnal target density (sigma units)
+  27.55   'sigma ' = layer 17 isopycnal target density (sigma units)
+  27.66   'sigma ' = layer 18 isopycnal target density (sigma units)
+  27.74   'sigma ' = layer 19 isopycnal target density (sigma units)
+  27.82   'sigma ' = layer 20 isopycnal target density (sigma units)
+  27.90   'sigma ' = layer 21 isopycnal target density (sigma units)
+  27.97   'sigma ' = layer 22 isopycnal target density (sigma units)
+  28.01   'sigma ' = layer 23 isopycnal target density (sigma units)
+  28.04   'sigma ' = layer 24 isopycnal target density (sigma units)
+  28.07   'sigma ' = layer 25 isopycnal target density (sigma units)
+  28.09   'sigma ' = layer 26 isopycnal target density (sigma units)
+  28.11   'sigma ' = layer 27 isopycnal target density (sigma units)
+  28.13   'sigma ' = layer 28 isopycnal target density (sigma units)
    2	  'iniflg' = initial state flag (0=levl, 1=zonl, 2=clim)
    0	  'jerlv0' = initial jerlov water type (1 to 5; 0 to use KPAR)
    3	  'yrflag' = days in year flag   (0=360,  1=366,  2=366J1, 3=actual)
    0	  'sshflg' = diagnostic SSH flag (0=SSH,1=SSH&stericSSH)
-   0.25 'dsurfq' = number of days between model diagnostics at the surface
- 5.00    'diagfq' = number of days between model diagnostics
+ 9999. 'dsurfq' = number of days between model diagnostics at the surface
+ 9999.00  'diagfq' = number of days between model diagnostics
    0.0	  'proffq' = number of days between model diagnostics on selected tiles
    0.0	  'tilefq' = number of days between model diagnostics on selected tiles
    1.0	  'meanfq' = number of days between model diagnostics (time averaged)
-99999.0	  'rstrfq' = number of days between model restart output
+ 100.0	  'rstrfq' = number of days between model restart output
  0.000	  'bnstfq' = number of days between baro nesting archive input
  0.000	  'nestfq' = number of days between 3-d  nesting archive input
   -4      'cplifq' = number of days (or time steps) between sea ice coupling
-1440.0	  'baclin' = baroclinic time step (seconds), int. divisor of 86400
- 144.0	  'batrop' = barotropic time step (seconds), int. div. of baclin/2
+1200.0	  'baclin' = baroclinic time step (seconds), int. divisor of 86400
+ 120.0	  'batrop' = barotropic time step (seconds), int. div. of baclin/2
    0	  'incflg' = incremental update flag (0=no, 1=yes, 2=full-velocity)
  100	  'incstp' = no. timesteps for full update (1=direct insertion)
    1	  'incupf' = number of days of incremental updating input
@@ -113,7 +109,7 @@ S-Z(15-11): dp00/f/x/i=3m/1.125/12m/1m; ds=1m/1.125/4m; src_2.2.12;
    0.0    'tfrz_0' = ENLN: ice melting point (degC) at S=0psu
   -0.054  'tfrz_s' = ENLN: gradient of ice melting point (degC/psu)
    0.25   'frzifq' = e-folding time scale back to tfrz (days or -ve time steps)
-   0.0    'ticegr' = ENLN: temp. grad. inside ice (deg/m); =0 use surtmp
+   5.0    'ticegr' = ENLN: temp. grad. inside ice (deg/m); =0 use surtmp
    0.5    'hicemn' = ENLN: minimum ice thickness (m)
   10.0    'hicemx' = ENLN: maximum ice thickness (m)
    0      'ishelf' = ice shelf flag    (0=none,1=ice shelf over ocean)
@@ -177,7 +173,7 @@ S-Z(15-11): dp00/f/x/i=3m/1.125/12m/1m; ds=1m/1.125/4m; src_2.2.12;
    3.0	  'tidrmp' = TIDES:            ramp time (days)
    0.0	  'tid_t0' = TIDES: origin for ramp time (model day)
   12	  'clmflg' = climatology frequency flag   (6=bimonthly, 12=monthly)
-   4	  'wndflg' = wind stress input flag (0=none,1=u/v-grid,2,3=p-grid,4,5=wnd10m)
+   4	  'wndflg' = wind stress input flag (0=none,1=u/v-grid,2,3=p-grid,4,5=wnd10m,7=nextsim)
    2      'ustflg' = ustar forcing     flag        (3=input,1,2=wndspd,4=stress)
    6	  'flxflg' = thermal forcing   flag (0=none,3=net_flux,1-2,4-6=sst-based)
    6      'empflg' = E-P     forcing   flag (0=none,3=net_E-P, 1-2,4-6=sst-based_E)
@@ -202,4 +198,4 @@ S-Z(15-11): dp00/f/x/i=3m/1.125/12m/1m; ds=1m/1.125/4m; src_2.2.12;
    0     'nmarcs' = '' Surface archive filename. Dot and date appended. Empty: use old hycom name.
    0     'nmarcv' = '' Full    archive filename. Dot and date appended. Empty: use old hycom name.
    0     'nmarcm' = '' Mean    archive filename. Dot and date appended. Empty: use old hycom name.
-   0     'nrdflg' = (0,1,...,7) options for the radiation heat fluxes.
+   0     'nrdflg' = (0,1,...,7) options for the radiation heat fluxes
