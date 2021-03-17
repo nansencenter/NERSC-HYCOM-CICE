@@ -14,7 +14,7 @@ The following tools are necessary
 
 * A working fortran compiler.
 
-* A working installation of the Eearth System Modelling Framework: https://www.earthsystemcog.org/projects/esmf/download/. The code has been tested and verified to work with ESMF v 5.2.0.rp3. Some info on installing ESMF can be found [here](doc/ESMF.md)
+* A working installation of the Eearth System Modelling Framework: https://github.com/esmf-org/esmf/releases/tag/ESMF_5_2_0rp3. The code has been tested and verified to work with ESMF v 5.2.0.rp3. Some info on installing ESMF can be found [here](doc/ESMF.md)
 
 * A working python 2.7 installation and several python modules, [installation info can be found here](doc/python.md)
 
