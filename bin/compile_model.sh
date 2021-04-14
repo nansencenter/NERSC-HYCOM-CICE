@@ -186,7 +186,7 @@ elif [ "$SITE" == "fram" ] ; then
 
 elif [ "$SITE" == "betzy" ] ; then
    echo "hardcoded settings for $SITE"
-   export ESMF_DIR=/cluster/software/ESMF/8.0.0-intel-2019b/
+   export ESMF_DIR=/cluster/software/ESMF/8.0.1-intel-2020a/
    export ESMF_MOD_DIR=${ESMF_DIR}mod/
    export ESMF_LIB_DIR=${ESMF_DIR}lib/
    
