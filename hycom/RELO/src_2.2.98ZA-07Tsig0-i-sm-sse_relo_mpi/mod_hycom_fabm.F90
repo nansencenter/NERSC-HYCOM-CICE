@@ -46,8 +46,8 @@ module mod_hycom_fabm
 !  these are used for bottom exchange
    integer :: nbottom
    real :: hbottom
-   real, allocatable :: mass1Dbefore(:,:), mass1Dafter(:,:)
-   real, allocatable :: massdiff(:,:), ratiodiff(:,:), fakemass(:)
+!   real, allocatable :: mass1Dbefore(:,:), mass1Dafter(:,:)
+!   real, allocatable :: massdiff(:,:), ratiodiff(:,:), fakemass(:)
 !  these are used for check_state mass balance
    real, allocatable :: mass_before_check_state(:, :, :, :)
    real, allocatable :: mass_after_check_state(:)
@@ -202,11 +202,11 @@ contains
         allocate(atmco2(nyearCO2))
         allocate(atmco2_fabm(ii, jj))
 ! used for bottom exchange 
-        allocate(mass1Dbefore(kk,size(fabm_model%state_variables)))
-        allocate(mass1Dafter(kk,size(fabm_model%state_variables)))
-        allocate(massdiff(kk,size(fabm_model%state_variables)))
-        allocate(ratiodiff(kk,size(fabm_model%state_variables)))
-        allocate(fakemass(size(fabm_model%state_variables)))
+!        allocate(mass1Dbefore(kk,size(fabm_model%state_variables)))
+!        allocate(mass1Dafter(kk,size(fabm_model%state_variables)))
+!        allocate(massdiff(kk,size(fabm_model%state_variables)))
+!        allocate(ratiodiff(kk,size(fabm_model%state_variables)))
+!        allocate(fakemass(size(fabm_model%state_variables)))
 ! used for check_state mass balance
         allocate(mass_before_check_state(ii,jj,kk,size(fabm_model%state_variables)))
         allocate(mass_after_check_state(kk))
@@ -704,41 +704,9 @@ contains
       ! Vertical movement (includes sinking and floating)
       if (do_vertical_movement) then
         if (do_check_state) call check_state('before vertical_movement', n, .false.)
-          do ivar=1,size(fabm_model%state_variables)
-           if (trim(fabm_model%state_variables(ivar)%name)=='ECO_opa') then
-             do i=1,ii
-              do j=1,jj
-                 if (i==itest .and. j==jtest) then
-                 mass1Dbefore(:,ivar) = tracer(i, j, :, n, ivar) * dp(i, j, : , n)/onem
-                 write(*,*)'VERTICAL bottom before,',tracer(i,j,kbottom(i,j,n)-1:kbottom(i,j,n)+1,n, ivar)            
-                 write(*,'(A25,2x,F14.4,2x,F14.4,2x,I02,2x,F7.3)')'CHECK before vertical',sum(tracer(i, j, :, m, ivar) * dp(i, j, : , m)/onem), sum(tracer(i, j, :, n, ivar) * dp(i, j, : , n)/onem),modelmonth,modelday
-                 endif
-              enddo
-             enddo
-           endif
-          enddo
-                 
         call vertical_movement(n, m, delt1)
-
-          do ivar=1,size(fabm_model%state_variables)
-           if (trim(fabm_model%state_variables(ivar)%name)=='ECO_opa') then
-             do i=1,ii
-              do j=1,jj
-                 if (i==itest .and. j==jtest) then
-                 mass1Dafter(:,ivar) = tracer(i, j, :, n, ivar) * dp(i, j, : , n)/onem
-                 write(*,*)'VERTICAL MASS DIFF,',sum(mass1Dafter(1:kbottom(i,j,n),ivar)) - sum(mass1Dbefore(1:kbottom(i,j,n),ivar))
-                 write(*,*)'VERTICAL bottom after,',tracer(i,j,kbottom(i,j,n)-1:kbottom(i,j,n)+1,n, ivar),kbottom(i,j,n)
-                 write(*,'(A25,2x,F14.4,2x,F14.4,2x,I02,2x,F7.3)')'CHECK after vertical',sum(tracer(i, j, :, m, ivar) * dp(i, j, : , m)/onem), sum(tracer(i, j, :, n, ivar) * dp(i, j, : , n)/onem),modelmonth,modelday
-                 endif
-              enddo
-             enddo
-           endif
-          enddo
-
         if (do_check_state) call check_state('after vertical_movement', n, .false.)
       end if
-
-
 
 #ifdef FABM_CHECK_NAN
     do j=1,jj
@@ -774,82 +742,17 @@ contains
 
       ! Compute bottom source terms
       if (do_bottom_sources) then
-! BELOW IS A TEMPORARY FIX TO KEEP SEDIMENT VALUES AT AN UPPER THRESHOLD
-! THE VALUES ARE DETERMINED BASED ON A 3-YEAR SPINUP 99TH PERCENTILE OF EACH
-! VARIABLE INDIVIDUALLY
-! HIGH VALUES ARE SET TO A BIT LOWER VALUES TO KEEP THE MODEL REPEATEDLY
-! EXCEEDING THE 99TH PERCENTILE
-! THE SAME THING IS ALSO DONE AFTER THE BOTTOM EXCHANGE
 
-!      do ivar=1,size(fabm_model%bottom_state_variables)
-!        if (trim(fabm_model%bottom_state_variables(ivar)%name) == 'ECO_sed1') then
-!           if ( (maxval(fabm_bottom_state(:, :, 2, ivar)) .gt. 50000. ) &
-!                 .or. (maxval(fabm_bottom_state(:, :, 1, ivar)) .gt. 50000. ) ) then
-!              do j=1,jj
-!                 do i=1,ii
-!                    fabm_bottom_state(i, j, 2, ivar) = min( fabm_bottom_state(i, j, 2, ivar), 40000. )
-!                    fabm_bottom_state(i, j, 1, ivar) = min( fabm_bottom_state(i, j, 1, ivar), 40000. )
-!                 enddo
-!              enddo
-!           endif
-!        endif
-!        if (trim(fabm_model%bottom_state_variables(ivar)%name) == 'ECO_sed2') then
-!           if ( (maxval(fabm_bottom_state(:, :, 2, ivar)) .gt. 13000. ) &
-!                .or. (maxval(fabm_bottom_state(:, :, 1, ivar)) .gt. 13000. ) ) then
-!              do j=1,jj
-!                 do i=1,ii
-!                    fabm_bottom_state(i, j, 2, ivar) = min( fabm_bottom_state(i, j, 2, ivar), 10000. )
-!                    fabm_bottom_state(i, j, 1, ivar) = min( fabm_bottom_state(i, j, 1, ivar), 10000. )
-!                 enddo
-!              enddo
-!           endif
-!        endif
-!      enddo
-!!
       do j=1,jj
         flux = 0
         sms_bt = 0
         call fabm_do_bottom(fabm_model, 1, ii, j, flux, sms_bt)
         do i=1,ii
           if (kbottom(i, j, n) > 0) then
-
-            do ivar=1,size(fabm_model%state_variables)
-               mass1Dbefore(1:kbottom(i, j, n),ivar) = tracer(i, j, 1:kbottom(i, j, n), n, ivar) * dp(i, j, 1:kbottom(i, j, n) , n)/onem
-                if (trim(fabm_model%state_variables(ivar)%name) == 'ECO_opa') then
-                 if (i==itest .and. j==jtest ) then
-                 write(*,'(A25,2x,F14.4,2x,F14.4,2x,I02,2x,F7.3)')'CHECK before sediment',sum(tracer(i, j, :, m, ivar) * dp(i, j, : , m)/onem), sum(tracer(i, j, :, n, ivar) * dp(i, j, : , n)/onem),modelmonth,modelday
-                 do k=1,size(fabm_model%bottom_state_variables)
-                    if (trim(fabm_model%bottom_state_variables(k)%name) == 'ECO_sed2') then
-                       write(*,*)'CHECK',fabm_bottom_state(i, j, n, k),delt1,bottom_stress(i, j)
-                    endif
-                 enddo
-                 endif
-                endif
-            enddo
-!            do ivar=1,size(fabm_model%state_variables)
-!               mass1Dbefore(:,ivar) = tracer(i, j, :, n, ivar) * dp(i, j, : , n)/onem
-!            enddo
-            if (i==itest .and. j==jtest) then
-              do ivar=1,size(fabm_model%bottom_state_variables)
-               if (trim(fabm_model%bottom_state_variables(ivar)%name) == 'ECO_sed2') then
-                    write(*,*)'sed2_before,',fabm_bottom_state(i, j, n, ivar),delt1* sms_bt(i, ivar)
-               endif
-              enddo
-            endif
             fabm_bottom_state(i, j, n, :) = fabm_bottom_state(i, j, n, :) + delt1 * sms_bt(i, :) ! update sediment layer
-            if (i==itest .and. j==jtest) then
-              do ivar=1,size(fabm_model%bottom_state_variables)
-               if (trim(fabm_model%bottom_state_variables(ivar)%name) == 'ECO_sed2') then
-                    write(*,*)'sed2_after,',fabm_bottom_state(i, j, n, ivar),delt1* sms_bt(i, ivar)
-               endif
-              enddo
-            endif
             if ( dp(i, j, kbottom(i,j,n), n)/onem >= 3.0 ) then ! check if the bottom layer is thicker than 3 meters,
                                                                 ! if so, apply the flux as usual (I will decrease the criteria in time)
-          !    do k = kbottom(i,j,n),kk
                 tracer(i, j, kbottom(i,j,n), n, :) = tracer(i, j, kbottom(i,j,n), n, :) + delt1 * flux(i, :)/dp(i, j, kbottom(i,j,n), n)*onem
-          !      tracer(i, j, k, n, :) = tracer(i, j, k, n, :) + delt1 * flux(i, :)/dp(i, j, kbottom(i,j,n), n)*onem
-          !    enddo
             else ! in case less than 3 meters, to avoid accumulation at the bottom thin layers,
                  ! distribute the flux into multiple layers that add up to > 3 meters thickness
               hbottom = 0
@@ -871,75 +774,10 @@ contains
               stop
             end if
 #endif
-
-            do ivar=1,size(fabm_model%state_variables)
-               mass1Dafter(1:kbottom(i,j,n),ivar) = tracer(i, j, 1:kbottom(i,j,n), n, ivar) * dp(i, j, 1:kbottom(i,j,n) , n)/onem
-               massdiff(1:kbottom(i,j,n),ivar) = mass1Dafter(1:kbottom(i,j,n),ivar) - mass1Dbefore(1:kbottom(i,j,n),ivar)
-               if ( sum(massdiff(1:kbottom(i,j,n),ivar)) .ne. 0.) then
-                 ratiodiff(1:kbottom(i,j,n),ivar) =massdiff(1:kbottom(i,j,n),ivar)/sum(massdiff(1:kbottom(i,j,n),ivar))
-                 fakemass(ivar) = sum(massdiff(1:kbottom(i,j,n),ivar)) - flux(i,ivar) * delt1
-                 mass1Dafter(1:kbottom(i,j,n),ivar) = mass1Dafter(1:kbottom(i,j,n),ivar) - fakemass(ivar) * ratiodiff(1:kbottom(i,j,n),ivar)
-                 if (i==itest .and. j==jtest .and. trim(fabm_model%state_variables(ivar)%name)=='ECO_opa') then
-                    write(*,*)'FAKEMASS,',trim(fabm_model%state_variables(ivar)%name),sum(massdiff(1:kbottom(i,j,n),ivar)),fakemass(ivar)
-                    write(*,*)'TRCbefore,',trim(fabm_model%state_variables(ivar)%name),tracer(i,j, kbottom(i,j,n), n, ivar),modelmonth
-                 endif
-                 tracer(i, j, 1:kbottom(i,j,n), n, ivar) = mass1Dafter(1:kbottom(i,j,n),ivar) / ( dp(i, j, 1:kbottom(i,j,n) , n)/onem )
-                 if (i==itest .and. j==jtest .and. trim(fabm_model%state_variables(ivar)%name)=='ECO_opa') then
-                    write(*,*)'TRCafter,',trim(fabm_model%state_variables(ivar)%name),tracer(i,j,kbottom(i,j,n), n, ivar),modelday
-                    write(*,*)'FLUX,',trim(fabm_model%state_variables(ivar)%name),flux(i,ivar) * delt1, kbottom(i,j,n)
-                    write(*,'(A25,2x,F14.4,2x,F14.4,2x,I02,2x,F7.3,2x,F11.6)')'CHECK after sediment',sum(tracer(i, j, :, m, ivar) * dp(i, j, : , m)/onem), sum(tracer(i, j, :, n, ivar) * dp(i, j, : , n)/onem),modelmonth,modelday,flux(i,ivar) * delt1
-                 endif
-               endif
-            enddo
-!            do ivar=1,size(fabm_model%state_variables)
-!               mass1Dafter(:,ivar) = tracer(i, j, :, n, ivar) * dp(i, j, :, n)/onem
-!               massdiff(:,ivar) = mass1Dafter(:,ivar) - mass1Dbefore(:,ivar)
-!               if ( sum(massdiff(:,ivar)) .ne. 0.) then
-!                 ratiodiff(:,ivar) =massdiff(:,ivar)/sum(massdiff(:,ivar))
-!                 fakemass(ivar) = sum(massdiff(:,ivar)) - flux(i,ivar) * delt1
-!                 mass1Dafter(:,ivar) = mass1Dafter(:,ivar) - fakemass(ivar) * ratiodiff(:,ivar)
-!                 tracer(i, j, :, n, ivar) = mass1Dafter(:,ivar) / ( dp(i, j, : , n)/onem )
-!                 if (i==itest .and. j==jtest) then
-!                    write(*,*)'FAKEMASS,',trim(fabm_model%state_variables(ivar)%name),sum(massdiff(:,ivar)),fakemass(ivar)
-!                 endif
-!               endif
-!            enddo
-
           end if
         end do
       end do
-! BELOW IS A TEMPORARY FIX TO KEEP SEDIMENT VALUES AT AN UPPER THRESHOLD
-! THE VALUES ARE DETERMINED BASED ON A 3-YEAR SPINUP 99TH PERCENTILE OF EACH
-! VARIABLE INDIVIDUALLY
-! HIGH VALUES ARE SET TO A BIT LOWER VALUES TO KEEP THE MODEL REPEATEDLY
-! EXCEEDING THE 99TH PERCENTILE
-! THE SAME THING IS ALSO DONE BEFORE THE EXCHANGE
 
-!      do ivar=1,size(fabm_model%bottom_state_variables)
-!        if (trim(fabm_model%bottom_state_variables(ivar)%name) == 'ECO_sed1') then
-!           if ( (maxval(fabm_bottom_state(:, :, 2, ivar)) .gt. 50000. ) &
-!                .or. (maxval(fabm_bottom_state(:, :, 1, ivar)) .gt. 50000. ) ) then
-!              do j=1,jj
-!                 do i=1,ii
-!                    fabm_bottom_state(i, j, 2, ivar) = min( fabm_bottom_state(i, j, 2, ivar), 40000. )
-!                    fabm_bottom_state(i, j, 1, ivar) = min( fabm_bottom_state(i, j, 1, ivar), 40000. )
-!                 enddo
-!              enddo
-!           endif
-!        endif
-!        if (trim(fabm_model%bottom_state_variables(ivar)%name) == 'ECO_sed2') then
-!           if ( (maxval(fabm_bottom_state(:, :, 2, ivar)) .gt. 13000. ) &
-!                .or. (maxval(fabm_bottom_state(:, :, 1, ivar)) .gt. 13000. ) ) then
-!              do j=1,jj
-!                 do i=1,ii
-!                    fabm_bottom_state(i, j, 2, ivar) = min( fabm_bottom_state(i, j, 2, ivar), 10000. )
-!                    fabm_bottom_state(i, j, 1, ivar) = min( fabm_bottom_state(i, j, 1, ivar), 10000. )
-!                 enddo
-!              enddo
-!           endif
-!        endif
-!      enddo
-!!
       if (do_check_state) call check_state('after bottom sources', n, .false.)
       end if
 
@@ -966,20 +804,6 @@ contains
       end if
 
       ! Compute source terms and update state
-          do ivar=1,size(fabm_model%state_variables)
-           if (trim(fabm_model%state_variables(ivar)%name)=='ECO_opa') then
-             do i=1,ii
-              do j=1,jj
-                 if (i==itest .and. j==jtest) then
-                 mass1Dbefore(:,ivar) = tracer(i, j, :, n, ivar) * dp(i, j, : ,n)/onem
-                 write(*,*)'INTERIOR before,',tracer(i,j,kbottom(i,j,n)-1:kbottom(i,j,n)+1,n, ivar)
-                 write(*,*)'INTERIOR before thk,',dp(i,j,kbottom(i,j,n)-1:kbottom(i,j,n)+1,n)/onem
-                 write(*,'(A25,2x,F14.4,2x,F14.4,2x,I02,2x,F7.3)')'CHECK before interior',sum(tracer(i, j, :, m, ivar) * dp(i, j, : , m)/onem), sum(tracer(i, j, :, n, ivar) * dp(i, j, : , n)/onem),modelmonth,modelday
-                 endif
-              enddo
-             enddo
-           endif
-          enddo
       if (do_interior_sources) then
       do k=1,kk
         do j=1,jj
@@ -1004,7 +828,7 @@ contains
       end do
       if (do_check_state) call check_state('after interior sources', n, .false.)
       end if
-!write (*,*) 'hycom_fabm_after_interior', nstep, time
+
       input => first_input
       do while (associated(input))
         if (input%roleriver == role_river) then
@@ -1024,79 +848,40 @@ contains
         end if
         input => input%next
       end do
-!write (*,*) 'hycom_fabm_after_correct', nstep, time
-          do ivar=1,size(fabm_model%state_variables)
-           if (trim(fabm_model%state_variables(ivar)%name)=='ECO_opa') then
-             do i=1,ii
-              do j=1,jj
-                 if (i==itest .and. j==jtest) then
-                 mass1Dafter(:,ivar) = tracer(i, j, :, n, ivar) * dp(i, j, : ,n)/onem
-                 write(*,*)'INTERIOR MASS DIFF chk,',sum(mass1Dafter(1:kbottom(i,j,n),ivar)) - sum(mass1Dbefore(1:kbottom(i,j,n),ivar))
-                 write(*,*)'INTERIOR after chk,',tracer(i,j,kbottom(i,j,n)-1:kbottom(i,j,n)+1,n, ivar),kbottom(i,j,n)
-                 write(*,*)'INTERIOR after thk chk,',dp(i,j,kbottom(i,j,n)-1:kbottom(i,j,n)+1,n)/onem,kbottom(i,j,n)
-                 write(*,'(A25,2x,F14.4,2x,F14.4,2x,I02,2x,F7.3)')'CHECK after interior chk',sum(tracer(i, j, :, m, ivar) * dp(i, j, : , m)/onem), sum(tracer(i, j,:, n, ivar) * dp(i, j, : , n)/onem),modelmonth,modelday
-                 write(*,*)'CHECK ---------'
-                 endif
-              enddo
-             enddo
-           endif
-          enddo
 
-          do i=1,ii
-            do j=1,jj
-              do ivar=1,size(fabm_model%state_variables)
-                mass_before_check_state(i, j, :, ivar) = tracer(i, j, :, n, ivar) * dp(i, j, :, n)/onem
-              enddo
-            enddo
+! FABM tracer concentration at the bottom layer is copied to thin layers below by check_sate
+! To preserve mass, total mass difference is distributed among the bottom layer and below
+      do i=1,ii
+        do j=1,jj
+          do ivar=1,size(fabm_model%state_variables)
+            mass_before_check_state(i, j, :, ivar) = tracer(i, j, :, n, ivar) * dp(i, j, :, n)/onem
           enddo
+        enddo
+      enddo
+      
       call check_state('after hycom_fabm_update', n, .true.)
-          do i=1,ii
-            do j=1,jj
-              if (SEA_P) then
-                 do ivar=1,size(fabm_model%state_variables)
-                   mass_after_check_state(:) = tracer(i, j, :, n, ivar) * dp(i, j, :, n)/onem
-                   mass_diff_check_state = sum(mass_after_check_state(:)) - sum(mass_before_check_state(i, j, :, ivar))
-                   do k=kbottom(i,j,n),kk
-                      tracer(i, j, k, n, ivar) = tracer(i, j, k, n, ivar) - mass_diff_check_state / sum(dp(i, j, kbottom(i,j,n):kk, n)/onem)
-                   enddo
-                 enddo
-               endif
-            enddo
-          enddo
-
-          do ivar=1,size(fabm_model%state_variables)
-           if (trim(fabm_model%state_variables(ivar)%name)=='ECO_opa') then
-             do i=1,ii
-              do j=1,jj
-                 if (i==itest .and. j==jtest) then
-                 mass1Dafter(:,ivar) = tracer(i, j, :, n, ivar) * dp(i, j, : ,n)/onem
-                 write(*,*)'INTERIOR MASS DIFF,',sum(mass1Dafter(1:kbottom(i,j,n),ivar)) - sum(mass1Dbefore(1:kbottom(i,j,n),ivar))
-                 write(*,*)'INTERIOR after,',tracer(i,j,kbottom(i,j,n)-1:kbottom(i,j,n)+1,n, ivar),kbottom(i,j,n)
-                 write(*,*)'INTERIOR after thk,',dp(i,j,kbottom(i,j,n)-1:kbottom(i,j,n)+1,n)/onem,kbottom(i,j,n)
-                 write(*,'(A25,2x,F14.4,2x,F14.4,2x,I02,2x,F7.3)')'CHECK after interior',sum(tracer(i, j, :, m, ivar) * dp(i, j, : , m)/onem), sum(tracer(i, j, :, n, ivar) * dp(i, j, : , n)/onem),modelmonth,modelday
-                 write(*,*)'CHECK ---------'
-                 endif
-              enddo
+      
+      do i=1,ii
+        do j=1,jj
+          if (SEA_P) then
+             do ivar=1,size(fabm_model%state_variables)
+               mass_after_check_state(:) = tracer(i, j, :, n, ivar) * dp(i, j, :, n)/onem
+               mass_diff_check_state = sum(mass_after_check_state(:)) - sum(mass_before_check_state(i, j, :, ivar))
+               do k=kbottom(i,j,n),kk
+                  tracer(i, j, k, n, ivar) = tracer(i, j, k, n, ivar) - mass_diff_check_state / sum(dp(i, j, kbottom(i,j,n):kk, n)/onem)
+               enddo
              enddo
            endif
-          enddo
-!write (*,*) 'hycom_fabm_after_check_state', nstep, time
+        enddo
+      enddo
+!! --------
+
       ! Apply the Robert-Asselin filter to the surface and bottom state.
       ! Note that RA will be applied to the pelagic tracers within mod_tsavc - no need to do it here!
-!write (*,*) 'hycom_fabm_before_assalin', nstep, time
+
       fabm_surface_state(1:ii, 1:jj, m, :) = fabm_surface_state(1:ii, 1:jj, m, :) + 0.5*ra2fac*(fabm_surface_state_old(1:ii, 1:jj, :)+fabm_surface_state(1:ii, 1:jj, n, :)-2.0*fabm_surface_state(1:ii, 1:jj, m, :))
-      do i=1,ii
-         do j=1,jj
-            if (i==itest .and. j==jtest) write(*,*)'sedBEFOREas',fabm_bottom_state(i, j, m, :)
-         enddo
-      enddo
       fabm_bottom_state(1:ii, 1:jj, m, :) = fabm_bottom_state(1:ii, 1:jj, m, :) + 0.5*ra2fac*(fabm_bottom_state_old(1:ii, 1:jj, :)+fabm_bottom_state(1:ii, 1:jj, n, :)-2.0*fabm_bottom_state(1:ii, 1:jj, m, :))
-      do i=1,ii
-         do j=1,jj
-            if (i==itest .and. j==jtest) write(*,*)'sedAFTERas',fabm_bottom_state(i, j, m, :)
-         enddo
-      enddo
-!write (*,*) 'hycom_fabm_update_after', nstep, time
+
     end subroutine hycom_fabm_update
 
     subroutine check_state(location, index, repair)
@@ -1180,11 +965,6 @@ contains
               else
                 ! Sinking: move tracer downward over bottom interface of the layer (flux < 0)
                 flux(i, k) = flux(i, k) + max(-(1-epsilon)*dp(i, j, k, n)/onem/timestep*tracer(i, j, k, n, ivar), w(i, k, ivar)*tracer(i, j, k, m, ivar))
-              !  if (i == itest .and. j == jtest .and. k == 15 .and. w(i, k,ivar) .ne. 0.0) then
-              !     write(*,*)'VERTICAL',-(1-epsilon)*dp(i, j, k, n)/onem/timestep*tracer(i, j, k, n, ivar), &
-              !                          -(1-epsilon)*dp(i, j, k,n)/onem/timestep*tracer(i, j, k, m, ivar), &
-              !                          w(i, k, ivar)*tracer(i, j, k, m,ivar),modelmonth,modelday
-              !  endif 
               end if
             end do ! i
           end do ! k
@@ -1341,9 +1121,7 @@ contains
                        atmco2_3 = pair / 9.81 * 10.**(-2.0)
                        atmco2_fabm(i,j) = atmco2_0 * (atmco2_3 - atmco2_2) * 0.997                     
 
-!                       if (i==itest.and.j==jtest) write(*,*)'DEWPT',dewpt(i,j,l0),dewpt(i,j,l1),dewpt(i,j,l2),dewpt(i,j,l3)
-                       if (i==itest.and.j==jtest) write(*,'(A4,4(1x,F8.3))')'PCO2',dew,pair,atmco2_0,atmco2_fabm(i,j)
-!write(*,'(A4,4(1x,F8.3))')'PCO2',dew,pair,atmco2_0,atmco2_fabm(i,j)
+
                        do k=1,kk
                           delZ(k) = dp(i,j,k,index)/onem                    !
                           if(k.eq.1)then                                    !
@@ -1363,11 +1141,8 @@ contains
         ! Transfer pointer to environmental data
         ! Do this for all variables on FABM's standard variable list that the model can provide.
         ! For this list, visit http://fabm.net/standard_variables
-!        call fabm_model%link_interior_data(standard_variables%temperature, temp(1:ii, 1:jj, 1:kk, index))
-!        call fabm_model%link_interior_data(standard_variables%practical_salinity, saln(1:ii, 1:jj, 1:kk, index))
         call fabm_model%link_interior_data(standard_variables%temperature,cotemp(1:ii,1:jj, 1:kk))
         call fabm_model%link_interior_data(standard_variables%practical_salinity,cosal(1:ii,1:jj,1:kk))
-!        call fabm_model%link_interior_data(standard_variables%density, th3d(1:ii,1:jj, 1:kk, index)+thbase+1000.)
         call fabm_model%link_interior_data(standard_variables%density,codens(1:ii,1:jj, 1:kk))
         call fabm_model%link_interior_data(standard_variables%pressure,codepth(1:ii,1:jj, 1:kk))
 
@@ -1449,7 +1224,6 @@ contains
           do j=1,jj
             do i=1,ii
               if (associated(interior_output%data3d) .and. pdata3d(i, j, k) .lt. -1E18) pdata3d(i, j, k) = 0.0 ! the intention here is to remove the mask (-2E20) from fabm 
-!              if (i==itest .and. j==jtest .and. associated(interior_output%data3d)) write(*,*)'HERE',interior_output%mean(i, j, k),k, pdata3d(i, j, k)
               if (SEA_P) interior_output%mean(i, j, k) = interior_output%mean(i, j, k) + s * dp(i, j, k, n) * pdata3d(i, j, k)
             end do
           end do
@@ -1559,9 +1333,6 @@ contains
         do k= 1,kk
           do j= 1,jj
             do i= 1,ii
-!              if (i==itest.and.j==jtest.and.k==1) then
-!                write(*,*)'HEREnext',nestn,nested_number,nested_data_dev(i,j,k,1,nestn),nested_data_dev(i,j,k,2,nestn)
-!              endif
               nested_data_dev(i,j,k,1,nestn) = nested_data_dev(i,j,k,2,nestn)
             enddo
           enddo
@@ -1580,7 +1351,7 @@ contains
       character(len=80) :: cline
       character(len=6) :: cvarin
       integer :: ios,idmtst,jdmtst
-      !integer :: nestn,i,j,k
+
     if (nested_bio) then
       write(flnm,'("nest/archv_fabm.",i4.4,"_",i3.3,"_",i2.2)') iyear, iday, ihour
 
@@ -1676,7 +1447,7 @@ contains
           call zaiosk(iunit)
           return
         end if
-!          write(*,'(A8,1x,I1,1x,I1,1x,A8)')'HEREread',nestn,nested_number,nested_variables(nestn)
+
           i = index(cline,'=')
           read(cline(i+1:),*) nnstep,timein,k,thet,hminb,hmaxb
 
@@ -1705,8 +1476,6 @@ contains
         do k=1,kk
           do j=1,jj
             do i=1,ii
-!              if (i==itest.and.j==jtest) write(*,*)'HEREupd',k,nestn,(delt1*rmunp_trc(i,j)* &
-!                (nested_data_dev(i,j,k,ln0,nestn)*wn0 +nested_data_dev(i,j,k,ln1,nestn)*wn1) )/(1.0 + delt1*rmunp_trc(i,j))
               tracer(i,j,k,n,istate_dev(nestn))=(tracer(i,j,k,n,istate_dev(nestn)) + delt1*rmunp_trc(i,j)* &
                 (nested_data_dev(i,j,k,ln0,nestn)*wn0 +nested_data_dev(i,j,k,ln1,nestn)*wn1) )/(1.0 + delt1*rmunp_trc(i,j))
             end do
@@ -1749,7 +1518,6 @@ contains
               exit
            endif
         enddo
-!        write(*,*)'GETTIME',modelyear, modelday, modelmonth
 
     end subroutine fabm_gettime
 
