@@ -46,8 +46,6 @@ module mod_hycom_fabm
 !  these are used for bottom exchange
    integer :: nbottom
    real :: hbottom
-!   real, allocatable :: mass1Dbefore(:,:), mass1Dafter(:,:)
-!   real, allocatable :: massdiff(:,:), ratiodiff(:,:), fakemass(:)
 !  these are used for check_state mass balance
    real, allocatable :: mass_before_check_state(:, :, :, :)
    real, allocatable :: mass_after_check_state(:)
@@ -201,12 +199,6 @@ contains
         allocate(nested_data_dev(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kknest,2,nested_number))
         allocate(atmco2(nyearCO2))
         allocate(atmco2_fabm(ii, jj))
-! used for bottom exchange 
-!        allocate(mass1Dbefore(kk,size(fabm_model%state_variables)))
-!        allocate(mass1Dafter(kk,size(fabm_model%state_variables)))
-!        allocate(massdiff(kk,size(fabm_model%state_variables)))
-!        allocate(ratiodiff(kk,size(fabm_model%state_variables)))
-!        allocate(fakemass(size(fabm_model%state_variables)))
 ! used for check_state mass balance
         allocate(mass_before_check_state(ii,jj,kk,size(fabm_model%state_variables)))
         allocate(mass_after_check_state(kk))
@@ -1034,7 +1026,7 @@ contains
        !     end do
        ! end do
         do j=1,jj       ! CAGLAR - I did it from top to bottom in order to avoid having < 0.1 m layer in the water column.
-            do i=1,ii   !          Looking for other solutions for this
+            do i=1,ii   
               if (SEA_P) then
                 do k = 1,kk
                   if (dp(i, j, k, index)/onem <= h_min) exit
