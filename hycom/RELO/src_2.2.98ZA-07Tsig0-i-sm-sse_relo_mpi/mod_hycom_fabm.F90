@@ -43,8 +43,14 @@ module mod_hycom_fabm
    real :: bottom_stress_keep 
    logical, allocatable :: mask(:, :, :, :)
    integer, allocatable :: kbottom(:, :, :)
+!  these are used for bottom exchange
    integer :: nbottom
    real :: hbottom
+!  these are used for check_state mass balance
+   real, allocatable :: mass_before_check_state(:, :, :, :)
+   real, allocatable :: mass_after_check_state(:)
+   real              :: mass_diff_check_state
+!
    real :: wndstr,strspd
    real, allocatable :: h(:, :,:),delZ(:),codepth(:,:,:),cotemp(:,:,:),cosal(:,:,:),codens(:,:,:)
    real, allocatable :: hriver(:, :)
@@ -193,6 +199,10 @@ contains
         allocate(nested_data_dev(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kknest,2,nested_number))
         allocate(atmco2(nyearCO2))
         allocate(atmco2_fabm(ii, jj))
+! used for check_state mass balance
+        allocate(mass_before_check_state(ii,jj,kk,size(fabm_model%state_variables)))
+        allocate(mass_after_check_state(kk))
+!
     end subroutine hycom_fabm_allocate
 
     subroutine hycom_fabm_initialize()
@@ -724,37 +734,7 @@ contains
 
       ! Compute bottom source terms
       if (do_bottom_sources) then
-! BELOW IS A TEMPORARY FIX TO KEEP SEDIMENT VALUES AT AN UPPER THRESHOLD
-! THE VALUES ARE DETERMINED BASED ON A 3-YEAR SPINUP 99TH PERCENTILE OF EACH
-! VARIABLE INDIVIDUALLY
-! HIGH VALUES ARE SET TO A BIT LOWER VALUES TO KEEP THE MODEL REPEATEDLY
-! EXCEEDING THE 99TH PERCENTILE
-! THE SAME THING IS ALSO DONE AFTER THE BOTTOM EXCHANGE
-      do ivar=1,size(fabm_model%bottom_state_variables)
-        if (trim(fabm_model%bottom_state_variables(ivar)%name) == 'ECO_sed1') then
-           if ( (maxval(fabm_bottom_state(:, :, 2, ivar)) .gt. 50000. ) &
-                 .or. (maxval(fabm_bottom_state(:, :, 1, ivar)) .gt. 50000. ) ) then
-              do j=1,jj
-                 do i=1,ii
-                    fabm_bottom_state(i, j, 2, ivar) = min( fabm_bottom_state(i, j, 2, ivar), 40000. )
-                    fabm_bottom_state(i, j, 1, ivar) = min( fabm_bottom_state(i, j, 1, ivar), 40000. )
-                 enddo
-              enddo
-           endif
-        endif
-        if (trim(fabm_model%bottom_state_variables(ivar)%name) == 'ECO_sed2') then
-           if ( (maxval(fabm_bottom_state(:, :, 2, ivar)) .gt. 13000. ) &
-                .or. (maxval(fabm_bottom_state(:, :, 1, ivar)) .gt. 13000. ) ) then
-              do j=1,jj
-                 do i=1,ii
-                    fabm_bottom_state(i, j, 2, ivar) = min( fabm_bottom_state(i, j, 2, ivar), 10000. )
-                    fabm_bottom_state(i, j, 1, ivar) = min( fabm_bottom_state(i, j, 1, ivar), 10000. )
-                 enddo
-              enddo
-           endif
-        endif
-      enddo
-!!
+
       do j=1,jj
         flux = 0
         sms_bt = 0
@@ -762,9 +742,11 @@ contains
         do i=1,ii
           if (kbottom(i, j, n) > 0) then
             fabm_bottom_state(i, j, n, :) = fabm_bottom_state(i, j, n, :) + delt1 * sms_bt(i, :) ! update sediment layer
-            if ( dp(i, j, kbottom(i,j,n), n)/onem >= 3.0 ) then ! check if the bottom layer is thicker than 10 meters, if so, apply the flux as usual (I will decrease the criteria in time)
-              tracer(i, j, kbottom(i,j,n), n, :) = tracer(i, j, kbottom(i,j,n), n, :) + delt1 * flux(i, :)/dp(i, j, kbottom(i,j,n), n)*onem
-            else ! in case less than 10 meters, to avoid accumulation at the bottom thin layers, distribute the flux into multiple layers that add up to > 10 meters thickness
+            if ( dp(i, j, kbottom(i,j,n), n)/onem >= 3.0 ) then ! check if the bottom layer is thicker than 3 meters,
+                                                                ! if so, apply the flux as usual (I will decrease the criteria in time)
+                tracer(i, j, kbottom(i,j,n), n, :) = tracer(i, j, kbottom(i,j,n), n, :) + delt1 * flux(i, :)/dp(i, j, kbottom(i,j,n), n)*onem
+            else ! in case less than 3 meters, to avoid accumulation at the bottom thin layers,
+                 ! distribute the flux into multiple layers that add up to > 3 meters thickness
               hbottom = 0
               nbottom = 0
               do k = kbottom(i,j,n),1,-1
@@ -773,9 +755,11 @@ contains
                 nbottom = nbottom + 1
               end do
               do k = kbottom(i,j,n)-nbottom , kbottom(i,j,n) ! distribute the flux to total height, and to multiple layers
+              !do k = kbottom(i,j,n)-nbottom , kk
                 tracer(i, j, k, n, :) = tracer(i, j, k, n, :) + delt1 * flux(i, :)/hbottom
               end do
             end if
+
 #ifdef FABM_CHECK_NAN
             if (any(isnan(tracer(i, j, kbottom(i,j,n), n, :)))) then
               write (*,*) 'NaN after do_bottom:', tracer(i, j, kbottom(i,j,n), n, :), flux(i, :), dp(i, j, kbottom(i,j,n), n)/onem
@@ -785,37 +769,7 @@ contains
           end if
         end do
       end do
-! BELOW IS A TEMPORARY FIX TO KEEP SEDIMENT VALUES AT AN UPPER THRESHOLD
-! THE VALUES ARE DETERMINED BASED ON A 3-YEAR SPINUP 99TH PERCENTILE OF EACH
-! VARIABLE INDIVIDUALLY
-! HIGH VALUES ARE SET TO A BIT LOWER VALUES TO KEEP THE MODEL REPEATEDLY
-! EXCEEDING THE 99TH PERCENTILE
-! THE SAME THING IS ALSO DONE BEFORE THE EXCHANGE
-      do ivar=1,size(fabm_model%bottom_state_variables)
-        if (trim(fabm_model%bottom_state_variables(ivar)%name) == 'ECO_sed1') then
-           if ( (maxval(fabm_bottom_state(:, :, 2, ivar)) .gt. 50000. ) &
-                .or. (maxval(fabm_bottom_state(:, :, 1, ivar)) .gt. 50000. ) ) then
-              do j=1,jj
-                 do i=1,ii
-                    fabm_bottom_state(i, j, 2, ivar) = min( fabm_bottom_state(i, j, 2, ivar), 40000. )
-                    fabm_bottom_state(i, j, 1, ivar) = min( fabm_bottom_state(i, j, 1, ivar), 40000. )
-                 enddo
-              enddo
-           endif
-        endif
-        if (trim(fabm_model%bottom_state_variables(ivar)%name) == 'ECO_sed2') then
-           if ( (maxval(fabm_bottom_state(:, :, 2, ivar)) .gt. 13000. ) &
-                .or. (maxval(fabm_bottom_state(:, :, 1, ivar)) .gt. 13000. ) ) then
-              do j=1,jj
-                 do i=1,ii
-                    fabm_bottom_state(i, j, 2, ivar) = min( fabm_bottom_state(i, j, 2, ivar), 10000. )
-                    fabm_bottom_state(i, j, 1, ivar) = min( fabm_bottom_state(i, j, 1, ivar), 10000. )
-                 enddo
-              enddo
-           endif
-        endif
-      enddo
-!!
+
       if (do_check_state) call check_state('after bottom sources', n, .false.)
       end if
 
@@ -866,7 +820,7 @@ contains
       end do
       if (do_check_state) call check_state('after interior sources', n, .false.)
       end if
-!write (*,*) 'hycom_fabm_after_interior', nstep, time
+
       input => first_input
       do while (associated(input))
         if (input%roleriver == role_river) then
@@ -886,15 +840,40 @@ contains
         end if
         input => input%next
       end do
-!write (*,*) 'hycom_fabm_after_correct', nstep, time
+
+! FABM tracer concentration at the bottom layer is copied to thin layers below by check_sate
+! To preserve mass, total mass difference is distributed among the bottom layer and below
+      do i=1,ii
+        do j=1,jj
+          do ivar=1,size(fabm_model%state_variables)
+            mass_before_check_state(i, j, :, ivar) = tracer(i, j, :, n, ivar) * dp(i, j, :, n)/onem
+          enddo
+        enddo
+      enddo
+      
       call check_state('after hycom_fabm_update', n, .true.)
-!write (*,*) 'hycom_fabm_after_check_state', nstep, time
+      
+      do i=1,ii
+        do j=1,jj
+          if (SEA_P) then
+             do ivar=1,size(fabm_model%state_variables)
+               mass_after_check_state(:) = tracer(i, j, :, n, ivar) * dp(i, j, :, n)/onem
+               mass_diff_check_state = sum(mass_after_check_state(:)) - sum(mass_before_check_state(i, j, :, ivar))
+               do k=kbottom(i,j,n),kk
+                  tracer(i, j, k, n, ivar) = tracer(i, j, k, n, ivar) - mass_diff_check_state / sum(dp(i, j, kbottom(i,j,n):kk, n)/onem)
+               enddo
+             enddo
+           endif
+        enddo
+      enddo
+!! --------
+
       ! Apply the Robert-Asselin filter to the surface and bottom state.
       ! Note that RA will be applied to the pelagic tracers within mod_tsavc - no need to do it here!
-!write (*,*) 'hycom_fabm_before_assalin', nstep, time
+
       fabm_surface_state(1:ii, 1:jj, m, :) = fabm_surface_state(1:ii, 1:jj, m, :) + 0.5*ra2fac*(fabm_surface_state_old(1:ii, 1:jj, :)+fabm_surface_state(1:ii, 1:jj, n, :)-2.0*fabm_surface_state(1:ii, 1:jj, m, :))
       fabm_bottom_state(1:ii, 1:jj, m, :) = fabm_bottom_state(1:ii, 1:jj, m, :) + 0.5*ra2fac*(fabm_bottom_state_old(1:ii, 1:jj, :)+fabm_bottom_state(1:ii, 1:jj, n, :)-2.0*fabm_bottom_state(1:ii, 1:jj, m, :))
-!write (*,*) 'hycom_fabm_update_after', nstep, time
+
     end subroutine hycom_fabm_update
 
     subroutine check_state(location, index, repair)
@@ -1047,7 +1026,7 @@ contains
        !     end do
        ! end do
         do j=1,jj       ! CAGLAR - I did it from top to bottom in order to avoid having < 0.1 m layer in the water column.
-            do i=1,ii   !          Looking for other solutions for this
+            do i=1,ii   
               if (SEA_P) then
                 do k = 1,kk
                   if (dp(i, j, k, index)/onem <= h_min) exit
@@ -1134,9 +1113,7 @@ contains
                        atmco2_3 = pair / 9.81 * 10.**(-2.0)
                        atmco2_fabm(i,j) = atmco2_0 * (atmco2_3 - atmco2_2) * 0.997                     
 
-!                       if (i==itest.and.j==jtest) write(*,*)'DEWPT',dewpt(i,j,l0),dewpt(i,j,l1),dewpt(i,j,l2),dewpt(i,j,l3)
-                       if (i==itest.and.j==jtest) write(*,'(A4,4(1x,F8.3))')'PCO2',dew,pair,atmco2_0,atmco2_fabm(i,j)
-!write(*,'(A4,4(1x,F8.3))')'PCO2',dew,pair,atmco2_0,atmco2_fabm(i,j)
+
                        do k=1,kk
                           delZ(k) = dp(i,j,k,index)/onem                    !
                           if(k.eq.1)then                                    !
@@ -1156,11 +1133,8 @@ contains
         ! Transfer pointer to environmental data
         ! Do this for all variables on FABM's standard variable list that the model can provide.
         ! For this list, visit http://fabm.net/standard_variables
-!        call fabm_model%link_interior_data(standard_variables%temperature, temp(1:ii, 1:jj, 1:kk, index))
-!        call fabm_model%link_interior_data(standard_variables%practical_salinity, saln(1:ii, 1:jj, 1:kk, index))
         call fabm_model%link_interior_data(standard_variables%temperature,cotemp(1:ii,1:jj, 1:kk))
         call fabm_model%link_interior_data(standard_variables%practical_salinity,cosal(1:ii,1:jj,1:kk))
-!        call fabm_model%link_interior_data(standard_variables%density, th3d(1:ii,1:jj, 1:kk, index)+thbase+1000.)
         call fabm_model%link_interior_data(standard_variables%density,codens(1:ii,1:jj, 1:kk))
         call fabm_model%link_interior_data(standard_variables%pressure,codepth(1:ii,1:jj, 1:kk))
 
@@ -1242,7 +1216,6 @@ contains
           do j=1,jj
             do i=1,ii
               if (associated(interior_output%data3d) .and. pdata3d(i, j, k) .lt. -1E18) pdata3d(i, j, k) = 0.0 ! the intention here is to remove the mask (-2E20) from fabm 
-!              if (i==itest .and. j==jtest .and. associated(interior_output%data3d)) write(*,*)'HERE',interior_output%mean(i, j, k),k, pdata3d(i, j, k)
               if (SEA_P) interior_output%mean(i, j, k) = interior_output%mean(i, j, k) + s * dp(i, j, k, n) * pdata3d(i, j, k)
             end do
           end do
@@ -1352,9 +1325,6 @@ contains
         do k= 1,kk
           do j= 1,jj
             do i= 1,ii
-!              if (i==itest.and.j==jtest.and.k==1) then
-!                write(*,*)'HEREnext',nestn,nested_number,nested_data_dev(i,j,k,1,nestn),nested_data_dev(i,j,k,2,nestn)
-!              endif
               nested_data_dev(i,j,k,1,nestn) = nested_data_dev(i,j,k,2,nestn)
             enddo
           enddo
@@ -1373,7 +1343,7 @@ contains
       character(len=80) :: cline
       character(len=6) :: cvarin
       integer :: ios,idmtst,jdmtst
-      !integer :: nestn,i,j,k
+
     if (nested_bio) then
       write(flnm,'("nest/archv_fabm.",i4.4,"_",i3.3,"_",i2.2)') iyear, iday, ihour
 
@@ -1469,7 +1439,7 @@ contains
           call zaiosk(iunit)
           return
         end if
-!          write(*,'(A8,1x,I1,1x,I1,1x,A8)')'HEREread',nestn,nested_number,nested_variables(nestn)
+
           i = index(cline,'=')
           read(cline(i+1:),*) nnstep,timein,k,thet,hminb,hmaxb
 
@@ -1498,8 +1468,6 @@ contains
         do k=1,kk
           do j=1,jj
             do i=1,ii
-!              if (i==itest.and.j==jtest) write(*,*)'HEREupd',k,nestn,(delt1*rmunp_trc(i,j)* &
-!                (nested_data_dev(i,j,k,ln0,nestn)*wn0 +nested_data_dev(i,j,k,ln1,nestn)*wn1) )/(1.0 + delt1*rmunp_trc(i,j))
               tracer(i,j,k,n,istate_dev(nestn))=(tracer(i,j,k,n,istate_dev(nestn)) + delt1*rmunp_trc(i,j)* &
                 (nested_data_dev(i,j,k,ln0,nestn)*wn0 +nested_data_dev(i,j,k,ln1,nestn)*wn1) )/(1.0 + delt1*rmunp_trc(i,j))
             end do
@@ -1542,7 +1510,6 @@ contains
               exit
            endif
         enddo
-!        write(*,*)'GETTIME',modelyear, modelday, modelmonth
 
     end subroutine fabm_gettime
 
