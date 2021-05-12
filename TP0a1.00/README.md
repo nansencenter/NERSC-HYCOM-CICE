@@ -87,6 +87,6 @@ Quick start: To compile HYCOM as standalone (i.e. not coupled with CICE) you nee
 
 #  Runtime errors and solutions
 
-1. Error related to ice blocks  
+1. Error related to ice blocks: "ice: no. blocks exceed max:"  
 You can edit the number of ice blocks (variable name is MXBLCKS ) inside  
 the file is comp_ice.esmf located under NERSC-HYCOM-CICE/cice/Release-5.1
