@@ -1,0 +1,81 @@
+<?xml version="1.0"?>
+<xml>
+   <forcing_datasets>
+      <forcing_dataset name="era5" rootPath="/cluster/projects/nn2993k/ERA5/" format="netcdf" timestep="6h">
+<!--     <field name="internal name known by routine"   file="path to file"  varname="name of variable in netcdf file" unit="udunit"/> -->
+         <field known_name="10u"   file="[rootPath]6h.10U_%Y.nc"  varname="10U"  units="m s**-1"/>
+         <field known_name="10v"   file="[rootPath]6h.10V_%Y.nc"  varname="10V"  units="m s**-1"/>
+         <field known_name="2t"    file="[rootPath]6h.2T_%Y.nc"   varname="2T"   units="K"/>
+         <field known_name="2d"    file="[rootPath]6h.2D_%Y.nc"   varname="2D"   units="K"/>
+         <field known_name="msl"   file="[rootPath]6h.MSL_%Y.nc"  varname="MSL"  units="Pa"/>
+         <field known_name="tp"    file="[rootPath]6h.TP_%Y.nc"   varname="TP"   units="m"      accumulated="6h"/> <!--6 hour accumulated precip: double check hourly or not!!-->
+         <field known_name="tcc"   file="[rootPath]6h.TCC_%Y.nc"  varname="TCC"  units="1"/>
+         <field known_name="ssrd"  file="[rootPath]6h.SSRD_%Y.nc" varname="SSRD" units="J m**-2" accumulated="6h"/> <!-- 6 hour accumulated flux-->
+      </forcing_dataset>
+
+
+   <!-- As above, but includes strd (surface thermal downwelling radiation) as well-->
+      <forcing_dataset name="era5+lw" rootPath="/cluster/projects/nn2993k/ERA5/" format="netcdf" timestep="6h">
+<!--     <field name="internal name known by routine"   file="path to file"  varname="name of variable in netcdf file" unit="udunit"/> -->
+         <field known_name="10u"   file="[rootPath]6h.10U_%Y.nc"  varname="10U"  units="m s**-1"/>
+         <field known_name="10v"   file="[rootPath]6h.10V_%Y.nc"  varname="10V"  units="m s**-1"/>
+         <field known_name="2t"    file="[rootPath]6h.2T_%Y.nc"   varname="2T"   units="K"/>
+         <field known_name="2d"    file="[rootPath]6h.2D_%Y.nc"   varname="2D"   units="K"/>
+         <field known_name="msl"   file="[rootPath]6h.MSL_%Y.nc"  varname="MSL"  units="Pa"/>
+         <field known_name="tp"    file="[rootPath]6h.TP_%Y.nc"   varname="TP"   units="m"      accumulated="6h"/> <!--6 hour accumulated precip: double the source whether hourly or not !!-->
+         <field known_name="tcc"   file="[rootPath]/6h.TCC_%Y.nc"  varname="TCC"  units="1"/>
+         <field known_name="ssrd"  file="[rootPath]/6h.SSRD_%Y.nc" varname="SSRD" units="J m**-2" accumulated="6h"/> <!-- 6 hour accumulated flux-->
+      </forcing_dataset>
+
+
+
+      <!-- As above, but different calculation of downwelling shortwave -->
+      <forcing_dataset name="era5-oldssrd" rootPath="/cluster/projects/nn2993k/ERA5/" format="netcdf" timestep="6h">
+<!--     <field name="internal name known by routine"   file="path to file"  varname="name of variable in netcdf file" unit="udunit"/> -->
+         <field known_name="10u"   file="[rootPath]/6h.10U_%Y.nc"  varname="10U"  units="m s**-1"/>
+         <field known_name="10v"   file="[rootPath]/6h.10V_%Y.nc"  varname="10V"  units="m s**-1"/>
+         <field known_name="2t"    file="[rootPath]/6h.2T_%Y.nc"   varname="2T"   units="K"/>
+         <field known_name="2d"    file="[rootPath]/6h.2D_%Y.nc"   varname="2D"   units="K"/>
+         <field known_name="msl"   file="[rootPath]/6h.MSL_%Y.nc"  varname="MSL"  units="Pa"/>
+         <field known_name="tp"    file="[rootPath]/6h.TP_%Y.nc"   varname="TP"   units="m"      accumulated="6h"/> <!--6 hour accumulated precip-->
+         <field known_name="tcc"   file="[rootPath]/6h.TCC_%Y.nc"  varname="TCC"  units="1"/>
+      </forcing_dataset>
+
+   <!-- As above, but includes strd (surface thermal downwelling radiation) as well-->
+      <forcing_dataset name="era5+all" rootPath="/cluster/projects/nn2993k/ERA5/" format="netcdf" timestep="6h">
+<!--     <field name="internal name known by routine"   file="path to file"  varname="name of variable in netcdf file" unit="udunit"/> -->
+         <field known_name="10u"   file="[rootPath]/6h.10U_%Y.nc"  varname="10U"  units="m s**-1"/>
+         <field known_name="10v"   file="[rootPath]/6h.10V_%Y.nc"  varname="10V"  units="m s**-1"/>
+         <field known_name="2t"    file="[rootPath]/6h.2T_%Y.nc"   varname="2T"   units="K"/>
+         <field known_name="2d"    file="[rootPath]/6h.2D_%Y.nc"   varname="2D"   units="K"/>
+         <field known_name="msl"   file="[rootPath]/6h.MSL_%Y.nc"  varname="MSL"  units="Pa"/>
+         <field known_name="tp"    file="[rootPath]/6h.TP_%Y.nc"   varname="TP"   units="m"      accumulated="6h"/> <!--6 hour accumulated precip-->
+         <field known_name="tcc"   file="[rootPath]/6h.TCC_%Y.nc"  varname="TCC"  units="1"/>
+         <field known_name="ssrd"  file="[rootPath]/6h.SSRD_%Y..nc" varname="SSRD" units="J m**-2" accumulated="6h"/> <!-- 6 hour accumulated flux-->
+         <field known_name="strd"  file="[rootPath]/6h.STRD_%Y..nc" varname="STRD" units="J m**-2" accumulated="6h"/> <!-- 6 hour accumulated flux-->
+         <field known_name="ssr"  file="[rootPath]/6h.SSR_%Y.nc" varname="SSR" units="J m**-2" accumulated="6h"/> <!-- 6 hour accumulated flux-->
+         <field known_name="str"  file="[rootPath]/6h.STR_%Y.nc" varname="STR" units="J m**-2" accumulated="6h"/> <!-- 6 hour accumulated flux-->
+      </forcing_dataset>
+         
+   <!-- As above, but includes strd (surface thermal downwelling radiation) as well-->
+      <forcing_dataset name="era5+ssr" rootPath="/cluster/projects/nn2993k/ERA5/" format="netcdf" timestep="6h">
+<!--     <field name="internal name known by routine"   file="path to file"  varname="name of variable in netcdf file" unit="udunit"/> -->
+         <field known_name="10u"   file="[rootPath]/6h.10U_%Y.nc"  varname="10U"  units="m s**-1"/>
+         <field known_name="10v"   file="[rootPath]/6h.10V_%Y.nc"  varname="10V"  units="m s**-1"/>
+         <field known_name="2t"    file="[rootPath]/6h.2T_%Y.nc"   varname="2T"   units="K"/>
+         <field known_name="2d"    file="[rootPath]/6h.2D_%Y.nc"   varname="2D"   units="K"/>
+         <field known_name="msl"   file="[rootPath]/6h.MSL_%Y.nc"  varname="MSL"  units="Pa"/>
+         <field known_name="tp"    file="[rootPath]/6h.TP_%Y.nc"   varname="TP"   units="m"      accumulated="6h"/> <!--6 hour accumulated precip-->
+         <field known_name="tcc"   file="[rootPath]/6h.TCC_%Y.nc"  varname="TCC"  units="1"/>
+         <field known_name="ssrd"  file="[rootPath]/6h.SSRD_%Y.nc" varname="SSRD" units="J m**-2" accumulated="6h"/> <!-- 6 hour accumulated flux-->
+         <field known_name="ssr"  file="[rootPath]/6h.SSR_%Y.nc" varname="SSR" units="J m**-2" accumulated="6h"/> <!-- 6 hour accumulated flux-->
+      </forcing_dataset>
+    
+
+
+
+   </forcing_datasets>
+</xml>
+
+
+

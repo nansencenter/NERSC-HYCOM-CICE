@@ -1,0 +1,130 @@
+# --------------------------------------------------------------------
+# USE OF NOAA ESRL DATA
+# 
+# These data are made freely available to the public and the
+# scientific community in the belief that their wide dissemination
+# will lead to greater understanding and new scientific insights.
+# The availability of these data does not constitute publication
+# of the data.  NOAA relies on the ethics and integrity of the user to
+# ensure that GML receives fair credit for their work.  If the data 
+# are obtained for potential use in a publication or presentation, 
+# GML should be informed at the outset of the nature of this work.  
+# If the GML data are essential to the work, or if an important 
+# result or conclusion depends on the GML data, co-authorship
+# may be appropriate.  This should be discussed at an early stage in
+# the work.  Manuscripts using the GML data should be sent to GML
+# for review before they are submitted for publication so we can
+# ensure that the quality and limitations of the data are accurately
+# represented.
+# 
+# Contact:   Ed Dlugokencky (303 497 6228; ed.dlugokencky@noaa.gov)
+# 
+# File Creation:  Wed Aug  5 09:08:40 2020
+# 
+# RECIPROCITY
+# 
+# Use of these data implies an agreement to reciprocate.
+# Laboratories making similar measurements agree to make their
+# own data available to the general public and to the scientific
+# community in an equally complete and easily accessible form.
+# Modelers are encouraged to make available to the community,
+# upon request, their own tools used in the interpretation
+# of the GML data, namely well documented model code, transport
+# fields, and additional information necessary for other
+# scientists to repeat the work and to run modified versions.
+# Model availability includes collaborative support for new
+# users of the models.
+# --------------------------------------------------------------------
+#  
+#  
+# See www.esrl.noaa.gov/gmd/ccgg/trends/ for additional details.
+#  
+#
+# The uncertainty in the global annual mean is estimated using a monte carlo
+# technique that computes 100 global annual averages, each time using a
+# slightly different set of measurement records from the NOAA ESRL cooperative
+# air sampling network.  The reported uncertainty is the mean of the standard
+# deviations for each annual average using this technique. Please see
+# Conway et al., 1994, JGR, vol. 99, no. D11. for a complete discussion.
+#
+# CO2 expressed as a mole fraction in dry air, micromol/mol, abbreviated as ppm
+#
+# NOTE: In general, the data presented for the last year are subject to change, 
+# depending on recalibration of the reference gas mixtures used, and other quality
+# control procedures. Occasionally, earlier years may also be changed for the same
+# reasons.  Usually these changes are minor.
+#
+# AS: the years before 1980 are copied from another dataset
+# year     mean      unc
+  1948   312.70     0.10
+  1949   312.70     0.10
+  1950   312.80     0.10
+  1951   312.90     0.10
+  1952   313.00     0.10
+  1953   313.20     0.10
+  1954   313.50     0.10
+  1955   313.80     0.10
+  1956   314.10     0.10
+  1957   314.50     0.10
+  1958   315.00     0.10
+  1959   316.00     0.10
+  1960   316.90     0.10
+  1961   317.60     0.10
+  1962   318.50     0.10
+  1963   319.00     0.10
+  1964   319.60     0.10
+  1965   320.00     0.10
+  1966   321.40     0.10
+  1967   322.20     0.10
+  1968   323.00     0.10
+  1969   324.60     0.10
+  1970   325.70     0.10
+  1971   326.30     0.10
+  1972   327.50     0.10
+  1973   329.70     0.10
+  1974   330.20     0.10
+  1975   331.10     0.10
+  1976   332.00     0.10
+  1977   333.80     0.10
+  1978   335.40     0.10
+  1979   336.80     0.10
+  1980   338.80     0.10
+  1981   339.99     0.10
+  1982   340.76     0.10
+  1983   342.44     0.10
+  1984   343.99     0.10
+  1985   345.46     0.10
+  1986   346.87     0.10
+  1987   348.62     0.10
+  1988   351.15     0.10
+  1989   352.80     0.10
+  1990   353.98     0.10
+  1991   355.29     0.10
+  1992   355.99     0.10
+  1993   356.71     0.10
+  1994   358.21     0.10
+  1995   360.04     0.10
+  1996   361.79     0.10
+  1997   362.90     0.10
+  1998   365.54     0.10
+  1999   367.64     0.10
+  2000   368.84     0.10
+  2001   370.41     0.10
+  2002   372.42     0.10
+  2003   374.96     0.10
+  2004   376.79     0.10
+  2005   378.81     0.10
+  2006   380.95     0.10
+  2007   382.68     0.10
+  2008   384.79     0.10
+  2009   386.29     0.10
+  2010   388.57     0.10
+  2011   390.45     0.10
+  2012   392.46     0.10
+  2013   395.19     0.10
+  2014   397.12     0.10
+  2015   399.42     0.10
+  2016   402.86     0.10
+  2017   405.00     0.10
+  2018   407.39     0.10
+  2019   409.85     0.10

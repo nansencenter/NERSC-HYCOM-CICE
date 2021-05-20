@@ -28,7 +28,7 @@ export P=$mydir                                                  #  ---""---
 export D=$P/data                                                 # Where data ends up
 export S=$P/SCRATCH                  # Scratch area 
 
-export SIGVER=2   # Version of equation of state (this is 7-term sigma 2). Must not cause conflict with thflag in blkdat.input
+export SIGVER=1   # Version of equation of state (this is 7-term sigma 2). Must not cause conflict with thflag in blkdat.input
 export NMPI=4
 
 # Consistency check. Ensures expt dir ends in expt_X

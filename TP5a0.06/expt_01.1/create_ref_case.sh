@@ -1,6 +1,6 @@
 #!/bin/bash
 
-myclim="woa2013" # Climatology to use
+myclim="woa2018" # Climatology to use
 #myclim="phc" # Climatology to use
 
 Icore=23
@@ -75,7 +75,7 @@ if [ $NTRACR -ne 0 ] ; then
   # Create CO2 z-relaxation files from GLODAPV2
   cd $EDIR
   echo "co2 relax climatology"
-  z_glodap_co2.sh $KSIGMA > $EDIR/log/ref_bio_relax.out 2>&1
+  z_glodap_co2.sh $KSIGMA > $EDIR/log/ref_co2_relax.out 2>&1
   res=$?
   [ $res -eq 0 ] && echo "Success"
   [ $res -ne 0 ] && echo "Failure... Log in $EDIR/log/ref_co2_relax.out"
@@ -147,6 +147,3 @@ echo "If things went fine, you can now generate test forcing like this: "
 echo "    atmo_synoptic.sh erai 2001-01-01T00:00:00  2001-01-05T00:00:00"
 echo "Then edit the job script pbsjob.sh to read and make sure expt_preprocess.sh is called like this"
 echo "    expt_preprocess.sh 2001-01-01T00:00:00 2001-01-05T00:00:00 --init "
-echo
-echo "TODO: Current limitations on synoptic forcing routines mean that only erai forcing from 2015 can be used."
-

@@ -14,6 +14,8 @@ contains
       real :: pi,radian ! Dummys for smt_funcs.h
       include 'stmt_funcs.H'
       integer :: i,j,k,k1,k2
+      !mld1 ---> stepmldT  (with  eps_temp )
+      !mld2 ---> stepmld  (with  eps_dens )
 
       !real, parameter :: eps_dens=0.05 ;
       real, parameter :: eps_dens=0.03 ;

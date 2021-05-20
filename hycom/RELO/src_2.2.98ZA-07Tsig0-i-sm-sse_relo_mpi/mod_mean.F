@@ -55,6 +55,10 @@ c
      &   surflx_m,salflx_m, covice_m,thkice_m,temice_m
 #if defined(NERSC_HYCOM_CICE)
      &   ,si_u_m, si_v_m
+#if defined(OFFICEField)
+      logical, save, private :: Toffice=.true.  
+      ! Shielding the output of ice fields
+#endif
 #endif
 
       contains
@@ -145,7 +149,7 @@ c
            si_v_m(i,j) = 0.0
 #endif
         enddo !i
-#ifndef _FABM_
+
         do k= 1,kk
           do i=1,ii
               dp_m(i,j,k) = 0.0
@@ -155,9 +159,11 @@ c
               ke_m(i,j,k) = 0.0
                u_m(i,j,k) = 0.0
                v_m(i,j,k) = 0.0
+#ifndef _FABM_
             do ktr= 1,ntracr
               tracer_m(i,j,k,ktr) = 0.0
             enddo !ktr
+#endif
 #if defined(STOKES)
             if     (stdarc) then
               usdp_m(i,j,k) = 0.0
@@ -166,7 +172,6 @@ c
 #endif
           enddo !i
         enddo !k
-#endif
       enddo !j
 #ifdef _FABM_
       call hycom_fabm_zero_mean_output()
@@ -562,7 +567,11 @@ c
       write (nop,117) 'kemix   ',nmean,time_ave,0,thbase,xmin,xmax
       call flush(nop)
       endif !1st tile
+#if defined(OFFICEField)
+      if     (iceflg.ne.0 .and. Toffice==.false.) then
+#else
       if     (iceflg.ne.0) then
+#endif
         call zaiowr(covice_m,ip,.true., xmin,xmax, nopa, .false.)
         if     (mnproc.eq.1) then
         write (nop,117) 'covice  ',nmean,time_ave,0,coord,xmin,xmax
@@ -608,6 +617,7 @@ c
       call zaiowr(u_m(1-nbdy,1-nbdy,k),iu,.true.,
      &            xmin,xmax, nopa, .false.)
       if     (mnproc.eq.1) then
+c --- u-vel. and v-vel. designate the total velocity fields      
       write (nop,117) 'u-vel.  ',nmean,time_ave,k,coord,xmin,xmax
       call flush(nop)
       endif !1st tile
@@ -681,7 +691,11 @@ C$Alfatih   write (nop,117) 'tracer  ',nmean,time_ave,k,coord,xmin,xmax
 #endif
 #if defined(NERSC_HYCOM_CICE)
 C --- Moved here to not interfere with nesting etc
+#if defined(OFFICEField)
+      if     (iceflg.ne.0 .and. Toffice==.false.) then
+#else
       if     (iceflg.ne.0) then
+#endif
         call zaiowr(si_u_m,ip,.true., xmin,xmax, nopa, .false.)
         if     (mnproc.eq.1) then
         write (nop,117) 'si_u    ',nmean,time_ave,0,coord,xmin,xmax
@@ -785,7 +799,11 @@ c ---   which only includes the fields up to vbaro (or up to nsterc)
      &    0.0,                                                     !W/m**2
      &    0.0,                                                     !W/m**2
      &    salflx_m(itest,jtest)*thref*8.64E7/saln_m(itest,jtest,1) !mm/day
+#if defined(OFFICEField)
+        if     (iceflg.ne.0 .and. Toffice==.false.) then
+#else
         if     (iceflg.ne.0) then
+#endif
           write (nop,'(2a / a,f11.4, 3f8.2,2f8.1,f9.2)')
      &    '## model-day',
      &    '  covice  thkice  temice  flxice  fswice   iceE-P',

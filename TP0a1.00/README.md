@@ -13,9 +13,8 @@ The directory will contain input and output files for different experiments. All
 
 # REGION.src
 
-First of all, source the REGION.src file. This will set your PATH variable to
-point to $NHCROOT/bin. That way you dont have to write the full path to the
-commands you want to execute.
+First of all, make a copy of the REGION.src file from the input folder into your working directory (TP0a1.00 for example).
+Then, you need to set your PATH variable to point to $NHCROOT/bin. That way you don't have to write the full path to the commands you want to execute.
 
 With that out of the way, here is 
 
@@ -84,3 +83,10 @@ Quick start: To compile HYCOM as standalone (i.e. not coupled with CICE) you nee
 1. In blkdat.input set ‘iceflg’ to 0.
 2. Link $NHCROOT/TP0a1.00/expt_01.0/mysource to experiment directory
 3. compile_model.sh -m fram -u ifort
+
+
+#  Runtime errors and solutions
+
+1. Error related to ice blocks: "ice: no. blocks exceed max:"  
+You can edit the number of ice blocks (variable name is MXBLCKS ) inside  
+the file is comp_ice.esmf located under NERSC-HYCOM-CICE/cice/Release-5.1

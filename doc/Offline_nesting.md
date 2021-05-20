@@ -10,6 +10,10 @@ Nesting in current version need to be started from source regional directory/exp
 You should expect to have your horizontally/vertically interpolated files in the TOPAZ nesting experiment folder, in this case TP5a0.06/030/archv.XXX_XXX.[ab] because you specified target experiment expt_03.0. Please note I link the "bin" directory one back the experiment folder in all region directories for example, if my current directory is TP5a0.06 it would be ln -sf ~/NERSC-CICE/bin .
 
 
+It is worth noting that you have to run the first year from climatology
+and then introduce the nesting from a restart file.
+
+
 
 #  Quick start
 

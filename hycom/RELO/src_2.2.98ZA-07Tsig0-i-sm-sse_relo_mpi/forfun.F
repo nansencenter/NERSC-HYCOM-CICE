@@ -926,7 +926,14 @@ c ---       otherwise, must start after wind day 1462.0, 01/01/1905.
           read (uoff+901,'(a79)') preambl
         endif
 c
-        do iunit= 901,908
+        do iunit= 899,908
+          if     (iunit.eq.899 .and.  
+     &            .not.(mslprf .or. flxflg.eq.6)) then
+            cycle  !no mslprs
+          endif
+          if     (iunit.eq.900 .and. ustflg.ne.3) then
+            cycle  !no ustar 
+          endif
           if     (iunit.eq.903 .and. wndflg.ge.3) then
             cycle  !no wndspd
           endif
@@ -1578,6 +1585,9 @@ c
       rmu(   :,:) = 0.0  !needed for thermf
       rmutra(:,:) = 0.0
       rmunp( :,:) = 0.0
+#ifdef _FABM_
+      rmunp_trc( :,:) = 0.0
+#endif
       rmunv( :,:) = 0.0  !needed for thermf
 c
       lgth = len_trim(flnmforw)
@@ -1632,9 +1642,9 @@ c
         call zaiocl(915)
       else
         if     (mnproc.eq.1) then
-        write (lp,*) 'No sss relaxation limiter.'
+        write (lp,*) 'sss relaxation is limited (less than 0.5).'
         endif !1st tile
-        sssrmx(:,:) = 99.9  !needed for thermf, set to no limit
+        sssrmx(:,:) = 0.5  !needed for thermf, set to a limit of 0.5 psu
       endif
 c
       if     (relax) then  ! boundary thermal relaxation
@@ -2644,7 +2654,7 @@ c
       dtime1 = dtime(901)
 c
 c --- check the input times.
-      do k= 902,910
+      do k= 899,910
         if     (dtime(k).ne.dtime1) then
           if     (mnproc.eq.1) then
           write(lp,*)
@@ -3821,6 +3831,26 @@ c
         close (unit=uoff+915)
         endif !1st tile
         call zaiocl(915)
+c
+#ifdef _FABM_
+        call zaiopf('nest/rmutr.a', 'old', 915)
+        if     (mnproc.eq.1) then  ! .b file from 1st tile only
+        open (unit=uoff+915,file='nest/rmutr.b',
+     &        status='old',action='read')
+        endif !1st tile
+        call zagetc(cline,ios, uoff+915)  !1st line of the header on all tiles
+        if     (mnproc.eq.1) then  ! .b file from 1st tile only
+        rewind uoff+915
+        read  (uoff+915,'(a79)') preambl
+        endif !1st tile
+        call preambl_print(preambl)
+        call rdmonth(rmunp_trc, 915)
+        call xctilr(rmunp_trc,1,1, nbdy,nbdy, halo_ps)
+        if     (mnproc.eq.1) then  ! .b file from 1st tile only
+        close (unit=uoff+915)
+        endif !1st tile
+        call zaiocl(915)
+#endif
 c
         dnestf = abs(nestfq)
         if     (dnestf.lt.1.0) then

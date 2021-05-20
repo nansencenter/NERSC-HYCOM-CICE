@@ -785,12 +785,14 @@ contains
       call HFReadField(df,ut,idm,jdm,'utot    ',vlevel,1)
       call HFReadField(df,vt,idm,jdm,'vtot    ',vlevel,1)
    elseif(trim(df%ftype)=="archv"&
-           .or.trim(df%ftype)=="archm"&
            .or.trim(df%ftype)=="archs") then
       call HFReadField(df,ut,idm,jdm,'u-vel.  ',vlevel,1)
       call HFReadField(df,vt,idm,jdm,'v-vel.  ',vlevel,1)
       call HFReadField(df,ub,idm,jdm,'u_btrop ',0,1)
       call HFReadField(df,vb,idm,jdm,'v_btrop ',0,1)
+   elseif(trim(df%ftype)=="archm") then
+      call HFReadField(df,ut,idm,jdm,'u-vel.  ',vlevel,1)
+      call HFReadField(df,vt,idm,jdm,'v-vel.  ',vlevel,1)
    elseif (trim(df%ftype)=="archv_wav") then
       call HFReadField(df,ut,idm,jdm,'u-vel.  ',vlevel,1)
       call HFReadField(df,vt,idm,jdm,'v-vel.  ',vlevel,1)
@@ -971,56 +973,64 @@ contains
    character(len=8) char8
    char8=adjustl(cfld)
    !print *,count( df%cfld == char8 .and. df%tlevel==timelevel ) 
-   if (cfld=='chla') then
+   if (cfld=='chla_nor') then
      is3DVar=.true.
    else if (cfld=='chla_eco') then
      is3DVar=.true.
-   else if(cfld=='attcoef') then
+   else if(cfld=='attc_nor') then
      is3DVar=.true.
    else if(cfld=='attc_eco') then
      is3DVar=.true.
-   else if(cfld=='nitrate') then
+   else if(cfld=='nit_nor') then
      is3DVar=.true.
    else if(cfld=='nit_eco') then
      is3DVar=.true.
-   else if(cfld=='phosphat') then
+   else if(cfld=='pho_nor') then
      is3DVar=.true.
    else if(cfld=='sil_eco') then
      is3DVar=.true.
    else if(cfld=='pho_eco') then
      is3DVar=.true.
-   else if(cfld=='pbiomass') then
+   else if(cfld=='pbio_nor') then
      is3DVar=.true.
    else if(cfld=='pbio_eco') then
      is3DVar=.true.
-   else if(cfld=='zbiomass') then
+   else if(cfld=='zbio_nor') then
      is3DVar=.true.
    else if(cfld=='zbio_eco') then
      is3DVar=.true.
-   else if(cfld=='oxygen') then
+   else if(cfld=='oxy_nor') then
      is3DVar=.true.
    else if(cfld=='oxy_eco') then
      is3DVar=.true.
    else if(cfld=='salt1000') then
      is3DVar=.true.
+   else if(cfld=='detvflux') then
+     is3DVar=.true.
 ! _FABM__caglar_
-   else if(cfld=='chl_fabm') then
+   else if(cfld=='chla') then
      is3DVar=.true.
-   else if(cfld=='nit_fabm') then
+   else if(cfld=='nitrate') then
      is3DVar=.true.
-   else if(cfld=='sil_fabm') then
+   else if(cfld=='silicate') then
      is3DVar=.true.
-   else if(cfld=='pho_fabm') then
+   else if(cfld=='phosphat') then
      is3DVar=.true.
-   else if(cfld=='pbiofabm') then
+   else if(cfld=='pbiomass') then
      is3DVar=.true.
-   else if(cfld=='zbiofabm') then
+   else if(cfld=='zbiomass') then
      is3DVar=.true.
-   else if(cfld=='oxy_fabm') then
+   else if(cfld=='oxygen') then
      is3DVar=.true.
-   else if(cfld=='prmpfabm') then
+   else if(cfld=='primprod') then
      is3DVar=.true.
-   else if(cfld=='attcfabm') then
+   else if(cfld=='attcoeff') then
+     is3DVar=.true.
+   else if(cfld=='dic') then
+     is3DVar=.true.
+   else if(cfld=='ph') then
+     is3DVar=.true.
+   else if(cfld=='spco2') then
      is3DVar=.true.
 ! _FABM__caglar_
    else if(cfld=='utotl' .and. trim(df%ftype)=='archm') then
@@ -1176,13 +1186,13 @@ contains
          stdname='sea_water_salinity' ; units='1e-3' ; vname='so'
          limits=(/0,45/)
       case ('temp') 
-         stdname='sea_water_potential_temperature' ; units='Celsius' ; vname='theta0'
+         stdname='sea_water_potential_temperature' ; units='degrees_C' ; vname='thetao'
          limits=(/-3,50/)
       case ('levsaln')
          stdname='sea_water_salinity' ; units='1e-3' ; vname='levitus_salinity'
          limits=(/0,45/)
       case ('levtemp') 
-         stdname='sea_water_potential_temperature' ; units='Celsius' ; vname='levitus_temperature'
+         stdname='sea_water_potential_temperature' ; units='degrees_C' ; vname='levitus_temperature'
          limits=(/-3,50/)
       case ('ssh','srfhgt') 
          stdname='sea_surface_height_above_geoid' ; units='m' ; vname='zos'
@@ -1238,10 +1248,11 @@ contains
          stdname='sea_ice_area_fraction' ; units='1' ; vname='siconc'
          limits=(/0,1/)
       case ('fy_age','iage_d')
-          stdname='age_of_sea_ice' ; units='year' ; vname='siage'
-          limits=(/0,365/)
+          stdname='age_of_sea_ice' ; units='day' ; vname='siage'
+          limits=(/0,36500/)
        case ('fy_frac','FYarea_d')
-          stdname='sea_ice_fraction_of_first_year' ; units='1' ;  
+          stdname='sea_ice_classification' ; units='1' ; 
+          longname = 'sea ice area fraction of first year ice'
           vname='siconc_fy'
           limits=(/0,1/)
       case ('ubavg','u_btrop') 
@@ -1319,19 +1330,19 @@ contains
          units='kg m-2 s-1' ; vname='fwflux'
          limits=(/-1e-3,1e-3/)
          stdname='water_flux_into_ocean'
-      case ('mld1','mld')
-         units='m' ; vname='mld'
+      case ('stepmldT')
+         units='m' ; vname='stepmldT'
          limits=(/0.,5000./)
-         stdname='ocean_mixed_layer_thickness'
-      case ('mld2','mlp')
-         units='m' ; vname='mlp'
+         stdname='ocean_mixed_layer_thickness_defined_by_sigma_theta'
+      case ('stepmld')
+         units='m' ; vname='stepmld'
          limits=(/0.,5000./)
-         stdname='ocean_mixed_layer_thickness'
+         stdname='ocean_mixed_layer_thickness_defined_by_sigma_theta'
 !Alfati. More accurate method for computing MLD using density         
-      case ('GS_MLD')
+      case ('mld')
          units='m' ; vname='mlotst'
          limits=(/0.,3500./)
-         stdname='ocean_mixed_layer_thickness_defined_by_sigma'
+         stdname='ocean_mixed_layer_thickness_defined_by_sigma_theta'
       case ('dpmixl','dp_mixl','dpmix') 
          vname='dpmix'
          units='m'
@@ -1340,7 +1351,7 @@ contains
 !KAL20151204 - Adding bottom temperature
       case ('btemp') 
          vname    = 'bottomT'
-         units    = 'Celsius'
+         units    = 'degrees_C'
          limits   = (/-3,50/)
          stdname  = 'sea_water_potential_temperature_at_sea_floor'
          longname = 'Sea floor potential temperature'
@@ -1377,7 +1388,7 @@ contains
          longname = 'Sea floor kinetic energy'
 
 !AS06092011 - adding biological variables for MyOcean
-      case ('chla') 
+      case ('chla_nor') 
          vname='chla'
          units='kg m-3'
          limits=(/0.,1.e-4/)
@@ -1387,7 +1398,7 @@ contains
          units='kg m-3'
          limits=(/0.,1.e-4/)
          stdname='mass_concentration_of_chlorophyll_a_in_sea_water'
-      case ('attcoef')
+      case ('attc_nor')
          vname='attcoef'
          units='m-1'
          limits=(/0.,0.5/)
@@ -1397,7 +1408,7 @@ contains
          units='m-1'
          limits=(/0.,0.5/)
          stdname='volume_attenuation_coefficient_of_downwelling_radiative_flux_in_sea_water'
-      case ('nitrate')
+      case ('nit_nor')
          vname='nitrat'
          units='mole m-3'
          limits=(/0.,5.e-2/)
@@ -1406,7 +1417,7 @@ contains
          units='mole m-3'
          limits=(/0.,5.e-2/)
          stdname='mole_concentration_of_nitrate_in_sea_water'
-      case ('phosphat')
+      case ('pho_nor')
          vname='phosphat'
          units='mole m-3'
          limits=(/0.,1e-2/)
@@ -1421,7 +1432,7 @@ contains
          units='mole m-3'
          limits=(/0.,100./)
          stdname='mole_concentration_of_silicate_in_sea_water'
-      case ('pbiomass')
+      case ('pbio_nor')
          vname='pbiomass'
          units='mole m-3'
          limits=(/0.,0.01/)
@@ -1431,7 +1442,7 @@ contains
          units='mole m-3'
          limits=(/0.,0.01/)
          stdname='mole_concentration_of_phytoplankton_expressed_as_nitrogen_in_sea_water'
-      case ('zbiomass')
+      case ('zbio_nor')
          vname='zbiomass'
          units='mole m-3'
          limits=(/0.,0.01/)
@@ -1441,7 +1452,7 @@ contains
          units='mole m-3'
          limits=(/0.,0.01/)
          stdname='mole_concentration_of_zooplankton_expressed_as_nitrogen_in_sea_water'
-      case ('oxygen')
+      case ('oxy_nor')
          vname='oxygen'
          units='kg m-3'
          limits=(/0.,0.05/)
@@ -1456,7 +1467,12 @@ contains
          units='psu / 1000'
          limits=(/0.,0.045/)
          stdname='standard_salinity_divideby_1000'
-      case ('pp_depth')
+      case ('detvflux')
+         vname='expc'
+         units='mol m-2 d-1'
+         limits=(/0.0,1500.0/)
+         stdname='sinking_mole_flux_of_particulate_organic_matter_expressed_as_carbon_in_sea_water'
+      case ('pp_d_nor')
          vname='pp_depth'
          units='kg m-2 s-1'
          limits=(/0.,1.e-7/)
@@ -1482,10 +1498,10 @@ contains
          limits=(/0.,200./)
          stdname='depth_integrated_chlorophyll_one_optical_depth'
 !AS06092011
-      case ('albedo','albice_d')
+      case ('albedo','albsni_d')
          vname='sialb'
-         units='%'
-         limits=(/0.,100./)
+         units='1'
+         limits=(/0.,1./)
          stdname='sea_ice_albedo'
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1515,51 +1531,71 @@ contains
          stdname='mean_wave_from_direction'
          cellmethod='area: mean'
 ! _FABM__caglar_
-         case ('chl_fabm')
+         case ('chla')
          vname='chl'
          units='mg m-3'
          limits=(/0.,100./)
          stdname='mass_concentration_of_chlorophyll_a_in_sea_water'
-         case ('nit_fabm')
+         case ('nitrate')
          vname='no3'
          units='mmol m-3'
          limits=(/0.,50./)
          stdname='mole_concentration_of_nitrate_in_sea_water'
-         case ('sil_fabm')
+         case ('silicate')
          vname='si'
          units='mmol m-3'
-         limits=(/0.,100./)
+         limits=(/0.,250./)
          stdname='mole_concentration_of_silicate_in_sea_water'
-         case ('pho_fabm')
+         case ('phosphat')
          vname='po4'
          units='mmol m-3'
          limits=(/0.,10./)
          stdname='mole_concentration_of_phosphate_in_sea_water'
-         case ('pbiofabm')
+         case ('pbiomass')
          vname='phyc'
          units='mmol m-3'
-         limits=(/0.,100./)
+         limits=(/0.,500./)
          stdname='mole_concentration_of_phytoplankton_expressed_as_carbon_in_sea_water'
-         case ('zbiofabm')
+         case ('zbiomass')
          vname='zooc'
          units='mmol m-3'
-         limits=(/0.,100./)
+         limits=(/0.,500./)
          stdname='mole_concentration_of_zooplankton_expressed_as_carbon_in_sea_water' 
-         case ('oxy_fabm')
+         case ('oxygen')
          vname='o2'
          units='mmol m-3'
-         limits=(/0.,500./)
+         limits=(/0.,1000./)
          stdname='mole_concentration_of_dissolved_molecular_oxygen_in_sea_water'
-         case ('prmpfabm')
+         case ('pp_depth')
+         vname='npp'
+         units='mg m-2 d-1'
+         limits=(/0.,8460./)
+         stdname='net_primary_productivity_of_biomass_expressed_as_carbon'
+         case ('primprod')
          vname='nppv'
-         units='mg m-3 d-1'
-         limits=(/0.,250./)
+         units='mg m-3 day-1'
+         limits=(/0.,2000./)
          stdname='net_primary_production_of_biomass_expressed_as_carbon_per_unit_volume_in_sea_water'
-         case ('attcfabm')
+         case ('attcoeff')
          vname='kd'
          units='m-1'
          limits=(/0.,1./)
          stdname='volume_attenuation_coefficient_of_downwelling_radiative_flux_in_sea_water'
+         case ('dic')
+         vname='dissic'
+         units='mole m-3'
+         limits=(/1.,3./)
+         stdname='mole_concentration_of_dissolved_inorganic_carbon_in_sea_water'
+         case ('ph')
+         vname='ph'
+         units='1'
+         limits=(/7.,10./)
+         stdname='sea_water_ph_reported_on_total_scale'
+         case ('spco2')
+         vname='spco2'
+         units='Pa'
+         limits=(/0.,100./)
+         stdname='surface_partial_pressure_of_carbon_dioxide_in_sea_water'
 ! _FABM__caglar_
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

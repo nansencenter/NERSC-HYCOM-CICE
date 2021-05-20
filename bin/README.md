@@ -117,6 +117,7 @@ the hycom setup files (grid and bathymetry) to be present.
 | river_nersc.sh | Use simple nersc river routine |
 | river_trip.sh | River fluxes based on TRIP and ERAI or ERA40 climatology. Can now use pre-existing riverflow in TRIP_PATH |
 | river_trip_realtime.sh | River fluxes based on TRIP, can generate realtime river forcing based on ERA40 or ERAI as well as river climatology|
+| river_nersc.sh | Use simple nersc river routine for Greenland, use this command bin/river_nersc.sh 100 300 ./input/greenland_landice.dat and move everything to SCRATCH_Greenland directory in order to prepare the merging with other rivers later|
 
 
 
@@ -133,6 +134,9 @@ the hycom setup files (grid and bathymetry) to be present.
 | nest_check_ports.sh  |Checks a port setup for errors |
 | nemo_mesh_to_hycom.py | Converts NEMO grid to hycom file types (regional.grid and regional.depths)|
 | nemo_to_hycom.py  | Converts NEMO input files  to hycom archv files  (also calls nemo_mesh_to_hycom)|
+| nest_rmu_linear.csh | This can be used to create nest rum with linearly increasing e-fold time, more stable nesting. need
+to modfiy the ports indices|
+
 
 
 # Tide tools 

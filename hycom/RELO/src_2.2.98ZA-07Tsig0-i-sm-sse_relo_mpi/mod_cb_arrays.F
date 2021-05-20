@@ -423,6 +423,9 @@ c ---  (kkwall and kknest are either kdm or, if inactive, 1).
 #endif
      & rmu,           ! weights for   s.w.b.c. relax
      & rmunp,         ! weights for p.n.w.b.c. relax
+#ifdef _FABM_
+     & rmunp_trc,     ! weights for FABM nesting variables
+#endif
      & rmunv,         ! weights for v.n.w.b.c. relax
      & rmutra         ! weights for tracr.b.c. relax (maximum of all tracers)
 
@@ -1348,12 +1351,18 @@ c
       allocate(
      &          rmu(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy),
      &        rmunp(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy),
+#ifdef _FABM_
+     &        rmunp_trc(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy),
+#endif
      &        rmunv(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy),
      &       rmutra(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy) )
       call mem_stat_add( 5*(idm+2*nbdy)*(jdm+2*nbdy) )
 #endif
                 rmu = r_init
               rmunp = r_init
+#ifdef _FABM_
+              rmunp_trc = r_init
+#endif
               rmunv = r_init
              rmutra = r_init
 c

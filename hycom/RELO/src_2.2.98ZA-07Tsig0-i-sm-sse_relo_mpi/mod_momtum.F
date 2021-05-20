@@ -40,6 +40,9 @@ c
 #if defined(STOKES)
       use mod_stokes     ! HYCOM Stokes drift
 #endif
+#ifdef CPL_OASIS_HYCOM
+      use mod_cpl_oasis_init
+#endif
       implicit none
 c
       integer m,n
@@ -412,6 +415,18 @@ c
      &                          +(tauy(i,j,l2)+tauy(i,j+1,l2))*w2
      &                          +(tauy(i,j,l3)+tauy(i,j+1,l3))*w3)*0.5
                 endif !natm
+              elseif (wndflg==7) then
+#ifdef CPL_OASIS_HYCOM
+                 surtx(i,j)=cplts_recv(i,j,i2o_taux)
+                 surty(i,j)=cplts_recv(i,j,i2o_tauy)
+                 !EM:  halo completed below
+                 !EM:  TODO: check stress over ice if nextsim (see
+                 !           below)
+#else
+                 write(6,*)
+     &  'Wndflg=7 can only be used when CPL_OASIS_HYCOM is defined'
+                 call xcstop('(momtum_hs)')
+#endif
               else !wndflg.eq.4,5,6
 c ---           calculate stress from 10m winds using cd_coare or cd_core3
                 if     (natm.eq.2) then
