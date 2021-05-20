@@ -667,6 +667,10 @@ c
 #if defined(STOKES)
       use mod_stokes  !    HYCOM Stokes Drift
 #endif
+#ifdef CPL_OASIS_HYCOM
+      use mod_cpl_oasis_init
+#endif
+
       implicit none
 c
       integer m,n, j
@@ -859,12 +863,16 @@ c ---   wind = wind, or wind-ocean, speed (m/s)
 c ---   swfl = shortwave radiative thermal flux (W/m^2) +ve into ocean/ice
 c ---          Qsw includes the atmos. model's surface albedo,
 c ---          i.e. it already allows for sea-ice&snow where it is observed.
+#ifdef CPL_OASIS_HYCOM
+        swfl=cplts_recv(i,j,i2o_swra)
+#else
         if     (natm.eq.2) then
           swfl=swflx (i,j,l0)*w0+swflx (i,j,l1)*w1
         else
           swfl=swflx (i,j,l0)*w0+swflx (i,j,l1)*w1
      &        +swflx (i,j,l2)*w2+swflx (i,j,l3)*w3
         endif !natm
+#endif
         if     (dswflg.eq.1) then
 c ---     daily to diurnal shortwave correction to swfl and radfl.
           dloc  = dtime + plon(i,j)/360.0
@@ -1469,8 +1477,15 @@ c --- Total surface fluxes
 c
 c ---   input radiation flux is the net flux.
 c
+#ifdef CPL_OASIS_HYCOM
+! put heat flux from nextsim here???
+        evap=0.0
+        surflx(i,j)=cplts_recv(i,j,i2o_swra) + 
+     &              cplts_recv(i,j,i2o_lwlh)
+#else 
         evap=0.0
         surflx(i,j)=radfl
+#endif
       else  ! no flux
         evap=0.0
         surflx(i,j)=0.0  
@@ -1549,7 +1564,12 @@ c --- emnp = evaporation minus precipitation   (m/sec) into atmos.
         prcp = 0.0
         emnp = 0.0   !no E-P
       elseif (empflg.eq.3) then
+#ifdef CPL_OASIS_HYCOM
+        emnp = cplts_recv(i,j,i2o_fwfl)
+        !emnp = -prcp !input prcp is P-E
+#else
         emnp = -prcp !input prcp is P-E
+#endif
       elseif (empflg.gt.0) then !E based on model SST
         emnp = evap *thref/evaplh - prcp  !input prcp is P
       else  !E based on observed SST
@@ -1582,18 +1602,33 @@ c
         sssc   =  swall(i,j,1,lc0)*wc0+swall(i,j,1,lc1)*wc1
      &           +swall(i,j,1,lc2)*wc2+swall(i,j,1,lc3)*wc3
         sssdif = sssc - saln(i,j,1,n)
-        if     (saln(i,j,1,n).gt.0.5*sssc .and.
-     &          abs(sssdif).gt.abs(sssrmx(i,j))) then  !large sss anomaly
-          if     (sssrmx(i,j).lt.0.0) then
-            sssdif = covice(i,j)*sssdif !turn off relaxation except under ice
-          elseif (sssdif.lt.0.0) then !sssdif < -sssrmx < 0
-            sssdif =      covice(i,j)*   sssdif +
-     &               (1.0-covice(i,j))*(-sssrmx(i,j))  !limit relaxation
-          else !sssdif > sssrmx > 0
-            sssdif =      covice(i,j)*    sssdif +
-     &               (1.0-covice(i,j))*   sssrmx(i,j)  !limit relaxation
-          endif
-        endif
+
+! 19022021: This has been commented out to avoid relaxation back to climatological salinity
+!           below the sea ice in the central Arctic where the climatology is of low quality
+!        if     (saln(i,j,1,n).gt.0.5*sssc .and.
+!     &          abs(sssdif).gt.abs(sssrmx(i,j))) then  !large sss anomaly
+!          if     (sssrmx(i,j).lt.0.0) then
+!            sssdif = covice(i,j)*sssdif !turn off relaxation except under ice
+!          elseif (sssdif.lt.0.0) then !sssdif < -sssrmx < 0
+!            sssdif =      covice(i,j)*   sssdif +
+!     &               (1.0-covice(i,j))*(-sssrmx(i,j))  !limit relaxation
+!          else !sssdif > sssrmx > 0
+!            sssdif =      covice(i,j)*    sssdif +
+!     &               (1.0-covice(i,j))*   sssrmx(i,j)  !limit relaxation
+!          endif
+!        endif
+
+        ! add the limited relaxation no more than sssrmx 
+        ! on everywhere in the Arctic (WOA18 too fresher) 
+        if     (abs(sssdif).gt.abs(sssrmx(i,j))) then  !  large sss anomaly
+           if     (sssrmx(i,j).lt.0.0) then
+                 sssdif = 0.0    !  turn off relaxation except under ice
+           elseif (sssdif .lt. 0.0) then
+                 sssdif = -sssrmx(i,j)   ! limit relaxation 
+           else
+                 sssdif = sssrmx(i,j) !limit relaxation 
+           endif
+        endif    
         sssflx(i,j)=(rmus*min(p(i,j,kk+1),thkmls*onem)/g)*sssdif
 *       salflx(i,j)=salflx(i,j)+sssflx(i,j) !update salflx in thermf_oi
       else
@@ -1602,6 +1637,8 @@ c
       endif !srelax
       endif !ip
       enddo !i
+
+      
       return
       end subroutine thermfj
 

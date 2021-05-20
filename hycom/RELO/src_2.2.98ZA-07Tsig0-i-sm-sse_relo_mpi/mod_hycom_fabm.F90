@@ -21,6 +21,9 @@ module mod_hycom_fabm
 
    use mod_xc         ! HYCOM communication interface
    use mod_cb_arrays  ! HYCOM saved arrays
+#ifdef CPL_OASIS_HYCOM
+   use mod_cpl_oasis_init
+#endif
    implicit none
 
    private
@@ -40,8 +43,14 @@ module mod_hycom_fabm
    real :: bottom_stress_keep 
    logical, allocatable :: mask(:, :, :, :)
    integer, allocatable :: kbottom(:, :, :)
+!  these are used for bottom exchange
    integer :: nbottom
    real :: hbottom
+!  these are used for check_state mass balance
+   real, allocatable :: mass_before_check_state(:, :, :, :)
+   real, allocatable :: mass_after_check_state(:)
+   real              :: mass_diff_check_state
+!
    real :: wndstr,strspd
    real, allocatable :: h(:, :,:),delZ(:),codepth(:,:,:),cotemp(:,:,:),cosal(:,:,:),codens(:,:,:)
    real, allocatable :: hriver(:, :)
@@ -98,6 +107,7 @@ module mod_hycom_fabm
    logical :: nested_bio
 
    integer :: pCO2unit, yCO2init, nyearCO2,modelyear,modelmonth
+   character(len=80)  :: co2str
    real    :: co2_seasonality(12),modelday,modeltime,pair
    real    :: dew,atmco2_0,atmco2_1,atmco2_2,atmco2_3
 contains
@@ -163,7 +173,7 @@ contains
     ! read atmospheric CO2 time-series
     pCO2unit = 2640
     yCO2init = 1948
-    nyearCO2 = 71 ! last data year = 2018
+    nyearCO2 = 72 ! last data year = 2019
     co2_seasonality = [1.8552,2.7411,3.7847,4.6522,4.2706,1.1206,-4.3468,-8.6286,-7.9663,-3.7896,1.8954,3.0054]
       
     end subroutine hycom_fabm_configure
@@ -189,6 +199,10 @@ contains
         allocate(nested_data_dev(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kknest,2,nested_number))
         allocate(atmco2(nyearCO2))
         allocate(atmco2_fabm(ii, jj))
+! used for check_state mass balance
+        allocate(mass_before_check_state(ii,jj,kk,size(fabm_model%state_variables)))
+        allocate(mass_after_check_state(kk))
+!
     end subroutine hycom_fabm_allocate
 
     subroutine hycom_fabm_initialize()
@@ -197,7 +211,7 @@ contains
       type (type_interior_output),   pointer :: last_interior_output
       type (type_horizontal_output), pointer :: last_horizontal_output
 
-      integer :: yCO2
+      integer :: yCO2,tmpyear
 
         ! Provide extents of the spatial domain (number of layers nz for a 1D column)
         call fabm_set_domain(fabm_model, ii, jj, kk, baclin)
@@ -242,11 +256,22 @@ contains
             last_horizontal_output%data2d => fabm_get_horizontal_diagnostic_data(fabm_model, ivar)
         end do
 
-        open(unit=pCO2unit, file='pCO2a_1948_2018',form='formatted')
-        do yCO2=1,nyearCO2
-          read(pCO2unit,*) atmco2(yCO2)
+        open(unit=pCO2unit, file='co2_annmean_gl.txt',form='formatted')                                                 
+!AS skip the fist lines starting with #
+        read(pCO2unit,*) co2str
+        print*, 'str', co2str
+        do while (co2str(1:1).eq.'#')
+           read(pCO2unit,*) co2str
         end do
-        close(pCO2unit) 
+        
+!AS read the data
+        backspace(pCO2unit)
+        do yCO2=1,nyearCO2 
+            read(pCO2unit,*) tmpyear, atmco2(yCO2)
+        end do
+
+        close(pCO2unit)  
+
     contains
 
       function add_interior_output(variable) result(saved)
@@ -687,7 +712,7 @@ contains
         end do
     end do
 #endif
-!write (*,*) 'hycom_fabm_after_vertical', nstep, time
+
       do k=1,kk
         do j=1,jj
           call fabm_get_light_extinction(fabm_model, 1, ii, j, k, extinction)
@@ -706,9 +731,10 @@ contains
             call fabm_get_light(fabm_model, 1, kk, i, j)
         end do
       end do
-!write (*,*) 'hycom_fabm_after_light', nstep, time
+
       ! Compute bottom source terms
       if (do_bottom_sources) then
+
       do j=1,jj
         flux = 0
         sms_bt = 0
@@ -716,9 +742,11 @@ contains
         do i=1,ii
           if (kbottom(i, j, n) > 0) then
             fabm_bottom_state(i, j, n, :) = fabm_bottom_state(i, j, n, :) + delt1 * sms_bt(i, :) ! update sediment layer
-            if ( dp(i, j, kbottom(i,j,n), n)/onem >= 3.0 ) then ! check if the bottom layer is thicker than 10 meters, if so, apply the flux as usual (I will decrease the criteria in time)
-              tracer(i, j, kbottom(i,j,n), n, :) = tracer(i, j, kbottom(i,j,n), n, :) + delt1 * flux(i, :)/dp(i, j, kbottom(i,j,n), n)*onem
-            else ! in case less than 10 meters, to avoid accumulation at the bottom thin layers, distribute the flux into multiple layers that add up to > 10 meters thickness
+            if ( dp(i, j, kbottom(i,j,n), n)/onem >= 3.0 ) then ! check if the bottom layer is thicker than 3 meters,
+                                                                ! if so, apply the flux as usual (I will decrease the criteria in time)
+                tracer(i, j, kbottom(i,j,n), n, :) = tracer(i, j, kbottom(i,j,n), n, :) + delt1 * flux(i, :)/dp(i, j, kbottom(i,j,n), n)*onem
+            else ! in case less than 3 meters, to avoid accumulation at the bottom thin layers,
+                 ! distribute the flux into multiple layers that add up to > 3 meters thickness
               hbottom = 0
               nbottom = 0
               do k = kbottom(i,j,n),1,-1
@@ -727,9 +755,11 @@ contains
                 nbottom = nbottom + 1
               end do
               do k = kbottom(i,j,n)-nbottom , kbottom(i,j,n) ! distribute the flux to total height, and to multiple layers
+              !do k = kbottom(i,j,n)-nbottom , kk
                 tracer(i, j, k, n, :) = tracer(i, j, k, n, :) + delt1 * flux(i, :)/hbottom
               end do
             end if
+
 #ifdef FABM_CHECK_NAN
             if (any(isnan(tracer(i, j, kbottom(i,j,n), n, :)))) then
               write (*,*) 'NaN after do_bottom:', tracer(i, j, kbottom(i,j,n), n, :), flux(i, :), dp(i, j, kbottom(i,j,n), n)/onem
@@ -739,9 +769,10 @@ contains
           end if
         end do
       end do
+
       if (do_check_state) call check_state('after bottom sources', n, .false.)
       end if
-!write (*,*) 'hycom_fabm_after_bottom', nstep, time
+
       ! Compute surface source terms
       if (do_surface_sources) then
       do j=1,jj
@@ -763,7 +794,7 @@ contains
       end do
       if (do_check_state) call check_state('after surface sources', n, .false.)
       end if
-!write (*,*) 'hycom_fabm_after_surface', nstep, time
+
       ! Compute source terms and update state
       if (do_interior_sources) then
       do k=1,kk
@@ -789,7 +820,7 @@ contains
       end do
       if (do_check_state) call check_state('after interior sources', n, .false.)
       end if
-!write (*,*) 'hycom_fabm_after_interior', nstep, time
+
       input => first_input
       do while (associated(input))
         if (input%roleriver == role_river) then
@@ -809,15 +840,40 @@ contains
         end if
         input => input%next
       end do
-!write (*,*) 'hycom_fabm_after_correct', nstep, time
+
+! FABM tracer concentration at the bottom layer is copied to thin layers below by check_sate
+! To preserve mass, total mass difference is distributed among the bottom layer and below
+      do i=1,ii
+        do j=1,jj
+          do ivar=1,size(fabm_model%state_variables)
+            mass_before_check_state(i, j, :, ivar) = tracer(i, j, :, n, ivar) * dp(i, j, :, n)/onem
+          enddo
+        enddo
+      enddo
+      
       call check_state('after hycom_fabm_update', n, .true.)
-!write (*,*) 'hycom_fabm_after_check_state', nstep, time
+      
+      do i=1,ii
+        do j=1,jj
+          if (SEA_P) then
+             do ivar=1,size(fabm_model%state_variables)
+               mass_after_check_state(:) = tracer(i, j, :, n, ivar) * dp(i, j, :, n)/onem
+               mass_diff_check_state = sum(mass_after_check_state(:)) - sum(mass_before_check_state(i, j, :, ivar))
+               do k=kbottom(i,j,n),kk
+                  tracer(i, j, k, n, ivar) = tracer(i, j, k, n, ivar) - mass_diff_check_state / sum(dp(i, j, kbottom(i,j,n):kk, n)/onem)
+               enddo
+             enddo
+           endif
+        enddo
+      enddo
+!! --------
+
       ! Apply the Robert-Asselin filter to the surface and bottom state.
       ! Note that RA will be applied to the pelagic tracers within mod_tsavc - no need to do it here!
-!write (*,*) 'hycom_fabm_before_assalin', nstep, time
+
       fabm_surface_state(1:ii, 1:jj, m, :) = fabm_surface_state(1:ii, 1:jj, m, :) + 0.5*ra2fac*(fabm_surface_state_old(1:ii, 1:jj, :)+fabm_surface_state(1:ii, 1:jj, n, :)-2.0*fabm_surface_state(1:ii, 1:jj, m, :))
       fabm_bottom_state(1:ii, 1:jj, m, :) = fabm_bottom_state(1:ii, 1:jj, m, :) + 0.5*ra2fac*(fabm_bottom_state_old(1:ii, 1:jj, :)+fabm_bottom_state(1:ii, 1:jj, n, :)-2.0*fabm_bottom_state(1:ii, 1:jj, m, :))
-!write (*,*) 'hycom_fabm_update_after', nstep, time
+
     end subroutine hycom_fabm_update
 
     subroutine check_state(location, index, repair)
@@ -970,7 +1026,7 @@ contains
        !     end do
        ! end do
         do j=1,jj       ! CAGLAR - I did it from top to bottom in order to avoid having < 0.1 m layer in the water column.
-            do i=1,ii   !          Looking for other solutions for this
+            do i=1,ii   
               if (SEA_P) then
                 do k = 1,kk
                   if (dp(i, j, k, index)/onem <= h_min) exit
@@ -1017,6 +1073,9 @@ contains
                        bottom_stress(i, j) = ustarb(i, j)*ustarb(i, j)*rho_0 !
                        swflx_fabm(i,j)= sswflx(i,j) ! ice-corrected downwelling shortwave flux
 
+#ifdef CPL_OASIS_HYCOM
+                       wspd_fabm(i,j) = cplts_recv(i,j,i2o_wspd)
+#else
                        if     (flxflg.eq.6) then ! wind speed (taken from therm.F)
                           wspd_fabm(i,j) = wndocn(i,j)
                        else if (natm.eq.2) then
@@ -1024,7 +1083,11 @@ contains
                        else
                           wspd_fabm(i,j) =wndspd(i,j,l0)*w0+wndspd(i,j,l1)*w1+wndspd(i,j,l2)*w2+wndspd(i,j,l3)*w3    
                        end if
+#endif
 
+#ifdef CPL_OASIS_HYCOM
+                       pair = cplts_recv(i,j,i2o_mslp)
+#else
                        if     (mslprf .or. flxflg.eq.6) then
                           if     (natm.eq.2) then
                              pair=mslprs(i,j,l0)*w0 + mslprs(i,j,l1)*w1
@@ -1035,6 +1098,7 @@ contains
                           pair = 1013.0*100.0
                        endif
                        pair = pair * 0.01 ! convert Pa --> mBar (hPa) (result is of magnitude 1E+3) 
+#endif
 
                        if     (natm.eq.2) then
                           dew = dewpt(i,j,l0)*w0 + dewpt(i,j,l1)*w1
@@ -1049,9 +1113,7 @@ contains
                        atmco2_3 = pair / 9.81 * 10.**(-2.0)
                        atmco2_fabm(i,j) = atmco2_0 * (atmco2_3 - atmco2_2) * 0.997                     
 
-!                       if (i==itest.and.j==jtest) write(*,*)'DEWPT',dewpt(i,j,l0),dewpt(i,j,l1),dewpt(i,j,l2),dewpt(i,j,l3)
-                       if (i==itest.and.j==jtest) write(*,'(A4,4(1x,F8.3))')'PCO2',dew,pair,atmco2_0,atmco2_fabm(i,j)
-!write(*,'(A4,4(1x,F8.3))')'PCO2',dew,pair,atmco2_0,atmco2_fabm(i,j)
+
                        do k=1,kk
                           delZ(k) = dp(i,j,k,index)/onem                    !
                           if(k.eq.1)then                                    !
@@ -1071,11 +1133,8 @@ contains
         ! Transfer pointer to environmental data
         ! Do this for all variables on FABM's standard variable list that the model can provide.
         ! For this list, visit http://fabm.net/standard_variables
-!        call fabm_model%link_interior_data(standard_variables%temperature, temp(1:ii, 1:jj, 1:kk, index))
-!        call fabm_model%link_interior_data(standard_variables%practical_salinity, saln(1:ii, 1:jj, 1:kk, index))
         call fabm_model%link_interior_data(standard_variables%temperature,cotemp(1:ii,1:jj, 1:kk))
         call fabm_model%link_interior_data(standard_variables%practical_salinity,cosal(1:ii,1:jj,1:kk))
-!        call fabm_model%link_interior_data(standard_variables%density, th3d(1:ii,1:jj, 1:kk, index)+thbase+1000.)
         call fabm_model%link_interior_data(standard_variables%density,codens(1:ii,1:jj, 1:kk))
         call fabm_model%link_interior_data(standard_variables%pressure,codepth(1:ii,1:jj, 1:kk))
 
@@ -1156,6 +1215,7 @@ contains
         do k=1,kk
           do j=1,jj
             do i=1,ii
+              if (associated(interior_output%data3d) .and. pdata3d(i, j, k) .lt. -1E18) pdata3d(i, j, k) = 0.0 ! the intention here is to remove the mask (-2E20) from fabm 
               if (SEA_P) interior_output%mean(i, j, k) = interior_output%mean(i, j, k) + s * dp(i, j, k, n) * pdata3d(i, j, k)
             end do
           end do
@@ -1265,9 +1325,6 @@ contains
         do k= 1,kk
           do j= 1,jj
             do i= 1,ii
-!              if (i==itest.and.j==jtest.and.k==1) then
-!                write(*,*)'HEREnext',nestn,nested_number,nested_data_dev(i,j,k,1,nestn),nested_data_dev(i,j,k,2,nestn)
-!              endif
               nested_data_dev(i,j,k,1,nestn) = nested_data_dev(i,j,k,2,nestn)
             enddo
           enddo
@@ -1286,7 +1343,7 @@ contains
       character(len=80) :: cline
       character(len=6) :: cvarin
       integer :: ios,idmtst,jdmtst
-      !integer :: nestn,i,j,k
+
     if (nested_bio) then
       write(flnm,'("nest/archv_fabm.",i4.4,"_",i3.3,"_",i2.2)') iyear, iday, ihour
 
@@ -1382,7 +1439,7 @@ contains
           call zaiosk(iunit)
           return
         end if
-!          write(*,'(A8,1x,I1,1x,I1,1x,A8)')'HEREread',nestn,nested_number,nested_variables(nestn)
+
           i = index(cline,'=')
           read(cline(i+1:),*) nnstep,timein,k,thet,hminb,hmaxb
 
@@ -1411,10 +1468,8 @@ contains
         do k=1,kk
           do j=1,jj
             do i=1,ii
-!              if (i==itest.and.j==jtest) write(*,*)'HEREupd',k,nestn,(delt1*rmunp(i,j)* &
-!                (nested_data_dev(i,j,k,ln0,nestn)*wn0 +nested_data_dev(i,j,k,ln1,nestn)*wn1) )/(1.0 + delt1*rmunp(i,j))
-              tracer(i,j,k,n,istate_dev(nestn))=(tracer(i,j,k,n,istate_dev(nestn)) + delt1*rmunp(i,j)* &
-                (nested_data_dev(i,j,k,ln0,nestn)*wn0 +nested_data_dev(i,j,k,ln1,nestn)*wn1) )/(1.0 + delt1*rmunp(i,j))
+              tracer(i,j,k,n,istate_dev(nestn))=(tracer(i,j,k,n,istate_dev(nestn)) + delt1*rmunp_trc(i,j)* &
+                (nested_data_dev(i,j,k,ln0,nestn)*wn0 +nested_data_dev(i,j,k,ln1,nestn)*wn1) )/(1.0 + delt1*rmunp_trc(i,j))
             end do
           end do
         end do
@@ -1455,7 +1510,6 @@ contains
               exit
            endif
         enddo
-!        write(*,*)'GETTIME',modelyear, modelday, modelmonth
 
     end subroutine fabm_gettime
 

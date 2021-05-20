@@ -1,7 +1,7 @@
 
 /* BARRIER       set a barrier; for SPMD versions      */
 #if defined(MPI)
-# define BARRIER call mpi_barrier(mpi_comm_hycom,mpierr)
+# define BARRIER call mpi_barrier(MPI_COMM,mpierr)
 #elif defined(SHMEM)
 # define BARRIER call shmem_barrier_all()
 #endif
@@ -80,6 +80,11 @@
 # define SHMEM_NPES shmem_n_pes
 #endif /* SHMEM */
 
+#if defined(CPL_OASIS_HYCOM)
+# define MPI_COMM localComm
+#else
+# define MPI_COMM mpi_comm_hycom
+#endif
 c
 c-----------------------------------------------------------------------
 c
@@ -154,7 +159,7 @@ c
         do mp= mpe_1(nproc)+1,mpe_e(nproc)
           call MPI_RECV(at,ii_pe(mp,nproc)*jj,MTYPER,
      &                  idproc(mp,nproc), 9941,
-     &                  mpi_comm_hycom, MPI_STATUS_IGNORE, mpierr)
+     &                  MPI_COMM, MPI_STATUS_IGNORE, mpierr)
           do j= 1,jj
             do i= 1,ii_pe(mp,nproc)
               al(i0_pe(mp,nproc)+i,j) = at(i+(j-1)*ii_pe(mp,nproc))
@@ -169,7 +174,7 @@ c
         enddo
         call MPI_SEND(at,ii*jj,MTYPER,
      &                idproc(mpe_1(nproc),nproc), 9941,
-     &                mpi_comm_hycom, mpierr)
+     &                MPI_COMM, mpierr)
       endif
 #elif defined(SHMEM)
       do j= 1,jj
@@ -221,7 +226,7 @@ c
           if     (idproc(mp,np).ne.idproc(mproc,nproc)) then
             call MPI_RECV(al,itdm*jj_pe(mp,np),MTYPER,
      &                    idproc(mp,np), 9942,
-     &                    mpi_comm_hycom, MPI_STATUS_IGNORE, mpierr)
+     &                    MPI_COMM, MPI_STATUS_IGNORE, mpierr)
             do j= 1,jj_pe(mp,np)
               do i= 1,itdm
                 aa(i,j+j0_pe(mp,np)) = al(i,j)
@@ -232,12 +237,12 @@ c
       elseif (mproc.eq.mpe_1(nproc)) then
         call MPI_SEND(al,itdm*jj,MTYPER,
      &                idproc1(mnp), 9942,
-     &                mpi_comm_hycom, mpierr)
+     &                MPI_COMM, mpierr)
       endif
 c
       if     (mnflg.eq.0) then
         call mpi_bcast(aa,itdm*jtdm,MTYPER,
-     &                 idproc1(1),mpi_comm_hycom,mpierr)
+     &                 idproc1(1),MPI_COMM,mpierr)
       endif
 #elif defined(SHMEM)
       if     (mnflg.eq.0 .or. mnproc.eq.mnflg) then
@@ -349,7 +354,7 @@ c
         do mp= mpe_1(nproc)+1,mpe_e(nproc)
           call MPI_RECV(at4,ii_pe(mp,nproc)*jj,MTYPE4,
      &                  idproc(mp,nproc), 9941,
-     &                  mpi_comm_hycom, MPI_STATUS_IGNORE, mpierr)
+     &                  MPI_COMM, MPI_STATUS_IGNORE, mpierr)
           do j= 1,jj
             do i= 1,ii_pe(mp,nproc)
               al4(i0_pe(mp,nproc)+i,j) = at4(i+(j-1)*ii_pe(mp,nproc))
@@ -359,7 +364,7 @@ c
       else  !mproc>1
         call MPI_SEND(a,ii*jj,MTYPE4,
      &                idproc(mpe_1(nproc),nproc), 9941,
-     &                mpi_comm_hycom, mpierr)
+     &                MPI_COMM, mpierr)
       endif
 #elif defined(SHMEM)
       do j= 1,jj
@@ -423,7 +428,7 @@ c
           if     (idproc(mp,np).ne.idproc(mproc,nproc)) then
             call MPI_RECV(al4,itdm*jj_pe(mp,np),MTYPE4,
      &                    idproc(mp,np), 9942,
-     &                    mpi_comm_hycom, MPI_STATUS_IGNORE, mpierr)
+     &                    MPI_COMM, MPI_STATUS_IGNORE, mpierr)
             do j= 1,jj_pe(mp,np)
               do i= 1,itdm
                 aa(i,j+j0_pe(mp,np)) = al4(i,j)
@@ -434,7 +439,7 @@ c
       elseif (mproc.eq.mpe_1(nproc)) then
         call MPI_SEND(al4,itdm*jj,MTYPE4,
      &                idproc1(mnp), 9942,
-     &                mpi_comm_hycom, mpierr)
+     &                MPI_COMM, mpierr)
       endif
 #elif defined(SHMEM)
       if     (mnproc.eq.mnflg) then
@@ -547,14 +552,14 @@ c       "broadcast" row sections of aa to all processors in the row.
               call MPI_ISEND(aa(1,j0_pe(mp,np)+1),
      &                      itdm*jj_pe(mp,np),MTYPER,
      &                      idproc(mp,np), 9951,
-     &                      mpi_comm_hycom, mpireqa(j), mpierr)
+     &                      MPI_COMM, mpireqa(j), mpierr)
             endif
           enddo
           call mpi_waitall( j, mpireqa, MPI_STATUSES_IGNORE, mpierr)
         elseif (mproc.eq.mpe_1(nproc)) then
           call MPI_RECV(al,itdm*jj,MTYPER,
      &                  idproc1(mnflg), 9951,
-     &                  mpi_comm_hycom, MPI_STATUS_IGNORE, mpierr)
+     &                  MPI_COMM, MPI_STATUS_IGNORE, mpierr)
         endif
 c
         if     (mproc.eq.mpe_1(nproc)) then
@@ -563,13 +568,13 @@ c
             i = i + 1
             call MPI_ISEND(al,itdm*jj,MTYPER,
      &                    idproc(mp,nproc), 9952,
-     &                    mpi_comm_hycom, mpireqb(i), mpierr)
+     &                    MPI_COMM, mpireqb(i), mpierr)
           enddo
           call mpi_waitall( i, mpireqb, MPI_STATUSES_IGNORE, mpierr)
         else
           call MPI_RECV(al,itdm*jj,MTYPER,
      &                  idproc(mpe_1(nproc),nproc), 9952,
-     &                  mpi_comm_hycom, MPI_STATUS_IGNORE, mpierr)
+     &                  MPI_COMM, MPI_STATUS_IGNORE, mpierr)
         endif
 c
         aa(:,j0+1:j0+jj) = al(:,1:jj)
@@ -675,14 +680,14 @@ c       "broadcast" row sections of aa to first processor in each row.
               call MPI_ISEND(aa(1,j0_pe(mp,np)+1),
      &                      itdm*jj_pe(mp,np),MTYPE4,
      &                      idproc(mp,np), 9951,
-     &                      mpi_comm_hycom, mpireqa(j), mpierr)
+     &                      MPI_COMM, mpireqa(j), mpierr)
             endif
           enddo
           call mpi_waitall( j, mpireqa, MPI_STATUSES_IGNORE, mpierr)
         elseif (mproc.eq.mpe_1(nproc)) then
           call MPI_RECV(al4,itdm*jj,MTYPE4,
      &                  idproc1(mnflg), 9951,
-     &                  mpi_comm_hycom, MPI_STATUS_IGNORE, mpierr)
+     &                  MPI_COMM, MPI_STATUS_IGNORE, mpierr)
         endif
 c
 c       "broadcast" partial row sections to the rest of the row's processors
@@ -698,7 +703,7 @@ c       "broadcast" partial row sections to the rest of the row's processors
             msg = msg + 1
             call MPI_ISEND(alt4(1,mp),ii_pe(mp,nproc)*jj,MTYPE4,
      &                    idproc(mp,nproc), 9952,
-     &                    mpi_comm_hycom, mpireqb(msg), mpierr)
+     &                    MPI_COMM, mpireqb(msg), mpierr)
           enddo !mp
 c
           do j= 1,jj
@@ -711,7 +716,7 @@ c
         else
           call MPI_RECV(at4,ii*jj,MTYPE4,
      &                  idproc(mpe_1(nproc),nproc), 9952,
-     &                  mpi_comm_hycom, MPI_STATUS_IGNORE, mpierr)
+     &                  MPI_COMM, MPI_STATUS_IGNORE, mpierr)
           do j= 1,jj
             do i= 1,ii
               a(i,j) = at4(i+(j-1)*ii)
@@ -767,7 +772,7 @@ c       "broadcast" partial row sections of aa to all processors in the row.
             msg = msg + 1
             call MPI_ISEND(alt4(1,mp),ii_pe(mp,nproc)*jj,MTYPE4,
      &                    idproc(mp,nproc), 9953,
-     &                    mpi_comm_hycom, mpireqb(msg), mpierr)
+     &                    MPI_COMM, mpireqb(msg), mpierr)
           enddo !mp
 c
           do j= 1,jj
@@ -780,7 +785,7 @@ c
         else
           call MPI_RECV(at4,ii*jj,MTYPE4,
      &                  idproc(mpe_1(nproc),nproc), 9953,
-     &                  mpi_comm_hycom, MPI_STATUS_IGNORE, mpierr)
+     &                  MPI_COMM, MPI_STATUS_IGNORE, mpierr)
           do j= 1,jj
             do i= 1,ii
               a(i,j) = at4(i+(j-1)*ii)
@@ -875,7 +880,7 @@ c
 #if defined(MPI)
         call mpi_bcast(b,nn,MTYPER,
      &                 idproc1(mnflg),
-     &                 mpi_comm_hycom,mpierr)
+     &                 MPI_COMM,mpierr)
 #elif defined(SHMEM)
         BARRIER
         if     (mnproc.ne.mnflg) then
@@ -978,11 +983,11 @@ c
 #if defined(MPI)
         if     (lmnflg.eq.0) then
           call mpi_bcast(elem(kdb),1,MTYPER,
-     &                   idproc(mp,np),mpi_comm_hycom,mpierr)
+     &                   idproc(mp,np),MPI_COMM,mpierr)
         elseif (lmnflg.ne.mnproc) then
           call MPI_SEND(elem(kdb),1,MTYPER,
      &                  idproc1(lmnflg), 9932,
-     &                  mpi_comm_hycom, mpierr)
+     &                  MPI_COMM, mpierr)
         endif !lmnflg
 #elif defined(SHMEM)
         BARRIER
@@ -994,11 +999,11 @@ c
 #if defined(MPI)
         if     (lmnflg.eq.0) then
           call mpi_bcast(elem(kdb),1,MTYPER,
-     &                   idproc(mp,np),mpi_comm_hycom,mpierr)
+     &                   idproc(mp,np),MPI_COMM,mpierr)
         elseif (lmnflg.eq.mnproc) then
           call MPI_RECV( elem(kdb),1,MTYPER,
      &                   idproc(mp,np), 9932,
-     &                   mpi_comm_hycom, MPI_STATUS_IGNORE, mpierr)
+     &                   MPI_COMM, MPI_STATUS_IGNORE, mpierr)
         endif !lmnflg
 #elif defined(SHMEM)
         BARRIER
@@ -1111,7 +1116,7 @@ c     broadcast to all processors
 c
 #if defined(MPI)
       call mpi_bcast(iline,81,MTYPEI,
-     &               idproc1(1),mpi_comm_hycom,mpierr)
+     &               idproc1(1),MPI_COMM,mpierr)
 #elif defined(SHMEM)
       BARRIER
       if     (mnproc.ne.1) then
@@ -1160,7 +1165,7 @@ c
       call flush(lp)
 c
 #if defined(MPI)
-      call mpi_abort(mpi_comm_hycom,9)
+      call mpi_abort(MPI_COMM,9)
 #else
       call abort()
 #endif
@@ -1308,16 +1313,16 @@ c ---   gatherv onto the 1st mpi task, then broadcast the result
         call mpi_gatherv(als(1,kdb),nlp(mnp,kdb),MTYPER,
      &                   alr(1,kdb),nlp(0,kdb),nxp(0,kdb),MTYPER,
      &                   idproc1(1),
-     &                   mpi_comm_hycom, mpierr)
+     &                   MPI_COMM, mpierr)
         call mpi_bcast(  alr(1,kdb),nxpa,MTYPER,
      &                   idproc1(1),
-     &                   mpi_comm_hycom, mpierr)
+     &                   MPI_COMM, mpierr)
       else
         mnp = idproc(mproc,nproc)
         call mpi_gatherv(als(1,kdb),nlp(mnp,kdb),MTYPER,
      &                   alr(1,kdb),nlp(0,kdb),nxp(0,kdb),MTYPER,
      &                   idproc1(mnflg),
-     &                   mpi_comm_hycom, mpierr)
+     &                   MPI_COMM, mpierr)
       endif !mnflg
 #elif defined(SHMEM)
       call xcstop('xciget: shmem not implemented')
@@ -1520,11 +1525,11 @@ c
 #if defined(MPI)
             if     (mnflg.eq.0) then
               call mpi_bcast(al(lx0+1,kdb),nxl,MTYPER,
-     &                       idproc(mp,np),mpi_comm_hycom,mpierr)
+     &                       idproc(mp,np),MPI_COMM,mpierr)
             elseif (mnflg.ne.mnproc) then
               call MPI_SEND(al(lx0+1,kdb),nxl,MTYPER,
      &                      idproc1(mnflg), 9931,
-     &                      mpi_comm_hycom, mpierr)
+     &                      MPI_COMM, mpierr)
             endif
           else
 c
@@ -1532,11 +1537,11 @@ c           another tile.
 c
             if     (mnflg.eq.0) then
               call mpi_bcast(al(lx0+1,kdb),nxl,MTYPER,
-     &                       idproc(mp,np),mpi_comm_hycom,mpierr)
+     &                       idproc(mp,np),MPI_COMM,mpierr)
             elseif (mnflg.eq.mnproc) then
               call MPI_RECV(al(lx0+1,kdb),nxl,MTYPER,
      &                      idproc(mp,np), 9931,
-     &                      mpi_comm_hycom, MPI_STATUS_IGNORE, mpierr)
+     &                      MPI_COMM, MPI_STATUS_IGNORE, mpierr)
             endif
 #endif /* MPI */
           endif
@@ -1612,11 +1617,11 @@ c
 #if defined(MPI)
             if     (mnflg.eq.0) then
               call mpi_bcast(al(lx0+1,kdb),nxl,MTYPER,
-     &                       idproc(mp,np),mpi_comm_hycom,mpierr)
+     &                       idproc(mp,np),MPI_COMM,mpierr)
             elseif (mnflg.ne.mnproc) then
               call MPI_SEND(al(lx0+1,kdb),nxl,MTYPER,
      &                      idproc1(mnflg), 9931,
-     &                      mpi_comm_hycom, mpierr)
+     &                      MPI_COMM, mpierr)
             endif
           else
 c
@@ -1624,11 +1629,11 @@ c           another tile.
 c
             if     (mnflg.eq.0) then
               call mpi_bcast(al(lx0+1,kdb),nxl,MTYPER,
-     &                       idproc(mp,np),mpi_comm_hycom,mpierr)
+     &                       idproc(mp,np),MPI_COMM,mpierr)
             elseif (mnflg.eq.mnproc) then
               call MPI_RECV(al(lx0+1,kdb),nxl,MTYPER,
      &                      idproc(mp,np), 9931,
-     &                      mpi_comm_hycom, MPI_STATUS_IGNORE, mpierr)
+     &                      MPI_COMM, MPI_STATUS_IGNORE, mpierr)
             endif
 #endif /* MPI */
           endif
@@ -1888,11 +1893,11 @@ c
 #if defined(MPI)
         if     (mnflg.eq.0) then
           call mpi_allreduce(b,c,nn,MTYPER,mpi_max,
-     &                       mpi_comm_hycom,mpierr)
+     &                       MPI_COMM,mpierr)
         else
           call mpi_reduce(   b,c,nn,MTYPER,mpi_max,
      &                       idproc1(mnflg),
-     &                       mpi_comm_hycom,mpierr)
+     &                       MPI_COMM,mpierr)
         endif
 #elif defined(SHMEM)
         BARRIER
@@ -2063,11 +2068,11 @@ c
 #if defined(MPI)
         if     (mnflg.eq.0) then
           call mpi_allreduce(b,c,nn,MTYPER,mpi_min,
-     &                       mpi_comm_hycom,mpierr)
+     &                       MPI_COMM,mpierr)
         else
           call mpi_reduce(   b,c,nn,MTYPER,mpi_min,
      &                       idproc1(mnflg),
-     &                       mpi_comm_hycom,mpierr)
+     &                       MPI_COMM,mpierr)
         endif
 #elif defined(SHMEM)
         BARRIER
@@ -2333,24 +2338,25 @@ c --- two copies of HYCOM on distinct MPI tasks, master/slave via mod_pipe.
       if     (mypei.lt.idp1_2) then
         nocean = 1  !master ocean
         call mpi_comm_split(mpi_comm_world, nocean,mypei,
-     &                      mpi_comm_hycom, mpierr)
+     &                      MPI_COMM, mpierr)
         lp = 6
       else
         nocean = 2  !slave ocean
         call mpi_comm_split(mpi_comm_world, nocean,mypei,
-     &                      mpi_comm_hycom, mpierr)
+     &                      MPI_COMM, mpierr)
         lp = uoff+6
         write(cfile,"(a,i6.6,a)") "./OCEAN2/stdout",mypei+1,".log"
         open(unit=lp,file=trim(cfile),status='new')
       endif
-#else
+#elif !defined(CPL_OASIS_HYCOM)
       call mpi_init(mpierr)
       call mpi_comm_dup(mpi_comm_world, mpi_comm_hycom, mpierr)
       lp = 6
 #endif
+
 c
-      call mpi_comm_rank(mpi_comm_hycom, mypei, mpierr)
-      call mpi_comm_size(mpi_comm_hycom, npesi, mpierr)
+      call mpi_comm_rank(MPI_COMM, mypei, mpierr)
+      call mpi_comm_size(MPI_COMM, npesi, mpierr)
 c
       mnproc = mypei + 1  ! mnproc counts from 1
 #if defined(DEBUG_ALL)
@@ -2481,7 +2487,7 @@ c
       endif
 c
 #if defined(RELO)
-c --- region's horizontal dimensions are from patch.input:
+c --- region''s horizontal dimensions are from patch.input:
 c
       itdm = itdm_in
       jtdm = jtdm_in
@@ -2634,11 +2640,11 @@ c     mpi-2 i/o group (public), see mod_za.
 c
       if     (mproc.eq.mp_1st) then
         i = 1
-        call mpi_comm_split(mpi_comm_hycom, i,0,
+        call mpi_comm_split(MPI_COMM, i,0,
      &                      group_1st_in_row, mpierr)
       else
         i = 0
-        call mpi_comm_split(mpi_comm_hycom, i,0,
+        call mpi_comm_split(MPI_COMM, i,0,
      &                      group_1st_in_row, mpierr)
         call mpi_comm_free( group_1st_in_row, mpierr)
       endif
@@ -3092,7 +3098,7 @@ c
           if(ii_pe(m,n).ne.0)then
             mn= mn + 1
 #if defined(ARCTIC)
-c ---       don't include the last row (it is a copy of the previous one)
+c ---       don''t include the last row (it is a copy of the previous one)
             deBlockList(2,1,mn) =      j0_pe(m,n)+1
             deBlockList(2,2,mn) = min( j0_pe(m,n)+jj_pe(m,n), jtdm-1 )
 #else
@@ -3233,11 +3239,12 @@ c
       endif
       call xcsync(flush_lp)
 c
-#if defined(USE_ESMF) || defined(USE_CCSM3) || defined(OCEANS2)
+#if defined(USE_ESMF) || defined(USE_CCSM3) || defined(OCEANS2) || defined(CPL_OASIS_HYCOM)
 c
 c --- we may not be running on all processes, so call mpi_abort
 c
       if     (mnproc.eq.1) then
+	write (*,*) 'Calling mpi abort'
         call mpi_abort(mpi_comm_hycom,9)
       endif
       call xcsync(flush_lp)
@@ -3351,7 +3358,7 @@ c
 #if defined(MPI)
             call MPI_RECV(sum8t,l,MTYPED,
      &                    idproc(mp,nproc), 9900,
-     &                    mpi_comm_hycom, MPI_STATUS_IGNORE, mpierr)
+     &                    MPI_COMM, MPI_STATUS_IGNORE, mpierr)
 #elif defined(SHMEM)
             call SHMEM_GETD(sum8t,
      &                      sum8t,l,idproc(mp,nproc))
@@ -3371,7 +3378,7 @@ c
         if     (l.gt.0) then
           call MPI_SEND(sum8t,l,MTYPED,
      &                  idproc(mpe_1(nproc),nproc), 9900,
-     &                  mpi_comm_hycom, mpierr)
+     &                  MPI_COMM, mpierr)
         endif
 #endif
       endif
@@ -3393,7 +3400,7 @@ c
 #if defined(MPI)
           call MPI_RECV(sum8j,jj_pe(mp,np),MTYPED,
      &                  idproc(mp,np), 9901,
-     &                  mpi_comm_hycom, MPI_STATUS_IGNORE, mpierr)
+     &                  MPI_COMM, MPI_STATUS_IGNORE, mpierr)
 #elif defined(SHMEM)
           call SHMEM_GETD(sum8j,
      &                    sum8j,jj_pe(mp,np),idproc(mp,np))
@@ -3409,7 +3416,7 @@ c
       elseif (mproc.eq.mpe_1(nproc)) then
         call MPI_SEND(sum8j,jj,MTYPED,
      &                idproc1(1), 9901,
-     &                mpi_comm_hycom, mpierr)
+     &                MPI_COMM, mpierr)
 #endif
       endif
 c
@@ -3417,7 +3424,7 @@ c     broadcast result to all processors.
 c
 #if defined(MPI)
       call mpi_bcast(sum8s,1,MTYPED,
-     &               idproc1(1),mpi_comm_hycom,mpierr)
+     &               idproc1(1),MPI_COMM,mpierr)
 #elif defined(SHMEM)
       BARRIER
       if     (mnproc.ne.1) then
@@ -3533,7 +3540,7 @@ c
 #if defined(MPI)
             call MPI_RECV(sum8t,l,MTYPED,
      &                    idproc(mp,nproc), 9900,
-     &                    mpi_comm_hycom, MPI_STATUS_IGNORE, mpierr)
+     &                    MPI_COMM, MPI_STATUS_IGNORE, mpierr)
 #elif defined(SHMEM)
             call SHMEM_GETD(sum8t,
      &                      sum8t,l,idproc(mp,nproc))
@@ -3553,7 +3560,7 @@ c
         if     (l.gt.0) then
           call MPI_SEND(sum8t,l,MTYPED,
      &                  idproc(mpe_1(nproc),nproc), 9900,
-     &                  mpi_comm_hycom, mpierr)
+     &                  MPI_COMM, mpierr)
         endif
 #endif
       endif
@@ -3573,7 +3580,7 @@ c
 #if defined(MPI)
           call MPI_RECV(sum8j,jj_pe(mp,np),MTYPED,
      &                  idproc(mp,np), 9901,
-     &                  mpi_comm_hycom, MPI_STATUS_IGNORE, mpierr)
+     &                  MPI_COMM, MPI_STATUS_IGNORE, mpierr)
 #elif defined(SHMEM)
           call SHMEM_GETD(sum8j,
      &                    sum8j,jj_pe(mp,np),idproc(mp,np))
@@ -3586,7 +3593,7 @@ c
       elseif (mproc.eq.mpe_1(nproc)) then
         call MPI_SEND(sum8j,jj,MTYPED,
      &                idproc1(1), 9901,
-     &                mpi_comm_hycom, mpierr)
+     &                MPI_COMM, mpierr)
 #endif
       endif
 #if defined(TIMER)
@@ -3835,7 +3842,7 @@ c
               call mpi_send_init(
      &          ai(ls0+1,1),lm,MTYPER,
      &          idproc(m0_top+m,nproc+1), 99053,
-     &          mpi_comm_hycom, mpireqa(l), mpierr)
+     &          MPI_COMM, mpireqa(l), mpierr)
             enddo
             do m= 1,mm_top
               l   = l + 1
@@ -3844,7 +3851,7 @@ c
               call mpi_recv_init(
      &          ai(ls0+1,2),lm,MTYPER,
      &          idproc(m0_top+m,nproc+1), 99053,
-     &          mpi_comm_hycom, mpireqa(l), mpierr)
+     &          MPI_COMM, mpireqa(l), mpierr)
             enddo
             nreqa = l
           endif  !new mpi_init
@@ -4185,12 +4192,12 @@ c
                 call mpi_send_init(
      &            ai(ls0+1,1),lm,MTYPER,
      &            idproc(m0_top+m,nproc+1), 9905,
-     &            mpi_comm_hycom, mpireqa(l), mpierr)
+     &            MPI_COMM, mpireqa(l), mpierr)
               else !arctic
                 call mpi_send_init(
      &            ai(ls0+1,1),lm,MTYPER,
      &            idproc(m0_top+m,nproc+1), 99051,
-     &            mpi_comm_hycom, mpireqa(l), mpierr)
+     &            MPI_COMM, mpireqa(l), mpierr)
               endif
             enddo
             if     (nproc.eq.jpr) then !arctic
@@ -4201,7 +4208,7 @@ c
                 call mpi_send_init(
      &            aia(1,1),lm,MTYPER,
      &            idproc(mod(ipr+1-mproc,ipr)+1,nproc), 99052,
-     &            mpi_comm_hycom, mpireqa(l), mpierr)
+     &            MPI_COMM, mpireqa(l), mpierr)
               endif !q-grid,u-grid
             endif
             do m= 1,mm_bot
@@ -4210,7 +4217,7 @@ c
               lm  = ii_sb(m)*nhl*(ld-l1+1)
               call mpi_send_init(
      &          ai(ls0+1,2),lm,MTYPER,idproc(m0_bot+m,nproc-1), 9906,
-     &          mpi_comm_hycom, mpireqa(l), mpierr)
+     &          MPI_COMM, mpireqa(l), mpierr)
             enddo
             do m= 1,mm_top
               l   = l + 1
@@ -4220,12 +4227,12 @@ c
                 call mpi_recv_init(
      &            ai(ls0+1,4),lm,MTYPER,
      &            idproc(m0_top+m,nproc+1), 9906,
-     &            mpi_comm_hycom, mpireqa(l), mpierr)
+     &            MPI_COMM, mpireqa(l), mpierr)
               else !arctic
                 call mpi_recv_init(
      &            ai(ls0+1,4),lm,MTYPER,
      &            idproc(m0_top+m,nproc+1), 99051,
-     &            mpi_comm_hycom, mpireqa(l), mpierr)
+     &            MPI_COMM, mpireqa(l), mpierr)
               endif
             enddo
             if     (nproc.eq.jpr) then !arctic
@@ -4236,7 +4243,7 @@ c
                 call mpi_recv_init(
      &            aia(1,2),lm,MTYPER,
      &            idproc(mod(ipr+1-mproc,ipr)+1,nproc), 99052,
-     &            mpi_comm_hycom, mpireqa(l), mpierr)
+     &            MPI_COMM, mpireqa(l), mpierr)
               endif !q-grid,u-grid
             endif
             do m= 1,mm_bot
@@ -4245,7 +4252,7 @@ c
               lm  = ii_sb(m)*nhl*(ld-l1+1)
               call mpi_recv_init(
      &          ai(ls0+1,3),lm,MTYPER,idproc(m0_bot+m,nproc-1), 9905,
-     &          mpi_comm_hycom, mpireqa(l), mpierr)
+     &          MPI_COMM, mpireqa(l), mpierr)
             enddo
             nreqa = l
           endif
@@ -4362,11 +4369,11 @@ c
           call mpi_sendrecv(
      &          aj(1,1),l,MTYPER,idhalo(2), 9907,
      &          aj(1,4),l,MTYPER,idhalo(2), 9908,
-     &          mpi_comm_hycom, MPI_STATUS_IGNORE, mpierr)
+     &          MPI_COMM, MPI_STATUS_IGNORE, mpierr)
           call mpi_sendrecv(
      &          aj(1,2),l,MTYPER,idhalo(1), 9908,
      &          aj(1,3),l,MTYPER,idhalo(1), 9907,
-     &          mpi_comm_hycom, MPI_STATUS_IGNORE, mpierr)
+     &          MPI_COMM, MPI_STATUS_IGNORE, mpierr)
 #elif defined(MPI)
           if     (klmold.ne.(ld-l1+1) .or.
      &            mhlold.ne.mhl       .or.
@@ -4386,16 +4393,16 @@ c
             endif
             call mpi_send_init(
      &            aj(1,1),l,MTYPER,idhalo(2), 9907,
-     &            mpi_comm_hycom, mpireqb(1), mpierr)
+     &            MPI_COMM, mpireqb(1), mpierr)
             call mpi_send_init(
      &            aj(1,2),l,MTYPER,idhalo(1), 9908,
-     &            mpi_comm_hycom, mpireqb(2), mpierr)
+     &            MPI_COMM, mpireqb(2), mpierr)
             call mpi_recv_init(
      &            aj(1,3),l,MTYPER,idhalo(1), 9907,
-     &            mpi_comm_hycom, mpireqb(3), mpierr)
+     &            MPI_COMM, mpireqb(3), mpierr)
             call mpi_recv_init(
      &            aj(1,4),l,MTYPER,idhalo(2), 9908,
-     &            mpi_comm_hycom, mpireqb(4), mpierr)
+     &            MPI_COMM, mpireqb(4), mpierr)
           endif
           call mpi_startall(4, mpireqb, mpierr)
           call mpi_waitall( 4, mpireqb, MPI_STATUSES_IGNORE, mpierr)
@@ -4577,7 +4584,7 @@ c
               lm  = ii_st(m)*nhl*(ld-l1+1)
               call mpi_send_init(
      &          ai(ls0+1,1),lm,MTYPER,idproc(m0_top+m,nproc+1), 9905,
-     &          mpi_comm_hycom, mpireqa(l), mpierr)
+     &          MPI_COMM, mpireqa(l), mpierr)
             enddo
             do m= 1,mm_bot
               l   = l + 1
@@ -4585,7 +4592,7 @@ c
               lm  = ii_sb(m)*nhl*(ld-l1+1)
               call mpi_send_init(
      &          ai(ls0+1,2),lm,MTYPER,idproc(m0_bot+m,nproc-1), 9906,
-     &          mpi_comm_hycom, mpireqa(l), mpierr)
+     &          MPI_COMM, mpireqa(l), mpierr)
             enddo
             do m= 1,mm_top
               l   = l + 1
@@ -4593,7 +4600,7 @@ c
               lm  = ii_st(m)*nhl*(ld-l1+1)
               call mpi_recv_init(
      &          ai(ls0+1,4),lm,MTYPER,idproc(m0_top+m,nproc+1), 9906,
-     &          mpi_comm_hycom, mpireqa(l), mpierr)
+     &          MPI_COMM, mpireqa(l), mpierr)
             enddo
             do m= 1,mm_bot
               l   = l + 1
@@ -4601,7 +4608,7 @@ c
               lm  = ii_sb(m)*nhl*(ld-l1+1)
               call mpi_recv_init(
      &          ai(ls0+1,3),lm,MTYPER,idproc(m0_bot+m,nproc-1), 9905,
-     &          mpi_comm_hycom, mpireqa(l), mpierr)
+     &          MPI_COMM, mpireqa(l), mpierr)
             enddo
             nreqa = l
           endif
@@ -4690,11 +4697,11 @@ c
           call mpi_sendrecv(
      &          aj(1,1),l,MTYPER,idhalo(2), 9907,
      &          aj(1,4),l,MTYPER,idhalo(2), 9908,
-     &          mpi_comm_hycom, MPI_STATUS_IGNORE, mpierr)
+     &          MPI_COMM, MPI_STATUS_IGNORE, mpierr)
           call mpi_sendrecv(
      &          aj(1,2),l,MTYPER,idhalo(1), 9908,
      &          aj(1,3),l,MTYPER,idhalo(1), 9907,
-     &          mpi_comm_hycom, MPI_STATUS_IGNORE, mpierr)
+     &          MPI_COMM, MPI_STATUS_IGNORE, mpierr)
 #elif defined(MPI)
           if     (ilold.ne.l) then
             if     (ilold.ne.0) then
@@ -4706,16 +4713,16 @@ c
             ilold = l
             call mpi_send_init(
      &            aj(1,1),l,MTYPER,idhalo(2), 9907,
-     &            mpi_comm_hycom, mpireqb(1), mpierr)
+     &            MPI_COMM, mpireqb(1), mpierr)
             call mpi_send_init(
      &            aj(1,2),l,MTYPER,idhalo(1), 9908,
-     &            mpi_comm_hycom, mpireqb(2), mpierr)
+     &            MPI_COMM, mpireqb(2), mpierr)
             call mpi_recv_init(
      &            aj(1,3),l,MTYPER,idhalo(1), 9907,
-     &            mpi_comm_hycom, mpireqb(3), mpierr)
+     &            MPI_COMM, mpireqb(3), mpierr)
             call mpi_recv_init(
      &            aj(1,4),l,MTYPER,idhalo(2), 9908,
-     &            mpi_comm_hycom, mpireqb(4), mpierr)
+     &            MPI_COMM, mpireqb(4), mpierr)
           endif
           call mpi_startall(4, mpireqb, mpierr)
           call mpi_waitall( 4, mpireqb, MPI_STATUSES_IGNORE, mpierr)
@@ -4937,7 +4944,7 @@ c
 #if defined(MPI)
         call MPI_SEND(tc,97,MTYPED,
      &                idproc1(1), 9949,
-     &                mpi_comm_hycom, mpierr)
+     &                MPI_COMM, mpierr)
 #endif
       else   !mnproc.eq.1
         do mn= 1,ijpr
@@ -4945,7 +4952,7 @@ c
 #if defined(MPI)
             call MPI_RECV(tc,97,MTYPED,
      &                    idproc1(mn), 9949,
-     &                    mpi_comm_hycom, MPI_STATUS_IGNORE, mpierr)
+     &                    MPI_COMM, MPI_STATUS_IGNORE, mpierr)
 #elif defined(SHMEM)
             call SHMEM_GETD(tc,tc,97,idproc1(mn))
 #endif
@@ -5069,18 +5076,18 @@ c
         tcxl(2) = tcxc(2)
         call mpi_allreduce(tcxl,tcxc,1,
      &                     mpi_2double_precision,mpi_minloc,
-     &                     mpi_comm_hycom,mpierr)
+     &                     MPI_COMM,mpierr)
         mnloc = tcxc(2)  !processor with the least comm. overhead
         if     (mnproc.eq.1) then
           if     (mnloc.ne.1) then
             call MPI_RECV(tc,97,MTYPED,
      &                    idproc1(mnloc), 9949,
-     &                    mpi_comm_hycom, MPI_STATUS_IGNORE, mpierr)
+     &                    MPI_COMM, MPI_STATUS_IGNORE, mpierr)
           endif
         elseif (mnproc.eq.mnloc) then
           call MPI_SEND(tc,97,MTYPED,
      &                  idproc1(1), 9949,
-     &                  mpi_comm_hycom, mpierr)
+     &                  MPI_COMM, mpierr)
         endif
 #elif defined(SHMEM)
         BARRIER

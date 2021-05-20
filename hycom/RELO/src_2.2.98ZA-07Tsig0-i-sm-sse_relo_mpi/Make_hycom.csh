@@ -38,7 +38,7 @@ if ( $ICEFLG == 0 ) then
     /bin/rm hycom
     echo "only hycom"
     make ARCH=$ARCH TYPE=$TYPE hycom
-    mv -f hycom hycom_cice
+    mv -f hycom hycom_oasis
 else
     echo "HYCOM-CICE"
     /bin/rm hycom_cice

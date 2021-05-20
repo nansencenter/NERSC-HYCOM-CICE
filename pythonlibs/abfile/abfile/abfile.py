@@ -65,7 +65,7 @@ class AFile(object) :
 
    def _init_record(self) :
       # Size of output 2D Array
-      self._n2drec= ((self._idm*self._jdm+4095)/4096)*4096
+      self._n2drec= ((self._idm*self._jdm+4095)//4096)*4096 # original
 
       # Init sequenctial record counter
       self._iarec = 0
@@ -90,11 +90,11 @@ class AFile(object) :
       """
 
       # Initialize writing array (1D)
-      w=numpy.ones(self._n2drec)*self._spval
+      w=numpy.ones(self._n2drec) *self._spval
 
       # Check array shape against idm/jdm
-      if h.shape[0] <> self._jdm or h.shape[1] <> self._idm :
-         raise AFileError,"array shape is (%d,%d),expected (%d,%d)"%(h.shape[0],h.shape[1],self._jdm,self._idm)
+      if h.shape[0] != self._jdm or h.shape[1] != self._idm :
+         raise AFileError("array shape is (%d,%d),expected (%d,%d)"%(h.shape[0],h.shape[1],self._jdm,self._idm))
 
       # Fill w array
       w[0:self._idm*self._jdm] = h.flatten() 
@@ -106,13 +106,13 @@ class AFile(object) :
       # Calc min and mask
       #print self._mask
       if self._mask :
-         I=numpy.where(~mask)
+         I=numpy.where(mask!=True)
          hmax=h[I].max()
          hmin=h[I].min()
          J=numpy.where(mask.flatten())
          w[J] = self._spval
-         #print "writerecord w mask:",numpy.count_nonzero(mask),mask.size
-         #print "writerecord w mask:",hmin,hmax,w[0:self._idm*self._jdm].min(),w[0:self._idm*self._jdm].max()
+        # print "writerecord w mask:",numpy.count_nonzero(mask),mask.size
+        # print "writerecord w mask:",hmin,hmax,w[0:self._idm*self._jdm].min(),w[0:self._idm*self._jdm].max()
       else :
          hmax=h.max()
          hmin=h.min()
@@ -156,7 +156,7 @@ class AFile(object) :
       else :
          struct_fmt="d"
       mydtype=numpy.dtype("%s%s"%(self._endian_structfmt,struct_fmt))
-      w=numpy.fromfile(self._filea,dtype=mydtype,count=self.n2drec)
+      w=numpy.fromfile(self._filea,dtype=mydtype,count=int(self.n2drec))
 
       w=w[0:self.idm*self.jdm]
       w.shape=(self.jdm,self.idm)
@@ -171,9 +171,9 @@ class AFile(object) :
    def seekrecord(self,record) :
       # Seek to correct record and read
       if self._real4 :
-         self._filea.seek(record*self.n2drec*4)
+         self._filea.seek(int(record*self.n2drec*4))
       else :
-         self._filea.seek(record*self.n2drec*8)
+         self._filea.seek(int(record*self.n2drec*8))
       return
 
 
@@ -241,12 +241,12 @@ class ABFile(object) :
       if value is None :
          msg = "key %s is not defined "%key
          logger.error(msg)
-         raise ValueError,msg
+         raise ValueError(msg)
       if type(value) == type(1) :
          tmp ="%5d   '%-6s'\n"%(value,key)
       else :
          msg = "writeitem not implemented for this type: %s"%type(value)
-         raise NotImplementedError,msg
+         raise NotImplementedError(msg)
       self._fileb.write(tmp)
 
    def readline(self) :
@@ -254,7 +254,7 @@ class ABFile(object) :
 
 
    def bminmax(self,*arks,**kwargs) :
-      raise BFileError,"bminmax not implemented for this class"
+      raise BFileError("bminmax not implemented for this class")
 
 
    @property
@@ -262,16 +262,16 @@ class ABFile(object) :
       return set([elem["field"] for elem in self._fields.values()])
 
    def write_field(*args,**kwargs) :
-      raise BFileError,"write_field not implemented for this class"
+      raise BFileError("write_field not implemented for this class")
 
    def read_field(*args,**kwargs) :
-      raise BFileError,"read_field not implemented for this class"
+      raise BFileError("read_field not implemented for this class")
 
    def write_header(self,*args,**kwargs) :
-      raise BFileError,"write_header not implemented for this class"
+      raise BFileError("write_header not implemented for this class")
 
    def read_header(self,*args,**kwargs) :
-      raise BFileError,"read_header not implemented for this class"
+      raise BFileError("read_header not implemented for this class")
 
 
    def _open_filea_if_necessary(self,field) :
@@ -288,9 +288,9 @@ class ABFile(object) :
       self._fileb.close()
 
    def check_dimensions(self,field) :
-      if self._idm <> field.shape[1] or self._jdm <> field.shape[0] :
+      if self._idm != field.shape[1] or self._jdm != field.shape[0] :
          msg = "dimensions do not match for field. Field dim=%dX%d, file dim=%dX%d"%(field.shape[0].field.shape[1], self._idm, self._jdm)
-         raise BFileError,msg
+         raise BFileError(msg)
 
 
 
@@ -323,10 +323,10 @@ class ABFile(object) :
       testmin = numpy.abs(w.min()-mydict["min"]) > numpy.abs(mydict["min"])*1.e-4 
       testmax = numpy.abs(w.max()-mydict["max"]) > numpy.abs(mydict["max"])*1.e-4 
       if testmin or testmax :
-         msg="File %s a b values inconsistent: Field %s at %d, .a min/max: %12.6g %12.6g  .a min/max: %12.6g  %12.6g " %(
-            w.min(),w,max(),mydict["min"],mydict["max"])
+         msg="File a b values inconsistent: Field %s at %d, .a min/max: %12.6g %12.6g  .a min/max: %12.6g  %12.6g " %(
+            mydict["field"],mydict["k"],w.min(),w.max(),mydict["min"],mydict["max"])
          logger.error(msg)
-         raise ValueError,msg
+         raise ValueError(msg)
 
    #@classmethod
    #def factory(cls,bfile) :
@@ -346,14 +346,14 @@ class ABFileBathy(ABFile) :
 
       super(ABFileBathy,self).__init__(basename,action,mask=mask,real4=real4,endian=endian)
       if action == "r" :
-         if idm <> None and jdm <> None:
+         if idm != None and jdm != None:
             self._idm=idm
             self._jdm=jdm
             self.read_header()
             self.read_field_info()
             self._open_filea_if_necessary(numpy.zeros((self._jdm,self._idm)))
          else :
-            raise BFileError,"ABFileBathy opened as read, but idm and jdm not provided"
+            raise BFileError("ABFileBathy opened as read, but idm and jdm not provided")
       else :
          self.write_header()
 
@@ -458,8 +458,8 @@ class ABFileRmu(ABFile) :
          self._idm = int(m.group(1))
          self._jdm = int(m.group(2))
       else :
-         raise  AFileError, "Unable to parse idm, jdm from header. File=%s, Parseable string=%s"%(
-               self._filename, self._header[4].strip())
+         raise  AFileError("Unable to parse idm, jdm from header. File=%s, Parseable string=%s"%(
+               self._filename, self._header[4].strip()))
 
 #   def read_field_info(self) :
 #      fieldkeys=["field","min","max"]
@@ -763,8 +763,8 @@ class ABFileForcing(ABFile) :
          self._idm = int(m.group(1))
          self._jdm = int(m.group(2))
       else :
-         raise  AFileError, "Unable to parse idm, jdm from header. File=%s, Parseable string=%s"%(
-               self._filename, self._header[4].strip())
+         raise  AFileError("Unable to parse idm, jdm from header. File=%s, Parseable string=%s"%(
+               self._filename, self._header[4].strip()))
 
 
    def write_header(self) :
@@ -804,7 +804,7 @@ class ABFileForcing(ABFile) :
             self._fields[i]["min"]  = float(m.group(4).strip())
             self._fields[i]["max"]  = float(m.group(5).strip())
          else :
-            raise NameError,"cant parse forcing field"
+            raise NameError("cant parse forcing field")
          i+=1
          line=self.readline().strip()
 
@@ -837,6 +837,39 @@ class ABFileForcing(ABFile) :
    def field_times(self) :
       return set([elem["dtime1"] for elem in self._fields.values()])
 
+class ABFileRiver(ABFile) :
+   """ Class for doing input/output on pairs of hycom .a and .b files. This is for river forcing files"""
+   """ At the moment, only write river function is implemented. You can read it by using 'loada' subroutines """
+   fieldkeys=["field","min","max"]
+   def __init__(self,basename,action,mask=False,real4=True,endian="big", idm=None,jdm=None,
+                cline1="",cline2=""):
+
+      super(ABFileRiver,self).__init__(basename,action,mask=mask,real4=real4,endian=endian)
+      self._idm=idm
+      self._jdm=jdm
+      self._cline1=cline1
+      self._cline2=cline2
+      if action == "w" :
+         pass
+      else :
+         quit()
+
+
+   def write_header(self) :
+      self._fileb.write(self._cline1.strip()+"\n")
+      self._fileb.write(self._cline2.strip()+"\n")
+      self._fileb.write("\n")
+      self._fileb.write("\n")
+      self._fileb.write("i/jdm =%5d %5d\n"%(self._idm,self._jdm))
+
+
+   def write_field(self,field,mask,fieldname,month) :
+      self._open_filea_if_necessary(field)
+      self.check_dimensions(field)
+      hmin,hmax = self._filea.writerecord(field,mask)
+      self._fileb.write(" %s: month,range = %s%14.6E%14.6E\n"%(fieldname,str(month).zfill(2),hmin,hmax))
+
+
 class ABFileRestart(ABFile) :
    """ Class for doing input/output on pairs of hycom .a and .b files. This is for restart files"""
    fieldkeys=["field","step","day","k","dens","min","max"]
@@ -845,18 +878,18 @@ class ABFileRestart(ABFile) :
 
       super(ABFileRestart,self).__init__(basename,action,mask=mask,real4=real4,endian=endian)
       if self._action == "r" :
-         if idm <> None and jdm <> None:
+         if idm != None and jdm != None:
             self._idm=idm
             self._jdm=jdm
             self.read_header() # Sets internal metadata. Overrides those on input
             self.read_field_info()
             self._open_filea_if_necessary(numpy.zeros((self._jdm,self._idm)))
          else :
-            raise BFileError,"ABFileBathy opened as read, but idm and jdm not provided"
+            raise BFileError("ABFileBathy opened as read, but idm and jdm not provided")
       elif self._action == "w" :
-         # Need to test if idm, jdm, etc is set at this stage
-         raise NotImplementedError,"ABFileRestart writing not implemented"
-
+##         # Need to test if idm, jdm, etc is set at this stage
+##         raise NotImplementedError,"ABFileRestart writing not implemented"
+           pass
 
    def read_header(self) :
       #RESTART2: iexpt,iversn,yrflag,sigver =    990    22     3     2
@@ -873,9 +906,9 @@ class ABFileRestart(ABFile) :
       self._yrflag=int(m.group(3))
       self._sigver=int(m.group(4))
       m2=re.match("RESTART2: nstep,dtime,thbase[ ]*=[ ]*([^ ]+)[ ]+([^ ]+)[ ]+([^ ]+)",self._header[1])
-      self._nstep=int(m.group(1))
-      self._dtime=float(m.group(2))
-      self._thbase=float(m.group(2))
+      self._nstep=int(m2.group(1))
+      self._dtime=float(m2.group(2))
+      self._thbase=float(m2.group(3))
 
    def read_field_info(self) :
       #u       : layer,tlevel,range =   1  1    -9.2374402E-01   6.0595530E-01
@@ -883,7 +916,7 @@ class ABFileRestart(ABFile) :
       line=self.readline().strip()
       i=0
       while line :
-         m = re.match("^([a-z_ ]+): layer,tlevel,range =[ ]*([^ ]+)[ ]+([^ ]+)[ ]+([^ ]+)[ ]+([^ ]+)",line)
+         m = re.match("^([a-zA-Z0-9_ ]+): layer,tlevel,range =[ ]*([^ ]+)[ ]+([^ ]+)[ ]+([^ ]+)[ ]+([^ ]+)",line)
          if m :
             self._fields[i] = {}
             self._fields[i]["field"] = m.group(1).strip()
@@ -892,7 +925,7 @@ class ABFileRestart(ABFile) :
             self._fields[i]["min"] = float(m.group(4))
             self._fields[i]["max"] = float(m.group(5))
          else :
-            raise NameError,"unable to parse line %s"%line
+            raise NameError("unable to parse line %s"%line)
          #print i,line
          i+=1
          line=self.readline().strip()
@@ -911,6 +944,31 @@ class ABFileRestart(ABFile) :
          w = None
       return w
 
+# THE RESTART WRITING - a later addition to KAL's original abfile.py 
+#  caglar: other classes in abfile.py code call 'write_header' within 'write_field'.
+#          Because of many inputs in the header, I decided to do it separately.
+#          Make sure that you call 'write_header' only once before calling the rest of 'write_field'    
+#
+#  example lines:
+#
+#  newfile = 'merged'
+#  new_abfile = abfile.ABFileRestart(newfile,"w",idm=I2,jdm=I1)
+#  new_abfile.write_header(iexpt,iversn,yrflag,sigver,nstep,dtime,thbase)
+#  ~~ for loop for variables
+#     new_abfile.write_field(field,None,fieldname,k,t)  # None stands for mask
+#  new_abfile.close() 
+
+   def write_header(self,iexpt,iversn,yrflag,sigver,nstep,dtime,thbase) :
+      self._fileb.write("RESTART2: iexpt,iversn,yrflag,sigver = %6d%6d%6d%6d\n"%(iexpt,iversn,yrflag,sigver))
+      self._fileb.write("RESTART2: nstep,dtime,thbase = %12d%19.10f%24.13f\n"%(nstep,dtime,thbase))
+
+   def write_field(self,field,mask,fieldname,k,time) :
+      self._open_filea_if_necessary(field)
+      self.check_dimensions(field)
+      hmin,hmax = self._filea.writerecord(field,mask)
+      fmtstr="%-8s: layer,tlevel,range = %3d%3d%18.7E%16.7E\n"
+      self._fileb.write(fmtstr%(fieldname,k,time,hmin,hmax))
+###
 
    @property
    def fieldlevels(self) :
@@ -964,8 +1022,8 @@ class ABFileRelax(ABFile) :
          self._idm = int(m.group(1))
          self._jdm = int(m.group(2))
       else :
-         raise  BFileError, "Unable to parse idm, jdm from header. File=%s, Parseable string=%s"%(
-               self._basename, self._header[4].strip())
+         raise  BFileError("Unable to parse idm, jdm from header. File=%s, Parseable string=%s"%(
+               self._basename, self._header[4].strip()))
       #print self._idm,self._jdm
 
 
@@ -988,7 +1046,7 @@ class ABFileRelax(ABFile) :
             self._fields[i]["max"] = float(m.group(6))
             #print self._fields[i]
          else :
-            raise NameError,"unable to parse line %s"%line
+            raise NameError("unable to parse line %s"%line)
          #print i,line
          i+=1
          line=self.readline().strip()
@@ -1039,8 +1097,8 @@ class ABFileRelaxZ(ABFile) :
          self._idm = int(m.group(1))
          self._jdm = int(m.group(2))
       else :
-         raise  AFileError, "Unable to parse idm, jdm from header. File=%s, Parseable string=%s"%(
-               self._filename, self._header[4].strip())
+         raise  AFileError("Unable to parse idm, jdm from header. File=%s, Parseable string=%s"%(
+               self._filename, self._header[4].strip()))
 
 
    def write_header(self) :
@@ -1079,7 +1137,7 @@ class ABFileRelaxZ(ABFile) :
             self._fields[i]["min"]  = float(m.group(3).strip())
             self._fields[i]["max"]  = float(m.group(4).strip())
          else :
-            raise NameError,"cant parse forcing field"
+            raise NameError("cant parse forcing field")
          i+=1
          line=self.readline().strip()
 

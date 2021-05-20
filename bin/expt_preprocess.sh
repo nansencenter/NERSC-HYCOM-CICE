@@ -464,7 +464,7 @@ fi
 #
 # --- tracer relaxation
 #
-if [ $TRCRLX -ne 0 ] ; then
+if [ $TRCRLX -ne 0 -o $NTRACR -eq -1 ] ; then
    echo "**Setting up tracer relaxation"
    for i in ECO_no3 ECO_pho ECO_sil ECO_oxy CO2_dic CO2_alk; do
       j=$(echo $i | head -c7)
@@ -479,8 +479,8 @@ if [ $TRCRLX -ne 0 ] ; then
    ln -sf $BASEDIR/relax/${E}/relax_rmu.a relax.rmutr.a  || tellerror "Could not get relax.rmutr.a"
    ln -sf $BASEDIR/relax/${E}/relax_rmu.b relax.rmutr.b  || tellerror "Could not get relax.rmutr.b"
 
-   [ ! -f  $INPUTDIR/pCO2a_1948_2018 ] && tellerror "$INPUTDIR/pCO2a_1948_2018 does not exist"
-   ln -sf $INPUTDIR/pCO2a_1948_2018 pCO2a_1948_2018 || tellerror "Could not get pCO2a_1948_2018"
+   [ ! -f  $INPUTDIR/co2_annmean_gl.txt ] && tellerror "$INPUTDIR/co2_annmean_gl.txt does not exist"
+   ln -sf $INPUTDIR/co2_annmean_gl.txt co2_annmean_gl.txt || tellerror "Could not get co2_annmean_gl.txt"
 fi
 #
 # - thermobaric reference state?
@@ -702,9 +702,13 @@ echo "SIGVER      = $SIGVER .There are $TERMS terms in equation of state"
 # Set up rel path and stmt fnc
 compdir=$(source_dir $V $TERMS $THFLAG)
 compdir=$P/build/${compdir}
-echo "Retrieving  hycom_cice from $compdir"
-/bin/cp $compdir/hycom_cice  . || tellerror "Could not get hycom_cice executable at "
-
+if [ $ICEFLG -eq 2 ] ; then
+  echo "Retrieving  hycom_cice from $compdir"
+  /bin/cp $compdir/hycom_cice  . || tellerror "Could not get hycom_cice executable at "
+elif [ $ICEFLG -eq 0 ] ; then
+  echo "Retrieving  hycom_oasis from $compdir"
+  /bin/cp $compdir/hycom_oasis  . || tellerror "Could not get hycom_oasis executable at "
+fi
 
 
 #

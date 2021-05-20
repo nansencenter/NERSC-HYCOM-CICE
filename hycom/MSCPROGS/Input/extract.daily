@@ -1,6 +1,6 @@
 4                      # Version of tecconv program
 pres     intf          # Field used to determine layer interfaces
-2 F F T                # 2-D, sphere, rotate, index velocities   
+2 F F T                # 2-D, sphere, rotate, index velocities (hyc2proj: only applies to 'native')   
 1 270 1 210            # section plot ia:ib ja:jb
 1 1   XX XX   X        # extracted layers for 3-d fields (not used for 2-d)
 saln    01 01   T 

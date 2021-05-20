@@ -1,14 +1,11 @@
 #!/usr/bin/env python
-import modeltools.hycom
 import argparse
-import datetime
-
 import datetime
 import numpy
 import cfunits
+import modeltools.hycom
 import modeltools.tools
 import modeltools.forcing.atmosphere
-import modeltools.tools
 #from mpl_toolkits.basemap import Basemap, shiftgrid
 import logging
 import abfile

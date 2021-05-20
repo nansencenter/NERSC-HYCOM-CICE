@@ -18,7 +18,7 @@
 #INCLUDES      = -I/cluster/software/netCDF-Fortran/4.4.4-intel-2017a-HDF5-1.8.18/include  -I${ESMF_MOD_DIR} -I${ESMF_DIR}include -I./CICE/rundir/compile
 
 # --- Mostafa: flags required for standalone HYCOM
-INCLUDES      = -I/cluster/software/netCDF-Fortran/4.4.4-intel-2017a-HDF5-1.8.18/include  #-I${ESMF_MOD_DIR} -I${ESMF_DIR}include -I./CICE/rundir/compile
+INCLUDES      = -I${ESMF_MOD_DIR} -I${ESMF_DIR}include -I./CICE/rundir/compile
 
 FC            = mpiifort 
 #FCFFLAGS      =	-traceback -g -O2 -fp-model source -warn nogeneral -convert big_endian -assume byterecl -real-size 64 -integer-size 32 

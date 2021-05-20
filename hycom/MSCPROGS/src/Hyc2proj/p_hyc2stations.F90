@@ -111,6 +111,8 @@ program p_hyc2stations
 
    ! This file will contain a list of data files produced by this routine
    open(96,file='hyc2stations.filelist',action='write',status='replace')
+   ! Alfati.: call zaioempty to deallocate
+   call zaioempty ! deallocated za - fields - ready for next file
 
    ! Were ready...
    print *
