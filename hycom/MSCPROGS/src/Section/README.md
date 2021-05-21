@@ -1,4 +1,5 @@
-# Scalar transport
+## How to use the Sections and transport tools
+## Scalar transport
 
 The “scalartransport.in” file can be used to make the routine m2transport2 calculate transport for additional tracer fields,
 
