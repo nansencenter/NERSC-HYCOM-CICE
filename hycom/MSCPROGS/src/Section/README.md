@@ -4,7 +4,7 @@
 Wether you are extraction vertical sections of fields using **m2section** or computing transports using **m2transport** or **m2transport2** you need to define the start and end point of the sections in a files called **sections.in**.  An example of such a file can be found in the folder **NERSC-HYCOM-CICE/hycom/MSCPROGS/Input/**. When sections.in is defined, run **section_intersect**, whose purpose is to set up the grid points which are needed to calculate transports and to interpolate section details.
 
 ## Extracting sections
-First define which varibales to extract in **extract.sec**.  An example of such a file can be found in the folder **NERSC-HYCOM-CICE/hycom/MSCPROGS/Input/**. Then run: 
+First define which variables to extract in **extract.sec**.  An example of such a file can be found in the folder **NERSC-HYCOM-CICE/hycom/MSCPROGS/Input/**. Then run: 
 
 `  m2sections [list of .b hycom files to precess] `
 
