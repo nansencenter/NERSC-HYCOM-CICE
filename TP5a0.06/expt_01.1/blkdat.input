@@ -109,11 +109,11 @@ S-Z(15-11): dp00/f/x/i=3m/1.125/12m/1m; ds=1m/1.125/4m; src_2.2.12;
    0.00   'visco2' = deformation-dependent Laplacian  viscosity factor
    0.20   'visco4' = deformation-dependent biharmonic viscosity factor
    0.0	  'facdf4' =       speed-dependent biharmonic viscosity factor
-   0.015  'veldf2' = diffusion velocity (m/s) for Laplacian  momentum dissip.
-   0.005  'veldf4' = diffusion velocity (m/s) for biharmonic momentum dissip.
-   0.00   'thkdf2' = diffusion velocity (m/s) for Laplacian  thickness diffus.
-   0.05   'thkdf4' = diffusion velocity (m/s) for biharmonic thickness diffus.
-   0.015  'temdf2' = diffusion velocity (m/s) for Laplacian  temp/saln diffus.
+  0.00286 'veldf2' = diffusion velocity (m/s) for Laplacian  momentum dissip.
+  -0.02   'veldf4' = diffusion velocity (m/s) for biharmonic momentum dissip.
+   0.0   'thkdf2' = diffusion velocity (m/s) for Laplacian  thickness diffus.
+  -0.02   'thkdf4' = diffusion velocity (m/s) for biharmonic thickness diffus.
+   0.005  'temdf2' = diffusion velocity (m/s) for Laplacian  temp/saln diffus.
    1.0	  'temdfc' = temp diffusion conservation (0.0,1.0 all dens,temp resp.)
    2.e-5  'vertmx' = diffusion velocity (m/s) for momentum at MICOM M.L.base
    0.1 	  'cbar  ' = rms flow speed     (m/s) for linear bottom friction
