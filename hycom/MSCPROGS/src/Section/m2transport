@@ -1,7 +1,17 @@
 #!/bin/bash
 #set -ex
 
-[ ! $1 ] && { echo " Usage: $(basename $0) [-nosec] <files> " ; exit  1;}
+if [ ! $1 ]  ; then
+   echo "m2transport: " 
+   echo "This script will calculate barotropic transports across a section. It will also"
+   echo "try calculate ice transports. You will need to specify sections in the file"
+   echo "sections.in." 
+   echo "Usage $(basename $0) [-nosec] <files> "
+   echo "where optional argument "
+   echo "   -nosec            specifies that section positions don't need to be calculated"
+   echo "                     again, convenient on multiple passes"
+   exit 1
+fi
 
 #Assume programs are in the same dir as this routine
 secprog=${0%m2transport}section_intersect
