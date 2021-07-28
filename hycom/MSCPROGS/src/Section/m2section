@@ -2,14 +2,22 @@
 #set -ex
 
 if [ ! $1 ]  ; then
-   echo "Nothing specified ..." 
-   echo "Usage $(basename $0) [-rotnormal] [-rotll] [-append] [-skipinit] <files> "
-   echo "where optional arguments "
-   echo "   -normalvelocities computes velocities tangent and normal to section"
-   echo "   -append           appends data to existing section files"
-   echo "   -skipinit         skips the section initialization stuff if you have it from before"
+   echo "m2section: " 
+   echo "This script can be used to extract data along a section specified in the file "
+   echo "sections.in. To specify which fields to extract, use the relative extract file "
+   echo "(daily, weekly, restart, etc.) If looking for velocities over the section, be sure "
+   echo "to select both utot and vtot fields for extraction in the extract file. This "
+   echo "routine also requires the extract.sec file, but its purpose is undocumented and "
+   echo "unclear." 
+   echo "Usage $(basename $0) [-rotnormal | rotll] [append] [-skipinit] <files>, "
+   echo "where optional arguments: "
+   echo "   -rotnormal | -rotll  specifies that velocities should be computed rotated to normal "
+   echo "                        or rotated to lat lon, respectively; "
+   echo "   -append              appends data to existing section files; and "
+   echo "   -skipinit            skips the section initialisation stuff if it exists from before. "
    exit 1
 fi
+
 
 # check for optional arguments
 domore=1
