@@ -1,13 +1,19 @@
 #!/bin/bash
 #set -ex
 
-usage="Routine calculates transport across a section.
-Sections must be specified in the file sections.in
-Transport definitions must be specified in transport.in
-Usage: $(basename $0) [-nosec] file1 file2 ... " 
+if [ ! $1 ]  ; then
+   echo "m2transport2: " 
+   echo "This script will calculate transports across a section, but with a more"
+   echo "fine-grained approach than m2transport. You will need to specify sections"
+   echo "in the file sections.in. You will also have to define how to calculate"
+   echo "transports in the file transports.in." 
+   echo "Usage $(basename $0) [-nosec] file1 file2 ..., "
+   echo "where optional argument: "
+   echo "   -nosec            specifies that section positions don't need to be calculated"
+   echo "                     again, convenient on multiple passes."
+   exit 1
+fi
 
-
-[ ! $1 ] && { echo " $usage" ;  exit 1 ;}
 
 #Assume programs are in the same dir as this routine
 secprog=${0%m2transport2}/section_intersect

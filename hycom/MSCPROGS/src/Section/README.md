@@ -58,3 +58,33 @@ Here a brief explanation of each tool, its usage, options, required input files 
 - tst001.nc           # this looks like a bathymetry mask for the section(s)
 - .zoneinfo           # just says "ZONE>1"
    Some of these outputs require clarification from someone who is more familiar with them.
+
+### m2transport2
+**Description:**
+   This script will calculate transports across a section, but with a more fine-grained approach than `m2transport`. You will need to specify the sections in the file *sections.in*. You will also have to define how to calculate transports in *transports.in*.
+
+**Usage:**
+
+`m2transport2 [-nosec] file1 file2 ...`,
+
+   where the optional argument:
+   `-nosec`    specifies that section positions don't need to be calculated again, convenient on multiple passes.
+
+**Required files:**
+- regional.grid.a
+- regional.grid.b
+- regional.depth.a
+- regional.depth.b
+- sections.in
+- transport.in
+   These files need to be in your current working directory when executing the `m2transport` routine.
+
+**Outputs:**
+- transports2.nc      # these are the transports outputs
+- section001.dat      # not sure if this is supposed to be the actual data
+- transports001.dat   # not sure what this is, looks like grid indices and 1-or-0 vales in two columns
+- tst001.nc           # this looks like a bathymetry mask for the section(s)
+   Some of these outputs require clarification from someone who is more familiar with them.
+
+> **An important note:**
+> With `m2transport2` you can also calculate scalar transports in addition to volume transports. The routine `m2transport2` will look for a file *scalartransports.in* which can be used to calculate these transports, such as heat transport. However, when I, Harry, tried to calculate scalar transports with the *scalartransport.in* file present no additional output compared to standard m2transport2 is created. This behaviour occurs even when the scalar transport flag is turned on in the compilation makefile. Feel free to add instructions here if you know how to overcome this issue.
