@@ -3,7 +3,7 @@ Sigma0; GDEM3 init; KPP mixed layer; SeaWiFS mon KPAR; nested in ATLd0.08 2.6;
 S-Z(15-11): dp00/f/x/i=3m/1.125/12m/1m; ds=1m/1.125/4m; src_2.2.12;
 12345678901234567890123456789012345678901234567890123456789012345678901234567890
   22	  'iversn' = hycom version number x10
- 030	  'iexpt ' = experiment number x10
+ 011	  'iexpt ' = experiment number x10
  800	  'idm   ' = longitudinal array size
  760	  'jdm   ' = latitudinal  array size
  -1	  'itest ' = grid point where detailed diagnostics are desired
