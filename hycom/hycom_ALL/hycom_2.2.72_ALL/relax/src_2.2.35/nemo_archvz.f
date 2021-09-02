@@ -2136,9 +2136,9 @@ C
         endif
 
 
-        ! CAUTION:  CONVERT VELOCITY COMPONENTS FROM P-CELL TO U- AND V-CELL, RESPECTIVELY HERE
+        ! CAUTION:  CONVERT VELOCITY COMPONENTS FROM  U- AND V-CELL TO P-CELL , RESPECTIVELY HERE
 
-        CALL UV2P(IDM,JDM,UV1,UV1,PU,PV)
+        CALL UV2P(IDM,JDM,UV1,VV1,PU,PV)
 
 
          ! CAUTION: for some reason temperature at level-75 is FILL_value
@@ -2282,21 +2282,31 @@ c
                     if (PU(i,j)  .gt. hspval) then
                         PU(i,j) = 0.0
                     else
-                        if     (j.ne.1) then
-                            UU(i,j) = 0.5*(PU(i,j-1) + PU(i,j))
+c                       if     (j.ne.1) then
+c                           UU(i,j) = 0.5*(PU(i,j-1) + PU(i,j))
+c                       else
+c                           UU(i,j) = 2.0*PU(i,2) - PU(i,3)
+c                       endif
+                        if     (i.ne.1) then
+                            UU(i,j) = 0.5*(PU(i-1,j) + PU(i,j))
                         else
-                            UU(i,j) = 2.0*PU(i,2) - PU(i,3)
+                            UU(i,j) = 2.0*PU(2,j) - PU(3,j)
                         endif
                     ENDIF
 c
                     if (PV(i,j)  .gt. hspval) then
                         PV(i,j) = 0.0
                     else
-                        if     (i.ne.1) then
-                            VV(i,j) = 0.5*(PV(i-1,j) + PV(i,j))
+c                       if     (i.ne.1) then
+c                           VV(i,j) = 0.5*(PV(i-1,j) + PV(i,j))
+c                       else
+c                           VV(i,j) = 2.0*PV(2,j) - PV(3,j)
+c                       endif
+                        if     (j.ne.1) then
+                            VV(i,j) = 0.5*(PV(i,j-1) + PV(i,j))
                         else
-                            VV(i,j) = 2.0*PV(2,j) - PV(3,j)
-                        endif
+                            VV(i,j) = 2.0*PV(i,2) - PV(i,3)
+                        endif                       
                     ENDIF
                 enddo
             enddo
@@ -2327,20 +2337,30 @@ c
                 if (UU(i,j)  .gt. hspval) then
                     PU(i,j) = 0.0
                 else
-                    if     (j.ne.jdm) then
-                        PU(i,j) = 0.5*(UU(i,j) + UU(i,j+1))
+c                   if     (j.ne.jdm) then
+c                       PU(i,j) = 0.5*(UU(i,j) + UU(i,j+1))
+c                   else
+c                       PU(i,j) = 2.0*UU(i,j-1) - UU(i,j-2)
+c                   endif
+                    if     (i.ne.idm) then
+                        PU(i,j) = 0.5*(UU(i,j) + UU(i+1,j))
                     else
-                        PU(i,j) = 2.0*UU(i,j-1) - UU(i,j-2)
+                        PU(i,j) = 2.0*UU(i-1,j) - UU(i-2,j)
                     endif
                 endif
 c
                 if (VV(i,j)  .gt. hspval) then
                     PV(i,j) = 0.0
                 else
-                    if     (i.ne.idm) then
-                        PV(i,j) = 0.5*(VV(i,j) + VV(i+1,j))
+c                   if     (i.ne.idm) then
+c                       PV(i,j) = 0.5*(VV(i,j) + VV(i+1,j))
+c                   else
+c                       PV(i,j) = 2.0*VV(i-1,j) - VV(i-2,j)
+c                   endif
+                    if     (j.ne.jdm) then
+                        PV(i,j) = 0.5*(VV(i,j) + VV(i,j+1))
                     else
-                        PV(i,j) = 2.0*VV(i-1,j) - VV(i-2,j)
+                        PV(i,j) = 2.0*VV(i,j-1) - VV(i,j-2)
                     endif
                 endif
 c
