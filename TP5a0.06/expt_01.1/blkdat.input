@@ -6,17 +6,17 @@ S-Z(15-11): dp00/f/x/i=3m/1.125/12m/1m; ds=1m/1.125/4m; src_2.2.12;
  011	  'iexpt ' = experiment number x10
  800	  'idm   ' = longitudinal array size
  760	  'jdm   ' = latitudinal  array size
- -1	  'itest ' = grid point where detailed diagnostics are desired (540)
- -1	  'jtest ' = grid point where detailed diagnostics are desired (54)
+ -1	  'itest ' = grid point where detailed diagnostics are desired
+ -1	  'jtest ' = grid point where detailed diagnostics are desired
   50      'kdm   ' = number of layers
   50      'nhybrd' = number of hybrid levels (0=all isopycnal)
    0      'nsigma' = number of sigma  levels (nhybrd-nsigma z-levels)
-   1.0    'dp00  ' = deep    z-level spacing minimum thickness (m)
+   1.2    'dp00  ' = deep    z-level spacing minimum thickness (m)
  250.0    'dp00x ' = deep    z-level spacing maximum thickness (m)
-   1.15  'dp00f ' = deep    z-level spacing stretching factor (1.0=const.space)
-   1.0    'ds00  ' = shallow z-level spacing minimum thickness (m)
+   1.1    'dp00f ' = deep    z-level spacing stretching factor (1.0=const.space)
+   1.2    'ds00  ' = shallow z-level spacing minimum thickness (m)
   75.0    'ds00x ' = shallow z-level spacing maximum thickness (m)
-   1.15  'ds00f ' = shallow z-level spacing stretching factor (1.0=const.space)
+   1.1    'ds00f ' = shallow z-level spacing stretching factor (1.0=const.space)
    1.0	  'dp00i ' = deep iso-pycnal spacing minimum thickness (m)
    6.0	  'isotop' = shallowest depth for isopycnal layers     (m, <0 from file)
   35.0	  'saln0 ' = initial salinity value (psu), only used for iniflg<2
@@ -36,33 +36,33 @@ S-Z(15-11): dp00/f/x/i=3m/1.125/12m/1m; ds=1m/1.125/4m; src_2.2.12;
   0.9     'sigma ' = layer  9  density (sigma units)
   1.0     'sigma ' = layer 10  density (sigma units)
   24.05   'sigma ' = layer 11  density (sigma units)
-  24.96   'sigma ' = layer 12  density (sigma units)
-  25.68   'sigma ' = layer 13  density (sigma units)
-  26.05   'sigma ' = layer 14  density (sigma units)
-  26.30   'sigma ' = layer 15  density (sigma units)
-  26.60   'sigma ' = layer 16  density (sigma units)
-  26.83   'sigma ' = layer 17  density (sigma units)
-  26.94   'sigma ' = layer 18  density (sigma units)
-  27.03   'sigma ' = layer 19  density (sigma units)
-  27.10   'sigma ' = layer 20  density (sigma units)
-  27.20   'sigma ' = layer 21  density (sigma units)
-  27.28   'sigma ' = layer 22  density (sigma units)
-  27.33   'sigma ' = layer 23  density (sigma units)
-  27.46   'sigma ' = layer 24  density (sigma units)
-  27.47   'sigma ' = layer 25  density (sigma units)
-  27.55   'sigma ' = layer 26  density (sigma units)
-  27.57   'sigma ' = layer 27  density (sigma units)
-  27.61   'sigma ' = layer 28  density (sigma units)
-  27.63   'sigma ' = layer 29  density (sigma units)
-  27.66   'sigma ' = layer 30  density (sigma units)
-  27.72   'sigma ' = layer 31  density (sigma units)
-  27.74   'sigma ' = layer 32  density (sigma units)
-  27.81   'sigma ' = layer 33  density (sigma units)
-  27.82   'sigma ' = layer 34  density (sigma units)
-  27.84   'sigma ' = layer 35  density (sigma units)
-  27.87   'sigma ' = layer 36  density (sigma units)
-  27.90   'sigma ' = layer 37  density (sigma units)
-  27.97   'sigma ' = layer 38  density (sigma units)
+  25.72   'sigma ' = layer 12  density (sigma units)
+  26.40   'sigma ' = layer 13  density (sigma units)
+  26.90   'sigma ' = layer 14  density (sigma units)
+  27.13   'sigma ' = layer 15  density (sigma units)
+  27.19   'sigma ' = layer 16  density (sigma units)
+  27.25   'sigma ' = layer 17  density (sigma units)
+  27.29   'sigma ' = layer 18  density (sigma units)
+  27.34   'sigma ' = layer 19  density (sigma units)
+  27.42   'sigma ' = layer 20  density (sigma units)
+  27.50   'sigma ' = layer 21  density (sigma units)
+  27.56   'sigma ' = layer 22  density (sigma units)
+  27.63   'sigma ' = layer 23  density (sigma units)
+  27.66   'sigma ' = layer 24  density (sigma units)
+  27.69   'sigma ' = layer 25  density (sigma units)
+  27.72   'sigma ' = layer 26  density (sigma units)
+  27.74   'sigma ' = layer 27  density (sigma units)
+  27.76   'sigma ' = layer 28  density (sigma units)
+  27.78   'sigma ' = layer 29  density (sigma units)
+  27.80   'sigma ' = layer 30  density (sigma units)
+  27.82   'sigma ' = layer 31  density (sigma units)
+  27.85   'sigma ' = layer 32  density (sigma units)
+  27.87   'sigma ' = layer 33  density (sigma units)
+  27.90   'sigma ' = layer 34  density (sigma units)
+  27.93   'sigma ' = layer 35  density (sigma units)
+  27.95   'sigma ' = layer 36  density (sigma units)
+  27.97   'sigma ' = layer 37  density (sigma units)
+  27.99   'sigma ' = layer 38  density (sigma units)
   28.01   'sigma ' = layer 39  density (sigma units)
   28.02   'sigma ' = layer 40  density (sigma units)
   28.03   'sigma ' = layer 41  density (sigma units)
@@ -74,7 +74,7 @@ S-Z(15-11): dp00/f/x/i=3m/1.125/12m/1m; ds=1m/1.125/4m; src_2.2.12;
   28.09   'sigma ' = layer 47  density (sigma units)
   28.10   'sigma ' = layer 48  density (sigma units)
   28.11   'sigma ' = layer 49  density (sigma units)
-  28.13   'sigma ' = layer 50  density (sigma units)
+  28.12   'sigma ' = layer 50  density (sigma units)
    2      'iniflg' = initial state flag (0=levl, 1=zonl, 2=clim)
    0	  'jerlv0' = initial jerlov water type (1 to 5; 0 to use KPAR)
    3	  'yrflag' = days in year flag   (0=360,  1=366,  2=366J1, 3=actual)
@@ -84,12 +84,12 @@ S-Z(15-11): dp00/f/x/i=3m/1.125/12m/1m; ds=1m/1.125/4m; src_2.2.12;
    0.0	  'proffq' = number of days between model diagnostics on selected tiles
    0.0	  'tilefq' = number of days between model diagnostics on selected tiles
    1.0    'meanfq' = number of days between model diagnostics (time averaged)
-  60.0	  'rstrfq' = number of days between model restart output
- 0.000	  'bnstfq' = number of days between baro nesting archive input
- 0.000	  'nestfq' = number of days between 3-d  nesting archive input
-  -12      'cplifq' = number of days (or time steps) between sea ice coupling
+   5.0	  'rstrfq' = number of days between model restart output
+ 1.000	  'bnstfq' = number of days between baro nesting archive input
+ 1.000	  'nestfq' = number of days between 3-d  nesting archive input
+  -24     'cplifq' = number of days (or time steps) between sea ice coupling
  300.0	  'baclin' = baroclinic time step (seconds), int. divisor of 86400
-  15.0	  'batrop' = barotropic time step (seconds), int. div. of baclin/2
+ 15.0	  'batrop' = barotropic time step (seconds), int. div. of baclin/2
    0	  'incflg' = incremental update flag (0=no, 1=yes, 2=full-velocity)
  100	  'incstp' = no. timesteps for full update (1=direct insertion)
    1	  'incupf' = number of days of incremental updating input
@@ -160,7 +160,7 @@ S-Z(15-11): dp00/f/x/i=3m/1.125/12m/1m; ds=1m/1.125/4m; src_2.2.12;
    1	  'dbdiff' = KPP:     activate double diffusion  mixing (0=F,1=T)
    1	  'nonloc' = KPP:     activate nonlocal b. layer mixing (0=F,1=T)
    0	  'botdiw' = K-PROF:  activate bot.enhan.int.wav mixing (0=F,1=T)
-   1	  'difout' = K-PROF:  output visc/diff coffs in archive (0=F,1=T)
+   0	  'difout' = K-PROF:  output visc/diff coffs in archive (0=F,1=T)
    0	  'difsmo' = K-PROF:  number of layers with horiz smooth diff coeffs
   50.e-4  'difm0 ' = KPP:     max viscosity   due to shear instability (m**2/s)
   50.e-4  'difs0 ' = KPP:     max diffusivity due to shear instability (m**2/s)
@@ -177,13 +177,13 @@ S-Z(15-11): dp00/f/x/i=3m/1.125/12m/1m; ds=1m/1.125/4m; src_2.2.12;
    0      'langmr' = KPP:     activate Langmuir turb. factor    (0=F,1=T)
    0      'fltflg' = FLOATS: synthetic float flag (0=no; 1=yes)
    4      'nfladv' = FLOATS: advect every nfladv bacl. time steps (even, >=4)
-   1      'nflsam' = FLOATS: output (0=every nfladv steps; >0=no. of days)
+   0      'nflsam' = FLOATS: output (0=every nfladv steps; >0=no. of days)
    0      'intpfl' = FLOATS: horiz. interp. (0=2nd order+n.n.; 1=n.n. only)
    0      'iturbv' = FLOATS: add horiz. turb. advection velocity (0=no; 1=yes)
    1      'ismpfl' = FLOATS: sample water properties at float (0=no; 1=yes)
 4.63e-6   'tbvar ' = FLOATS: horizontal turb. vel. variance scale (m**2/s**2)
    0.4    'tdecri' = FLOATS: inverse decorrelation time scale (1/day)
-   0	  'lbflag' = lateral barotropic bndy flag (0=none, 1=port, 2=input)
+   2	  'lbflag' = lateral barotropic bndy flag (0=none, 1=port, 2=input)
    0	  'tidflg' = TIDES: tidal forcing flag    (0=none,1=open-bdy,2=bdy&body)
    0      'tidein' = TIDES: tide field input flag (0=no;1=yes;2=sal)
 11111111  'tidcon' = TIDES: 1 digit per (Q1K2P1N2O1K1S2M2), 0=off,1=on
@@ -210,16 +210,15 @@ S-Z(15-11): dp00/f/x/i=3m/1.125/12m/1m; ds=1m/1.125/4m; src_2.2.12;
    0      'stroff' = net stress offset flag               (0=F,1=T)
    0      'flxoff' = net flux offset flag                 (0=F,1=T)
    0      'flxsmo' = smooth surface fluxes                (0=F,1=T)
-   1	  'relax ' = activate lateral boundary nudging    (0=F,1=T)
+   0	  'relax ' = activate lateral boundary nudging    (0=F,1=T)
    0	  'trcrlx' = activate lat. bound. tracer nudging  (0=F,1=T)
    1	  'priver' = rivers as a precipitation bogas      (0=F,1=T)
-   1     'triver' = total river including Greenland      (0=F,1=T)
-   0     'epmass' = treat evap-precip as a mass exchange (0=F,1=T)
-   0     'nmrsti' = 'restart'  Restart filename. Dot and date appended. Empty: use old hycom name.
-   0     'nmrsto' = 'restart'  Restart filename. Dot and date appended. Empty: use old hycom name.
-   0     'nmarcs' = '' Surface archive filename. Dot and date appended. Empty: use old hycom name.
-   0     'nmarcv' = '' Full    archive filename. Dot and date appended. Empty: use old hycom name.
-   0     'nmarcm' = '' Mean    archive filename. Dot and date appended. Empty: use old hycom name.
+   0      'epmass' = treat evap-precip as a mass exchange (0=F,1=T)
+   0      'nmrsti' = 'restart'  Restart filename. Dot and date appended. Empty: use old hycom name.
+   0      'nmrsto' = 'restart'  Restart filename. Dot and date appended. Empty: use old hycom name.
+   0      'nmarcs' = '' Surface archive filename. Dot and date appended. Empty: use old hycom name.
+   0      'nmarcv' = '' Full    archive filename. Dot and date appended. Empty: use old hycom name.
+   0      'nmarcm' = '' Mean    archive filename. Dot and date appended. Empty: use old hycom name.
    0     'stdflg' = STOKES: add Stokes Drift velocities to kinematics and dynamics (0=F,1=T)
    0     'stdsur' = STOKES: add Stokes Drift Surface Stresses  to dnamics (0=F,1=T)
    0     'stdtau' = Remov from the tot wind stress the part lost to wave : (0=F,1=T)
@@ -227,4 +226,4 @@ S-Z(15-11): dp00/f/x/i=3m/1.125/12m/1m; ds=1m/1.125/4m; src_2.2.12;
    0     'stdbot' = STOKES: add Stokes Waves Field bottom friction drag (0=F,1=T)
    0     'stdarc' = STOKES: Stokes Drift Velocities in Archive (0=F,1=T)
    0     'altlng' = STOKES: Use alternative Lang def. from Kai et al (0=F,1=T)
-  10     'nsdzi ' = STOKES: number of interfaces in Stokes Drift input 
+  10     'nsdzi ' = STOKES: number of interfaces in Stokes Drift input
