@@ -93,6 +93,7 @@ export SSTRLX=`grep "'sstflg' =" blkdat.input | awk '{printf("%1d", $1)}'`
 export RLX=`grep "'relax ' =" blkdat.input | awk '{printf("%1d", $1)}'`
 export TRCRLX=`grep "'trcrlx' =" blkdat.input | awk '{printf("%1d", $1)}'`
 export THKDF4=`grep "'thkdf4' =" blkdat.input | awk '{printf("%f", $1)}'`
+export VELDF4=`grep "'veldf4' =" blkdat.input | awk '{printf("%f", $1)}'`
 export KAPREF=`grep "'kapref' =" blkdat.input | awk '{printf("%f", $1)}'`
 export VSIGMA=`grep "'vsigma' =" blkdat.input | awk '{printf("%1d", $1)}'`
 export FLXOFF=`grep "'flxoff' =" blkdat.input | awk '{printf("%1d", $1)}'`
@@ -497,6 +498,11 @@ fi
 if [ ${testthkdf2} -eq 1 ] ; then 
    ${pget} ${D}/../../relax/${E}/thkdf2.a thkdf2.a  || tellerror "Could not get thkdf2.a"
    ${pget} ${D}/../../relax/${E}/thkdf2.b thkdf2.b  || tellerror "Could not get thkdf2.b"
+fi
+testveldf4=$(echo $VELDF4'<'0.0 | bc -l)
+if [ ${testveldf4} -eq 1 ] ; then 
+   ${pget} ${D}/../../relax/${E}/veldf4.a veldf4.a  || tellerror "Could not get thkdf2.a"
+   ${pget} ${D}/../../relax/${E}/veldf4.b veldf4.b  || tellerror "Could not get thkdf2.b"
 fi
 
 
