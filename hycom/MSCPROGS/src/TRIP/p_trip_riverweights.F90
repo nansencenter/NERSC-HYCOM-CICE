@@ -23,6 +23,10 @@ program trip_riverweights
    use m_read_runoff_erai, only : nrolon_erai=>nlon, nrolat_erai=>nlat, &
                                    rolat_erai => lat, rolon_erai => lon, &
                                    init_runoff_erai
+   use m_read_runoff_era5, only : nrolon_era5=>nlon, nrolat_era5=>nlat, &
+                                   rolat_era5=> lat, rolon_era5=> lon, &
+                                   init_runoff_era5
+
    use mod_trip
    use m_handle_err
    implicit none
@@ -52,7 +56,8 @@ program trip_riverweights
    if (iargc()>=1) then
       call getarg(1,runoff_source)
    else 
-      runoff_source="erai"
+      !runoff_source="erai"
+      runoff_source="era5"
    end if
 
    ! Set up erai path and lon/lat
@@ -72,6 +77,14 @@ program trip_riverweights
       allocate(rolat(nrolat))
       rolon  = rolon_erai
       rolat  = rolat_erai
+   elseif (trim(runoff_source) == "era5") then 
+      call init_runoff_era5()
+      nrolon = nrolon_era5
+      nrolat = nrolat_era5
+      allocate(rolon(nrolon))
+      allocate(rolat(nrolat))
+      rolon  = rolon_era5
+      rolat  = rolat_era5
    else 
       print *,"Unknown runoff source "//trim(runoff_source)
       call exit(1)
