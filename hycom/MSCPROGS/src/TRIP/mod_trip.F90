@@ -86,6 +86,8 @@ contains
    ! Read trip05 database, put in grid (txt file)
    print '(a)','Reading TRIP database'
    open(10,file=trim(trip_path0)//tfile,status='old',action='read',iostat=ios)
+   print *,'TRIP database should be found in '//trim(trip_path0)
+   print *,'TRIP05 database should be found in '//trim(trip_path0)//tfile
    do j=1,ny
       read(10,*,iostat=ios) txtline
 
