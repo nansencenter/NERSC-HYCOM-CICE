@@ -149,6 +149,7 @@ program trip_flow
       rolon  = rolon_era5
       rolat  = rolat_era5
    else 
+
       print *,"Unknown runoff source "//trim(runoff_source)
       call exit(1)
    end if
@@ -294,10 +295,18 @@ program trip_flow
        dt=6*3600                  ! Time step (6 hours)
     elseif (trim(runoff_source) == "era5") then 
        spinupdays=3*365  ! 1 years
+<<<<<<< Updated upstream
        num_year=2
        intdays  =num_year*365  ! Up to and including 2015
        startyear=1989
        dt=6*3600                  ! Time step (6 hours)
+=======
+       num_year=27
+       intdays  =num_year*365  ! Up to and including 2015
+       startyear=1989
+       dt=6*3600                  ! Time step (6 hours)
+
+>>>>>>> Stashed changes
     else 
        print *,"Unknown runoff source "//trim(runoff_source)
        call exit(1)
