@@ -50,8 +50,6 @@ contains
    allocate(lat(nlat))
    flat=90
    dlat=-0.25
-!   flat=90
-!   dlat=-0.5
    do j= 1,nlat
       lat(j)=flat+(j-1)*dlat
    enddo
@@ -121,9 +119,8 @@ contains
 
    write(cyy,'(i4.4)') thisyear
    rofile=trim(ropath)//'6h.RO_'//cyy//'.nc'   
-   print *,rofile
-   print *,ropath
-   ! Open file
+  
+ ! Open file
    call handle_err(nf90_open(trim(rofile),NF90_NOCLOBBER,ncid))
 
    ! Get variable id

@@ -1,17 +1,17 @@
 ! --- -------------------------------------------------------------------
 ! --- River routine trip_riverweights
 ! --- -------------------------------------------------------------------
-! --- Program to map ERAI grid cells onto TRIP grid cells. Required
+! --- Program to map ERA5 grid cells onto TRIP grid cells. Required
 ! --- by trip_riverflow.
 ! ---
-! --- For now this routine uses ERAI data, but it can easily be changed 
+! --- For now this routine uses ERA5 data, but it can easily be changed 
 ! --- to other runoff products.
 ! ---
 ! --- Output from this routine is:
-! --- unformatted file containing mapping from ERAI runoff grid -> TRIP grid
+! --- unformatted file containing mapping from ERA5 runoff grid -> TRIP grid
 ! --- -------------------------------------------------------------------
 ! --- Prerequisites:
-! --- 1) ERAI landmask must be available in the path set in env variable ERAI_PATH
+! --- 1) ERA5 landmask must be available in the path set in env variable ERA5_PATH
 ! --- 2) TRIP data base must be available in the path set in env variable TRIP_PATH
 ! --- -------------------------------------------------------------------
 
@@ -56,8 +56,7 @@ program trip_riverweights
    if (iargc()>=1) then
       call getarg(1,runoff_source)
    else 
-      !runoff_source="erai"
-      runoff_source="era5"
+      runoff_source="era5" ! default
    end if
 
    ! Set up erai path and lon/lat

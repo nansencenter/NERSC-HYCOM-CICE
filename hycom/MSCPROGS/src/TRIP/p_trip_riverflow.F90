@@ -7,7 +7,7 @@
 ! --- the point towards the river outlets. All calculation is done on the 
 ! --- TRIP grid.
 ! ---
-! --- For now this routine uses ERAI data, but it can easily be changed 
+! --- For now this routine uses ERA5 data, but it can easily be changed 
 ! --- to other runoff products.
 ! ---
 ! --- Output from this routine is:
@@ -17,8 +17,8 @@
 ! --- Prerequisites:
 ! --- 1) river_weights must be called before running this 
 ! ---    routine - to get the mapping from runoff grid -> TRIP grid
-! --- 2) ERAI runoff data must be availabel in either the directory "./ERAI/",
-! ---    or in the directory set in env variable ERAI_PATH
+! --- 2) ERA5 runoff data must be availabel in either the directory "./ERA5/",
+! ---    or in the directory set in env variable ERA5_PATH
 ! --- 2) TRIP data base must be availabel in either the directory "./Data/",
 ! ---    or in the directory set in env variable TRIP_PATH
 ! --- -------------------------------------------------------------------
@@ -117,8 +117,7 @@ program trip_flow
    if (iargc()>=1) then
       call getarg(1,runoff_source)
    else 
-      !runoff_source="erai" !default
-      runoff_source="era5" !default: updated
+      runoff_source="era5" !default
    end if
    print *,"Runoff source: "//trim(runoff_source)
 
@@ -294,19 +293,11 @@ program trip_flow
        startyear=1989
        dt=6*3600                  ! Time step (6 hours)
     elseif (trim(runoff_source) == "era5") then 
-       spinupdays=3*365  ! 1 years
-<<<<<<< Updated upstream
-       num_year=2
-       intdays  =num_year*365  ! Up to and including 2015
-       startyear=1989
+       spinupdays=3*365           ! 3 years of spinup
+       num_year=5
+       intdays  =num_year*365
+       startyear=1992
        dt=6*3600                  ! Time step (6 hours)
-=======
-       num_year=27
-       intdays  =num_year*365  ! Up to and including 2015
-       startyear=1989
-       dt=6*3600                  ! Time step (6 hours)
-
->>>>>>> Stashed changes
     else 
        print *,"Unknown runoff source "//trim(runoff_source)
        call exit(1)
@@ -368,7 +359,7 @@ program trip_flow
              triprunoff(itrip,jtrip)= triprunoff(itrip,jtrip) +  &
              max(ro(i,j),0.0)*tmparea*1e6 ! triparea in km^2 units: m^3/s
                 !if (tmparea<0 .or. ro(i,j)<0) then
-                if (tmparea<0 .or. ro(i,j)<0) then
+                if (tmparea<0) then
                    print *,'This should not happen corect me',tmparea,ro(i,j),i,j
                    stop
                 endif
