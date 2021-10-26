@@ -92,7 +92,6 @@ program trip_tobioriv
    if (iargc()>=1) then
       call getarg(1,runoff_source)
    else 
-      !runoff_source="erai" !default
       runoff_source="era5" !default
    end if
    print *,"Runoff source: "//trim(runoff_source)

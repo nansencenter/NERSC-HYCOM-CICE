@@ -332,7 +332,11 @@ program trip_tohycom
    ! 3rd step - Save to forcing files
    open (unit=909, file='forcing.rivers.b',  &
          status='replace', action='write')
-   write(909,'(a)') 'River mass fluxes from TRIP+ERAI '
+   if (runoff_source=='era5') then
+        write(909,'(a)') 'River mass fluxes from TRIP+ERA5'
+   else
+        write(909,'(a)') 'River mass fluxes NOT from TRIP+ERA5 '
+   end if
    write(909,'(a)') ''
    write(909,'(a)') ''
    write(909,'(a)') ''
