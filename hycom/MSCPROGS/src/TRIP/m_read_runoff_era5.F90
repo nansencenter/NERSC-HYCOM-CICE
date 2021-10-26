@@ -1,7 +1,7 @@
 module m_read_runoff_era5
 
    character(len= 200), private :: ropath=''
-   character(len=*), parameter, private :: lsmfile='ans.LSM.nc'
+   character(len=*), parameter, private :: lsmfile='6h.RO_1992.nc'
    real, dimension(:), allocatable :: lon, lat
    integer :: nlon=1440, nlat=721
    private :: setpath
@@ -18,49 +18,41 @@ contains
    real :: dlon,dlat,flon,flat
 
    ! Path of ERA-5 data
-!   call setpath_era5()
+    call setpath_era5()
 
 ! Input data grid (for now - simple lat-lon (possibly gaussian) grid )
-!   ierr= nf90_open(trim(ropath)//lsmfile,NF90_NOCLOBBER,ncid)
-!   if (ierr/=NF90_NOERR) then
-!      print *,'Could not open '//trim(ropath)//lsmfile
-!      stop
-!   end if
+    ierr= nf90_open(trim(ropath)//lsmfile,NF90_NOCLOBBER,ncid)
+    if (ierr/=NF90_NOERR) then
+      print *,'Could not open '//trim(ropath)//lsmfile
+      stop
+   end if
      ! Open file
-!   call handle_err(nf90_open(trim(ropath)//lsmfile,NF90_NOCLOBBER,ncid))
+   call handle_err(nf90_open(trim(ropath)//lsmfile,NF90_NOCLOBBER,ncid))
 
-!   ! Get lon dim
-!   call handle_err( nf90_inq_varid(ncid, 'lon', varid))
-!   call handle_err( &
-!        nf90_Inquire_Variable(ncid,varid,ndims=ndims,dimids=dimids,natts=natts))
-!   call handle_err( &
-!        nf90_Inquire_Dimension(ncid, dimids(1), len=dimsize))
-!   nlon=dimsize 
-
-!   hardcoded for now :fanf
+   ! Get longitude
+   call handle_err( nf90_inq_varid(ncid, 'longitude', varid))
+   call handle_err( &
+        nf90_Inquire_Variable(ncid,varid,ndims=ndims,dimids=dimids,natts=natts))
+   call handle_err( &
+        nf90_Inquire_Dimension(ncid, dimids(1), len=dimsize))
+   nlon=dimsize 
    allocate(lon(nlon))
-   flon=0
-   dlon=0.25
-   do j= 1,nlon
-      lon(j)=mod(flon+(j-1)*dlon+360.d0,360.d0)
-      !lon(j)=flon+(j-1.)*dlon
-   enddo
+   call handle_err(nf90_Get_Var(ncid, varid,lon))
    print *,'min max lon',lon(1),lon(nlon),nlon
 
+   ! Get latitude                                                                                           
+   call handle_err( nf90_inq_varid(ncid, 'latitude', varid))
+   call handle_err( &
+        nf90_Inquire_Variable(ncid,varid,ndims=ndims,dimids=dimids,natts=natts))
+   call handle_err( &
+        nf90_Inquire_Dimension(ncid, dimids(1), len=dimsize))
+   nlat=dimsize
    allocate(lat(nlat))
-   flat=90
-   dlat=-0.25
-!   flat=90
-!   dlat=-0.5
-   do j= 1,nlat
-      lat(j)=flat+(j-1)*dlat
-   enddo
+   call handle_err(nf90_Get_Var(ncid, varid,lat))
    print *,'min max lat',lat(1),lat(nlat),nlat
-!   call handle_err(nf90_Get_Var(ncid, varid,lat))
-!
-!   call handle_err(nf90_Close(ncid))
-   end subroutine 
+   call handle_err(nf90_Close(ncid))
 
+   end subroutine 
 
 
   subroutine setpath_era5()
@@ -103,6 +95,8 @@ contains
    integer :: dimids  (NF90_MAX_VAR_DIMS)
    integer :: dimsizes(NF90_MAX_VAR_DIMS)
 
+   real :: offset, scale_factor
+
    ! Path of ERA-5 data
    call setpath_era5()
 
@@ -122,37 +116,44 @@ contains
    write(cyy,'(i4.4)') thisyear
    rofile=trim(ropath)//'6h.RO_'//cyy//'.nc'   
    print *,rofile
-   print *,ropath
+
    ! Open file
    call handle_err(nf90_open(trim(rofile),NF90_NOCLOBBER,ncid))
 
    ! Get variable id
    call handle_err( nf90_inq_varid(ncid, trim(varname), varid))
 
-!   ! Get dimensions of variable
-!   call handle_err( &
-!        nf90_Inquire_Variable(ncid,varid,ndims=ndims,dimids=dimids,natts=natts))
-!
-!   if (ndims/=3) then
-!      print *,'Expected 3D var '
-!      stop
-!   end if
-!
-!   ! Inquire three var dims
-!   call handle_err( &
-!        nf90_Inquire_Dimension(ncid, dimids(1), len=dimx))
-!   call handle_err( &
-!        nf90_Inquire_Dimension(ncid, dimids(2), len=dimy))
-!   call handle_err( &
-!        nf90_Inquire_Dimension(ncid, dimids(3), len=dimtime))
-!
-!   !print *,dimx, dimy, dimtime
-!   if (dimx/=nx .or. dimy/=ny) then
-!      print *,'Error in dimensions'
-!      print *,dimx,nx
-!      print *,dimy,ny
-!      stop '(read_runoff)'
-!   end if
+   ! Get dimensions of variable
+   call handle_err( &
+        nf90_Inquire_Variable(ncid,varid,ndims=ndims,dimids=dimids,natts=natts))
+
+   ! Get the offset and scale factor
+   call handle_err(&
+        nf90_get_att(ncid, varid,'add_offset', offset))
+   call handle_err(&
+        nf90_get_att(ncid, varid,'scale_factor', scale_factor))
+   print*, offset,scale_factor
+
+   if (ndims/=3) then
+      print *,'Expected 3D var '
+      stop
+   end if
+
+   ! Inquire three var dims
+   call handle_err( &
+        nf90_Inquire_Dimension(ncid, dimids(1), len=dimx))
+   call handle_err( &
+        nf90_Inquire_Dimension(ncid, dimids(2), len=dimy))
+   call handle_err( &
+        nf90_Inquire_Dimension(ncid, dimids(3), len=dimtime))
+
+   print *,dimx, dimy, dimtime
+   if (dimx/=nx .or. dimy/=ny) then
+      print *,'Error in dimensions'
+      print *,dimx,nx
+      print *,dimy,ny
+      stop '(read_runoff)'
+   end if
 
 
    ! Read variable
@@ -160,7 +161,7 @@ contains
    call handle_err(NF90_close(ncid))
 
    ! Conversion from m to m/s
-   fld = fld / (6*3600.) 
+   fld = (fld*scale_factor + offset) / (6*3600.) 
 
    end subroutine read_runoff_era5
 
