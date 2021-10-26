@@ -26,13 +26,8 @@ if [ -z "${TRIP_PATH}" ] ; then
 fi
 
 # Experiment  needs experiment number
-<<<<<<< Updated upstream
 along=150
 across=50
-=======
-along=200
-across=60
->>>>>>> Stashed changes
 create=1
 usage="
 This script will set up river forcing files used by HYCOM. The forcing
