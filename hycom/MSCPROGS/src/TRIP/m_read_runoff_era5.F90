@@ -48,15 +48,12 @@ contains
         nf90_Inquire_Dimension(ncid, dimids(1), len=dimsize))
    nlat=dimsize
    allocate(lat(nlat))
-<<<<<<< HEAD
    flat=90
    dlat=-0.25
    do j= 1,nlat
       lat(j)=flat+(j-1)*dlat
    enddo
-=======
    call handle_err(nf90_Get_Var(ncid, varid,lat))
->>>>>>> 2f21a4dd36298dc0c24d7bc87f73fc528e36c409
    print *,'min max lat',lat(1),lat(nlat),nlat
    call handle_err(nf90_Close(ncid))
 
@@ -123,14 +120,11 @@ contains
 
    write(cyy,'(i4.4)') thisyear
    rofile=trim(ropath)//'6h.RO_'//cyy//'.nc'   
-<<<<<<< HEAD
   
  ! Open file
-=======
    print *,rofile
 
    ! Open file
->>>>>>> 2f21a4dd36298dc0c24d7bc87f73fc528e36c409
    call handle_err(nf90_open(trim(rofile),NF90_NOCLOBBER,ncid))
 
    ! Get variable id
