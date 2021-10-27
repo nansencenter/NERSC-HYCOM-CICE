@@ -12,7 +12,7 @@ import modeltools.forcing.bathy
 import abfile
 import modeltools.cice.io
 import numpy
-from mpl_toolkits.basemap import Basemap
+##AO from mpl_toolkits.basemap import Basemap
 import netCDF4
 import logging
 import scipy.ndimage.measurements

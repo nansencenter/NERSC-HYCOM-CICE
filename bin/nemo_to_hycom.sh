@@ -18,7 +18,7 @@
 # (3) July 9 2019, accounting for both bio & phy nesting.
 # (4) July 11 2019, further imporvment.
 
-module load basemap/1.0.7-intel-2017a-Python-2.7.13
+##AO module load basemap/1.0.7-intel-2017a-Python-2.7.13
 
 options=$(getopt -o b:m -- "$@")
 [ $? -eq 0 ] || {

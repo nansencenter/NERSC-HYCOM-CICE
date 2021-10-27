@@ -3,19 +3,16 @@ import time as ttimm
 import numpy as np
 import matplotlib
 import abfile
-#import mod_reading as mr
 from pprint import pprint
 import argparse
 import matplotlib.pyplot as plt
-#from mpl_toolkits.basemap import Basemap
 from mpl_toolkits.axes_grid1 import make_axes_locatable, axes_size
 import logging
-#import cmocean 
 import pyproj as pyproj
 import matplotlib.patheffects as PathEffects
 import os.path
-#import scipy.interpolate
 from scipy.interpolate import griddata as grd
+
 # Set up logger
 _loglevel=logging.DEBUG
 logger = logging.getLogger(__name__)
@@ -50,23 +47,16 @@ def interp2points(fobj,varname,target_lonlats,mapping=None,latlon=True,**kwargs)
         (stereographic projection)
     """
 
-    #lon,lat  = fobj.get_lonlat()
     glon = ncfile1.variables['lon'][:] 
     glat = ncfile1.variables['lat'][:] 
     Z0    = ncfile1.variables[varname][:]
     Z=np.transpose(np.squeeze(Z0))
-    #mask1  = np.logical_not(np.isfinite(Z))
-    #mask1=np.isnan(Z)
-    #Z = np.ma.array(Z, mask=mask1)
     print 'Z.shape=', Z.shape
     print 'Z0.shape=', Z0.shape
     print 'lon.shape=', glon.shape
     print 'lon.ndim=', glon.ndim
     print 'lat.shape=',glat.shape
     lon,lat  = np.meshgrid(glon,glat,indexing='ij')
-    #lon,lat  = np.meshgrid(glon,glat,indexing='ij')
-    #print 'plon=', plon.shape
-    #print 'plat=', plat.shape
     # do interpolation in stereographic projection
     if mapping is None:
         if not latlon:
@@ -87,8 +77,6 @@ def interp2points(fobj,varname,target_lonlats,mapping=None,latlon=True,**kwargs)
 
     #source
     X,Y = mapping(lon,lat)
-    #Z    = fobj.get_var(varname,time_index=time_index).values #numpy masked array
-    #Z     = ncfile1.variables[varname][:]
     #target
     if latlon:
          lons,lats = target_lonlats
@@ -186,28 +174,12 @@ if __name__ == "__main__" :
        setattr(args, self.dest, tmp)
 
    parser = argparse.ArgumentParser(description='')
-   #parser.add_argument('--clim',       action=ClimParseAction,default=None)
-   #parser.add_argument('--cmap',       type=str,default="jet",help="matplotlib colormap to use")
-   #parser.add_argument('--window',     action=WindowParseAction, help='firsti,firstj,lasti,lastj', default=None)
-   #parser.add_argument('--idm',     type=int, help='Grid dimension 1st index []')
-   #parser.add_argument('--jdm',     type=int, help='Grid dimension 2nd index []')
-   #parser.add_argument('--fieldname',  type=str)
-   #parser.add_argument('--fieldlevel', type=int)
    parser.add_argument('--filename', help="",nargs='+')
-   #parser.add_argument('records',  nargs="+",    type=int)
    
    args = parser.parse_args()
    print args.filename
    #Example
    #python ./interpolate_sstncof2TP5.py --filename ../ncof_sst/ncof_sst_20*.nc
-
-   ### fh = Dataset('mld_dr003_l3.nc', mode='r')
-   ### fh_lons = fh.variables['lon'][:]
-   ### fh_lats = fh.variables['lat'][:]
-   ### 
-   ### fh_time = fh.variables['time'][:]
-   ### fh_mld_clim = fh.variables['mld_dr003_rmoutliers_smth_okrg'][:]
-   ### fh.close()
    
    gfile = abfile.ABFileGrid("regional.grid","r")
    plon=gfile.read_field("plon")
@@ -229,24 +201,6 @@ if __name__ == "__main__" :
             ncfile1 = Dataset(ncfile0,'r',format="NETCDF4")
             logger.info("ostia sst data: Now processing  %s"%ncfile0)
             # interpolate ncof_sst in tp5 grid
-###             ncfile1 = Dataset(ncfile0,'r',format="NETCDF4")
-###             glon = ncfile1.variables['lon'][:] 
-###             glat = ncfile1.variables['lat'][:] 
-###             gl_mask1 = ncfile1.variables['mask'][:]
-###             ncfile1.close()
-###             gl_mask = gl_mask1[0,:,:]
-###             glonn,glatt=np.meshgrid(glon,glat)
-###             print 'glonn=', glonn.shape
-###             print 'glatt=',glatt.shape
-###             print 'mask=',gl_mask.shape
-###             print 'plon=', plon.shape
-###             print 'plat=', plat.shape
-           #start_time = ttimm.time()
-            #print 'start time=', start_time
-###         #    newMask=scipy.interpolate.griddata( (glonn.flatten(),glatt.flatten()),gl_mask.flatten(),(plon,plat),'nearest')
-###         #    newMask=np.ma.masked_where(np.ma.getmask(depth),newMask)
-            #print 'elapsed time=',start_time - ttimm.time()
-            #newMask=scipy.interpolate.griddata( (glon.flatten(),glat.flatten()),gl_mask.flatten(),(plon,plat),'nearest')
             start_time = ttimm.time()
             print 'start time=', start_time
             newMask = interp2points(ncfile1,'mask',target_lonlats,mapping=None)
@@ -256,10 +210,8 @@ if __name__ == "__main__" :
             fld=sst_anlys - 273.1
             fld=np.ma.masked_where(np.ma.getmask(depth),fld)
             fld=np.ma.masked_invalid(fld)
-            #fld=np.ma.masked_where(fld<-1.8,fld)
             print 'mn,mx  data=',fld.min(),fld.max()
             print 'fldin_nansum=', np.nansum(fld)
-            #dt_cl[counter]=numpy.nanmean(fld)
             counter=counter+1
             file_count=file_count+1
             # write to nc file

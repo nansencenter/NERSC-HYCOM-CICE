@@ -34,7 +34,6 @@ from   matplotlib import pyplot as plt
 import abfile
 import numpy
 import numpy.ma as ma
-#from   mpl_toolkits.basemap import Basemap, cm
 import sys
 import os.path
 import re
