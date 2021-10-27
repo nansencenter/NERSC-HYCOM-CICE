@@ -292,7 +292,12 @@ program trip_flow
        intdays  =num_year*365  ! Up to and including 2015
        startyear=1989
        dt=6*3600                  ! Time step (6 hours)
+    elseif (trim(runoff_source) == "era5") then 
+       spinupdays=3*365  ! 1 years
        num_year=27
+       intdays  =num_year*365  ! Up to and including 2015
+       startyear=1992
+       dt=6*3600                  ! Time step (6 hours)
     else 
        print *,"Unknown runoff source "//trim(runoff_source)
        call exit(1)
