@@ -26,9 +26,9 @@ if [ -z "${TRIP_PATH}" ] ; then
 fi
 
 # Experiment  needs experiment number
-along=200
-across=60
-create=0
+along=150
+across=50
+create=1
 usage="
 This script will set up river forcing files used by HYCOM. The forcing
 is based on the ERA40 runoff data set, coupled with the TRIP data base 
@@ -147,7 +147,7 @@ fi
 # This uses trip_era40_clim.nc (from trip_flow) to interpolate to model grid. Uses conformal mapping
 echo
 echo "**Interpolating TRIP river flow to hycom"
-$MSCPROGS/src/TRIP/trip_tohycom $src $along $across    || { echo "Error when running trip_tohycom  (see errors above)" ; ex    it 1 ; }
+$MSCPROGS/src/TRIP/trip_tohycom $src $along $across    || { echo "Error when running trip_tohycom  (see errors above)" ; exit 1 ; }
 $MSCPROGS/src/TRIP/trip_tobiorivGN
 
 # For now the river forcing is  experiment-dependent
