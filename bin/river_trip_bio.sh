@@ -93,7 +93,7 @@ echo "Along-shore  radius               :$along"
 echo "Across-shore radius               :$across"
 echo "Runoff source                     :${src}"
 echo "Create riverweights and riverflow :${create} (0=False)"
-if [ $create -eq 1 ] ; then
+if [ $create -eq 0 ] ; then
    echo "Location of existing weight and flow data :${flowpath}"
    echo "Flow file                                 :${flowpath}/${flowfile}"
 fi
