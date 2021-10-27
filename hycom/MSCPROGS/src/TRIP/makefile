@@ -50,6 +50,7 @@ OBJECTS=m_handle_err.o \
 		  mod_trip.o \
 	m_read_runoff_era40.o \
 	m_read_runoff_erai.o \
+	m_read_runoff_era5.o \
 	p_trip_riverweights.o
 
 $(TARGET): $(OBJECTS) 
@@ -66,6 +67,7 @@ OBJECTS3=m_handle_err.o \
 		  mod_trip.o \
 			m_read_runoff_era40.o \
 			m_read_runoff_erai.o \
+			m_read_runoff_era5.o \
 			m_era40_fix.o \
 			p_trip_riverflow.o
 
