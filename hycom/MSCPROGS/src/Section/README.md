@@ -48,8 +48,8 @@ Here a brief explanation of each tool, its usage, options, required input files 
 
 **Outputs:**
 - transports.nc       these are the transports outputs
-- section001.dat      not sure if this is supposed to be the actual data
-- transports001.dat   not sure what this is, looks like grid indices and 1-or-0 vales in two columns
+- section001.dat      these are the nodes in the section(s)
+- transports001.dat   these are the nodes in the section(s) specifically for transports
 - tst001.nc           this looks like a bathymetry mask for the section(s)
 - .zoneinfo           just says "ZONE>1"
    Some of these outputs require clarification from someone who is more familiar with them.
@@ -76,8 +76,8 @@ Here a brief explanation of each tool, its usage, options, required input files 
 
 **Outputs:**
 - transports2.nc      these are the transports outputs
-- section001.dat      not sure if this is supposed to be the actual data
-- transports001.dat   not sure what this is, looks like grid indices and 1-or-0 vales in two columns
+- section001.dat      these are the nodes in the section(s)
+- transports001.dat   these are the nodes in the section(s) specifically for transports
 - tst001.nc           this looks like a bathymetry mask for the section(s)
    Some of these outputs require clarification from someone who is more familiar with them.
 
@@ -107,8 +107,7 @@ Here a brief explanation of each tool, its usage, options, required input files 
    These files need to be in your current working directory when executing the `m2section` routine.
 
 **Outputs:**
-- extract1            this is a copy of the extract.sec file
-- section001.dat      not sure if this is supposed to be the actual data
+- section001.dat      these are the nodes in the section(s)
 - section001.nc       contains the extracted fields as set out in extract.daily
 - tmp1.tec            empty file
 - transports001.dat   not sure what this is, looks like grid indices and 1-or-0 vales in two columns
