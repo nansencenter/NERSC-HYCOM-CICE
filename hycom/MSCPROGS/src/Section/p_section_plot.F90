@@ -229,7 +229,7 @@ program section_plot
                   call exit(1)
                end if
             else
-               print *,'Allowed arguments are -append and -rotnormal or -rotlonlat'
+               print *,'Allowed arguments are -append and -rotnormal or -rotll'
                print *, '(section_plot)'
                call exit(1)
             end if
