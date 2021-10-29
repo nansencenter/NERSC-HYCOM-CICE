@@ -3,11 +3,6 @@
 ## Preparations
 Whether you are extracting vertical sections of fields using **m2section** or computing transports using **m2transport** or **m2transport2** you need to define the start and end point of the sections in a file called *sections.in*. An example of such a file can be found in the folder **NERSC-HYCOM-CICE/hycom/MSCPROGS/Input/**. With *sections.in* defined, it was formerly necessary to first run `section_intersect`, whose purpose it is to set up the grid points which are needed to calculate transports and to interpolate section details. However, this is automatically called from the respective section tools executables and no longer needs to be done manually.
 
-## Extracting sections
-First define which variables to extracted in *extract.sec*.  An example of such a file can be found in the folder **NERSC-HYCOM-CICE/hycom/MSCPROGS/Input/**. Then run: 
-
-`  m2sections [list of .b hycom files to precess] `
-
 ## Scalar transport
 
 The “scalartransport.in” file can be used to make the routine m2transport2 calculate transport for additional tracer fields,
@@ -91,7 +86,7 @@ Here a brief explanation of each tool, its usage, options, required input files 
 
 ### m2section
 **Description:**
-   This script can be used to extract data along a section specified in the file *sections.in*. To specify which fields to extract, use the relevant extract files (daily, weekly, restart, etc). If interested in velocities over the section, be sure to select both *utot* and *vtot* fields in the extract file. This routine also requires the *extract.sec* file, but its use is undocumented and unclear. An example *extract.sec* file can be found at the **NERSC-HYCOM-CICE/hycom/MSCPROGS/Input/** directory. 
+   This script can be used to extract data along a section specified in the file *sections.in*. To specify which fields to extract, use the relevant extract files (daily, weekly, restart, etc). If interested in velocities over the section, be sure to select both *utot* and *vtot* fields in the extract file. 
 
 **Usage:**
 
@@ -108,12 +103,8 @@ Here a brief explanation of each tool, its usage, options, required input files 
 - regional.depth.a
 - regional.depth.b
 - sections.in
-- extract.sec
 - extract.daily (*or other relevant extract file*)
    These files need to be in your current working directory when executing the `m2section` routine.
-
-> **An important note:**
-> The extract fields defined in *extract.sec* are seemingly entirely ignored and only the fields specified in extract.daily are actually extracted. This behaviour persisted even when changing line 4 of *extract.sec*, which seemingly defines some kind of section(s) but, as stated earlier, this is also undocumented and unclear.
 
 **Outputs:**
 - extract1            this is a copy of the extract.sec file
