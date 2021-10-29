@@ -118,4 +118,6 @@ Here a brief explanation of each tool, its usage, options, required input files 
 > Jiping had mentioned that if running `m2section` after `m2transport2`, there are some snags in getting the expected behaviour. However, I could not replicate this. All outputs and extracted data seem to be identical to previous tests. It is worth noting, though, in case you come across unexpected behaviour.
 
 ## To do
-- confirm rotation code in `m2section` does not rotate to normal
+- [x] confirm rotation code in `m2section` does not rotate to normal
+- [ ] add rotation to normal functionality for single section
+- [ ] add rotation to normal functionality for composite sections (ambitious)
