@@ -51,12 +51,6 @@ echo "lonlat rotate : $rotll"
 echo "skip          : $useskip"
 echo "append        : $useappend"
 
-
-# Check for extract.sec
-[ ! -r extract.sec ] && echo "No file extract.sec present!" &&  exit 1
-[ -r extract.sec ]   && cp extract.sec extract1
-
-
 # This assumes that the work routine is in the same dir as m2nc
 prog="${0%m2section}section_plot"
 secprog="${0%m2section}section_intersect"
