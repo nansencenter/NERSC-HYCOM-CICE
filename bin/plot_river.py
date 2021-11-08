@@ -1,5 +1,5 @@
 import numpy as np
-import abfile
+import abfile.abfile as abf
 from matplotlib.colors import BoundaryNorm
 from matplotlib.ticker import MaxNLocator
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter
@@ -88,16 +88,16 @@ def main(region,experiment,tracer,month,cmap,clim,workdir):
         region = "NA2a0.80"
 
 
-    abgrid = abfile.ABFileGrid(workdir + user + "/" + \
+    abgrid = abf.ABFileGrid(workdir + user + "/" + \
         region + "/topo/regional.grid","r")
     plon=abgrid.read_field("plon")
     plat=abgrid.read_field("plat")
     jdm,idm=plon.shape
 
-    abriver = abfile.AFile(idm,jdm,workdir + user + "/" + \
+    abriver = abf.AFile(idm,jdm,workdir + user + "/" + \
         region + "/force/rivers/" + experiment + \
             "/" + name + ".a","r")
-    river  = abriver.read_record(np.int(month)-1)
+    river  = abriver.read_record(int(month)-1)
     abriver.close()
 
     if version == "old":
@@ -108,7 +108,7 @@ def main(region,experiment,tracer,month,cmap,clim,workdir):
         elif tracer == "silicate":
             river = river * 12.01 * 106. / 28.09
 
-    abdepth = abfile.ABFileBathy(workdir + user + "/" + \
+    abdepth = abf.ABFileBathy(workdir + user + "/" + \
         region + "/force/rivers/SCRATCH/regional.depth.b","r",idm=idm,jdm=jdm)
     depthm=abdepth.read_field("depth")
     river = np.ma.masked_where(depthm.mask,river)
@@ -122,14 +122,11 @@ def main(region,experiment,tracer,month,cmap,clim,workdir):
     pmesh = plt.pcolormesh(river,cmap=cmap)
     cb=ax.figure.colorbar(pmesh)
     if clim is not None : pmesh.set_clim(clim)
-    plt.text(0.015,1.05, "%s %s %s %s" %("river", tracer, "flux month:",\
-        month.zfill(2)),transform=ax.transAxes,FontSize=13)
-    plt.text(0.015,1.005, units,transform=ax.transAxes,FontSize=8)
+    plt.text(0.015,1.05, "%s %s %s %s" %("river", tracer, "flux month:",month.zfill(2)),transform=ax.transAxes,fontsize=13)
+    plt.text(0.015,1.005, units,transform=ax.transAxes,fontsize=8)
 
     # save figure
-    fig.canvas.print_figure(workdir + user + "/" + \
-        region + "/force/rivers/" + experiment + \
-            "/" + name + ".png",dpi=180)
+    fig.canvas.print_figure(workdir+user+"/"+region+"/force/rivers/"+experiment+"/"+name+".png",dpi=180)
 
 if __name__ == "__main__" :
 
