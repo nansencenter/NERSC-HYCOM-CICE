@@ -164,7 +164,7 @@
       END SUBROUTINE cpl_cleanup
 
 
-      SUBROUTINE cpl_snd(time, n, info )
+      SUBROUTINE cpl_snd(time, n, write_res, info )
       use mod_oasis
       IMPLICIT NONE
 
@@ -176,6 +176,7 @@
       !!----------------------------------------------------------------------
       INTEGER                   , INTENT(out) ::   info     ! OASIS3 info argument
       INTEGER                   , INTENT(in ) :: time,n     ! ocean time-step in seconds
+      LOGICAL                   , INTENT(in ) :: write_res  ! write restart or not 
       !!
       INTEGER    :: ifld
       !!--------------------------------------------------------------------
@@ -199,7 +200,7 @@
 
       do ifld=1,nsnd 
          CALL oasis_put(flds_send(ifld)%var_id,time,flds_send(ifld)%var(1:ii,1:jj),&
-         flds_send(ifld)%info)     
+         flds_send(ifld)%info, write_restart=write_res)     
 !EM bug ?         flds_recv(ifld)%info)     
       end do
 

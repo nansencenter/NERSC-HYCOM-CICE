@@ -2749,7 +2749,11 @@ c
 !AS sendign fields from HYCOM to NeXtSIM
       if (mnproc==1) print*, 'Sending 1',oasis_info
 !EM correct time stepping
-      CALL cpl_snd(int((nstep-nstep1-1)*baclin),n,oasis_info)
+      if (mod(dtime-dtime0+dsmall,drstrf).lt.dsmall2) then
+         CALL cpl_snd(int((nstep-nstep1-1)*baclin),n,.true.,oasis_info)
+      else
+         CALL cpl_snd(int((nstep-nstep1-1)*baclin),n,.false.,oasis_info)
+      end if
       if (mnproc==1) print*, 'Sending 2',oasis_info
 #endif
       end subroutine HYCOM_Run

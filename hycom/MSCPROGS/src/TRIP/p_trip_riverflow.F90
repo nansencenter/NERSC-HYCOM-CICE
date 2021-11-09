@@ -7,7 +7,7 @@
 ! --- the point towards the river outlets. All calculation is done on the 
 ! --- TRIP grid.
 ! ---
-! --- For now this routine uses ERAI data, but it can easily be changed 
+! --- For now this routine uses ERA5 data, but it can easily be changed 
 ! --- to other runoff products.
 ! ---
 ! --- Output from this routine is:
@@ -17,8 +17,8 @@
 ! --- Prerequisites:
 ! --- 1) river_weights must be called before running this 
 ! ---    routine - to get the mapping from runoff grid -> TRIP grid
-! --- 2) ERAI runoff data must be availabel in either the directory "./ERAI/",
-! ---    or in the directory set in env variable ERAI_PATH
+! --- 2) ERA5 runoff data must be availabel in either the directory "./ERA5/",
+! ---    or in the directory set in env variable ERA5_PATH
 ! --- 2) TRIP data base must be availabel in either the directory "./Data/",
 ! ---    or in the directory set in env variable TRIP_PATH
 ! --- -------------------------------------------------------------------
@@ -34,6 +34,10 @@ program trip_flow
    use m_read_runoff_erai, only : nrolon_erai=>nlon, nrolat_erai=>nlat, &
                                    rolat_erai => lat, rolon_erai => lon, &
                                    init_runoff_erai, read_runoff_erai
+   use m_read_runoff_era5, only : nrolon_era5=>nlon, nrolat_era5=>nlat, &
+                                   rolat_era5 => lat, rolon_era5 => lon, &
+                                   init_runoff_era5, read_runoff_era5
+
    use mod_trip
    implicit none
 !#if defined (TRIP05)
@@ -113,7 +117,7 @@ program trip_flow
    if (iargc()>=1) then
       call getarg(1,runoff_source)
    else 
-      runoff_source="erai" !default
+      runoff_source="era5" !default
    end if
    print *,"Runoff source: "//trim(runoff_source)
 
@@ -135,7 +139,16 @@ program trip_flow
       allocate(rolat(nrolat))
       rolon  = rolon_erai
       rolat  = rolat_erai
+   elseif (trim(runoff_source) == "era5") then 
+      call init_runoff_era5()
+      nrolon = nrolon_era5
+      nrolat = nrolat_era5
+      allocate(rolon(nrolon))
+      allocate(rolat(nrolat))
+      rolon  = rolon_era5
+      rolat  = rolat_era5
    else 
+
       print *,"Unknown runoff source "//trim(runoff_source)
       call exit(1)
    end if
@@ -279,6 +292,12 @@ program trip_flow
        intdays  =num_year*365  ! Up to and including 2015
        startyear=1989
        dt=6*3600                  ! Time step (6 hours)
+    elseif (trim(runoff_source) == "era5") then 
+       spinupdays=3*365  ! 1 years
+       num_year=27
+       intdays  =num_year*365  ! Up to and including 2015
+       startyear=1992
+       dt=6*3600                  ! Time step (6 hours)
     else 
        print *,"Unknown runoff source "//trim(runoff_source)
        call exit(1)
@@ -318,6 +337,8 @@ program trip_flow
            call era40_fix('RO',ro,nxro,nyro,rolon(1),rolat(1),rolon(2)-rolon(1),rolat(2)-rolat(1))
         elseif (trim(runoff_source) == "erai") then 
            call read_runoff_erai(startyear,rtime,ro,nxro,nyro)
+        elseif (trim(runoff_source) == "era5") then 
+           call read_runoff_era5(startyear,rtime,ro,nxro,nyro)
         else 
            print *,"Unknown runoff source "//trim(runoff_source)
            call exit(1)
@@ -335,10 +356,10 @@ program trip_flow
              itrip   =romapi   (i,j,k)
              jtrip   =romapj   (i,j,k)
              tmparea =roweights(i,j,k)
-             
              triprunoff(itrip,jtrip)= triprunoff(itrip,jtrip) +  &
-                ro(i,j)*tmparea*1e6 ! triparea in km^2  units: m^3/s
-                if (tmparea<0 .or. ro(i,j)<0) then
+             max(ro(i,j),0.0)*tmparea*1e6 ! triparea in km^2 units: m^3/s
+                !if (tmparea<0 .or. ro(i,j)<0) then
+                if (tmparea<0) then
                    print *,'This should not happen corect me',tmparea,ro(i,j),i,j
                    stop
                 endif
@@ -470,6 +491,8 @@ program trip_flow
              myfile = 'trip_era40_'//cyy//'.nc'
           elseif (trim(runoff_source) == "erai") then 
              myfile = 'trip_erai_'//cyy//'.nc'
+          elseif (trim(runoff_source) == "era5") then 
+             myfile = 'trip_era5_'//cyy//'.nc'
           else 
              print *,"Unknown runoff source "//trim(runoff_source)
              call exit(1)
@@ -601,6 +624,8 @@ program trip_flow
           call handle_err(nf90_create('trip_era40_clim.nc',NF90_CLOBBER,ncid))
        elseif (trim(runoff_source) == "erai") then 
           call handle_err(nf90_create('trip_erai_clim.nc',NF90_CLOBBER,ncid))
+       elseif (trim(runoff_source) == "era5") then
+          call handle_err(nf90_create('trip_era5_clim.nc',NF90_CLOBBER,ncid))
        else 
           print *,"Unknown runoff source "//trim(runoff_source)
           call exit(1)

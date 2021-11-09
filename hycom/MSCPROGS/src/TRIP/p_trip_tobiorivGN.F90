@@ -92,7 +92,7 @@ program trip_tobioriv
    if (iargc()>=1) then
       call getarg(1,runoff_source)
    else 
-      runoff_source="erai" !default
+      runoff_source="era5" !default
    end if
    print *,"Runoff source: "//trim(runoff_source)
  
@@ -108,6 +108,8 @@ program trip_tobioriv
       call handle_err(nf90_open('trip_era40_clim.nc',NF90_CLOBBER,ncid))
    elseif (trim(runoff_source) == "erai") then 
       call handle_err(nf90_open('trip_erai_clim.nc',NF90_CLOBBER,ncid))
+   elseif (trim(runoff_source) == "era5") then 
+      call handle_err(nf90_open('trip_era5_clim.nc',NF90_CLOBBER,ncid))
    else 
       print *,"Unknown runoff source "//trim(runoff_source)
       call exit(1)

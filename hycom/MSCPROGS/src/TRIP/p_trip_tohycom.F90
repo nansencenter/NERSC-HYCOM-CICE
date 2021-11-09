@@ -48,7 +48,7 @@ program trip_tohycom
    integer*4, external :: iargc
 #endif
 
-   print *,'Routine will calculate river discharge from TRIP+ERAi-derived'
+   print *,'Routine will calculate river discharge from TRIP+ERA5-derived'
    print *,'river fields. Input is across-shore radius and alongshore-shore radius.  Both in km'
    if (iargc()==3) then
       call getarg(1,runoff_source) 
@@ -57,9 +57,9 @@ program trip_tohycom
       radius=radius*1000.
       landradius=landradius*1000.
    else 
-   !   runoff_source="erai"
-   !   radius=d_radius
-   !   landradius=d_landradius
+      runoff_source="era5"
+      radius=d_radius
+      landradius=d_landradius
       print *,"p_trip_tohycom.F90 Not correct number of arguments..."
       call exit(1)
    end if
@@ -76,6 +76,8 @@ program trip_tohycom
       call handle_err(nf90_open('trip_era40_clim.nc',NF90_CLOBBER,ncid))
    elseif (trim(runoff_source) == "erai") then 
       call handle_err(nf90_open('trip_erai_clim.nc',NF90_CLOBBER,ncid))
+   elseif (trim(runoff_source) == "era5") then
+      call handle_err(nf90_open('trip_era5_clim.nc',NF90_CLOBBER,ncid))
    else 
       print *,"Unknown runoff source "//trim(runoff_source)
       call exit(1)
@@ -330,7 +332,11 @@ program trip_tohycom
    ! 3rd step - Save to forcing files
    open (unit=909, file='forcing.rivers.b',  &
          status='replace', action='write')
-   write(909,'(a)') 'River mass fluxes from TRIP+ERAI '
+   if (runoff_source=='era5') then
+        write(909,'(a)') 'River mass fluxes from TRIP+ERA5'
+   else
+        write(909,'(a)') 'River mass fluxes NOT from TRIP+ERA5 '
+   end if
    write(909,'(a)') ''
    write(909,'(a)') ''
    write(909,'(a)') ''
