@@ -85,7 +85,6 @@ cp $P/blkdat.input blkdat.input || tellerror "No blkdat.input file"
 export LBFLAG=`grep "'lbflag' =" blkdat.input | awk '{printf("%03d", $1)}'`
 export EB=`grep "'iexpt ' =" blkdat.input | awk '{printf("%03d", $1)}'`
 export PRIVER=`grep "'priver' =" blkdat.input | awk '{printf("%1d", $1)}'`
-export TRIVER=`grep "'triver' =" blkdat.input | awk '{printf("%1d", $1)}'`
 export NTRACR=`grep "'ntracr' =" blkdat.input | awk '{printf("%03d", $1)}'`
 export YRFLAG=`grep "'yrflag' =" blkdat.input | awk '{printf("%1d", $1)}'`
 export JERLV=`grep "'jerlv0' =" blkdat.input | awk '{printf("%1d", $1)}'`
@@ -94,6 +93,7 @@ export SSTRLX=`grep "'sstflg' =" blkdat.input | awk '{printf("%1d", $1)}'`
 export RLX=`grep "'relax ' =" blkdat.input | awk '{printf("%1d", $1)}'`
 export TRCRLX=`grep "'trcrlx' =" blkdat.input | awk '{printf("%1d", $1)}'`
 export THKDF4=`grep "'thkdf4' =" blkdat.input | awk '{printf("%f", $1)}'`
+export VELDF4=`grep "'veldf4' =" blkdat.input | awk '{printf("%f", $1)}'`
 export KAPREF=`grep "'kapref' =" blkdat.input | awk '{printf("%f", $1)}'`
 export VSIGMA=`grep "'vsigma' =" blkdat.input | awk '{printf("%1d", $1)}'`
 export FLXOFF=`grep "'flxoff' =" blkdat.input | awk '{printf("%1d", $1)}'`
@@ -112,7 +112,7 @@ export VELDF2=$(blkdat_get blkdat.input veldf2)
 export IDM=$(blkdat_get blkdat.input idm)
 export JDM=$(blkdat_get blkdat.input jdm)
 # MOSTAFA: BEGIN
-export NRDFLG=$(blkdat_get blkdat.input nrdflg)
+#############export NRDFLG=$(blkdat_get blkdat.input nrdflg)
 export LWFLAG=`grep "'lwflag' =" blkdat.input | awk '{printf("%1d", $1)}'`
 # MOSTAFA: END
 
@@ -152,7 +152,6 @@ echo "Fetched from blkdat.input:"
 echo "--------------------------"
 echo "EB     is $EB    "
 echo "PRIVER is $PRIVER"
-echo "TRIVER is $TRIVER"
 echo "YRFLAG is $YRFLAG"
 echo "JERLV  is $JERLV "
 echo "SSS    is $SSSRLX"
@@ -183,7 +182,7 @@ if [ $testbt -ne 1 ] ; then
 fi
 
 
-# Cehck coupling time step
+# Check coupling time step
 if [ $ICEFLG -eq 2 ] ; then
    # Check that icedt = cplifq*baclin
    test1=$(echo ${CPLIFQ}'<'0.0 | bc -l)
@@ -398,27 +397,9 @@ if [ $PRIVER -eq 0 ] ; then
 echo "**No river forcing. Set the priver to 1 to add river forcing"
 fi
 if [ $PRIVER -eq 1 ] ; then
-if [ $TRIVER -eq 0 ] ; then
-   echo "**Setting up river forcing  from priver"
-   cp $BASEDIR/force/rivers/$E/rivers.a forcing.rivers.a || tellerror "Could not get river .a file"
-   cp $BASEDIR/force/rivers/$E/rivers.b forcing.rivers.b || tellerror "Could not get river .b file"
-   if [ $NTRACR -ne 0 ] ; then
-      echo "**Setting up bio river forcing"
-      cp $BASEDIR/force/rivers/$E/ECO_no3.a rivers.ECO_no3.a || tellwarn "Could not get NO3 river .a file"
-      cp $BASEDIR/force/rivers/$E/ECO_no3.b rivers.ECO_no3.b || tellwarn "Could not get NO3 river .b file"
-      cp $BASEDIR/force/rivers/$E/ECO_sil.a rivers.ECO_sil.a || tellwarn "Could not get SIL river .a file"
-      cp $BASEDIR/force/rivers/$E/ECO_sil.b rivers.ECO_sil.b || tellwarn "Could not get SIL river .b file"
-      cp $BASEDIR/force/rivers/$E/ECO_pho.a rivers.ECO_pho.a || tellwarn "Could not get PHO river .a file"
-      cp $BASEDIR/force/rivers/$E/ECO_pho.b rivers.ECO_pho.b || tellwarn "Could not get PHO river .b file"
-   fi
-fi
-fi
-
-
-if [ $TRIVER -eq 1 ] ; then
-   echo "**Setting up (total) triver forcing (including greenland)"
-   cp /cluster/projects/nn2993k/TRIP/triver_Roshin/trivers.a forcing.rivers.a || tellerror "Could not get triver .a file"
-   cp /cluster/projects/nn2993k/TRIP/triver_Roshin/trivers.b forcing.rivers.b || tellerror "Could not get triver .b file"
+  echo "**Setting up river forcing  from priver"
+  cp $BASEDIR/force/rivers/$E/rivers.a forcing.rivers.a || tellerror "Could not get river .a file"
+  cp $BASEDIR/force/rivers/$E/rivers.b forcing.rivers.b || tellerror "Could not get river .b file"
    if [ $NTRACR -ne 0 ] ; then
       echo "**Setting up bio river forcing"
       cp $BASEDIR/force/rivers/$E/ECO_no3.a rivers.ECO_no3.a || tellwarn "Could not get NO3 river .a file"
@@ -517,6 +498,11 @@ fi
 if [ ${testthkdf2} -eq 1 ] ; then 
    ${pget} ${D}/../../relax/${E}/thkdf2.a thkdf2.a  || tellerror "Could not get thkdf2.a"
    ${pget} ${D}/../../relax/${E}/thkdf2.b thkdf2.b  || tellerror "Could not get thkdf2.b"
+fi
+testveldf4=$(echo $VELDF4'<'0.0 | bc -l)
+if [ ${testveldf4} -eq 1 ] ; then 
+   ${pget} ${D}/../../relax/${E}/veldf4.a veldf4.a  || tellerror "Could not get thkdf2.a"
+   ${pget} ${D}/../../relax/${E}/veldf4.b veldf4.b  || tellerror "Could not get thkdf2.b"
 fi
 
 
@@ -749,6 +735,9 @@ wait
 #
 if [ ! -s forcing.rivers.a ] ; then
    /bin/rm forcing.rivers.[ab]
+
+echo "problem with rivers"
+ls -l *rivers*
 fi
 
 

@@ -25,6 +25,7 @@
          <field known_name="tp"    file="[rootPath]6h.TP_%Y.nc"   varname="TP"   units="m"      accumulated="6h"/> <!--6 hour accumulated precip: double the source whether hourly or not !!-->
          <field known_name="tcc"   file="[rootPath]/6h.TCC_%Y.nc"  varname="TCC"  units="1"/>
          <field known_name="ssrd"  file="[rootPath]/6h.SSRD_%Y.nc" varname="SSRD" units="J m**-2" accumulated="6h"/> <!-- 6 hour accumulated flux-->
+	  <field known_name="strd"  file="[rootPath]/6h.STRD_%Y.nc" varname="STRD" units="J m**-2" accumulated="6h"/> <!-- 6 hour accumulated flux-->
       </forcing_dataset>
 
 

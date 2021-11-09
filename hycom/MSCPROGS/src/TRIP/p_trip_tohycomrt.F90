@@ -189,7 +189,7 @@ program trip_tohycom
    integer*4, external :: iargc
 #endif
 
-   print *,'Routine will calculate river discharge from TRIP+ERAi-derived'
+   print *,'Routine will calculate river discharge from TRIP+ERA5-derived'
    print *,'river fields. Input is across-shore radius and alongshore-shore radius.  Both in km'
    if (iargc()==6) then
       call getarg(1,runoff_source) 
@@ -201,9 +201,9 @@ program trip_tohycom
       radius=radius*1000.
       landradius=landradius*1000.
    else 
-      !runoff_source="erai"
-      !radius=d_radius
-      !landradius=d_landradius
+      runoff_source="era5"
+      radius=d_radius
+      landradius=d_landradius
       print *,"p_trip_tohycomrt.F90 Not correct number of arguments..."
       call exit(1)
    end if
@@ -222,6 +222,9 @@ program trip_tohycom
    elseif (trim(runoff_source) == "erai") then 
       print '(a)',"Opening river climatology file trip_erai_clim.nc"
       call handle_err(nf90_open('trip_erai_clim.nc',NF90_NOWRITE,ncid))
+   elseif (trim(runoff_source) == "era5") then
+      print '(a)',"Opening river climatology file trip_era5_clim.nc"
+      call handle_err(nf90_open('trip_era5_clim.nc',NF90_NOWRITE,ncid))
    else 
       print *,"Unknown runoff source "//trim(runoff_source)
       call exit(1)
@@ -493,7 +496,7 @@ program trip_tohycom
 
    print '(a)', 'Spreading discharge over ocean grid cells for climatology'
    open (unit=909, file='forcing.rivers.b',  status='replace', action='write')
-   write(909,'(a)') 'River mass fluxes from TRIP+ERAI  climatology'
+   write(909,'(a)') 'River mass fluxes from TRIP+ERA5  climatology'
    write(909,'(a)') ''
    write(909,'(a)') ''
    write(909,'(a)') ''

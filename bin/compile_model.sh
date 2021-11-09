@@ -135,10 +135,12 @@ elif [ "${unamen:0:5}" == "alvin" ] ; then
 elif [ "${unamen:0:5}" == "elvis" ] ; then
    SITE="elvis"
    MACROID=$ARCH.$SITE.$compiler
+elif [ "${unamen:8:5}" == "betzy" ] ; then
+   SITE="betzy"
+   MACROID=$ARCH.$SITE.$compiler
 elif [ "${unamen:0:5}" == "login" ] ; then # fram
    SITE="fram"
    MACROID=$ARCH.$SITE.$compiler
-
 # Generic case. SITE is empty
 elif [[ "${ARCH}" == "Linux" ]] ; then
    SITE=""
@@ -179,6 +181,12 @@ elif [ "$SITE" == "alvin" ] || [ "$SITE" == "elvis" ] ; then
 elif [ "$SITE" == "fram" ] ; then 
    echo "hardcoded settings for $SITE"
    export ESMF_DIR=/cluster/software/ESMF/7.1.0r-intel-2018b/
+   export ESMF_MOD_DIR=${ESMF_DIR}mod/
+   export ESMF_LIB_DIR=${ESMF_DIR}lib/
+
+elif [ "$SITE" == "betzy" ] ; then
+   echo "hardcoded settings for $SITE"
+   export ESMF_DIR=/cluster/software/ESMF/8.0.1-intel-2020a/
    export ESMF_MOD_DIR=${ESMF_DIR}mod/
    export ESMF_LIB_DIR=${ESMF_DIR}lib/
    
