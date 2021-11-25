@@ -2,7 +2,7 @@ from netCDF4 import Dataset
 import time as ttimm
 import numpy as np
 import matplotlib
-import abfile
+import abfile.abfile as abf
 from pprint import pprint
 import argparse
 import matplotlib.pyplot as plt
@@ -51,16 +51,16 @@ def interp2points(fobj,varname,target_lonlats,mapping=None,latlon=True,**kwargs)
     glat = ncfile1.variables['lat'][:] 
     Z0    = ncfile1.variables[varname][:]
     Z=np.transpose(np.squeeze(Z0))
-    print 'Z.shape=', Z.shape
-    print 'Z0.shape=', Z0.shape
-    print 'lon.shape=', glon.shape
-    print 'lon.ndim=', glon.ndim
-    print 'lat.shape=',glat.shape
-    lon,lat  = np.meshgrid(glon,glat,indexing='ij')
+    print('Z.shape=', Z.shape)
+    print('Z0.shape=', Z0.shape)
+    print('lon.shape=', glon.shape)
+    print('lon.ndim=', glon.ndim)
+    print('lat.shape=',glat.shape)
+    lon,lat=np.meshgrid(glon,glat,indexing='ij')
     # do interpolation in stereographic projection
     if mapping is None:
         if not latlon:
-            raise ValueError('need to provide mapping if latlon=False')
+            raise ValueError ('need to provide mapping if latlon=False')
         souths    = lat[lat<0]
         lat_0     = 90.
         lon_0     = -45.
@@ -84,11 +84,11 @@ def interp2points(fobj,varname,target_lonlats,mapping=None,latlon=True,**kwargs)
     else:
          x,y = target_lonlats
 
-    print 'X.shape=', X.shape
-    print 'Y.shape=', Y.shape
-    print 'Z.shape=', Z.shape
-    print 'x.shape=', x.shape
-    print 'y.shape=', y.shape
+    print('X.shape=', X.shape)
+    print('Y.shape=', Y.shape)
+    print('Z.shape=', Z.shape)
+    print('x.shape=', x.shape)
+    print('y.shape=', y.shape)
     # do interpolation
     fvals = reproj_mod2obs(X,Y,Z,x,y,**kwargs) #numpy masked array
 
@@ -151,14 +151,10 @@ def reduce_grid(X, Y, Z, bbox):
     jmax = id[1].max() +1
     #Z_ = Z.filled(np.nan).astype(float)
     if hasattr(Z, 'mask'):
-	Z_ = Z.filled(np.nan).astype(float)
+        Z_ = Z.filled(np.nan).astype(float)
     else:
-	Z_ = Z
-    return(
-            X[imin: imax, jmin: jmax],
-            Y[imin: imax, jmin: jmax],
-            Z_[imin: imax, jmin: jmax],
-            )
+        Z_ = Z
+    return(X[imin: imax, jmin: jmax], Y[imin: imax, jmin: jmax], Z_[imin: imax, jmin: jmax], )
 #-------------------------------------------------------------------------
 
 if __name__ == "__main__" :
@@ -177,15 +173,15 @@ if __name__ == "__main__" :
    parser.add_argument('--filename', help="",nargs='+')
    
    args = parser.parse_args()
-   print args.filename
+   print(args.filename)
    #Example
    #python ./interpolate_sstncof2TP5.py --filename ../ncof_sst/ncof_sst_20*.nc
    
-   gfile = abfile.ABFileGrid("regional.grid","r")
+   gfile = abf.ABFileGrid("regional.grid","r")
    plon=gfile.read_field("plon")
    plat=gfile.read_field("plat")
    gfile.close()
-   dpfile = abfile.ABFileBathy("regional.depth","r",idm=gfile.idm,jdm=gfile.jdm)
+   dpfile = abf.ABFileBathy("regional.depth","r",idm=gfile.idm,jdm=gfile.jdm)
    depth=dpfile.read_field("depth")
    dpfile.close()
    target_lon=plon
@@ -202,16 +198,16 @@ if __name__ == "__main__" :
             logger.info("ostia sst data: Now processing  %s"%ncfile0)
             # interpolate ncof_sst in tp5 grid
             start_time = ttimm.time()
-            print 'start time=', start_time
+            print('start time=', start_time)
             newMask = interp2points(ncfile1,'mask',target_lonlats,mapping=None)
             sst_anlys = interp2points(ncfile1,'analysed_sst',target_lonlats,mapping=None)
-            print 'elapsed time=',start_time - ttimm.time()
+            print('elapsed time=',start_time - ttimm.time())
             # Create scalar field for vectors
             fld=sst_anlys - 273.1
             fld=np.ma.masked_where(np.ma.getmask(depth),fld)
             fld=np.ma.masked_invalid(fld)
-            print 'mn,mx  data=',fld.min(),fld.max()
-            print 'fldin_nansum=', np.nansum(fld)
+            print('mn,mx  data=',fld.min(),fld.max())
+            print('fldin_nansum=', np.nansum(fld))
             counter=counter+1
             file_count=file_count+1
             # write to nc file
@@ -227,13 +223,13 @@ if __name__ == "__main__" :
             times = rootgrp.createVariable("time","f8",("time",))
             ostia_sst = rootgrp.createVariable("analysed_sst","f4",("time","lat","lon",))
             sst_mask = rootgrp.createVariable("ostia_mask","f4",("time","lat","lon",))
-            print 'ostia_sst.shape=',ostia_sst.shape
-            print 'sst_mask.shape=',sst_mask.shape
+            print('ostia_sst.shape=',ostia_sst.shape)
+            print('sst_mask.shape=',sst_mask.shape)
             times[:] = 1
             ostia_sst[0,:,:]=fld[:,:]
             sst_mask[0,:,:]=np.array(newMask[:,:])
 
             rootgrp.close()
             ### End file_intloop
-            print 'Computing the avearge of file_counter= ', file_count, 'counter=',counter
+            print('Computing the avearge of file_counter= ', file_count, 'counter=',counter)
 

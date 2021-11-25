@@ -235,7 +235,7 @@ def main(myfiles,fieldname,fieldlevel,
    yyyy1cnt=myfiles[0][-8:-5]
    print("myfiles[0]="),myfiles[0][-9:-5]
    print("myfiles[0]="),myfiles[0]
-   print("yyy1cnt="), print(yyyy1cnt)
+   print("yyy1cnt=") , print(yyyy1cnt)
    base = datetime.datetime(int(yyyy1cnt), 1, 15)
    tid=np.array([base + relativedelta(months=i) for i in range(len(myfiles))])
    if len(myfiles)==36:
