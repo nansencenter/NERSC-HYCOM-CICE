@@ -31,15 +31,15 @@ def main(start_time,end_time,init,nmpi,fnml) :
       #sec0=start_time - datetime.datetime(year_init,1,1,0,0,0)
       #sec0=sec0.days*86400. + sec0.seconds
       #istep0=int(numpy.floor(sec0/dt))-1
-      raise NameError,"negative istep0, adjust year_init"
+      raise NameError("negative istep0, adjust year_init")
 
 
    nml["setup_nml"]["year_init"] = year_init
    nml["setup_nml"]["istep0"] = istep0
    nml["setup_nml"]["npt"]=npt
-   print "year_init = ",nml["setup_nml"]["year_init"]
-   print "istep0    = ",nml["setup_nml"]["istep0"]
-   print "npt       = ",nml["setup_nml"]["npt"]
+   print("year_init = ",nml["setup_nml"]["year_init"])
+   print("istep0    = ",nml["setup_nml"]["istep0"])
+   print("npt       = ",nml["setup_nml"]["npt"])
 
    nml["domain_nml"]["nprocs"]=nmpi
 
