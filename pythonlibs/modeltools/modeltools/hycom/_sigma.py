@@ -28,7 +28,7 @@ class Sigma(object) :
          self.C7= 3.15235E-05#  !T^2S   coefficent
          self.pref=2000.0e4 # reference pressure, Pascals
       else :
-         raise ValueError,"flag<>0 not implemented"
+         raise ValueError("flag!=0 not implemented")
 
    def A0(self,S) :
       return (self.C1+self.C3*S)/self.C6
@@ -325,7 +325,7 @@ class Sigma17Term(object) :
       elif thflag==0 :
          self._pref=0.           #ref. pressure in Pascals, sigma2
       else :
-         raise ValueError,"thflag must be 0 or 2"
+         raise ValueError("thflag must be 0 or 2")
       self._rpdb =self._pref*self._prs2pdb
 
       # --- coefficients for 17-term rational function sig() at rpdb.
