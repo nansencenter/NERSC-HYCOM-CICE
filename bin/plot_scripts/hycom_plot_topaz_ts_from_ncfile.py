@@ -5,21 +5,21 @@ import argparse
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot
-import abfile
-import numpy
+import abfile.abfile as abf
+import numpy as np
 import logging
 import datetime
 import re
 import scipy.interpolate
 import os.path
 import matplotlib.pyplot as plt
-#import mod_HYCOM_utils as mhu
-#import mod_reading as mr
-import myMOD
 import matplotlib.dates as mdates
 from dateutil.relativedelta import relativedelta
 from matplotlib.dates import YearLocator, MonthLocator, DateFormatter
 import cmocean
+import cartopy.crs as ccrs
+import cartopy.feature as cfeature
+from mpl_toolkits.axes_grid1 import make_axes_locatable, axes_size
 
 
 # Set up logger
@@ -52,45 +52,40 @@ def main(myfiles,fieldname,
       dpi=180) :
 
 
-   #cmap=matplotlib.pyplot.get_cmap("jet")
-   #cmap=matplotlib.pyplot.get_cmap(cmap)
    cmap=matplotlib.pyplot.get_cmap("jet")
    if tokml :
-      ab = abfile.ABFileGrid("regional.grid","r")
+      ab = abf.ABFileGrid("regional.grid","r")
       plon=ab.read_field("plon")
       plat=ab.read_field("plat")
       ab.close()
 
-   # Prelim support for projections. import basemap only if needed since its usually not needed
-   # aaaand installation can sometimes be a bit painful .... bmn is None now, define it if needed
-   #bm=None
-   from mpl_toolkits.axes_grid1 import make_axes_locatable, axes_size
-   from mpl_toolkits.basemap import Basemap
    
-   ab = abfile.ABFileGrid("regional.grid","r")
+   ab = abf.ABFileGrid("regional.grid","r")
    plon=ab.read_field("plon")
    plat=ab.read_field("plat")
    scpx=ab.read_field("scpx")
    scpy=ab.read_field("scpy")
    target_lonlats=[plon,plat]
-   abdpth = abfile.ABFileBathy('regional.depth',"r",idm=ab.idm,jdm=ab.jdm)
+   abdpth = abf.ABFileBathy('regional.depth',"r",idm=ab.idm,jdm=ab.jdm)
    mdpth=abdpth.read_field('depth')
    maskd=mdpth.data
-   maskd[maskd>1e29]=numpy.nan
+   maskd[maskd>1e29]=np.nan
    #Region_mask=True
    Region_mask=False
    if Region_mask:
-      maskd[plat>80]=numpy.nan
-      maskd[plat<50]=numpy.nan
-      maskd[plon>60]=numpy.nan
-      maskd[plon<-50]=numpy.nan
-      #bm = Basemap(width=9000000,height=9000000,
+      maskd[plat>80]=np.nan
+      maskd[plat<50]=np.nan
+      maskd[plon>60]=np.nan
+      maskd[plon<-50]=np.nan
+
    Nordic_mask=maskd   
 
-   bm = Basemap(width=7400000,height=7400000, \
-         resolution='i',projection='stere',\
-         lat_ts=70,lat_0=85,lon_0=-40.)
-   x,y=bm(plon,plat)
+   proj=ccrs.Stereographic(central_latitude=90.0,central_longitude=-40.0)
+   pxy = proj.transform_points(ccrs.PlateCarree(), plon, plat)
+   px=pxy[:,:,0]
+   py=pxy[:,:,1]
+   x,y=np.meshgrid(np.arange(plon.shape[1]),np.arange(plon.shape[0]))
+
 
    if vector :
       logger.info("Vector component 1:%s"%fieldname)
@@ -107,8 +102,8 @@ def main(myfiles,fieldname,
       ix=1394
       jy=267
    sum_fld1=maskd
-   sum_fld1[~numpy.isnan(sum_fld1)]=0.0
-   Clim_arr=numpy.zeros((plon.shape[0],plon.shape[1],12))
+   sum_fld1[~np.isnan(sum_fld1)]=0.0
+   Clim_arr=np.zeros((plon.shape[0],plon.shape[1],12))
    #--------------- 
    # compute for TP6 files
    figure = matplotlib.pyplot.figure(figsize=(8,8))
@@ -116,34 +111,30 @@ def main(myfiles,fieldname,
    counter=0
    file_count=0
    sum_fld1=maskd
-   sum_fld1[~numpy.isnan(sum_fld1)]=0.0
+   sum_fld1[~np.isnan(sum_fld1)]=0.0
        
    #-----------------------------------------
    figure = matplotlib.pyplot.figure(figsize=(8,8))
    ax=figure.add_subplot(111)
-   bm = Basemap(width=7400000,height=7400000, \
-        resolution='i',projection='stere',\
-        lat_ts=70,lat_0=85,lon_0=-40.)
    onemm=9.806
    counter=0
    file_count=0
    sum_fld1=maskd
-   sum_fld1[~numpy.isnan(sum_fld1)]=0.0
-   dt_cnl=numpy.zeros(len(myfiles))
-   diff_dt_cnl=numpy.zeros(len(myfiles))
-   rmse_dt_cnl=numpy.zeros(len(myfiles))
+   sum_fld1[~np.isnan(sum_fld1)]=0.0
+   dt_cnl=np.zeros(len(myfiles))
+   diff_dt_cnl=np.zeros(len(myfiles))
+   rmse_dt_cnl=np.zeros(len(myfiles))
    Labl1=myfiles[0][:28]
    #Labl1="CNTL: New prsbas=0"
    yyyy1=myfiles[0][-14:-10]
-   print "myfiles[0]=",myfiles[0]
-   print "yyy1=", yyyy1
-   #base = datetime.datetime(2007, 1, 15)
+   print("myfiles[0]=",myfiles[0])
+   print("yyy1=", yyyy1)
    base = datetime.datetime(int(yyyy1), 1, 15)
-   tid=numpy.array([base + relativedelta(months=i) for i in xrange(len(myfiles))])
+   tid=np.array([base + relativedelta(months=i) for i in range(len(myfiles))])
    counter=0
    file_count=0
    sum_fld1=maskd
-   sum_fld1[~numpy.isnan(sum_fld1)]=0.0
+   sum_fld1[~np.isnan(sum_fld1)]=0.0
    logger.info(">>>>>--------------------------Processing the first files=  myfiles")
    if "salin" in fieldname:
       fieldname="salin01"
@@ -154,38 +145,36 @@ def main(myfiles,fieldname,
        if "srfhgt" in fieldname:
           #convert to "m"
           fld_arr= fld_arr/9.806
-       print "fld_arr.shpe", fld_arr.shape
+       print("fld_arr.shpe", fld_arr.shape)
        tot=fld_arr.shape[0]
        fh.close()
        for ii in range(tot):
           fld=fld_arr[ii,:,:]
-          #fld=numpy.ma.masked_where(fld<freezp,fld)
-          print 'mn,mx=',fld.min(),fld.max(), 'count=',counter
-          dt_cnl[counter]=numpy.nanmean(fld)
+          print('mn,mx=',fld.min(),fld.max(), 'count=',counter)
+          dt_cnl[counter]=np.nanmean(fld)
           if Point_tid:
              dt_cnl[counter]=fld[jy,ix]
-          print "fld.shape", fld.shape
-          print "Nordic_mask.shape", Nordic_mask.shape
+          print("fld.shape", fld.shape)
+          print("Nordic_mask.shape", Nordic_mask.shape)
           counter=counter+1
           sum_fld1=sum_fld1+fld
           del fld
          # End i_intloop      
-   print 'Computing the avearge of file_counter= ', file_count, 'counter=',counter
+   print('Computing the avearge of file_counter= ', file_count, 'counter=',counter)
    #next experminet
    if filename2:
-      dt_2=numpy.zeros(len(filename2))
-      diff_dt_2=numpy.zeros(len(filename2))
-      rmse_dt_2=numpy.zeros(len(filename2))
+      dt_2=np.zeros(len(filename2))
+      diff_dt_2=np.zeros(len(filename2))
+      rmse_dt_2=np.zeros(len(filename2))
       yyyy2=filename2[0][-14:-10]
-      print "filename2[0]=",filename2[0]
-      print "yyy1=", yyyy2
-      tid_2=numpy.array([datetime.datetime(int(yyyy2), 1, 15) \
-         + relativedelta(months=i) for i in xrange(len(filename2))])
+      print("filename2[0]=",filename2[0])
+      print("yyy1=", yyyy2)
+      tid_2=np.array([datetime.datetime(int(yyyy2), 1, 15)+relativedelta(months=i) for i in range(len(filename2))])
       Labl2=filename2[0][:28]
       counter=0
       file_count=0
       sum_fld1=maskd
-      sum_fld1[~numpy.isnan(sum_fld1)]=0.0
+      sum_fld1[~np.isnan(sum_fld1)]=0.0
       logger.info(">>>>>--------------------------Processing the first files=  myfiles")
       for ncfil in filename2:
           logger.info("Now processing  %s"%ncfil)
@@ -193,14 +182,14 @@ def main(myfiles,fieldname,
           fld_arr = fh.variables[fieldname][:]
           if "srfhgt" in fieldname:
              fld_arr= fld_arr/9.806
-          print "fld_arr.shpe", fld_arr.shape
+          print("fld_arr.shpe", fld_arr.shape)
           tot=fld_arr.shape[0]
           fh.close()
           for ii in range(tot):
              fld=fld_arr[ii,:,:]
-             #fld=numpy.ma.masked_where(fld<freezp,fld)
-             print 'mn,mx=',fld.min(),fld.max(), 'count=',counter
-             dt_2[counter]=numpy.nanmean(fld)
+             #fld=np.ma.masked_where(fld<freezp,fld)
+             print('mn,mx=',fld.min(),fld.max(), 'count=',counter)
+             dt_2[counter]=np.nanmean(fld)
              if Point_tid:
                 dt_2[counter]=fld[jy,ix]
              counter=counter+1
@@ -208,17 +197,6 @@ def main(myfiles,fieldname,
              del fld
 
    #---------------------------------------
-   #compute anaomlies and plot
-  #if "srfhgt" in fieldname:
-  #     srfhgt_mean=numpy.nanmean(dt_cnl)
-  #     logger.info("Srfhgt mean ----->>= %.2f"%srfhgt_mean)
-  #     dt_cnl[:]=dt_cnl[:]-srfhgt_mean
-  #     if filename2:
-  #        srfhgt_mean=numpy.nanmean(dt_2)
-  #        logger.info("file2: Srfhgt mean ----->>= %.2f"%srfhgt_mean)
-  #        dt_2[:]=dt_2[:]-srfhgt_mean
-  # #tid_clim=tid[::31]+14
-   #figure, ax = matplotlib.pyplot.figure()
    figure, ax = plt.subplots()
    years = YearLocator()   # every year
    months = MonthLocator()  # every month

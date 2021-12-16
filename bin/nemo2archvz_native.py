@@ -6,7 +6,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot
 import modeltools.forcing.bathy
-import abfile
+import abfile.abfile as abf
 import numpy
 import netCDF4
 import logging
@@ -19,16 +19,12 @@ import sys
 import shutil
 import glob
 from matplotlib import pyplot as plt
-
-####
 from netCDF4 import Dataset, MFDataset, num2date,date2num
 import scipy.io as io
 from scipy import ndimage
 import numpy as np
 from scipy.spatial import cKDTree
-#from myfill import fill as fill
 
-####
 
 
 
@@ -128,8 +124,8 @@ def periodic_i_shift_right(field,istep) :
 
 def arctic_patch_shift_up(field,jstep) :
    # shift field down
-   if jstep <> 1 :
-      raise NameError,"Arctic_patch_shift only with jstep=1 for now"
+   if jstep !=1 :
+      raise NameError("Arctic_patch_shift only with jstep=1 for now")
    field2 = numpy.copy(field)
    field2[1:,:] = field2[0:-1,:] # Shift up
    # NB:  row 0 is same as row 1 (extrapolated
@@ -137,8 +133,8 @@ def arctic_patch_shift_up(field,jstep) :
 
 def arctic_patch_shift_down(field,jstep) :
    # shift field down
-   if jstep <> 1 :
-      raise NameError,"Arctic_patch_shift only with jstep=1 for now"
+   if jstep != 1 :
+      raise NameError("Arctic_patch_shift only with jstep=1 for now")
    field2 = numpy.copy(field)
    field2[0:-1,:] = field2[1:,:] # Shift down
    tmp=field2[-1,:]              # Top row as top ...
@@ -268,7 +264,7 @@ def make_grid(filemesh):
    ddict["cori"]=corio
    ddict["pang"] =pang
    ddict["pasp"] =asp
-   abfile.write_regional_grid(ddict)
+   abf.write_regional_grid(ddict)
 
    # Bathymetry
    hdepw  = sliced(ncidz.variables["hdepw"] [0,:,:])
@@ -277,7 +273,7 @@ def make_grid(filemesh):
    ncidt=netCDF4.Dataset(maskfile,"r")
    tmask = sliced(ncidt.variables["tmaskutil"][0,:,:])
    tmp2 = numpy.where( mbathy>0.  ,hdepw,0.)
-   abfile.write_bathymetry("bathy",1,tmp2,0.)
+   abf.write_bathymetry("bathy",1,tmp2,0.)
  
    shutil.move("depth_bathy_01.a",'../topo/depth_NMOa0.08_01.a')
    shutil.move("depth_bathy_01.b",'../topo/depth_NMOa0.08_01.b')
@@ -536,7 +532,7 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=False,iexpt=10,iversn=22,yrfla
       if not m :
          msg="File %s is not a grid2D file, aborting"%file2d
          logger.error(msg)
-         raise ValueError,msg
+         raise ValueError(msg)
 
       # Construct remaining files
       filet  =os.path.join(dirname,m.group(1) + "gridT" + m.group(3))
@@ -571,7 +567,7 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=False,iexpt=10,iversn=22,yrfla
          if idx >7: 
             msg="No available BIO file within a week difference with PHY"
 	    logger.error(msg)
-            raise ValueError,msg
+            raise ValueError(msg)
          logger.info("BIO file %s reading & interpolating to 1/12 deg grid cells ..."%biofname)
          ncidb=netCDF4.Dataset(biofname,"r")
          blon=ncidb.variables["longitude"][:];
@@ -702,7 +698,7 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=False,iexpt=10,iversn=22,yrfla
       montg1=numpy.zeros(ssh.shape)
 
       # Write to abfile
-      outfile = abfile.ABFileArchv("./data/"+oname,"w",iexpt=iexpt,iversn=iversn,yrflag=yrflag,)
+      outfile = abf.ABFileArchv("./data/"+oname,"w",iexpt=iexpt,iversn=iversn,yrflag=yrflag,)
 
       logger.info("Writing 2D variables")
       outfile.write_field(montg1,                ip,"montg1"  ,0,model_day,1,0)

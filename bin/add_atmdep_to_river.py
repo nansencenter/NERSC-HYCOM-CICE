@@ -1,5 +1,5 @@
 import numpy as np
-import abfile
+import abfile.abfile as abf
 import argparse
 from netCDF4 import Dataset as NetCDFFile
 from scipy.interpolate import griddata
@@ -29,7 +29,7 @@ def main(path,source_file):
     lon = nc.variables["lon"][:]
     Nread = wetNOy + wetNHx + dryNOy + dryNHx
 
-    abgrid = abfile.ABFileGrid(path + "../../../topo/regional.grid","r")
+    abgrid = abf.ABFileGrid(path + "../../../topo/regional.grid","r")
     plon=abgrid.read_field("plon")
     plat=abgrid.read_field("plat")
     jdm,idm=plon.shape
@@ -41,11 +41,11 @@ def main(path,source_file):
     N = N/14.01 * 6.625 * 12.01 # mgN m-2 s-1 --> mgC m-2 s-1
 
 
-    outfile=abfile.ABFileRiver(path + "ECO_no3_new.a","w",idm=idm,jdm=jdm,\
+    outfile=abf.ABFileRiver(path + "ECO_no3_new.a","w",idm=idm,jdm=jdm,\
                    cline1='River nitrate fluxes + Atmospheric N deposition',\
                    cline2='mgC m-2 s-1')
     outfile.write_header()
-    Nriver = abfile.AFile(idm,jdm,path + "ECO_no3.a","r")
+    Nriver = abf.AFile(idm,jdm,path + "ECO_no3.a","r")
 
     for month in range(12):
         river  = Nriver.read_record(month)
@@ -73,11 +73,11 @@ def main(path,source_file):
     # ratio --> ( 7.4 / 14.01 * 6.625 ) / ( 0.02 / 31. * 106. ) = 51.2
     P = N/51.2
 
-    outfile=abfile.ABFileRiver(path + "ECO_pho_new.a","w",idm=idm,jdm=jdm,\
+    outfile=abf.ABFileRiver(path + "ECO_pho_new.a","w",idm=idm,jdm=jdm,\
                    cline1='River phosphate fluxes + Atmospheric P deposition',\
                    cline2='mgC m-2 s-1')
     outfile.write_header()
-    Priver = abfile.AFile(idm,jdm,path + "ECO_pho.a","r")
+    Priver = abf.AFile(idm,jdm,path + "ECO_pho.a","r")
 
     for month in range(12):
         river  = Priver.read_record(month)

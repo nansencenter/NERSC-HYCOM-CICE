@@ -5,21 +5,21 @@ import argparse
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot
-import abfile
-import numpy
+import abfile.abfile as abf
+import numpy as np
 import logging
 import datetime
 import re
 import scipy.interpolate
 import os.path
 import matplotlib.pyplot as plt
-#import mod_HYCOM_utils as mhu
-#import mod_reading as mr
-#import myMOD
 import matplotlib.dates as mdates
 from dateutil.relativedelta import relativedelta
 from matplotlib.dates import YearLocator, MonthLocator, DateFormatter
 import cmocean
+import cartopy.crs as ccrs
+import cartopy.feature as cfeature
+from mpl_toolkits.axes_grid1 import make_axes_locatable, axes_size
 
 '''
 Plot timeseries of the domain-wide average of a given field: examples 
@@ -56,21 +56,20 @@ def open_file(myfile0,filetype,fieldname,fieldlevel,datetime1=None,datetime2=Non
    ab2=None
    rdtimes=[]
    if filetype == "archive" :
-      ab = abfile.ABFileArchv(myfile,"r")
+      ab = abf.ABFileArchv(myfile,"r")
       n_intloop=1
-   #elif filetype == "restart" :
-   #   tmp = abfile.ABFileRestart(myfile,"r",idm=gfile.idm,jdm=gfile.jdm)
+
    elif filetype == "regional.depth" :
-      ab = abfile.ABFileBathy(myfile,"r",idm=idm,jdm=jdm)
+      ab = abf.ABFileBathy(myfile,"r",idm=idm,jdm=jdm)
       n_intloop=1
    elif filetype == "forcing" :
-      ab = abfile.ABFileForcing(myfile,"r",idm=idm,jdm=jdm)
+      ab = abf.ABFileForcing(myfile,"r",idm=idm,jdm=jdm)
       if vector :
          file2=myfile.replace(fieldname,vector)
          logger.info("Opening file %s for vector component nr 2"%file2)
-         ab2=abfile.ABFileForcing(file2,"r",idm=idm,jdm=jdm)
+         ab2=abf.ABFileForcing(file2,"r",idm=idm,jdm=jdm)
       if datetime1 is None or datetime2 is None :
-         raise NameError,"datetime1 and datetime2 must be specified when plotting forcing files"
+         raise NameError("datetime1 and datetime2 must be specified when plotting forcing files")
       else :
          iday1,ihour1,isec1 = modeltools.hycom.datetime_to_ordinal(datetime1,3)
          rdtime1 = modeltools.hycom.dayfor(datetime1.year,iday1,ihour1,3)
@@ -80,12 +79,12 @@ def open_file(myfile0,filetype,fieldname,fieldlevel,datetime1=None,datetime2=Non
          rdtimes=sorted([elem for elem in ab.field_times if elem >rdtime1 and elem < rdtime2])
          n_intloop=len(rdtimes)
    else :
-      raise NotImplementedError,"Filetype %s not implemented"%filetype
+      raise NotImplementedError("Filetype %s not implemented"%filetype)
    # Check that fieldname is actually in file
    if fieldname not in  ab.fieldnames :
       logger.error("Unknown field %s at level %d"%(fieldname,fieldlevel))
       logger.error("Available fields : %s"%(" ".join(ab.fieldnames)))
-      raise ValueError,"Unknown field %s at level %d"%(fieldname,fieldlevel)
+      raise ValueError("Unknown field %s at level %d"%(fieldname,fieldlevel))
 
    return n_intloop,ab,ab2,rdtimes
 
@@ -111,40 +110,34 @@ def main(myfiles,fieldname,fieldlevel,
       dpi=180) :
 
 
-   #cmap=matplotlib.pyplot.get_cmap("jet")
-   #cmap=matplotlib.pyplot.get_cmap(cmap)
    cmap=matplotlib.pyplot.get_cmap("jet")
-
-   # Prelim support for projections. import basemap only if needed since its usually not needed
-   # aaaand installation can sometimes be a bit painful .... bmn is None now, define it if needed
-   #bm=None
-   from mpl_toolkits.axes_grid1 import make_axes_locatable, axes_size
-   from mpl_toolkits.basemap import Basemap
    
-   ab = abfile.ABFileGrid("regional.grid","r")
+   ab = abf.ABFileGrid("regional.grid","r")
    plon=ab.read_field("plon")
    plat=ab.read_field("plat")
    scpx=ab.read_field("scpx")
    scpy=ab.read_field("scpy")
    target_lonlats=[plon,plat]
-   abdpth = abfile.ABFileBathy('regional.depth',"r",idm=ab.idm,jdm=ab.jdm)
+   abdpth = abf.ABFileBathy('regional.depth',"r",idm=ab.idm,jdm=ab.jdm)
    mdpth=abdpth.read_field('depth')
    maskd=mdpth.data
-   maskd[maskd>1e29]=numpy.nan
+   maskd[maskd>1e29]=np.nan
    #Region_mask=True
    Region_mask=False
    if Region_mask:
-      maskd[plat>80]=numpy.nan
-      maskd[plat<50]=numpy.nan
-      maskd[plon>60]=numpy.nan
-      maskd[plon<-50]=numpy.nan
-      #bm = Basemap(width=9000000,height=9000000,
+      maskd[plat>80]=np.nan
+      maskd[plat<50]=np.nan
+      maskd[plon>60]=np.nan
+      maskd[plon<-50]=np.nan
+
    Nordic_mask=maskd   
 
-   bm = Basemap(width=7400000,height=7400000, \
-         resolution='i',projection='stere',\
-         lat_ts=70,lat_0=85,lon_0=-40.)
-   x,y=bm(plon,plat)
+   proj=ccrs.Stereographic(central_latitude=90.0,central_longitude=-40.0)
+   pxy = proj.transform_points(ccrs.PlateCarree(), plon, plat)
+   px=pxy[:,:,0]
+   py=pxy[:,:,1]
+   x,y=np.meshgrid(np.arange(plon.shape[1]),np.arange(plon.shape[0]))
+
 
    if vector :
       logger.info("Vector component 1:%s"%fieldname)
@@ -152,11 +145,10 @@ def main(myfiles,fieldname,fieldlevel,
 
    #---------------first read and compute clim  
    Err_map=1
-   #freezp=-2.5
    freezp=-1.8
    sum_fld1=maskd
-   sum_fld1[~numpy.isnan(sum_fld1)]=0.0
-   Clim_arr=numpy.zeros((plon.shape[0],plon.shape[1],12))
+   sum_fld1[~np.isnan(sum_fld1)]=0.0
+   Clim_arr=np.zeros((plon.shape[0],plon.shape[1],12))
    #--------------- 
    # compute for TP6 files
    #-----------------------------------------
@@ -167,30 +159,29 @@ def main(myfiles,fieldname,fieldlevel,
    counter=0
    file_count=0
    sum_fld1=maskd
-   sum_fld1[~numpy.isnan(sum_fld1)]=0.0
-   dt_cnl=numpy.zeros(len(myfiles))
-   diff_dt_cnl=numpy.zeros(len(myfiles))
-   rmse_dt_cnl=numpy.zeros(len(myfiles))
-   #Labl1=myfiles[0][1:12]
+   sum_fld1[~np.isnan(sum_fld1)]=0.0
+   dt_cnl=np.zeros(len(myfiles))
+   diff_dt_cnl=np.zeros(len(myfiles))
+   rmse_dt_cnl=np.zeros(len(myfiles))
+
    Labl1="CNTL SST"
-   #Labl1="CNTL: prsbas=0"
    Labl1=myfiles[0][:28]
    yyyy1=myfiles[0][-9:-5]
    if "archv." in  myfiles[0]:
       yyyy1=myfiles[0][-13:-9]
-   print "myfiles[0]=",myfiles[0]
-   print "yyy1=", yyyy1
+   print("myfiles[0]=",myfiles[0])
+   print("yyy1=", yyyy1)
    if filename2:
-      dt_2=numpy.zeros(len(filename2))
-      diff_dt_2=numpy.zeros(len(filename2))
-      rmse_dt_2=numpy.zeros(len(filename2))
-      tid_2=numpy.array([datetime.datetime(int(yyyy1), 1, 15) \
-         + relativedelta(months=i) for i in xrange(len(filename2))])
+      dt_2=np.zeros(len(filename2))
+      diff_dt_2=np.zeros(len(filename2))
+      rmse_dt_2=np.zeros(len(filename2))
+      tid_2=np.array([datetime.datetime(int(yyyy1), 1, 15) \
+         + relativedelta(months=i) for i in range(len(filename2))])
       Labl2=filename2[0][:28]
       counter=0
       file_count=0
       sum_fld1=maskd
-      sum_fld1[~numpy.isnan(sum_fld1)]=0.0
+      sum_fld1[~np.isnan(sum_fld1)]=0.0
       if "srfhgt" in fieldname:
          fieldname="srfhgt"
       elif "temp" in fieldname:
@@ -209,38 +200,34 @@ def main(myfiles,fieldname,fieldlevel,
                  if vector :fld2=ab2.read_field(vector,rdtimes[i_intloop])
                  logger.info("Processing time %.2f"%rdtimes[i_intloop])
               else :
-                 raise NotImplementedError,"Filetype %s not implemented"%filetype
+                 raise NotImplementedError("Filetype %s not implemented"%filetype)
               # Create scalar field for vectors
-              print '---------mn,mx  data=',fld1.min(),fld1.max()
+              print('---------mn,mx  data=',fld1.min(),fld1.max())
               #if "srfhgt" in fieldname:
               #   fld1= fld1/9.806
-              print "fld1.shpe", fld1.shape
-              print 'mn,mx=',fld1.min(),fld1.max(), 'count=',counter
-              dt_2[counter]=numpy.nanmean(fld1)
+              print("fld1.shpe", fld1.shape)
+              print('mn,mx=',fld1.min(),fld1.max(), 'count=',counter)
+              dt_2[counter]=np.nanmean(fld1)
               counter=counter+1
               sum_fld1=sum_fld1+fld1
               del fld1
    #---------------------------------------------------------------------------------
    #---------------------------------------------------------------------------------
-   # filename main
-   #tid=numpy.zeros(len(myfiles))
-   #tid[:]=range(len(myfiles))
-   #base = datetime.datetime(2007, 1, 15)
    base = datetime.datetime(int(yyyy1), 1, 15)
-   tid=numpy.array([base + relativedelta(months=i) for i in xrange(len(myfiles))])
+   tid=np.array([base + relativedelta(months=i) for i in range(len(myfiles))])
    if "archv." in  myfiles[0]:
-      tid=numpy.array([base + relativedelta(days=i) for i in xrange(len(myfiles))])
+      tid=np.array([base + relativedelta(days=i) for i in range(len(myfiles))])
    nmexp=1
    if filename2:
       nmexp=nmexp+1
-   print 'processing data from No runs ==##############>>>>>>>>>>>>>>>>>>>>>>>', nmexp
+   print('processing data from No runs ==##############>>>>>>>>>>>>>>>>>>>>>>>', nmexp)
    whole_domain=True
    whole_domain=False
    #
    counter=0
    file_count=0
    sum_fld1=maskd
-   sum_fld1[~numpy.isnan(sum_fld1)]=0.0
+   sum_fld1[~np.isnan(sum_fld1)]=0.0
    logger.info(">>>>>--------------------------Processing the first files=  myfiles")
    for myfile0 in myfiles :
        logger.info("Now processing  %s"%myfile0)
@@ -254,9 +241,9 @@ def main(myfiles,fieldname,fieldlevel,
              if ('temp' in fieldname) and whole_domain:
                 vert_fld_sum=0
                 for lvl in range(50):
-                   print 'lvl=',lvl, fieldlevel
+                   print('lvl=',lvl, fieldlevel)
                    fld_lvl = ab.read_field(fieldname,lvl+1)
-                   vert_fld_sum=vert_fld_sum + numpy.nanmean(fld_lvl)
+                   vert_fld_sum=vert_fld_sum + np.nanmean(fld_lvl)
                 vert_fld_avg=vert_fld_sum/50.0
 
           elif filetype == "forcing" :
@@ -264,68 +251,59 @@ def main(myfiles,fieldname,fieldlevel,
              if vector :fld2=ab2.read_field(vector,rdtimes[i_intloop])
              logger.info("Processing time %.2f"%rdtimes[i_intloop])
           else :
-             raise NotImplementedError,"Filetype %s not implemented"%filetype
+             raise NotImplementedError("Filetype %s not implemented"%filetype)
           # Create scalar field for vectors
-          print '---------mn,mx  data=',fld1.min(),fld1.max()
+          print('---------mn,mx  data=',fld1.min(),fld1.max())
           #if "srfhgt" in fieldname:
           #   fld1= fld1/9.806
-          print "fld1.shpe", fld1.shape
-          print 'mn,mx=',fld1.min(),fld1.max(), 'count=',counter
+          print("fld1.shpe", fld1.shape)
+          print('mn,mx=',fld1.min(),fld1.max(), 'count=',counter)
           if ('temp' in fieldname) and whole_domain:
              dt_cnl[counter]=vert_fld_avg
           else:
-             dt_cnl[counter]=numpy.nanmean(fld1)
+             dt_cnl[counter]=np.nanmean(fld1)
           counter=counter+1
           sum_fld1=sum_fld1+fld1
           del fld1
           # End i_intloop
-       print 'Computing the avearge of file_counter= ', file_count, 'counter=',counter
+       print('Computing the avearge of file_counter= ', file_count, 'counter=',counter)
    #---------------------------------------
    #---------------------------------------
    #plot_climatology
-   Clim_arr=numpy.zeros((plon.shape[0],plon.shape[1],12))
+   Clim_arr=np.zeros((plon.shape[0],plon.shape[1],12))
    if 'tem' in fieldname:
       counter=0
-      rlxfile0="/home/sm_alfal/sea/TOPAZ6/NERSC-HYCOM-CICE/TP6a0.03/relax/070/relax_tem.a"
-      rlx_afile = abfile.AFile(ab.idm,ab.jdm,rlxfile0,"r")
+      rlxfile0="/cluster/work/users/achoth/TP5a0.06/relax/050/relax_tem.a"
+      rlx_afile = abf.AFile(ab.idm,ab.jdm,rlxfile0,"r")
       lyr=fieldlevel
       record_num=lyr
       record_var=record_num-1 
       fld = rlx_afile.read_record(record_var)
-      print 'mn,mx  data=',fld.min(),fld.max()
+      print('mn,mx  data=',fld.min(),fld.max())
       kdm=50
-      dt_clim=numpy.zeros(12)
+      dt_clim=np.zeros(12)
       for mnth in range(12) :
           fld1=rlx_afile.read_record(mnth*kdm+lyr-1)
           logger.debug("File %s, record_var/mnth*kdm %03d/%03d"%(rlxfile0,record_var,mnth*kdm))
-          print 'record, mn,mx  data=', kdm*mnth, fld1.min(),fld1.max()
-          #fld1=numpy.ma.masked_where(fld1<freezp,fld1)
-          #fld1=numpy.where(fld1<freezp,freezp,fld1)
-          print 'record, mn,mx  data=', kdm*mnth, fld1.min(),fld1.max()
+          print('record, mn,mx  data=', kdm*mnth, fld1.min(),fld1.max())
+          print('record, mn,mx  data=', kdm*mnth, fld1.min(),fld1.max())
           # Intloop used to read more fields in one file. Only for forcing for now
-          dt_clim[mnth]=numpy.nanmean(fld1)
+          dt_clim[mnth]=np.nanmean(fld1)
           #Clim_arr[:,:,mnth]=fld1[:,:]
           counter=counter+1
-          print 'counter=',counter
+          print('counter=',counter)
           del  fld1
       #
-      tid_clim=numpy.array([base + relativedelta(months=i) for i in xrange(12)])
+      tid_clim=np.array([base + relativedelta(months=i) for i in range(12)])
       #figure, ax = matplotlib.pyplot.figure()
       rpt=len(dt_cnl)/12
       dt_clim_cat=dt_clim
-      for ii in range(rpt-1):
-         print "concatenate "
-         dt_clim_cat=numpy.concatenate([dt_clim_cat,dt_clim])
+      for ii in range(int(rpt-1)):
+         print("concatenate ")
+         dt_clim_cat=np.concatenate([dt_clim_cat,dt_clim])
    #
    #---------------------------------------
    #---------------------------------------
-   #if "srfhgt" in fieldname:
-   #   srfhgt_mean=numpy.nanmean(dt_cnl)
-   #   logger.info("Srfhgt mean ----->>= %.2f"%srfhgt_mean)
-   #   dt_cnl[:]=dt_cnl[:]-srfhgt_mean
-
-   #tid_clim=tid[::31]+14
-   #figure, ax = matplotlib.pyplot.figure()
    figure, ax = plt.subplots()
    years = YearLocator()   # every year
    months = MonthLocator()  # every month
@@ -350,9 +328,8 @@ def main(myfiles,fieldname,fieldlevel,
    figure.autofmt_xdate()
    legend = plt.legend(loc='upper left',fontsize=8)
    plt.title("Area-averaged: %s(%d)"%(fieldname,fieldlevel))
-   #plt.xlabel('dayes')
    plt.ylabel("%s(%d)"%(fieldname,fieldlevel))
-   #plt.title('Pakistan India Population till 2007')
+
    if "k.e" in fieldname:
       fieldname="KE"
    if "u-vel" in fieldname:

@@ -5,21 +5,22 @@ import argparse
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot
-import abfile
-import numpy
+import abfile.abfile as abf
+import numpy as np
 import logging
 import datetime
 import re
 import scipy.interpolate
 import os.path
 import matplotlib.pyplot as plt
-#import mod_HYCOM_utils as mhu
-#import mod_reading as mr
 import mod_hyc2plot
 import matplotlib.dates as mdates
 from dateutil.relativedelta import relativedelta
 from matplotlib.dates import YearLocator, MonthLocator, DateFormatter
 import cmocean
+import cartopy.crs as ccrs
+import cartopy.feature as cfeature
+from mpl_toolkits.axes_grid1 import make_axes_locatable, axes_size
 
 """
 #usage
@@ -43,9 +44,9 @@ logger.propagate=False
 def gearth_fig(llcrnrlon, llcrnrlat, urcrnrlon, urcrnrlat, pixels=1024):
     """Return a Matplotlib `fig` and `ax` handles for a Google-Earth Image."""
     # https://ocefpaf.github.io/python4oceanographers/blog/2014/03/10/gearth/
-    aspect = numpy.cos(numpy.mean([llcrnrlat, urcrnrlat]) * numpy.pi/180.0)
-    xsize = numpy.ptp([urcrnrlon, llcrnrlon]) * aspect
-    ysize = numpy.ptp([urcrnrlat, llcrnrlat])
+    aspect = np.cos(np.mean([llcrnrlat, urcrnrlat]) * np.pi/180.0)
+    xsize = np.ptp([urcrnrlon, llcrnrlon]) * aspect
+    ysize = np.ptp([urcrnrlat, llcrnrlat])
     aspect = ysize / xsize
 
     if aspect > 1.0:
@@ -58,7 +59,7 @@ def gearth_fig(llcrnrlon, llcrnrlat, urcrnrlon, urcrnrlat, pixels=1024):
     fig = matplotlib.pyplot.figure(figsize=figsize,
                      frameon=False,
                      dpi=pixels//10)
-    # KML friendly image.  If using basemap try: `fix_aspect=False`.
+    # KML friendly image.
     ax = fig.add_axes([0, 0, 1, 1])
     ax.set_xlim(llcrnrlon, urcrnrlon)
     ax.set_ylim(llcrnrlat, urcrnrlat)
@@ -80,21 +81,19 @@ def open_file(myfile0,filetype,fieldname,fieldlevel,datetime1=None,datetime2=Non
    ab2=None
    rdtimes=[]
    if filetype == "archive" :
-      ab = abfile.ABFileArchv(myfile,"r")
+      ab = abf.ABFileArchv(myfile,"r")
       n_intloop=1
-   #elif filetype == "restart" :
-   #   tmp = abfile.ABFileRestart(myfile,"r",idm=gfile.idm,jdm=gfile.jdm)
    elif filetype == "regional.depth" :
-      ab = abfile.ABFileBathy(myfile,"r",idm=idm,jdm=jdm)
+      ab = abf.ABFileBathy(myfile,"r",idm=idm,jdm=jdm)
       n_intloop=1
    elif filetype == "forcing" :
-      ab = abfile.ABFileForcing(myfile,"r",idm=idm,jdm=jdm)
+      ab = abf.ABFileForcing(myfile,"r",idm=idm,jdm=jdm)
       if vector :
          file2=myfile.replace(fieldname,vector)
          logger.info("Opening file %s for vector component nr 2"%file2)
-         ab2=abfile.ABFileForcing(file2,"r",idm=idm,jdm=jdm)
+         ab2=abf.ABFileForcing(file2,"r",idm=idm,jdm=jdm)
       if datetime1 is None or datetime2 is None :
-         raise NameError,"datetime1 and datetime2 must be specified when plotting forcing files"
+         raise NameError("datetime1 and datetime2 must be specified when plotting forcing files")
       else :
          iday1,ihour1,isec1 = modeltools.hycom.datetime_to_ordinal(datetime1,3)
          rdtime1 = modeltools.hycom.dayfor(datetime1.year,iday1,ihour1,3)
@@ -104,12 +103,12 @@ def open_file(myfile0,filetype,fieldname,fieldlevel,datetime1=None,datetime2=Non
          rdtimes=sorted([elem for elem in ab.field_times if elem >rdtime1 and elem < rdtime2])
          n_intloop=len(rdtimes)
    else :
-      raise NotImplementedError,"Filetype %s not implemented"%filetype
+      raise NotImplementedError("Filetype %s not implemented"%filetype)
    # Check that fieldname is actually in file
    if fieldname not in  ab.fieldnames :
       logger.error("Unknown field %s at level %d"%(fieldname,fieldlevel))
       logger.error("Available fields : %s"%(" ".join(ab.fieldnames)))
-      raise ValueError,"Unknown field %s at level %d"%(fieldname,fieldlevel)
+      raise ValueError("Unknown field %s at level %d"%(fieldname,fieldlevel))
 
    return n_intloop,ab,ab2,rdtimes
 
@@ -130,49 +129,43 @@ def main(myfiles,fieldname,fieldlevel,
       dpi=180) :
 
 
-   #cmap=matplotlib.pyplot.get_cmap("jet")
-   #cmap=matplotlib.pyplot.get_cmap(cmap)
-   LinDic=mod_hyc2plot.cmap_dict('sawtooth_0-1.txt')
+   LinDic=mod_hyc2plot.cmap_dict('sawtooth_fc100.txt')
    if 'temp' or 'sal' in fieldname:
       cmap= matplotlib.colors.LinearSegmentedColormap('my_colormap',LinDic)
    else:
       cmap= matplotlib.colors.LinearSegmentedColormap('my_colormap',LinDic)
    if tokml :
-      ab = abfile.ABFileGrid("regional.grid","r")
+      ab = abf.ABFileGrid("regional.grid","r")
       plon=ab.read_field("plon")
       plat=ab.read_field("plat")
       ab.close()
 
-   # Prelim support for projections. import basemap only if needed since its usually not needed
-   # aaaand installation can sometimes be a bit painful .... bmn is None now, define it if needed
-   #bm=None
-   from mpl_toolkits.axes_grid1 import make_axes_locatable, axes_size
-   from mpl_toolkits.basemap import Basemap
    
-   ab = abfile.ABFileGrid("regional.grid","r")
+   ab = abf.ABFileGrid("regional.grid","r")
    plon=ab.read_field("plon")
    plat=ab.read_field("plat")
    scpx=ab.read_field("scpx")
    scpy=ab.read_field("scpy")
    target_lonlats=[plon,plat]
-   abdpth = abfile.ABFileBathy('regional.depth',"r",idm=ab.idm,jdm=ab.jdm)
+   abdpth = abf.ABFileBathy('regional.depth',"r",idm=ab.idm,jdm=ab.jdm)
    mdpth=abdpth.read_field('depth')
    maskd=mdpth.data
-   maskd[maskd>1e29]=numpy.nan
+   maskd[maskd>1e29]=np.nan
    Region_mask=True
    Region_mask=False
    if Region_mask:
-      maskd[plat>70]=numpy.nan
-      #maskd[plat<50]=numpy.nan
-      maskd[plon>20]=numpy.nan
-      maskd[plon<-30]=numpy.nan
-      #bm = Basemap(width=9000000,height=9000000,
+      maskd[plat>70]=np.nan
+      #maskd[plat<50]=np.nan
+      maskd[plon>20]=np.nan
+      maskd[plon<-30]=np.nan
+      
    Nordic_mask=maskd   
 
-   bm = Basemap(width=7400000,height=7400000, \
-         resolution='i',projection='stere',\
-         lat_ts=70,lat_0=85,lon_0=-40.)
-   x,y=bm(plon,plat)
+   proj=ccrs.Stereographic(central_latitude=90.0,central_longitude=-40.0)
+   pxy = proj.transform_points(ccrs.PlateCarree(), plon, plat)
+   px=pxy[:,:,0]
+   py=pxy[:,:,1]
+   x,y=np.meshgrid(np.arange(plon.shape[1]),np.arange(plon.shape[0]))
 
    if vector :
       logger.info("Vector component 1:%s"%fieldname)
@@ -181,33 +174,31 @@ def main(myfiles,fieldname,fieldlevel,
    #---------------first read and compute clim  
    Err_map=1
    sum_fld1=maskd
-   sum_fld1[~numpy.isnan(sum_fld1)]=0.0
-   Clim_arr=numpy.zeros((plon.shape[0],plon.shape[1],12))
+   sum_fld1[~np.isnan(sum_fld1)]=0.0
+   Clim_arr=np.zeros((plon.shape[0],plon.shape[1],12))
    if 'tem' or 'sal' in fieldname:
       counter=0
       if 'tem' in fieldname:
-         rlxfile0="/home/sm_alfal/sea/TOPAZ6/NERSC-HYCOM-CICE/TP6a0.03/relax/070/relax_tem.a"
+         rlxfile0="/cluster/work/users/achoth/TP5a0.06/relax/050/relax_tem.a"
       if 'sal' in fieldname:
-         rlxfile0="/home/sm_alfal/sea/TOPAZ6/NERSC-HYCOM-CICE/TP6a0.03/relax/070/relax_sal.a"
-      rlx_afile = abfile.AFile(ab.idm,ab.jdm,rlxfile0,"r")
+         rlxfile0="/cluster/work/users/achoth/TP5a0.06/relax/050/relax_sal.a"
+      rlx_afile = abf.AFile(ab.idm,ab.jdm,rlxfile0,"r")
       lyr=fieldlevel
       record_num=1
       record_var=record_num-1 
       fld = rlx_afile.read_record(record_var)
-      print 'mn,mx  data=',fld.min(),fld.max()
+      print('mn,mx  data='),fld.min(),fld.max()
       kdm=50
-      dt_clim=numpy.zeros(12)
+      dt_clim=np.zeros(12)
       for mnth in range(12) :
           fld1=rlx_afile.read_record(mnth*kdm+lyr-1)
-          #fld1=numpy.ma.masked_where(numpy.ma.getmask(mdpth),fld1)
-          #logger.debug("File %s, record %03d/%03d"%(myfile,record_var_pnt,mnth*kdm))
-          print 'record, mn,mx  data=', kdm*mnth, fld1.min(),fld1.max()
+          print('record, mn,mx  data='), kdm*mnth, fld1.min(),fld1.max()
           # Intloop used to read more fields in one file. Only for forcing for now
           dt_clim[mnth]=mod_hyc2plot.spatiomean(fld1,maskd)
           sum_fld1=sum_fld1+fld1
           Clim_arr[:,:,mnth]=fld1[:,:]
           counter=counter+1
-          print 'counter=',counter
+          print('counter='),counter
           del  fld1
       Clim_Avg=sum_fld1/counter
       del  sum_fld1
@@ -215,57 +206,51 @@ def main(myfiles,fieldname,fieldlevel,
    #---------------filename 
    figure = matplotlib.pyplot.figure(figsize=(8,8))
    ax=figure.add_subplot(111)
-   bm = Basemap(width=7400000,height=7400000, \
-        resolution='i',projection='stere',\
-        lat_ts=70,lat_0=85,lon_0=-40.)
    onemm=9.806
    counter=0
    file_count=0
    sum_fld1=maskd
-   sum_fld1[~numpy.isnan(sum_fld1)]=0.0
-   dt_cnl=numpy.zeros(len(myfiles))
-   diff_dt_cnl=numpy.zeros(len(myfiles))
-   rmse_dt_cnl=numpy.zeros(len(myfiles))
-   #Labl1=myfiles[0][1:12]
+   sum_fld1[~np.isnan(sum_fld1)]=0.0
+   dt_cnl=np.zeros(len(myfiles))
+   diff_dt_cnl=np.zeros(len(myfiles))
+   rmse_dt_cnl=np.zeros(len(myfiles))
    Labl1="Model: "+fieldname
    if "SPRBAS_0" in myfiles[0]:
       Labl1="CNTL: prsbas=0 "
    if filename2:
-      dt_2=numpy.zeros(len(filename2))
-      diff_dt_2=numpy.zeros(len(filename2))
-      rmse_dt_2=numpy.zeros(len(filename2))
+      dt_2=np.zeros(len(filename2))
+      diff_dt_2=np.zeros(len(filename2))
+      rmse_dt_2=np.zeros(len(filename2))
       yyyy1=filename2[0][-9:-5]
-      print "filename2[0]=",filename2[0][-9:-5]
-      print "filename2[0]=",filename2[0]
-      print "yyy1=", yyyy1
-      tid_2=numpy.array([datetime.datetime(int(yyyy1), 1, 15) \
-         + relativedelta(months=i) for i in xrange(len(filename2))])
+      print("filename2[0]="),filename2[0][-9:-5]
+      print("filename2[0]="),filename2[0]
+      print("yyy1="), yyyy1
+      tid_2=np.array([datetime.datetime(int(yyyy1), 1, 15) \
+         + relativedelta(months=i) for i in range(len(filename2))])
       Labl2="filename2"
       Labl2="Corrected"
       if "erai" in filename2[0]:
          Labl2="CNTL: prsbas=1e5 "
-   #tid=numpy.zeros(len(myfiles))
-   #tid[:]=range(len(myfiles))
-   #base = datetime.datetime(2007, 1, 15)
-   yyyy1cnt=myfiles[0][-9:-5]
-   print "myfiles[0]=",myfiles[0][-9:-5]
-   print "myfiles[0]=",myfiles[0]
-   print "yyy1cnt=", yyyy1cnt
+   
+   yyyy1cnt=myfiles[0][-8:-5]
+   print("myfiles[0]="),myfiles[0][-9:-5]
+   print("myfiles[0]="),myfiles[0]
+   print("yyy1cnt=") , print(yyyy1cnt)
    base = datetime.datetime(int(yyyy1cnt), 1, 15)
-   tid=numpy.array([base + relativedelta(months=i) for i in xrange(len(myfiles))])
+   tid=np.array([base + relativedelta(months=i) for i in range(len(myfiles))])
    if len(myfiles)==36:
       base = datetime.datetime(int(yyyy1cnt), 1, 15)
-      tid=numpy.array([base + relativedelta(months=i) for i in xrange(len(myfiles))])
-   #tid=mdates.date2num(tidstr)
+      tid=np.array([base + relativedelta(months=i) for i in range(len(myfiles))])
+
    nmexp=1
    if filename2:
       nmexp=nmexp+1
-   print 'processing data from No runs ==##############>>>>>>>>>>>>>>>>>>>>>>>', nmexp
+   print('processing data from No runs ==##############>>>>>>>>>>>>>>>>>>>>>>>'), nmexp
    for iii in range(nmexp):
       counter=0
       file_count=0
       sum_fld1=maskd
-      sum_fld1[~numpy.isnan(sum_fld1)]=0.0
+      sum_fld1[~np.isnan(sum_fld1)]=0.0
       if iii==1 and filename2:
          myfiles=filename2
       else:
@@ -288,62 +273,52 @@ def main(myfiles,fieldname,fieldlevel,
                if vector :fld2=ab2.read_field(vector,rdtimes[i_intloop])
                logger.info("Processing time %.2f"%rdtimes[i_intloop])
             else :
-               raise NotImplementedError,"Filetype %s not implemented"%filetype
+               raise NotImplementedError("Filetype %s not implemented"%filetype)
             if not window :
-               J,I=numpy.meshgrid(numpy.arange(fld1.shape[0]),numpy.arange(fld1.shape[1]))
+               J,I=np.meshgrid(np.arange(fld1.shape[0]),np.arange(fld1.shape[1]))
             else :
-               J,I=numpy.meshgrid( numpy.arange(window[1],window[3]),numpy.arange(window[0],window[2]))
+               J,I=np.meshgrid( np.arange(window[1],window[3]),np.arange(window[0],window[2]))
             # Create scalar field for vectors
             if vector : 
-               fld = numpy.sqrt(fld1**2+fld2**2)
+               fld = np.sqrt(fld1**2+fld2**2)
             else :
                fld=fld1
-            print '---------mn,mx  data=',fld.min(),fld.max()
+            print('---------mn,mx  data='),fld.min(),fld.max()
             sum_fld1=sum_fld1+fld
-            cindx=numpy.remainder(counter,12)
-            print "counter", counter, "cindx=", cindx
-            #dt_cl[counter]=numpy.nanmean(fld)
+            cindx=np.remainder(counter,12)
+            print("counter"), counter, print("cindx="), cindx
             if iii==0:
-               #dt_cnl[counter]=numpy.nanmean(fld)
                dt_cnl[counter]=mod_hyc2plot.spatiomean(fld,Nordic_mask)
                diff_dt_cnl[counter]=mod_hyc2plot.spatiomean(fld[:,:]-Clim_arr[:,:,cindx],Nordic_mask)
-               rmse_dt_cnl[counter]=numpy.sqrt(mod_hyc2plot.spatiomean((fld[:,:]-Clim_arr[:,:,cindx])**2,Nordic_mask))
+               rmse_dt_cnl[counter]=np.sqrt(mod_hyc2plot.spatiomean((fld[:,:]-Clim_arr[:,:,cindx])**2,Nordic_mask))
                Labl=Labl1
             if iii==1 and filename2:
                dt_2[counter]=mod_hyc2plot.spatiomean(fld,Nordic_mask)
                diff_dt_2[counter]=mod_hyc2plot.spatiomean(fld[:,:]-Clim_arr[:,:,cindx],Nordic_mask)
-               rmse_dt_2[counter]=numpy.sqrt(mod_hyc2plot.spatiomean((fld[:,:]-Clim_arr[:,:,cindx])**2,Nordic_mask))
+               rmse_dt_2[counter]=np.sqrt(mod_hyc2plot.spatiomean((fld[:,:]-Clim_arr[:,:,cindx])**2,Nordic_mask))
                Labl=Labl2
             # Apply mask if requested
             counter=counter+1
             file_count=file_count+1
             del fld
          # End i_intloop
-      print 'Computing the avearge of file_counter= ', file_count, 'counter=',counter, 'cindx=',cindx
+      print('Computing the avearge of file_counter= '), print(file_count), print('counter='),print(counter), print('cindx='),print(cindx)
       if file_count> 0:
          fld_Avg=sum_fld1/file_count
       if Err_map:
          cmap=cmocean.cm.balance
-         #fld_diff=fld_Avg -Ncof_Avg
          fld_diff=fld_Avg -Clim_Avg
-      if bm is not None :
-         if fieldname=='k.e.' :
-            P=bm.pcolormesh(x[J,I],y[J,I],numpy.log10(fld_Avg[J,I]),cmap=cmap)
-         elif fieldname=='srfhgt' :
-            P=bm.pcolormesh(x[J,I],y[J,I],(fld_Avg[J,I]/onemm),cmap=cmap)
-         else :
-            P=bm.pcolormesh(x[J,I],y[J,I],fld_diff[J,I],cmap=cmap)
-            if 'temp' in fieldname:
-               P1=bm.contour(x[J,I],y[J,I],fld_diff[J,I],levels=[-1.,1,4.0,8], \
-                      colors=('w',),linestyles=('-',),linewidths=(1.5,))
+
+      if fieldname=='k.e.' :
+            P=ax.pcolormesh(x[J,I],y[J,I],np.log10(fld_Avg[J,I]),cmap=cmap)
+      elif fieldname=='srfhgt' :
+            P=ax.pcolormesh(x[J,I],y[J,I],(fld_Avg[J,I]/onemm),cmap=cmap)
+      else :
+            P=ax.pcolormesh(x[J,I],y[J,I],fld_diff[J,I],cmap=cmap)
+      if 'temp' in fieldname:
+               P1=ax.contour(x[J,I],y[J,I],fld_diff[J,I],levels=[-1.,1,4.0,8],colors=('w',),linestyles=('-',),linewidths=(1.5,))
                matplotlib.pyplot.clabel(P1, fmt = '%2.1d', colors = 'w', fontsize=10) #contour line labels
-         bm.drawcoastlines(linewidth=0.05)
-         bm.drawcountries(linewidth=0.05)
-         bm.fillcontinents(color='.8',lake_color='white')
-         bm.drawparallels(numpy.arange(-80.,81.,40.),linewidth=0.2)
-         bm.drawmeridians(numpy.arange(-180.,181.,40.),linewidth=0.2)
-         bm.drawmapboundary(linewidth=0.2) #fill_color='aqua')
-       ##
+
       # Print figure.
       aspect = 40
       pad_fraction = 0.25
@@ -353,7 +328,6 @@ def main(myfiles,fieldname,fieldlevel,
       cax = divider.append_axes("right", size=width, pad=pad)
       cb=ax.figure.colorbar(P,cax=cax,extend='both')
       if clim is not None : P.set_clim(clim)
-      #ax.set_title('Diff: Model SST - Ostia SST :'+myfiles[0])
       ax.set_title("Diff:%s(%d)"%(fieldname,fieldlevel)+' :( Model - Clim )')
       # Print figure.
       fnamepng_template=myfiles[0][-20:-5].replace("/",'') +"_Avg_TP6_%s_%d_%03d_iii%03d_Avg.png"
@@ -365,33 +339,28 @@ def main(myfiles,fieldname,fieldlevel,
       figure.canvas.print_figure(fnamepng,bbox_inches='tight',dpi=dpi)
       ax.clear()
       cb.remove()
-      datmen=numpy.nanmean(fld_diff)
+      datmen=np.nanmean(fld_diff)
       spatiodatmen=mod_hyc2plot.spatiomean(fld_diff,Nordic_mask)
-      print '-----------mean diff data, spatio=', datmen,spatiodatmen
+      print('-----------mean diff data, spatio='), datmen,spatiodatmen
       del sum_fld1
       #---------------------------------------
 
 
-   #tid_clim=tid[::31]+14
-   print 'tid len=', tid.shape
+   print('tid len='), print(tid.shape)
    if filename2:
-      print 'dt_2=', dt_2.shape
-   #print 'dt_3=', dt_3.shape
-   # print 'dt_4=', dt_4.shape
-   tid_clim=numpy.array([base + relativedelta(months=i) for i in xrange(12)])
-   #figure, ax = matplotlib.pyplot.figure()
+      print('dt_2='), print(dt_2.shape)
+   tid_clim=np.array([base + relativedelta(months=i) for i in range(12)])
    figure, ax = plt.subplots()
    rpt=len(dt_cnl)/12
    dt_clim_cat=dt_clim
-   for ii in range(rpt-1):
-      print "concatenate "
-      dt_clim_cat=numpy.concatenate([dt_clim_cat,dt_clim])
+   for ii in range(int(rpt-1)):
+      print("concatenate ")
+      dt_clim_cat=np.concatenate([dt_clim_cat,dt_clim])
       
      
    years = YearLocator()   # every year
    months = MonthLocator()  # every month
    yearsFmt = DateFormatter('%Y')
-   #ax=figure.add_subplot(111)
    nplts=1  
    ax.plot_date(tid, dt_cnl, '-o',color='g',ms=3,  label=Labl1)
    if filename2:
@@ -416,9 +385,7 @@ def main(myfiles,fieldname,fieldlevel,
    figure.autofmt_xdate()
    legend = plt.legend(loc='upper left',fontsize=8)
    plt.title("Area-averaged: %s(%d)"%(fieldname,fieldlevel))
-   #plt.xlabel('dayes')
    plt.ylabel("%s(%d)"%(fieldname,fieldlevel))
-   #plt.title('Pakistan India Population till 2007')
    ts_fil="time_series_cntl_flx_%s_%02d_%02d"%(fieldname,fieldlevel,nplts)
    if Region_mask:
       ts_fil='Region_'+ts_fil
@@ -428,7 +395,7 @@ def main(myfiles,fieldname,fieldlevel,
    #-----------------
    # plot short  mean error
    figure, ax = plt.subplots()
-   print "diff_dt_cnl[:]=",diff_dt_cnl[:]
+   print("diff_dt_cnl[:]="),diff_dt_cnl[:]
    nplts=1  
    ll=-1*len(tid)
    if filename2:
@@ -437,12 +404,7 @@ def main(myfiles,fieldname,fieldlevel,
    if filename2:
       ax.plot_date(tid_2, diff_dt_2, '-v',color='orange',ms=3,  label=Labl2)
       nplts=nplts+1  
-   #if filename5:
-   #   ax.plot_date(tid_5, diff_dt_5,'--', color='m', label=Labl5)
-   #   nplts=nplts+1  
-###    if 'tem' in fieldname:
-###       ax.plot_date(tid[ll:], dt_clim_cat[ll:],'-' ,color='black', label='Phc-Clim.')
-###       nplts=nplts+1  
+
    ax.xaxis.set_major_locator(years)
    ax.xaxis.set_major_formatter(yearsFmt)
    ax.xaxis.set_minor_locator(months)
@@ -456,9 +418,7 @@ def main(myfiles,fieldname,fieldlevel,
    figure.autofmt_xdate()
    legend = plt.legend(loc='upper left',fontsize=8)
    plt.title("Mean diff:Model-Clim: %s(%d)"%(fieldname,fieldlevel))
-   #plt.xlabel('dayes')
    plt.ylabel("diff:%s(%d)"%(fieldname,fieldlevel))
-   #plt.title('Pakistan India Population till 2007')
    ts_fil='Mdiff'+"ST_cntl_flx_%s_%02d_%02d"%(fieldname,fieldlevel,nplts)
    if Region_mask:
       ts_fil='Region_Mdiff'+"ST_cntl_flx_%s_%02d_%02d"%(fieldname,fieldlevel,nplts)
@@ -478,12 +438,7 @@ def main(myfiles,fieldname,fieldlevel,
    if filename2:
       ax.plot_date(tid_2, rmse_dt_2, '-v',color='orange',ms=3,  label=Labl2)
       nplts=nplts+1  
-   #if filename5:
-   #   ax.plot_date(tid_5, rmse_dt_5,'--', color='m', label=Labl5)
-   #   nplts=nplts+1  
-###    if 'tem' in fieldname:
-###       ax.plot_date(tid[ll:], dt_clim_cat[ll:],'-' ,color='black', label='Phc-Clim.')
-###       nplts=nplts+1  
+
    ax.xaxis.set_major_locator(years)
    ax.xaxis.set_major_formatter(yearsFmt)
    ax.xaxis.set_minor_locator(months)
@@ -497,9 +452,7 @@ def main(myfiles,fieldname,fieldlevel,
    figure.autofmt_xdate()
    legend = plt.legend(loc='upper left',fontsize=8)
    plt.title("RMSE: (Model-Clim) %s(%d)"%(fieldname,fieldlevel))
-   #plt.xlabel('dayes')
    plt.ylabel("RMSE:%s(%d)"%(fieldname,fieldlevel))
-   #plt.title('Pakistan India Population till 2007')
    ts_fil='RMSE'+"ST_cntl_flx_%s_%02d_%02d"%(fieldname,fieldlevel,nplts)
    if Region_mask:
       ts_fil='Region_RMSE'+"ST2007_cntl_flx_%s_%02d_%02d"%(fieldname,fieldlevel,nplts)

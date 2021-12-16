@@ -4,7 +4,7 @@ import modelgrid
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot
-import abfile
+import abfile.abfile as abf
 import modeltools.cice.io
 import numpy
 from mpl_toolkits.basemap import Basemap
@@ -24,8 +24,8 @@ logger.propagate=False
 
 def main(grid) :
    griddict=grid.create_datadict_hycom()
-   abfile.write_regional_grid(griddict)
-   abfile.write_diag_nc(griddict)
+   abf.write_regional_grid(griddict)
+   abf.write_diag_nc(griddict)
    logger.info("grid shown in grid.png")
    grid.plotgrid(2.).canvas.print_figure("grid.png")
 
