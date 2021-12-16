@@ -3,9 +3,8 @@ import argparse
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot
-import abfile
+import abfile.abfile as abf
 import numpy
-from mpl_toolkits.basemap import Basemap
 import modeltools.hycom
 import logging
 import re
@@ -40,7 +39,7 @@ def main(psikk_file,archv_files, psikk_file_type="restart",month=1) :
    if not from_relax_archv and not from_relax and not from_restart :
       msg="psikk_file_type must be either restart relax or relax_archv"
       logger.error(msg)
-      raise ValueError,msg
+      raise ValueError(msg)
 
    # Open blkdat files. Get some properties
    bp=modeltools.hycom.BlkdatParser("blkdat.input")
@@ -58,14 +57,14 @@ def main(psikk_file,archv_files, psikk_file_type="restart",month=1) :
       kapnum = 2
       msg="Only kapref>=0 is implemented for now"
       logger.error(msg)
-      raise ValueError,msg
+      raise ValueError(msg)
    else :
       kapnum = 1 
 
    if kapnum > 1 :
       msg="Only kapnum=1 is implemented for now"
       logger.error(msg)
-      raise ValueError,msg
+      raise ValueError(msg)
 
    path0=os.path.join(".","montg1")
    if os.path.exists(path0) and os.path.isdir(path0) :
@@ -90,7 +89,7 @@ def main(psikk_file,archv_files, psikk_file_type="restart",month=1) :
       # Read input variables from lowest layer of a restart file
       m=re.match( "^(.*)(\.[ab])", psikk_file)
       if m : psikk_file=m.group(1)
-      rfile=abfile.ABFileRestart(psikk_file,"r",idm=idm,jdm=jdm)
+      rfile=abf.ABFileRestart(psikk_file,"r",idm=idm,jdm=jdm)
       psikk=rfile.read_field("psikk",0)
       thkk=rfile.read_field("thkk",0)
       rfile.close()
@@ -98,26 +97,26 @@ def main(psikk_file,archv_files, psikk_file_type="restart",month=1) :
    # Option 2: Get temp, salinity and dp from relaxaiton fields. Estimate thkk and psikk
    elif from_relax :
       pattern="^(.*)_(tem|int|sal)"
-      psikk_file = abfile.ABFile.strip_ab_ending(psikk_file)
+      psikk_file = abf.ABFile.strip_ab_ending(psikk_file)
       m=re.match(pattern,psikk_file)
       if m :  
-         relaxtem=abfile.ABFileRelax(m.group(1)+"_tem","r")
-         relaxsal=abfile.ABFileRelax(m.group(1)+"_sal","r")
-         relaxint=abfile.ABFileRelax(m.group(1)+"_int","r")
+         relaxtem=abf.ABFileRelax(m.group(1)+"_tem","r")
+         relaxsal=abf.ABFileRelax(m.group(1)+"_sal","r")
+         relaxint=abf.ABFileRelax(m.group(1)+"_int","r")
       else :
          msg="""Input hycom relaxation file %s does not match pattern
          %s"""%(psikk_file,pattern)
          logger.error(msg)
-         raise ValueError,msg
+         raise ValueError(msg)
 
    # Option 3: Get temp, salinity and dp from relaxation fields (archive files generated during relaxation setup). Estimate thkk and psikk
    elif from_relax_archv :
-      arcfile0=abfile.ABFileArchv(psikk_file,"r")
+      arcfile0=abf.ABFileArchv(psikk_file,"r")
 
    else :
       msg="No way of estimating psikk and thkk. Aborting ..."
       logger(msg)
-      raise ValueError, msg
+      raise ValueError(msg)
 
    # Estimate psikk, thkk from climatology. (Option 1 or option 2)
    if from_relax or from_relax_archv :
@@ -142,7 +141,7 @@ def main(psikk_file,archv_files, psikk_file_type="restart",month=1) :
          else :
             msg="No way of estimating sal, tem and dp. Aborting ..."
             logger(msg)
-            raise ValueError, msg
+            raise ValueError(msg)
 
          th3d       =sig.sig(temp,saln) - thbase
          thstar     =numpy.ma.copy(th3d)
@@ -154,7 +153,7 @@ def main(psikk_file,archv_files, psikk_file_type="restart",month=1) :
          elif kapref < 0 :
             msg="Only kapref>=0 is implemented for now"
             logger.error(msg)
-            raise ValueError,msg
+            raise ValueError(msg)
          # From hycom inicon.f
          #        montg(i,j,1,kkap)=0.0
          #        do k=1,kk-1
@@ -190,7 +189,7 @@ def main(psikk_file,archv_files, psikk_file_type="restart",month=1) :
    for archv_file in archv_files :
 
       logger.debug("Processing %s"%(archv_file))
-      arcfile=abfile.ABFileArchv(archv_file,"r")
+      arcfile=abf.ABFileArchv(archv_file,"r")
 
       # Read all layers .. (TODO: If there is memory problems, read and estimate sequentially)
       temp    = numpy.ma.zeros((jdm,idm))    # Only needed when calculating density
@@ -216,7 +215,7 @@ def main(psikk_file,archv_files, psikk_file_type="restart",month=1) :
          elif kapref < 0 :
             msg="Only kapref>=0 is implemented for now"
             logger.error(msg)
-            raise ValueError,msg
+            raise ValueError(msg)
 
       # This part of montg1 does nto depend on pbavg
       montg1c  = modeltools.hycom.montg1_pb(thstar,p) 
@@ -246,7 +245,7 @@ def main(psikk_file,archv_files, psikk_file_type="restart",month=1) :
 
       # Open new archive file, and write montg1 to it.
       fnameout = os.path.join(path0,os.path.basename(arcfile.basename))
-      arcfile_out=abfile.ABFileArchv(fnameout,"w",iversn=iversn,yrflag=yrflag,iexpt=iexpt,mask=False)
+      arcfile_out=abf.ABFileArchv(fnameout,"w",iversn=iversn,yrflag=yrflag,iexpt=iexpt,mask=False)
 
 
 

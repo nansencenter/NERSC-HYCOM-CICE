@@ -7,11 +7,9 @@ matplotlib.use('Agg')
 import matplotlib.pyplot
 import modeltools.forcing.bathy
 import modeltools.tools
-#import modeltools.hycom.io
-import abfile
+import abfile.abfile as abf
 import modeltools.cice.io
 import numpy
-from mpl_toolkits.basemap import Basemap
 import netCDF4
 import logging
 import re
@@ -38,7 +36,7 @@ def main(infile_coarse,infile_fine,
    logger.info("Bathy threshold is %12.4f"%bathy_threshold)
 
    # Read plon,plat
-   gfile=abfile.ABFileGrid("regional.grid","r")
+   gfile=abf.ABFileGrid("regional.grid","r")
    plon=gfile.read_field("plon")
    plat=gfile.read_field("plat")
    gfile.close()
@@ -46,7 +44,7 @@ def main(infile_coarse,infile_fine,
    # Read input bathymetry - fine version
    m=re.match( "^(.*)(\.[ab])", infile_fine)
    if m : infile_fine=m.group(1)
-   bfile=abfile.ABFileBathy(infile_fine,"r",idm=gfile.idm,jdm=gfile.jdm)
+   bfile=abf.ABFileBathy(infile_fine,"r",idm=gfile.idm,jdm=gfile.jdm)
    fine_depth_m=bfile.read_field("depth")
    fine_depth_m=numpy.ma.masked_where(fine_depth_m<=bathy_threshold,fine_depth_m)
    fine_depth=numpy.ma.filled(fine_depth_m,bathy_threshold)
@@ -55,7 +53,7 @@ def main(infile_coarse,infile_fine,
    # Read input bathymetry - coarse version
    m=re.match( "^(.*)(\.[ab])", infile_coarse)
    if m : infile_coarse=m.group(1)
-   bfile=abfile.ABFileBathy(infile_coarse,"r",idm=gfile.idm,jdm=gfile.jdm)
+   bfile=abf.ABFileBathy(infile_coarse,"r",idm=gfile.idm,jdm=gfile.jdm)
    coarse_depth_m=bfile.read_field("depth")
    coarse_depth_m=numpy.ma.masked_where(coarse_depth_m<=bathy_threshold,coarse_depth_m)
    coarse_depth=numpy.ma.filled(coarse_depth_m,bathy_threshold)
@@ -153,7 +151,7 @@ def main(infile_coarse,infile_fine,
 
 
    # Print to HYCOM
-   abfile.write_bathymetry("MERGED",0,newbathy,bathy_threshold)
+   abf.write_bathymetry("MERGED",0,newbathy,bathy_threshold)
 
 
 
