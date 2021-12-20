@@ -11,7 +11,7 @@ import os
 def main(fnml,block,param) :
    nml  = f90nml.read(fnml)
 
-   print nml[block][param] 
+   print(nml[block][param]) 
 
 if __name__ == "__main__" :
    parser = argparse.ArgumentParser(description='')
