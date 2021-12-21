@@ -65,13 +65,13 @@ class SectionBase(object) :
       i=numpy.arange(self._flagu.shape[1]) - 0.5
       j=numpy.arange(self._flagu.shape[0])
       x,y=numpy.meshgrid(i,j)
-      I=numpy.where(self._flagu<>0)
+      I=numpy.where(self._flagu!=0)
       ax.quiver(x[I],y[I],self._flagu[I],numpy.zeros(self._flagu.shape)[I],width=.005,color="y")
       #
       i=numpy.arange(self._flagu.shape[1])
       j=numpy.arange(self._flagu.shape[0]) - 0.5
       x,y=numpy.meshgrid(i,j)
-      I=numpy.where(self._flagv<>0)
+      I=numpy.where(self._flagv!=0)
       ax.quiver(x[I],y[I],numpy.zeros(self._flagv.shape)[I], self._flagv[I],width=.005,color="y")
       #
       ax.set_xlim(I[1].min(),I[1].max())
@@ -85,12 +85,12 @@ class SectionBase(object) :
       import matplotlib
       fig = matplotlib.pyplot.figure(figsize=(12,24))
       ax=fig.add_subplot(211)
-      J,I=numpy.where(self._flagu<>0)
+      J,I=numpy.where(self._flagu!=0)
       ax.scatter(I,J,30,self._flagu[J,I],edgecolors="face")
       self._add_gridlines(ax,plon,plat) 
       ax.set_title("u-flag; negative values mean negative\n grid direction is treated as positive direction")
       ax=fig.add_subplot(212)
-      J,I=numpy.where(self._flagv<>0)
+      J,I=numpy.where(self._flagv!=0)
       ax.scatter(I,J,30,self._flagv[J,I],edgecolors="face")
       self._add_gridlines(ax,plon,plat) 
       ax.set_title("v-flag; negative values mean negative\n grid direction is treated as positive direction")
@@ -165,8 +165,8 @@ class Section(SectionBase) :
       self._jdm,self._idm = self._grid_c_lon.shape
 
 
-      if len(waypoints_lon) <> 2 or len(waypoints_lat) <> 2 :
-         raise SectionError,"Only two waypoints all2oed"
+      if len(waypoints_lon) !=2 or len(waypoints_lat) != 2 :
+         raise SectionError("Only two waypoints all2oed")
 
       ########### The following assumes crossections go along great circles ###############
 
@@ -182,7 +182,7 @@ class Section(SectionBase) :
 
       # The section plane is indeterminate if waypoints and origo is on the same line. Abort
       if numpy.sqrt(numpy.sum(self._normal_vector**2)) < 1e-2:
-         raise SectionError,"Section is on opposite sides of the earth"
+         raise SectionError("Section is on opposite sides of the earth")
 
       # Make normal vector a unit vector
       self._normal_vector= self._normal_vector / numpy.sqrt(numpy.sum(self._normal_vector**2))
@@ -248,7 +248,7 @@ class Section(SectionBase) :
 
 
       # Find pivot points along section. This is the simplest approach where we use cell centers  to plot section
-      J,I = numpy.where(numpy.logical_or(self._flagu<>0,self._flagv<>0))
+      J,I = numpy.where(numpy.logical_or(self._flagu != 0,self._flagv != 0))
       self._section_i=I
       self._section_j=J
       self._section_longitudes = self._grid_c_lon  [J,I]
@@ -298,7 +298,7 @@ class Section(SectionBase) :
       # Case 1 : great circle intersects between lower left and upper left corner of grid cell
       if case == 1 :
          J,I=numpy.where(fac * numpy.roll(fac,-1,axis=0) < 0)
-         K=numpy.where(numpy.logical_and(J<>fac.shape[0]-1,I<>fac.shape[1]-1))
+         K=numpy.where(numpy.logical_and(J != fac.shape[0]-1,I != fac.shape[1]-1))
          I=I[K]
          J=J[K]
 
@@ -309,7 +309,7 @@ class Section(SectionBase) :
       # Case 2 : great circle intersects between lower left and lower right corner of grid cell
       elif case == 2 :
          J,I=numpy.where(fac * numpy.roll(fac,-1,axis=1) < 0)
-         K=numpy.where(numpy.logical_and(J<>fac.shape[0]-1,I<>fac.shape[1]-1))
+         K=numpy.where(numpy.logical_and(J != fac.shape[0]-1,I != fac.shape[1]-1))
          I=I[K]
          J=J[K]
 
@@ -422,8 +422,8 @@ class SectionIJSpace(SectionBase) :
       jishape = self._grid_c_lon.shape
       self._jdm,self._idm = jishape
 
-      if len(waypoints_i) <> 2 or len(waypoints_j) <> 2 :
-         raise SectionError,"Only two waypoints all2oed"
+      if len(waypoints_i) != 2 or len(waypoints_j) != 2 :
+         raise SectionError("Only two waypoints all2oed")
 
       self._waypoints_x=waypoints_i
       self._waypoints_y=waypoints_j
@@ -496,7 +496,7 @@ class SectionIJSpace(SectionBase) :
 
       # Find pivot points along section. This is the simplest approach where we use cell centers 
       # TODO: find actual crossing points of grid ?
-      I,J = numpy.where(numpy.logical_or(self._flagu<>0,self._flagv<>0))
+      I,J = numpy.where(numpy.logical_or(self._flagu!=0,self._flagv!=0))
       self._section_i=I
       self._section_j=J
 

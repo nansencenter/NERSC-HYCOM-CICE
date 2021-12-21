@@ -38,15 +38,15 @@ class FieldInterpolator(object) :
       dy=self._y[1:]-self._y[:-1]
       absdiffy= numpy.abs((numpy.max(dy)-numpy.min(dy))/numpy.abs(numpy.max(dy)))
 
-      if len(self._x.shape) <> 1 or len(self._x.shape) <> 1 :
-         raise FieldInterpolatorError,"Field coordinates (x) must be 1D and regular"
+      if len(self._x.shape) != 1 or len(self._x.shape) != 1 :
+         raise FieldInterpolatorError("Field coordinates (x) must be 1D and regular")
       elif absdiffx>1e-5 :
-         raise FieldInterpolatorError,"Field coordinates (x) must be 1D and regular"
+         raise FieldInterpolatorError("Field coordinates (x) must be 1D and regular")
 
-      if len(self._y.shape) <> 1 or len(self._y.shape) <> 1 :
-         raise FieldInterpolatorError,"Field coordinates (y) must be 1D and regular"
+      if len(self._y.shape) != 1 or len(self._y.shape) != 1 :
+         raise FieldInterpolatorError("Field coordinates (y) must be 1D and regular")
       elif absdiffy>1e-5 :
-         raise FieldInterpolatorError,"Field coordinates (y) must be 1D and regular"
+         raise FieldInterpolatorError("Field coordinates (y) must be 1D and regular")
 
 
       # Simplify internal calculations by flipping coordinate directions to be increasing
