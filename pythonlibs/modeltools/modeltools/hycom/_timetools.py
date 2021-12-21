@@ -16,7 +16,7 @@ ch.setFormatter(formatter)
 logger.addHandler(ch) 
 
 def leapyear(iyr) :
-   if ( iyr%4==0 and 1901+iyr%400==0) or iyr%4<>0  :
+   if ( iyr%4==0 and 1901+iyr%400==0) or iyr%4!=0  :
      leapyear=False
    else :
      leapyear=True
@@ -24,8 +24,8 @@ def leapyear(iyr) :
 
 
 def datetime_to_ordinal(dt,yrflag) :
-   if yrflag <> 3 :
-      raise ValueError,"Only yearflag=3 supported for datetime_to_ordinal"
+   if yrflag != 3 :
+      raise ValueError("Only yearflag=3 supported for datetime_to_ordinal")
    else :
       td = dt - datetime.datetime(dt.year,1,1,0,0,0) 
       tdd = td.days + 1
@@ -60,7 +60,7 @@ def dayfor(iyear,iday,ihour,yrflag) :
    elif yrflag == 3 :
 
      if iyear < 1901 :
-        raise ValueError, 'error in forday - yrflag value %d must have year >=1901. year is %d'%(yrflag,iyear)
+        raise ValueError('error in forday - yrflag value %d must have year >=1901. year is %d'%(yrflag,iyear))
 
 
      iyr=iyear-1901
@@ -88,7 +88,7 @@ def dayfor(iyear,iday,ihour,yrflag) :
         iday2=iday2-diy
 
    else :
-      raise ValueError, 'error in forday - unsupported yrflag value: %d'%yrflag
+      raise ValueError('error in forday - unsupported yrflag value: %d'%yrflag)
 
    return dtime
 
@@ -99,7 +99,7 @@ def dayfor_datetime(iyear,iday,ihour,yrflag) :
       tmp =datetime.datetime(1901,1,1,0,0,0)
       return tmp + datetime.timedelta(days=dtime)
    else :
-      raise NotImplementedError,"yrflag = %d"%yrflag
+      raise NotImplementedError("yrflag = %d"%yrflag)
 
 
 
@@ -132,7 +132,7 @@ def forday(dtime,yrflag) :
         iyr = iyr - 1
       elif day>=367.0 :
         iyr = iyr + 1
-      elif day>=366.0 and iyr%4<>3 :
+      elif day>=366.0 and iyr%4!=3 :
         iyr = iyr + 1
 
 
@@ -144,21 +144,21 @@ def forday(dtime,yrflag) :
       ihour = int((dtime - dtim1 + 1.001 - iday)*24.0)
 
    else :
-      raise ValueError, 'error in forday - unsupported yrflag value: %d'%yrflag
+      raise ValueError('error in forday - unsupported yrflag value: %d'%yrflag)
 
    return iyear, iday, ihour
 
 
 
 def forday_datetime(dtime,yrflag) :
-   print dtime
+   print(dtime)
    iy,id,ih=forday(dtime,yrflag) 
-   print iy,id,ih
+   print(iy,id,ih)
    if yrflag == 3 :
       tmp =datetime.datetime(iy,1,1,0,0,0)
       return tmp + datetime.timedelta(days=id-1) + datetime.timedelta(hours=ih)
    else :
-      raise NotImplementedError,"yrflag = %d"%yrflag
+      raise NotImplementedError("yrflag = %d"%yrflag)
 
 
 

@@ -45,12 +45,7 @@ class FieldReader(object) :
 
    def find_timestep(self,dt,varname) :
       tmp = self._coordmap[varname]["time"]-dt
-      #print self._filename
-      #print dt
-      #print tmp[0]
       tmp = [ i.days*86400 + i.seconds  for i in tmp]
-      #print tmp[0]
-      #print numpy.where(numpy.array(tmp)==0)
       I = numpy.where(numpy.array(tmp)==0)[0]
       return I
 
@@ -69,7 +64,7 @@ class FieldReader(object) :
 
 
    def get_proj4grid(self,varname,dt) :
-      raise NotImplementedError,"get_proj4grid not implemented"
+      raise NotImplementedError("get_proj4grid not implemented")
 
 
 
@@ -78,7 +73,7 @@ class FieldReader(object) :
       if format == "netcdf" :
          return NetcdfFieldReader(filenametemplate,coord_props=coord_props,time_offset=time_offset)
       else :
-         raise FieldReaderError,"Only netcdf supported at the moment"
+         raise FieldReaderError("Only netcdf supported at the moment")
 
 
 class NetcdfFieldReader(FieldReader) :
@@ -110,7 +105,7 @@ class NetcdfFieldReader(FieldReader) :
                   logger.info("Setting units from explicit coordinate properties for variable %s"%i)
                   unit_string = self._coord_props[i]["units"]
                else  :
-                  raise FieldReaderError,"No units specified for variable %s"%i
+                  raise FieldReaderError("No units specified for variable %s"%i)
             else  :
                if i in self._coord_props and "units" in self._coord_props[i] :
                   logger.warning("Overriding units for variable %s"%i)
@@ -130,7 +125,7 @@ class NetcdfFieldReader(FieldReader) :
                         logger.info("Setting calendar from explicit coordinate properties for variable %s"%i)
                         calendar = self._coord_props[i]["calendar"]
                      else  :
-                        raise FieldReaderError,"No calendar specified for variable %s"%i
+                        raise FieldReaderError("No calendar specified for variable %s"%i)
                   else  :
                      if i in self._coord_props and "calendar" in self._coord_props[i] :
                         logger.warning("Overriding calendar for variable %s"%i)
@@ -146,7 +141,7 @@ class NetcdfFieldReader(FieldReader) :
                elif unit.islatitude :
                   self._coordvar["lat"] = coordvar[:]
                else :
-                  raise FieldReaderError,"Dont know how to handle coordinate variable %s"%i
+                  raise FieldReaderError("Dont know how to handle coordinate variable %s"%i)
 
             if unit.isreftime :
                self._coordmap[varname]["time"] = self._coordvar["time"]
@@ -158,10 +153,8 @@ class NetcdfFieldReader(FieldReader) :
                self._coordmap[varname]["lat"] = self._coordvar["lat"]
                self._coordrank[varname]["lat"] = inumber
             else :
-               raise FieldReaderError,"Dont know how to handle coordinate variable %s"%i
+               raise FieldReaderError("Dont know how to handle coordinate variable %s"%i)
 
-         #print self._coordmap[varname].keys()
-      #print "open finished"
 
    def close(self) :
       self._nc.close()
@@ -169,10 +162,7 @@ class NetcdfFieldReader(FieldReader) :
 
    def open_if_needed(self,dt) :
       # Open file if necessary
-      if self._filenametemplate.find('/ERA5/') > 0 :
-         tmpdt=dt
-      else :
-         tmpdt=dt-self._time_offset
+      tmpdt=dt-self._time_offset
       newfilename=tmpdt.strftime(self._filenametemplate)
       if not self.file_is_open(newfilename) : 
          if self._filename is not None : self._nc.close()
@@ -223,7 +213,7 @@ class ForcingField(object) :
          if self._accumulation_time[-1] == "h" :
             self._accumulation_time = datetime.timedelta(hours=int(self._accumulation_time[:-1]))
          else :
-            raise AtmosphericForcingError,"time step must be specified in hours (hours + letter 'h')"
+            raise AtmosphericForcingError("time step must be specified in hours (hours + letter 'h')")
 
       if self._accumulation_time is not None  :
          # Convert from accumulated to flux
@@ -239,7 +229,6 @@ class ForcingField(object) :
       else :
          self._accumulation_scale_factor = 1.
          self._accumulation_time=datetime.timedelta(0)
-      #print name,accumulation_time
 
 
       self._cfunit             = cfunits.Units(units=self._units)
@@ -250,7 +239,7 @@ class ForcingField(object) :
 
    def get_timestep(self,dt,unit=None) : 
 
-      outdt=dt
+      #outdt=dt
 
       # Do unit conversion to get correct output unit
       if unit is not None :
@@ -258,29 +247,25 @@ class ForcingField(object) :
 
       logger.debug("Varname %s : imposed unit=%s, my unit=%s"%(self._varname,str(mycfunit), self._units))
 
-      #tmp = numpy.squeeze(self._fieldreader.get_timestep(self._varname,dt))
       tmp = numpy.squeeze(self._fieldreader.get_timestep(self._varname,dt))*self._accumulation_scale_factor
       if not self._cfunit.equals(mycfunit) :
-         #print "Unit conversion:",self.varname,"unit=",self._cfunit, "targetunit=", mycfunit
-         #print "Unit conversion:max=",tmp.max()
-         #print self._accumulation_time
          tmp=cfunits.Units.conform(tmp,self._cfunit,mycfunit)
-         #print "Unit conversion:max after=",tmp.max()
 
 #Approach 2: Calculate average at this time
       # If this is an accumulated field, we need to get next field and interpolate
       # TODO: Check if this is really necessary
-      if self._accumulation_time <> datetime.timedelta(0):
-         dt2 = dt + self._accumulation_time
-         logger.info("Computing interpolated value for accumulated field %s (Reading additional field at %s)"%(self._varname,str(dt2)))
-         tmp2 = numpy.squeeze(self._fieldreader.get_timestep(self._varname,dt2))*self._accumulation_scale_factor
-         if not self._cfunit.equals(mycfunit) :
+## AO THIS IS NOT NEEDED FOR ERA5-6h
+#      if self._accumulation_time <> datetime.timedelta(0):
+#         dt2 = dt + self._accumulation_time
+#         logger.info("Computing interpolated value for accumulated field %s (Reading additional field at %s)"%(self._varname,str(dt2)))
+#         tmp2 = numpy.squeeze(self._fieldreader.get_timestep(self._varname,dt2))*self._accumulation_scale_factor
+#         if not self._cfunit.equals(mycfunit) :
             #print "Unit conversion:",self.varname,"unit=",self._cfunit, "targetunit=", mycfunit
             #print "Unit conversion:max=",tmp.max()
-            tmp2=cfunits.Units.conform(tmp2,self._cfunit,mycfunit)
+#            tmp2=cfunits.Units.conform(tmp2,self._cfunit,mycfunit)
             #print "Unit conversion:max after=",tmp.max()
-         tmp = 0.5*(tmp + tmp2)
-         outdt = dt
+#         tmp = 0.5*(tmp + tmp2)
+#         outdt = dt
 
 
       #TODO - may be optimized out
@@ -291,7 +276,7 @@ class ForcingField(object) :
 
       logger.info("Reading name %20s, varname=%20s"%(self._name,self._varname))
       self._data=tmp
-      self._time=outdt
+      self._time=dt
 
    def get_coords(self,dt) : 
       self._coordx,self._coordy =  self._fieldreader.get_coords(self._varname,dt)
