@@ -59,8 +59,8 @@ class BlkdatParser(object) :
          #m = re.match("^(.*)'([a-z0-9]{6})'[ ]*=[ ]*(.*$)",line.strip())
          m = re.match("^[\s]*(.*)[\s]*'([a-z0-9 _]{6})'[\s]*=[\s]*(.*$)",line.strip())
          if not m :
-            print m,line
-            raise BlkdatError,"Error when parsing file. Line does not match required pattern"
+            print(m,line)
+            raise BlkdatError("Error when parsing file. Line does not match required pattern")
 
          value=m.group(1).strip()
          key  =m.group(2).strip()
