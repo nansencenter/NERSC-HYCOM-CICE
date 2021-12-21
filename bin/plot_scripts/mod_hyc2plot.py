@@ -1,18 +1,14 @@
-import numpy as np
 import modeltools.hycom
-import abfile
-import matplotlib.pyplot
 import matplotlib
 import cmocean
-import abfile
-import numpy
+import abfile.abfile as abf
+import numpy as np
 import datetime
 import re
 import scipy.interpolate
 import os.path
-# colormaps
 from matplotlib.dates import YearLocator, MonthLocator, DateFormatter, DayLocator 
-#import pandas as pd
+
 
 """
 This module contains useful functions, and always we can add more here
@@ -79,7 +75,7 @@ def calc_kinetic(uin,vin):
    % U'U'bar = UUbar - Ubar*Ubar (same for V)
    % 
    """
-   print ">>>uin.shape, vin.shape=",np.shape(uin),np.shape(vin) 
+   print(">>>uin.shape, vin.shape="),print(np.shape(uin)),print(np.shape(vin)) 
    # calculate Ubar / Vbar
    ubar=np.nanmean(uin,axis=0)
    vbar=np.nanmean(vin,axis=0)
@@ -107,7 +103,7 @@ def runningMean(x, N):
     #running mean
     #y = np.zeros((len(x),))
     #y = np.zeros(shape=x.shape)
-    print "Calculating running mean over", x.shape, "mean window=", N 
+    print("Calculating running mean over"), print(x.shape), print("mean window="), print(N) 
     #for ctr in range(x.shape[0]):
     #     y[ctr] = np.nansum(x[ctr:(ctr+N)],axis=0)
     #return y/N
@@ -129,12 +125,12 @@ def runningMean(x, N):
 
 def spatiomean(fldin,regi_mask):
   #  fldin=[]
-    ab = abfile.ABFileGrid("regional.grid","r")
+    ab = abf.ABFileGrid("regional.grid","r")
     pplon=ab.read_field("plon")
     pplat=ab.read_field("plat")
     scppx=ab.read_field("scpx")
     scppy=ab.read_field("scpy")
-    abdpth = abfile.ABFileBathy('regional.depth',"r",idm=ab.idm,jdm=ab.jdm)
+    abdpth = abf.ABFileBathy('regional.depth',"r",idm=ab.idm,jdm=ab.jdm)
     mdpth=abdpth.read_field('depth')
     maskdd=mdpth.data
     maskdd[maskdd>1e29]=np.nan
@@ -159,9 +155,9 @@ def spatiomean(fldin,regi_mask):
     numer[np.isnan(regi_mask)]=np.nan
     denum[np.isnan(regi_mask)]=np.nan
     fldin_avg=np.nansum(numer)/np.nansum(denum)
-    print 'np.nansum(numer)=', np.nansum(numer)
-    print 'np.nansum(denum)=', np.nansum(denum)
-    print 'fldin_avg=', fldin_avg
+    print('np.nansum(numer)='), print(np.nansum(numer))
+    print('np.nansum(denum)='), print(np.nansum(denum))
+    print('fldin_avg='), print(fldin_avg)
     #direct mean
     return fldin_avg
 
@@ -182,7 +178,7 @@ def sig(T,S) :
    # --- sigma-theta as a function of temp (deg c) and salinity (mil)
    # --- (friedrich-levitus 3rd degree polynomial fit)
    dens=(C1+C3*S+np.multiply(T,(C2+C5*S+np.multiply(T,(C4+C7*S+C6*T)))))
-   print "dens min, max=",dens.min(),dens.max()
+   print("dens min, max="),print(dens.min()),print(dens.max())
    #return (C1+C3*S+T*(C2+C5*S+T*(C4+C7*S+C6*T)))
    return dens
 
@@ -190,7 +186,7 @@ def sig(T,S) :
 def plot_hycom_func1D(tid,dat1,fig_tit,labl1='dat1',dat2=None,\
                   labl2='dat2',unit=None):
    #Plot hycom field
-   figure, ax =matplotlib.pyplot.subplots()
+   figure, ax =plt.subplots()
    days = DayLocator()   # every year
    years = YearLocator()   # every year
    months = MonthLocator()  # every month
@@ -215,7 +211,7 @@ def plot_hycom_func1D(tid,dat1,fig_tit,labl1='dat1',dat2=None,\
    #ax.fmt_ydata = price
    figure.autofmt_xdate()
    #ax.locator_params(axis='x', nbins=10)
-   print 'len(tid)=', len(tid)
+   print('len(tid)='), print(len(tid))
    if len(tid) > 100:
       every_nth = 30
    else:
@@ -223,9 +219,9 @@ def plot_hycom_func1D(tid,dat1,fig_tit,labl1='dat1',dat2=None,\
    for n, label in enumerate(ax.xaxis.get_ticklabels()):
       if n % every_nth != 0:
          label.set_visible(False)
-   legend =matplotlib.pyplot.legend(loc='upper left',fontsize=8)
+   legend =plt.legend(loc='upper left',fontsize=8)
    fnamepng='Fig1D_'+fig_tit
-   print "output in  %s"%fnamepng
+   print("output in  %s"%fnamepng)
    figure.canvas.print_figure(fnamepng,bbox_inches='tight',dpi=180)
 
 
@@ -241,23 +237,22 @@ def plot_hycom_func(lon,lat,fld,fig_tit,uu=None,vv=None, \
    if cmap is None:
       cmap= matplotlib.colors.LinearSegmentedColormap('my_colormap',LinDic)
    else:
-      cmap=matplotlib.pyplot.get_cmap("jet")
-   #cmap=cmocean.cm.speed
-   #cmap=matplotlib.pyplot.get_cmap("jet")
+      cmap=plt.get_cmap("jet")
+
    bm = Basemap(width=7400000,height=7400000, \
          resolution='i',projection='stere',\
          lat_ts=70,lat_0=85,lon_0=-40.)
    x,y=bm(lon,lat)   
    J,I=np.meshgrid(np.arange(fld.shape[0]),np.arange(fld.shape[1])) 
    #
-   print "---------min,max of data=", fld.min(), fld.max()
-   figure = matplotlib.pyplot.figure(figsize=(8,8))
+   print("---------min,max of data="), print(fld.min()), print(fld.max())
+   figure = plt.figure(figsize=(8,8))
    ax=figure.add_subplot(111)
    P=bm.pcolormesh(x[J,I],y[J,I],fld[J,I],cmap=cmap)
    if 'temp' in fig_tit:
       P1=bm.contour(x[J,I],y[J,I],fld[J,I],levels=[-1.,1,4.0,8], \
              colors=('w',),linestyles=('-',),linewidths=(1.5,))
-      matplotlib.pyplot.clabel(P1, fmt = '%2.1d', colors = 'w', fontsize=10) #contour line labels
+      plt.clabel(P1, fmt = '%2.1d', colors = 'w', fontsize=10) #contour line labels
    bm.drawcoastlines(linewidth=0.05)
    bm.drawcountries(linewidth=0.05)
    bm.fillcontinents(color='.8',lake_color='white')
@@ -267,7 +262,7 @@ def plot_hycom_func(lon,lat,fld,fig_tit,uu=None,vv=None, \
    ##
    if uu is not None:
       skip=10
-      print "ploting quiver .......>>> "
+      print("ploting quiver .......>>> ")
       I2=I[::skip,::skip]
       J2=J[::skip,::skip]
       ax.quiver(x[J2,I2],y[J2,I2],uu[J2,I2],vv[J2,I2])
@@ -289,18 +284,18 @@ def plot_hycom_func(lon,lat,fld,fig_tit,uu=None,vv=None, \
       ax.set_title(fig_tit)
    # Print figure.
    fnamepng='Fig_'+fig_tit
-   print "output in  %s"%fnamepng
+   print("output in  %s"%fnamepng)
    dpi=180
    figure.canvas.print_figure(fnamepng,bbox_inches='tight',dpi=dpi)
-   matplotlib.pyplot.close(figure)
+   plt.close(figure)
 
 
 def gearth_fig(llcrnrlon, llcrnrlat, urcrnrlon, urcrnrlat, pixels=1024):
     """Return a Matplotlib `fig` and `ax` handles for a Google-Earth Image."""
     # https://ocefpaf.github.io/python4oceanographers/blog/2014/03/10/gearth/
-    aspect = numpy.cos(numpy.mean([llcrnrlat, urcrnrlat]) * numpy.pi/180.0)
-    xsize = numpy.ptp([urcrnrlon, llcrnrlon]) * aspect
-    ysize = numpy.ptp([urcrnrlat, llcrnrlat])
+    aspect = np.cos(np.mean([llcrnrlat, urcrnrlat]) * np.pi/180.0)
+    xsize = np.ptp([urcrnrlon, llcrnrlon]) * aspect
+    ysize = np.ptp([urcrnrlat, llcrnrlat])
     aspect = ysize / xsize
 
     if aspect > 1.0:
@@ -310,7 +305,7 @@ def gearth_fig(llcrnrlon, llcrnrlat, urcrnrlon, urcrnrlat, pixels=1024):
 
     if False:
         plt.ioff()  # Make `True` to prevent the KML components from poping-up.
-    fig = matplotlib.pyplot.figure(figsize=figsize,
+    fig = plt.figure(figsize=figsize,
                      frameon=False,
                      dpi=pixels//10)
     # KML friendly image.  If using basemap try: `fix_aspect=False`.
@@ -322,17 +317,17 @@ def gearth_fig(llcrnrlon, llcrnrlat, urcrnrlon, urcrnrlat, pixels=1024):
 
 
 def interpolate_to_latlon(lon,lat,data,res=0.1) :
-   lon2 = numpy.mod(lon+360.,360.)
+   lon2 = np.mod(lon+360.,360.)
    # New grid
-   minlon=numpy.floor((numpy.min(lon2)/res))*res
-   minlat=max(-90.,numpy.floor((numpy.min(lat)/res))*res)
-   maxlon=numpy.ceil((numpy.max(lon2)/res))*res
-   maxlat=min(90.,numpy.ceil((numpy.max(lat)/res))*res)
+   minlon=np.floor((np.min(lon2)/res))*res
+   minlat=max(-90.,np.floor((np.min(lat)/res))*res)
+   maxlon=np.ceil((np.max(lon2)/res))*res
+   maxlat=min(90.,np.ceil((np.max(lat)/res))*res)
    #maxlat=90.
-   lo1d = numpy.arange(minlon,maxlon+res,res)
-   la1d = numpy.arange(minlat,maxlat,res)
-   lo2d,la2d=numpy.meshgrid(lo1d,la1d)
-   print minlon,maxlon,minlat,maxlat
+   lo1d = np.arange(minlon,maxlon+res,res)
+   la1d = np.arange(minlat,maxlat,res)
+   lo2d,la2d=np.meshgrid(lo1d,la1d)
+   print(minlon,maxlon,minlat,maxlat)
 
    if os.path.exists("grid.info") :
       import modelgrid
@@ -349,32 +344,32 @@ def interpolate_to_latlon(lon,lat,data,res=0.1) :
 
       # Mask out points not on grid
       K=J<data.shape[0]-1
-      K=numpy.logical_and(K,I<data.shape[1]-1)
-      K=numpy.logical_and(K,J>=0)
-      K=numpy.logical_and(K,I>=0)
+      K=np.logical_and(K,I<data.shape[1]-1)
+      K=np.logical_and(K,J>=0)
+      K=np.logical_and(K,I>=0)
 
       # Pivot point 
       Ii=I.astype('i')
       Ji=J.astype('i')
 
       # Takes into account data mask
-      tmp =numpy.logical_and(K[K],~data.mask[Ji[K],Ii[K]])
+      tmp =np.logical_and(K[K],~data.mask[Ji[K],Ii[K]])
       K[K]=tmp
       
       tmp=data[Ji[K],Ii[K]]
-      a,b=numpy.where(K) 
-      z=numpy.zeros(K.shape)
+      a,b=np.where(K) 
+      z=np.zeros(K.shape)
       z[a,b] = tmp
-      z=numpy.ma.masked_where(~K,z)
+      z=np.ma.masked_where(~K,z)
 
    # Brute force ...
    else  :
-      K=numpy.where(~data.mask)
+      K=np.where(~data.mask)
       z=scipy.interpolate.griddata( (lon2[K],lat[K]),data[K],(lo2d,la2d),'cubic')
-      z=numpy.ma.masked_invalid(z)
+      z=np.ma.masked_invalid(z)
       z2=scipy.interpolate.griddata( (lon2.flatten(),lat.flatten()),data.mask.flatten(),(lo2d,la2d),'nearest')
       z2=z2>.1
-      z=numpy.ma.masked_where(z2,z)
+      z=np.ma.masked_where(z2,z)
 
    return lo2d,la2d,z
 

@@ -1,18 +1,15 @@
 #!/usr/bin/env python
 import modeltools.hycom
 import argparse
-
 import matplotlib
 matplotlib.use('Agg')
-import matplotlib.pyplot
-#import modeltools.forcing.bathy
-#import modeltools.hycom.io
-import abfile
-#import modeltools.cice.io
-import numpy
-from mpl_toolkits.basemap import Basemap
+import matplotlib.pyplot as plt
+import abfile.abfile as abf
+import numpy as np
 import netCDF4
 import logging
+import cartopy.crs as ccrs
+import cartopy.feature as cfeature
 
 # Set up logger
 _loglevel=logging.DEBUG
@@ -39,35 +36,26 @@ if __name__ == "__main__" :
 
    parser = argparse.ArgumentParser(description='')
    parser.add_argument('--clim',       action=ClimParseAction,default=None)
-   parser.add_argument('--window',     action=WindowParseAction, help='firsti,firstj,lasti,lastj', default=None)
+   parser.add_argument('--window',     action=WindowParseAction, help='firsti,firstj,lasti,lastj',default=None)
    parser.add_argument('idm',     type=int, help='Grid dimension 1st index []')
    parser.add_argument('jdm',     type=int, help='Grid dimension 2nd index []')
    parser.add_argument('filename', help="")
    parser.add_argument('records',  nargs="+",    type=int)
-
    args = parser.parse_args()
 
-   #afile = modeltools.hycom.io.AFile(args.idm,args.jdm,args.filename,"r")
-   afile = abfile.AFile(args.idm,args.jdm,args.filename,"r")
+   afile = abf.AFile(args.idm,args.jdm,args.filename,"r")
 
-   cmap=matplotlib.pyplot.get_cmap("jet")
-   #cmap=matplotlib.pyplot.get_cmap("YlOrRd")
-
+   cmap=plt.get_cmap("jet")
+  
     
    for record in args.records :
 
       fld = afile.read_record(record)
-      figure = matplotlib.pyplot.figure(figsize=(8,8))
+      figure = plt.figure(figsize=(8,8))
       ax=figure.add_subplot(111)
       P=ax.pcolormesh(fld,cmap=cmap)
       if args.clim is not None :P.set_clim(args.clim)
       ax.figure.colorbar(P)
-
-
-      #figure.colorbar(P,norm=matplotlib.colors.LogNorm(vmin=w5.min(), vmax=w5.max()))
-      #ax.contour(w5)#,[-10.,-100.,-500.,-1000.])
-      #ax.set_title("Slope fac in color, depth contours in black")
-      #logger.info("Slope factor in slopefac.png")
       figure.canvas.print_figure("tst%03d.png"%record)
 
 

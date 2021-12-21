@@ -8,11 +8,9 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot
 import modeltools.forcing.bathy
-#import modeltools.hycom.io
-import abfile
+import abfile.abfile as abf
 import modeltools.cice.io
 import numpy
-from mpl_toolkits.basemap import Basemap
 import netCDF4
 import logging
 import scipy.ndimage.measurements
@@ -105,7 +103,7 @@ def port_setup(kdport,in_depth_m) :
          jfports.append(jfport)
          jlports.append(jlport)
       else :
-         raise ValueError,"Unknown kdport value %d"%kdport
+         raise ValueError("Unknown kdport value %d"%kdport)
 
    return ifports,ilports,jfports,jlports,kdports,labels
 
@@ -203,7 +201,7 @@ def main(infile,rmu_width,rmu_efold,dpi=180):
    bathy_threshold=0. # TODO
 
    # Read plon,plat
-   gfile=abfile.ABFileGrid("regional.grid","r")
+   gfile=abf.ABFileGrid("regional.grid","r")
    plon=gfile.read_field("plon")
    plat=gfile.read_field("plat")
    gfile.close()
@@ -211,7 +209,7 @@ def main(infile,rmu_width,rmu_efold,dpi=180):
    # Read input bathymetri
    m=re.match( "^(.*)(\.[ab])", infile)
    if m : infile=m.group(1)
-   bfile=abfile.ABFileBathy(infile,"r",idm=gfile.idm,jdm=gfile.jdm,mask=True)
+   bfile=abf.ABFileBathy(infile,"r",idm=gfile.idm,jdm=gfile.jdm,mask=True)
    in_depth_m=bfile.read_field("depth")
    bfile.close()
    in_depth=numpy.ma.filled(in_depth_m,bathy_threshold)
@@ -278,7 +276,7 @@ def main(infile,rmu_width,rmu_efold,dpi=180):
    fid.close()
 
    # Write rmu file
-   rmufile=abfile.ABFileRmu("rmu","w",
+   rmufile=abf.ABFileRmu("rmu","w",
          cline1="Relaxation mask",
          cline2="Relaxation mask created by topo_ports.py. rel zone width=%d, efold time=%d days"%(rmu_width,rmu_efold),
          mask=True)
@@ -374,7 +372,7 @@ def main(infile,rmu_width,rmu_efold,dpi=180):
 
    if fatal :
       logger.error("Errors were encountered - see errors above, and consult diag files. You may need to modify your topo file")
-      raise NameError,"fatal exit"
+      raise NameError("fatal exit")
    return rmumask,rmumask_m
 
 

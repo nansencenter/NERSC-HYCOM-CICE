@@ -31,10 +31,9 @@
 # M. Bakhoday-Paskyabi, 11 July 2019, adding bio fields
 #
 from   matplotlib import pyplot as plt
-import abfile
+import abfile.abfile as abf
 import numpy
 import numpy.ma as ma
-#from   mpl_toolkits.basemap import Basemap, cm
 import sys
 import os.path
 import re
@@ -280,7 +279,7 @@ def interpolate2d(x, y, Z, points, mode='linear', bounds_error=False):
                'exceeds max grid value %.15f ' % (mz, mZ))
         if not(numpy.isnan(mz) or numpy.isnan(mZ)):
             if not mz <= mZ:
-                print "warning"
+                print("warning")
                 #raise RuntimeError(msg)
 
     # Populate result with interpolated values for points inside domain
@@ -459,12 +458,12 @@ def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_path=None) :
     if not m:
         msg="File %s is not a grid2D file, aborting"%file
         logger.error(msg)
-        raise ValueError,msg
+        raise ValueError(msg)
     
     #fileinput0=os.path.join(dirname+"/"+"MERCATOR-PHY-24-"+m.group(2))
     file_date=file[-16:-6]
     fileinput0=file
-    print file_date,file
+    print(file_date,file)
     next_day=datetime.datetime.strptime(file_date, '%Y-%m-%d')+datetime.timedelta(days=1)
     fileinput1=datetime.datetime.strftime(next_day,'%Y%m%d')
     fileinput1=os.path.join(dirname+"/"+file_pre+fileinput1+'.nc')
@@ -539,12 +538,12 @@ def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_path=None) :
        points = numpy.transpose(((plat.flatten(),plon.flatten())))
        delta = mydt.strftime( '%Y-%m-%d')
        # filename format MERCATOR-BIO-14-2013-01-05-00
-       print bio_path,delta
+       print(bio_path,delta)
        idx,biofname=search_biofile(bio_path,delta)
        if idx >7: 
           msg="No available BIO file within a week difference with PHY"
           logger.error(msg)
-          raise ValueError,msg
+          raise ValueError(msg)
        logger.info("BIO file %s reading & interpolating to 1/12 deg grid cells ..."%biofname)
        ncidb=netCDF4.Dataset(biofname,"r")
        blon=ncidb.variables["longitude"][:];
@@ -638,7 +637,7 @@ def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_path=None) :
     #flnm.close()
     ssh = numpy.where(numpy.abs(ssh)>1000,0.,ssh*9.81) # NB: HYCOM srfhgt is in geopotential ...
     #
-    outfile = abfile.ABFileArchv("./data/"+oname,"w",iexpt=iexpt,iversn=iversn,yrflag=yrflag,)
+    outfile = abf.ABFileArchv("./data/"+oname,"w",iexpt=iexpt,iversn=iversn,yrflag=yrflag,)
     outfile.write_field(zeros,                   ip,"montg1"  ,0,model_day,1,0)
     outfile.write_field(ssh,                     ip,"srfhgt"  ,0,model_day,0,0)
     outfile.write_field(zeros,                   ip,"surflx"  ,0,model_day,0,0) # Not used

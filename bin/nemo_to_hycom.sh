@@ -18,8 +18,6 @@
 # (3) July 9 2019, accounting for both bio & phy nesting.
 # (4) July 11 2019, further imporvment.
 
-module load basemap/1.0.7-intel-2017a-Python-2.7.13
-
 options=$(getopt -o b:m -- "$@")
 [ $? -eq 0 ] || {
     echo "$usage"
@@ -116,7 +114,7 @@ tmp3=int(numpy.round(cfunits.Units.conform(time,tmp,tmp2)))
 fnametemplate="archv.%Y_%j"
 deltat=datetime.datetime(refy,refm,refd,0,0,0)+datetime.timedelta(hours=tmp3)
 oname=deltat.strftime(fnametemplate)+"_00"
-print oname
+print(oname)
 END
 }
 else
@@ -136,7 +134,7 @@ tmp3=int(numpy.round(cfunits.Units.conform(time,tmp,tmp2)))
 fnametemplate="archv.%Y_%j"
 deltat=datetime.datetime(refy,refm,refd,0,0,0)+datetime.timedelta(hours=tmp3)
 oname=deltat.strftime(fnametemplate)+"_00"
-print oname
+print(oname)
 END
 }
 

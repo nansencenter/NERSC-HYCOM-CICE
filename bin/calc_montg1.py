@@ -3,9 +3,8 @@ import argparse
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot
-import abfile
+import abfile.abfile as abf
 import numpy
-from mpl_toolkits.basemap import Basemap
 import modeltools.hycom
 import logging
 import re
@@ -82,14 +81,14 @@ def main(archv_files,opath,header_line1=cline1,header_line2=cline2,header_line3=
       kapnum = 2
       msg="Only kapref>=0 is implemented for now"
       logger.error(msg)
-      raise ValueError,msg
+      raise ValueError(msg)
    else :
       kapnum = 1 
 
    if kapnum > 1 :
       msg="Only kapnum=1 is implemented for now"
       logger.error(msg)
-      raise ValueError,msg
+      raise ValueError(msg)
 
 
    # hycom sigma and kappa, written in python. NB: sigver is not used here.
@@ -109,7 +108,7 @@ def main(archv_files,opath,header_line1=cline1,header_line2=cline2,header_line3=
    for archv_file in archv_files :
       archv_file=archv_file[:-2]
       logger.debug("Processing %s"%(archv_file))
-      arcfile=abfile.ABFileArchv(archv_file,"r")
+      arcfile=abf.ABFileArchv(archv_file,"r")
       
       temp    = numpy.ma.zeros((jdm,idm))    # Only needed when calculating density
       saln    = numpy.ma.zeros((jdm,idm))    # Only needed when calculating density
@@ -136,7 +135,7 @@ def main(archv_files,opath,header_line1=cline1,header_line2=cline2,header_line3=
          elif kapref < 0 :
             msg="Only kapref>=0 is implemented for now"
             logger.error(msg)
-            raise ValueError,msg
+            raise ValueError(msg)
          if k > 0 : 
             montg = montg - p[k,:,:] * (thstar[k  ,:,:] - thstarup) * thref**2
 
@@ -162,7 +161,7 @@ def main(archv_files,opath,header_line1=cline1,header_line2=cline2,header_line3=
 
       # Open new archive file, and write montg1 to it.
       fnameout = opath+str(archv_file[-17:])
-      arcfile_out=abfile.ABFileArchv(fnameout,"w",iversn=iversn,yrflag=yrflag,iexpt=iexpt,mask=False,cline1=header_line1,cline2=header_line2,cline3=header_line3)
+      arcfile_out=abf.ABFileArchv(fnameout,"w",iversn=iversn,yrflag=yrflag,iexpt=iexpt,mask=False,cline1=header_line1,cline2=header_line2,cline3=header_line3)
 
       fields=arcfile.get_fields()
       for key in sorted(fields.keys()) :
