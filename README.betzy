@@ -46,7 +46,7 @@ module load CMake/3.16.4-GCCcore-9.3.0
    
 5.1) prepare the python tools on Betzy
 
-  ### Assuming you downloaded the code to ~/NERSC-HYCOM-CICE
+  ### Assuming you downloaded the code to ~/NERSC-HYCOM-CICE (if you already have these libraries installed, then add --upgrade to the lines below)
    pip install --user ~/NERSC-HYCOM-CICE/pythonlibs/modeltools
    pip install --user ~/NERSC-HYCOM-CICE/pythonlibs/modelgrid
    pip install --user ~/NERSC-HYCOM-CICE/pythonlibs/gridxsec 
