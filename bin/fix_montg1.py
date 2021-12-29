@@ -42,7 +42,7 @@ cline3="Expt 01.1  nhybrd=50 nsigma= 0 ds00= 1.00 dp00= 1.00 dp00x= 450.0 dp00f=
 def main(archv_files,regress_file,opath,depth_file,header_line1=cline1,header_line2=cline2,header_line3=cline3 ) :
 
    regr = open(regress_file,'rb')
-   slope,intercept,nemomeandt = pickle.load(regr)
+   slope,intercept,nemomeandt = pickle.load(regr,encoding="latin1")
 
    bp=modeltools.hycom.BlkdatParser("blkdat.input")
    idm    = bp["idm"]
