@@ -88,6 +88,12 @@ e.g. pip install --user file:/cluster/home/cagyum/NERSC-HYCOM-CICE/pythonlibs/mo
    pip install --user file:path-to-NERSC-HYCOM-CICE/pythonlibs/gridxsec 
    pip install --user file:path-to-NERSC-HYCOM-CICE/pythonlibs/abfile 
 ```
+If not already exist, one  may need to install:
+```
+   pip install --user pyproj==1.9.6
+   pip install --user netcdftime
+```
+
 To upgrade the libraries after a change in these libraries, just call the same install commands with the extra option: "--upgrade"
 
 e.g. pip install --user file:path-to-NERSC-HYCOM-CICE/pythonlibs/gridxsec --upgrade
