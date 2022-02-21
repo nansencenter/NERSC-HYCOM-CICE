@@ -37,8 +37,8 @@ done
 
 # Update path
 export PATH=$BINDIR/:$PATH
-export Sysdir=/cluster/projects/nn2993k
-
+#export Sysdir=/cluster/projects/nn2993k
+export Sysdir=/cluster/projects/nn9481k
 # PATHS to hycom-supplied ocean climatologies, on specially formatted input files
 export LEVITUS_PATH=${Sysdir}/ModelInput/clim/levitus/   
 export PHC_PATH=${Sysdir}/ModelInput/clim/PHC/
