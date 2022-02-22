@@ -44,7 +44,7 @@ module load CMake/3.16.4-GCCcore-9.3.0
 
    compile_model.sh ifort -u
    
-5.1) prepare the python tools on Betzy
+5) prepare the python tools on Betzy
 
   ### Assuming you downloaded the code to ~/NERSC-HYCOM-CICE (if you already have these libraries installed, then add --upgrade to the lines below)
    pip install --user ~/NERSC-HYCOM-CICE/pythonlibs/modeltools
@@ -60,22 +60,4 @@ module load CMake/3.16.4-GCCcore-9.3.0
    pip install --user f90nml
    pip install --user scipy
    pip install --user pyproj
-
-
-5.2) prepare the python tools on fram.
-
-   pip install --user f90nml 
-   pip install --user netCDF4
-   pip install --user pyproj 
-   pip install --user matplotlib
-   pip install --user scipy
-   pip install --user numpy
-   pip install --user cfunits==1.9 # don't remember this well, but this is what I did probably
-
-   #assuming you downloaded the code to ~/NERSC-HYCOM-CICE
-   pip install --user ~/NERSC-HYCOM-CICE/pythonlibs/modeltools
-   pip install --user ~/NERSC-HYCOM-CICE/pythonlibs/modelgrid
-   pip install --user ~/NERSC-HYCOM-CICE/pythonlibs/gridxsec 
-   pip install --user ~/NERSC-HYCOM-CICE/pythonlibs/abfile
-
 
