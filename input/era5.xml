@@ -1,7 +1,8 @@
 <?xml version="1.0"?>
 <xml>
+<!-- Please note that the rootPath here is overwritten by the one defined in REGION.src file. So, Don't worry about the path definition here -->
    <forcing_datasets>
-      <forcing_dataset name="era5" rootPath="/cluster/projects/nn2993k/ERA5/" format="netcdf" timestep="6h">
+      <forcing_dataset name="era5" rootPath="/cluster/projects/nn9481k/ERA5_6h/" format="netcdf" timestep="6h">
 <!--     <field name="internal name known by routine"   file="path to file"  varname="name of variable in netcdf file" unit="udunit"/> -->
          <field known_name="10u"   file="[rootPath]6h.10U_%Y.nc"  varname="10U"  units="m s**-1"/>
          <field known_name="10v"   file="[rootPath]6h.10V_%Y.nc"  varname="10V"  units="m s**-1"/>
@@ -15,7 +16,7 @@
 
 
    <!-- As above, but includes strd (surface thermal downwelling radiation) as well-->
-      <forcing_dataset name="era5+lw" rootPath="/cluster/projects/nn2993k/ERA5/" format="netcdf" timestep="6h">
+      <forcing_dataset name="era5+lw" rootPath="cluster/projects/nn9481k/ERA5_6h/" format="netcdf" timestep="6h">
 <!--     <field name="internal name known by routine"   file="path to file"  varname="name of variable in netcdf file" unit="udunit"/> -->
          <field known_name="10u"   file="[rootPath]6h.10U_%Y.nc"  varname="10U"  units="m s**-1"/>
          <field known_name="10v"   file="[rootPath]6h.10V_%Y.nc"  varname="10V"  units="m s**-1"/>
@@ -31,7 +32,7 @@
 
 
       <!-- As above, but different calculation of downwelling shortwave -->
-      <forcing_dataset name="era5-oldssrd" rootPath="/cluster/projects/nn2993k/ERA5/" format="netcdf" timestep="6h">
+      <forcing_dataset name="era5-oldssrd" rootPath="cluster/projects/nn9481k/ERA5_6h/" format="netcdf" timestep="6h">
 <!--     <field name="internal name known by routine"   file="path to file"  varname="name of variable in netcdf file" unit="udunit"/> -->
          <field known_name="10u"   file="[rootPath]/6h.10U_%Y.nc"  varname="10U"  units="m s**-1"/>
          <field known_name="10v"   file="[rootPath]/6h.10V_%Y.nc"  varname="10V"  units="m s**-1"/>
@@ -43,7 +44,7 @@
       </forcing_dataset>
 
    <!-- As above, but includes strd (surface thermal downwelling radiation) as well-->
-      <forcing_dataset name="era5+all" rootPath="/cluster/projects/nn2993k/ERA5/" format="netcdf" timestep="6h">
+      <forcing_dataset name="era5+all" rootPath="cluster/projects/nn9481k/ERA5_6h/" format="netcdf" timestep="6h">
 <!--     <field name="internal name known by routine"   file="path to file"  varname="name of variable in netcdf file" unit="udunit"/> -->
          <field known_name="10u"   file="[rootPath]/6h.10U_%Y.nc"  varname="10U"  units="m s**-1"/>
          <field known_name="10v"   file="[rootPath]/6h.10V_%Y.nc"  varname="10V"  units="m s**-1"/>
@@ -59,7 +60,7 @@
       </forcing_dataset>
          
    <!-- As above, but includes strd (surface thermal downwelling radiation) as well-->
-      <forcing_dataset name="era5+ssr" rootPath="/cluster/projects/nn2993k/ERA5/" format="netcdf" timestep="6h">
+      <forcing_dataset name="era5+ssr" rootPath="cluster/projects/nn9481k/ERA5_6h/" format="netcdf" timestep="6h">
 <!--     <field name="internal name known by routine"   file="path to file"  varname="name of variable in netcdf file" unit="udunit"/> -->
          <field known_name="10u"   file="[rootPath]/6h.10U_%Y.nc"  varname="10U"  units="m s**-1"/>
          <field known_name="10v"   file="[rootPath]/6h.10V_%Y.nc"  varname="10V"  units="m s**-1"/>
