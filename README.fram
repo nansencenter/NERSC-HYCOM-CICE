@@ -1,17 +1,14 @@
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 1) Recommended .bashrc content for FRAM
 
-export LANG=en_US.UTF-8
-export LC_ALL=en_US.utf8
-
-module load NCL/6.6.2-intel-2018b
-module load FFTW/3.3.8-intel-2018b
-module load ESMF/7.1.0r-intel-2018b
-module load CDO/1.9.5-intel-2018b
-module load CMake/3.9.1
-module load ncview/2.1.7-intel-2018b
-module load netCDF/4.6.1-intel-2018b
-module load Python/2.7.15-intel-2018b
+module purge
+module load Python/3.8.2-GCCcore-9.3.0
+module load intel/2020a 
+module load ESMF/8.0.1-intel-2020a
+module load FFTW/3.3.8-intel-2020a 
+module load UDUNITS/2.2.26-GCCcore-9.3.0
+module load CMake/3.16.4-GCCcore-9.3.0
+module load netCDF-Fortran/4.5.2-iimpi-2020a
 
 
 2) Compiling hycom_all under NERSC-HYCOM-CICE/hycom/hycom_ALL/hycom_2.2.72_ALL
@@ -21,9 +18,16 @@ module load Python/2.7.15-intel-2018b
 
 3) Compiling MSCPROGS under NERSC-HYCOM-CICE/hycom/MSCPROGS/src
 
-   Ensure "LIBS=-lnetcdf -lnetcdff -lfftw3 -lmkl" in the make.fram.ifort
-
-4) Compiling hycom_cice under TP0a1.00/expt_01.0
+ Go to NERSC-HYCOM-CICE/hycom/MSCPROGS/src/Make.Inc/
+ Execute:
+ ln -s make.fram.ifort make.inc
+ Ensure "LIBS=-lnetcdf -lnetcdff -lfftw3 -lmkl" in the make.fram.ifort
+ cd ../
+ make clean
+ make all
+ make install
+          
+ 4) Compiling hycom_cice under TP0a1.00/expt_01.0
 
    compile_model.sh ifort -u
 
