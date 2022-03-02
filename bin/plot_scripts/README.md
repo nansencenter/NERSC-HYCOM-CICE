@@ -13,6 +13,8 @@ This directory contains routines for processing and plotting model output.
 |executable     | purpose|
 |-------- | -------------|
 |hycom_plot_section_topaz.py  | creating section plot from ab files with an option for density plot    |
+|hycom_plot_section_TOPAZ_Avg.py  | calculate and plot section average from given archive files    |
+|hycom_plot_section_TOPAZ_Avg_relax.py  | calculate and plot section annual average from relax files    |
 |hycom_plot_topaz_ts_from_ncfile.py | plotting  time series of spatially-averaged of 2D field from netCDF files   |
 |hycom_plot_topaz_ts_from_abfile.py | plotting  time series of spatially-averaged of 2D field from ab files     |
 |hycom_plot_archive_topaz_Avg |      ploting 2D  from a given ab file, and it will plot the averaged if the input are ab muliple files|

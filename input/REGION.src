@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Set the Environment Variables defining the Region and Experiment Number
-export R=TP0a1.00
+export R=TP5a0.06
 
 # Consistency check. 
 mydir=$(cd $(dirname ${BASH_SOURCE}) && pwd)
@@ -13,7 +13,7 @@ if [ "$tmp" != "${R}" ] ;then
 fi
 
 # Set the Path Here
-export NHCROOT=/cluster/home/cagyum/DEVELOP/NERSC-HYCOM-CICE       # Set this if necessary (eg out of work)
+export NHCROOT=/cluster/home/achoth/AchHycom/NERSC-HYCOM-CICE       # Set this if necessary (eg out of work)
 
 export HYCOM_ALL=$NHCROOT/hycom/hycom_ALL/hycom_2.2.72_ALL/    # follows NHCROOT, but can be set differently
 export INPUTDIR=$NHCROOT/input/                                # follows NHCROOT, but can be set differently
@@ -37,32 +37,32 @@ done
 
 # Update path
 export PATH=$BINDIR/:$PATH
-#export Sysdir=/cluster/projects/nn2993k
-export Sysdir=/cluster/projects/nn9481k
+export Sysdir_nn2993k=/cluster/projects/nn2993k
+export Sysdir_nn9481k=/cluster/projects/nn9481k
 # PATHS to hycom-supplied ocean climatologies, on specially formatted input files
-export LEVITUS_PATH=${Sysdir}/ModelInput/clim/levitus/   
-export PHC_PATH=${Sysdir}/ModelInput/clim/PHC/
-export WOA2013_PATH=${Sysdir}/ModelInput/clim/WOA2013/hycom_0.25/sigma-0/
-export WOA2013BIO_PATH=${Sysdir}/ModelInput/clim/WOA2013/Nutrients
-export WOA2018_PATH=${Sysdir}/ModelInput/clim/WOA2018/hycom_0.25/sigma-0/
-export GLODAPCO2_PATH=${Sysdir}/ModelInput/GLODAPV2/
+export LEVITUS_PATH=${Sysdir_nn2993k}/ModelInput/clim/levitus/   
+export PHC_PATH=${Sysdir_nn2993k}/ModelInput/clim/PHC/
+export WOA2013_PATH=${Sysdir_nn2993k}/ModelInput/clim/WOA2013/hycom_0.25/sigma-0/
+export WOA2013BIO_PATH=${Sysdir_nn2993k}/ModelInput/clim/WOA2013/Nutrients
+export WOA2018_PATH=${Sysdir_nn2993k}/ModelInput/clim/WOA2018/hycom_0.25/sigma-0/
+export GLODAPCO2_PATH=${Sysdir_nn2993k}/ModelInput/GLODAPV2/
 
 
-export SEAWIFS=${Sysdir}/ModelInput/clim/seawifs/
+export SEAWIFS=${Sysdir_nn2993k}/ModelInput/clim/seawifs/
 export COADSWIND=/work/shared/nersc/msc/ModelInput/force/wind_ieee/coads/
 export COADSFLUX=/work/shared/nersc/msc/ModelInput/force/flux_ieee/coads/
 export ERA15=/work/shared/nersc/msc/ModelInput/force/era15/monthly/
 export NCEP_CLIM_PATH=/work/shared/nersc/NCEP_Clim/
-export ERA40_CLIM_PATH=${Sysdir}/ERA40-Clim/
-export ERA40_PATH=${Sysdir}/ERA40/
-export ERAI_PATH=${Sysdir}/ERA-I/
-export ERA5_PATH=${Sysdir}/ERA5/
-export WOA2005_PATH=${Sysdir}/ModelInput/WOA2005/
+export ERA40_CLIM_PATH=${Sysdir_nn2993k}/ERA40-Clim/
+export ERA40_PATH=${Sysdir_nn2993k}/ERA40/
+export ERAI_PATH=${Sysdir_nn2993k}/ERA-I/
+export ERA5_PATH=${Sysdir_nn9481k}/ERA5_6h/
+export WOA2005_PATH=${Sysdir_nn2993k}/ModelInput/WOA2005/
 export ECNC_PATH=/work/shared/nersc/ECMWFR_T799/
 export NCEP_PATH=/work/shared/nersc/NCEP/
-export ETOPO5_PATH=${Sysdir}/ModelInput/bathymetry/ETOPO5/
-export GEBCO_PATH=${Sysdir}/ModelInput/bathymetry/GEBCO/
-export IBCAO_PATH=${Sysdir}/ModelInput/bathymetry/IBCAO_v3/
+export ETOPO5_PATH=${Sysdir_nn2993k}/ModelInput/bathymetry/ETOPO5/
+export GEBCO_PATH=${Sysdir_nn2993k}/ModelInput/bathymetry/GEBCO/
+export IBCAO_PATH=${Sysdir_nn2993k}/ModelInput/bathymetry/IBCAO_v3/
 export FES_PATH=/work/shared/nersc/msc/ModelInput/tides/FES2004/
 export CSR_PATH=/work/shared/nersc/msc/ModelInput/tides/CSR/
 export TRIP_PATH=/cluster/projects/nn2993k/TRIP/

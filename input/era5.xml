@@ -1,5 +1,6 @@
 <?xml version="1.0"?>
 <xml>
+<!-- Please note that the rootPath here is overwritten by the one defined in REGION.src file. So, Don't worry about the path definition here -->
    <forcing_datasets>
       <forcing_dataset name="era5" rootPath="/cluster/projects/nn9481k/ERA5/" format="netcdf" timestep="6h">
 <!--     <field name="internal name known by routine"   file="path to file"  varname="name of variable in netcdf file" unit="udunit"/> -->
