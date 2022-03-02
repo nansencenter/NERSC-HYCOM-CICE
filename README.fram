@@ -12,12 +12,7 @@ module load intel/2021a
 
 2) Compiling hycom_all under NERSC-HYCOM-CICE/hycom/hycom_ALL/hycom_2.2.72_ALL
 
-   Define "setenv ARCH intelIFC" in Make_all.src
-
-   and change a little in Make_ncdr.src
-   module restore system
-   module load NCL/6.4.0-intel-2017a
-   setenv NCDF /cluster/software/netCDF-Fortran/4.4.4-intel-2017a
+   # Define "setenv ARCH intelIFC" in Make_all.src
 
    csh Make_all.com 
    csh Make_ncdf.com 
@@ -36,7 +31,7 @@ module load intel/2021a
     
 4) Compiling hycom_cice under TP0a1.00/expt_01.0
 
-   compile_model.sh ifort -u
+   compile_model.sh -m fram ifort
    
 5) prepare the python tools on Fram
 
