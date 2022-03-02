@@ -180,7 +180,7 @@ elif [ "$SITE" == "alvin" ] || [ "$SITE" == "elvis" ] ; then
 
 elif [ "$SITE" == "fram" ] ; then 
    echo "hardcoded settings for $SITE"
-   export ESMF_DIR=/cluster/software/ESMF/7.1.0r-intel-2018b/
+   export ESMF_DIR=/cluster/software/ESMF/8.0.1-intel-2020a/
    export ESMF_MOD_DIR=${ESMF_DIR}mod/
    export ESMF_LIB_DIR=${ESMF_DIR}lib/
 
@@ -197,7 +197,7 @@ elif [ "$SITE" == "surfsara" ] ; then
    export ESMF_LIB_DIR=${ESMF_DIR}lib/
    
 elif [[ "${unames:0:5}" == "Linux" ]] && [[ "$SITE" == "fram" ]] ; then
-   export ESMF_DIR=/cluster/software/ESMF/7.1.0r-intel-2018b/
+   export ESMF_DIR=/cluster/software/ESMF/8.0.1-intel-2020a/
    export ESMF_MOD_DIR=${ESMF_DIR}mod/
    export ESMF_LIB_DIR=${ESMF_DIR}lib/
 
