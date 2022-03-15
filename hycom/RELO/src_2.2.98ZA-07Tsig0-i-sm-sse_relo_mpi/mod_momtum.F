@@ -53,8 +53,10 @@ c --- -----------------------------------------
 c
       logical, parameter :: lpipe_momtum=.false.      !usually .false.
 
-
+#if not defined(icestress)
+c Currently drag cofficient in cice is half the magnitude
       real,    parameter :: dragw_rho=0.01072d0*1026.0d0  !ice-ocean drag from CICE
+#endif
       real,    parameter ::     pairc=1013.0d0*100.0d0    !air pressure (Pa)
       real,    parameter ::      rgas=287.1d0           !gas constant (j/kg/k)
       real,    parameter ::     tzero=273.16d0          !celsius to kelvin offset
@@ -504,6 +506,13 @@ c
                 surty(i,j) = 0.0
               elseif (iceflg.eq.2 .and. si_c(i,j).gt.0.0) then
 c ---           allow for ice-ocean stress
+#ifdef icestress
+                surtx(i,j) = (1.0-si_c(i,j))*surtx(i,j) +
+     &                            si_tx(i,j)
+                surty(i,j) = (1.0-si_c(i,j))*surty(i,j) +
+     &                            si_ty(i,j)
+
+#else
                 uimo = si_u(i,j) - usur
                 vimo = si_v(i,j) - vsur
                 simo = sqrt( uimo**2 + vimo**2 )
@@ -511,6 +520,7 @@ c ---           allow for ice-ocean stress
      &                            si_c(i,j) *dragw_rho*simo*uimo
                 surty(i,j) = (1.0-si_c(i,j))*surty(i,j) +
      &                            si_c(i,j) *dragw_rho*simo*vimo
+#endif
               endif !ice-ocean stress
             endif !ip
           enddo !i
