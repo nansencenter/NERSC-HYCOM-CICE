@@ -1,122 +1,54 @@
-Updation for compiling the HYCOM_CICE and hycom_all programs at 26th Feb 2020:
-
-Recommendation for the newly modules on Fram as the environomental setting in .bash_profile:
-
-module restore system
-module load NCL/6.6.2-intel-2018b
-module load ESMF/7.1.0r-intel-2018b
-module load FFTW/3.3.8-intel-2018b
-module swap Python/3.6.6-intel-2018b Python/2.7.15-intel-2018b
-module load ncview/2.1.7-intel-2018b
-module load NCO/4.7.9-intel-2018b
-
-
-
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-Currently, the compiler environoment on fram has a good consistence using intel-Fortran.
+1) Recommended .bashrc content for FRAM
 
-1) The basic modules for compiling are listed as following:
-
-module restore system
-module load NCL/6.4.0-intel-2017a 
-module load FFTW/3.3.6-intel-2017a
-module load ESMF/6.3.0rp1-intel-2017a-HDF5-1.8.18
-
-Then the listed modules are:
-Currently Loaded Modules:
-  1) StdEnv                                             (S)
-  2) GCCcore/6.3.0odules:
-  3) binutils/2.27-GCCcore-6.3.0                        (H)
-  4) icc/2017.1.132-GCC-6.3.0-2.27
-  5) ifort/2017.1.132-GCC-6.3.0-2.27                    (H)
-  6) iccifort/2017.1.132-GCC-6.3.0-2.27                 (S)
-  7) impi/2017.1.132-iccifort-2017.1.132-GCC-6.3.0-2.27
-  8) iimpi/2017a17.1.132-GCC-6.3.0-2.27                 (H)
-  9) imkl/2017.1.132-iimpi-2017a17.1.132-GCC-6.3.0-2.27
- 10) intel/2017a1.132-GCC-6.3.0-2.27
- 11) cURL/7.53.1-GCCcore-6.3.07a.0-2.27                 (H)
- 12) JasPer/1.900.1-intel-2017a017.1.132-GCC-6.3.0-2.27 (H)
- 13) g2lib/1.4.0-intel-2017a.0                          (H)
- 14) g2clib/1.6.0-intel-2017a7aa                        (H)
- 15) Szip/2.1-intel-2017a17a0-2.27                      (H)
- 16) NASM/2.12.02-intel-2017a00-2.27                    (H)
- 17) libjpeg-turbo/1.5.1-intel-2017a.27                 (H)
- 18) HDF/4.2.12-intel-2017a7a-2017.1.132-GCC-6.3.0-2.27 (H)
- 19) zlib/1.2.11-GCCcore-6.3.0-2017a.132-GCC-6.3.0-2.27 (H)
- 20) HDF5/1.8.18-intel-2017a017a17.1.132-GCC-6.3.0-2.27 (H)
- 21) netCDF/4.4.1.1-intel-2017a-HDF5-1.8.18             (H)
- 22) netCDF-Fortran/4.4.4-intel-2017a-HDF5-1.8.18       (H)
- 23) bzip2/1.0.6-GCCcore-6.3.0a-HDF5-1.8.18             (H)
- 24) libpng/1.6.29-GCCcore-6.3.02017a-HDF5-1.8.18       (H)
- 25) freetype/2.7.1-GCCcore-6.3.0-libpng-1.6.29         (H)
- 26) ncurses/6.0-GCCcore-6.3.0.0HDF5-1.8.18             (H)
- 27) libreadline/7.0-GCCcore-6.3.0libpng-1.6.2918       (H)
- 28) Tcl/8.6.6-GCCcore-6.3.0.0-2017a                    (H)
- 29) SQLite/3.17.0-GCCcore-6.3.0.07a                    (H)
- 30) GMP/6.1.2-GCCcore-6.3.06.3.0-libpng-1.6.29         (H)
- 31) libffi/3.2.1-GCCcore-6.3.00                        (H)
- 32) Python/2.7.13-intel-2017a.3.0F5-1.8.18             (H)
- 33) expat/2.2.0-GCCcore-6.3.00-2017a-HDF5-1.8.18       (H)
- 34) GEOS/3.6.1-intel-2017a-Python-2.7.135-1.8.18       (H)
- 35) XZ/5.2.3-GCCcore-6.3.03.0.02017a-HDF5-1.8.18       (H)
- 36) libxml2/2.9.4-GCCcore-6.3.0on-2.7.131.6.29         (H)
- 37) LibTIFF/4.0.7-intel-2017a3.0-libpng-1.6.29         (H)
- 38) PCRE/8.40-intel-2017a-6.3.0.0libpng-1.6.29         (H)
- 39) GDAL/2.2.0-intel-2017a-Python-2.7.13-HDF5-1.8.18   (H)
- 40) UDUNITS/2.2.24-intel-2017a0.0                      (H)
- 41) netCDF-C++4/4.3.0-intel-2017a-HDF5-1.8.18-1.8.18   (H)
- 42) pixman/0.34.0-GCCcore-6.3.0                        (H)
- 43) gettext/0.19.8.1-GCCcore-6.3.0HDF5-1.8.18          (H)
- 44) util-linux/2.29.2-intel-2017a-2.7.13-HDF5-1.8.18   (H)
- 45) GLib/2.52.0-intel-2017ae-6.3.02.7.13               (H)
- 46) fontconfig/2.12.1-GCCcore-6.3.0-libpng-1.6.29      (H)
- 47) X11/20170314-GCCcore-6.3.0                         (H)
- 48) cairo/1.14.8-intel-2017a                           (H)
- 49) libiconv/1.15-GCCcore-6.3.0                        (H)
- 50) GSL/2.3-intel-2017a
- 51) NCL/6.4.0-intel-2017a
- 52) FFTW/3.3.6-intel-2017a
- 53) ESMF/6.3.0rp1-intel-2017a-HDF5-1.8.18
-
-  Where:
-   H:  Hidden Module
-   S:  Module is Sticky, requires --force to unload or purge
+ml purge
+module load Python/3.8.2-GCCcore-9.3.0
+module load ESMF/8.0.1-intel-2020a
+module load FFTW/3.3.8-intel-2020a
+module load UDUNITS/2.2.26-GCCcore-9.3.0
+module load CMake/3.16.4-GCCcore-9.3.0
+module load intel/2021a
 
 
 2) Compiling hycom_all under NERSC-HYCOM-CICE/hycom/hycom_ALL/hycom_2.2.72_ALL
 
-   Define "setenv ARCH intelIFC" in Make_all.src
-
-   and change a little in Make_ncdr.src
-   module restore system
-   module load NCL/6.4.0-intel-2017a
-   setenv NCDF /cluster/software/netCDF-Fortran/4.4.4-intel-2017a
+   # Define "setenv ARCH intelIFC" in Make_all.src
 
    csh Make_all.com 
    csh Make_ncdf.com 
 
-
 3) Compiling MSCPROGS under NERSC-HYCOM-CICE/hycom/MSCPROGS/src
 
-   Ensure "LIBS=-lnetcdf -lnetcdff -lfftw3 -lmkl" in the make.fram.ifort
+       Go to NERSC-HYCOM-CICE/hycom/MSCPROGS/src/Make.Inc/
+       Ensure "LIBS=-lnetcdf -lnetcdff -lfftw3 -lmkl" in the make.fram.ifort
+       execute:
+          ln -s make.fram.ifort make.inc
+          cd ../
+          gmake clean
+          gmake all
+          gmake install
 
-
+    
 4) Compiling hycom_cice under TP0a1.00/expt_01.0
 
-   compile_model.sh -m fram -u ifort
+   compile_model.sh -m fram ifort
    
+5) prepare the python tools on Fram
 
-5) prepare the python tools on fram.
+  ### Assuming you downloaded the code to ~/NERSC-HYCOM-CICE (if you already have these libraries installed, then add --upgrade to the lines below)
+   pip install --user ~/NERSC-HYCOM-CICE/pythonlibs/modeltools
+   pip install --user ~/NERSC-HYCOM-CICE/pythonlibs/modelgrid
+   pip install --user ~/NERSC-HYCOM-CICE/pythonlibs/gridxsec 
+   pip install --user ~/NERSC-HYCOM-CICE/pythonlibs/abfile
 
-   module load git/2.14.2-intel-2017a
+  ### TO UPGRADE -->  pip install --user --upgrade ~/NERSC-HYCOM-CICE/pythonlibs/abfile
 
-   pip install --user git+http://github.com/knutal/abfile
-   pip install --user git+http://github.com/knutal/modeltools
-   pip install --user git+http://github.com/knutal/modelgrid
-   pip install --user git+http://github.com/knutal/gridxsec 
-   pip install --user f90nml 
+   pip install --user cfunits
    pip install --user netCDF4
-   pip install --user pyproj 
-
-6) running the model of TP0 on fram, the sepecific paths and the task system information are referred under the diretory of NERSC-HYCOM-CICE/TP0a1.00/expt_01.0/fram
+   pip install --user netcdftime
+   pip install --user numpy
+   pip install --user cmocean
+   pip install --user f90nml
+   pip install --user scipy
+   pip install --user pyproj
 
