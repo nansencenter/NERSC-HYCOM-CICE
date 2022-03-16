@@ -56,6 +56,7 @@ c
 #if not defined(icestress)
 c Currently drag cofficient in cice is half the magnitude
       real,    parameter :: dragw_rho=0.01072d0*1026.0d0  !ice-ocean drag from CICE
+c     CICE USES                       0.00536d0*1026.0d0
 #endif
       real,    parameter ::     pairc=1013.0d0*100.0d0    !air pressure (Pa)
       real,    parameter ::      rgas=287.1d0           !gas constant (j/kg/k)
