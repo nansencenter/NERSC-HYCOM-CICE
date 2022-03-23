@@ -53,12 +53,10 @@ c --- -----------------------------------------
 c
       logical, parameter :: lpipe_momtum=.false.      !usually .false.
 
-#if not defined(icestress)
 c Reduced dragw_rho to half in order to align with CICE
-       real,    parameter :: dragw_rho=0.01072d0*1026.0d0  !ice-ocean drag from CICE
-c      real,    parameter :: dragw_rho=0.01072d0*1026.0d0  !ice-ocean drag original
+      real,    parameter :: dragw_rho=0.00536d0*1026.0d0  !ice-ocean drag from CICE
+c     real,    parameter :: dragw_rho=0.01072d0*1026.0d0  !ice-ocean drag original
 
-#endif
       real,    parameter ::     pairc=1013.0d0*100.0d0    !air pressure (Pa)
       real,    parameter ::      rgas=287.1d0           !gas constant (j/kg/k)
       real,    parameter ::     tzero=273.16d0          !celsius to kelvin offset
