@@ -54,8 +54,8 @@ EXTRALIBS     =  -lfftw3 -lmkl -lnetcdff -lnetcdf -lmpi -lmpifort
 
 
 # from fabm 
-#CPPFLAGS      = $(CPPFLAGS) -D_FABM_ -I${HOME}/local/fabm/hycom/include
-#EXTRALIBS      = $(EXTRALIBS) -L${HOME}/local/fabm/hycom/lib -lfabm
+#CPPFLAGS      += -D_FABM_ -I${HOME}/local/fabm/hycom/include
+#EXTRALIBS     += -L${HOME}/local/fabm/hycom/lib -lfabm
 
 #
 # --- generic make definitions
