@@ -791,6 +791,7 @@ contains
       call HFReadField(df,ub,idm,jdm,'u_btrop ',0,1)
       call HFReadField(df,vb,idm,jdm,'v_btrop ',0,1)
    elseif(trim(df%ftype)=="archm") then
+      !Alfati. archm already contains total velocity in u-vel.&v-vel.
       call HFReadField(df,ut,idm,jdm,'u-vel.  ',vlevel,1)
       call HFReadField(df,vt,idm,jdm,'v-vel.  ',vlevel,1)
    elseif (trim(df%ftype)=="archv_wav") then
@@ -1037,6 +1038,8 @@ contains
      is3DVar=.true.
    else if(cfld=='utotl' .and. trim(df%ftype)=='archv') then
      is3DVar=.true.
+   else if(cfld=='wtotl') then
+     is3DVar=.true.
    else        
      is3DVar=count( df%cfld == char8 .and. df%tlevel==timelevel ) > 1
    end if
@@ -1220,6 +1223,10 @@ contains
          end if
          units='m s-1' 
          limits=(/-3,3/)
+      case ('wtotl') 
+         stdname='upward_sea_water_velocity' 
+         units='m s-1' ; vname='wo'
+         limits=(/-1,1/)
       case ('u','u-vel.') 
          if (.not.gridrotate) then
             stdname='baroclinic_eastward_sea_water_velocity' 
