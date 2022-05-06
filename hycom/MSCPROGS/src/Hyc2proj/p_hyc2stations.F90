@@ -209,8 +209,15 @@ program p_hyc2stations
             ! 3D vector to be rotated 
             if (is3Dvar(hfile,fld(ifld)%fextract,1)) then
                print *,fld(ifld)%fextract,'3D vector'
-               call HFReadField3D(hfile,hy3d ,idm,jdm,kdm,fld(ifld  )%fextract,1)
-               call HFReadField3D(hfile,hy3d2,idm,jdm,kdm,fld(ifld+1)%fextract,1)
+ !Alfatih 20190510 added option for total velcity
+               if (trim(fld(ifld)%fextract)=='utotl') then
+                  do k=1,kdm
+                    call HFReaduvtot(hfile,hy3d(:,:,k),hy3d2(:,:,k),idm,jdm,k,1)
+                  end do
+               else 
+                  call HFReadField3D(hfile,hy3d ,idm,jdm,kdm,fld(ifld  )%fextract,1)
+                  call HFReadField3D(hfile,hy3d2,idm,jdm,kdm,fld(ifld+1)%fextract,1)
+               end if
                do k=1,kdm
                   call rotate(hy3d(:,:,k),hy3d2(:,:,k),   plat,plon,idm,jdm,'m2l')
                end do
@@ -243,8 +250,13 @@ program p_hyc2stations
             ! 2D vector to be rotated 
             else
                print *,fld(ifld)%fextract,'2D vector'
-               call HFReadField(hfile,hy2d ,idm,jdm,fld(ifld  )%fextract,0,1)
-               call HFReadField(hfile,hy2d2,idm,jdm,fld(ifld+1)%fextract,0,1)
+               ! Alfatih: option to compute total surface velocity
+               if (trim(fld(ifld)%fextract)=='utotl') then
+                  call HFReaduvtot(hfile,hy2d,hy2d2,idm,jdm,0,1)
+               else
+                  call HFReadField(hfile,hy2d ,idm,jdm,fld(ifld  )%fextract,0,1)
+                  call HFReadField(hfile,hy2d2,idm,jdm,fld(ifld+1)%fextract,0,1)
+               end if
                call rotate(hy2d,hy2d2,plat,plon,idm,jdm,'m2l')
                do igroup=1,ngroup
                do istat=1,stations_per_group(igroup)

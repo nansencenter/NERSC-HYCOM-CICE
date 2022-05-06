@@ -592,6 +592,243 @@ module m_bio_conversions
      end subroutine pco2_conv
 
 ! _FABM__caglar_
+! _vertical_velocity
+
+   subroutine vertical_velocity(u,v,pres,w,scpx,scpy,scux,scvy,plon,plat,depth,onem,idm,jdm,kdm)
+!diagnose vertical velocity: m/s
+      implicit none
+      
+      integer, intent(in) :: idm,jdm,kdm
+      real, intent(in) :: onem
+      real, dimension(idm,jdm,kdm)  , intent(in)    :: u,v
+      real, dimension(idm,jdm,kdm+1)  , intent(in)  :: pres
+      real, dimension(idm,jdm,kdm+1)  :: lpres
+      real, dimension(idm,jdm)  , intent(in)        :: scpx,scpy,scux,scvy,plon,plat,depth
+      real, dimension(idm,jdm,kdm)      , intent(out) :: w
+      real, dimension(idm,jdm,kdm)                :: dudx,dvdy,dpdx,dpdy,layer_thkn,int_div,thk_adv
+      real :: idsum, tasum
+
+      integer :: i,j,k
+
+      lpres=pres/onem;
+      ! caulculate derivative:
+      do i=2,idm-1
+        do j=2,jdm-1
+          if (depth(i,j)>0) then
+            do k=1,kdm
+              dudx(i,j,k)=(u(i+1,j,k)-u(i-1,j,k))/(scux(i-1,j)+scux(i,j));
+              dvdy(i,j,k)=(v(i,j+1,k)-v(i,j-1,k))/(scvy(i,j-1)+scvy(i,j));
+
+              dpdx(i,j,k)=(lpres(i+1,j,k+1)-lpres(i-1,j,k+1))/(scpx(i-1,j)+scpx(i,j));
+              dpdy(i,j,k)=(lpres(i,j+1,k+1)-lpres(i,j-1,k+1))/(scpy(i,j-1)+scpy(i,j));
+            end do
+          end if
+        end do
+      end do
+!      print*, dudx(50,50,:)
+!      print*, dvdy(50,50,:)
+!      print*, dpdx(50,50,:)
+!      print*, dpdy(50,50,:)
+!  calculate at the bottom of the first layer:
+      do i=2,idm-1
+        do j=2,jdm-1
+          if (depth(i,j)>0) then
+            do k=1,kdm
+              layer_thkn(i,j,k)=lpres(i,j,k+1)-lpres(i,j,k);
+            end do
+          end if
+        end do
+      end do
+
+!  calculate the thickness integrated divergence in each layer
+      do i=2,idm-1
+        do j=2,jdm-1
+          if (depth(i,j)>0) then
+            do k=1,kdm
+              int_div(i,j,k)=layer_thkn(i,j,k)*(dudx(i,j,k)+dvdy(i,j,k))
+            end do
+          end if
+        end do
+      end do
+
+!  calculate thickness advection in each layer:
+      thk_adv(:,:,1)=0.0
+      do i=2,idm-1
+        do j=2,jdm-1
+          if (depth(i,j)>0) then
+            do k=2,kdm
+              thk_adv(i,j,k)=(u(i,j,k)-u(i,j,k-1))*dpdx(i,j,k) + &
+                             (v(i,j,k)-v(i,j,k-1))*dpdy(i,j,k);
+
+            end do
+          end if
+        end do
+      end do
+
+!  evaluate the vertical veolocity at the mid-point in each layer
+      do i=2,idm-1
+        do j=2,jdm-1
+          if (depth(i,j)>0) then
+            w(i,j,1)=0.5*int_div(i,j,1);  
+            idsum=0.0
+            tasum=0.0
+            do k=2,kdm
+              idsum=idsum+int_div(i,j,k)
+              tasum=tasum+thk_adv(i,j,k-1)
+              w(i,j,k)=idsum-tasum+0.5*int_div(i,j,k)
+            end do
+          end if
+        end do
+      end do
+
+   end subroutine vertical_velocity
+!   
+!   subroutine w_velocity(u,v,pres,w,scpx,scpy,scux,scvy,plon,plat,depth,onem,idm,jdm,kdm)
+   subroutine w_velocity(u,v,pres,w,scpx,scpy,scux,scuy,scvx,scvy,plon,plat,depth,onem,idm,jdm,kdm)
+      
+!diagnose vertical velocity: m/s
+      implicit none
+      
+      integer, intent(in) :: idm,jdm,kdm
+      real, intent(in) :: onem
+      real, dimension(idm,jdm,kdm)  , intent(in)    :: u,v
+      real, dimension(idm,jdm,kdm+1)  , intent(in)  :: pres
+      real, dimension(idm,jdm,kdm+1)  :: lpres
+      real, dimension(idm,jdm)  , intent(in)        :: scpx,scpy,scux,scuy,scvx,scvy,plon,plat,depth
+      real, dimension(idm,jdm,kdm)    , intent(out) :: w
+      real, dimension(idm,jdm)                      :: dpdx,dpdy
+      real             dudxdn,dudxup,dvdydn,dvdyup        
+      real, dimension(idm,jdm,kdm)   :: dplayer
+      !real :: idsum, tasum
+
+      real, parameter :: flag = 2.0**100
+      integer :: i,j,k
+
+      lpres=pres/onem;
+! calculate layer depth in meters
+      do k=1,kdm
+       dplayer(:,:,k)=(lpres(:,:,k+1)-lpres(:,:,k))
+      end do
+      
+!      if     (iowvlin.ne.0) then
+      do j= 2,jdm-1
+        do i= 2,idm-1
+          if (depth(i,j)>0) then
+          !if     (ip(i,j).eq.1) then
+            dudxdn= &
+                 (u(i+1,j  ,1)*scuy(i+1,j  )-u(i,j,1)*scuy(i,j))&
+                 /(scpx(i,j)*scpy(i,j))
+            dvdydn= &
+                 (v(i  ,j+1,1)*scvx(i  ,j+1)-v(i,j,1)*scvx(i,j))&
+                 /(scpx(i,j)*scpy(i,j))
+            w(i,j,1)=     dplayer(i,j,1)*(dudxdn+dvdydn) ! layer interface
+            !w(i,j,1)=0.5*dplayer(i,j,1)*(dudxdn+dvdydn) ! layer center
+          else
+            w(i,j,1) = flag
+          endif
+        enddo
+      enddo
+      do k= 2,kdm
+        do j= 2,jdm-1
+          do i= 2,idm-1
+            !if     (iu(i,j).eq.1) then
+            if (depth(i,j)>0) then
+              dpdx(i,j)=&
+                     (lpres(i,j,k)*scpy(i,j)-lpres(i-1,j  ,k)*scpy(i-1,j  ))&
+                     /(scux(i,j)*scuy(i,j))
+            endif
+          enddo
+        enddo
+        do j= 2,jdm-1
+          do i= 2,idm-1
+            if (depth(i,j)>0) then
+            !if     (iv(i,j).eq.1) then
+              dpdy(i,j)=&
+                     (lpres(i,j,k)*scpx(i,j)-lpres(i  ,j-1,k)*scpx(i  ,j-1))&
+                     /(scvx(i,j)*scvy(i,j))
+            endif
+          enddo
+        enddo
+        do j=1,jdm
+          !if     (iu(2   ,j).eq.1) then
+          if (depth(2,j)>0) then
+            dpdx(1 ,j)=dpdx(2   ,j)
+          endif
+          if (depth(idm-1,j)>0) then
+          !if     (iu(ii-1,j).eq.1) then
+            dpdx(idm,j)=dpdx(idm-1,j)
+          endif
+        enddo
+        do i=1,idm
+          if (depth(i,2)>0) then
+          !if     (iv(i,2   ).eq.1) then
+            dpdy(i,1 )=dpdy(i,2   )
+          endif
+          if (depth(i,jdm-1)>0) then
+          !if     (iv(i,jj-1).eq.1) then
+            dpdy(i,jdm)=dpdy(i,jdm-1)
+          endif
+        enddo
+        do j= 1,jdm-1
+          do i= 1,idm-1
+            if (depth(i,j)>0) then
+            !if     (ip(i,j).eq.1) then
+              dudxup=&
+                   (u(i+1,j  ,k-1)*scuy(i+1,j  )-&
+                    u(i  ,j  ,k-1)*scuy(i  ,j  ))&
+                   /(scpx(i,j)*scpy(i,j))
+              dvdyup=&
+                    (v(i  ,j+1,k-1)*scvx(i  ,j+1)-&
+                    v(i  ,j  ,k-1)*scvx(i  ,j  ))&
+                   /(scpx(i,j)*scpy(i,j))
+              dudxdn=&
+                   (u(i+1,j  ,k  )*scuy(i+1,j  )-&
+                    u(i  ,j  ,k  )*scuy(i  ,j  ))&
+                   /(scpx(i,j)*scpy(i,j))
+              dvdydn=&
+                   (v(i  ,j+1,k  )*scvx(i  ,j+1)-&
+                    v(i  ,j  ,k  )*scvx(i  ,j  ))&
+                   /(scpx(i,j)*scpy(i,j))
+             w(i,j,k)=w(i,j,k-1)+0.5*(2.0*dplayer(i,j,k)*(dudxup+dvdyup)-&  !intfwv=0
+                      (u(i  ,j  ,k)-u(i  ,j  ,k-1))*dpdx(i  ,j  )-&
+                      (u(i+1,j  ,k)-u(i+1,j  ,k-1))*dpdx(i+1,j  )-&
+                      (v(i  ,j  ,k)-v(i  ,j  ,k-1))*dpdy(i  ,j  )-&
+                      (v(i  ,j+1,k)-v(i  ,j+1,k-1))*dpdy(i  ,j+1))
+             !w(i,j,k)=w(i,j,k-1)+0.5*(dplayer(i,j,k-1)*(dudxup+dvdyup)+& !intfwv=0 
+             !                         dplayer(i,j,k  )*(dudxdn+dvdydn)-&
+             !         (u(i  ,j  ,k)-u(i  ,j  ,k-1))*dpdx(i  ,j  )-&
+             !         (u(i+1,j  ,k)-u(i+1,j  ,k-1))*dpdx(i+1,j  )-&
+             !         (v(i  ,j  ,k)-v(i  ,j  ,k-1))*dpdy(i  ,j  )-&
+             !         (v(i  ,j+1,k)-v(i  ,j+1,k-1))*dpdy(i  ,j+1))
+            else
+              w(i,j,k) = flag
+            endif
+          enddo
+        enddo
+        do i= 1,idm
+          w(i ,jdm,k) = flag
+        enddo
+        do j= 1,jdm
+          w(idm,j ,k) = flag
+        enddo
+      enddo
+!
+! --- w is noisy - smooth at least once.
+!
+!      if     (smooth) then
+!        do k= 1,kkin
+!          call psmoo(w(1,1,k),work)
+!          call psmoo(w(1,1,k),work)
+!        enddo
+!      else
+!        do k= 1,kkin
+!          call psmoo(w(1,1,k),work)
+!        enddo
+!      endif
+!      endif !iowvlin 
+
+   end subroutine w_velocity
+!------------------------------------------------
 end module
 
 

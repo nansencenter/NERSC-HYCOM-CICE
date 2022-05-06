@@ -40,7 +40,7 @@
 program p_hyc2proj
    use mod_parameters
    use mod_xc, only: idm,jdm, xcspmd
-   use mod_grid, only : get_grid, depths, plon, plat, qlat, qlon
+   use mod_grid, only : get_grid, depths, plon, plat, qlat, qlon, scpx, scpy, scux, scuy, scvx, scvy
    use mod_year_info
    use mod_levitus
    use mod_toproj
@@ -71,6 +71,7 @@ program p_hyc2proj
       hy3d2,pres, levint, temp, sal, dens
 !AS06092011 - adding biological variables for MyOcean
    real, allocatable, dimension(:,:,:) :: fla, dia, nit, pho, oxy, pp, biovar,s1000
+   real, allocatable, dimension(:,:,:) :: u,v
    real, allocatable, dimension(:,:,:) :: micro, meso, sil,dic,ph,det, pco2
    real, allocatable, dimension(:,:)   :: biovar2d
    real, allocatable, dimension(:,:)   :: hy2d, hy2d2, regu2d, strmf, &
@@ -158,8 +159,8 @@ program p_hyc2proj
       allocate(regu3d   (nxp,nyp,kdm))    ! 3D vars on projection grid, original vertical grid
       allocate(regusp3d (nxp,nyp,ndeep))  ! 3D vars on projection grid, z-level vertical grid
       allocate(strmf    (idm,jdm))        ! 2D stream func 
-      allocate(mld1     (idm,jdm))        ! MLD1
-      allocate(mld2     (idm,jdm))        ! MLD2
+      allocate(mld1     (idm,jdm))        ! MLD1 ---> stepmldT  ( with temperature threshold)
+      allocate(mld2     (idm,jdm))        ! MLD2 ---> stepmld  ( with denity threshold)
       allocate(hy2d     (idm,jdm))        ! Holds 2D vars on original grid
       allocate(hy2d2    (idm,jdm))        ! Holds 2D vector vars on original grid
       allocate(regu2d   (nxp,nyp))        ! 2D vars on projection grid
@@ -472,6 +473,23 @@ program p_hyc2proj
                   call pbiomass_eco(micro,meso,biovar,idm,jdm,kdm)
                   hy3d=biovar
                   deallocate(micro,meso,biovar)
+               else if (trim(fld(ifld)%fextract)=='wtotl') then
+                  ! Compute vertical velocity(m/s)
+                  allocate(u(idm,jdm,kdm))
+                  allocate(v(idm,jdm,kdm))
+                  allocate(biovar(idm,jdm,kdm))
+                  ! 
+                  !call HFReadField3D(hfile,u,idm,jdm,kdm,'u-vel.',1)
+                  !call HFReadField3D(hfile,v,idm,jdm,kdm,'v-vel.',1)
+                  !call w_velocity(u,v,pres,biovar,scpx,scpy,scuy,scvx,plon,plat,depths,idm,jdm,kdm)
+                  !call w_velocity(u,v,pres,biovar,scpx,scpy,scux,scuy,scvx,scvy,plon,plat,depths,onem,idm,jdm,kdm)
+                  !Alfatih: u,v: total velocity
+                  do k=1,kdm
+                    call HFReaduvtot(hfile,u(:,:,k),v(:,:,k),idm,jdm,k,1)
+                  end do
+                  call vertical_velocity(u,v,pres,biovar,scpx,scpy,scux,scvy,plon,plat,depths,onem,idm,jdm,kdm)
+                  hy3d=biovar
+                  deallocate(u,v,biovar)
 
                else if (trim(fld(ifld)%fextract)=='oxy_nor') then 
                   ! Compute dissolved oxygen (mole m-3)
