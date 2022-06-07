@@ -16,7 +16,13 @@ ulimit -s 2000000   ## if needed
    # Define "setenv ARCH intelIFC" in Make_all.src
    csh Make_all.com
 
+   !! NOT COMPLETE
+	The csh script above does not complete because it gets stuck in archive folder.
+        Normally it should fail and continue but not this time.
+        You can compile each folder individually for the time being until the problem is resolved.
 
+        Netcdf routines are not tested and are not vital for HYCOM, but for those interested,
+        
 3) Compiling MSCPROGS under NERSC-HYCOM-CICE/hycom/MSCPROGS/src
 
        Go to NERSC-HYCOM-CICE/hycom/MSCPROGS/src/Make.Inc/
