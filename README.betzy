@@ -2,22 +2,13 @@
 1) Recommended .bashrc content for BETZY
 
 ml purge
-module load Python/3.8.2-GCCcore-9.3.0
-module load ESMF/8.0.1-intel-2020a
-module load FFTW/3.3.8-intel-2020a
-module load UDUNITS/2.2.26-GCCcore-9.3.0
-module load CMake/3.16.4-GCCcore-9.3.0
-module load intel/2021a
-
-PS. If using OpenMPI software, It is recommended to use the following modules :
-
-ml purge
 ml load UDUNITS/2.2.26-GCCcore-9.3.0
 ml load CMake/3.16.4-GCCcore-9.3.0
 ml load Python/3.8.2-GCCcore-9.3.0
 ml load FFTW/3.3.8-iomkl-2020a
 ml load ESMF/8.0.1-iomkl-2020a
 
+ulimit -s 2000000   ## if needed
 
 
 2) Compiling hycom_all under NERSC-HYCOM-CICE/hycom/hycom_ALL/hycom_2.2.72_ALL
@@ -31,9 +22,7 @@ ml load ESMF/8.0.1-iomkl-2020a
         You can compile each folder individually for the time being until the problem is resolved.
 
         Netcdf routines are not tested and are not vital for HYCOM, but for those interested,
-               check the use of the following:
-               csh Make_ncdf.com	
-
+        
 3) Compiling MSCPROGS under NERSC-HYCOM-CICE/hycom/MSCPROGS/src
 
        Go to NERSC-HYCOM-CICE/hycom/MSCPROGS/src/Make.Inc/
@@ -44,13 +33,10 @@ ml load ESMF/8.0.1-iomkl-2020a
           gmake all
           gmake install
 
-    !! NOT COMPLETE
-       Even though MSPROGS installs, executable that use regional.grid.[ab] files
-       give segmentation faults for large domains.
-
 4) Compiling hycom_cice under TP0a1.00/expt_01.0
 
    compile_model.sh ifort -u
+
    
 5) prepare the python tools on Betzy
 
