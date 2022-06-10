@@ -7,6 +7,8 @@ This directory contains routines for generating/processing new grids and bathyme
 
 ` $  -You need to topfix to manullay handle isolated wet points, etc`
 
+` $  -After "topofix", you need to run hycom_bathy_consistency.py to remove any inconsistency`
+
 ` $  -Then create land mask using cice_kmt.sh`
 
 
