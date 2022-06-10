@@ -1,8 +1,12 @@
 This directory contains routines for generating/processing new grids and bathymetry files.
 ` `
+
 ` $  -For new grid you need grid.info as input file for "hycom_grid.py" `
+
 ` $  -Then create the bathy file using "hycom_bathy.py" `
+
 ` $  -You need to topfix to manullay handle isolated wet points, etc`
+
 ` $  -Then create land mask using cice_kmt.sh`
 
 
