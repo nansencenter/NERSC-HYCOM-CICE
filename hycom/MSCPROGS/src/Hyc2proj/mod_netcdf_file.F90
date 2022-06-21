@@ -120,7 +120,7 @@ contains
    call startDate(hfile,rtb)
 
    call handle_err(NF90_PUT_ATT(ncstate%ncid,NF90_GLOBAL,'title', 'Arctic Ocean Physics Reanalysis'))
-   call handle_err(NF90_PUT_ATT(ncstate%ncid,NF90_GLOBAL,'institution',  'NERSC, Thormoehlens gate 47, N-5006 Bergen, Norway'))
+   call handle_err(NF90_PUT_ATT(ncstate%ncid,NF90_GLOBAL,'institution',  'NERSC, Jahnebakken 3, N-5007 Bergen, Norway'))
    call date_and_time(date=dateinfo)
    call handle_err(NF90_PUT_ATT(ncstate%ncid,NF90_GLOBAL,'history', dateinfo(1:8)//':Created by program hyc2proj, version '//cver))
    call handle_err(NF90_PUT_ATT(ncstate%ncid,NF90_GLOBAL,'source', 'NERSC-HYCOM model fields'))
