@@ -40,8 +40,7 @@ def main(infile,blo,bla,shapiro_passes,resolution=None,cutoff=5.) :
    width=numpy.median(scpx)
    logger.info("Grid median resolution:%8.2f km "%(width/1000.))
    # give the bathy directory here
-   #bathyDir="/work/shared/nersc/msc/ModelInput/bathymetry/GEBCO_2014/"
-   bathyDir="/nobackup/prod2/sm_alfal/ModelInput/bathymetry/GEBCO/"
+   bathyDir="/cluster/projects/nn2993k/ModelInput/bathymetry/GEBCO_2014/"
    # GEBCO only - TODO: move logic to gebco set
    if resolution is None  :
       if width  > 20 :
