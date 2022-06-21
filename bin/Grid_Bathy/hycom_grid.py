@@ -7,7 +7,6 @@ import matplotlib.pyplot
 import abfile.abfile as abf
 import modeltools.cice.io
 import numpy
-#from mpl_toolkits.basemap import Basemap
 import logging
 
 # Set up logger
