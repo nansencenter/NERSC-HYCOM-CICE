@@ -3,9 +3,10 @@
 import pyproj
 import numpy
 import logging
-import re 
+import re
+import math
 #import confmap
-from .confmap import ConformalMapping
+from modelgrid.confmap import ConformalMapping
 
 #exmaple: ../bin/hycom_grid.py confmap --filename data/grid.info
 
@@ -670,12 +671,12 @@ def plotgrid(lon,lat,width=3000000,height=3000000) :
    import matplotlib.pyplot as plt
    from matplotlib.figure import Figure
    from matplotlib.backends.backend_agg import FigureCanvasAgg
-   #from mpl_toolkits.basemap import Basemap
    import cartopy.crs as ccrs
    import cartopy.feature as cfeature
    #
    #
    proj=ccrs.Stereographic(central_latitude=90.0,central_longitude=-40.0)
+   #proj=ccrs.Stereographic(central_latitude=0.1,central_longitude=-10.0)
    pxy = proj.transform_points(ccrs.PlateCarree(), lon, lat)
    px=pxy[:,:,0]
    py=pxy[:,:,1]
@@ -701,16 +702,16 @@ def plotgrid(lon,lat,width=3000000,height=3000000) :
    # Probably a way of estimating the width here...
    print ("width=",width,"height=",height)
    print ("clon=",clon,"clat=",clat)
-   #m = Basemap(projection='stere',lon_0=clon,lat_0=clat,resolution='l',width=width,height=height,ax=ax)
-   #x,y = m(lon,lat)
 
    # Pick a suitable set of grid lines
    nlines=10
-   stepx,stepy=[int(elem/nlines) for elem in lon.shape]
+   stepx,stepy=[math.ceil(elem/nlines) for elem in lon.shape]
+   
    x2=numpy.zeros((nlines+1,nlines+1))
    y2=numpy.zeros((nlines+1,nlines+1))
+   print(stepx,stepy,x2.shape,px.shape)
 
-   #print x2.shape,x[::stepx,::stepy].shape
+   #print(x2.shape,px[::stepx,::stepy].shape)
    x2[:-1,:-1]=px[::stepx,::stepy]
    x2[-1,:-1]=px[-1,::stepy]
    x2[:-1,-1]=px[::stepx,-1]
@@ -720,16 +721,10 @@ def plotgrid(lon,lat,width=3000000,height=3000000) :
    y2[-1,:-1]=py[-1,::stepy]
    y2[-1,-1]=py[-1,-1]
 
-   #m.drawcoastlines()
-   #m.drawmapboundary() # draw a line around the map region
-   #m.drawparallels(numpy.arange(-90.,120.,30.),labels=[1,0,0,0]) # draw parallels
-   #m.drawmeridians(numpy.arange(0.,420.,60.),labels=[0,0,0,1]) # draw meridians
    #v=numpy.zeros(x.shape)
    v=numpy.zeros(px.shape)
    col=".8"
    cmap=matplotlib.colors.ListedColormap([col,col])
-   #m.pcolormesh(x,y,v,ax=ax,edgecolor="k",cmap=cmap)
-   #m.pcolormesh(x,y,v,ax=ax,edgecolor="none",cmap=cmap)
    plt.pcolormesh(px,py,v,edgecolor="none",cmap=cmap)
    for j in range(y2.shape[1]) :
       plt.plot(x2[:,j],y2[:,j],color="b",lw=2)
