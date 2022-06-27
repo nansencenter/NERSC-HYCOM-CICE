@@ -26,7 +26,7 @@ export BINDIR=$(cd $(dirname $0) && pwd)/
 # Set basedir based on relative paths of script
 # Can be troublesome, but should be less prone to errors
 # than setting basedir directly
-source ${BINDIR}/common_functions.sh  || { echo "Could not source ${BINDIR}/common_functions.sh" ; exit 1 ; }
+source ${BINDIR}/../common_functions.sh  || { echo "Could not source ${BINDIR}/common_functions.sh" ; exit 1 ; }
 source ${BASEDIR}/REGION.src || { echo "Could not source ${BASEDIR}/REGION.src" ; exit 1 ; }
 D=$BASEDIR/topo/
 S=$D/SCRATCH 
@@ -42,7 +42,7 @@ cp ${BASEDIR}/topo/regional.grid.a $S  || { echo "Could not get regional.grid.a 
 
 echo "Running routine cice_kmt.py in directory $S"
 [ -f cice_kmt.nc ] && rm cice_kmt.nc
-#$BASEDIR/../python/cice_kmt.py $infile
-cice_kmt.py $infile
+${BINDIR}/Grid_Bathy/cice_kmt.py $infile
 cp cice_kmt.nc $D/$kmtfile  || { echo "Could not get cice_kmt.nc file " ; exit 1 ; }
 echo "Normal exit. created kmt file $D/$kmtfile"
+
