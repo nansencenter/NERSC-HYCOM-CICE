@@ -104,7 +104,7 @@ class AFile(object) :
 
       logger.debug("zaiowr_a h shape = %s, w.size=%d"%(h.shape,w.size,))
       # Calc min and mask
-      #print self._mask
+      #print("mask boolean:",self._mask)
       if self._mask :
          I=numpy.where(mask!=True)
          hmax=h[I].max()
@@ -1176,7 +1176,7 @@ def write_bathymetry(exp,version,d,threshold) :
    #regf.write_field(d,mask)
    #No mask!
    tmp = numpy.copy(d)
-   mask=d<=threshold
+   mask = tmp <= threshold
    tmp[mask] = AFile.huge
    regf = ABFileBathy(myfile,"w",idm=d.shape[0],jdm=d.shape[1],mask=True)
    regf.write_field(tmp,mask)

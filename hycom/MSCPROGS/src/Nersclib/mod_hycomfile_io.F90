@@ -1187,9 +1187,11 @@ contains
          limits=(/0.,10001./)
       case ('saln','salin')
          stdname='sea_water_salinity' ; units='1e-3' ; vname='so'
+         longname='Salinity'
          limits=(/0,45/)
       case ('temp') 
          stdname='sea_water_potential_temperature' ; units='degrees_C' ; vname='thetao'
+         longname='Sea Temperature'
          limits=(/-3,50/)
       case ('levsaln')
          stdname='sea_water_salinity' ; units='1e-3' ; vname='levitus_salinity'
@@ -1199,6 +1201,7 @@ contains
          limits=(/-3,50/)
       case ('ssh','srfhgt') 
          stdname='sea_surface_height_above_geoid' ; units='m' ; vname='zos'
+         longname='Sea surface height'
          limits=(/-5,5/)
       case ('bsf','strmf') 
          stdname='ocean_barotropic_streamfunction' ; units='m3 s-1' ; vname='stfbaro'
