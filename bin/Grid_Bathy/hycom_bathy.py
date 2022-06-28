@@ -26,38 +26,62 @@ logger.addHandler(ch)
 logger.propagate=False
 
 """
-Example: ../bin/hycom_bathy.py --cutoff 0.5 regional.grid.a
+Example: ../bin/hycom_bathy.py --cutoff 0.5 regional.grid.a input_bathymetry=GEBCO_2021
 """
 
 
-def main(infile,blo,bla,shapiro_passes,resolution=None,cutoff=5.) :
+def main(infile,blo,bla,shapiro_passes,resolution,cutoff,input_bathymetry) :
 
    gfile=abfile.ABFileGrid("regional.grid","r")
    plon=gfile.read_field("plon")
    plat=gfile.read_field("plat")
    scpx=gfile.read_field("scpx")
    scpy=gfile.read_field("scpy")
-   width=numpy.median(scpx)
-   logger.info("Grid median resolution:%8.2f km "%(width/1000.))
+   width=numpy.median(scpx)/1000.0
+   logger.info("Grid median resolution:%8.2f km "%(width))
    # give the bathy directory here
-   bathyDir="/cluster/projects/nn2993k/ModelInput/bathymetry/GEBCO_2014/"
-   # GEBCO only - TODO: move logic to gebco set
-   if resolution is None  :
-      if width  > 20 :
-         dfile=bathyDir+"GEBCO_2014_2D_median20km.nc"
-      elif width > 8 :
-         dfile=bathyDir+"GEBCO_2014_2D_median8km.nc"
-      elif width > 4 :
-         dfile=bathyDir+"GEBCO_2014_2D_median4km.nc"
-      else :
-         dfile=bathyDir+"GEBCO_2014_2D.nc"
-      logger.info ("Source resolution not set - choosing datafile %s"%dfile)
-   else :
-      dfile=bathyDir+"GEBCO_2014_2D_median%dkm.nc" % resolution
-      logger.info ("Source resolution set to %d - trying to use datafile %s"%dfile)
-   gebco = modeltools.forcing.bathy.GEBCO2014(filename=dfile)
+   if input_bathymetry=="GEBCO_2021":
+     bathyDir="/cluster/projects/nn2993k/ModelInput/bathymetry/GEBCO_2021/"
+     # GEBCO only - TODO: move logic to gebco set
+     if resolution is None  :
+        if width  > 20 :
+          dfile=bathyDir+"GEBCO_2021_2D_median20km.nc"
+        elif width > 8 :
+          dfile=bathyDir+"GEBCO_2021_2D_median8km.nc"
+        elif width > 4 :
+          dfile=bathyDir+"GEBCO_2021_2D_median4km.nc"
+        elif width > 2 :
+          dfile=bathyDir+"GEBCO_2021_2D_median2km.nc"
+        else :
+          dfile=bathyDir+"GEBCO_2021_sub_ice_topo.nc"
+        logger.info ("Source resolution not set - choosing datafile %s"%dfile)
+     else :
+       dfile=bathyDir+"GEBCO_2021_2D_median%dkm.nc" % resolution
+       print(dfile)
+       logger.info ("Source resolution set to %d km - trying to use datafile %s"%(resolution,dfile))
+   elif input_bathymetry=="GEBCO_2014":
+     bathyDir="/cluster/projects/nn2993k/ModelInput/bathymetry/GEBCO_2014/"
+     # GEBCO only - TODO: move logic to gebco set
+     if resolution is None  :
+       if width  > 20 :
+          dfile=bathyDir+"GEBCO_2014_2D_median20km.nc"
+       elif width > 8 :
+          dfile=bathyDir+"GEBCO_2014_2D_median8km.nc"
+       elif width > 4 :
+          dfile=bathyDir+"GEBCO_2014_2D_median4km.nc"
+       else :
+          dfile=bathyDir+"GEBCO_2014_2D.nc"
+       logger.info ("Source resolution not set - choosing datafile %s"%dfile)
+     else :
+       dfile=bathyDir+"GEBCO_2014_2D_median%dkm.nc" % resolution
+       logger.info ("Source resolution set to %d km - trying to use datafile %s"%(resolution,dfile))
+   else:
+     print("Input grid not defined, cuttetn opotion GEBCO_2014 and GEBCO_2021")
+
+   gebco = modeltools.forcing.bathy.GEBCO(filename=dfile)
    w2=gebco.regrid(plon,plat,width=width)
-   #print w2.min(),w2.max()
+
+   print(w2.min(),w2.max())
 
    # Run shapiro filter on interpolated data to remove 2 DeltaX noise
    w3=numpy.copy(w2)
@@ -144,6 +168,7 @@ if __name__ == "__main__" :
    parser.add_argument('--resolution'    , type=int, default=None)
    parser.add_argument('--cutoff'        , type=float, default=5.0)
    parser.add_argument('regional_grid_file', type=str)
+   parser.add_argument('--input_bathymetry', type=str, default="GEBCO_2021")
    args = parser.parse_args()
 
    if args.basin_point :
@@ -160,5 +185,5 @@ if __name__ == "__main__" :
    else :
       regfile=args.regional_grid_file
 
-   main(regfile,blo,bla,args.shapiro_passes,args.resolution,args.cutoff)
+   main(regfile,blo,bla,args.shapiro_passes,args.resolution,args.cutoff,args.input_bathymetry)
 
