@@ -55,6 +55,7 @@ c
      &   montg_m,srfht_m,steric_m,dpbl_m,dpmixl_m,
      &   surflx_m,salflx_m, covice_m,thkice_m,temice_m
 #if defined(NERSC_HYCOM_CICE)
+C AS: adding surface stress to the mean fields
      &   ,si_u_m, si_v_m, surtx_m, surty_m
 #if defined(OFFICEField)
       logical, save, private :: Toffice=.true.  
