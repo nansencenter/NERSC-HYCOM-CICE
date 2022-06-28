@@ -37,8 +37,8 @@ def main(infile,blo,bla,shapiro_passes,resolution=None,cutoff=5.) :
    plat=gfile.read_field("plat")
    scpx=gfile.read_field("scpx")
    scpy=gfile.read_field("scpy")
-   width=numpy.median(scpx)
-   logger.info("Grid median resolution:%8.2f km "%(width/1000.))
+   width=numpy.median(scpx)/1000.0
+   logger.info("Grid median resolution:%8.2f km "%(width))
    # give the bathy directory here
    bathyDir="/cluster/projects/nn2993k/ModelInput/bathymetry/GEBCO_2014/"
    # GEBCO only - TODO: move logic to gebco set
