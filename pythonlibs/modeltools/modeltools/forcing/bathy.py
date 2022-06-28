@@ -21,10 +21,8 @@ logger.propagate=False
 #default_threshold=-5.
 
 
-class GEBCO2014(object) :
-
-   #def __init__(self,filename="/work/shared/nersc/msc/ModelInput/bathymetry/GEBCO_2014/GEBCO_2014_2D_median2km.nc") :
-   def __init__(self,filename="/work/shared/nersc/msc/ModelInput/bathymetry/GEBCO_2014/GEBCO_2014_2D") :
+class GEBCO(object) :
+   def __init__(self,filename="/work/s/cluster/projects/nn2993k/ModelInput/bathymetry/GEBCO_2021/GEBCO_2021_2D") :
       self._filename = filename
       #self._nc = scipy.io.netcdf.netcdf_file(self._filename)
       self._nc = netCDF4.Dataset(self._filename,"r")
