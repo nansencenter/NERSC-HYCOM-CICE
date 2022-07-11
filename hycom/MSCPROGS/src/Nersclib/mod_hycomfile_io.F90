@@ -791,6 +791,7 @@ contains
       call HFReadField(df,ub,idm,jdm,'u_btrop ',0,1)
       call HFReadField(df,vb,idm,jdm,'v_btrop ',0,1)
    elseif(trim(df%ftype)=="archm") then
+      !Alfati. archm already contains total velocity in u-vel.&v-vel.
       call HFReadField(df,ut,idm,jdm,'u-vel.  ',vlevel,1)
       call HFReadField(df,vt,idm,jdm,'v-vel.  ',vlevel,1)
    elseif (trim(df%ftype)=="archv_wav") then
@@ -1037,6 +1038,8 @@ contains
      is3DVar=.true.
    else if(cfld=='utotl' .and. trim(df%ftype)=='archv') then
      is3DVar=.true.
+   else if(cfld=='wtotl') then
+     is3DVar=.true.
    else        
      is3DVar=count( df%cfld == char8 .and. df%tlevel==timelevel ) > 1
    end if
@@ -1184,9 +1187,11 @@ contains
          limits=(/0.,10001./)
       case ('saln','salin')
          stdname='sea_water_salinity' ; units='1e-3' ; vname='so'
+         longname='Salinity'
          limits=(/0,45/)
       case ('temp') 
          stdname='sea_water_potential_temperature' ; units='degrees_C' ; vname='thetao'
+         longname='Sea Temperature'
          limits=(/-3,50/)
       case ('levsaln')
          stdname='sea_water_salinity' ; units='1e-3' ; vname='levitus_salinity'
@@ -1196,6 +1201,7 @@ contains
          limits=(/-3,50/)
       case ('ssh','srfhgt') 
          stdname='sea_surface_height_above_geoid' ; units='m' ; vname='zos'
+         longname='Sea surface height'
          limits=(/-5,5/)
       case ('bsf','strmf') 
          stdname='ocean_barotropic_streamfunction' ; units='m3 s-1' ; vname='stfbaro'
@@ -1220,6 +1226,10 @@ contains
          end if
          units='m s-1' 
          limits=(/-3,3/)
+      case ('wtotl') 
+         stdname='upward_sea_water_velocity' 
+         units='m s-1' ; vname='wo'
+         limits=(/-1,1/)
       case ('u','u-vel.') 
          if (.not.gridrotate) then
             stdname='baroclinic_eastward_sea_water_velocity' 

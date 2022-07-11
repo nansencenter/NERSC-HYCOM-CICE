@@ -6,9 +6,8 @@ import cfunits
 import modeltools.hycom
 import modeltools.tools
 import modeltools.forcing.atmosphere
-#from mpl_toolkits.basemap import Basemap, shiftgrid
 import logging
-import abfile
+import abfile.abfile as abf
 
 
 _loglevel=logging.DEBUG
@@ -81,7 +80,7 @@ def atmfor(start,end,af,grid_file="regional.grid",blkdat_file="blkdat.input",plo
    # Open hycom grid file, read longitude and latitude@
    # TODO: HYCOM-specific
    #za = modeltools.hycom.io.ABFileRegionalGrid(grid_file,"r")
-   za = abfile.ABFileGrid(grid_file,"r")
+   za = abf.ABFileGrid(grid_file,"r")
    mlon = za.read_field("plon")
    mlat = za.read_field("plat")
    Nx=mlon.shape[1]
@@ -128,7 +127,7 @@ def atmfor(start,end,af,grid_file="regional.grid",blkdat_file="blkdat.input",plo
           if lwflag == -1 :
            if "strd"   not in af.known_names_explicit : af.calculate_strd()
           else :
-              raise ValueError ("TODO: lwflag<>-1 not supported")
+              raise ValueError("TODO: lwflag!=-1 not supported")
 
        # Open output files. Dict uses "known name" when mapping to file object
        # TODO: HYCOM-specific
@@ -136,7 +135,7 @@ def atmfor(start,end,af,grid_file="regional.grid",blkdat_file="blkdat.input",plo
           # Open files
           for k,v in forcingpropertyset.items() :
               if k in af.known_names :
-                 ffiles[k]=abfile.ABFileForcing(
+                 ffiles[k]=abf.ABFileForcing(
                        "forcing.%s"%v.name,"w",idm=Nx, jdm=Ny, 
                        cline1=af.name,
                        cline2="%s (%s)"%(v.name,v.cfunit))

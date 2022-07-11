@@ -6,11 +6,15 @@ implicit none
 
 ! Grid info 
 real, dimension(:,:),allocatable, save :: plon,plat
+real, dimension(:,:),allocatable, save :: qlon,qlat
 real, dimension(:,:),allocatable, save :: ulon,ulat
 real, dimension(:,:),allocatable, save :: vlon,vlat
-real, dimension(:,:),allocatable, save :: qlon,qlat
-real, dimension(:,:),allocatable, save :: scuy,scvx
-real, dimension(:,:),allocatable, save :: scpy,scpx
+real, dimension(:,:),allocatable, save :: pang
+real, dimension(:,:),allocatable, save :: scpx,scpy
+real, dimension(:,:),allocatable, save :: scqx,scqy
+real, dimension(:,:),allocatable, save :: scux,scuy
+real, dimension(:,:),allocatable, save :: scvx,scvy
+real, dimension(:,:),allocatable, save :: cori,pasp
 real, dimension(:,:),allocatable, save :: depths
 real, dimension(:,:),allocatable, save :: depthu, depthv
 integer, dimension(:,:),allocatable, save :: ip,iu,iv
@@ -57,8 +61,17 @@ subroutine get_grid()
      allocate(ulat  (idm,jdm))
      allocate(vlon  (idm,jdm))
      allocate(vlat  (idm,jdm))
+     allocate(pang  (idm,jdm))
      allocate(scpx  (idm,jdm))
      allocate(scpy  (idm,jdm))
+     allocate(scqx  (idm,jdm))
+     allocate(scqy  (idm,jdm))
+     allocate(scux  (idm,jdm))
+     allocate(scuy  (idm,jdm))
+     allocate(scvx  (idm,jdm))
+     allocate(scvy  (idm,jdm))
+     allocate(cori  (idm,jdm))
+     allocate(pasp  (idm,jdm))
      allocate(depths(idm,jdm))
      allocate(mask(idm,jdm)) 
      call zaiopf('regional.grid.a','old',nop)
@@ -70,9 +83,17 @@ subroutine get_grid()
      call zaiord(ulat,mask,.false.,xmin,xmax,nop)
      call zaiord(vlon,mask,.false.,xmin,xmax,nop)
      call zaiord(vlat,mask,.false.,xmin,xmax,nop)
-     call zaiord(vlat,mask,.false.,xmin,xmax,nop) ! Not a bug, just skipped
+     call zaiord(pang,mask,.false.,xmin,xmax,nop) ! follow order
      call zaiord(scpx,mask,.false.,xmin,xmax,nop)
      call zaiord(scpy,mask,.false.,xmin,xmax,nop)
+     call zaiord(scqx,mask,.false.,xmin,xmax,nop)
+     call zaiord(scqy,mask,.false.,xmin,xmax,nop)
+     call zaiord(scux,mask,.false.,xmin,xmax,nop)
+     call zaiord(scuy,mask,.false.,xmin,xmax,nop)
+     call zaiord(scvx,mask,.false.,xmin,xmax,nop)
+     call zaiord(scvy,mask,.false.,xmin,xmax,nop)
+     call zaiord(cori,mask,.false.,xmin,xmax,nop)
+     call zaiord(pasp,mask,.false.,xmin,xmax,nop)
      call zaiocl(nop)
 
      write(*,*)'Load depths from file: regional.depth.a'
@@ -178,15 +199,16 @@ subroutine get_grid()
 
 
    ! Grid sizes (can also be retrieved from regional.grid))
-   allocate(scuy(idm,jdm))
-   allocate(scvx(idm,jdm))
-   scuy(:,1:jdm-1) = spherdist(qlon(1:idm,1:jdm-1),qlat(1:idm,1:jdm-1), &
-                               qlon(1:idm,2:jdm  ),qlat(1:idm,2:jdm  )   )
-   scuy(:,jdm)=scuy(:,jdm-1)  ! Approx - should use periodicity if available
+!  Alfatih: scuy,scvx  retrieved from regional.grid   
+!  allocate(scuy(idm,jdm))
+!  allocate(scvx(idm,jdm))
+!  scuy(:,1:jdm-1) = spherdist(qlon(1:idm,1:jdm-1),qlat(1:idm,1:jdm-1), &
+!                              qlon(1:idm,2:jdm  ),qlat(1:idm,2:jdm  )   )
+!  scuy(:,jdm)=scuy(:,jdm-1)  ! Approx - should use periodicity if available
 
-   scvx(1:idm-1,:) = spherdist(qlon(1:idm-1,1:jdm),qlat(1:idm-1,1:jdm  ), &
-                               qlon(2:idm  ,1:jdm),qlat(2:idm  ,1:jdm))
-   scvx(idm,:)=scvx(idm-1,:)! Approx
+!  scvx(1:idm-1,:) = spherdist(qlon(1:idm-1,1:jdm),qlat(1:idm-1,1:jdm  ), &
+!                              qlon(2:idm  ,1:jdm),qlat(2:idm  ,1:jdm))
+!  scvx(idm,:)=scvx(idm-1,:)! Approx
 
    ! Is grid periodic in i?
    periodic = any(depths(1,:)<.1) .and. any(depths(idm,:)<.1)

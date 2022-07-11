@@ -5,9 +5,8 @@ import datetime
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot
-import abfile
+import abfile.abfile as abf
 import numpy
-from mpl_toolkits.basemap import Basemap
 import netCDF4
 import logging
 import sys
@@ -30,13 +29,13 @@ def main(intopo) :
    bathy_threshold=0. # TODO
 
    # Read plon,plat
-   gfile=abfile.ABFileGrid("regional.grid","r")
+   gfile=abf.ABFileGrid("regional.grid","r")
    plon=gfile.read_field("plon")
    plat=gfile.read_field("plat")
    gfile.close()
 
    # Read input bathymetri
-   bfile=abfile.ABFileBathy(intopo,"r",idm=gfile.idm,jdm=gfile.jdm,mask=True)
+   bfile=abf.ABFileBathy(intopo,"r",idm=gfile.idm,jdm=gfile.jdm,mask=True)
    in_depth_m=bfile.read_field("depth")
    bfile.close()
 
@@ -85,7 +84,7 @@ def main(intopo) :
 
 
    # Print to HYCOM and CICE bathymetry files
-   abfile.write_bathymetry("MODIFIED",0,depth,bathy_threshold)
+   abf.write_bathymetry("MODIFIED",0,depth,bathy_threshold)
 
 
 

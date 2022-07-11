@@ -3,9 +3,8 @@ import argparse
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot
-import abfile
+import abfile.abfile as abf
 import numpy
-from mpl_toolkits.basemap import Basemap
 import logging
 
 # Set up logger
@@ -30,13 +29,13 @@ northern_limit_latitudes  = [67.5, 65,  62.,  57.7, 51.0, 49.4, 51.5, 57., 66.7,
 def main() :
 
    # Read plon,plat
-   gfile=abfile.ABFileGrid("regional.grid","r")
+   gfile=abf.ABFileGrid("regional.grid","r")
    plon=gfile.read_field("plon")
    plat=gfile.read_field("plat")
    gfile.close()
 
    # Read input bathymetry
-   bfile=abfile.ABFileBathy("regional.depth","r",idm=gfile.idm,jdm=gfile.jdm,mask=True)
+   bfile=abf.ABFileBathy("regional.depth","r",idm=gfile.idm,jdm=gfile.jdm,mask=True)
    in_depth_m=bfile.read_field("depth")
    bfile.close()
    #in_depth=numpy.ma.filled(in_depth_m,bathy_threshold)
@@ -81,7 +80,7 @@ def main() :
    figure.colorbar(P,ax=ax)
    figure.canvas.print_figure("kapref.png")
 
-   af = abfile.AFile(plon.shape[1],plon.shape[0],"tbaric.a","w")
+   af = abf.AFile(plon.shape[1],plon.shape[0],"tbaric.a","w")
    hmin,hmax = af.writerecord(kapref,None,record=0)
    af.close()
    bf = open("tbaric.b","w")

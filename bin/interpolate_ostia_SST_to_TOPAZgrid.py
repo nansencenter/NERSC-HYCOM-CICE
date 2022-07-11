@@ -2,20 +2,17 @@ from netCDF4 import Dataset
 import time as ttimm
 import numpy as np
 import matplotlib
-import abfile
-#import mod_reading as mr
+import abfile.abfile as abf
 from pprint import pprint
 import argparse
 import matplotlib.pyplot as plt
-#from mpl_toolkits.basemap import Basemap
 from mpl_toolkits.axes_grid1 import make_axes_locatable, axes_size
 import logging
-#import cmocean 
 import pyproj as pyproj
 import matplotlib.patheffects as PathEffects
 import os.path
-#import scipy.interpolate
 from scipy.interpolate import griddata as grd
+
 # Set up logger
 _loglevel=logging.DEBUG
 logger = logging.getLogger(__name__)
@@ -50,27 +47,20 @@ def interp2points(fobj,varname,target_lonlats,mapping=None,latlon=True,**kwargs)
         (stereographic projection)
     """
 
-    #lon,lat  = fobj.get_lonlat()
     glon = ncfile1.variables['lon'][:] 
     glat = ncfile1.variables['lat'][:] 
     Z0    = ncfile1.variables[varname][:]
     Z=np.transpose(np.squeeze(Z0))
-    #mask1  = np.logical_not(np.isfinite(Z))
-    #mask1=np.isnan(Z)
-    #Z = np.ma.array(Z, mask=mask1)
-    print 'Z.shape=', Z.shape
-    print 'Z0.shape=', Z0.shape
-    print 'lon.shape=', glon.shape
-    print 'lon.ndim=', glon.ndim
-    print 'lat.shape=',glat.shape
-    lon,lat  = np.meshgrid(glon,glat,indexing='ij')
-    #lon,lat  = np.meshgrid(glon,glat,indexing='ij')
-    #print 'plon=', plon.shape
-    #print 'plat=', plat.shape
+    print('Z.shape=', Z.shape)
+    print('Z0.shape=', Z0.shape)
+    print('lon.shape=', glon.shape)
+    print('lon.ndim=', glon.ndim)
+    print('lat.shape=',glat.shape)
+    lon,lat=np.meshgrid(glon,glat,indexing='ij')
     # do interpolation in stereographic projection
     if mapping is None:
         if not latlon:
-            raise ValueError('need to provide mapping if latlon=False')
+            raise ValueError ('need to provide mapping if latlon=False')
         souths    = lat[lat<0]
         lat_0     = 90.
         lon_0     = -45.
@@ -87,8 +77,6 @@ def interp2points(fobj,varname,target_lonlats,mapping=None,latlon=True,**kwargs)
 
     #source
     X,Y = mapping(lon,lat)
-    #Z    = fobj.get_var(varname,time_index=time_index).values #numpy masked array
-    #Z     = ncfile1.variables[varname][:]
     #target
     if latlon:
          lons,lats = target_lonlats
@@ -96,11 +84,11 @@ def interp2points(fobj,varname,target_lonlats,mapping=None,latlon=True,**kwargs)
     else:
          x,y = target_lonlats
 
-    print 'X.shape=', X.shape
-    print 'Y.shape=', Y.shape
-    print 'Z.shape=', Z.shape
-    print 'x.shape=', x.shape
-    print 'y.shape=', y.shape
+    print('X.shape=', X.shape)
+    print('Y.shape=', Y.shape)
+    print('Z.shape=', Z.shape)
+    print('x.shape=', x.shape)
+    print('y.shape=', y.shape)
     # do interpolation
     fvals = reproj_mod2obs(X,Y,Z,x,y,**kwargs) #numpy masked array
 
@@ -163,14 +151,10 @@ def reduce_grid(X, Y, Z, bbox):
     jmax = id[1].max() +1
     #Z_ = Z.filled(np.nan).astype(float)
     if hasattr(Z, 'mask'):
-	Z_ = Z.filled(np.nan).astype(float)
+        Z_ = Z.filled(np.nan).astype(float)
     else:
-	Z_ = Z
-    return(
-            X[imin: imax, jmin: jmax],
-            Y[imin: imax, jmin: jmax],
-            Z_[imin: imax, jmin: jmax],
-            )
+        Z_ = Z
+    return(X[imin: imax, jmin: jmax], Y[imin: imax, jmin: jmax], Z_[imin: imax, jmin: jmax], )
 #-------------------------------------------------------------------------
 
 if __name__ == "__main__" :
@@ -186,34 +170,18 @@ if __name__ == "__main__" :
        setattr(args, self.dest, tmp)
 
    parser = argparse.ArgumentParser(description='')
-   #parser.add_argument('--clim',       action=ClimParseAction,default=None)
-   #parser.add_argument('--cmap',       type=str,default="jet",help="matplotlib colormap to use")
-   #parser.add_argument('--window',     action=WindowParseAction, help='firsti,firstj,lasti,lastj', default=None)
-   #parser.add_argument('--idm',     type=int, help='Grid dimension 1st index []')
-   #parser.add_argument('--jdm',     type=int, help='Grid dimension 2nd index []')
-   #parser.add_argument('--fieldname',  type=str)
-   #parser.add_argument('--fieldlevel', type=int)
    parser.add_argument('--filename', help="",nargs='+')
-   #parser.add_argument('records',  nargs="+",    type=int)
    
    args = parser.parse_args()
-   print args.filename
+   print(args.filename)
    #Example
    #python ./interpolate_sstncof2TP5.py --filename ../ncof_sst/ncof_sst_20*.nc
-
-   ### fh = Dataset('mld_dr003_l3.nc', mode='r')
-   ### fh_lons = fh.variables['lon'][:]
-   ### fh_lats = fh.variables['lat'][:]
-   ### 
-   ### fh_time = fh.variables['time'][:]
-   ### fh_mld_clim = fh.variables['mld_dr003_rmoutliers_smth_okrg'][:]
-   ### fh.close()
    
-   gfile = abfile.ABFileGrid("regional.grid","r")
+   gfile = abf.ABFileGrid("regional.grid","r")
    plon=gfile.read_field("plon")
    plat=gfile.read_field("plat")
    gfile.close()
-   dpfile = abfile.ABFileBathy("regional.depth","r",idm=gfile.idm,jdm=gfile.jdm)
+   dpfile = abf.ABFileBathy("regional.depth","r",idm=gfile.idm,jdm=gfile.jdm)
    depth=dpfile.read_field("depth")
    dpfile.close()
    target_lon=plon
@@ -229,37 +197,17 @@ if __name__ == "__main__" :
             ncfile1 = Dataset(ncfile0,'r',format="NETCDF4")
             logger.info("ostia sst data: Now processing  %s"%ncfile0)
             # interpolate ncof_sst in tp5 grid
-###             ncfile1 = Dataset(ncfile0,'r',format="NETCDF4")
-###             glon = ncfile1.variables['lon'][:] 
-###             glat = ncfile1.variables['lat'][:] 
-###             gl_mask1 = ncfile1.variables['mask'][:]
-###             ncfile1.close()
-###             gl_mask = gl_mask1[0,:,:]
-###             glonn,glatt=np.meshgrid(glon,glat)
-###             print 'glonn=', glonn.shape
-###             print 'glatt=',glatt.shape
-###             print 'mask=',gl_mask.shape
-###             print 'plon=', plon.shape
-###             print 'plat=', plat.shape
-           #start_time = ttimm.time()
-            #print 'start time=', start_time
-###         #    newMask=scipy.interpolate.griddata( (glonn.flatten(),glatt.flatten()),gl_mask.flatten(),(plon,plat),'nearest')
-###         #    newMask=np.ma.masked_where(np.ma.getmask(depth),newMask)
-            #print 'elapsed time=',start_time - ttimm.time()
-            #newMask=scipy.interpolate.griddata( (glon.flatten(),glat.flatten()),gl_mask.flatten(),(plon,plat),'nearest')
             start_time = ttimm.time()
-            print 'start time=', start_time
+            print('start time=', start_time)
             newMask = interp2points(ncfile1,'mask',target_lonlats,mapping=None)
             sst_anlys = interp2points(ncfile1,'analysed_sst',target_lonlats,mapping=None)
-            print 'elapsed time=',start_time - ttimm.time()
+            print('elapsed time=',start_time - ttimm.time())
             # Create scalar field for vectors
             fld=sst_anlys - 273.1
             fld=np.ma.masked_where(np.ma.getmask(depth),fld)
             fld=np.ma.masked_invalid(fld)
-            #fld=np.ma.masked_where(fld<-1.8,fld)
-            print 'mn,mx  data=',fld.min(),fld.max()
-            print 'fldin_nansum=', np.nansum(fld)
-            #dt_cl[counter]=numpy.nanmean(fld)
+            print('mn,mx  data=',fld.min(),fld.max())
+            print('fldin_nansum=', np.nansum(fld))
             counter=counter+1
             file_count=file_count+1
             # write to nc file
@@ -275,13 +223,13 @@ if __name__ == "__main__" :
             times = rootgrp.createVariable("time","f8",("time",))
             ostia_sst = rootgrp.createVariable("analysed_sst","f4",("time","lat","lon",))
             sst_mask = rootgrp.createVariable("ostia_mask","f4",("time","lat","lon",))
-            print 'ostia_sst.shape=',ostia_sst.shape
-            print 'sst_mask.shape=',sst_mask.shape
+            print('ostia_sst.shape=',ostia_sst.shape)
+            print('sst_mask.shape=',sst_mask.shape)
             times[:] = 1
             ostia_sst[0,:,:]=fld[:,:]
             sst_mask[0,:,:]=np.array(newMask[:,:])
 
             rootgrp.close()
             ### End file_intloop
-            print 'Computing the avearge of file_counter= ', file_count, 'counter=',counter
+            print('Computing the avearge of file_counter= ', file_count, 'counter=',counter)
 

@@ -1,1 +1,1 @@
-from gridxsec import *
+from .gridxsec import *

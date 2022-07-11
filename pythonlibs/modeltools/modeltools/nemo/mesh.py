@@ -35,7 +35,7 @@ class NemoMesh(object) :
       if last_j is not None or first_i is not None or last_i is not None :
          msg="only first_j may be specified for subregion for now"
          logger.error(msg)
-         raise ValueError,msg
+         raise ValueError(msg)
 
 
       self._meshfile=meshfile
@@ -83,11 +83,11 @@ class NemoMesh(object) :
    # NB: Arctic patch is "repeated" in a sence
    def _slices_set(self,first_i=1,last_i=-1,first_j=0,last_j=-2) :
       if not (self._is_periodic_i and self._is_arctic_patch) :
-         raise ValueError,"nemo mesh is not periodic with arctic patch - fixme" 
+         raise ValueError("nemo mesh is not periodic with arctic patch - fixme") 
       if last_j is not -2 or first_i is not 1 or last_i is not -1 :
          msg="only first_j may be specified for subregion for now"
          logger.error(msg)
-         raise ValueError,msg
+         raise ValueError(msg)
 
       # Slices for selected domain 
       self._sj_sel=slice(first_j,last_j)
@@ -106,7 +106,7 @@ class NemoMesh(object) :
    # NB: field.shape=(jdm,idm)
    def u_to_hycom_u(self,field2d)  :
       if not self._is_periodic_i :
-         raise ValueError,"nemo mesh is not periodic in i - fixme" 
+         raise ValueError("nemo mesh is not periodic in i - fixme") 
       return numpy.roll(field2d,1,axis=1)
 
 
@@ -134,7 +134,7 @@ class NemoMesh(object) :
          #elif extrapolate=="" :
 
       else :
-         raise ValueError,"nemo mesh is not periodic in i - fixme" 
+         raise ValueError("nemo mesh is not periodic in i - fixme") 
       return myfield
 
 
@@ -150,8 +150,8 @@ class NemoMesh(object) :
 
    def arctic_patch_shift_up(self,field,jstep) :
       # shift field down
-      if jstep <> 1 :
-         raise NameError,"Arctic_patch_shift only with jstep=1 for now"
+      if jstep != 1 :
+         raise NameError("Arctic_patch_shift only with jstep=1 for now")
       field2 = numpy.copy(field)
       field2[1:,:] = field2[0:-1,:] # Shift up
       # NB:  row 0 is same as row 1 (extrapolated
@@ -159,8 +159,8 @@ class NemoMesh(object) :
 
    def arctic_patch_shift_down(self,field,jstep) :
       # shift field down
-      if jstep <> 1 :
-         raise NameError,"Arctic_patch_shift only with jstep=1 for now"
+      if jstep != 1 :
+         raise NameError("Arctic_patch_shift only with jstep=1 for now")
       field2 = numpy.copy(field)
       field2[0:-1,:] = field2[1:,:] # Shift down
       tmp=field2[-1,:]              # Top row as top ...
