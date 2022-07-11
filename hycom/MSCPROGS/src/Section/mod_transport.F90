@@ -523,7 +523,7 @@ end subroutine
          call HFReaduvtot  (hfile,utot,vtot,idm,jdm,k,1)
          call HFReadField  (hfile,temp,idm,jdm,'temp    ',k,1)
          if (trim(hfile%ftype)/='archv') then
-            call HFReadField  (hfile,saln,idm,jdm,'saln    ',k,1) ! need "salin" for archv files
+            call HFReadField  (hfile,saln,idm,jdm,'salin    ',k,1) ! need "salin" for archv files
          else
             call HFReadField  (hfile,saln,idm,jdm,'salin   ',k,1) 
          end if

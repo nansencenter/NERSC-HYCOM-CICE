@@ -54,8 +54,8 @@ EXTRALIBS     =  -lfftw3 -lmkl -lnetcdff -lnetcdf -lmpi -lmpifort
 
 
 # from fabm 
-#CPPFLAGS      = -DIA32 -DREAL8 -DMPI -DSERIAL_IO -DNAN2003 -DTIMER -DRELO -DUSE_ESMF -DUSE_ESMF_5 -DNERSC_HYCOM_CICE -D_FABM_ -I${HOME}/local/fabm/hycom/include
-#EXTRALIBS     = -L${ESMF_LIB_DIR}/ -lesmf -lfftw3 -lmkl -lnetcdff -lnetcdf -lmpi -lmpifort -L${HOME}/local/fabm/hycom/lib -lfabm
+#CPPFLAGS      += -D_FABM_ -I${HOME}/local/fabm/hycom/include
+#EXTRALIBS     += -L${HOME}/local/fabm/hycom/lib -lfabm
 
 #
 # --- generic make definitions

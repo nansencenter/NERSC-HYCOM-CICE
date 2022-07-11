@@ -100,10 +100,10 @@ class AtmosphericForcing(object) :
       elements = self._tree.findall('forcing_datasets/forcing_dataset[@name="%s"]'%forcing_dataset)
       if len(elements) > 1 : 
          msg = "Could not find unique dataset %s"%forcing_dataset
-         raise AtmosphericForcingError,msg
+         raise AtmosphericForcingError(msg)
       if len(elements) == 0 : 
          msg = "Could not find dataset %s"%forcing_dataset
-         raise AtmosphericForcingError,msg
+         raise AtmosphericForcingError(msg)
 
       # Parse the  Self._element attributes 
       self._rootPath = None
@@ -119,15 +119,15 @@ class AtmosphericForcing(object) :
       if self._timestep[-1] == "h" :
          self._timestep = datetime.timedelta(hours=int(self._timestep[:-1]))
       else :
-         raise AtmosphericForcingError,"time step must be specified in hours (hours + letter 'h')"
+         raise AtmosphericForcingError("time step must be specified in hours (hours + letter 'h')")
 
       # Get format - only netcdf currently supported 
       if "format" in self._element.attrib.keys(): 
          self._format=self._element.attrib["format"]
-         if self._format <> "netcdf" :
-            raise AtmosphericForcingError,"Only netcdf supported at the moment"
+         if self._format != "netcdf" :
+            raise AtmosphericForcingError("Only netcdf supported at the moment")
       else :
-         raise AtmosphericForcingError,"Format must be specified"
+         raise AtmosphericForcingError("Format must be specified")
 
       # Parse the available fields and create forcingfield class
       elements = self._element.findall('field')
@@ -138,7 +138,7 @@ class AtmosphericForcing(object) :
          name             = xml_element.attrib["known_name"]    # Variable names known to this module
          if name not in _all_known_names :
             msg = "Unknown field with name %s"%name
-            raise AtmosphericForcingError,msg
+            raise AtmosphericForcingError(msg)
 
          # We can specify coordinate properties (some times these are wrongly specified or missing).
          # Here we treat the coords as a dict
@@ -146,7 +146,7 @@ class AtmosphericForcing(object) :
          coord_props={}
          for el2 in tmp :
             if "varname" in el2.attrib.keys() :
-               coord_props[el2.attrib["varname"]] = dict([(elem[0],elem[1]) for elem in el2.attrib.items() if elem[0] <> "varname"])
+               coord_props[el2.attrib["varname"]] = dict([(elem[0],elem[1]) for elem in el2.attrib.items() if elem[0] != "varname"])
          #print coord_props
          #print name,coord_props
 
@@ -225,7 +225,7 @@ class AtmosphericForcing(object) :
          self["taux"].set_data(tmp1)
          self["tauy"].set_data(tmp2)
       else :
-         raise AtmosphericForcingError,"Can not calculate wind stress without 10 meter winds"
+         raise AtmosphericForcingError("Can not calculate wind stress without 10 meter winds")
 
 
    def calculate_windspeed(self) :
@@ -234,7 +234,7 @@ class AtmosphericForcing(object) :
          self._fields["wspd"]    = modeltools.tools.ForcingFieldCopy("wspd",self._fields["10u"],_assumed_units["wspd"])
          self["wspd"].set_data(numpy.sqrt(self["10u"].data**2+self["10v"].data**2))
       else :
-         raise AtmosphericForcingError,"Can not calculate wind speed without 10 meter winds"
+         raise AtmosphericForcingError("Can not calculate wind speed without 10 meter winds")
 
 
    def calculate_ustar(self) :
@@ -243,7 +243,7 @@ class AtmosphericForcing(object) :
          self._fields["ustar"]    = modeltools.tools.ForcingFieldCopy("ustar",self["taux"],_assumed_units["ustar"])
          self["ustar"].set_data(numpy.sqrt((self["taux"].data**2+self["tauy"].data**2)*1e-3))
       else :
-         raise AtmosphericForcingError,"Can not calculate wind stress without 10 meter winds"
+         raise AtmosphericForcingError("Can not calculate wind stress without 10 meter winds")
 
 
    def calculate_vapmix(self) :
@@ -253,7 +253,7 @@ class AtmosphericForcing(object) :
          self._fields["vapmix"]    = modeltools.tools.ForcingFieldCopy("vapmix",self["2t"],_assumed_units["vapmix"])
          self["vapmix"].set_data(vapmix(e,self["msl"].data))
       else :
-         raise AtmosphericForcingError,"Can not calculate wind stress without 10 meter winds"
+         raise AtmosphericForcingError("Can not calculate wind stress without 10 meter winds")
      
      
    def calculate_strd(self) :
@@ -268,7 +268,7 @@ class AtmosphericForcing(object) :
          self._fields["strd"]          = modeltools.tools.ForcingFieldCopy("strd",self["2t"],_assumed_units["strd"])
          self["strd"].set_data(strd_maykut_jacobs(self["2t"].data,e,self["tcc"].data))
       else :
-         raise AtmosphericForcingError,"Can not calculate TSRD"
+         raise AtmosphericForcingError("Can not calculate STRD")
 
      
    def calculate_ssrd(self) :
@@ -287,7 +287,7 @@ class AtmosphericForcing(object) :
          self._fields["sradtop"] = modeltools.tools.ForcingFieldCopy("sradtop",self["tcc"],_assumed_units["sradtop"])
          self["sradtop"].set_data(srad_top)
       else :
-         raise AtmosphericForcingError,"Can not calculate SSRD"
+         raise AtmosphericForcingError("Can not calculate SSRD")
 
 
 #MOSTAFA: BEGIN
@@ -300,7 +300,7 @@ class AtmosphericForcing(object) :
          self._fields["strd"]    = modeltools.tools.ForcingFieldCopy("strd",self["2d"],_assumed_units["strd"])
          self._fields["strd"].set_data(strd_bignami(self["2t"].data,e,self["tcc"].data))
       else :
-         raise AtmosphericForcingError,"Can not calculate TSRD"
+         raise AtmosphericForcingError("Can not calculate STRD")
    # Here I decompose the net lonwave radiation formulation into two parts: (1) term with no SST effect; (2) term with effects from SST
    # The SST here is from either observation or atmospheric model result.
    def calculate_lwrad_budyko(self) :
@@ -312,7 +312,7 @@ class AtmosphericForcing(object) :
          self._fields["lwrad"]    = modeltools.tools.ForcingFieldCopy("strd",self["2d"],_assumed_units["strd"])
          self._fields["lwrad"].set_data(lwrad_budyko(la,self["2t"].data,e,self["tcc"].data))
       else :
-         raise AtmosphericForcingError,"Can not calculate TSRD"
+         raise AtmosphericForcingError("Can not calculate STRD")
 
 
    def calculate_lwrad_berliand(self) :
@@ -324,7 +324,7 @@ class AtmosphericForcing(object) :
          self._fields["lwrad"]    = modeltools.tools.ForcingFieldCopy("strd",self["2d"],_assumed_units["strd"])
          self._fields["lwrad"].set_data(lwrad_berliand(self["2t"].data,e,self["tcc"].data))
       else :
-         raise AtmosphericForcingError,"Can not calculate TSRD"
+         raise AtmosphericForcingError("Can not calculate STRD")
 
 #
 #     TODO: more options will be appeared here
@@ -338,7 +338,7 @@ class AtmosphericForcing(object) :
          self._fields["slp"]    = modeltools.tools.ForcingFieldCopy("slp",self["msl"],_assumed_units["msl"])
          self["slp"].set_data( self["msl"].data * 1e-2)
       else :
-         raise AtmosphericForcingError,"Can not calculate slp fields"
+         raise AtmosphericForcingError("Can not calculate slp fields")
 
 
    def calculate_relhum(self) :
@@ -350,7 +350,7 @@ class AtmosphericForcing(object) :
          self._fields["relhum"]    = modeltools.tools.ForcingFieldCopy("relhum",self["2t"],_assumed_units["relhum"])
          self["relhum"].set_data(relhumid(e,ed,self["msl"].data)/100.)
       else :
-         raise AtmosphericForcingError,"Can not calculate wind stress without 10 meter winds"
+         raise AtmosphericForcingError("Can not calculate wind stress without 10 meter winds")
 
 
    @property
@@ -643,7 +643,7 @@ def qsw_et(dtime,plon,plat) :
    logger.debug("time hour angle at Greenwich=%.4f"%hangle)
 
    if abs(dtime.year - 2000) > 3000. :
-      raise AtmosphericForcingError, "qsw_et only suitable for present day climate"
+      raise AtmosphericForcingError("qsw_et only suitable for present day climate")
 
 
    # Solar declination in radians
@@ -737,9 +737,9 @@ def qsw0(qswtime,daysinyear,cc,plat,plon) :
 #c
    dangle=pi2*day/float(daysinyear)   #day-number-angle, in radians 
    if day<0. or day>daysinyear+1 :
-      print 'qsw0: Error in day for day angle'
-      print 'Day angle is ',day,daysinyear,qswtime
-      raise NameError,"test"
+      print('qsw0: Error in day for day angle')
+      print('Day angle is ',day,daysinyear,qswtime)
+      raise NameError("test")
       
 # --- compute astronomic quantities -- 
    decli=.006918+.070257*numpy.sin(dangle)   -.399912*numpy.cos(dangle)      \

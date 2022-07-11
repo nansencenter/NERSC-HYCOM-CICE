@@ -64,7 +64,7 @@ class FieldReader(object) :
 
 
    def get_proj4grid(self,varname,dt) :
-      raise NotImplementedError,"get_proj4grid not implemented"
+      raise NotImplementedError("get_proj4grid not implemented")
 
 
 
@@ -73,7 +73,7 @@ class FieldReader(object) :
       if format == "netcdf" :
          return NetcdfFieldReader(filenametemplate,coord_props=coord_props,time_offset=time_offset)
       else :
-         raise FieldReaderError,"Only netcdf supported at the moment"
+         raise FieldReaderError("Only netcdf supported at the moment")
 
 
 class NetcdfFieldReader(FieldReader) :
@@ -105,7 +105,7 @@ class NetcdfFieldReader(FieldReader) :
                   logger.info("Setting units from explicit coordinate properties for variable %s"%i)
                   unit_string = self._coord_props[i]["units"]
                else  :
-                  raise FieldReaderError,"No units specified for variable %s"%i
+                  raise FieldReaderError("No units specified for variable %s"%i)
             else  :
                if i in self._coord_props and "units" in self._coord_props[i] :
                   logger.warning("Overriding units for variable %s"%i)
@@ -125,7 +125,7 @@ class NetcdfFieldReader(FieldReader) :
                         logger.info("Setting calendar from explicit coordinate properties for variable %s"%i)
                         calendar = self._coord_props[i]["calendar"]
                      else  :
-                        raise FieldReaderError,"No calendar specified for variable %s"%i
+                        raise FieldReaderError("No calendar specified for variable %s"%i)
                   else  :
                      if i in self._coord_props and "calendar" in self._coord_props[i] :
                         logger.warning("Overriding calendar for variable %s"%i)
@@ -141,7 +141,7 @@ class NetcdfFieldReader(FieldReader) :
                elif unit.islatitude :
                   self._coordvar["lat"] = coordvar[:]
                else :
-                  raise FieldReaderError,"Dont know how to handle coordinate variable %s"%i
+                  raise FieldReaderError("Dont know how to handle coordinate variable %s"%i)
 
             if unit.isreftime :
                self._coordmap[varname]["time"] = self._coordvar["time"]
@@ -153,7 +153,7 @@ class NetcdfFieldReader(FieldReader) :
                self._coordmap[varname]["lat"] = self._coordvar["lat"]
                self._coordrank[varname]["lat"] = inumber
             else :
-               raise FieldReaderError,"Dont know how to handle coordinate variable %s"%i
+               raise FieldReaderError("Dont know how to handle coordinate variable %s"%i)
 
 
    def close(self) :
@@ -213,7 +213,7 @@ class ForcingField(object) :
          if self._accumulation_time[-1] == "h" :
             self._accumulation_time = datetime.timedelta(hours=int(self._accumulation_time[:-1]))
          else :
-            raise AtmosphericForcingError,"time step must be specified in hours (hours + letter 'h')"
+            raise AtmosphericForcingError("time step must be specified in hours (hours + letter 'h')")
 
       if self._accumulation_time is not None  :
          # Convert from accumulated to flux

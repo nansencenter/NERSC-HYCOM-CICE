@@ -6,7 +6,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot
 import modeltools.forcing.bathy
-import abfile
+import abfile.abfile as abf
 import numpy
 import netCDF4
 import logging
@@ -19,16 +19,12 @@ import sys
 import shutil
 import glob
 from matplotlib import pyplot as plt
-
-####
 from netCDF4 import Dataset, MFDataset, num2date,date2num
 import scipy.io as io
 from scipy import ndimage
 import numpy as np
 from scipy.spatial import cKDTree
-#from myfill import fill as fill
 
-####
 
 
 
@@ -80,12 +76,12 @@ def maplev(a,lpp=1):
     a[J,I]=av
     b=a
     #lpp=1  # it is better to be set to 100, but for practial reasnon, we keep it very small for now
-    i=range(1,im-1)
-    j=range(1,jm-1)
-    ip1=range(2,im)
-    jp1=range(2,jm)
-    im1=range(0,im-2)
-    jm1=range(0,jm-2)
+    i=list(range(1,im-1))
+    j=list(range(1,jm-1))
+    ip1=list(range(2,im))
+    jp1=list(range(2,jm))
+    im1=list(range(0,im-2))
+    jm1=list(range(0,jm-2))
     
     cc=numpy.zeros(a.shape)
     for k in range(lpp):
@@ -128,8 +124,8 @@ def periodic_i_shift_right(field,istep) :
 
 def arctic_patch_shift_up(field,jstep) :
    # shift field down
-   if jstep <> 1 :
-      raise NameError,"Arctic_patch_shift only with jstep=1 for now"
+   if jstep !=1 :
+      raise NameError("Arctic_patch_shift only with jstep=1 for now")
    field2 = numpy.copy(field)
    field2[1:,:] = field2[0:-1,:] # Shift up
    # NB:  row 0 is same as row 1 (extrapolated
@@ -137,8 +133,8 @@ def arctic_patch_shift_up(field,jstep) :
 
 def arctic_patch_shift_down(field,jstep) :
    # shift field down
-   if jstep <> 1 :
-      raise NameError,"Arctic_patch_shift only with jstep=1 for now"
+   if jstep != 1 :
+      raise NameError("Arctic_patch_shift only with jstep=1 for now")
    field2 = numpy.copy(field)
    field2[0:-1,:] = field2[1:,:] # Shift down
    tmp=field2[-1,:]              # Top row as top ...
@@ -268,7 +264,7 @@ def make_grid(filemesh):
    ddict["cori"]=corio
    ddict["pang"] =pang
    ddict["pasp"] =asp
-   abfile.write_regional_grid(ddict)
+   abf.write_regional_grid(ddict)
 
    # Bathymetry
    hdepw  = sliced(ncidz.variables["hdepw"] [0,:,:])
@@ -277,7 +273,7 @@ def make_grid(filemesh):
    ncidt=netCDF4.Dataset(maskfile,"r")
    tmask = sliced(ncidt.variables["tmaskutil"][0,:,:])
    tmp2 = numpy.where( mbathy>0.  ,hdepw,0.)
-   abfile.write_bathymetry("bathy",1,tmp2,0.)
+   abf.write_bathymetry("bathy",1,tmp2,0.)
  
    shutil.move("depth_bathy_01.a",'../topo/depth_NMOa0.08_01.a')
    shutil.move("depth_bathy_01.b",'../topo/depth_NMOa0.08_01.b')
@@ -306,14 +302,14 @@ def check_inputs(x, y, Z, points, mode, bounds_error):
 
     try:
         x = numpy.array(x)
-    except Exception, e:
+    except Exception as e:
         msg = ('Input vector x could not be converted to numpy array: '
                '%s' % str(e))
         raise Exception(msg)
 
     try:
         y = numpy.array(y)
-    except Exception, e:
+    except Exception as e:
         msg = ('Input vector y could not be converted to numpy array: '
                '%s' % str(e))
         raise Exception(msg)
@@ -341,7 +337,7 @@ def check_inputs(x, y, Z, points, mode, bounds_error):
     try:
         Z = numpy.array(Z)
         m, n = Z.shape
-    except Exception, e:
+    except Exception as e:
         msg = 'Z must be a 2D numpy array: %s' % str(e)
         raise Exception(msg)
 
@@ -535,8 +531,8 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=False,iexpt=10,iversn=22,yrfla
       m=re.match("(.*_)(grid2D)(_.*\.nc)",os.path.basename(file2d))
       if not m :
          msg="File %s is not a grid2D file, aborting"%file2d
-         logger.error(msg)
-         raise ValueError,msg
+         logger.error(msg)  
+         raise ValueError(msg)
 
       # Construct remaining files
       filet  =os.path.join(dirname,m.group(1) + "gridT" + m.group(3))
@@ -570,8 +566,8 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=False,iexpt=10,iversn=22,yrfla
          idx,biofname=search_biofile(bio_path,delta)
          if idx >7: 
             msg="No available BIO file within a week difference with PHY"
-	    logger.error(msg)
-            raise ValueError,msg
+            logger.error(msg)
+            raise ValueError(msg)
          logger.info("BIO file %s reading & interpolating to 1/12 deg grid cells ..."%biofname)
          ncidb=netCDF4.Dataset(biofname,"r")
          blon=ncidb.variables["longitude"][:];
@@ -612,13 +608,13 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=False,iexpt=10,iversn=22,yrfla
          dummy=numpy.zeros((ny,nx+1))
          dummy[:,:nx]=depth_lev;dummy[:,-1]=depth_lev[:,-1]
          depth_lev=dummy
-	 depth_lev[depth_lev>50]=0
-	 depth_lev=depth_lev.astype('i')
+         depth_lev[depth_lev>50]=0
+         depth_lev=depth_lev.astype('i')
          dummy_no3=no3
          dummy_po4=po4
          dummy_si=si
 
-	 for j in range(ny):
+         for j in range(ny):
             for i in range(nx):
                dummy_no3[depth_lev[j,i]:nz-2,j,i]=no3[depth_lev[j,i]-1,j,i]
                dummy_po4[depth_lev[j,i]:nz-2,j,i]=po4[depth_lev[j,i]-1,j,i]
@@ -702,7 +698,7 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=False,iexpt=10,iversn=22,yrfla
       montg1=numpy.zeros(ssh.shape)
 
       # Write to abfile
-      outfile = abfile.ABFileArchv("./data/"+oname,"w",iexpt=iexpt,iversn=iversn,yrflag=yrflag,)
+      outfile = abf.ABFileArchv("./data/"+oname,"w",iexpt=iexpt,iversn=iversn,yrflag=yrflag,)
 
       logger.info("Writing 2D variables")
       outfile.write_field(montg1,                ip,"montg1"  ,0,model_day,1,0)
@@ -717,12 +713,12 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=False,iexpt=10,iversn=22,yrfla
       error=numpy.zeros((ny,nx))
       for k in numpy.arange(u.shape[0]) :
          if bio_path:
-	    no3k=interpolate2d(blat, blon, no3[k,:,:], points).reshape((jdm,idm))
-	    no3k = maplev(no3k)
+            no3k=interpolate2d(blat, blon, no3[k,:,:], points).reshape((jdm,idm))
+            no3k = maplev(no3k)
             po4k=interpolate2d(blat, blon, po4[k,:,:], points).reshape((jdm,idm))
-	    po4k = maplev(po4k)
+            po4k = maplev(po4k)
             si_k=interpolate2d(blat, blon, si[k,:,:], points).reshape((jdm,idm))
-	    si_k = maplev(si_k)
+            si_k = maplev(si_k)
             if k%10==0 : logger.info("Writing 3D variables including BIO, level %d of %d"%(k+1,u.shape[0]))
          else:
             if k%10==0 : logger.info("Writing 3D variables, level %d of %d"%(k+1,u.shape[0]))

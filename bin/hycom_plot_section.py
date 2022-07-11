@@ -4,10 +4,11 @@ import modeltools.tools
 import argparse
 import matplotlib
 matplotlib.use('Agg')
-import matplotlib.pyplot
-import abfile
-import numpy
-from mpl_toolkits.basemap import Basemap
+import matplotlib.pyplot as plt
+import abfile.abfile as abf
+import numpy as np
+import cartopy.crs as ccrs
+import cartopy.feature as cfeature
 import netCDF4
 import logging
 import re
@@ -31,12 +32,10 @@ def main(lon1,lat1,lon2,lat2,variable,files,filetype="archive",clim=None,section
       ijspace=False,xaxis="distance",section_map=False,dpi=180) :
 
    logger.info("Filetype is %s"% filetype)
-   gfile = abfile.ABFileGrid("regional.grid","r")
+   gfile = abf.ABFileGrid("regional.grid","r")
    plon=gfile.read_field("plon")
    plat=gfile.read_field("plat")
-   qlon=gfile.read_field("qlon")
-   qlat=gfile.read_field("qlat")
-
+  
    # Set up section info
    if ijspace :
       sec = gridxsec.SectionIJSpace([lon1,lon2],[lat1,lat2],plon,plat)
@@ -46,13 +45,9 @@ def main(lon1,lat1,lon2,lat2,variable,files,filetype="archive",clim=None,section
    dist=sec.distance
    slon=sec.longitude
    slat=sec.latitude
-
-   # In testing
-   #J,I,slon,slat,case,dist=sec.find_intersection(qlon,qlat)
-   #print I,J
-   #raise NameError,"test"
-
-
+   print(slon.shape)
+   print(slat.shape)
+ 
 
    logger.info("Min max I-index (starts from 0):%d %d"%(I.min(),I.max()))
    logger.info("Min max J-index (starts from 0):%d %d"%(J.min(),J.max()))
@@ -61,26 +56,28 @@ def main(lon1,lat1,lon2,lat2,variable,files,filetype="archive",clim=None,section
    if section_map :
       ll_lon=slon.min()-10.
       ur_lon=slon.max()+10.
-      ll_lat=numpy.maximum(-90.,slat.min()-10.)
-      ur_lat=numpy.minimum(90. ,slat.max()+10.)
-      m = Basemap(projection='mill', llcrnrlon=ll_lon, llcrnrlat=ll_lat, urcrnrlon=ur_lon, urcrnrlat=ur_lat, resolution='l')
-      (x,y) = m(slon,slat)
-      figure = matplotlib.pyplot.figure()
+      ll_lat=np.maximum(-90.,slat.min()-10.)
+      ur_lat=np.minimum(90. ,slat.max()+10.)
+      
+      proj=ccrs.Stereographic(central_latitude=90.0,central_longitude=-40.0)
+      pxy = proj.transform_points(ccrs.PlateCarree(), plon, plat)
+      px=pxy[:,:,0]
+      py=pxy[:,:,1]
+      x,y=np.meshgrid(np.arange(slon.shape[0]),np.arange(slat.shape[0]))
+            
+      figure =plt.figure(figsize=(10,8))
       ax=figure.add_subplot(111)
-      m.drawcoastlines()
-      #m.fillcontinents(color='coral',lake_color='aqua')
-      m.drawparallels(numpy.arange(-90.,120.,30.),labels=[1,0,0,0]) # draw parallels
-      m.drawmeridians(numpy.arange(0.,420.,60.),labels=[0,0,0,1]) # draw meridians
-      m.drawmapboundary() # draw a line around the map region
-      m.plot(x,y,"r",lw=3)
-      m.etopo()
-      #m.scatter(x,y,s=20,c=dist)
+        
+      ax = plt.axes(projection=ccrs.PlateCarree())
+      ax.set_extent([-179, 179, 53, 85],ccrs.PlateCarree())
+      ax.add_feature(cfeature.GSHHSFeature('auto', edgecolor='grey'))
+      ax.add_feature(cfeature.GSHHSFeature('auto', facecolor='grey'))
+      ax.gridlines()
+      ax.plot(slon,slat,"r-",lw=1)
+      
       pos = ax.get_position()
-      #print pos
       asp=pos.height/pos.width
-      #print asp
       w=figure.get_figwidth()
-      #print w
       h=asp*w
       figure.set_figheight(h)
       if sectionid :
@@ -114,7 +111,7 @@ def main(lon1,lat1,lon2,lat2,variable,files,filetype="archive",clim=None,section
       xlab="Distance along section[km]"
 
    # Loop over archive files
-   figure = matplotlib.pyplot.figure()
+   figure = plt.figure()
    ax=figure.add_subplot(111)
    pos = ax.get_position()
    for fcnt,myfile0 in enumerate(files) :
@@ -128,18 +125,18 @@ def main(lon1,lat1,lon2,lat2,variable,files,filetype="archive",clim=None,section
 
       # Add more filetypes if needed. By def we assume archive
       if filetype == "archive" :
-         i_abfile = abfile.ABFileArchv(myfile,"r")
+         i_abfile = abf.ABFileArchv(myfile,"r")
       elif filetype == "restart" :
-         i_abfile = abfile.ABFileRestart(myfile,"r",idm=gfile.idm,jdm=gfile.jdm)
+         i_abfile = abf.ABFileRestart(myfile,"r",idm=gfile.idm,jdm=gfile.jdm)
       else :
-         raise NotImplementedError,"Filetype %s not implemented"%filetype
+         raise NotImplementedError("Filetype %s not implemented"%filetype)
 
       # kdm assumed to be max level in ab file
       kdm=max(i_abfile.fieldlevels)
 
       # Set up interface and daat arrays
-      intfsec=numpy.zeros((kdm+1,I.size))
-      datasec=numpy.zeros((kdm+1,I.size))
+      intfsec=np.zeros((kdm+1,I.size))
+      datasec=np.zeros((kdm+1,I.size))
 
       # Loop over layers in file. 
       logger.info("File %s"%(myfile))
@@ -149,25 +146,19 @@ def main(lon1,lat1,lon2,lat2,variable,files,filetype="archive",clim=None,section
          # Get 2D fields
          dp2d=i_abfile.read_field(dpname,k+1)
          data2d=i_abfile.read_field(variable,k+1)
-         dp2d=numpy.ma.filled(dp2d,0.)/modeltools.hycom.onem
-         data2d=numpy.ma.filled(data2d,1e30)
+         dp2d=np.ma.filled(dp2d,0.)/modeltools.hycom.onem
+         data2d=np.ma.filled(data2d,1e30)
 
          # Place data into section arrays
          intfsec[k+1,:] = intfsec[k,:] + dp2d[J,I]
          if k==0 : datasec[k,:] = data2d[J,I]
          datasec[k+1,:] = data2d[J,I]
 
-      i_maxd=numpy.argmax(numpy.abs(intfsec[kdm,:]))
-      #print i_maxd
+      i_maxd=np.argmax(np.abs(intfsec[kdm,:]))
       
       # Set up section plot
-      #datasec = numpy.ma.masked_where(datasec==1e30,datasec)
-      datasec = numpy.ma.masked_where(datasec>0.5*1e30,datasec)
-      #print datasec.min(),datasec.max()
-      #figure = matplotlib.pyplot.figure()
-      #ax=figure.add_subplot(111)
-      #P=ax.pcolormesh(dist/1000.,-intfsec,datasec)
-      P=ax.pcolormesh(x,-intfsec,datasec,cmap="jet")
+      datasec = np.ma.masked_where(datasec>0.5*1e30,datasec)
+      P=plt.pcolormesh(x,-intfsec,datasec,cmap="jet",shading='auto')
       if clim is not None : P.set_clim(clim)
 
       # Plot layer interfaces
@@ -186,8 +177,7 @@ def main(lon1,lat1,lon2,lat2,variable,files,filetype="archive",clim=None,section
       ax.set_title(myfile)
       ax.set_ylabel(variable)
       ax.set_xlabel(xlab)
-      #ax.set_position(pos)
-      #matplotlib.pyplot.tight_layout()
+
 
       # Print in different y-lims 
       suff=os.path.basename(myfile)

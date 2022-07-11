@@ -1,1 +1,1 @@
-from  abfile import *
+from  .abfile import *

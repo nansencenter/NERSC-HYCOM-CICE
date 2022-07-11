@@ -6,11 +6,9 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot
 import modeltools.forcing.bathy
-#import modeltools.hycom.io
-import abfile
+import abfile.abfile as abf
 import modeltools.cice.io
 import numpy
-from mpl_toolkits.basemap import Basemap
 import netCDF4
 import logging
 import sys
@@ -29,13 +27,13 @@ logger.propagate=False
 
 def main(intopo) :
    # Read plon,plat
-   gfile=abfile.ABFileGrid("regional.grid","r")
+   gfile=abf.ABFileGrid("regional.grid","r")
    plon=gfile.read_field("plon")
    plat=gfile.read_field("plat")
    gfile.close()
 
    # Read input bathymetry
-   bfile=abfile.ABFileBathy(intopo,"r",idm=gfile.idm,jdm=gfile.jdm,mask=True)
+   bfile=abf.ABFileBathy(intopo,"r",idm=gfile.idm,jdm=gfile.jdm,mask=True)
    in_depth_m=bfile.read_field("depth")
    bfile.close()
 
