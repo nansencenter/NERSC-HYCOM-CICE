@@ -1142,8 +1142,8 @@
       use ice_flux, only: fsw, flw, fsnow, frain, sst, sss, uocn, vocn, &
           frzmlt_init, fswfac, fswabs, fswthru, alvdr, alvdf, alidr, alidf, &
           ! Added rhoa Till RAsmussen 22/8/2022
-          albice, albsno, albpnd, coszen, flat, fsens, flwout, evap, rhoa &
-          Tair, Tref, Qref, congel, frazil, snoice, dsnow, &
+          albice, albsno, albpnd, coszen, flat, fsens, flwout, evap, &
+          rhoa, Tair, Tref, Qref, congel, frazil, snoice, dsnow, &
           melts, meltb, meltt, meltl, fresh, fsalt, fresh_ai, fsalt_ai, &
           fhocn, fhocn_ai, uatm, vatm, &
           fswthru_ai, strairx, strairy, strtltx, strtlty, strintx, strinty, &
