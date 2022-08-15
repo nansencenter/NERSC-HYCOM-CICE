@@ -385,7 +385,7 @@
            n_flwup      , n_flwup_ai   , &
            n_evap       , n_evap_ai    , &
 ! Added rhoa Till Rasmussen 15/8/2022
-           n_Tair       , rhoa         , &
+           n_Tair       , n_rhoa         , &
            n_Tref       , n_Qref       , &
            n_congel     , n_frazil     , &
            n_snoice     , n_dsnow      , &
