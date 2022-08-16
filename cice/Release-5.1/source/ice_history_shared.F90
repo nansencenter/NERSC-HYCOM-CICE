@@ -204,7 +204,8 @@
            f_fsens     = 'm', f_fsens_ai   = 'm', &
            f_flwup     = 'm', f_flwup_ai   = 'm', &
            f_evap      = 'm', f_evap_ai    = 'm', &
-           f_Tair      = 'm', &
+! Added rhoa Till Rasmussen 15/8/2022
+           f_Tair      = 'm', f_rhoa       = 'm', &
            f_Tref      = 'm', f_Qref       = 'm', &
            f_congel    = 'm', f_frazil     = 'm', &
            f_snoice    = 'm', f_dsnow      = 'm', &
@@ -285,7 +286,8 @@
            f_fsens,     f_fsens_ai , &
            f_flwup,     f_flwup_ai , &
            f_evap,      f_evap_ai  , &
-           f_Tair                  , &
+           ! Added rhoa Till Rasmussen 15/8/2022
+           f_Tair,      f_rhoa     , &
            f_Tref,      f_Qref     , &
            f_congel,    f_frazil   , &
            f_snoice,    f_dsnow    , &
@@ -382,7 +384,8 @@
            n_fsens      , n_fsens_ai   , &
            n_flwup      , n_flwup_ai   , &
            n_evap       , n_evap_ai    , &
-           n_Tair       , &
+           ! Added rhoa Till Rasmussen 15/8/2022
+           n_Tair       , n_rhoa         , &
            n_Tref       , n_Qref       , &
            n_congel     , n_frazil     , &
            n_snoice     , n_dsnow      , &

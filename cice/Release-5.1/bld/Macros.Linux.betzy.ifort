@@ -11,7 +11,7 @@ CPPFLAGS   := -P -traditional
 CPPDEFS    := -DLINUX
 CFLAGS     := -c -O2
 ifeq ($(COMMDIR), mpi)
-   FC         :=  mpifort 
+   FC         :=  mpiifort 
 else
    FC         :=  ifort 
 endif
