@@ -939,13 +939,13 @@ c ---   which only includes the fields up to vbaro (or up to nsterc)
      &       saln_m(itest,jtest,k),                                  !psu
      &       th3d_m(itest,jtest,k)+thbase,                           !SigmaT
      &       dp_m(itest,jtest,k)*qonem,                              !m
-     &       (p(itest,jtest,k+1)+p(itest,jtest,k))*0.5*qonem,        !m
-!     &       vcty(itest,jtest,k+1)*1.e4,                             !cm**2/s
-!     &       dift(itest,jtest,k+1)*1.e4,                             !cm**2/s
-!     &       difs(itest,jtest,k+1)*1.e4,                             !cm**2/s
+     &       (p(itest,jtest,k+1)+p(itest,jtest,k))*0.5*qonem         !m
+!     &      ,vcty(itest,jtest,k+1)*1.e4                              !cm**2/s
+!     &      ,dift(itest,jtest,k+1)*1.e4                              !cm**2/s
+!     &      ,difs(itest,jtest,k+1)*1.e4                              !cm**2/s
 #if defined(STOKES)
-     &       max(-999.99,min(999.99,ustk*100.0)),                    !cm/s
-     &       max(-999.99,min(999.99,vstk*100.0))                    !cm/s
+     &      ,max(-999.99,min(999.99,ustk*100.0))                    !cm/s
+     &      ,max(-999.99,min(999.99,vstk*100.0))                    !cm/s
 #endif
 #ifndef _FABM_
      &       ,(tracer_m(itest,jtest,k,ktr),ktr=1,ntracr)              !0-999?
