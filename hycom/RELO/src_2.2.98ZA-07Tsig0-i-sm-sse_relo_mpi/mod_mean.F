@@ -55,6 +55,7 @@ c
      &   montg_m,srfht_m,steric_m,dpbl_m,dpmixl_m,
      &   surflx_m,salflx_m, covice_m,thkice_m,temice_m
 #if defined(NERSC_HYCOM_CICE)
+C AS: adding surface stress to the mean fields
      &   ,si_u_m, si_v_m, surtx_m, surty_m
 #if defined(OFFICEField)
       logical, save, private :: Toffice=.true.  
@@ -85,12 +86,13 @@ c
       allocate(   saln_m(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kdm) )
       allocate(   th3d_m(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kdm) )
       allocate(     dp_m(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kdm) )
+      call mem_stat_add(     7*(idm+2*nbdy)*(jdm+2*nbdy)*kdm )
       if (difout) then
-      allocate(   vcty_m(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kdm) )
-      allocate(   dift_m(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kdm) )
-      allocate(   difs_m(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kdm) )
+         allocate(   vcty_m(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kdm) )
+         allocate(   dift_m(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kdm) )
+         allocate(   difs_m(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kdm) )
+         call mem_stat_add(     3*(idm+2*nbdy)*(jdm+2*nbdy)*kdm )
       end if
-      call mem_stat_add(     8*(idm+2*nbdy)*(jdm+2*nbdy)*kdm )
 #if defined(STOKES)
       if     (stdarc) then
         allocate(   usdp_m(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kdm) )
@@ -938,12 +940,12 @@ c ---   which only includes the fields up to vbaro (or up to nsterc)
      &       th3d_m(itest,jtest,k)+thbase,                           !SigmaT
      &       dp_m(itest,jtest,k)*qonem,                              !m
      &       (p(itest,jtest,k+1)+p(itest,jtest,k))*0.5*qonem         !m
-!     &       vcty(itest,jtest,k+1)*1.e4,                            !cm**2/s
-!     &       dift(itest,jtest,k+1)*1.e4,                            !cm**2/s
-!     &       difs(itest,jtest,k+1)*1.e4                             !cm**2/s
+!     &      ,vcty(itest,jtest,k+1)*1.e4                              !cm**2/s
+!     &      ,dift(itest,jtest,k+1)*1.e4                              !cm**2/s
+!     &      ,difs(itest,jtest,k+1)*1.e4                              !cm**2/s
 #if defined(STOKES)
-     &       ,max(-999.99,min(999.99,ustk*100.0))                    !cm/s
-     &       ,max(-999.99,min(999.99,vstk*100.0))                    !cm/s
+     &      ,max(-999.99,min(999.99,ustk*100.0))                    !cm/s
+     &      ,max(-999.99,min(999.99,vstk*100.0))                    !cm/s
 #endif
 #ifndef _FABM_
      &       ,(tracer_m(itest,jtest,k,ktr),ktr=1,ntracr)              !0-999?
