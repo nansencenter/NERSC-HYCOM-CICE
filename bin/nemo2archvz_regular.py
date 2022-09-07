@@ -97,14 +97,14 @@ def check_inputs(x, y, Z, points, mode, bounds_error):
 
     try:
         x = numpy.array(x)
-    except Exception, e:
+    except Exception as e:
         msg = ('Input vector x could not be converted to numpy array: '
                '%s' % str(e))
         raise Exception(msg)
 
     try:
         y = numpy.array(y)
-    except Exception, e:
+    except Exception as e:
         msg = ('Input vector y could not be converted to numpy array: '
                '%s' % str(e))
         raise Exception(msg)
@@ -132,7 +132,7 @@ def check_inputs(x, y, Z, points, mode, bounds_error):
     try:
         Z = numpy.array(Z)
         m, n = Z.shape
-    except Exception, e:
+    except Exception as e:
         msg = 'Z must be a 2D numpy array: %s' % str(e)
         raise Exception(msg)
 
@@ -301,12 +301,12 @@ def maplev(a):
     a[J,I]=av
     b=a
     lpp=1  # it is better to be set to 100, but for practial reasnon, we keep it very small for now
-    i=range(1,im-1)
-    j=range(1,jm-1)
-    ip1=range(2,im)
-    jp1=range(2,jm)
-    im1=range(0,im-2)
-    jm1=range(0,jm-2)
+    i=list(range(1,im-1))
+    j=list(range(1,jm-1))
+    ip1=list(range(2,im))
+    jp1=list(range(2,jm))
+    im1=list(range(0,im-2))
+    jm1=list(range(0,jm-2))
     
     cc=numpy.zeros(a.shape)
     for k in range(lpp):
@@ -463,7 +463,7 @@ def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_path=None) :
     #fileinput0=os.path.join(dirname+"/"+"MERCATOR-PHY-24-"+m.group(2))
     file_date=file[-16:-6]
     fileinput0=file
-    print(file_date,file)
+    print((file_date,file))
     next_day=datetime.datetime.strptime(file_date, '%Y-%m-%d')+datetime.timedelta(days=1)
     fileinput1=datetime.datetime.strftime(next_day,'%Y%m%d')
     fileinput1=os.path.join(dirname+"/"+file_pre+fileinput1+'.nc')
@@ -538,7 +538,7 @@ def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_path=None) :
        points = numpy.transpose(((plat.flatten(),plon.flatten())))
        delta = mydt.strftime( '%Y-%m-%d')
        # filename format MERCATOR-BIO-14-2013-01-05-00
-       print(bio_path,delta)
+       print((bio_path,delta))
        idx,biofname=search_biofile(bio_path,delta)
        if idx >7: 
           msg="No available BIO file within a week difference with PHY"

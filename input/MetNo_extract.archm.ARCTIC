@@ -7,6 +7,7 @@ salin   01 50   T
 temp    01 50   T
 utotl   01 50   T
 vtotl   01 50   T
+wtotl   01 50   T
 u-vel.  01 50   F
 v-vel.  01 50   F
 u_btrop  00 00  F

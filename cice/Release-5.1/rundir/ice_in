@@ -237,6 +237,7 @@
   , f_flwup_ai     = 'm' 
   , f_evap         = 'x' 
   , f_evap_ai      = 'm' 
+  , f_rhoa         = 'm' 
   , f_Tair         = 'm' 
   , f_Tref         = 'x' 
   , f_Qref         = 'x'

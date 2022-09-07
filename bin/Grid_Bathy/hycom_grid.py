@@ -7,7 +7,6 @@ import matplotlib.pyplot
 import abfile.abfile as abf
 import modeltools.cice.io
 import numpy
-from mpl_toolkits.basemap import Basemap
 import logging
 
 # Set up logger
@@ -21,6 +20,9 @@ ch.setFormatter(formatter)
 logger.addHandler(ch)
 logger.propagate=False
 
+"""
+Example: ../bin/hycom_grid.py confmap --filename ./grid.info
+"""
 
 def main(grid) :
    griddict=grid.create_datadict_hycom()

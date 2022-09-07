@@ -28,9 +28,9 @@ month as integer, e.g. January is 1
 accepts only these tracers: nitrate, phosphate, silicate, volume
 
 execute anywhere:
-python hycom_plot_river.py TP0 020 nitrate 6
-or
-python hycom_plot_river.py TP0 020 nitrate 6 --clim="0,0.05"
+python plot_river.py TP0 020 nitrate 6
+
+python plot_river.py TP0 020 nitrate 6 --clim="0,0.05"
 '''
 def main(region,experiment,tracer,month,cmap,clim,workdir):
 
@@ -97,7 +97,7 @@ def main(region,experiment,tracer,month,cmap,clim,workdir):
     abriver = abfile.AFile(idm,jdm,workdir + user + "/" + \
         region + "/force/rivers/" + experiment + \
             "/" + name + ".a","r")
-    river  = abriver.read_record(np.int(month)-1)
+    river  = abriver.read_record(int(month)-1)
     abriver.close()
 
     if version == "old":
@@ -123,8 +123,8 @@ def main(region,experiment,tracer,month,cmap,clim,workdir):
     cb=ax.figure.colorbar(pmesh)
     if clim is not None : pmesh.set_clim(clim)
     plt.text(0.015,1.05, "%s %s %s %s" %("river", tracer, "flux month:",\
-        month.zfill(2)),transform=ax.transAxes,FontSize=13)
-    plt.text(0.015,1.005, units,transform=ax.transAxes,FontSize=8)
+        month.zfill(2)),transform=ax.transAxes,fontsize=13)
+    plt.text(0.015,1.005, units,transform=ax.transAxes,fontsize=8)
 
     # save figure
     fig.canvas.print_figure(workdir + user + "/" + \
