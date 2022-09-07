@@ -23,6 +23,9 @@ ch.setFormatter(formatter)
 logger.addHandler(ch)
 logger.propagate=False
 
+"""
+Example:  ../bin/hycom_bathy_consistency.py depth_TP6a0.03_01.a
+"""
 
 def main(infile,blo,bla,
       remove_isolated_basins=True,

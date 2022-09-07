@@ -28,7 +28,7 @@ fi
 # Experiment  needs experiment number
 along=150
 across=50
-create=1
+create=0
 usage="
 This script will set up river forcing files used by HYCOM. The forcing
 is based on the ERA40 runoff data set, coupled with the TRIP data base 

@@ -179,14 +179,13 @@ elif [ "$SITE" == "alvin" ] || [ "$SITE" == "elvis" ] ; then
    export ESMF_LIB_DIR=${ESMF_DIR}/lib/libO/Linux.$compiler.64.mpi.default/
 
 elif [ "$SITE" == "fram" ] ; then 
-   echo "hardcoded settings for $SITE"
-   export ESMF_DIR=/cluster/software/ESMF/8.0.1-intel-2020a/
+   export ESMF_DIR=${EBROOTESMF}/
    export ESMF_MOD_DIR=${ESMF_DIR}mod/
    export ESMF_LIB_DIR=${ESMF_DIR}lib/
 
 elif [ "$SITE" == "betzy" ] ; then
-   echo "hardcoded settings for $SITE"
-   export ESMF_DIR=/cluster/software/ESMF/8.0.1-intel-2020a/
+   ##export ESMF_DIR=/cluster/software/ESMF/8.0.1-intel-2020a/
+   export ESMF_DIR=${EBROOTESMF}/
    export ESMF_MOD_DIR=${ESMF_DIR}mod/
    export ESMF_LIB_DIR=${ESMF_DIR}lib/
    
@@ -197,7 +196,7 @@ elif [ "$SITE" == "surfsara" ] ; then
    export ESMF_LIB_DIR=${ESMF_DIR}lib/
    
 elif [[ "${unames:0:5}" == "Linux" ]] && [[ "$SITE" == "fram" ]] ; then
-   export ESMF_DIR=/cluster/software/ESMF/8.0.1-intel-2020a/
+   export ESMF_DIR=${EBROOTESMF}/
    export ESMF_MOD_DIR=${ESMF_DIR}mod/
    export ESMF_LIB_DIR=${ESMF_DIR}lib/
 

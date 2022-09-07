@@ -1218,7 +1218,7 @@ subroutine cice_get_import(import_state)
    use ice_domain,      only : nblocks, blocks_ice
    use ice_flux,        only : frzmlt, uocn, vocn, sss, sst, hmix, &
                                uatm, vatm, Tair, zlvl, potT, &
-                               ss_tltx, ss_tlty, Qa, flw, &
+                               ss_tltx, ss_tlty, Qa, rhoa, flw, &
                                fsnow, frain, swvdr, swvdf, swidr, swidf
    use ice_grid,        only : t2ugrid_vector
    implicit none
@@ -1362,6 +1362,14 @@ subroutine cice_get_import(import_state)
                Qa(i,j,iblk) = impData(ifld,iblk)%p(ig,jg)
             end do
             end do
+         elseif (trim(impFieldName(ifld)) == "rhoair") then
+            do j=jlo,jhi
+            do i=ilo,ihi
+               ig  = this_block%i_glob(i)
+               jg  = this_block%j_glob(j)
+               rhoa(i,j,iblk) = impData(ifld,iblk)%p(ig,jg)
+            end do
+            end do            
 !         shortwave radiation downwell divided into four parts see ice_forcing.F
 !         elseif (trim(impFieldName(ifld)) == "swvdr") then
 !            do j=jlo,jhi
