@@ -23,39 +23,41 @@ set NYGLOB = `echo $GRID | sed s/.\*x//`
 # If BLCKX (BLCKY) does not divide NXGLOB (NYGLOB) evenly, padding 
 # will be used on the right (top) of the grid.
 if ($RES == 'col') then   # for column configuration:
-   setenv NTASK      1       # total number of processors
-   setenv BLCKX      5       # x-dimension of blocks ( not including )
-   setenv BLCKY      5       # y-dimension of blocks (  ghost cells  )
-   setenv NICELYR    7       # number of vertical layers in the ice
-   setenv NSNWLYR    1       # number of vertical layers in the snow
-   setenv NICECAT    5       # number of ice thickness categories
+   if ( ! $?NTASK )   setenv NTASK     1       # total number of processors
+   if ( ! $?BLCKX )   setenv BLCKX     5       # x-dimension of blocks ( not including )
+   if ( ! $?BLCKY )   setenv BLCKY     5       # y-dimension of blocks (  ghost cells  )
+   if ( ! $?NICELYR ) setenv NICELYR   7       # number of vertical layers in the ice
+   if ( ! $?NSNWLYR ) setenv NSNWLYR   1       # number of vertical layers in the snow
+   if ( ! $?NICECAT ) setenv NICECAT   5       # number of ice thickness categories
 else                      # test problem: gx3
-   setenv NTASK     30       # total number of processors
-   setenv BLCKX     38       # x-dimension of blocks ( not including )
-   setenv BLCKY     36       # y-dimension of blocks (  ghost cells  )
-   setenv NICELYR    7       # number of vertical layers in the ice
-   setenv NSNWLYR    1       # number of vertical layers in the snow
-   setenv NICECAT    5       # number of ice thickness categories
+   if ( ! $?NTASK )   setenv NTASK    30      # total number of processors
+   if ( ! $?BLCKX )   setenv BLCKX    38       # x-dimension of blocks ( not including )
+   if ( ! $?BLCKY )   setenv BLCKY    36       # y-dimension of blocks (  ghost cells  )
+   if ( ! $?NICELYR ) setenv NICELYR   7       # number of vertical layers in the ice
+   if ( ! $?NSNWLYR ) setenv NSNWLYR   1       # number of vertical layers in the snow
+   if ( ! $?NICECAT ) setenv NICECAT   5       # number of ice thickness categories
 endif
 
-# may need to increase MXBLCKS with rake distribution or padding
-@ a = $NXGLOB * $NYGLOB ; @ b = $BLCKX * $BLCKY * $NTASK  
-@ m = $a / $b ; setenv MXBLCKS $m; if ($MXBLCKS == 0) setenv MXBLCKS 1
+if ( ! $?MXBLCKS ) then 
+  # may need to increase MXBLCKS with rake distribution or padding
+  @ a = $NXGLOB * $NYGLOB ; @ b = $BLCKX * $BLCKY * $NTASK  
+  @ m = $a / $b ; setenv MXBLCKS $m; if ($MXBLCKS == 0) setenv MXBLCKS 1
+endif
 #setenv MXBLCKS 37 # if necessary (code will print proper value)
-setenv MXBLCKS 2 # if necessary (code will print proper value)
+#setenv MXBLCKS 6 # if necessary (code will print proper value)
 
 ### Tracers               # match ice_in tracer_nml to conserve memory
-setenv TRAGE   1          # set to 1 for ice age tracer
-setenv TRFY    1          # set to 1 for first-year ice area tracer
-setenv TRLVL   1          # set to 1 for level and deformed ice tracers
-setenv TRPND   1          # set to 1 for melt pond tracers
-setenv NTRAERO 0          # number of aerosol tracers 
-                          # (up to max_aero in ice_domain_size.F90) 
-                          # CESM uses 3 aerosol tracers
-setenv TRBRI   0          # set to 1 for brine height tracer
-setenv NBGCLYR 7          # number of zbgc layers
-setenv TRBGCS  0          # number of skeletal layer bgc tracers 
-                          # TRBGCS=0 or 2<=TRBGCS<=9)
+if ( ! $?TRAGE )   setenv TRAGE   1  # set to 1 for ice age tracer
+if ( ! $?TRFY )    setenv TRFY    1  # set to 1 for first-year ice area tracer
+if ( ! $?TRLVL )   setenv TRLVL   1  # set to 1 for level and deformed ice tracers
+if ( ! $?TRPND )   setenv TRPND   1  # set to 1 for melt pond tracers
+if ( ! $?NTRAERO ) setenv NTRAERO 0  # number of aerosol tracers 
+                                     # (up to max_aero in ice_domain_size.F90) 
+                                     # CESM uses 3 aerosol tracers
+if ( ! $?TRBRI )   setenv TRBRI   0  # set to 1 for brine height tracer
+if ( ! $?NBGCLYR ) setenv NBGCLYR 0  # number of zbgc layers
+if ( ! $?TRBGCS  ) setenv TRBGCS  0  # number of skeletal layer bgc tracers 
+                                     # TRBGCS=0 or 2<=TRBGCS<=9)
 
 ### Specialty code
 setenv CAM_ICE  no        # set to yes for CAM runs (single column) 

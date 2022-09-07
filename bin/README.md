@@ -61,7 +61,7 @@ the hycom setup files (grid and bathymetry) to be present.
 # Generation of grids
 
 
-|executable     | purpose|
+|executable under ./Grid_Bathy/   | purpose|
 |-------- | -------------|
 |hycom_grid.py       | Create bathymetry based on conformal mapping or on proj4 projection. Can do  the same as old confmap routines in MSCPROGS |
 
@@ -69,13 +69,13 @@ the hycom setup files (grid and bathymetry) to be present.
 
 # Generation of bathymetries
 
-|executable     | purpose|
+|executable  under ./Grid_Bathy/   | purpose|
 |-------- | -------------|
 |hycom_bathy_merge.py       | Merges two bathymetries on the same grid. |
 |hycom_bathy_consistency.py | Does a consistency check of a hycom bathymetri (removes isolated basins, single cell islands, etc)|
 |hycom_bathy.py             | Generate hycom bathymetry for a predefined hycom grid |
 |cice_kmt.py | Simple script for creating CICE land mask from hycom bathymetry |
-| cice_kmt.sh | Basically a wrapper around coce_kmt.py |
+|cice_kmt.sh | Basically a wrapper around coce_kmt.py |
 |hycom_bathy_modify.py| Can be used to modify bathymetry in points or in blocks based on input from stdin|
 
 

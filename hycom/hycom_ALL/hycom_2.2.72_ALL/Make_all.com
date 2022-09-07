@@ -21,7 +21,8 @@ endif
 #
 setenv A $cwd
 #
-foreach d ( archive force meanstd plot relax sample subregion topo )
+#####foreach d ( archive force meanstd plot relax sample subregion topo )
+foreach d ( force meanstd relax subregion topo )
   echo "PROCESSING ${d}/src:"
   cd ${A}/${d}/src
   csh Make_all.com >&! Make_all.log
