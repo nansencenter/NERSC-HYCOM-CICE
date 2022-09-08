@@ -1,0 +1,3 @@
+&hycom_nml
+    write_arche= .false.
+/
