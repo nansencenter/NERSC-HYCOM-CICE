@@ -6,6 +6,7 @@ import matplotlib.pyplot
 import abfile.abfile as abf
 import numpy
 import modeltools.hycom
+from modeltools.hycom import _montg_tools
 import logging
 import re
 import os
@@ -22,6 +23,12 @@ ch.setFormatter(formatter)
 logger.addHandler(ch)
 logger.propagate=False
 
+"""
+example
+python ../bin/hycom_montg1.py --psikk-file-type="restart"  ./data/TP6restart.2021_365_00_0000.a ../nest/070/archv.2022_004_00.a
+
+Modifed files are stored under : ./montg1/
+"""
 
 # Northern line 
 northern_limit_longitudes = [-35 ,-16, -6.6, -4.2, -0.3,   4., 31.6, 97., 172.,-172,
@@ -36,6 +43,12 @@ def main(psikk_file,archv_files, psikk_file_type="restart",month=1) :
    from_relax_archv = psikk_file_type=="relax_archv"
    from_relax       = psikk_file_type=="relax"
    from_restart     = psikk_file_type=="restart"
+
+      # Open blkdat files. Get some properties
+   header_line1="HYCOM nested archive files"
+   header_line2="Compute montg1 from Nemo ssh using ../bin/hycom_montg1.py"
+   header_line3="Expt 01.0 ............"
+
    if not from_relax_archv and not from_relax and not from_restart :
       msg="psikk_file_type must be either restart relax or relax_archv"
       logger.error(msg)
@@ -52,7 +65,8 @@ def main(psikk_file,archv_files, psikk_file_type="restart",month=1) :
    iversn = bp["iversn"]
    iexpt  = bp["iexpt"]
    yrflag = bp["yrflag"]
-   thref=modeltools.hycom.thref
+   #thref=modeltools.hycom.thref
+   thref=1e-3
    if kapref == -1 : 
       kapnum = 2
       msg="Only kapref>=0 is implemented for now"
@@ -143,7 +157,7 @@ def main(psikk_file,archv_files, psikk_file_type="restart",month=1) :
             logger(msg)
             raise ValueError(msg)
 
-         th3d       =sig.sig(temp,saln) - thbase
+         th3d       =sig.sig(temp,saln) - float(thbase)
          thstar     =numpy.ma.copy(th3d)
          if kapref > 0 :
             thstar=thstar + kappa.kappaf(temp[:,:],
@@ -204,7 +218,7 @@ def main(psikk_file,archv_files, psikk_file_type="restart",month=1) :
          saln  =arcfile.read_field("salin",k+1)
          #dp    [k  ,:,:]=arcfile.read_field("thknss",k+1)
          dp    [:,:]=arcfile.read_field("thknss",k+1)
-         th3d  [k  ,:,:]=sig.sig(temp,saln) - thbase
+         th3d  [k  ,:,:]=sig.sig(temp,saln) - float(thbase)
          p     [k+1,:,:]= p[k,:,:] + dp[:,:]
          thstar[k  ,:,:]=numpy.ma.copy(th3d  [k  ,:,:])
          if kapref > 0 :
@@ -218,12 +232,12 @@ def main(psikk_file,archv_files, psikk_file_type="restart",month=1) :
             raise ValueError(msg)
 
       # This part of montg1 does nto depend on pbavg
-      montg1c  = modeltools.hycom.montg1_pb(thstar,p) 
+      montg1c  = modeltools.hycom._montg_tools.montg1_no_pb(psikk,thkk,thstar,p) 
 
       # This part depends linearly on pbavg
-      montg1pb = modeltools.hycom.montg1_no_pb(psikk,thkk,thstar,p) 
-      print montg1c.min(),montg1c.max()
-      print montg1pb.min(),montg1pb.max()
+      montg1pb = modeltools.hycom._montg_tools.montg1_pb(thstar,p)
+      print( "montg1c.min(),montg1c.max()=",montg1c.min(),montg1c.max() )
+      print( "montg1pb.min(),montg1pb.max()=",montg1pb.min(),montg1pb.max() )
 
 
 # ... we have ...
@@ -238,14 +252,14 @@ def main(psikk_file,archv_files, psikk_file_type="restart",month=1) :
       # Barotropic pressure. NB: srfhgt is in geopotential height : 
       srfhgt=arcfile.read_field("srfhgt",0)
       pbavg  = (srfhgt - montg1c) / (montg1pb+thref)
-      print pbavg.min(),pbavg.max()
+      print( "pbavg.min(),pbavg.max()=",pbavg.min(),pbavg.max() )
       montg1 = montg1pb*pbavg + montg1c
       logger.info("Estimated montg1 ")
-      print montg1.min(),montg1.max()
+      print( "montg1.min(),montg1.max()=",montg1.min(),montg1.max() )
 
       # Open new archive file, and write montg1 to it.
       fnameout = os.path.join(path0,os.path.basename(arcfile.basename))
-      arcfile_out=abf.ABFileArchv(fnameout,"w",iversn=iversn,yrflag=yrflag,iexpt=iexpt,mask=False)
+      arcfile_out=abf.ABFileArchv(fnameout,"w",iversn=iversn,yrflag=yrflag,iexpt=iexpt,mask=False,cline1=header_line1,cline2=header_line2,cline3=header_line3)
 
 
 
@@ -258,8 +272,9 @@ def main(psikk_file,archv_files, psikk_file_type="restart",month=1) :
          fld       =arcfile.read_field(fieldname,k)
 
          if fieldname == "montg1" :
+            print( "original--> montg1.min(),montg1.max()=",fld.min(),fld.max() )
             logger.info("Writing field %10s at level %3d to %s (modified)"%(fieldname,k,fnameout))
-            arcfile_out.write_field(montg1,None,fieldname,time_step,model_day,sigver,thbase) 
+            arcfile_out.write_field(montg1,None,fieldname,time_step,model_day,k,dens)
          else :
             arcfile_out.write_field(fld   ,None,fieldname,time_step,model_day,k,dens) 
             #logger.info("Writing field %10s at level %3d to %s (copy from original)"%(fieldname,k,fnameout))
