@@ -111,10 +111,7 @@ export VISCO2=$(blkdat_get blkdat.input visco2)
 export VELDF2=$(blkdat_get blkdat.input veldf2)
 export IDM=$(blkdat_get blkdat.input idm)
 export JDM=$(blkdat_get blkdat.input jdm)
-# MOSTAFA: BEGIN
-#############export NRDFLG=$(blkdat_get blkdat.input nrdflg)
 export LWFLAG=`grep "'lwflag' =" blkdat.input | awk '{printf("%1d", $1)}'`
-# MOSTAFA: END
 
 restarti=$(blkdat_get_string blkdat.input nmrsti "restart_in")
 
@@ -308,20 +305,7 @@ echo "**Setting up pre-prepared synoptic forcing from force/synoptic/$E"
 DIR=$BASEDIR/force/synoptic/$E/
 echo $DIR
 
-# MOSTAFA: BEGIN
-if  [ "$LWFLAG" -eq -1 -a "$NRDFLG" -eq 3 ] ; then
-declare -a arr=("radflx" "shwflx" "nlwrad" "vapmix" "airtmp" "precip" "mslprs" "wndewd" "wndnwd" "dewpt")
-elif  [ "$LWFLAG" -eq -1 -a "$NRDFLG" -eq 4 ] ; then
-declare -a arr=("radflx" "shwflx" "nlwrad" "nswrad"  "vapmix" "airtmp" "precip" "mslprs" "wndewd" "wndnwd" "dewpt")
-elif  [ "$LWFLAG" -eq -1 -a "$NRDFLG" -eq 5 ] ; then
-declare -a arr=("radflx" "shwflx" "nswrad"  "vapmix" "airtmp" "precip" "mslprs" "wndewd" "wndnwd" "dewpt")
-elif  [ "$LWFLAG" -eq -1 -a "$NRDFLG" -eq 6 ] ; then
-declare -a arr=("radflx" "shwflx" "nswrad"  "vapmix" "airtmp" "precip" "mslprs" "wndewd" "wndnwd" "dewpt")
-elif  [ "$LWFLAG" -eq -1 -a "$NRDFLG" -eq 7 ] ; then
-declare -a arr=("radflx" "shwflx" "nswrad"  "vapmix" "airtmp" "precip" "mslprs" "wndewd" "wndnwd" "dewpt")
-else
 declare -a arr=("radflx" "shwflx" "vapmix" "airtmp" "precip" "mslprs" "wndewd" "wndnwd" "dewpt")
-fi
 #for i in tauewd taunwd wndspd radflx shwflx vapmix \
 #   airtmp precip uwind vwind clouds relhum slp ; do
 
@@ -417,8 +401,8 @@ fi
 #
 if [ $JERLV -eq 0 ] ; then
    echo "**Setting up kpar forcing"
-   cp $BASEDIR/force/seawifs/kpar.a forcing.kpar.a || tellerror "Could not get kpar.a file"
-   cp $BASEDIR/force/seawifs/kpar.b forcing.kpar.b || tellerror "Could not get kpar.b file"
+   ln -sf $BASEDIR/force/seawifs/kpar.a forcing.kpar.a || tellerror "Could not get kpar.a file"
+   ln -sf $BASEDIR/force/seawifs/kpar.b forcing.kpar.b || tellerror "Could not get kpar.b file"
 fi
 
 
@@ -735,9 +719,8 @@ wait
 #
 if [ ! -s forcing.rivers.a ] ; then
    /bin/rm forcing.rivers.[ab]
-
-echo "problem with rivers"
-ls -l *rivers*
+   echo "problem with rivers"
+   ls -l *rivers*
 fi
 
 
@@ -769,6 +752,5 @@ fi
 
 # Tell where stuff ended up
 exit $numerr # Fails if any fatal errors occured
-
 
 

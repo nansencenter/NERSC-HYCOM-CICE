@@ -3,9 +3,12 @@
 import pyproj
 import numpy
 import logging
-import re 
-import confmap
+import re
+import math
+#import confmap
+from modelgrid.confmap import ConformalMapping
 
+#exmaple: ../bin/hycom_grid.py confmap --filename data/grid.info
 
 # Set up logger
 _loglevel=logging.DEBUG
@@ -21,11 +24,11 @@ logger.propagate=False # Dont propagate to parent in hierarchy (determined by ".
 class Grid(object) :
    """ Class inherited by others . not meant to be instantiated"""
    def _grid(self,deltax,deltay,extended=False) : 
-      raise NotImplementedError,""
+      raise NotImplementedError("")
 
 
    def proj_is_latlong(self) :
-      raise NotImplementedError,""
+      raise NotImplementedError("")
 
 
    def p_azimuth(self) :
@@ -243,7 +246,7 @@ class Grid(object) :
       #print nc["grid_corner_lon"][itest]
       #print nc["grid_center_lat"][itest]
       #print nc["grid_corner_lat"][itest]
-      figure = matplotlib.pyplot.figure(figsize=(8,8))
+      figure = plt.figure(figsize=(8,8))
       ax=figure.add_subplot(111)
       ax.hold(True)
       ax.set_xlim(numpy.amin(nc["grid_corner_lon"][itest,:])-.1,numpy.amax(nc["grid_corner_lon"][itest,:])+.1)
@@ -324,7 +327,8 @@ class ConformalGrid(Grid) :
       self._Nx = ires
       self._Ny = jres
 
-      self._conformal_mapping = confmap.ConformalMapping(
+      #self._conformal_mapping = confmap.ConformalMapping(
+      self._conformal_mapping = ConformalMapping(
          lat_a,lon_a,lat_b,lon_b,
          wlim,elim,ires,
          slim,nlim,jres,
@@ -372,7 +376,7 @@ class ConformalGrid(Grid) :
       elif tmp[0] == ".false." : 
          mercator=False
       else :
-         raise ValueError,"Unable to safely resolve value of mercator flag for confmap"
+         raise ValueError("Unable to safely resolve value of mercator flag for confmap")
 
       #   0.365 .false.   ! merc fac
       tmp=fid.readline().split("!")[0].strip().split()
@@ -382,7 +386,7 @@ class ConformalGrid(Grid) :
       elif tmp[1] == ".false." : 
          lold=False
       else :
-         raise ValueError,"Unable to safely resolve value of lold flag for confmap"
+         raise ValueError("Unable to safely resolve value of lold flag for confmap")
 
       #.false.           ! Smoothing, Shapiro filter
       fid.readline() # Not needed for grid generation
@@ -518,7 +522,7 @@ class Proj4Grid(Grid) :
    def cice_ugrid(self,extended=False) :
       # TODO: Check out why its like this ....
       #return self._grid(+0.5*self._dx,+0.5*self._dy,extended)
-      raise NotImplementedEerror,"check cice_ugrid return values"
+      raise NotImplementedEerror("check cice_ugrid return values")
       return self._grid(-0.5*self._dx,-0.5*self._dy,extended)
 
    def proj_is_latlong(self) :
@@ -562,7 +566,7 @@ class Proj4Grid(Grid) :
       else :
          msg = "Failed to read version number from projection file %s"%filename
          logger.error(msg)
-         raise ValueError,msg
+         raise ValueError(msg)
 
 
       line=fid.readline()
@@ -572,7 +576,7 @@ class Proj4Grid(Grid) :
       else :
          msg = "Failed to read proj 4 string from projection file %s"%filename
          logger.error(msg)
-         raise ValueError,msg
+         raise ValueError(msg)
 
       line=fid.readline()
       m = re.search("Lower Left Longitude[ ]*:(.*)",line)
@@ -581,7 +585,7 @@ class Proj4Grid(Grid) :
       else :
          msg = "Failed to read lower left longitude from projection file %s"%filename
          logger.error(msg)
-         raise ValueError,msg
+         raise ValueError(msg)
 
       line=fid.readline()
       m = re.search("Lower Left Latitude[ ]*:(.*)",line)
@@ -590,7 +594,7 @@ class Proj4Grid(Grid) :
       else :
          msg = "Failed to read lower left latitude number from projection file %s"%filename
          logger.error(msg)
-         raise ValueError,msg
+         raise ValueError(msg)
 
       line=fid.readline()
       m = re.search("Projection Delta X[ ]*:(.*)",line)
@@ -599,7 +603,7 @@ class Proj4Grid(Grid) :
       else :
          msg = "Failed to read delta x from projection file %s"%filename
          logger.error(msg)
-         raise ValueError,msg
+         raise ValueError(msg)
 
       line=fid.readline()
       m = re.search("Projection Delta Y[ ]*:(.*)",line)
@@ -608,7 +612,7 @@ class Proj4Grid(Grid) :
       else :
          msg = "Failed to read delta y from projection file %s"%filename
          logger.error(msg)
-         raise ValueError,msg
+         raise ValueError(msg)
 
       line=fid.readline()
       m = re.search("Projection Nodes X[ ]*:(.*)",line)
@@ -617,7 +621,7 @@ class Proj4Grid(Grid) :
       else :
          msg = "Failed to read number of x nodes from projection file %s"%filename
          logger.error(msg)
-         raise ValueError,msg
+         raise ValueError(msg)
 
       line=fid.readline()
       m = re.search("Projection Nodes Y[ ]*:(.*)",line)
@@ -626,7 +630,7 @@ class Proj4Grid(Grid) :
       else :
          msg = "Failed to read number of y nodes from projection file %s"%filename
          logger.error(msg)
-         raise ValueError,msg
+         raise ValueError(msg)
       fid.close()
 
       return  p4s,ll_lon,ll_lat,dx,dy,nx,ny
@@ -664,60 +668,68 @@ def fwd_azimuth(lon1,lat1,lon2,lat2) :
 
 def plotgrid(lon,lat,width=3000000,height=3000000) :
    import matplotlib
-   import matplotlib.pyplot
+   import matplotlib.pyplot as plt
    from matplotlib.figure import Figure
    from matplotlib.backends.backend_agg import FigureCanvasAgg
-   from mpl_toolkits.basemap import Basemap
-
+   import cartopy.crs as ccrs
+   import cartopy.feature as cfeature
+   #
+   #
+   proj=ccrs.Stereographic(central_latitude=90.0,central_longitude=-40.0)
+   #proj=ccrs.Stereographic(central_latitude=0.1,central_longitude=-10.0)
+   pxy = proj.transform_points(ccrs.PlateCarree(), lon, lat)
+   px=pxy[:,:,0]
+   py=pxy[:,:,1]
    #print "testlon, testlat:",lon[1,1],lat[1,1]
 
    #figure = Figure()
    #ax     = figure.add_subplot(111)
    #canvas = FigureCanvasAgg(figure)
 
-   figure = matplotlib.pyplot.figure(figsize=(8,8))
-   ax=figure.add_subplot(111)
+   figure = plt.figure(figsize=(8,8))
+   ax=figure.add_subplot(111, projection=proj)
+   ax.add_feature(cfeature.GSHHSFeature('auto', edgecolor='silver'))
+   ax.add_feature(cfeature.GSHHSFeature('auto', facecolor='silver'))
+   ax.gridlines()
+   #ax.set_extent((-2700000, 2200000, -3300000, 2200000), crs=ccrs.NorthPolarStereo())
+   ax.set_extent((-5000000, 4000000, -4300000, 3150000), crs=proj)
 
    #Pick center longitude
-   ix,iy=[elem/2 for elem in lon.shape]
+   ix,iy=[int(elem/2) for elem in lon.shape]
    clon=lon[ix,iy]
    clat=lat[ix,iy]
 
    # Probably a way of estimating the width here...
-   #print width,height
-   #print clon,clat
-   m = Basemap(projection='stere',lon_0=clon,lat_0=clat,resolution='l',width=width,height=height,ax=ax)
-   x,y = m(lon,lat)
+   print ("width=",width,"height=",height)
+   print ("clon=",clon,"clat=",clat)
 
    # Pick a suitable set of grid lines
    nlines=10
-   stepx,stepy=[elem/nlines for elem in lon.shape]
+   stepx,stepy=[math.ceil(elem/nlines) for elem in lon.shape]
+   
    x2=numpy.zeros((nlines+1,nlines+1))
    y2=numpy.zeros((nlines+1,nlines+1))
+   print(stepx,stepy,x2.shape,px.shape)
 
-   #print x2.shape,x[::stepx,::stepy].shape
-   x2[:-1,:-1]=x[::stepx,::stepy]
-   x2[-1,:-1]=x[-1,::stepy]
-   x2[:-1,-1]=x[::stepx,-1]
-   x2[-1,-1]=x[-1,-1]
-   y2[:-1,:-1]=y[::stepx,::stepy]
-   y2[:-1,-1]=y[::stepx,-1]
-   y2[-1,:-1]=y[-1,::stepy]
-   y2[-1,-1]=y[-1,-1]
+   #print(x2.shape,px[::stepx,::stepy].shape)
+   x2[:-1,:-1]=px[::stepx,::stepy]
+   x2[-1,:-1]=px[-1,::stepy]
+   x2[:-1,-1]=px[::stepx,-1]
+   x2[-1,-1]=px[-1,-1]
+   y2[:-1,:-1]=py[::stepx,::stepy]
+   y2[:-1,-1]=py[::stepx,-1]
+   y2[-1,:-1]=py[-1,::stepy]
+   y2[-1,-1]=py[-1,-1]
 
-   m.drawcoastlines()
-   m.drawmapboundary() # draw a line around the map region
-   m.drawparallels(numpy.arange(-90.,120.,30.),labels=[1,0,0,0]) # draw parallels
-   m.drawmeridians(numpy.arange(0.,420.,60.),labels=[0,0,0,1]) # draw meridians
-   v=numpy.zeros(x.shape)
+   #v=numpy.zeros(x.shape)
+   v=numpy.zeros(px.shape)
    col=".8"
    cmap=matplotlib.colors.ListedColormap([col,col])
-   #m.pcolormesh(x,y,v,ax=ax,edgecolor="k",cmap=cmap)
-   m.pcolormesh(x,y,v,ax=ax,edgecolor="none",cmap=cmap)
+   plt.pcolormesh(px,py,v,edgecolor="none",cmap=cmap)
    for j in range(y2.shape[1]) :
-      m.plot(x2[:,j],y2[:,j],color="b",lw=2)
+      plt.plot(x2[:,j],y2[:,j],color="b",lw=2)
    for i in range(y2.shape[0]) :
-      m.plot(x2[i,:],y2[i,:],color="r",lw=2)
+      plt.plot(x2[i,:],y2[i,:],color="r",lw=2)
    ax.set_title("Every %d in x(blue) and every %d in y(red) shown"%(stepy,stepx))
 
    return figure

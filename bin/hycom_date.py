@@ -61,7 +61,7 @@ def main(input,output,value) :
       value=modeltools.hycom.dayfor(iy,id,ih,3)
    else :
       logger.error("input must be either dtime, datetime or ordinal")
-      raise NotImplementedError,input
+      raise NotImplementedError(input)
 
    if output == "dtime" :
       return value 
@@ -72,7 +72,7 @@ def main(input,output,value) :
       return modeltools.hycom.forday(value,3)
    else :
       logger.error("output must be either dtime, datetime or ordinal")
-      raise NotImplementedError,output
+      raise NotImplementedError(input)
 
 
 
@@ -93,4 +93,4 @@ if __name__ == "__main__" :
    args = parser.parse_args()
 
    value = main(args.input,args.output,args.value)
-   print value
+   print(value)
