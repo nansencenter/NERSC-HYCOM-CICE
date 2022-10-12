@@ -10,6 +10,7 @@
 ! 2006 ECH: Added namelist variables, warnings.
 !           Replaced old default initial ice conditions with 3.14 version.
 !           Converted to free source form (F90).
+! 2022 TAR  add option read to option ice_ic
 
       module ice_init
 
@@ -23,6 +24,10 @@
          ice_ic      ! method of ice cover initialization
                      ! 'default'  => latitude and sst dependent
                      ! 'none'     => no ice
+                     ! 'read'     => read in ice con and thicknes (aice
+                     ! and hi) from netcdf file and distributes where
+                     ! sst is below freezing. All ice is put in one
+                     ! layer.
                      ! note:  restart = .true. overwrites
 
 !=======================================================================
@@ -433,7 +438,7 @@
          endif
       endif
       if (trim(runtype) == 'initial' .and. .not.(restart)) then
-         if (ice_ic /= 'none' .and. ice_ic /= 'default') then
+         if (ice_ic /= 'none' .and. ice_ic /= 'default' .and. ice_ic /= 'read') then
             if (my_task == master_task) then
             write(nu_diag,*) &
             'WARNING: runtype, restart, ice_ic are inconsistent:'
@@ -1130,7 +1135,8 @@
       use ice_blocks, only: block, get_block, nx_block, ny_block
       use ice_constants, only: c0
       use ice_domain, only: nblocks, blocks_ice
-      use ice_domain_size, only: nilyr, nslyr, max_ntrcr, n_aero
+      use ice_domain_size, only: nilyr, nslyr, max_ntrcr, n_aero, &
+                                 max_blocks
       use ice_fileunits, only: nu_diag
       use ice_flux, only: sst, Tf, Tair, salinz, Tmltz
       use ice_grid, only: tmask, ULON, ULAT
@@ -1142,7 +1148,9 @@
       use ice_itd, only: aggregate
       use ice_exit, only: abort_ice
       use ice_therm_shared, only: ktherm, heat_capacity
-
+      use ice_read_write, only: ice_read_nc, ice_open_nc, ice_close_nc
+      use ice_forcing, only: ocn_data_dir 
+      use ice_constants, only: field_loc_center, field_type_scalar
       integer (kind=int_kind) :: &
          ilo, ihi    , & ! physical domain indices
          jlo, jhi    , & ! physical domain indices
@@ -1152,8 +1160,18 @@
          it          , & ! tracer index
          iblk            ! block index
 
+      integer (kind=int_kind) :: &
+         fid               ! file id for netCDF file 
+
+      character (char_len) :: &
+         fieldname            ! field name in netcdf file
+
       type (block) :: &
          this_block           ! block information for current block
+
+      real (kind=dbl_kind), dimension(:,:,:),allocatable :: abar2d, hbar2d
+
+      character (char_len_long) :: ice_init_file 
 
       !-----------------------------------------------------------------
       ! Check number of layers in ice and snow.
@@ -1234,10 +1252,31 @@
          enddo
       endif
 
-      !-----------------------------------------------------------------
-      ! Set state variables
-      !-----------------------------------------------------------------
+      !-----------------------------------------------------------------     
+      ! Read state variables              
+      !----------------------------------------------------------------- 
+      if (ice_ic ==trim('read')) then ! if restart from 
+#ifdef ncdf
+         allocate(hbar2d(nx_block,ny_block,max_blocks), &
+                  abar2d(nx_block,ny_block,max_blocks))
+         ice_init_file = trim(ocn_data_dir)//'ice_initial.nc'
+         if (my_task == master_task) then
 
+             write (nu_diag,*) ' '
+             write (nu_diag,*) 'Initial ice cover ', trim(ice_init_file)
+         endif
+                   call ice_open_nc(ice_init_file,fid)
+         fieldname = 'aice'
+         call ice_read_nc &
+             (fid, 1, fieldname, abar2d(:,:,:), .true., &
+             field_loc_center, field_type_scalar)
+             fieldname = 'hi'
+         call ice_read_nc &
+             (fid, 1, fieldname, hbar2d(:,:,:), .true., &
+             field_loc_center, field_type_scalar)
+     
+          call ice_close_nc(fid)
+      
       !$OMP PARALLEL DO PRIVATE(iblk,ilo,ihi,jlo,jhi,this_block, &
       !$OMP                     iglob,jglob)
       do iblk = 1, nblocks
@@ -1247,22 +1286,52 @@
          ihi = this_block%ihi
          jlo = this_block%jlo
          jhi = this_block%jhi
-         iglob = this_block%i_glob
-         jglob = this_block%j_glob
 
-         call set_state_var (nx_block,            ny_block,            &
-                             ilo, ihi,            jlo, jhi,            &
-                             iglob,               jglob,               &
-                             ice_ic,              tmask(:,:,    iblk), &
-                             ULON (:,:,    iblk), ULAT (:,:,    iblk), &
-                             Tair (:,:,    iblk), sst  (:,:,    iblk), &
-                             Tf   (:,:,    iblk),                      &
-                             salinz(:,:,:, iblk), Tmltz(:,:,:,  iblk), &
-                             aicen(:,:,  :,iblk), trcrn(:,:,:,:,iblk), &
-                             vicen(:,:,  :,iblk), vsnon(:,:,  :,iblk))
+         call read_state_var     (nx_block,       ny_block,            &
+                                  ilo, ihi,       jlo, jhi,            &
+                                                  tmask(:,:,    iblk), &
+                                  Tair (:,:,    iblk), sst  (:,:,    iblk), &
+                                  Tf   (:,:,    iblk),                      &
+                                  salinz(:,:,:, iblk), Tmltz(:,:,:,  iblk), &
+                                  aicen(:,:,  :,iblk), trcrn(:,:,:,:,iblk), &
+                                  vicen(:,:,  :,iblk), vsnon(:,:,  :,iblk), &
+                                  abar2d(:,:,   iblk), hbar2d(:,:,   iblk))
 
       enddo                     ! iblk
       !$OMP END PARALLEL DO
+      deallocate(hbar2d, abar2d)          
+#else
+      call abort_ice('Can only read init ice when ncdf is used')
+#endif
+      else
+      !-----------------------------------------------------------------
+      ! Set state variables
+      !-----------------------------------------------------------------
+         !$OMP PARALLEL DO PRIVATE(iblk,ilo,ihi,jlo,jhi,this_block, &
+         !$OMP                     iglob,jglob)
+         do iblk = 1, nblocks
+               this_block = get_block(blocks_ice(iblk),iblk)         
+               ilo = this_block%ilo
+               ihi = this_block%ihi
+               jlo = this_block%jlo
+               jhi = this_block%jhi
+               iglob = this_block%i_glob
+               jglob = this_block%j_glob
+
+               call set_state_var (nx_block,            ny_block,            &
+                                   ilo, ihi,            jlo, jhi,            &
+                                   iglob,               jglob,               &
+                                   ice_ic,              tmask(:,:,    iblk), &
+                                   ULON (:,:,    iblk), ULAT (:,:,    iblk), &
+                                   Tair (:,:,    iblk), sst  (:,:,    iblk), &
+                                   Tf   (:,:,    iblk),                      &
+                                   salinz(:,:,:, iblk), Tmltz(:,:,:,  iblk), &
+                                aicen(:,:,  :,iblk), trcrn(:,:,:,:,iblk), &
+                                vicen(:,:,  :,iblk), vsnon(:,:,  :,iblk))
+
+         enddo                     ! iblk
+         !$OMP END PARALLEL DO
+      endif
 
       !-----------------------------------------------------------------
       ! ghost cell updates
@@ -1641,6 +1710,228 @@
       end subroutine set_state_var
 
 !=======================================================================
+
+! Initialize state in each ice thickness category
+! Put all ice in one category -> homogenous oce
+! author: Till Rasmussen, DMI
+
+      subroutine read_state_var (nx_block, ny_block, &
+                                ilo, ihi, jlo, jhi,  &
+                                          tmask,     &
+                                Tair,     sst,       &
+                                          Tf,        &
+                                salinz,   Tmltz,     &
+                                aicen,    trcrn,     &
+                                vicen,    vsnon,     &
+                                abar2d,   hbar2d)
+
+      use ice_constants, only: c0, c1, c2, c2p5, c3, p2, p5, rhoi, rhos, Lfresh, &
+           cp_ice, cp_ocn, Tsmelt, Tffresh, rad_to_deg, puny
+      use ice_domain_size, only: nilyr, nslyr, nx_global, ny_global, max_ntrcr, ncat
+      use ice_state, only: nt_Tsfc, nt_qice, nt_qsno, nt_sice, &
+           nt_fbri, tr_brine, tr_lvl, nt_alvl, nt_vlvl
+      use ice_itd, only: hin_max
+      use ice_therm_mushy, only: &
+           enthalpy_mush, &
+           liquidus_temperature_mush, &
+           temperature_mush
+      use ice_therm_shared, only: heat_capacity, calc_Tsfc, ktherm
+      use ice_grid, only: grid_type
+      use ice_forcing, only: atm_data_type
+
+      integer (kind=int_kind), intent(in) :: &
+         nx_block, ny_block, & ! block dimensions
+         ilo, ihi          , & ! physical domain indices
+         jlo, jhi           
+
+      logical (kind=log_kind), dimension (nx_block,ny_block), intent(in) :: &
+         tmask      ! true for ice/ocean cells
+
+      real (kind=dbl_kind), dimension (nx_block,ny_block), intent(in) :: &
+         Tair    , & ! air temperature  (K)
+         Tf      , & ! freezing temperature (C)
+         abar2d  , & ! ice con read from file
+         hbar2d  , & ! ice thickness read from file
+         sst         ! sea surface temperature (C) 
+
+      real (kind=dbl_kind), dimension (nx_block,ny_block,nilyr), &
+         intent(in) :: &
+         salinz  , & ! initial salinity profile
+         Tmltz       ! initial melting temperature profile
+
+      real (kind=dbl_kind), dimension (nx_block,ny_block,ncat), &
+         intent(out) :: &
+         aicen , & ! concentration of ice
+         vicen , & ! volume per unit area of ice          (m)
+         vsnon     ! volume per unit area of snow         (m)
+
+      real (kind=dbl_kind), dimension(nx_block,ny_block,max_ntrcr,ncat), &
+         intent(out) :: &
+         trcrn     ! ice tracers
+                   ! 1: surface temperature of ice/snow (C)
+
+      ! local variables
+
+      integer (kind=int_kind) :: &
+         i, j        , & ! horizontal indices
+         ij          , & ! horizontal index, combines i and j loops
+         k           , & ! ice layer index
+         n           , & ! thickness category index
+         it          , & ! tracer index
+         icells          ! number of cells initialized with ice
+
+      integer (kind=int_kind), dimension(nx_block*ny_block) :: &
+         indxi, indxj    ! compressed indices for cells with aicen > puny
+
+      real (kind=dbl_kind) :: &
+         slope, Ti
+
+      real (kind=dbl_kind), parameter :: &
+         hsno_init = 0.20_dbl_kind      ! initial snow thickness (m)
+
+      do n = 1, ncat
+         do j = 1, ny_block
+         do i = 1, nx_block
+            aicen(i,j,n) = c0
+            vicen(i,j,n) = c0
+            vsnon(i,j,n) = c0
+            trcrn(i,j,nt_Tsfc,n) = Tf(i,j)  ! surface temperature 
+            if (max_ntrcr >= 2) then
+               do it = 2, max_ntrcr
+                  trcrn(i,j,it,n) = c0
+               enddo
+            endif
+            if (tr_lvl)   trcrn(i,j,nt_alvl,n) = c1
+            if (tr_lvl)   trcrn(i,j,nt_vlvl,n) = c1
+            if (tr_brine) trcrn(i,j,nt_fbri,n) = c1
+            do k = 1, nilyr
+               trcrn(i,j,nt_sice+k-1,n) = salinz(i,j,k)
+            enddo
+            do k = 1, nslyr
+               trcrn(i,j,nt_qsno+k-1,n) = -rhos * Lfresh
+            enddo
+         enddo
+         enddo
+      enddo
+
+         ! place ice at high latitudes where ocean sfc is cold
+      icells = 0
+      do j = jlo, jhi
+        do i = ilo, ihi
+           if (tmask(i,j)) then
+               if (sst (i,j) <= Tf(i,j)+p2) then
+                  icells = icells + 1
+                  indxi(icells) = i
+                  indxj(icells) = j
+               endif            ! cold surface
+            endif               ! tmask
+         enddo                  ! i
+      enddo                  ! j
+
+         do n = 1, ncat
+            do ij = 1, icells
+               i = indxi(ij)
+               j = indxj(ij)
+               if (n < ncat) then
+                  if (hbar2d(i,j)>hin_max(n-1) .and. hbar2d(i,j)<hin_max(n)) then
+                     aicen(i,j,n) = abar2d(i,j)
+                     vicen(i,j,n) = hbar2d(i,j)*abar2d(i,j)
+                     vsnon(i,j,n) = min(aicen(i,j,n)*hsno_init,p2*vicen(i,j,n))
+                     if (tr_brine) trcrn(i,j,nt_fbri,n) = c1
+                  endif
+               else
+                  if (hbar2d(i,j)>hin_max(ncat-1)) then
+                     aicen(i,j,n) = abar2d(i,j)
+                     vicen(i,j,n) = hbar2d(i,j)*abar2d(i,j)
+                     vsnon(i,j,n) = min(aicen(i,j,n)*hsno_init,p2*vicen(i,j,n))
+                     if (tr_brine) trcrn(i,j,nt_fbri,n) = c1
+                  endif
+               endif
+            enddo
+               ! surface temperature
+            if (calc_Tsfc) then
+
+               do ij = 1, icells
+                  i = indxi(ij)
+                  j = indxj(ij)
+                  trcrn(i,j,nt_Tsfc,n) = min(Tsmelt, Tair(i,j) - Tffresh) !deg C
+               enddo
+
+            else    ! Tsfc is not calculated by the ice model
+
+               do ij = 1, icells
+                  i = indxi(ij)
+                  j = indxj(ij)
+                  trcrn(i,j,nt_Tsfc,n) = Tf(i,j)   ! not used
+               enddo
+
+            endif       ! calc_Tsfc
+
+            ! other tracers
+
+            if (heat_capacity) then
+
+               ! ice enthalpy, salinity 
+               do k = 1, nilyr
+                  do ij = 1, icells
+                     i = indxi(ij)
+                     j = indxj(ij)
+
+                     ! assume linear temp profile and compute enthalpy
+                     slope = Tf(i,j) - trcrn(i,j,nt_Tsfc,n)
+                     Ti = trcrn(i,j,nt_Tsfc,n) &
+                        + slope*(real(k,kind=dbl_kind)-p5) &
+                                /real(nilyr,kind=dbl_kind)
+
+                     if (ktherm == 2) then
+                        ! enthalpy
+                        trcrn(i,j,nt_qice+k-1,n) = &
+                             enthalpy_mush(Ti, salinz(i,j,k))
+                     else
+                        trcrn(i,j,nt_qice+k-1,n) = &
+                            -(rhoi * (cp_ice*(Tmltz(i,j,k)-Ti) &
+                            + Lfresh*(c1-Tmltz(i,j,k)/Ti) - cp_ocn*Tmltz(i,j,k)))
+                     endif
+
+                     ! salinity
+                     trcrn(i,j,nt_sice+k-1,n) = salinz(i,j,k)
+                  enddo            ! ij
+               enddo               ! nilyr
+
+               ! snow enthalpy
+               do k = 1, nslyr
+                  do ij = 1, icells
+                     i = indxi(ij)
+                     j = indxj(ij)
+                     Ti = min(c0, trcrn(i,j,nt_Tsfc,n))
+                     trcrn(i,j,nt_qsno+k-1,n) = -rhos*(Lfresh - cp_ice*Ti)
+
+                  enddo            ! ij
+               enddo               ! nslyr
+
+            else  ! one layer with zero heat capacity
+
+               ! ice energy
+               k = 1
+
+               do ij = 1, icells
+                  i = indxi(ij)
+                  j = indxj(ij)
+                  trcrn(i,j,nt_qice+k-1,n) = -rhoi * Lfresh
+                  trcrn(i,j,nt_sice+k-1,n) = salinz(i,j,k)
+               enddo            ! ij
+
+               ! snow energy
+               do ij = 1, icells
+                  i = indxi(ij)
+                  j = indxj(ij)
+                  trcrn(i,j,nt_qsno+k-1,n) = -rhos * Lfresh
+               enddo            ! ij
+
+            endif               ! heat_capacity
+         enddo                  ! ncat
+
+      end subroutine read_state_var
 
       end module ice_init
 
