@@ -240,7 +240,6 @@
   , f_flwup_ai     = 'h' 
   , f_evap         = 'x' 
   , f_evap_ai      = 'm' 
-  , f_rhoa         = 'h' 
   , f_Tair         = 'h' 
   , f_Tref         = 'x' 
   , f_Qref         = 'x'
