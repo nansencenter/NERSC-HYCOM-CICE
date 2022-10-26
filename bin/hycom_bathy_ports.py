@@ -320,7 +320,6 @@ def main(infile,rmu_width,rmu_efold,dpi=180):
    ax2=figure2.add_subplot(111)
    cmap=matplotlib.pyplot.get_cmap("Greys_r")
    P=ax2.pcolormesh(in_depth_m,cmap=cmap,edgecolor=".4",alpha=.5,linewidth=.05)
-   ax2.hold()
    Ps=[]; Ls=[]
    for i in range(len(kdports)) :
 
