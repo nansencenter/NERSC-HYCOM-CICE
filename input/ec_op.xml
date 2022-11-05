@@ -36,8 +36,52 @@
             <coordinate varname="time" calendar="proleptic_gregorian"/>
             <coordinate varname="lon" units="degrees_east"/>
             <coordinate varname="lat" units="degrees_north"/>
+		  </field>	
+     </forcing_dataset>
+
+       <!-- As above, but different calculation  -->
+	  <forcing_dataset name="ec_op+lw" rootPath="/home/sm_alfal/work/sea/TOPAZ5/ECNC/" format="netcdf" timestep="6h">
+         <field known_name="10u"   file="[rootPath]/ec_atmo_geo_la_U10M.nc"  varname="U10M"  units="m s**-1">
+            <coordinate varname="time" calendar="proleptic_gregorian"/>
+            <coordinate varname="lon" units="degrees_east"/>
+            <coordinate varname="lat" units="degrees_north"/>
+         </field>
+         <field known_name="10v"   file="[rootPath]/ec_atmo_geo_la_V10M.nc"  varname="V10M"  units="m s**-1">
+            <coordinate varname="time" calendar="proleptic_gregorian"/>
+            <coordinate varname="lon" units="degrees_east"/>
+            <coordinate varname="lat" units="degrees_north"/>
+         </field>
+         <field known_name="2t"    file="[rootPath]/ec_atmo_geo_la_T2M.nc"   varname="T2M"   units="K">
+            <coordinate varname="time" calendar="proleptic_gregorian"/>
+            <coordinate varname="lon" units="degrees_east"/>
+            <coordinate varname="lat" units="degrees_north"/>
+         </field>
+         <field known_name="2d"    file="[rootPath]/ec_atmo_geo_la_D2M.nc"   varname="D2M"   units="K">
+            <coordinate varname="time" calendar="proleptic_gregorian"/>
+            <coordinate varname="lon" units="degrees_east"/>
+            <coordinate varname="lat" units="degrees_north"/>
+         </field>
+         <field known_name="msl"   file="[rootPath]/ec_atmo_geo_la_MSL.nc"  varname="MSL"  units="Pa">
+            <coordinate varname="time" calendar="proleptic_gregorian"/>
+            <coordinate varname="lon" units="degrees_east"/>
+            <coordinate varname="lat" units="degrees_north"/>
+         </field>
+         <field known_name="tcc"   file="[rootPath]/ec_atmo_geo_la_TCC.nc"  varname="TCC"  units="1">
+            <coordinate varname="time" calendar="proleptic_gregorian"/>
+            <coordinate varname="lon" units="degrees_east"/>
+            <coordinate varname="lat" units="degrees_north"/>
+         </field>
+			<field known_name="tp"    file="[rootPath]/ec_atmo_geo_la_TP.nc"   varname="TP"   units="m"      accumulated="6h">
+            <coordinate varname="time" calendar="proleptic_gregorian"/>
+            <coordinate varname="lon" units="degrees_east"/>
+            <coordinate varname="lat" units="degrees_north"/>
 		   </field>	
 		   <field known_name="ssrd"  file="[rootPath]/ec_atmo_geo_la_SSRD.nc" varname="SSRD" units="J m**-2" accumulated="6h"> 
+            <coordinate varname="time" calendar="proleptic_gregorian"/>
+            <coordinate varname="lon" units="degrees_east"/>
+            <coordinate varname="lat" units="degrees_north"/>
+		   </field>	
+		   <field known_name="ssr"  file="[rootPath]/ec_atmo_geo_la_SSR.nc" varname="SSR" units="J m**-2" accumulated="6h"> 
             <coordinate varname="time" calendar="proleptic_gregorian"/>
             <coordinate varname="lon" units="degrees_east"/>
             <coordinate varname="lat" units="degrees_north"/>
