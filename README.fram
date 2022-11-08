@@ -33,7 +33,11 @@ module load intel/2021a
 
    compile_model.sh -m fram ifort
    
-5) prepare the python tools on Fram
+5) On occation a problem with the c-compile can occur, this can be solved by adding these two lines to .bashrc
+   export LANG=en_US.UTF-8
+   export LC_ALL=en_US.utf8
+   
+6) prepare the python tools on Fram
 
   ### Assuming you downloaded the code to ~/NERSC-HYCOM-CICE (if you already have these libraries installed, then add --upgrade to the lines below)
    pip install --user ~/NERSC-HYCOM-CICE/pythonlibs/modeltools
