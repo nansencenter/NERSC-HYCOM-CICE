@@ -8,19 +8,38 @@ import warnings
 import argparse
 import getpass
 import _BETZY_the_mapping_loop_with_ice
+import _FRAM_the_mapping_loop_with_ice
 from numpy import dtype
 import os
+import socket
 ########################
 warnings.filterwarnings('ignore')
 user = getpass.getuser()
 
 '''
+CAGLAR: Nov22
 how to use:
 
-The code works with mandatory inputs. 
-You need to specify your own following these examples:
+_FORTRAN_subroutine_
 
---domain=/cluster/work/users/cagyum/TP5a0.06
+The code uses a fortran loop for a higly efficient loop for mapping satellite to model grid.
+To use the fortran subroutine, notice that at the top, we imported machine specific library (e.g. _BETZY_the_mapping_loop_with_ice)
+You need to import your own machine library. To create it (inside the bin/chl_profiling_satellite/ folder) specify the MACHINE as your own
+
+>>  f2py -c -m _MACHINE_the_mapping_loop_with_ice satellite_map.f90
+
+This should create .so file  with a long name, rename it to '_MACHINE_the_mapping_loop_with_ice.so' format 
+
+You can then add this machine specific library to the code. Search in the code 'gethostname' and copy/modify the if statement following the others. 
+____________________
+
+The code works with mandatory inputs. 
+You need to specify these:
+
+domain, experiment, year and day
+
+Also consider the following options:
+
 --nerscdir=/cluster/home/cagyum/NERSC-HYCOM-CICE
 --satdir=/cluster/work/users/cagyum/OCCCI/L3/copernicus_globcolor_daily_rep/chl/
 
@@ -30,6 +49,20 @@ You need to specify your own following these examples:
               # you can provide your user and password as a system variable 
               # e.g. in bash: export copernicus_user=XXX  && export copernicus_pass=XXX  
 
+--opendap_rep # this overwrites user satdir and gets the Copernicus L3 NRT data through opendap
+              # you need to have a Copernicus account.
+              # the code will use your username and password.
+              # you can provide your user and password as a system variable 
+              # e.g. in bash: export copernicus_user=XXX  && export copernicus_pass=XXX
+
+--debug       # save a netcdf file containing satellite, old chl and new chl.
+
+
+
+# The script has been tested with the following inside the experiment folder with a link to bin folder in the upper directory:
+
+python ../bin/chl_profiling_satellite/chl_profile.py /cluster/work/users/cagyum/TP5a0.06 020 $y $nn --nerscdir=/cluster/home/cagyum/NERSC-HYCOM-CICE --opendap_nrt --debug
+ 
 '''
 def main(experiment,year,day,satdir,nerscdir,domain,debug,opendap_rep,opendap_nrt):
 
@@ -154,7 +187,10 @@ def main(experiment,year,day,satdir,nerscdir,domain,debug,opendap_rep,opendap_nr
     icemask = ic.variables["iceumask"][:,:]
     icf = np.asfortranarray(icemask)
 
-    satout = _BETZY_the_mapping_loop_with_ice.main(depthmf,scpxf,scpyf,platf,plonf,icf,satlatf,satlonf,satchlf)
+    if 'betzy' in socket.gethostname():
+       satout = _BETZY_the_mapping_loop_with_ice.main(depthmf,scpxf,scpyf,platf,plonf,icf,satlatf,satlonf,satchlf)
+    if 'fram' in socket.gethostname():
+       satout = _FRAM_the_mapping_loop_with_ice.main(depthmf,scpxf,scpyf,platf,plonf,icf,satlatf,satlonf,satchlf)
     satout = np.ma.masked_where(satout>1000.,satout)
     satout = np.ma.masked_where(satout<0.,satout)
     satout = np.ma.masked_array(satout,depthm.mask)
@@ -169,6 +205,7 @@ def main(experiment,year,day,satdir,nerscdir,domain,debug,opendap_rep,opendap_nr
 ##########################################################################################
 
     print('adjusting profiles')
+    print('this may take a few minutes')
     for j in range(jdm):
        for i in range(idm):
 
@@ -343,7 +380,8 @@ def profiler(surf,lat,lon,year,day, *args, **kwargs):
     if regions[JJ,II] == 9 : location = 'NORDIC'    
 
     if np.ma.is_masked(regions[JJ,II]):
-       print('Water depth below 50 metes, no profiling will be done')
+       #print('Water depth below 50 metes, no profiling will be done')
+       pass
     else:
       if surf < 0.1:
          bins = 'C1'
@@ -403,10 +441,10 @@ def profiler(surf,lat,lon,year,day, *args, **kwargs):
                       pass
         
 
-         print(timecal,season,area,bins,region,'   model J:',JJ,' model I:',II)
+         #print(timecal,season,area,bins,region,'   model J:',JJ,' model I:',II)
       else:
-         print(timecal,season,area,bins)
-            
+         #print(timecal,season,area,bins)
+         pass   
 
       z = np.arange(profdep)
       cz = cb - s*z + cmax * np.exp(-((z - zmax)/delta)**2)
