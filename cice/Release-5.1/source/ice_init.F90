@@ -1819,7 +1819,7 @@
       do j = jlo, jhi
         do i = ilo, ihi
            if (tmask(i,j)) then
-               if (sst (i,j) <= Tf(i,j)+p2) then
+               if (sst (i,j) <= Tf(i,j)+p2 .and. abar2d(i,j) > 0.15) then
                   icells = icells + 1
                   indxi(icells) = i
                   indxj(icells) = j
