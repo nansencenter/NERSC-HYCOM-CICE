@@ -27,6 +27,13 @@ ch.setFormatter(formatter)
 logger.addHandler(ch)
 logger.propagate=False
 
+"""
+Example (from the topo-folder of the inner grid - TOPAZ2, merging with NEMO-grid):
+../expt_03.1/bin/Grid_Bathy/hycom_bathy_merge_grids.py ../../NMOa0.08/topo/depth_NMOa0.08_01.a ../../NMOa0.08/topo/regional.grid.a depth_TP2a0.10_01.a
+To see all options:
+../expt_03.1/bin/Grid_Bathy/hycom_bathy_merge_grids.py --help
+"""
+
 
 def main(infile_coarse,gridfile_coarse,infile_fine,
       ncells_linear=20,
