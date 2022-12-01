@@ -919,7 +919,7 @@ c ---   existing radfl is the diurnal Qsw correction only
               sstflx(i,j) = 0.0
         elseif (lwflag.gt.0) then
 c ---     over-ocean longwave correction to radfl (Qsw+Qlw).
-          fsur = temp(i,j,1,n)
+          tsur = temp(i,j,1,n)
           if     (lwflag.eq.1) then !from climatology
             tdif = tsur -
      &             ( twall(i,j,1,lc0)*wc0+twall(i,j,1,lc1)*wc1
