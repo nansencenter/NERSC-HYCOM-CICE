@@ -915,126 +915,11 @@ c ---   existing radfl is the diurnal Qsw correction only
      &            +radflx(i,j,l2)*w2+radflx(i,j,l3)*w3)
         endif !natm
         if     (lwflag.eq.-1) then
-CMOSTAFA: BEGIN
-          if (nrdflg .eq. 0) then
-c ---         input radflx is Qlwdn, convert to Qlw + Qsw
               radfl = radfl - sb_cst*(temp(i,j,1,n)+tzero)**4 + swfl
               sstflx(i,j) = 0.0
-              if     (i.eq.itest.and.j.eq.jtest) then 
-                 print *,'nradflg == 0'
-              endif 
-          elseif (nrdflg .eq. 1) then
-              radfl = radfl-0.98*sb_cst*(temp(i,j,1,n)+tzero)**4 + swfl
-              sstflx(i,j) = 0.0
-              if     (i.eq.itest.and.j.eq.jtest) then
-                 print *,'nradflg == 1'
-              endif
-          elseif (nrdflg .eq. 3) then
-              if     (natm.eq.2) then
-                airt=airtmp(i,j,l0)*w0+airtmp(i,j,l1)*w1
-                lwr=nlwrad(i,j,l0)*w0+nlwrad(i,j,l1)*w1
-              else
-c ---           airt = air temperature (C)
-                airt=airtmp(i,j,l0)*w0+airtmp(i,j,l1)*w1
-     &            +airtmp(i,j,l2)*w2+airtmp(i,j,l3)*w3
-c ---           First term in Budyko (1974) (W/m^2). I have
-c ---           redistributed the original formulation
-                lwr=nlwrad(i,j,l0)*w0+nlwrad(i,j,l1)*w1
-     &            +nlwrad(i,j,l2)*w2+nlwrad(i,j,l3)*w3
-              endif !natm
-              tsur = temp(i,j,1,n)
-              tdif = airt - tsur
-c ---         negative sign for lwrad is to make it positive downward
-              radfl=-(lwr-4.0*0.98*sb_cst*(airt+tzero)**3.0*tdif) +swfl
-              sstflx(i,j) = 0.0
-              if     (i.eq.itest.and.j.eq.jtest) then
-                  print *,'nrdflg is ',nrdflg,radfl
-              endif
-          elseif (nrdflg .eq. 4) then
-              radfl =  0.0
-c ---         Here swrad and lwrad are net longwave and net shortwave
-c ---         radiations.
-c ---         Conventions:
-c ---         Net shortwave radiation is positive downward and
-c ---         net longwave radiation is positive upward from ERA-I 
-              if     (natm.eq.2) then
-                swr=nswrad(i,j,l0)*w0+nswrad(i,j,l1)*w1
-                lwr=nlwrad(i,j,l0)*w0+nlwrad(i,j,l1)*w1
-              else
-c ---           Net shortwave radiation
-                swr=nswrad(i,j,l0)*w0+nswrad(i,j,l1)*w1
-     &            +nswrad(i,j,l2)*w2+nswrad(i,j,l3)*w3
-c ---           First term in Budyko (1974) (W/m^2). I have
-c ---           redistributed the original formulation
-                lwr=nlwrad(i,j,l0)*w0+nlwrad(i,j,l1)*w1
-     &            +nlwrad(i,j,l2)*w2+nlwrad(i,j,l3)*w3
-              endif !natm
-c ---         if both swr and lwr and + downward 
-c ---         (both positive downward, note that the averaged lwrad is
-c ---          positive upward)             
-              radfl = swr - lwr
-              if     (i.eq.itest.and.j.eq.jtest) then
-                  print *,'nrdflg is ',nrdflg,radfl
-              endif
-          elseif (nrdflg .eq. 5) then
-              swr = 0.
-c ---         Here we use net shortwave radiation from ERAI and
-c ---         downwelling longwave radiation from Bignami (1995).
-c ---         Note that with this flag net shortwave radiation used
-c ---         in the biogeochemisitry model is from ERAI  
-              if     (natm.eq.2) then
-                swr=nswrad(i,j,l0)*w0+nswrad(i,j,l1)*w1
-              else
-c ---           Net shortwave radiation
-                swr=nswrad(i,j,l0)*w0+nswrad(i,j,l1)*w1
-     &            +nswrad(i,j,l2)*w2+nswrad(i,j,l3)*w3
-              endif !natm
-              radfl = radfl + swr - sb_cst*(temp(i,j,1,n)+tzero)**4  
-              if     (i.eq.itest.and.j.eq.jtest) then
-                  print *,'nrdflg is ',nrdflg,radfl
-              endif
-          elseif (nrdflg .eq. 6) then
-              swr = 0.
-c ---         Here we use net shortwave radiation from ERAI and
-c ---         downwelling longwave radiation from Bignami (1995)
-              if     (natm.eq.2) then
-                swr=nswrad(i,j,l0)*w0+nswrad(i,j,l1)*w1
-              else
-c ---           Net shortwave radiation
-                swr=nswrad(i,j,l0)*w0+nswrad(i,j,l1)*w1
-     &            +nswrad(i,j,l2)*w2+nswrad(i,j,l3)*w3
-              endif !natm
-              radfl = radfl + swr - sb_cst*(temp(i,j,1,n)+tzero)**4
-              if     (i.eq.itest.and.j.eq.jtest) then
-                  print *,'nrdflg is ',nrdflg,radfl
-              endif
-          elseif (nrdflg .eq. 7) then
-c ---         This segment is the same as nrdflg == 6, except that
-c ---         we use a new offlux formulation which is time-dependent
-              swr = 0.
-c ---         Here we use net shortwave radiation from ERAI and
-c ---         downwelling longwave radiation from Bignami (1995)
-              if     (natm.eq.2) then
-                swr=nswrad(i,j,l0)*w0+nswrad(i,j,l1)*w1
-              else
-c ---           Net shortwave radiation
-                swr=nswrad(i,j,l0)*w0+nswrad(i,j,l1)*w1
-     &            +nswrad(i,j,l2)*w2+nswrad(i,j,l3)*w3
-              endif !natm
-              radfl = radfl + swr - sb_cst*(temp(i,j,1,n)+tzero)**4
-              if     (i.eq.itest.and.j.eq.jtest) then
-                  print *,'nrdflg is ',nrdflg,radfl
-              endif
-          else
-              if     (i.eq.itest.and.j.eq.jtest) then
-                 print *,'nradflg is not valid '
-              endif
-
-          endif
-CMOSTAFA: END
         elseif (lwflag.gt.0) then
 c ---     over-ocean longwave correction to radfl (Qsw+Qlw).
-          tsur = temp(i,j,1,n)
+          fsur = temp(i,j,1,n)
           if     (lwflag.eq.1) then !from climatology
             tdif = tsur -
      &             ( twall(i,j,1,lc0)*wc0+twall(i,j,1,lc1)*wc1
@@ -1492,31 +1377,9 @@ c
       endif  ! flxflg
 c
 c --- add a time-invarient net heat flux offset
-CMOSTAFA: BEGIN
       if     (flxoff) then
-        if (nrdflg .ne. 7) then
            surflx(i,j)=surflx(i,j)+offlux(i,j)
-        else
-           xa0 =       6.146 
-           xa1 =      -1.852
-           xb1 =      -2.153 
-           xa2 =      0.2617 
-           xb2 =      0.7784 
-           xw  =     0.01718
-           call  forday(dtime,yrflag,iyear,iday,ihour) 
-           if (i .eq. itest .and. j .eq. jtest) print *,'here**',iday
-           doy=iday+ihour/24.0
-           wght_oflx=xa0+xa1*cos(doy*xw)+xb1*sin(doy*xw)+
-     &          xa2*cos(2.0*doy*xw)+ xb2*sin(2.0*doy*xw)
-c ---      Normalise the weight
-           wght_oflx=wght_oflx/9.7643
-           if (i .eq. itest .and. j .eq. jtest) then
-              print *,'weight offlux,iday,doy: ', wght_oflx,iday,doy
-           endif
-           surflx(i,j)=surflx(i,j)+wght_oflx*offlux(i,j)
-        endif!nrdflg
       endif!flxoff
-CMOSTAFA: END
 c
 c --- relax to surface temperature
       if     (sstflg.ge.1) then 
@@ -1548,17 +1411,7 @@ c ---   in shallow water this is (dpmixl(i,j,n)/p(i,j,kk+1)  )/rmut
         sstflx(i,j)=sstflx(i,j)+sstrlx
       endif !sstflg
 c --- sswflx = shortwave radiative energy flux (W/m^2) into ocean
-CMOSTAFA: BEGIN
-      if (nrdflg .eq. 5) then
-c ---    Use net shortwave radiation from ERA-I
-         sswflx(i,j)=swr
-      else
          sswflx(i,j)=swfl
-
-      endif
-
-CMOSTAFA: END
-
 c --- emnp = evaporation minus precipitation   (m/sec) into atmos.
       if     (.not.pcipf) then
         prcp = 0.0

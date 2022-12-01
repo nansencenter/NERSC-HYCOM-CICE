@@ -736,10 +736,7 @@ c
      &               iversn,iexpt,jerlv0,
      &               iceflg,ishelf,icmflg,wndflg,ustflg,
      &               flxflg,empflg,dswflg,albflg,lwflag,sstflg,sssflg,
-     &               difsmo,disp_count,
-CMOSTAFA: BEGIN
-     &               nrdflg
-CMOSTAFA: END
+     &               difsmo,disp_count
 
 c
       real,    parameter ::
