@@ -915,8 +915,9 @@ c ---   existing radfl is the diurnal Qsw correction only
      &            +radflx(i,j,l2)*w2+radflx(i,j,l3)*w3)
         endif !natm
         if     (lwflag.eq.-1) then
-              radfl = radfl - sb_cst*(temp(i,j,1,n)+tzero)**4 + swfl
-              sstflx(i,j) = 0.0
+c ---     input radflx is Qlwdn, convert to Qlw + Qsw
+          radfl = radfl - sb_cst*(temp(i,j,1,n)+tzero)**4 + swfl
+          sstflx(i,j) = 0.0
         elseif (lwflag.gt.0) then
 c ---     over-ocean longwave correction to radfl (Qsw+Qlw).
           tsur = temp(i,j,1,n)
@@ -1377,9 +1378,35 @@ c
       endif  ! flxflg
 c
 c --- add a time-invarient net heat flux offset
-      if     (flxoff) then
-           surflx(i,j)=surflx(i,j)+offlux(i,j)
-      endif!flxoff
+CMOSTAFA: BEGIN
+      if (flxoff) then
+#ifdef TARDEBUG_NRDFLG
+        if (nrdflg .ne. 7) then
+          surflx(i,j)=surflx(i,j)+offlux(i,j)
+        else
+           xa0 =       6.146 
+           xa1 =      -1.852
+           xb1 =      -2.153 
+           xa2 =      0.2617 
+           xb2 =      0.7784 
+           xw  =     0.01718
+           call  forday(dtime,yrflag,iyear,iday,ihour) 
+           if (i .eq. itest .and. j .eq. jtest) print *,'here**',iday
+           doy=iday+ihour/24.0
+           wght_oflx=xa0+xa1*cos(doy*xw)+xb1*sin(doy*xw)+
+     &          xa2*cos(2.0*doy*xw)+ xb2*sin(2.0*doy*xw)
+! ---      Normalise the weight
+           wght_oflx=wght_oflx/9.7643
+           if (i .eq. itest .and. j .eq. jtest) then
+              print *,'weight offlux,iday,doy: ', wght_oflx,iday,doy
+           endif
+           surflx(i,j)=surflx(i,j)+wght_oflx*offlux(i,j)
+        endif!nrdflg
+#else
+        surflx(i,j)=surflx(i,j)+offlux(i,j)
+#endif
+      endif!flxoff     
+CMOSTAFA: END
 c
 c --- relax to surface temperature
       if     (sstflg.ge.1) then 
@@ -1412,6 +1439,7 @@ c ---   in shallow water this is (dpmixl(i,j,n)/p(i,j,kk+1)  )/rmut
       endif !sstflg
 c --- sswflx = shortwave radiative energy flux (W/m^2) into ocean
          sswflx(i,j)=swfl
+
 c --- emnp = evaporation minus precipitation   (m/sec) into atmos.
       if     (.not.pcipf) then
         prcp = 0.0
