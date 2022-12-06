@@ -1,10 +1,10 @@
-! Program to create the files thkdf4.[a,b] read by HYCOM when the value is not constant
-! Here, the value follows the following equation:
+! Program to create the files thkdf4.[a,b] read by HYCOM when the value is spatially variable
+! Here, the thickness diffusion-4 is a function of latitude:
 ! thkdf4(i,j)=0.6*cos(abs(modlat(i,j)-45))+0.05
-! we found some numerical noise in layer 9, which is well corrected when thkdf4
-! is added. However, thkdf4 destroy the advection of atlantic water in the
-! Arctic.
-!Created by Fanf
+! we found some ugly numerical noise below the mixed layer in the Gulf Stream, which is well corrected when thkdf4
+! is added. However, thkdf4 hampers the advection of atlantic water into the Nordic Seas and the 
+! Arctic. So the compromise here is to increase the parameter value around the Gulf Stream ~45N only. 
+!Created by francois.counillon@nersc.no, 2009, rephrased by laurent.bertino@nersc.no 
 
 program thkdf4
    use mod_xc
