@@ -32,6 +32,7 @@ export S=$P/SCRATCH                  # Scratch area
 
 export SIGVER=1   # Version of equation of state (this is 7-term sigma 2). Must not cause conflict with thflag in blkdat.input
 export NMPI=336
+export MXBLCKS=2  # This is the number of ice blocks. It should be added in this file for the ice initialisation
 
 # Consistency check. Ensures expt dir ends in expt_X
 #echo $tmp
