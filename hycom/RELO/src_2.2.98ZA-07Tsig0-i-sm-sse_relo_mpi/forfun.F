@@ -593,18 +593,12 @@ c ---     linear interpolation in time, so slots 3 and 4 are zero.
               surtmp(i,j,natm)   = 0.0
               seatmp(i,j,natm-1) = 0.0
               seatmp(i,j,natm)   = 0.0
-CMOSTAFA: BEGIN
-              nlwrad(i,j,natm-1) = 0.0
-              nlwrad(i,j,natm)   = 0.0
-              nswrad(i,j,natm-1) = 0.0
-              nswrad(i,j,natm)   = 0.0
 c     CAGLAR: BEGIN (MAY2019)
 #ifdef _FABM_
               dewpt(i,j,natm-1) = 0.0
               dewpt(i,j,natm)   = 0.0
 #endif
 c     CAGLAR: END
-CMOSTAFA: END
 
             enddo
           enddo
@@ -1237,15 +1231,11 @@ c
 !KAL
             surtmp(i,j,l) = 0.0
             seatmp(i,j,l) = 0.0
-CMOSTAFA: BEGIN
-            nlwrad(i,j,l) = 0.0
-            nswrad(i,j,l) = 0.0
 c     CAGLAR: BEGIN (MAY2019)
 #ifdef _FABM_
             dewpt(i,j,l) = 0.0
 #endif
 c     CAGLAR: END
-CMOSTAFA: END
           enddo !i
         enddo !j
       enddo !l
