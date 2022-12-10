@@ -805,12 +805,6 @@ c
 c --- parameters primarily for flxflg=4
       real, parameter :: vonkar=0.4         !Von Karmann constant
       real, parameter :: cpcore=1000.5      !specific heat of air (j/kg/deg)
-CMOSTAFA: BEGIN
-      real     lwr,swr
-      real     xa0,xa1,xb1,xa2 ,xb2,xw,doy,wght_oflx 
-      integer  iyear,iday,ihour
-CMOSTAFA: END
-
 c
       real satvpr,qsatur6,qsatur,qsatur5,t6,p6,f6,qra
       include 'stmt_fns.h'  !declares t
@@ -1378,35 +1372,9 @@ c
       endif  ! flxflg
 c
 c --- add a time-invarient net heat flux offset
-CMOSTAFA: BEGIN
       if (flxoff) then
-#ifdef TARDEBUG_NRDFLG
-        if (nrdflg .ne. 7) then
-          surflx(i,j)=surflx(i,j)+offlux(i,j)
-        else
-           xa0 =       6.146 
-           xa1 =      -1.852
-           xb1 =      -2.153 
-           xa2 =      0.2617 
-           xb2 =      0.7784 
-           xw  =     0.01718
-           call  forday(dtime,yrflag,iyear,iday,ihour) 
-           if (i .eq. itest .and. j .eq. jtest) print *,'here**',iday
-           doy=iday+ihour/24.0
-           wght_oflx=xa0+xa1*cos(doy*xw)+xb1*sin(doy*xw)+
-     &          xa2*cos(2.0*doy*xw)+ xb2*sin(2.0*doy*xw)
-! ---      Normalise the weight
-           wght_oflx=wght_oflx/9.7643
-           if (i .eq. itest .and. j .eq. jtest) then
-              print *,'weight offlux,iday,doy: ', wght_oflx,iday,doy
-           endif
-           surflx(i,j)=surflx(i,j)+wght_oflx*offlux(i,j)
-        endif!nrdflg
-#else
         surflx(i,j)=surflx(i,j)+offlux(i,j)
-#endif
       endif!flxoff     
-CMOSTAFA: END
 c
 c --- relax to surface temperature
       if     (sstflg.ge.1) then 
