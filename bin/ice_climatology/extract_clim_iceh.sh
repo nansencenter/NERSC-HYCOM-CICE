@@ -1,14 +1,22 @@
 ###############################################################################
 # Usage:
-#       extract_iceh2TP5.sh <modgridpath> 
+#       extract_clim_iceh.sh <modgridpath> 
 #  or
-#       extract_iceh2TP5.sh 
-# The later will use the default model grid from TP5
+#       extract_clim_iceh.sh 
+#
+# It will create an ice climatology file named ice_initial.nc 
+# which should be under $model/scratch direcotry because the hycom_cice will access this file.
+# (In fact, its location is predefined by ocn_data_dir in ice_in
+# 
+# The later will use the default run of the test in TP5
 # Based on the sea ice climatology from the TP4b reanalysis in 1991-2020,
 # interpolating the sea ice, SST, and SSS on the target model grids
 # 
 # Basic software requires:
 # 1) python 3; cdo and nco modules; 
+#    For example on Betzy:
+#    ml load CDO/1.9.9-iompi-2020a
+#    ml load NCO/4.9.7-iomkl-2020a
 # 2) target model grid information and ice grid files;
 # 3) link the ice_kmt.nc to the present work directory;
 # 4) the iceh climatology file as the source file for interpolation.
@@ -18,9 +26,11 @@
 ###############################################################################
 # First check the relevant model grid files:
 #
+echo "It requires the model grid files to be available!"
 if [ $# -eq 1 ]; then
    Targetmoddir=$1
 else
+   echo "Default run in a test case in TP5"
    Targetmoddir='/cluster/work/users/xiejp/TOPAZ/TP5a0.06/topo'
 fi
 files1="regional.grid regional.depth"
@@ -34,11 +44,6 @@ done
 
 # sea ice climatology files:
 Fini=TP4b_1991-2020_AssimSurf.nc
-# skip the depth dimension
-# Ftmp=out0.nc
-# ncks -F -d depth,1,1 ${Fini} ${Ftmp} 
-# #[ -s ${Ftmp} ] && rm ${Ftmp}
-# ncwa -F -a depth,1 ${Ftmp} out1.nc 
 
 Fraw=cice_kmt.nc
 files2="${Fini} ${Fraw} createmask.py"
@@ -84,14 +89,10 @@ Isst=0   # Switch on sss/sst processing ofr Isst=1,otherwise switch off
 if [ -s ${Fini} -a -s ${Ftmpmask} ]; then
    [ -s ${Fout} ] && rm ${Fout}
    echo "interpolating ... "
-   # load the module on Betzy
-   module load CDO/1.9.9-iompi-2020a
+   #module load CDO/1.9.9-iompi-2020a
    cdo remapbil,${Ftmpmask} ${Fini} ${Fout}
 
-   # Third interpolating
-   # load the module on Betzy
-   #module load NCO/5.0.3-intel-2021b
-   ml load NCO/4.9.7-iomkl-2020a
+   #ml load NCO/4.9.7-iomkl-2020a
    echo "Defaulting the values for different masks ... "
    ncks -v ${Vars} ${Fout} ${Ftmp}  
    ncrename -h -O -v siconc,aice_raw -v sithick,hi_raw ${Ftmp}  
