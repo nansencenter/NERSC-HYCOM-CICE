@@ -2131,7 +2131,6 @@ c
       endif
 #endif 
 
-CMOSTAFA: BEGIN
 c ---  s w i t c h e s  for calculating net radiation fluxes  (0=not,
 c ---  1=using black body & input SST, 2=using HYCOM SST)
 c
