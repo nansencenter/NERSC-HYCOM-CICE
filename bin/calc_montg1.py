@@ -32,7 +32,6 @@ python /cluster/home/achoth/pyScripts_AO_Betzy/ValidationFreq/Alf_calc_montg1.py
 
 
 """
-### AO
 # Get component of montgomery potential at surface that depends on pbavg
 def montg1_pb(thstar,p) :
    kdm=thstar.shape[0]
@@ -46,7 +45,6 @@ def montg1_pb(thstar,p) :
    return montgpb
 
 
-
 # Get component of montgomery potential at surface that does not depend on pbavg
 def montg1_no_pb(psikk,thkk,thstar,p) :
    kdm=thstar.shape[0]
@@ -56,10 +54,6 @@ def montg1_no_pb(psikk,thkk,thstar,p) :
    for k in reversed(range(kdm-1)) :
       montgc [:,:]=montgc [:,:]+ p[k+1,:,:]*(thstar[k+1,:,:]-thstar[k,:])*thref**2
    return montgc
-
-
-
-### AO
 
 
 def approx_montg1(thstar,p,srfhgt,idm,jdm,rstr_file):
