@@ -603,6 +603,27 @@ else
       cp $D/${filename}.a .
       cp $D/${filename}.b .
 
+      if [ $tmp -eq 1 -o $tmp2 -eq 1 ] ; then
+       echo "debug: $(pwd)" 
+       ### "Calculate and Write Montgometry potential into the nesting files"
+       echo "filename="${filename}
+       for yy in `seq ${start_year} ${end_year}`; do
+        y=$(( $yy % 4 ))
+        if [ $y -eq 0 ]
+        then
+        echo "$yy is Leap Year!"
+        end_day=366
+        else
+        end_day=365
+        echo "$yy is not a Leap Year!"
+        fi
+        for dn in `seq -w ${start_oday} ${end_day}`; do
+         python ../calc_montg1.py /cluster/work/users/achoth/TP5a0.06/nest/080_NewMontg/archv.${yy}_${dn}_00.b  /cluster/work/users/achoth/TP5a0.06/expt_08.1/data/${filename}.b  ${nestdir}/
+        done
+       done
+       echo " Nesting Files Modified Successfully "
+      fi
+      
    elif [ -f $D/${filename}_mem001.a -a -f $D/${filename}_mem001.b ]; then
       echo "using HYCOM restart files ${filename}_mem???.[ab] from data dir $D"
       for f in ${plink} $D/${filename}_mem*.? ; do
