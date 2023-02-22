@@ -1,0 +1,17 @@
+This directory contains routine for generating ice drift from
+a) A series daily files in HYCOM_CICE with name format: iceh.????-??-??.nc
+b) Also to support the ensemble files like the names as iceh.????-??-??_???.nc
+c) A daily ice drift from OSISAF (if extending to 2 days then to modify the parameter:NDAYS_OSISAF_DRIFT)
+d) There are two basic outputs: Mod_drift000.nc and Obs_drift.txt, the latter citing the used observation file
+
+icedriftnc_osisaf: When called with no arguments it shows how to add the arguments.  It contains two ways to run:
+        Case 1: (validation one model run)
+        icedriftnc_osisaf iceh.2019-01-01.nc /cluster/projects/nn2993k/TP4b0.12/idrft_osisaf/
+        It automatically searches the observation from the predefined directory, and requires more one day drift from the previous date at the current diretory.            
+
+        Case 2: (validation ensemble model runs)
+        icedriftnc_osisaf iceh.2019-01-01.nc /cluster/projects/nn2993k/TP4b0.12/idrft_osisaf/ 100
+        It also requires the relevant model files avaiable at the current direcdtory using the name format as the b) mentioned.
+
+
+NB: Drift is calculated using a Runge-kutta 2nd order approach
