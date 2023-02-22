@@ -54,6 +54,6 @@ install : all
 	cp $(TARGET0) $(script) ../../bin
 
 clean:
-	rm ./TMP/*.o TMP/*.mod $(TARGET0)
+	rm ./TMP/*.o TMP/*.* $(TARGET0)
 
 
