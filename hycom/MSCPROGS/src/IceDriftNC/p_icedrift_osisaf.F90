@@ -47,13 +47,13 @@ program p_icedrift_osisaf
   !integer,parameter :: NDAYS_OSISAF_DRIFT=2    ! Two day interval for OSISAF product before
   !character(len=*),parameter :: OSISAF_FILE_NAME_PREFIX = 'ice_drift_nh_polstere-625_multi-oi_'
   integer,parameter :: NDAYS_OSISAF_DRIFT=1  ! Two day interval for OSISAF product before
-  character(len=*),parameter :: OSISAF_FILE_NAME_PREFIX = 'ice_drift_nh_ease2-750_cdr-v1p0_24h-'
+  character(len=*),parameter :: OSISAF_FILE_NAME_PREFIX='ice_drift_nh_ease2-750_cdr-v1p0_24h-'
   character(len=*),parameter :: Def_Obsdir='/cluster/projects/nn2993k/TP4b0.12/idrft_osisaf/'
 
   ! Global variables derived from input arguments
   character(len=3)      :: rungen       ! Typically TP4/TP5
-  character(len=100)    :: driftfile    ! Name of drift file from OSISAF
-  character(len=100)    :: dailyfile    ! Name of daily nc-file from MODLE
+  character(len=80)    :: driftfile    ! Name of drift file from OSISAF
+  character(len=80)    :: dailyfile    ! Name of daily nc-file from MODLE
   !character(len=4)      :: byear        ! Bulletin year (first date in daily mean file name)
   integer               :: enssize      ! Ensemble size
 
@@ -92,7 +92,7 @@ program p_icedrift_osisaf
          call ncvar_dump2D(rungen,drnx,drny,drlon,drlat,dX,dY,dflg,0)
       endif
       open(10,file='Obs_drift.txt',action='write')
-         write(10,*) trim(driftfile)
+         write(10,'(a,SP)') trim(driftfile)
       close(10)
 
   end subroutine
