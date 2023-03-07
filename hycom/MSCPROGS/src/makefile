@@ -18,6 +18,7 @@ FindLayer \
 GridToLL \
 Hyc2proj \
 IceDrift \
+IceDriftNC \
 Idealized_Grid \
 MkEnsemble \
 Relax \
