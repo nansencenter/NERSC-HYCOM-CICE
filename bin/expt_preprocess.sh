@@ -603,6 +603,11 @@ else
       cp $D/${filename}.a .
       cp $D/${filename}.b .
 
+#
+# --- Start compute Montg. on the go, to be sure it is computed from the right nesting file.
+# --- For operatinal runs and other rund where it is certain that there has been no 
+# --- changes to the model setup, this part should be commented out. 
+#
       if [ $tmp -eq 1 -o $tmp2 -eq 1 ] ; then
        echo "debug: $(pwd)" 
        ### "Calculate and Write Montgometry potential into the nesting files"
@@ -623,7 +628,9 @@ else
        done
        echo " Nesting Files Modified Successfully "
       fi
-      
+#
+# --- End compute Montg. on the go, to be sure it is computed from the right nesting file.
+#     
    elif [ -f $D/${filename}_mem001.a -a -f $D/${filename}_mem001.b ]; then
       echo "using HYCOM restart files ${filename}_mem???.[ab] from data dir $D"
       for f in ${plink} $D/${filename}_mem*.? ; do
