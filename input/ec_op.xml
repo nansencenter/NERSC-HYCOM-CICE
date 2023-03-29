@@ -128,7 +128,6 @@
 		  </field>	
       </forcing_dataset>
 
-
       <!-- includes strd + ssrd from ECMWF, same as ec_op+lw used before-->
 	  <forcing_dataset name="ec_op+ssrd+strd" rootPath="/home/sm_alfal/work/sea/TOPAZ5/ECNC/" format="netcdf" timestep="6h">
          <field known_name="10u"   file="[rootPath]/ec_atmo_geo_la_U10M_%Y.nc"  varname="U10M"  units="m s**-1">
@@ -179,6 +178,3 @@
       </forcing_dataset>
    </forcing_datasets>
 </xml>
-
-
-
