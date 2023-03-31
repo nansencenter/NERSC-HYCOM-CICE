@@ -4,7 +4,7 @@
 # outputs:         target date which determine the filename and output directory (similar as above)
 #
 #  Note: the time steps in HYCOM and in CICE model should be double checked
-#     T_hycom=600  and T_cice=900 (s) are defoult values in the script
+#     T_hycom=300  and T_cice=900 (s) are defoult values in the script
 # 
 #  and the refered dates are 1901/1/1 and 1958/1/1
 #    H_yy=1901  H_mm=1 H_dd=1
@@ -26,7 +26,9 @@
 #  .or.  restart_hycomcice.sh Py Pm Pd Oy Om Od <Sdir> <Odir>
 #  .or.  restart_hycomcice.sh Py Pm Pd Oy Om Od <Sdir> <Sdir_ice> <Odir>
 #  
+#
 # 2Jan 2019 by Jiping Xie  
+# Updated 31 March 2023 to correct the bug for $#=8
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #
 
@@ -158,7 +160,8 @@ echo "modify the nstep and dtime in cice-nc file ... "
 (( itime = ${istep} * ${T_cice} ))
 
 echo "CIEE steps in one day: ${ice_st} so there are ${istep} ${itime}"
-module load NCO/4.6.6-intel-2017a
+#module load NCO/4.6.6-intel-2017a
+ml load NCO/4.9.7-iomkl-2020a
 cd ${Odir_ice}
 ncatted -h -a istep1,global,o,i,${istep} ${Ofice} out1.nc
 ncatted -O -h -a time,global,o,i,${itime} out1.nc
