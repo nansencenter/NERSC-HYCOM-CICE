@@ -13,9 +13,10 @@
 #  
 #  suggest:
 # 
-# ~ 2016 2016 7 7 2007 7 15 /cluster/work/users/xiejp/TOPAZ/TP2a0.10/expt_03.0/data /cluster/work/user/xiejp/TOPAZ/TP2a0.10/expt_04.0/data
-#  
+#  initial_ensemble.sh 1993 2012 7 9 2019 7 20 /cluster/work/users/xiejp/work_temp_data/data_081 /cluster/work/users/xiejp/TOPAZ/TP5a0.06/expt_04.0  
 #  3Jan 2019 by Jiping Xie  
+# Updated 31 March 2023 to add a requirement for the time interval(Dj0>15 days)
+#
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 if [ $# -lt 8 -o $# -gt 10 ]; then
@@ -26,7 +27,7 @@ if [ $# -lt 8 -o $# -gt 10 ]; then
   exit 0
 elif [ $# -eq 8 ]; then
   Srdir=$8  
-  Ordir= './' 
+  Ordir= "./" 
   Srdir_c=${Srdir}/cice
   Ordir_c=${Ordir}/cice
 elif [ $# -eq 9 ]; then
@@ -41,6 +42,8 @@ elif [ $# -eq 10 ]; then
   Ordir_c=${Ordir}/cice
 fi
 
+echo ${Ordir}
+
 Y1=$1
 Y2=$2
 mm1=$3
@@ -49,7 +52,7 @@ Oyy=$5
 Omm=$6
 Odd=$7
 
-echo "$Y1 $Y2 $mm1 $mm1 $Oyy $Omm $Odd"
+echo "$Y1 $Y2 $mm1 $mm2 $Oyy $Omm $Odd"
 echo "${Srdir_c}" 
 echo "${Ordir_c}"
 echo ""
@@ -84,6 +87,7 @@ kk=0     # before the label of the first member
 #kk=22      # before the label of the first member
 (( Ojdy = 1 + `datetojul ${Oyy} ${Omm} ${Odd} ${Oyy} 1 1 | tail -4c` ))
 
+Dj0=15
 for yy in `seq ${Y1} ${Y2}`; do
   Jdy1=$(datetojul ${yy} ${mm1} 1 ${yy} 1 1 | tail -4c) 
   Jdy2=$(datetojul ${yy} ${mm2} 1 ${yy} 1 1 | tail -4c) 
@@ -92,22 +96,29 @@ for yy in `seq ${Y1} ${Y2}`; do
     echo "Wrong in the input mm1(mm2) to fix the month window!"
     exit 0
   fi
+  J1=0
   for jj in `seq ${Jdy1} ${Jdy2}`; do
      Sdate=$(jultodate ${jj} ${yy} 1 1)
      (( Sjdy = 1 + `datetojul ${Sdate:0:4} ${Sdate:4:2} ${Sdate:6:2} ${Sdate:0:4} 1 1 | tail -4c` ))
      Sfice="iced.${Sdate:0:4}-`echo 0${Sdate:4:2}|tail -3c`-`echo 0${Sdate:6:2}|tail -3c`-00000.nc"
      Sfhycom="restart.${Sdate:0:4}_`echo 00${Sjdy}|tail -4c`_00_0000"
      if [ -s ${Srdir}/${Sfhycom}.a -a -s ${Srdir}/${Sfhycom}.b -a ${Srdir_c}/${Sfice} ]; then
-       restart_hycomcice.sh ${Sdate:0:4} ${Sdate:4:2} ${Sdate:6:2} ${Oyy} ${Omm} ${Odd} ${Srdir} ${Ordir} 
-       Fhycom="${Ordir}/restart.${Oyy}_`echo 00${Ojdy}|tail -4c`_00_0000"
-       Fcice="${Ordir_c}/iced.${Oyy}-`echo 0${Omm}|tail -3c`-`echo 0${Odd}|tail -3c`-00000"
-       if [ -s ${Fhycom}.a -a -s ${Fhycom}.b -a ${Fcice}.nc ]; then
-         let kk=kk+1
-         Msur="mem`echo 00${kk}|tail -4c`"
-         mv ${Fhycom}.a ${Fhycom}_${Msur}.a
-         mv ${Fhycom}.b ${Fhycom}_${Msur}.b
-         mv ${Fcice}.nc ${Fcice}_${Msur}.nc
-       fi
+        (( Dj = jj - J1 ))
+        if [ ${Dj} -gt ${Dj0} ]; then
+           restart_hycomcice.sh ${Sdate:0:4} ${Sdate:4:2} ${Sdate:6:2} ${Oyy} ${Omm} ${Odd} ${Srdir} ${Ordir} 
+           Fhycom="${Ordir}/restart.${Oyy}_`echo 00${Ojdy}|tail -4c`_00_0000"
+           Fcice="${Ordir_c}/iced.${Oyy}-`echo 0${Omm}|tail -3c`-`echo 0${Odd}|tail -3c`-00000"
+  
+           #echo "${Fhycom}.a -a -s ${Fhycom}.b -a ${Fcice}.nc "
+           if [ -s ${Fhycom}.a -a -s ${Fhycom}.b -a ${Fcice}.nc ]; then
+              let kk=kk+1
+              Msur="mem`echo 00${kk}|tail -4c`"
+              mv ${Fhycom}.a ${Fhycom}_${Msur}.a
+              mv ${Fhycom}.b ${Fhycom}_${Msur}.b
+              mv ${Fcice}.nc ${Fcice}_${Msur}.nc
+              (( J1 = jj ))
+           fi
+        fi
      fi
   done
 done
