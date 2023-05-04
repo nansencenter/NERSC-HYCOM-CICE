@@ -487,8 +487,11 @@ program p_hyc2proj
                   do k=1,kdm
                     call HFReaduvtot(hfile,u(:,:,k),v(:,:,k),idm,jdm,k,1)
                   end do
-                  call vertical_velocity(u,v,pres,biovar,scpx,scpy,scux,scvy,plon,plat,depths,onem,idm,jdm,kdm)
+                  call w_velocity(u,v,pres,biovar,scpx,scpy,scux,scuy,scvx,scvy,plon,plat,depths,onem,idm,jdm,kdm)
+                  !call vertical_velocity(u,v,pres,biovar,scpx,scpy,scux,scvy,plon,plat,depths,onem,idm,jdm,kdm)
                   hy3d=biovar
+                  !convert units from m s-1 to m day-1
+                  hy3d=hy3d*24.0*3600.0
                   deallocate(u,v,biovar)
 
                else if (trim(fld(ifld)%fextract)=='oxy_nor') then 

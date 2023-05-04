@@ -683,9 +683,8 @@ module m_bio_conversions
 
    end subroutine vertical_velocity
 !   
-!   subroutine w_velocity(u,v,pres,w,scpx,scpy,scux,scvy,plon,plat,depth,onem,idm,jdm,kdm)
    subroutine w_velocity(u,v,pres,w,scpx,scpy,scux,scuy,scvx,scvy,plon,plat,depth,onem,idm,jdm,kdm)
-      
+!-- from archv2ncdf3      
 !diagnose vertical velocity: m/s
       implicit none
       
@@ -696,7 +695,7 @@ module m_bio_conversions
       real, dimension(idm,jdm,kdm+1)  :: lpres
       real, dimension(idm,jdm)  , intent(in)        :: scpx,scpy,scux,scuy,scvx,scvy,plon,plat,depth
       real, dimension(idm,jdm,kdm)    , intent(out) :: w
-      real, dimension(idm,jdm)                      :: dpdx,dpdy
+      real, dimension(idm,jdm)                      :: dpdx,dpdy, work
       real             dudxdn,dudxup,dvdydn,dvdyup        
       real, dimension(idm,jdm,kdm)   :: dplayer
       !real :: idsum, tasum
@@ -711,8 +710,8 @@ module m_bio_conversions
       end do
       
 !      if     (iowvlin.ne.0) then
-      do j= 2,jdm-1
-        do i= 2,idm-1
+      do j= 1,jdm-1
+        do i= 1,idm-1
           if (depth(i,j)>0) then
           !if     (ip(i,j).eq.1) then
             dudxdn= &
@@ -721,16 +720,16 @@ module m_bio_conversions
             dvdydn= &
                  (v(i  ,j+1,1)*scvx(i  ,j+1)-v(i,j,1)*scvx(i,j))&
                  /(scpx(i,j)*scpy(i,j))
-            w(i,j,1)=     dplayer(i,j,1)*(dudxdn+dvdydn) ! layer interface
-            !w(i,j,1)=0.5*dplayer(i,j,1)*(dudxdn+dvdydn) ! layer center
+            !w(i,j,1)=     dplayer(i,j,1)*(dudxdn+dvdydn) ! layer interface intfwv=1
+            w(i,j,1)=0.5*dplayer(i,j,1)*(dudxdn+dvdydn) ! layer center  intfwv=0
           else
             w(i,j,1) = flag
           endif
         enddo
       enddo
       do k= 2,kdm
-        do j= 2,jdm-1
-          do i= 2,idm-1
+        do j= 1,jdm-1
+          do i= 1,idm-1
             !if     (iu(i,j).eq.1) then
             if (depth(i,j)>0) then
               dpdx(i,j)=&
@@ -739,8 +738,8 @@ module m_bio_conversions
             endif
           enddo
         enddo
-        do j= 2,jdm-1
-          do i= 2,idm-1
+        do j= 1,jdm-1
+          do i= 1,idm-1
             if (depth(i,j)>0) then
             !if     (iv(i,j).eq.1) then
               dpdy(i,j)=&
@@ -783,23 +782,23 @@ module m_bio_conversions
                    /(scpx(i,j)*scpy(i,j))
               dudxdn=&
                    (u(i+1,j  ,k  )*scuy(i+1,j  )-&
-                    u(i  ,j  ,k  )*scuy(i  ,j  ))&
+                    u(i  ,j  ,k  )*scuy(i   ,j  ))&
+                   /(scpx(i,j)*scpy(i,j)) 
+              dvdydn=&                    
+                   (v(i  ,j+1,k  )*scvx(i   ,j+1)-&
+                    v(i  ,j  ,k  )*scvx(i   ,j  ))&
                    /(scpx(i,j)*scpy(i,j))
-              dvdydn=&
-                   (v(i  ,j+1,k  )*scvx(i  ,j+1)-&
-                    v(i  ,j  ,k  )*scvx(i  ,j  ))&
-                   /(scpx(i,j)*scpy(i,j))
-             w(i,j,k)=w(i,j,k-1)+0.5*(2.0*dplayer(i,j,k)*(dudxup+dvdyup)-&  !intfwv=0
-                      (u(i  ,j  ,k)-u(i  ,j  ,k-1))*dpdx(i  ,j  )-&
-                      (u(i+1,j  ,k)-u(i+1,j  ,k-1))*dpdx(i+1,j  )-&
-                      (v(i  ,j  ,k)-v(i  ,j  ,k-1))*dpdy(i  ,j  )-&
-                      (v(i  ,j+1,k)-v(i  ,j+1,k-1))*dpdy(i  ,j+1))
-             !w(i,j,k)=w(i,j,k-1)+0.5*(dplayer(i,j,k-1)*(dudxup+dvdyup)+& !intfwv=0 
-             !                         dplayer(i,j,k  )*(dudxdn+dvdydn)-&
+             !w(i,j,k)=w(i,j,k-1)+0.5*(2.0*dplayer(i,j,k)*(dudxdn+dvdydn)-&  !intfwv=1
              !         (u(i  ,j  ,k)-u(i  ,j  ,k-1))*dpdx(i  ,j  )-&
              !         (u(i+1,j  ,k)-u(i+1,j  ,k-1))*dpdx(i+1,j  )-&
              !         (v(i  ,j  ,k)-v(i  ,j  ,k-1))*dpdy(i  ,j  )-&
              !         (v(i  ,j+1,k)-v(i  ,j+1,k-1))*dpdy(i  ,j+1))
+             w(i,j,k)=w(i,j,k-1)+0.5*(dplayer(i,j,k-1)*(dudxup+dvdyup)+& !intfwv=0 
+                                      dplayer(i,j,k  )*(dudxdn+dvdydn)-&
+                      (u(i  ,j  ,k)-u(i  ,j  ,k-1))*dpdx(i  ,j  )-&
+                      (u(i+1,j  ,k)-u(i+1,j  ,k-1))*dpdx(i+1,j  )-&
+                      (v(i  ,j  ,k)-v(i  ,j  ,k-1))*dpdy(i  ,j  )-&
+                      (v(i  ,j+1,k)-v(i  ,j+1,k-1))*dpdy(i  ,j+1))
             else
               w(i,j,k) = flag
             endif
@@ -811,23 +810,65 @@ module m_bio_conversions
         do j= 1,jdm
           w(idm,j ,k) = flag
         enddo
+      enddo !k
+!
+! --- w is noisy - smooth at least twice.
+      do k= 1,kdm
+        !call psmoo(w(1,1,k),work)
+        !call psmoo(w(1,1,k),work)
+        work(:,:)=w(:,:,k)
+        w(:,:,k)=psmoo(work(:,:),idm,jdm)
+        work(:,:)=w(:,:,k)
+        w(:,:,k)=psmoo(work(:,:),idm,jdm)
+      enddo
+!     !iowvlin 
+   end subroutine w_velocity
+!---   
+   function psmoo(alist,idm,jdm)
+!
+      integer idm,jdm
+      real alist(idm,jdm),blist(idm,jdm), psmoo(idm,jdm)
+      real, parameter :: wgt  = 0.25
+      real, parameter :: flag = 2.0**100
+      integer i,ia,ib,j,ja,jb
+!     copy the code that does the smmothing from archv2ncdf3
+!     entry psmoo(alist,blist)
+!c ---this entry is set up to smooth data carried at -p- points
+!c
+      do i=1,idm
+         do j=1,jdm
+            if (alist(i,j).ne.flag) then
+               !ja=max(jfp(i,l),j-1)
+               !jb=min(jlp(i,l),j+1)
+               ja=j-1
+               jb=j+1
+               if (alist(i,ja).eq.flag) ja=j
+               if (alist(i,jb).eq.flag) jb=j
+               blist(i,j)=(1.-wgt-wgt)*alist(i,j)+wgt*(alist(i,ja)+alist(i,jb))
+            endif
+         enddo
       enddo
 !
-! --- w is noisy - smooth at least once.
-!
-!      if     (smooth) then
-!        do k= 1,kkin
-!          call psmoo(w(1,1,k),work)
-!          call psmoo(w(1,1,k),work)
-!        enddo
-!      else
-!        do k= 1,kkin
-!          call psmoo(w(1,1,k),work)
-!        enddo
-!      endif
-!      endif !iowvlin 
-
-   end subroutine w_velocity
+      do j=1,jdm
+         do i=1,idm
+            if (alist(i,j).ne.flag) then
+               !ia=max(ifp(j,l),i-1)
+               !ib=min(ilp(j,l),i+1)
+               ia=i-1
+               ib=i+1
+               if (alist(ia,j).eq.flag) ia=i
+               if (alist(ib,j).eq.flag) ib=i
+               alist(i,j)=(1.-wgt-wgt)*blist(i,j)+wgt*(blist(ia,j)+blist(ib,j))
+            endif
+         enddo
+      enddo
+      psmoo(:,:)=alist(:,:)
+   end
+!  function std(x,ldim)
+!  real x(ldim)
+!  xmean=sum(x)/ldim
+!  std=sqrt(sum((x-xmean)*(x-xmean))/(ldim-1))
+!  end
 !------------------------------------------------
 end module
 
