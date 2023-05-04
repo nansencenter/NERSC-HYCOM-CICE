@@ -1,5 +1,5 @@
 # --------------------------------------------------------------------
-# USE OF NOAA ESRL DATA
+# USE OF NOAA GML DATA
 # 
 # These data are made freely available to the public and the
 # scientific community in the belief that their wide dissemination
@@ -17,9 +17,9 @@
 # ensure that the quality and limitations of the data are accurately
 # represented.
 # 
-# Contact:   Ed Dlugokencky (303 497 6228; ed.dlugokencky@noaa.gov)
+# Contact:  Xin Lan (xin.lan@noaa.gov)
 # 
-# File Creation:  Wed Aug  5 09:08:40 2020
+# File Creation: Wed Apr  5 03:55:14 2023
 # 
 # RECIPROCITY
 # 
@@ -30,19 +30,18 @@
 # Modelers are encouraged to make available to the community,
 # upon request, their own tools used in the interpretation
 # of the GML data, namely well documented model code, transport
-# fields, and additional information necessary for other
-# scientists to repeat the work and to run modified versions.
-# Model availability includes collaborative support for new
-# users of the models.
+# fields, modeled mole fractions, and additional information 
+# necessary for other scientists to repeat the work and to run 
+# modified versions. Model availability includes collaborative 
+# support for new users of the models.
 # --------------------------------------------------------------------
-#  
-#  
-# See www.esrl.noaa.gov/gmd/ccgg/trends/ for additional details.
-#  
-#
+# 
+# 
+# See gml.noaa.gov/ccgg/trends/ for additional details.
+# 
 # The uncertainty in the global annual mean is estimated using a monte carlo
-# technique that computes 100 global annual averages, each time using a
-# slightly different set of measurement records from the NOAA ESRL cooperative
+# technique that computes 200 global annual averages, each time using a
+# slightly different set of measurement records from the NOAA GML cooperative
 # air sampling network.  The reported uncertainty is the mean of the standard
 # deviations for each annual average using this technique. Please see
 # Conway et al., 1994, JGR, vol. 99, no. D11. for a complete discussion.
@@ -53,7 +52,7 @@
 # depending on recalibration of the reference gas mixtures used, and other quality
 # control procedures. Occasionally, earlier years may also be changed for the same
 # reasons.  Usually these changes are minor.
-#
+# 
 # AS: the years before 1980 are copied from another dataset
 # year     mean      unc
   1948   312.70     0.10
@@ -88,45 +87,46 @@
   1977   333.80     0.10
   1978   335.40     0.10
   1979   336.80     0.10
-  1980   338.91     0.10
-  1981   340.11     0.10
-  1982   340.86     0.10
-  1983   342.53     0.10
-  1984   344.07     0.10
-  1985   345.54     0.10
-  1986   346.97     0.10
-  1987   348.68     0.10
-  1988   351.16     0.10
-  1989   352.78     0.10
-  1990   354.05     0.10
-  1991   355.39     0.10
-  1992   356.09     0.10
-  1993   356.83     0.10
-  1994   358.33     0.10
-  1995   360.17     0.10
-  1996   361.93     0.10
-  1997   363.05     0.10
-  1998   365.70     0.10
-  1999   367.80     0.10
-  2000   368.96     0.10
-  2001   370.57     0.10
-  2002   372.59     0.10
-  2003   375.15     0.10
-  2004   376.95     0.10
-  2005   378.98     0.10
-  2006   381.15     0.10
-  2007   382.90     0.10
-  2008   385.02     0.10
-  2009   386.50     0.10
-  2010   388.76     0.10
-  2011   390.63     0.10
-  2012   392.65     0.10
-  2013   395.40     0.10
-  2014   397.34     0.10
-  2015   399.65     0.10
-  2016   403.06     0.10
-  2017   405.22     0.10
-  2018   407.62     0.10
-  2019   410.07     0.10
-  2020   412.44     0.10
-  2021   414.73     0.10
+  1980   338.91     0.07
+  1981   340.11     0.08
+  1982   340.86     0.03
+  1983   342.53     0.05
+  1984   344.07     0.07
+  1985   345.54     0.07
+  1986   346.97     0.07
+  1987   348.68     0.09
+  1988   351.16     0.07
+  1989   352.78     0.06
+  1990   354.05     0.07
+  1991   355.39     0.06
+  1992   356.10     0.06
+  1993   356.84     0.07
+  1994   358.33     0.07
+  1995   360.18     0.05
+  1996   361.93     0.04
+  1997   363.05     0.05
+  1998   365.70     0.04
+  1999   367.80     0.07
+  2000   368.97     0.06
+  2001   370.57     0.05
+  2002   372.59     0.04
+  2003   375.15     0.04
+  2004   376.95     0.06
+  2005   378.97     0.05
+  2006   381.14     0.05
+  2007   382.90     0.05
+  2008   385.02     0.05
+  2009   386.50     0.04
+  2010   388.76     0.06
+  2011   390.63     0.06
+  2012   392.65     0.07
+  2013   395.39     0.06
+  2014   397.34     0.05
+  2015   399.65     0.05
+  2016   403.09     0.07
+  2017   405.22     0.07
+  2018   407.61     0.07
+  2019   410.07     0.08
+  2020   412.44     0.06
+  2021   414.71     0.06
+  2022   417.06     0.15
