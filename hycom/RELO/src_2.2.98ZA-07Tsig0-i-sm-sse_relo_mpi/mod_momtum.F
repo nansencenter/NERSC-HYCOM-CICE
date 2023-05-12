@@ -43,6 +43,7 @@ c
 #ifdef CPL_OASIS_HYCOM
       use mod_cpl_oasis_init
 #endif
+      use mod_NERSCnml, only : relative_wnd_coef, nersc_init
       implicit none
 c
       integer m,n
@@ -67,6 +68,7 @@ c
      &        airt,vpmx,wndx,wndy,wind,cdw,pair,rair,
      &        sumdp,sumth,thksur
       integer i,j,k,kl,l,margin,mbdy,hlstep
+
 c     &,iffstep
 c	  data iffstep/0/
 c      save iffstep
@@ -384,11 +386,10 @@ c ---           average currents over top thkcdw meters
                     exit
                   endif
                 enddo !k
-                usur  = 0.5*( usur/psur + ubavg(i,  j,n) +
-     &                                    ubavg(i+1,j,n)  )
-                
-                vsur  = 0.5*( vsur/psur + vbavg(i,j,  n) +
-     &                                    vbavg(i,j+1,n)  )
+                usur  = 0.5*relative_wnd_coef*( usur/psur + 
+     &                           ubavg(i,j,n)+ubavg(i+1,j,n) )
+                vsur  = 0.5*relative_wnd_coef*( vsur/psur + 
+     &                           vbavg(i,j,n)+vbavg(i,j+1,n) )
               endif !usur,vsur
 c
               if     (wndflg.eq.2 .or. wndflg.eq.3) then ! tau on p grid
