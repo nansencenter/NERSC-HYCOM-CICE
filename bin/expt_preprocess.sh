@@ -771,7 +771,7 @@ fi
 #  ls -laFq nest
 #endif
 
-# Check if opy the hycom namelist exists
+# Check if the hycom namelist exists
 # and copy it into the SCRATCH directory
 if [ -f $P/hycom_opt ] ; then
     cp $P/hycom_opt $S
