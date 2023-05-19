@@ -771,6 +771,13 @@ fi
 #  ls -laFq nest
 #endif
 
+# Check if opy the hycom namelist exists
+# and copy it into the SCRATCH directory
+if [ -f $P/hycom_opt ] ; then
+    cp $P/hycom_opt $S
+else
+    echo "The hycom_opt namelist file is not in the expt dir"
+fi
 
 if [ $numerr -eq 0 ] ; then
    echo "No fatal errors. Ok to start model set up in $S"
