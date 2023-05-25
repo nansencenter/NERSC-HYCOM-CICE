@@ -74,7 +74,7 @@ c
      &                      (1.0-covice(i,j))*salflx(i,j) +
      &                                        sflice(i,j) + !cell average
      &                                        rivflx(i,j) + !rivers everywhere
-     &                                        sssflx(i,j)   !relax  everywhere
+     &                      (1.0-covice(i,j))*sssflx(i,j)   ! skip relaxation at ice cover
               else !a river point
                 salflx(i,j) =                 salflx(i,j) + !might be a river
      &                                        sflice(i,j) + !cell average
