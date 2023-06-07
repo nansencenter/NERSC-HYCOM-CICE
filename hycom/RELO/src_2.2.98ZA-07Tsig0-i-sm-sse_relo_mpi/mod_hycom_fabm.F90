@@ -50,6 +50,7 @@ module mod_hycom_fabm
    real, allocatable :: mass_before_check_state(:, :, :, :)
    real, allocatable :: mass_after_check_state(:)
    real              :: mass_diff_check_state
+   real, allocatable :: spd(:)
 !
    real :: wndstr,strspd
    real, allocatable :: h(:, :,:),delZ(:),codepth(:,:,:),cotemp(:,:,:),cosal(:,:,:),codens(:,:,:)
@@ -173,7 +174,7 @@ contains
     ! read atmospheric CO2 time-series
     pCO2unit = 2640
     yCO2init = 1948
-    nyearCO2 = 75 ! last data year = 2022
+    nyearCO2 = 74 ! last data year = 2021
     co2_seasonality = [1.8552,2.7411,3.7847,4.6522,4.2706,1.1206,-4.3468,-8.6286,-7.9663,-3.7896,1.8954,3.0054]
       
     end subroutine hycom_fabm_configure
@@ -662,7 +663,7 @@ contains
     subroutine hycom_fabm_update(m, n, ibio)
       integer, intent(in) :: m, n, ibio
       integer :: i, k, j, ivar
-
+   
       real :: extinction(ii)
       real :: sms(ii, size(fabm_model%state_variables))
       real :: flux(ii, size(fabm_model%state_variables))
@@ -699,7 +700,10 @@ contains
         call vertical_movement(n, m, delt1)
         if (do_check_state) call check_state('after vertical_movement', n, .false.)
       end if
-
+!call check_dsnk("AFTER VERTICAL",m)
+!call check_dsnk("AFTER VERTICAL",n)
+call check_finite("AFTER VERTICAL", m)
+call check_finite("AFTER VERTICAL", n)
 #ifdef FABM_CHECK_NAN
     do j=1,jj
         do i=1,ii
@@ -773,6 +777,10 @@ contains
       if (do_check_state) call check_state('after bottom sources', n, .false.)
       end if
 
+!call check_dsnk("AFTER BOTTOM",m)
+!call check_dsnk("AFTER BOTTOM",n)
+call check_finite("AFTER BOTTOM", m)
+call check_finite("AFTER BOTTOM", n)
       ! Compute surface source terms
       if (do_surface_sources) then
       do j=1,jj
@@ -796,6 +804,8 @@ contains
       end if
 
       ! Compute source terms and update state
+call check_finite("BEFORE INTERIOR", m)
+call check_finite("BEFORE INTERIOR", n)
       if (do_interior_sources) then
       do k=1,kk
         do j=1,jj
@@ -818,9 +828,12 @@ contains
 #endif
         end do
       end do
+call check_finite("AFTER INTERIOR", m)
+call check_finite("AFTER INTERIOR", n)
       if (do_check_state) call check_state('after interior sources', n, .false.)
       end if
-
+call check_finite("AFTER INTERIOR CHECK STATE", m)
+call check_finite("AFTER INTERIOR CHECK STATE", n)
       input => first_input
       do while (associated(input))
         if (input%roleriver == role_river) then
@@ -841,31 +854,35 @@ contains
         input => input%next
       end do
 
+!call check_dsnk("AFTER INTERIOR",m)
+!call check_dsnk("AFTER INTERIOR",n)
+call check_finite("AFTER RIVER", m)
+call check_finite("AFTER RIVER", n)
 ! FABM tracer concentration at the bottom layer is copied to thin layers below by check_sate
 ! To preserve mass, total mass difference is distributed among the bottom layer and below
-      do i=1,ii
-        do j=1,jj
-          do ivar=1,size(fabm_model%state_variables)
-            mass_before_check_state(i, j, :, ivar) = tracer(i, j, :, n, ivar) * dp(i, j, :, n)/onem
-          enddo
-        enddo
-      enddo
+!      do i=1,ii
+!        do j=1,jj
+!          do ivar=1,size(fabm_model%state_variables)
+!            mass_before_check_state(i, j, :, ivar) = tracer(i, j, :, n, ivar) * dp(i, j, :, n)/onem
+!          enddo
+!        enddo
+!      enddo
       
       call check_state('after hycom_fabm_update', n, .true.)
       
-      do i=1,ii
-        do j=1,jj
-          if (SEA_P) then
-             do ivar=1,size(fabm_model%state_variables)
-               mass_after_check_state(:) = tracer(i, j, :, n, ivar) * dp(i, j, :, n)/onem
-               mass_diff_check_state = sum(mass_after_check_state(:)) - sum(mass_before_check_state(i, j, :, ivar))
-               do k=kbottom(i,j,n),kk
-                  tracer(i, j, k, n, ivar) = tracer(i, j, k, n, ivar) - mass_diff_check_state / sum(dp(i, j, kbottom(i,j,n):kk, n)/onem)
-               enddo
-             enddo
-           endif
-        enddo
-      enddo
+!      do i=1,ii
+!        do j=1,jj
+!          if (SEA_P) then
+!             do ivar=1,size(fabm_model%state_variables)
+!               mass_after_check_state(:) = tracer(i, j, :, n, ivar) * dp(i, j, :, n)/onem
+!               mass_diff_check_state = sum(mass_after_check_state(:)) - sum(mass_before_check_state(i, j, :, ivar))
+!               do k=kbottom(i,j,n),kk
+!                  tracer(i, j, k, n, ivar) = tracer(i, j, k, n, ivar) - mass_diff_check_state / sum(dp(i, j, kbottom(i,j,n):kk, n)/onem)
+!               enddo
+!             enddo
+!           endif
+!        enddo
+!      enddo
 !! --------
 
       ! Apply the Robert-Asselin filter to the surface and bottom state.
@@ -874,6 +891,10 @@ contains
       fabm_surface_state(1:ii, 1:jj, m, :) = fabm_surface_state(1:ii, 1:jj, m, :) + 0.5*ra2fac*(fabm_surface_state_old(1:ii, 1:jj, :)+fabm_surface_state(1:ii, 1:jj, n, :)-2.0*fabm_surface_state(1:ii, 1:jj, m, :))
       fabm_bottom_state(1:ii, 1:jj, m, :) = fabm_bottom_state(1:ii, 1:jj, m, :) + 0.5*ra2fac*(fabm_bottom_state_old(1:ii, 1:jj, :)+fabm_bottom_state(1:ii, 1:jj, n, :)-2.0*fabm_bottom_state(1:ii, 1:jj, m, :))
 
+!call check_dsnk("AFTER ROBERT",m)
+!call check_dsnk("AFTER ROBERT",n)
+call check_finite("AFTER ROBERT", m)
+call check_finite("AFTER ROBERT", n)
     end subroutine hycom_fabm_update
 
     subroutine check_state(location, index, repair)
@@ -882,12 +903,21 @@ contains
       integer, intent(in) :: index
       logical, intent(in) :: repair
 
-      logical :: valid_int, valid_sf, valid_bt
-
-      integer :: i, j, k, ivar, old_index
+      logical :: valid_int, valid_sf, valid_bt, repair_dsnk
+      real :: spdk
+      integer :: i, j, k, ivar, old_index, indDET, indDSNK, kb
 
       old_index = current_time_index
       call update_fabm_state(index)
+
+      do i=1,ii
+        do j=1,jj
+          do ivar=1,size(fabm_model%state_variables)
+            mass_before_check_state(i, j, :, ivar) = tracer(i, j, :, index, ivar) * dp(i, j, :, index)/onem
+          enddo
+        enddo
+      enddo
+
       do k=1,kk
         do j=1,jj
           call fabm_check_state(fabm_model, 1, ii, j, k, repair, valid_int)
@@ -906,30 +936,127 @@ contains
         end if
       end do
 
-      do ivar=1,size(fabm_model%state_variables)
-        if (.not.all(ieee_is_finite(tracer(1:ii, 1:jj, 1:kk, index, ivar)))) then
-          write (*,*) location, 'Interior state variable not finite:', ivar, 'range', minval(tracer(1:ii, 1:jj, 1:kk, index, ivar)), maxval(tracer(1:ii, 1:jj, 1:kk, index, ivar))
-          stop
-        end if
-      end do
+!      do ivar=1,size(fabm_model%state_variables)
+!        if (.not.all(ieee_is_finite(tracer(1:ii, 1:jj, 1:kk, index, ivar)))) then
+!          write (*,*) location, 'Interior state variable not finite:', ivar, 'range', minval(tracer(1:ii, 1:jj, 1:kk, index, ivar)), maxval(tracer(1:ii, 1:jj, 1:kk, index, ivar)),fabm_model%state_variables(ivar)%name
+!          stop
+!        end if
+!      end do
 
       if (repair) then
         ! FABM will have placed "missing value" for all state variables in all masked cells.
         ! However, as these can be revived later in the simulation, make sure their value is valid by
         ! copying bottom value for pelagic tracers to all layers below bottom.
+
+        do ivar=1,size(fabm_model%state_variables)
+          if ( fabm_model%state_variables(ivar)%name == "ECO_det" ) then
+             indDET = ivar
+          end if
+          if ( fabm_model%state_variables(ivar)%name == "ECO_dsnk" ) then
+             indDSNK = ivar
+             repair_dsnk = .true.
+          end if
+        end do
+
         do j=1,jj
           do i=1,ii
             if (SEA_P) then
               do k=kbottom(i, j, index)+1, kk
                 tracer(i, j, k, index, :) = tracer(i, j, kbottom(i, j, index), index, :)
               end do
+              do ivar=1,size(fabm_model%state_variables)
+                mass_after_check_state(:) = tracer(i, j, :, index, ivar) * dp(i,j,:, index)/onem
+                mass_diff_check_state = sum(mass_after_check_state(:)) - sum(mass_before_check_state(i, j, :, ivar))
+                do k=kbottom(i,j,index)+1,kk
+                  tracer(i, j, k, index, ivar) = tracer(i, j, k, index, ivar) - mass_diff_check_state / sum(dp(i, j, kbottom(i,j,index):kk, index)/onem)
+                enddo
+
+                if ( ivar == indDSNK) then
+                   if (repair_dsnk) then
+                      spd = tracer(i, j, :, index, indDSNK) / tracer(i, j, :,index, indDET) * 24.*60.*60. 
+                      if (i == itest .and. j == jtest) then
+                         write(*,*)"SPD",spd
+                      end if
+                      if (minval(spd).lt.0.5 .or. maxval(spd).gt.15.0 ) then
+                         k=1
+                         spdk = tracer(i, j, k, index, indDSNK) / tracer(i,j,k,index, indDET) * 24.*60.*60.
+                         if (spdk .lt.0.5 .or. spdk .gt.12.0 ) then
+                            spdk = 5.0
+                            tracer(i, j, k, index, indDSNK) = tracer(i,j,k,index, indDET) * spdk / 24. / 60. / 60.
+                         end if
+                         do k=2, kk
+                            spdk = tracer(i, j, k, index, indDSNK) / tracer(i, j,k,index, indDET) * 24.*60.*60.
+                            if (spdk .lt.0.5 .or. spdk .gt.12.0 ) then
+                               spdk = tracer(i, j, k-1, index, indDSNK) / tracer(i, j,k-1,index, indDET) * 24.*60.*60.
+                               tracer(i, j, k, index, indDSNK) = tracer(i, j,k,index, indDET) * spdk / 24. / 60. / 60.
+                            end if
+                         end do
+                         do k=1, kk
+                            if (tracer(i, j, k, index, indDSNK) / tracer(i, j, k,index, indDET) * 24.*60.*60. .lt.0.5 .or. tracer(i, j, k, index, indDSNK) / tracer(i, j, k,index, indDET) * 24.*60.*60. .gt.15.0 ) then
+                               write(*,*)"OUTSIDE REPAIR",tracer(i, j, k, index,indDSNK) / tracer(i, j, k,index, indDET) * 24.*60.*60.,k,kbottom(i, j, index)
+                            end if
+                         end do
+                      end if
+                   end if
+                end if
+              end do
             end if
           end do
         end do
       end if
 
+      do ivar=1,size(fabm_model%state_variables)
+        if (.not.all(ieee_is_finite(tracer(1:ii, 1:jj, 1:kk, index, ivar)))) then
+          write (*,*) location, 'Interior state variable not finite:', ivar,'range', minval(tracer(1:ii, 1:jj, 1:kk, index, ivar)), maxval(tracer(1:ii,1:jj, 1:kk, index, ivar)),fabm_model%state_variables(ivar)%name
+          stop
+        end if
+      end do
+
       call update_fabm_state(old_index)
     end subroutine check_state
+
+    subroutine check_finite(location, index)
+      use, intrinsic :: ieee_arithmetic
+      character(len=*), intent(in) :: location
+      integer, intent(in) :: index
+      integer:: ivar,i,j
+      do ivar=1,size(fabm_model%state_variables)
+        do i=1,ii
+           do j=1,jj
+              if (SEA_P) then
+                 if (.not.all(ieee_is_finite(tracer(i, j, 1:kk, index, ivar)))) then
+                    write (*,*) location, index,'Interior state variable not finite:', ivar,'range', minval(tracer(i, j, 1:kk, index, ivar)), maxval(tracer(i,j, 1:kk, index, ivar)),fabm_model%state_variables(ivar)%name
+                    write (*,*) location, index,'Interior state variable not finite:',kbottom(i,j,index),tracer(i, j, 1:kk, index, ivar)
+                    stop
+                 end if
+              end if
+           end do
+        end do
+      end do
+    end subroutine check_finite
+
+    subroutine check_dsnk(location,index)
+      character(len=*), intent(in) :: location
+      integer, intent(in) :: index
+      integer :: i, j, k
+        do j=1,jj
+          do i=1,ii
+            if (SEA_P) then
+               spd = tracer(i, j, :, index, 20) / tracer(i, j, :,index, 17) * 24.*60.*60.
+               if (i == itest .and. j == jtest) then
+                  write(*,*)"SPD",index,location,spd
+               end if
+                      if (minval(spd).lt.0.5 .or. maxval(spd).gt.15.0 ) then
+                         do k=1, kk
+                            if (tracer(i, j, k, index, 20) / tracer(i, j, k,index, 17) * 24.*60.*60. .lt.0.5 .or. tracer(i, j, k, index, 20) / tracer(i, j, k,index, 17) * 24.*60.*60. .gt.15.0 ) then
+                               write(*,*)location,index,tracer(i, j, k, index,20) / tracer(i, j, k,index, 17) * 24.*60.*60.,k,kbottom(i, j,index)
+                            end if
+                         end do
+                      end if
+            end if
+          end do
+        end do
+    end subroutine check_dsnk
 
     subroutine vertical_movement(n, m, timestep)
       integer, intent(in) :: n, m

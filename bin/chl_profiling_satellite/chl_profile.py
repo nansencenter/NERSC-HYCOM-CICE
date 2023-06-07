@@ -7,8 +7,6 @@ import datetime
 import warnings
 import argparse
 import getpass
-import _BETZY_the_mapping_loop_with_ice
-import _FRAM_the_mapping_loop_with_ice
 from numpy import dtype
 import os
 import socket
@@ -17,13 +15,16 @@ warnings.filterwarnings('ignore')
 user = getpass.getuser()
 
 '''
+CAGLAR: Jun23
+Added coccolithophore support
+
 CAGLAR: Nov22
 how to use:
 
 _FORTRAN_subroutine_
 
 The code uses a fortran loop for a higly efficient loop for mapping satellite to model grid.
-To use the fortran subroutine, notice that at the top, we imported machine specific library (e.g. _BETZY_the_mapping_loop_with_ice)
+To use the fortran subroutine, notice that we import machine specific library later in the code (e.g. _BETZY_the_mapping_loop_with_ice)
 You need to import your own machine library. To create it (inside the bin/chl_profiling_satellite/ folder) specify the MACHINE as your own
 
 >>  f2py -c -m _MACHINE_the_mapping_loop_with_ice satellite_map.f90
@@ -48,12 +49,6 @@ Also consider the following options:
               # the code will use your username and password.
               # you can provide your user and password as a system variable 
               # e.g. in bash: export copernicus_user=XXX  && export copernicus_pass=XXX  
-
---opendap_rep # this overwrites user satdir and gets the Copernicus L3 NRT data through opendap
-              # you need to have a Copernicus account.
-              # the code will use your username and password.
-              # you can provide your user and password as a system variable 
-              # e.g. in bash: export copernicus_user=XXX  && export copernicus_pass=XXX
 
 --debug       # save a netcdf file containing satellite, old chl and new chl.
 
@@ -144,8 +139,10 @@ def main(experiment,year,day,satdir,nerscdir,domain,debug,opendap_rep,opendap_nr
 
     dia3D = np.zeros((kdm,jdm,idm))
     fla3D = np.zeros((kdm,jdm,idm))
+    cocco3D = np.zeros((kdm,jdm,idm)) 
     diachl3D = np.zeros((kdm,jdm,idm))
     flachl3D = np.zeros((kdm,jdm,idm))
+    coccochl3D = np.zeros((kdm,jdm,idm))
     dp3D     = np.zeros((kdm,jdm,idm))
     depth3D  = np.zeros((kdm,jdm,idm))
 
@@ -153,13 +150,17 @@ def main(experiment,year,day,satdir,nerscdir,domain,debug,opendap_rep,opendap_nr
     diachlnew = np.zeros((kdm,jdm,idm))
     flanew    = np.zeros((kdm,jdm,idm))
     flachlnew = np.zeros((kdm,jdm,idm))
+    cocconew    = np.zeros((kdm,jdm,idm))
+    coccochlnew = np.zeros((kdm,jdm,idm))
     estimated = np.zeros((profdep,jdm,idm))
     d_estimated = np.zeros((profdep,jdm,idm))
     for k in range(kdm):
        dia3D[k,:,:]    = f.read_field('ECO_dia',k+1)
        fla3D[k,:,:]    = f.read_field('ECO_fla',k+1)
+       cocco3D[k,:,:]    = f.read_field('ECO_ccl',k+1)
        diachl3D[k,:,:] = f.read_field('ECO_diac',k+1)
        flachl3D[k,:,:] = f.read_field('ECO_flac',k+1)
+       coccochl3D[k,:,:] = f.read_field('ECO_cclc',k+1)
        dp3D[k,:,:]     = f.read_field('dp',k+1)/modeltools.hycom.onem
        if k == 0:
           depth3D[k,:,:] = dp3D[k,:,:]/2.
@@ -168,8 +169,10 @@ def main(experiment,year,day,satdir,nerscdir,domain,debug,opendap_rep,opendap_nr
 
        dianew[k,:,:] = dia3D[k,:,:]
        flanew[k,:,:] = fla3D[k,:,:]
+       cocconew[k,:,:] = cocco3D[k,:,:]
        diachlnew[k,:,:] = diachl3D[k,:,:]
        flachlnew[k,:,:] = flachl3D[k,:,:]
+       coccochlnew[k,:,:] = coccochl3D[k,:,:]
 
     depthmf = np.asfortranarray(depthm)
     satchlf = np.asfortranarray(satchl)
@@ -188,8 +191,10 @@ def main(experiment,year,day,satdir,nerscdir,domain,debug,opendap_rep,opendap_nr
     icf = np.asfortranarray(icemask)
 
     if 'betzy' in socket.gethostname():
+       import _BETZY_the_mapping_loop_with_ice
        satout = _BETZY_the_mapping_loop_with_ice.main(depthmf,scpxf,scpyf,platf,plonf,icf,satlatf,satlonf,satchlf)
     if 'fram' in socket.gethostname():
+       import _FRAM_the_mapping_loop_with_ice
        satout = _FRAM_the_mapping_loop_with_ice.main(depthmf,scpxf,scpyf,platf,plonf,icf,satlatf,satlonf,satchlf)
     satout = np.ma.masked_where(satout>1000.,satout)
     satout = np.ma.masked_where(satout<0.,satout)
@@ -226,9 +231,11 @@ def main(experiment,year,day,satdir,nerscdir,domain,debug,opendap_rep,opendap_nr
             # take model data in 1D
             dia    = dia3D[:,j,i]
             fla    = fla3D[:,j,i]
+            cocco  = cocco3D[:,j,i]
             diachl = diachl3D[:,j,i]
             flachl = flachl3D[:,j,i]
-            chl    = diachl + flachl
+            coccochl = coccochl3D[:,j,i]
+            chl    = diachl + flachl + coccochl
             d1D    = depth3D[:,j,i]
     
             # interpolate estimated profile to model depth
@@ -237,8 +244,10 @@ def main(experiment,year,day,satdir,nerscdir,domain,debug,opendap_rep,opendap_nr
             chl_adjusted = np.zeros((kdm))
             flachl_adjsuted = np.zeros((kdm))
             diachl_adjsuted = np.zeros((kdm))
+            coccochl_adjsuted = np.zeros((kdm))
             fla_adjsuted = np.zeros((kdm))
             dia_adjsuted = np.zeros((kdm))
+            cocco_adjsuted = np.zeros((kdm))
             for k in range(kdm):
                 if d1D[k] <= np.max(chl_profile_depth) : # profile estimation is limited to the profdep depth
                                                          # we need to keep model values below as they are
@@ -246,15 +255,19 @@ def main(experiment,year,day,satdir,nerscdir,domain,debug,opendap_rep,opendap_nr
                 else :
                    chl_adjusted[k] = chl[k]
     
-                flachl_adjsuted[k] = ( flachl[k] / (flachl[k] + diachl[k]) ) * chl_adjusted[k]
-                diachl_adjsuted[k] = ( diachl[k] / (flachl[k] + diachl[k]) ) * chl_adjusted[k]
+                flachl_adjsuted[k] = ( flachl[k] / (flachl[k] + diachl[k] + coccochl[k]) ) * chl_adjusted[k]
+                diachl_adjsuted[k] = ( diachl[k] / (flachl[k] + diachl[k] + coccochl[k]) ) * chl_adjusted[k]
+                coccochl_adjsuted[k] = ( coccochl[k] / (flachl[k] + diachl[k] + coccochl[k]) ) * chl_adjusted[k]
                 fla_adjsuted[k] = flachl_adjsuted[k] * ( fla[k] / flachl[k] )
                 dia_adjsuted[k] = diachl_adjsuted[k] * ( dia[k] / diachl[k] )
+                cocco_adjsuted[k] = coccochl_adjsuted[k] * ( cocco[k] / coccochl[k] )
     
             dianew[:,j,i] = dia_adjsuted
             flanew[:,j,i] = fla_adjsuted
+            cocconew[:,j,i] = cocco_adjsuted
             diachlnew[:,j,i] = diachl_adjsuted
             flachlnew[:,j,i] = flachl_adjsuted
+            coccochlnew[:,j,i] = coccochl_adjsuted
             estimated[:,j,i] = chl_profile
             d_estimated[:,j,i] = chl_profile_depth
 
@@ -281,6 +294,12 @@ def main(experiment,year,day,satdir,nerscdir,domain,debug,opendap_rep,opendap_nr
            dummy = flanew[k-1,:,:]
            field[~depthm.mask] = dummy[~depthm.mask]
            new_abfile.write_field(field,None,fieldname,k,t)
+        elif fieldname == "ECO_ccl" :
+           print("MODIFYING  %10s at level %3d at time=%d"%(fieldname,k,t))
+#           new_abfile.write_field(flanew[k-1,:,:],None,fieldname,k,t)
+           dummy = cocconew[k-1,:,:]
+           field[~depthm.mask] = dummy[~depthm.mask]
+           new_abfile.write_field(field,None,fieldname,k,t)
         elif fieldname == "ECO_flac" :
            print("MODIFYING  %10s at level %3d at time=%d"%(fieldname,k,t))
 #           new_abfile.write_field(flachlnew[k-1,:,:],None,fieldname,k,t)
@@ -291,6 +310,12 @@ def main(experiment,year,day,satdir,nerscdir,domain,debug,opendap_rep,opendap_nr
            print("MODIFYING  %10s at level %3d at time=%d"%(fieldname,k,t))
 #           new_abfile.write_field(diachlnew[k-1,:,:],None,fieldname,k,t)
            dummy = diachlnew[k-1,:,:]
+           field[~depthm.mask] = dummy[~depthm.mask]
+           new_abfile.write_field(field,None,fieldname,k,t)
+        elif fieldname == "ECO_cclc" :
+           print("MODIFYING  %10s at level %3d at time=%d"%(fieldname,k,t))
+#           new_abfile.write_field(diachlnew[k-1,:,:],None,fieldname,k,t)
+           dummy = coccochlnew[k-1,:,:]
            field[~depthm.mask] = dummy[~depthm.mask]
            new_abfile.write_field(field,None,fieldname,k,t)
         else:
