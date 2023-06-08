@@ -386,16 +386,10 @@ c ---           average currents over top thkcdw meters
                     exit
                   endif
                 enddo !k
-!TAR START ! Remove old imp
-!               usur  = 0.5*relative_wnd_coef*( usur/psur + 
-!        &                           ubavg(i,j,n)+ubavg(i+1,j,n) )
-!               vsur  = 0.5*relative_wnd_coef*( vsur/psur + 
-!        &                           vbavg(i,j,n)+vbavg(i,j+1,n) ) 
                 usur  = 0.5*( usur/psur + 
      &                               ubavg(i,j,n)+ubavg(i+1,j,n) )
                 vsur  = 0.5*( vsur/psur + 
      &                               vbavg(i,j,n)+vbavg(i,j+1,n) )
-!TAR END
               endif !usur,vsur
 c
               if     (wndflg.eq.2 .or. wndflg.eq.3) then ! tau on p grid
@@ -474,53 +468,36 @@ c ---           calculate stress from 10m winds using cd_coare or cd_core3
 c
                 if     (wndflg.eq.4 .and. flxflg.eq.6) then
 c ---             use wind-current in place of wind for everything
-!TAR START
-!                  samo  = sqrt( (wndx-usur)**2 + (wndy-vsur)**2 )
                    samo  = sqrt( (wndx-relative_wnd_coef*usur)**2 +
      &                            (wndy-relative_wnd_coef*vsur)**2 )
-!TAR END
                   cdw   = 1.0e-3*cd_coarep(samo,vpmx,airt,pair,
-     &                                     temp(i,j,1,n))
-!TAR START                  
+     &                                     temp(i,j,1,n))               
                   surtx( i,j) = rair*cdw*samo*(wndx-
      &                                          relative_wnd_coef*usur)
                   surty( i,j) = rair*cdw*samo*(wndy-
      &                                          relative_wnd_coef*vsur)
-!                  surtx( i,j) = rair*cdw*samo*(wndx-usur)
-!                  surty( i,j) = rair*cdw*samo*(wndy-vsur)
 
-!TAR END
                   wndocn(i,j) = samo  !save for thermf
                 elseif (wndflg.eq.4) then
                   cdw  = 1.0e-3*cd_coare(wind,vpmx,airt,
      &                                    temp(i,j,1,n))
 c ---             use wind-current magnitude and direction for stress 
-!TAR START
                   samo = sqrt( (wndx-relative_wnd_coef*usur)**2 +
      &                          (wndy-relative_wnd_coef*vsur)**2 )
                   surtx(i,j) = rair*cdw*samo*(wndx-
      &                                         relative_wnd_coef*usur)
                   surty(i,j) = rair*cdw*samo*(wndy-     
      &                                         relative_wnd_coef*vsur)
-!                  samo = sqrt( (wndx-usur)**2 + (wndy-vsur)**2 )
-!                  surtx(i,j) = rair*cdw*samo*(wndx-usur)
-!                  surty(i,j) = rair*cdw*samo*(wndy-vsur)
-!TAR END
                 else  ! wndflg.eq.5
                   cdw  = 1.0e-3*cd_core2(wind,vpmx,airt,
      &                                    temp(i,j,1,n))
 c ---             use wind-current magnitude and direction for stress 
-!TAR START                  
-!                  samo = sqrt( (wndx-usur)**2 + (wndy-vsur)**2 )
-!                  surtx(i,j) = rair*cdw*samo*(wndx-usur)
-!                  surty(i,j) = rair*cdw*samo*(wndy-vsur)
                   samo = sqrt( (wndx-relative_wnd_coef*usur)**2 + 
      &                          (wndy-relative_wnd_coef*vsur)**2 )
                   surtx(i,j) = rair*cdw*samo*(wndx-
      &                                          relative_wnd_coef*usur)
                   surty(i,j) = rair*cdw*samo*(wndy-
      &                                          relative_wnd_coef*vsur)
-!TAR END
           endif
               endif !wndflg
 c
