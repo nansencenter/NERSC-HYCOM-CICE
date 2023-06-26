@@ -76,7 +76,7 @@ subroutine ncvar_dump2D(rungen,nx,ny,lon0,lat0,mdx,mdy,mflg,imem)
    dimms2d=(/idimid,jdimid/)
    dimms3d=(/idimid,jdimid,rdimid/)
 
-   print *,"Writing into the new file: "//trim(filenc)
+   print *,"Writing into the file: "//trim(filenc)
    if (imem==0.or..not.ex1) then
       call handle_err(NF90_DEF_VAR(ncid,'lon',NF90_Float,dimms2d,varid))
       call handle_err(NF90_PUT_ATT(ncid,varid,'units',"degree"))
@@ -92,7 +92,7 @@ subroutine ncvar_dump2D(rungen,nx,ny,lon0,lat0,mdx,mdy,mflg,imem)
       call handle_err(NF90_PUT_VAR(ncid,varid,lat0,start=(/1,1/)))
 
       call handle_err(NF90_REDEF(ncid))
-      call handle_err(NF90_DEF_VAR(ncid,'dX-ice',NF90_Float,dimms2d,varid))
+      call handle_err(NF90_DEF_VAR(ncid,'dX',NF90_Float,dimms2d,varid))
       call handle_err(NF90_PUT_ATT(ncid,varid,'units',"km"))
       call handle_err(NF90_PUT_ATT(ncid,varid,'_FillValue',undefr4))
       call handle_err(NF90_PUT_ATT(ncid,varid,'missing_value',undefr4))
@@ -101,7 +101,7 @@ subroutine ncvar_dump2D(rungen,nx,ny,lon0,lat0,mdx,mdy,mflg,imem)
       call handle_err(NF90_PUT_VAR(ncid,varid,tmpdx,start=(/1,1/)))
 
       call handle_err(NF90_REDEF(ncid))
-      call handle_err(NF90_DEF_VAR(ncid,'dY-ice',NF90_Float,dimms2d,varid))
+      call handle_err(NF90_DEF_VAR(ncid,'dY',NF90_Float,dimms2d,varid))
       call handle_err(NF90_PUT_ATT(ncid,varid,'units',"km"))
       call handle_err(NF90_PUT_ATT(ncid,varid,'_FillValue',undefr4))
       call handle_err(NF90_PUT_ATT(ncid,varid,'missing_value',undefr4))
@@ -117,9 +117,9 @@ subroutine ncvar_dump2D(rungen,nx,ny,lon0,lat0,mdx,mdy,mflg,imem)
       call handle_err(NF90_PUT_VAR(ncid,varid,mflg,start=(/1,1/)))
    else
       print *, 'Debuging 1'
-      call handle_err(NF90_INQ_VARID(ncid,'dY-ice',varid))
+      call handle_err(NF90_INQ_VARID(ncid,'dY',varid))
       call handle_err(NF90_PUT_VAR(ncid,varid,tmpdy,start=(/1,1/)))
-      call handle_err(NF90_INQ_VARID(ncid,'dX-ice',varid))
+      call handle_err(NF90_INQ_VARID(ncid,'dX',varid))
       call handle_err(NF90_PUT_VAR(ncid,varid,tmpdx,start=(/1,1/)))
       print *, 'Debuging 2'
    endif
