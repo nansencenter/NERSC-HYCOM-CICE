@@ -30,7 +30,7 @@ endif
 	cat MODEL.CPP $*.F | $(CPP) $(CPPFLAGS) > ./TMP/$*.f; cd ./TMP ; $(CF77) -c  $(CPPFLAGS) $(FFLAGS) $(F77FLG) $(INCLUDE) -o $*.o ../$<
 
 
-TARGET0= icedriftnc_osisaf
+TARGET0= icedrift_osisafNC
 targets = $(TARGET0)
 script=gen_icedrift_ens.sh
 all : $(TARGET0)
