@@ -44,18 +44,16 @@ program p_icedrift_osisaf
   use m_ncvar_dump
   implicit none
 
-  !integer,parameter :: NDAYS_OSISAF_DRIFT=2    ! Two day interval for OSISAF product before
-  !character(len=*),parameter :: OSISAF_FILE_NAME_PREFIX = 'ice_drift_nh_polstere-625_multi-oi_'
-  integer,parameter :: NDAYS_OSISAF_DRIFT=1  ! Two day interval for OSISAF product before
-  character(len=*),parameter :: OSISAF_FILE_NAME_PREFIX='ice_drift_nh_ease2-750_cdr-v1p0_24h-'
   character(len=*),parameter :: Def_Obsdir='/cluster/projects/nn2993k/TP4b0.12/idrft_osisaf/'
-
+  integer :: NDAYS_DRIFT
+  character(len=80) :: OSISAF_NAME_PREFIX
+  character(len=80) :: osisafdir
+  character(len=80) :: osisaf_dir
   ! Global variables derived from input arguments
-  character(len=3)      :: rungen       ! Typically TP4/TP5
-  character(len=80)    :: driftfile    ! Name of drift file from OSISAF
-  character(len=80)    :: dailyfile    ! Name of daily nc-file from MODLE
-  !character(len=4)      :: byear        ! Bulletin year (first date in daily mean file name)
-  integer               :: enssize      ! Ensemble size
+  character(len=3)  :: rungen       ! Typically TP4/TP5
+  character(len=100) :: driftfile    ! Name of drift file from OSISAF
+  character(len=80) :: dailyfile    ! Name of daily output from CICE 
+  integer           :: enssize      ! Ensemble size
 
   call main()
 
@@ -80,10 +78,12 @@ program p_icedrift_osisaf
 
       if (enssize>0) then
          do imem=1,enssize
+            print *, fjulday
+            call getInitialPositions(drnx,drny,drlon,drlat,x0,y0)
             call calculateModelDrift(drnx,drny,fyear,fjulday,x0,y0,x,y,imem)
             call dXdYObservationSpace(drnx,drny,x0,y0,x,y,dX,dY)
             call writeOutputFile(drnx,drny,dX,dY,imem)
-            call ncvar_dump2D(rungen,drnx,drny,drlon,drlat,dX,dY,dflg,imem)
+            !call ncvar_dump2D(rungen,drnx,drny,drlon,drlat,dX,dY,dflg,imem)
          end do
       else
          call calculateModelDrift(drnx,drny,fyear,fjulday,x0,y0,x,y,0)
@@ -100,29 +100,37 @@ program p_icedrift_osisaf
   subroutine readArguments(fyear,fjulday)
       integer,intent(out):: fyear,fjulday
       character(len=100) :: tmparg
-      character(len=8) :: Sdate 
+      character(len=8) :: Sdate,Ldate 
+      character(len=20) :: Strcmd 
       integer :: pl,fmonth,fdm
       integer :: lyear,lmonth,ldm
       integer*4, external :: iargc
       logical             :: fexist
 
-      if (iargc()>=2.and.iargc()<=3) then
-         ! Rungen for model id (TP5)
-         ! bulletin refyear from model
-         ! call getarg(1,tmparg) ; read(tmparg,*) byear
-         ! bulletin julian day from model
-         !call getarg(2,tmparg) ; read(tmparg,*) bjuld
-
+      Strcmd='icedrift_osisafNC'
+      if (iargc()>=3.and.iargc()<=4) then
          ! Input ice drift file from model
          call getarg(1,tmparg) ; read(tmparg,*) dailyfile 
+         print *,'dailyfile='//trim(dailyfile)
+         ! Input where is the ice drift observations. Needed for initial grid positions,
+         call getarg(2,osisaf_dir) ; 
+         print *, osisafdir 
 
-         ! Input ice drift file. Needed for initial grid positions,
-         ! start and end times of model integrations
-         call getarg(2,tmparg) ; !read(tmparg,*) driftfile
-         
+         call getarg(3,tmparg) ; read(tmparg,*) NDAYS_DRIFT
+         if (NDAYS_DRIFT==1) then
+            ! ice_drift_nh_ease2-750_cdr-v1p0_24h-202012261200.nc
+            OSISAF_NAME_PREFIX='ice_drift_nh_ease2-750_cdr-v1p0_24h-'
+         elseif (NDAYS_DRIFT==2) then
+            ! ice_drift_nh_polstere-625_multi-oi_202303231200.nc
+            OSISAF_NAME_PREFIX='ice_drift_nh_polstere-625_multi-oi_'
+         else
+            print *,'No supported observation due to the drift time days'
+            stop
+         endif 
+
          pl=5
          if (len(dailyfile) .lt. pl .or. dailyfile(1:pl) .ne.'iceh.') then
-            print *, 'icedriftnc_osisaf: ERROR'
+            print *, trim(Strcmd)//': ERROR'
             print *, 'Given filename does not follow with general prefix:'
             print *, 'iceh.????-??-??.nc'
             call exit(1)
@@ -134,63 +142,50 @@ program p_icedrift_osisaf
          read(dailyfile(pl+9:pl+10),'(i2)') ldm
          print *,'Last year, month, day'
          print *,lyear,lmonth,ldm
-
+         write(Ldate,'(i4.4,i2.2,i2.2)') lyear,lmonth,ldm
          ! Convert to julian days ref start year
-         fjulday=datetojulian(lyear,lmonth,ldm,lyear,1,1)
-         print *,'First year, month, day',fjulday
-         if (fjulday<NDAYS_OSISAF_DRIFT) then
-            fyear=lyear-1
-            select case (NDAYS_OSISAF_DRIFT)
-               case (2) 
-                  fmonth=12
-                  fdm=30
-               case (3) 
-                  fmonth=12
-                  fdm=29
-               case default
-                  fmonth=12
-                  fdm=31
-            end select
+         fjulday=datetojulian(lyear,lmonth,ldm,1950,1,1)
 
-         else
-            call juliantodate(fjulday-NDAYS_OSISAF_DRIFT,fyear,fmonth,fdm,lyear,1,1)
-         endif
+         print *,'First year, month, day',fjulday
+         call juliantodate(fjulday-NDAYS_DRIFT+1,fyear,fmonth,fdm,1950,1,1)
          print *,fyear,fmonth,fdm,Sdate
          write(Sdate,'(i4.4,i2.2,i2.2)') fyear,fmonth,fdm
          write(dailyfile(pl+1:pl+4),'(i4)') fyear
          write(dailyfile(pl+6:pl+7),'(i2)') fmonth
          write(dailyfile(pl+9:pl+10),'(i2)') fdm
-         fjulday=datetojulian(fyear,fmonth,fdm,fyear,1,1)
+         fjulday=datetojulian(fyear,fmonth,fdm,1950,1,1)
 
-         driftfile=trim(OSISAF_FILE_NAME_PREFIX)//trim(Sdate)//'1200.nc'
-         inquire(File=trim(tmparg)//trim(driftfile),EXIST=fexist)
+         driftfile=trim(OSISAF_NAME_PREFIX)//trim(Ldate)//'1200.nc'
+         print *, trim(osisafdir)//trim(driftfile)
+         inquire(File=trim(osisaf_dir)//trim(driftfile),EXIST=fexist)
          if (fexist) then
-            !call system("ln -sf 'trim(tmparg)//trim(driftfile)//' .")
-            call system("ln -sf "//trim(tmparg)//trim(driftfile)//" .")
-            print *, 'Obs. Drift: ',trim(OSISAF_FILE_NAME_PREFIX)//trim(Sdate)//'1200.nc'
+            call system("ln -sf "//trim(osisaf_dir)//trim(driftfile)//" .")
+            print *, 'Obs. Drift: ',trim(driftfile)
          else
             print *, 'Missing the drift Obs. Please check the input directory'
-            print *,trim(tmparg)
+            print *,trim(OSISAF_DIR)
             print *, 'Or try to use the default directory (Betzy): '
             print *, trim(Def_Obsdir)//' ?'
             call exit(1)
          endif
-
          enssize=0
-         if (iargc()==3) then
-            call getarg(3,tmparg) ; read(tmparg,*) enssize
+         if (iargc()==4) then
+            call getarg(4,tmparg) ; read(tmparg,*) enssize
             if (enssize<1.or.enssize>100) then
                print *, 'double check for the predefined index in ensemble!'
                call exit(1)
             endif
          endif 
 
-       else
-          print *,'icedriftnc_osisaf calculates ice drift based on a specified output file in HYCOM_CICE'
+      else
           print *
-          print *,'Usage - 2/3 args:'
-          print *,'icedriftnc_osisaf iceh_nc_file Obs_dir <size of ensemble>'
+          print *,'To calculates ice drift based on a specified output file in HYCOM_CICE'
+          print *, 'Usage: '
+          print *, '        ~ <single_iceh_file> <Obs_dir> <1/2>'
+          print *, '  .Or.  ~ <ens_iceh_file> <Obs_dir> <1/2> <size-ensemble>'
           print *
+          print *, 'NB: Option of 1/2 means the 1-day or 2-day drift products.'
+          print * 
           call exit(1)
       end if
   end subroutine
@@ -225,8 +220,9 @@ program p_icedrift_osisaf
 
 !
 ! reading the iceh file as the daily output from HYCOM_CICE
-  subroutine getIcedriftDaily(driu,driv)
+  subroutine getIcedriftDaily(driu,driv,imem)
       real,dimension(idm,jdm),intent(inout) :: driu,driv
+      integer,optional,intent(in) :: imem
       integer, dimension(NF90_MAX_VAR_DIMS) :: dimsizes
       integer :: recdim, numdim
       integer :: drnx,drny
@@ -238,14 +234,19 @@ program p_icedrift_osisaf
       drnx=dimsizes(1)
       drny=dimsizes(2)
 
-      call ncvar_read(dailyfile,'uvel_d',driu,drnx,drny,1,1,1)
-      call ncvar_read(dailyfile,'vvel_d',driv,drnx,drny,1,1,1)
-      call ncvar_read(dailyfile,'aice_d',varmask,drnx,drny,1,1,1)
+      if (present(imem)) then
+         call ncvar_read(dailyfile,'uvel_d',driu,drnx,drny,1,1,1,imem)
+         call ncvar_read(dailyfile,'vvel_d',driv,drnx,drny,1,1,1,imem)
+         call ncvar_read(dailyfile,'aice_d',varmask,drnx,drny,1,1,1,imem)
+         !call ncvar_read(dailyfile,'aisnap_d',varmask,drnx,drny,1,1,1,imem)
+      else
+         call ncvar_read(dailyfile,'uvel_d',driu,drnx,drny,1,1,1)
+         call ncvar_read(dailyfile,'vvel_d',driv,drnx,drny,1,1,1)
+         call ncvar_read(dailyfile,'aice_d',varmask,drnx,drny,1,1,1)
+      endif
       where(varmask<0.05.or.varmask>1.0) driv=0
       where(varmask<0.05.or.varmask>1.0) driu=0
-      !print *,minval(driv),maxval(driv)
       !print *,minval(driu),maxval(driu)
-
   end subroutine
 
 
@@ -297,28 +298,30 @@ program p_icedrift_osisaf
 
       allocate(u(idm,jdm,2))
       allocate(v(idm,jdm,2))
-
       allocate(x(drnx,drny))
       allocate(y(drnx,drny))
 
       ! We use 6 hours as the RK(2) time step
       delt=6*3600.
+      time=fjulday-datetojulian(fyear,1,1,1950,1,1)
 
-      time=fjulday
       first=.true.
       x=x0
       y=y0
-
       ! This cycles days
-      do daystep=1,NDAYS_OSISAF_DRIFT
+      do daystep=1,NDAYS_DRIFT
           !print *,'day step',daystep
           ! Initially ; Read new field into time slot 0 and 1
           if (first) then
             call year_day(time,fyear,forecastdate,'ecmwf')
             if (imem>0) then
                call readDailyMeanFile(forecastdate,u,v,1,imem)
+               u(:,:,2)=u(:,:,1)
+               v(:,:,2)=v(:,:,1)
             else
                call readDailyMeanFile(forecastdate,u,v,1)
+               u(:,:,2)=u(:,:,1)
+               v(:,:,2)=v(:,:,1)
             endif
             first=.false.
           else
@@ -330,11 +333,13 @@ program p_icedrift_osisaf
           ! Note: year_day routine handles change from one year
           ! to the next. If time+daystep is 365 or larger it
           ! returns a day in January the following year
-          call year_day(time+daystep,fyear,forecastdate,'ecmwf')
-          if (imem>0) then
-             call readDailyMeanFile(forecastdate,u,v,1,imem)
-          else
-             call readDailyMeanFile(forecastdate,u,v,2)
+          if (daystep>1) then
+             call year_day(min(time+daystep,time+NDAYS_DRIFT-1),fyear,forecastdate,'ecmwf')
+             if (imem>0) then
+                call readDailyMeanFile(forecastdate,u,v,2,imem)
+             else
+                call readDailyMeanFile(forecastdate,u,v,2)
+             endif
           endif
           ! One days worth of rk2 integration here
           call rk2(u,v,scpx,scpy,idm,jdm,x,y,drnx,drny,delt,undef)
@@ -398,14 +403,16 @@ program p_icedrift_osisaf
       if (present(indmem)) then
          write(cmem,"(I3.3)") indmem
          dailyfile='iceh.'//forecastdate%cyy//'-'//forecastdate%cmm//  &
-                '-'//forecastdate%cdm//"_"//trim(cmem)//'.nc' 
+                '-'//forecastdate%cdm//'_ens.nc' 
+         !dailyfile='iceh.'//forecastdate%cyy//'-'//forecastdate%cmm//  &
+         !       '-'//forecastdate%cdm//"_"//trim(cmem)//'.nc' 
+         call getIcedriftDaily(iou,iov,indmem)
       else
          dailyfile='iceh.'//forecastdate%cyy// &
             '-'//forecastdate%cmm//'-'//forecastdate%cdm//'.nc' 
+         call getIcedriftDaily(iou,iov)
       endif
-
       print *,'reading '//trim(dailyfile),ind
-      call getIcedriftDaily(iou,iov)
       u(:,:,ind) = iou
       v(:,:,ind) = iov
       deallocate(iou,iov)
@@ -421,8 +428,9 @@ program p_icedrift_osisaf
       real*4, dimension(:,:), allocatable :: dXio,dYio
 
       ! Name for resulting model drift file
-      findnc=index(driftfile,'.nc')
-      drfilemodel=driftfile(1:findnc-1)//'.uf'
+      findnc=index(dailyfile,'.nc')
+      drfilemodel=dailyfile(1:findnc-1)//'.uf'
+      print *,'Output the ensemble file: '//trim(drfilemodel)
 
       allocate(dXio(drnx,drny))
       allocate(dYio(drnx,drny))
