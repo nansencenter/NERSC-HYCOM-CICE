@@ -223,18 +223,7 @@ class ConformalMapping(object) :
       lon_o=numpy.atleast_1d(lon_o)
 
       # fix for wrap-around
-      # western limit in new coordinates can be east of eastern limit (sigh)....
-      # in that case di is < 0
-      lontmp=numpy.copy(lon_o)
-      #
-      I=numpy.logical_and(lontmp<self._wlim,self._di>0.)
-      lontmp[I]=lontmp[I]+360.
-      #
-      I=numpy.logical_and(lontmp>self._wlim,self._di<0.)
-      lontmp[I]=lontmp[I]+360.
-      #
-      I=lontmp-self._wlim > 360.
-      lontmp[I] = lontmp[I]-360.
+      lon_o[np.where(lon_o<0)] += 360.
 
       ipiv=(lontmp-self._wlim)/self._di + 1.0
 
