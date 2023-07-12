@@ -214,37 +214,26 @@ class ConformalMapping(object) :
       return lat_o,lon_o
 
 
-   def pivotp(self,lat_o,lon_o) :
+   def pivotp(self,lat_n,lon_n) :
       # This subroutine computes the pivot point of each of the observations
       # in the temporary array tmpobs of type observation. The pivot point
       # is the biggest i and the biggest j, (i,j) is the computation points/
       # the grid, that is less than the position of the observation.
-      lat_o=numpy.atleast_1d(lat_o)
-      lon_o=numpy.atleast_1d(lon_o)
+      lat_n=numpy.atleast_1d(lat_n)
+      lon_n=numpy.atleast_1d(lon_n)
 
       # fix for wrap-around
-      # western limit in new coordinates can be east of eastern limit (sigh)....
-      # in that case di is < 0
-      lontmp=numpy.copy(lon_o)
-      #
-      I=numpy.logical_and(lontmp<self._wlim,self._di>0.)
-      lontmp[I]=lontmp[I]+360.
-      #
-      I=numpy.logical_and(lontmp>self._wlim,self._di<0.)
-      lontmp[I]=lontmp[I]+360.
-      #
-      I=lontmp-self._wlim > 360.
-      lontmp[I] = lontmp[I]-360.
+      lon_n[np.where(lon_n<0)] += 360.
 
-      ipiv=(lontmp-self._wlim)/self._di + 1.0
+      ipiv=(lon_n-self._wlim)/self._di + 1.0
 
       jpiv=numpy.ones(ipiv.shape)*-999
       if self._mercator: 
-         I=numpy.abs(lat_o) < 89.999 
-         tmptan=numpy.tan(0.5*_rad*lat_o[I]+0.25*_pi_1)
+         I=numpy.abs(lat_n) < 89.999 
+         tmptan=numpy.tan(0.5*_rad*lat_n[I]+0.25*_pi_1)
          jpiv[I]=(numpy.log(tmptan)-self._slim*_rad)/(_rad*self._dj) + 1.0
       else :
-         jpiv=(lat_o-self_slim)/dj + 1.0
+         jpiv=(lat_n-self_slim)/dj + 1.0
 
       # Returns floats, cast to int to use as index/pivot points
       return ipiv,jpiv
