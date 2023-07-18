@@ -485,8 +485,8 @@ if [ ${testthkdf2} -eq 1 ] ; then
 fi
 testveldf4=$(echo $VELDF4'<'0.0 | bc -l)
 if [ ${testveldf4} -eq 1 ] ; then 
-   ${pget} ${D}/../../relax/${E}/veldf4.a veldf4.a  || tellerror "Could not get thkdf2.a"
-   ${pget} ${D}/../../relax/${E}/veldf4.b veldf4.b  || tellerror "Could not get thkdf2.b"
+   ${pget} ${D}/../../relax/${E}/veldf4.a veldf4.a  || tellerror "Could not get veldf4.a"
+   ${pget} ${D}/../../relax/${E}/veldf4.b veldf4.b  || tellerror "Could not get veldf4.b"
 fi
 
 
