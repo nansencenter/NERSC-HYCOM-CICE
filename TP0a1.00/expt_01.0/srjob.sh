@@ -7,7 +7,7 @@
 #SBATCH -N 1   # number of nodes
 #SBATCH -n 4 # number of cores
 #SBATCH  --mail-type=END
-#SBATCH --mail-user=achref.othmani@nersc.no
+#SBATCH --mail-user=
 
 #SBATCH -o log/HY_CICE.out
 #SBATCH -e log/HY_CICE.err
