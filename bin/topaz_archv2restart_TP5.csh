@@ -4,10 +4,25 @@ set echo
 #
 # --- Form a HYCOM restart file from a HYCOM archive file.
 #
-setenv RID TP5a0.06
+set in_year = $1
+set in_day = $2
+set in_day = `printf '%03d' $in_day`
+
+set out_year = $1
+set out_day = $2
+set out_day = `printf '%03d' $out_day`
+
+set dir = `pwd`
+set parentdir = `dirname $dir`
+set foldername = `basename $parentdir`
+
+setenv RID = $foldername #TP5a0.06
+source $pwd/EXPT.src
+
 setenv R  /cluster/work/users/achoth//${RID}
-setenv D /cluster/work/users/achoth/${RID}/expt_08.1/data
-setenv O /cluster/work/users/achoth/${RID}/expt_08.1/data/NewRestart
+setenv D /cluster/work/users/achoth/${RID}/expt_${X}/data
+setenv O /cluster/work/users/achoth/${RID}/expt_${X}/data/NewRestart
+
 
 #
 #mkdir -p ${O}
@@ -16,11 +31,11 @@ cd       ${D}
 touch regional.depth.a regional.depth.b
 if (-z regional.depth.a) then
   /bin/rm regional.depth.a
-  /bin/ln -s ${R}/topo/depth_${RID}_05.a regional.depth.a
+  /bin/ln -s ${R}/topo/depth_${RID}_{T}.a regional.depth.a
 endif
 if (-z regional.depth.b) then
   /bin/rm regional.depth.b
-  /bin/ln -s ${R}/topo/depth_${RID}_05.b regional.depth.b
+  /bin/ln -s ${R}/topo/depth_${RID}_{T}.b regional.depth.b
 endif
 #
 touch regional.grid.a regional.grid.b
@@ -41,9 +56,9 @@ endif
 #aprun -n 1 ~/HYCOM-tools/archive/src/archv2restart <<E-o-D
 #~/HYCOM-tools/archive/src/archv2restart <<E-o-D
 /cluster/home/achoth/AchHycom/NERSC-HYCOM-CICE/hycom/hycom_ALL/hycom_2.2.72_ALL/archive/src/archv2restart <<E-o-D
-${D}/archv.1993_001_00.a
-${D}/restart.1993_001_00_0000.a
-${O}/restart.1993_001_00_0000.a
+${D}/archv.${in_year}_${in_day}_00.a
+${D}/restart.${in_year}_${in_day}_00_0000.a
+${O}/restart.${out_year}_${out_day}_00_0000.a
  081     'iexpt ' = experiment number x10 (000=from archive file)
   3     'yrflag' = days in year flag (0=360J16,1=366J16,2=366J01,3-actual)
 800     'idm   ' = longitudinal array size
