@@ -71,19 +71,19 @@ c
      &                                        flxice(i,j)   !cell average
               sstflx(i,j) = (1.0-covice(i,j))*sstflx(i,j)   !relax over ocean
               if (sss_underice==.false.) then
-                sssflx(i,j)=(1.0-covice(i,j))*sssflx(i,j)   ! skip relaxation at ice cover
+                sssflx(i,j)=(1.0-covice(i,j))*sssflx(i,j)   !skip relaxation bellow sea ice
               endif
               if     (rivers(i,j,1).eq.0.0) then  !usual case
                 salflx(i,j) =
      &                      (1.0-covice(i,j))*salflx(i,j) +
      &                                        sflice(i,j) + !cell average
      &                                        rivflx(i,j) + !rivers everywhere
-     &                                        sssflx(i,j)   ! skip relaxation at ice cover
+     &                                        sssflx(i,j)   !relax everywhere 
               else !a river point
                 salflx(i,j) =                 salflx(i,j) + !might be a river
      &                                        sflice(i,j) + !cell average
      &                                        rivflx(i,j) + !rivers evrywhere
-     &                                        sssflx(i,j)   !relax  evrywhere
+     &                                        sssflx(i,j)   !relax evrywhere
               endif !rivers
                util1(i,j) = surflx(i,j)*scp2(i,j)
                util2(i,j) = salflx(i,j)*scp2(i,j)
