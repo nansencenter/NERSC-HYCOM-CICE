@@ -131,24 +131,9 @@ if [ ${iceclim} -eq 1 ]; then
       ml load matplotlib/3.2.1-intel-2020a-Python-3.8.2
       ${BINDIR}cice_kmt.py regional.depth.a
    fi
-   prg=${BINDIR}ice_climatology/extract_clim_iceh.sh
-   ${prg}
-   [ -s ice_initial.nc ] && mv ice_initial.nc ../.
-   cd ${EDIR}
+   prg=${BINDIR}ice_climatology/extract_clim_iceh_update.sh
+   ${prg} ${EDIR}
    [ -r ice_clim ] && rm -rf ice_clim
-   if [ -s ice_initial.nc -a -s ice_in ]; then
-      iice=$(grep -n "ocn_data_dir" ice_in | awk -F ":" '{print $1}')
-      if [ ${iice} -gt 0 ]; then
-         [ -s ice_new ] && rm ice_new
-         awk -F " " '{
-            if (FNR=='$iice') 
-               {print " ",$1,$2,"  ",$3,"\047../\047"}
-            else
-               {print $0}
-         }' ice_in | tr -d '\r' > ice_new
-         [ -s ice_new ] && mv ice_new ice_in
-      fi
-   fi
 fi
 
 # Create simple river forcing
