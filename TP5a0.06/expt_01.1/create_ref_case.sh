@@ -113,6 +113,44 @@ res=$?
 [ $res -ne 0 ] && echo "Failure..."
 echo ".."
 
+iceclim=1
+# Create a climatology ice cover used by initialization
+cd $EDIR
+echo "Prepare the sea ice ocover at first from climatology:"
+if [ ${iceclim} -eq 1 ]; then
+   echo "It requires to access the cice_kmd.nc,TP4b_1991-2020_AssimSurf.nc, and so on..."
+   [ -r ice_clim ] && rm -rf ice_clim
+   [ ! -s ice_clim ] && mkdir ice_clim
+   cd ice_clim
+   ln -sf ${BINDIR}ice_climatology/TP4b_1991-2020_AssimSurf.nc .
+   ln -sf ${BINDIR}ice_climatology/createmask.py .
+   ln -sf ${EDIR}/../topo/regional.* .
+   if [ -s ${EDIR}/SCRATCH/cice_kmd.nc ]; then
+      ln -sf ${EDIR}/SCRATCH/cice_kmd.nc .
+   else
+      ml load matplotlib/3.2.1-intel-2020a-Python-3.8.2
+      ${BINDIR}cice_kmt.py regional.depth.a
+   fi
+   prg=${BINDIR}ice_climatology/extract_clim_iceh.sh
+   ${prg}
+   [ -s ice_initial.nc ] && mv ice_initial.nc ../.
+   cd ${EDIR}
+   [ -r ice_clim ] && rm -rf ice_clim
+   if [ -s ice_initial.nc -a -s ice_in ]; then
+      iice=$(grep -n "ocn_data_dir" ice_in | awk -F ":" '{print $1}')
+      if [ ${iice} -gt 0 ]; then
+         [ -s ice_new ] && rm ice_new
+         awk -F " " '{
+            if (FNR=='$iice') 
+               {print " ",$1,$2,"  ",$3,"\047../\047"}
+            else
+               {print $0}
+         }' ice_in | tr -d '\r' > ice_new
+         [ -s ice_new ] && mv ice_new ice_in
+      fi
+   fi
+fi
+
 # Create simple river forcing
 cd $EDIR
 echo "river forcing, if biology active, may take some time"
