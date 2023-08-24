@@ -133,6 +133,7 @@ if [ ${iceclim} -eq 1 ]; then
    fi
    prg=${BINDIR}ice_climatology/extract_clim_iceh_update.sh
    ${prg} ${EDIR}
+   cd ${EDIR}
    [ -r ice_clim ] && rm -rf ice_clim
 fi
 
