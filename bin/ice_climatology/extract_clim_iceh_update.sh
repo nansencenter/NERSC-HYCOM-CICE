@@ -93,11 +93,6 @@ if [ -s ${Fini} -a -s ${Ftmpmask} ]; then
    ncrename -h -O -v siconc,aice_raw -v sithick,hi_raw ${Ftmp}  
    ncrename -h -O -v so,sss_raw -v thetao,sst_raw ${Ftmp}  
 
-   #[ -s ${Fout} ] && rm ${Fout}
-   #ncks -F -d depth,1,1 ${Ftmp} ${Fout} 
-   #[ -s ${Ftmp} ] && rm ${Ftmp}
-   #ncwa -F -a depth,1 ${Fout} ${Ftmp} 
-
    if [ -s cice_kmt.nc ]; then
      ncks -4 cice_kmt.nc kmt4.nc
      ncks -A -v kmt kmt4.nc ${Ftmp} 
