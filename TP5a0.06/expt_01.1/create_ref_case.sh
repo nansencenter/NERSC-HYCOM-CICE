@@ -116,7 +116,7 @@ echo ".."
 iceclim=1
 # Create a climatology ice cover used by initialization
 cd $EDIR
-echo "Prepare the sea ice ocover at first from climatology:"
+echo "Prepare the sea ice cover from climatology:"
 if [ ${iceclim} -eq 1 ]; then
    echo "It requires to access the cice_kmd.nc,TP4b_1991-2020_AssimSurf.nc, and so on..."
    [ -r ice_clim ] && rm -rf ice_clim
