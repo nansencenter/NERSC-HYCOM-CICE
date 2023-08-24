@@ -142,8 +142,5 @@ if [ -s ${Fini} -a -s ${Ftmpmask} ]; then
       fi
    fi
 
-
-
    fi
-
 fi
