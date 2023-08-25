@@ -139,8 +139,12 @@ if [ -s ${Fini} -a -s ${Ftmpmask} ]; then
                   {print $0}
             }' ice_in | tr -d '\r' > ice_new
             [ -s ice_new ] && mv ice_new ice_in
+         fi
+      else
+         echo "Warning: missing ice_in!"
+         echo "Please manually check 'ocn_data_dir' accessible to ice_initial.nc"
+         echo ""
       fi
-   fi
 
    fi
 fi
