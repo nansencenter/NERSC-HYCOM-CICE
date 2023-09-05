@@ -43,7 +43,8 @@ c
 c
       real,    allocatable, dimension(:,:,:),
      &         save, private ::
-     &   u_m,v_m,ke_m,temp_m,saln_m,th3d_m,dp_m
+     &   u_m,v_m,ke_m,temp_m,saln_m,th3d_m,dp_m,dpu_m,dpv_m
+     &   ,dift_m,difs_m,vcty_m
 #if defined(STOKES)
      &  ,usdp_m,vsdp_m
 #endif
@@ -54,7 +55,8 @@ c
      &   montg_m,srfht_m,steric_m,dpbl_m,dpmixl_m,
      &   surflx_m,salflx_m, covice_m,thkice_m,temice_m
 #if defined(NERSC_HYCOM_CICE)
-     &   ,si_u_m, si_v_m
+C AS: adding surface stress to the mean fields
+     &   ,si_u_m, si_v_m, surtx_m, surty_m
 #if defined(OFFICEField)
       logical, save, private :: Toffice=.true.  
       ! Shielding the output of ice fields
@@ -84,7 +86,15 @@ c
       allocate(   saln_m(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kdm) )
       allocate(   th3d_m(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kdm) )
       allocate(     dp_m(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kdm) )
+      allocate(     dpu_m(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kdm) )
+      allocate(     dpv_m(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kdm) )
       call mem_stat_add(     7*(idm+2*nbdy)*(jdm+2*nbdy)*kdm )
+      if (difout) then
+         allocate(   vcty_m(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kdm) )
+         allocate(   dift_m(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kdm) )
+         allocate(   difs_m(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kdm) )
+         call mem_stat_add(     3*(idm+2*nbdy)*(jdm+2*nbdy)*kdm )
+      end if
 #if defined(STOKES)
       if     (stdarc) then
         allocate(   usdp_m(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kdm) )
@@ -110,7 +120,9 @@ c
 #if defined(NERSC_HYCOM_CICE)
       allocate( si_u_m(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy) )
       allocate( si_v_m(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy) )
-      call mem_stat_add(     2*(idm+2*nbdy)*(jdm+2*nbdy) )
+      allocate( surtx_m(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy) )
+      allocate( surty_m(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy) )
+      call mem_stat_add(     4*(idm+2*nbdy)*(jdm+2*nbdy) )
 #endif
 c
       return
@@ -145,20 +157,29 @@ c
            ubaro_m(i,j) = 0.0
            vbaro_m(i,j) = 0.0
 #if defined(NERSC_HYCOM_CICE)
-           si_u_m(i,j) = 0.0
-           si_v_m(i,j) = 0.0
+           si_u_m(i,j)  = 0.0
+           si_v_m(i,j)  = 0.0
+           surtx_m(i,j) = 0.0
+           surty_m(i,j) = 0.0
 #endif
         enddo !i
 
         do k= 1,kk
           do i=1,ii
               dp_m(i,j,k) = 0.0
+             dpu_m(i,j,k) = 0.0
+             dpv_m(i,j,k) = 0.0
             temp_m(i,j,k) = 0.0
             saln_m(i,j,k) = 0.0
             th3d_m(i,j,k) = 0.0
               ke_m(i,j,k) = 0.0
                u_m(i,j,k) = 0.0
                v_m(i,j,k) = 0.0
+      if (difout) then
+            vcty_m(i,j,k) = 0.0
+            dift_m(i,j,k) = 0.0
+            difs_m(i,j,k) = 0.0
+      end if
 #ifndef _FABM_
             do ktr= 1,ntracr
               tracer_m(i,j,k,ktr) = 0.0
@@ -224,6 +245,8 @@ c
 #if defined(NERSC_HYCOM_CICE)
             si_u_m(i,j)   = si_u_m(i,j)   + s*  si_u(i,j)
             si_v_m(i,j)   = si_v_m(i,j)   + s*  si_v(i,j)
+            surtx_m(i,j)  = surtx_m(i,j)  + s*  surtx(i,j)
+            surty_m(i,j)  = surty_m(i,j)  + s*  surty(i,j)
 #endif
           endif !ip
           if (SEA_U) then
@@ -247,6 +270,11 @@ c
               saln_m(i,j,k) = saln_m(i,j,k) +   saln(i,j,k,n) * q
               th3d_m(i,j,k) = th3d_m(i,j,k) +   th3d(i,j,k,n) * q
                 ke_m(i,j,k) =   ke_m(i,j,k) +     ke          * q
+            if (difout) then
+              vcty_m(i,j,k) = vcty_m(i,j,k) +   vcty(i,j,k+1)   * q
+              dift_m(i,j,k) = dift_m(i,j,k) +   dift(i,j,k+1)   * q
+              difs_m(i,j,k) = difs_m(i,j,k) +   difs(i,j,k+1)   * q
+            end if
 #ifndef _FABM_
               do ktr= 1,ntracr
                 tracer_m(i,j,k,ktr) = tracer_m(i,j,k,  ktr) +
@@ -263,10 +291,12 @@ c
             if (SEA_U) then
                        q = s*dpu(i,j,k,n)
               u_m(i,j,k) = u_m(i,j,k) + q*(u(i,j,k,n) + ubavg(i,j,n))
+              dpu_m(i,j,k)=dpu_m(i,j,k) +                   q
             endif !iu
             if (SEA_V) then
                        q = s*dpv(i,j,k,n)
               v_m(i,j,k) = v_m(i,j,k) + q*(v(i,j,k,n) + vbavg(i,j,n))
+              dpv_m(i,j,k)=dpv_m(i,j,k) +                   q
             endif !iv
           enddo !i
         enddo !k
@@ -333,6 +363,8 @@ c
 #if defined(NERSC_HYCOM_CICE)
             si_u_m  (i,j) = si_u_m  (i,j) * q
             si_v_m  (i,j) = si_v_m  (i,j) * q
+            surtx_m (i,j) = surtx_m (i,j) * q
+            surty_m (i,j) = surty_m (i,j) * q
 #endif
           endif !ip
           if (SEA_U) then
@@ -352,6 +384,11 @@ c
                 saln_m(i,j,k) = saln_m(i,j,k) * qdp
                 th3d_m(i,j,k) = th3d_m(i,j,k) * qdp
                   ke_m(i,j,k) =   ke_m(i,j,k) * qdp
+              if (difout) then
+                vcty_m(i,j,k) = vcty_m(i,j,k) * qdp
+                dift_m(i,j,k) = dift_m(i,j,k) * qdp
+                difs_m(i,j,k) = difs_m(i,j,k) * qdp
+              end if
 #ifndef _FABM_
                 do ktr= 1,ntracr
                   tracer_m(i,j,k,ktr) = tracer_m(i,j,k,  ktr) * qdp
@@ -368,6 +405,11 @@ c
                 saln_m(i,j,k) = saln_m(i,j,k-1)
                 th3d_m(i,j,k) = th3d_m(i,j,k-1)
                   ke_m(i,j,k) =   ke_m(i,j,k-1)
+              if (difout) then
+                vcty_m(i,j,k) = vcty_m(i,j,k-1)
+                dift_m(i,j,k) = dift_m(i,j,k-1)
+                difs_m(i,j,k) = difs_m(i,j,k-1)
+              end if
 #ifndef _FABM_
                 do ktr= 1,ntracr
                   tracer_m(i,j,k,ktr) = tracer_m(i,j,k-1,ktr)
@@ -382,20 +424,22 @@ c
               endif !dpthin:else
             endif !ip
             if (SEA_U) then
-              qdp = min(depthu(i,j), 0.5*(p(i,j,k+1)+p(i-1,j,k+1))) -
-     &              min(depthu(i,j), 0.5*(p(i,j,k  )+p(i-1,j,k  )))
-              if     (qdp.ge.dpthin) then
-                qdp = q/qdp
+!              qdp = min(depthu(i,j), 0.5*(p(i,j,k+1)+p(i-1,j,k+1))) -
+!     &              min(depthu(i,j), 0.5*(p(i,j,k  )+p(i-1,j,k  )))
+              dpu_m(i,j,k) = dpu_m(i,j,k) * q
+              if     (dpu_m(i,j,k).ge.dpthin) then
+                qdp = q/dpu_m(i,j,k)
                 u_m(i,j,k) = u_m(i,j,k) * qdp
               else 
                 u_m(i,j,k) = u_m(i,j,k-1)
               endif
             endif !iu
             if (SEA_V) then
-              qdp = min(depthv(i,j), 0.5*(p(i,j,k+1)+p(i,j-1,k+1))) -
-     &              min(depthv(i,j), 0.5*(p(i,j,k  )+p(i,j-1,k  )))
-              if     (qdp.ge.dpthin) then
-                qdp = q/qdp
+!              qdp = min(depthv(i,j), 0.5*(p(i,j,k+1)+p(i,j-1,k+1))) -
+!     &              min(depthv(i,j), 0.5*(p(i,j,k  )+p(i,j-1,k  )))
+              dpv_m(i,j,k) = dpv_m(i,j,k) * q
+              if     (dpv_m(i,j,k).ge.dpthin) then
+                qdp = q/dpv_m(i,j,k)
                 v_m(i,j,k) = v_m(i,j,k) * qdp
               else 
                 v_m(i,j,k) = v_m(i,j,k-1)
@@ -549,7 +593,7 @@ c
       endif !1st tile
       call zaiowr(th3d_m,ip,.true., xmin,xmax, nopa, .false.)
       if     (mnproc.eq.1) then
-      write (nop,117) 'thmix   ',nmean,time_ave,0,thbase,xmin,xmax
+      write (nop,117) 'thmix   ',nmean,time_ave,0,coord,xmin,xmax
       call flush(nop)
       endif !1st tile
       call zaiowr(u_m,iu,.true., xmin,xmax, nopa, .false.)
@@ -564,7 +608,7 @@ c
       endif !1st tile
       call zaiowr(ke_m,ip,.true., xmin,xmax, nopa, .false.)
       if     (mnproc.eq.1) then
-      write (nop,117) 'kemix   ',nmean,time_ave,0,thbase,xmin,xmax
+      write (nop,117) 'kemix   ',nmean,time_ave,0,coord,xmin,xmax
       call flush(nop)
       endif !1st tile
 #if defined(OFFICEField)
@@ -657,6 +701,26 @@ c --- u-vel. and v-vel. designate the total velocity fields
       write (nop,117) 'density ',nmean,time_ave,k,coord,xmin,xmax
       call flush(nop)
       endif !1st tile
+      if (difout) then
+      call zaiowr(vcty_m(1-nbdy,1-nbdy,k),ip,.true., 
+     &            xmin,xmax, nopa, .false.)
+      if     (mnproc.eq.1) then
+      write (nop,117) 'viscty   ',nmean,time_ave,k,coord,xmin,xmax
+      call flush(nop)
+      endif !1st tile
+      call zaiowr(difs_m(1-nbdy,1-nbdy,k),ip,.true., 
+     &            xmin,xmax, nopa, .false.)
+      if     (mnproc.eq.1) then
+      write (nop,117) 't-diff   ',nmean,time_ave,k,coord,xmin,xmax
+      call flush(nop)
+      endif !1st tile
+      call zaiowr(difs_m(1-nbdy,1-nbdy,k),ip,.true., 
+     &            xmin,xmax, nopa, .false.)
+      if     (mnproc.eq.1) then
+      write (nop,117) 's-diff   ',nmean,time_ave,k,coord,xmin,xmax
+      call flush(nop)
+      endif !1st tile
+      end if 
 #ifndef _FABM_
       do ktr= 1,ntracr
         call zaiowr(tracer_m(1-nbdy,1-nbdy,k,ktr),ip,.true.,
@@ -708,6 +772,16 @@ C --- Moved here to not interfere with nesting etc
         endif !1st tile
       endif  ! iceflg
 C --- Moved here to not interfere with nesting etc
+      call zaiowr(surtx_m,ip,.true., xmin,xmax, nopa, .false.)
+      if     (mnproc.eq.1) then
+        write (nop,117) 'surtx    ',nmean,time_ave,0,coord,xmin,xmax
+        call flush(nop)
+      endif !1st tile 
+      call zaiowr(surty_m,ip,.true., xmin,xmax, nopa, .false.)
+      if     (mnproc.eq.1) then
+        write (nop,117) 'surty    ',nmean,time_ave,0,coord,xmin,xmax
+        call flush(nop)
+      endif !1st tile 
 #endif
 c
  117  format (a8,' =',i11,f11.3,i3,f7.3,1p2e16.7)
@@ -872,14 +946,14 @@ c ---   which only includes the fields up to vbaro (or up to nsterc)
      &       temp_m(itest,jtest,k),                                  !degC
      &       saln_m(itest,jtest,k),                                  !psu
      &       th3d_m(itest,jtest,k)+thbase,                           !SigmaT
-     &         dp_m(itest,jtest,k)*qonem,                            !m
-     &           (p(itest,jtest,k+1)+p(itest,jtest,k))*0.5*qonem,    !m
-     &       0.0, !vcty(itest,jtest,k+1)*1.e4,                       !cm**2/s
-     &       0.0, !dift(itest,jtest,k+1)*1.e4,                       !cm**2/s
-     &       0.0 !difs(itest,jtest,k+1)*1.e4,                       !cm**2/s
+     &       dp_m(itest,jtest,k)*qonem,                              !m
+     &       (p(itest,jtest,k+1)+p(itest,jtest,k))*0.5*qonem         !m
+!     &      ,vcty(itest,jtest,k+1)*1.e4                              !cm**2/s
+!     &      ,dift(itest,jtest,k+1)*1.e4                              !cm**2/s
+!     &      ,difs(itest,jtest,k+1)*1.e4                              !cm**2/s
 #if defined(STOKES)
-     &       ,max(-999.99,min(999.99,ustk*100.0))                    !cm/s
-     &       ,max(-999.99,min(999.99,vstk*100.0))                    !cm/s
+     &      ,max(-999.99,min(999.99,ustk*100.0))                    !cm/s
+     &      ,max(-999.99,min(999.99,vstk*100.0))                    !cm/s
 #endif
 #ifndef _FABM_
      &       ,(tracer_m(itest,jtest,k,ktr),ktr=1,ntracr)              !0-999?
