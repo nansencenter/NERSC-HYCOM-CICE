@@ -43,7 +43,7 @@ c
 #ifdef CPL_OASIS_HYCOM
       use mod_cpl_oasis_init
 #endif
-      use mod_NERSCnml, only : relative_wnd_coef, nersc_init
+      use mod_NERSCnml, only : relative_wnd_coef
       implicit none
 c
       integer m,n
