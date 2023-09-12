@@ -633,7 +633,7 @@ else
 #     
    elif [ -f $D/${filename}_mem001.a -a -f $D/${filename}_mem001.b ]; then
       echo "using HYCOM restart files ${filename}_mem???.[ab] from data dir $D"
-      for f in ${plink} $D/${filename}_mem*.? ; do
+      for f in $D/${filename}_mem*.? ; do
          ${plink} $f .
       done
 
