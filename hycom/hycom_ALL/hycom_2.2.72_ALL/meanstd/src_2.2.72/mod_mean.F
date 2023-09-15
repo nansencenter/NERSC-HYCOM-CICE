@@ -11,6 +11,11 @@ c --- ntracr= number of tracers to form the mean of
 c
       integer, save :: ii,ii1,ii2,iorign,jj,jj1,jj2,jorign,kk,ntracr
       integer, save :: nmean,nstep
+
+c --- lsteric = steric in input (and output) means
+c --- lwtrflx = wtrflx in input (and output) means
+c
+      logical, save :: loneta, lsteric,lwtrflx
 c
 c --- archive header
 c
@@ -24,18 +29,19 @@ c
 C
       real,    save, allocatable, dimension (:,:,:) :: 
      &   u,v,ke,temp,saln,th3d,dp,dw,p,
-     &   u_m,v_m,ke_m,temp_m,saln_m,th3d_m,dp_m,dw_m
+     &   u_m,v_m,ke_m,temp_m,saln_m,th3d_m,dp_m,dpu_m,dpv_m,dw_m
 c
       real,    save, allocatable, dimension (:,:)   :: 
      &   depths,depthu,depthv,
      &   ubaro,vbaro,pbaro,kebaro,
-     &   montg,srfht,dpbl,dpmixl,
+     &   montg,srfht,steric,oneta,onetaw,dpbl,dpmixl,
      &   tmix,smix,thmix,umix,vmix,kemix,
-     &   surflx,salflx, covice,thkice,temice,
+     &   surflx,salflx,wtrflx,covice,thkice,temice,
      &   ubaro_m,vbaro_m,pbaro_m,kebaro_m,
-     &   montg_m,srfht_m,dpbl_m,dpmixl_m,
+     &   montg_m,srfht_m,steric_m,dpbl_m,dpmixl_m,
      &   tmix_m,smix_m,thmix_m,umix_m,vmix_m,kemix_m,
-     &   surflx_m,salflx_m, covice_m,thkice_m,temice_m,
+     &   surflx_m,salflx_m,wtrflx_m,covice_m,thkice_m,temice_m,
+     &   oneta_m,onetaw_m,onetaw_u,onetaw_v,
      &   si_u, si_um, si_v, si_vm
 c    add two sea-ice variables for drift
 c
@@ -51,6 +57,8 @@ c
 
       subroutine mean_alloc
       implicit none
+      real       spval
+      parameter (spval=2.0**100)
 c
 c --- initialize allocatable arrays.
 c
@@ -60,6 +68,10 @@ c
       jj2 = jj - 2
 c
       nmean = 0
+
+      lsteric = .false. !default
+      lwtrflx = .false. !default
+      loneta  = .false. !default
 c
       allocate(      u(ii,jj,kk) )
       allocate(      v(ii,jj,kk) )
@@ -78,6 +90,8 @@ c
       allocate(   saln_m(ii,jj,kk) );     saln_m = 0.0
       allocate(   th3d_m(ii,jj,kk) );     th3d_m = 0.0
       allocate(     dp_m(ii,jj,kk) );       dp_m = 0.0
+      allocate(    dpu_m(ii,jj,kk) );      dpu_m = 0.0
+      allocate(    dpv_m(ii,jj,kk) );      dpv_m = 0.0
       allocate(     dw_m(ii,jj,kk) );       dw_m = 0.0
 c
       if     (ntracr.gt.0) then
@@ -95,6 +109,9 @@ c
       allocate( kebaro(ii,jj) )
       allocate(  montg(ii,jj) )
       allocate(  srfht(ii,jj) )
+      allocate( steric(ii,jj) )
+      allocate(  oneta(ii,jj) )
+      allocate( onetaw(ii,jj) )
       allocate(   dpbl(ii,jj) )
       allocate( dpmixl(ii,jj) )
       allocate(   tmix(ii,jj) )
@@ -105,6 +122,7 @@ c
       allocate(  kemix(ii,jj) )
       allocate( surflx(ii,jj) )
       allocate( salflx(ii,jj) )
+      allocate( wtrflx(ii,jj) )
       allocate( covice(ii,jj) )
       allocate( thkice(ii,jj) )
       allocate( temice(ii,jj) )
@@ -117,6 +135,11 @@ c
       allocate( kebaro_m(ii,jj) );   kebaro_m = 0.0
       allocate(  montg_m(ii,jj) );    montg_m = 0.0
       allocate(  srfht_m(ii,jj) );    srfht_m = 0.0
+      allocate( steric_m(ii,jj) );   steric_m = 0.0
+      allocate(  oneta_m(ii,jj) );    oneta_m = 0.0
+      allocate( onetaw_m(ii,jj) );   onetaw_m = 0.0
+      allocate( onetaw_u(ii,jj) );   onetaw_u = 0.0
+      allocate( onetaw_v(ii,jj) );   onetaw_v = 0.0
       allocate(   dpbl_m(ii,jj) );     dpbl_m = 0.0
       allocate( dpmixl_m(ii,jj) );   dpmixl_m = 0.0
       allocate(   tmix_m(ii,jj) );     tmix_m = 0.0
@@ -127,6 +150,7 @@ c
       allocate(  kemix_m(ii,jj) );    kemix_m = 0.0
       allocate( surflx_m(ii,jj) );   surflx_m = 0.0
       allocate( salflx_m(ii,jj) );   salflx_m = 0.0
+      allocate( wtrflx_m(ii,jj) );   wtrflx_m = 0.0
       allocate( covice_m(ii,jj) );   covice_m = 0.0
       allocate( thkice_m(ii,jj) );   thkice_m = 0.0
       allocate( temice_m(ii,jj) );   temice_m = 0.0
@@ -160,6 +184,7 @@ c
 c
       s = iweight
 c
+      p(:,:,:) = 0.0
       do j= 1,jj
         do i= 1,ii
           if     (ip(i,j).eq.1) then
@@ -167,14 +192,15 @@ c
             do k= 1,kk
               p(i,j,k+1) = p(i,j,k) + dw(i,j,k)
             enddo
-          else
-            p(i,j,:) = 0.0
+!          else
+!            p(i,j,:) = 0.0
           endif
         enddo
       enddo
 c
+c
       do j= 1,jj
-        do i= 1,ii
+       do i= 1,ii
           if     (iu(i,j).eq.1) then
             ubaro_m(i,j) =  ubaro_m(i,j) + ubaro(i,j) * s
              umix_m(i,j) =   umix_m(i,j) +  umix(i,j) * s
@@ -184,13 +210,23 @@ c
             else
               im = ii
             endif
+c ---       depthu is either depths(i,j) or depths(i-1,j)
+            if     (depths(i,j).eq.depths(im,j)) then
+              onetaw_u(i,j) = 0.5*(onetaw(i,j)+onetaw(im,j))
+            elseif (depths(i,j).eq.depthu(i,j)) then
+              onetaw_u(i,j) =      onetaw(i,j)
+            else
+              onetaw_u(i,j) =                  onetaw(im,j)
+            endif
             do k= 1,kk
               swk = s*max(0.0,
      &                    min(depthu(i,j),
      &                        0.5*(p(i,j,k+1)+p(im,j,k+1))) -
      &                    min(depthu(i,j),
-     &                        0.5*(p(i,j,k  )+p(im,j,k  )))  )
-              u_m(i,j,k) = u_m(i,j,k) + u(i,j,k) * swk
+     &                        0.5*(p(i,j,k  )+p(im,j,k  )))  )*
+     &              onetaw_u(i,j)
+              dpu_m(i,j,k) = dpu_m(i,j,k) +            swk
+                u_m(i,j,k) =   u_m(i,j,k) + u(i,j,k) * swk
             enddo
           endif !iu
 
@@ -203,13 +239,23 @@ c
             else
               jm = jj
             endif
+c ---       depthv is either depths(i,j) or depths(i,j-1)
+            if     (depths(i,j).eq.depths(i,jm)) then
+              onetaw_v(i,j) = 0.5*(onetaw(i,j)+onetaw(i,jm))
+            elseif (depths(i,j).eq.depthv(i,j)) then
+              onetaw_v(i,j) =      onetaw(i,j)
+            else
+              onetaw_v(i,j) =                  onetaw(i,jm)
+            endif
             do k= 1,kk
               swk = s*max(0.0,
      &                    min(depthv(i,j),
      &                        0.5*(p(i,j,k+1)+p(i,jm,k+1))) -
      &                    min(depthv(i,j),
-     &                        0.5*(p(i,j,k  )+p(i,jm,k  )))  )
-              v_m(i,j,k) = v_m(i,j,k) + v(i,j,k) * swk
+     &                        0.5*(p(i,j,k  )+p(i,jm,k  )))  )*
+     &              onetaw_v(i,j)
+              dpv_m(i,j,k) = dpv_m(i,j,k) +            swk
+                v_m(i,j,k) =   v_m(i,j,k) + v(i,j,k) * swk
             enddo
           endif !iv
 c
@@ -218,6 +264,7 @@ c
             kebaro_m(i,j)   = kebaro_m(i,j)   + kebaro(i,j)   * s
              montg_m(i,j)   =  montg_m(i,j)   +  montg(i,j)   * s
              srfht_m(i,j)   =  srfht_m(i,j)   +  srfht(i,j)   * s
+            steric_m(i,j)   = steric_m(i,j)   + steric(i,j)   * s
               dpbl_m(i,j)   =   dpbl_m(i,j)   +   dpbl(i,j)   * s
             dpmixl_m(i,j)   = dpmixl_m(i,j)   + dpmixl(i,j)   * s
               tmix_m(i,j)   =   tmix_m(i,j)   +   tmix(i,j)   * s
@@ -226,13 +273,17 @@ c
              kemix_m(i,j)   =  kemix_m(i,j)   +  kemix(i,j)   * s
             surflx_m(i,j)   = surflx_m(i,j)   + surflx(i,j)   * s
             salflx_m(i,j)   = salflx_m(i,j)   + salflx(i,j)   * s
+            wtrflx_m(i,j)   = wtrflx_m(i,j)   + wtrflx(i,j)   * s
             covice_m(i,j)   = covice_m(i,j)   + covice(i,j)   * s
             thkice_m(i,j)   = thkice_m(i,j)   + thkice(i,j)   * s
             temice_m(i,j)   = temice_m(i,j)   + temice(i,j)   * s
                si_um(i,j)   =    si_um(i,j)   +   si_u(i,j)   * s
                si_vm(i,j)   =    si_vm(i,j)   +   si_v(i,j)   * s
 c
-                      sw(:) =                       dw(i,j,:) * s
+             oneta_m(i,j)   =  oneta_m(i,j)   +  oneta(i,j)   * s
+            onetaw_m(i,j)   = onetaw_m(i,j)   + onetaw(i,j)   * s
+c
+                      sw(:) =         onetaw(i,j) * dw(i,j,:) * s
 c
                 dw_m(i,j,:) =     dw_m(i,j,:) +                 sw(:)
                 dp_m(i,j,:) =     dp_m(i,j,:) +                 sw(:)
@@ -261,7 +312,7 @@ c
 c
       integer, intent(in) :: iweight
 c
-c --- add an archive sqaured to the mean.
+c --- add an archive squared to the mean.
 c --- layer quantities weighted by layer thickness (i.e. by dw).
 c
       integer i,im,j,jm,k,ktr
@@ -278,8 +329,8 @@ c
             do k= 1,kk
               p(i,j,k+1) = p(i,j,k) + dw(i,j,k)
             enddo
-          else
-            p(i,j,:) = 0.0
+c          else
+c            p(i,j,:) = 0.0
           endif
         enddo
       enddo
@@ -295,13 +346,23 @@ c
             else
               im = ii
             endif
+c ---       depthu is either depths(i,j) or depths(i-1,j)
+            if     (depths(i,j).eq.depths(im,j)) then
+              onetaw_u(i,j) = 0.5*(onetaw(i,j)+onetaw(im,j))
+            elseif (depths(i,j).eq.depthu(i,j)) then
+              onetaw_u(i,j) =      onetaw(i,j)
+            else
+              onetaw_u(i,j) =                  onetaw(im,j)
+            endif
             do k= 1,kk
               swk = s*max(0.0,
      &                    min(depthu(i,j),
      &                        0.5*(p(i,j,k+1)+p(im,j,k+1))) -
      &                    min(depthu(i,j),
-     &                        0.5*(p(i,j,k  )+p(im,j,k  )))  )
-              u_m(i,j,k) = u_m(i,j,k) + u(i,j,k)**2 * swk
+     &                        0.5*(p(i,j,k  )+p(im,j,k  )))  )*
+     &              onetaw_u(i,j)
+              dpu_m(i,j,k) = dpu_m(i,j,k) +               swk
+                u_m(i,j,k) =   u_m(i,j,k) + u(i,j,k)**2 * swk
             enddo
           endif !iu
 c
@@ -314,13 +375,23 @@ c
             else
               jm = jj
             endif
+c ---       depthv is either depths(i,j) or depths(i,j-1)
+            if     (depths(i,j).eq.depths(i,jm)) then
+              onetaw_v(i,j) = 0.5*(onetaw(i,j)+onetaw(i,jm))
+            elseif (depths(i,j).eq.depthv(i,j)) then
+              onetaw_v(i,j) =      onetaw(i,j)
+            else
+              onetaw_v(i,j) =                  onetaw(i,jm)
+            endif
             do k= 1,kk
               swk = s*max(0.0,
      &                    min(depthv(i,j),
      &                        0.5*(p(i,j,k+1)+p(i,jm,k+1))) -
      &                    min(depthv(i,j),
-     &                        0.5*(p(i,j,k  )+p(i,jm,k  )))  )
-              v_m(i,j,k) = v_m(i,j,k) + v(i,j,k)**2 * swk
+     &                        0.5*(p(i,j,k  )+p(i,jm,k  )))  )*
+     &              onetaw_v(i,j)
+              dpv_m(i,j,k) = dpv_m(i,j,k) +               swk
+                v_m(i,j,k) =   v_m(i,j,k) + v(i,j,k)**2 * swk
             enddo
           endif !iv
 c
@@ -329,6 +400,7 @@ c
             kebaro_m(i,j)   = kebaro_m(i,j)   + kebaro(i,j)**2   * s
              montg_m(i,j)   =  montg_m(i,j)   +  montg(i,j)**2   * s
              srfht_m(i,j)   =  srfht_m(i,j)   +  srfht(i,j)**2   * s
+            steric_m(i,j)   = steric_m(i,j)   + steric(i,j)**2   * s
               dpbl_m(i,j)   =   dpbl_m(i,j)   +   dpbl(i,j)**2   * s
             dpmixl_m(i,j)   = dpmixl_m(i,j)   + dpmixl(i,j)**2   * s
               tmix_m(i,j)   =   tmix_m(i,j)   +   tmix(i,j)**2   * s
@@ -337,16 +409,20 @@ c
              kemix_m(i,j)   =  kemix_m(i,j)   +  kemix(i,j)**2   * s
             surflx_m(i,j)   = surflx_m(i,j)   + surflx(i,j)**2   * s
             salflx_m(i,j)   = salflx_m(i,j)   + salflx(i,j)**2   * s
+            wtrflx_m(i,j)   = wtrflx_m(i,j)   + wtrflx(i,j)**2   * s
             covice_m(i,j)   = covice_m(i,j)   + covice(i,j)**2   * s
             thkice_m(i,j)   = thkice_m(i,j)   + thkice(i,j)**2   * s
             temice_m(i,j)   = temice_m(i,j)   + temice(i,j)**2   * s
                si_um(i,j)   =    si_um(i,j)   +   si_u(i,j)**2   * s
                si_vm(i,j)   =    si_vm(i,j)   +   si_v(i,j)**2   * s
 c
-                      sw(:) =                       dw(i,j,:)    * s
+             oneta_m(i,j)   =  oneta_m(i,j)   +  oneta(i,j)**2   * s
+            onetaw_m(i,j)   = onetaw_m(i,j)   + onetaw(i,j)      * s
 c
-                dw_m(i,j,:) =     dw_m(i,j,:) +                    sw(:)
                 dp_m(i,j,:) =     dp_m(i,j,:) +     dp(i,j,:)**2 * s
+                      sw(:) =         onetaw(i,j) * dw(i,j,:)    * s
+               dw_m(i,j,:) =     dw_m(i,j,:) +          sw(:)
+c
               temp_m(i,j,:) =   temp_m(i,j,:) +   temp(i,j,:)**2 * sw(:)
               saln_m(i,j,:) =   saln_m(i,j,:) +   saln(i,j,:)**2 * sw(:)
               th3d_m(i,j,:) =   th3d_m(i,j,:) +   th3d(i,j,:)**2 * sw(:)
@@ -496,6 +572,7 @@ c
       kebaro_m = kebaro
        montg_m =  montg
        srfht_m =  srfht
+      steric_m = steric
         dpbl_m =   dpbl
       dpmixl_m = dpmixl
         tmix_m =   tmix
@@ -506,9 +583,12 @@ c
        kemix_m =  kemix
       surflx_m = surflx
       salflx_m = salflx
+      wtrflx_m = wtrflx
       covice_m = covice
       thkice_m = thkice
       temice_m = temice
+       oneta_m =  oneta
+      onetaw_m = onetaw
          si_um =   si_u
          si_vm =   si_v 
 *
@@ -614,6 +694,7 @@ c
             kebaro_m(i,j) = q*(kebaro_m(i,j) - kebaro(i,j))
              montg_m(i,j) = q*( montg_m(i,j) -  montg(i,j))
              srfht_m(i,j) = q*( srfht_m(i,j) -  srfht(i,j))
+            steric_m(i,j) = q*(steric_m(i,j) - steric(i,j))
               dpbl_m(i,j) = q*(  dpbl_m(i,j) -   dpbl(i,j))
             dpmixl_m(i,j) = q*(dpmixl_m(i,j) - dpmixl(i,j))
               tmix_m(i,j) = q*(  tmix_m(i,j) -   tmix(i,j))
@@ -622,6 +703,7 @@ c
              kemix_m(i,j) = q*( kemix_m(i,j) -  kemix(i,j))
             surflx_m(i,j) = q*(surflx_m(i,j) - surflx(i,j))
             salflx_m(i,j) = q*(salflx_m(i,j) - salflx(i,j))
+            wtrflx_m(i,j) = q*(wtrflx_m(i,j) - wtrflx(i,j))
             covice_m(i,j) = q*(covice_m(i,j) - covice(i,j))
             thkice_m(i,j) = q*(thkice_m(i,j) - thkice(i,j))
             temice_m(i,j) = q*(temice_m(i,j) - temice(i,j))
@@ -656,6 +738,7 @@ c
         call mean_box(kebaro_m,ii,jj, 1,nbox,larctic,lperiod)
         call mean_box( montg_m,ii,jj, 1,nbox,larctic,lperiod)
         call mean_box( srfht_m,ii,jj, 1,nbox,larctic,lperiod)
+        call mean_box(steric_m,ii,jj, 1,nbox,larctic,lperiod)
         call mean_box(  dpbl_m,ii,jj, 1,nbox,larctic,lperiod)
         call mean_box(dpmixl_m,ii,jj, 1,nbox,larctic,lperiod)
         call mean_box(  tmix_m,ii,jj, 1,nbox,larctic,lperiod)
@@ -664,6 +747,7 @@ c
         call mean_box( kemix_m,ii,jj, 1,nbox,larctic,lperiod)
         call mean_box(surflx_m,ii,jj, 1,nbox,larctic,lperiod)
         call mean_box(salflx_m,ii,jj, 1,nbox,larctic,lperiod)
+        call mean_box(wtrflx_m,ii,jj, 1,nbox,larctic,lperiod)
         call mean_box(covice_m,ii,jj, 1,nbox,larctic,lperiod)
         call mean_box(thkice_m,ii,jj, 1,nbox,larctic,lperiod)
         call mean_box(temice_m,ii,jj, 1,nbox,larctic,lperiod)
@@ -691,18 +775,6 @@ c
 c
       s = 1.0/nmean
 c
-      do j= 1,jj
-        do i= 1,ii
-          if     (ip(i,j).eq.1) then
-            p(i,j,1) = 0.0
-            do k= 1,kk
-              p(i,j,k+1) = p(i,j,k) + dw_m(i,j,k)*s
-            enddo
-          else
-            p(i,j,:) = 0.0
-          endif
-        enddo
-      enddo
 c
       do j= 1,jj
         do i= 1,ii
@@ -713,8 +785,7 @@ c
               im = ii
             endif
             do k= 1,kk
-              swk = min(depthu(i,j), 0.5*(p(i,j,k+1)+p(im,j,k+1))) -
-     &              min(depthu(i,j), 0.5*(p(i,j,k  )+p(im,j,k  )))
+              swk = dpu_m(i,j,k) * s
               if     (swk.ge.0.000001) then
                 swk = s/swk
                 u_m(i,j,k) = u_m(i,j,k) * swk
@@ -737,8 +808,7 @@ c
               jm = jj
             endif
             do k= 1,kk
-              swk = min(depthv(i,j), 0.5*(p(i,j,k+1)+p(i,jm,k+1))) -
-     &              min(depthv(i,j), 0.5*(p(i,j,k  )+p(i,jm,k  )))
+              swk = dpv_m(i,j,k) * s
               if     (swk.ge.0.000001) then
                 swk = s/swk
                 v_m(i,j,k) = v_m(i,j,k) * swk
@@ -759,6 +829,7 @@ c
             kebaro_m(i,j)   = kebaro_m(i,j)   * s
              montg_m(i,j)   =  montg_m(i,j)   * s
              srfht_m(i,j)   =  srfht_m(i,j)   * s
+            steric_m(i,j)   = steric_m(i,j)   * s
               dpbl_m(i,j)   =   dpbl_m(i,j)   * s
             dpmixl_m(i,j)   = dpmixl_m(i,j)   * s
               tmix_m(i,j)   =   tmix_m(i,j)   * s
@@ -767,9 +838,13 @@ c
              kemix_m(i,j)   =  kemix_m(i,j)   * s
             surflx_m(i,j)   = surflx_m(i,j)   * s
             salflx_m(i,j)   = salflx_m(i,j)   * s
+            wtrflx_m(i,j)   = wtrflx_m(i,j)   * s
             covice_m(i,j)   = covice_m(i,j)   * s
             thkice_m(i,j)   = thkice_m(i,j)   * s
             temice_m(i,j)   = temice_m(i,j)   * s
+c
+             oneta_m(i,j)   =  oneta_m(i,j)   * s
+            onetaw_m(i,j)   = onetaw_m(i,j)   * s
                si_um(i,j)   =    si_um(i,j)   * s
                si_vm(i,j)   =    si_vm(i,j)   * s
 c
@@ -794,12 +869,17 @@ c
                   tracer_m(i,j,k,ktr) = tracer_m(i,j,k-1,ktr)
                 enddo !ktr
               endif
+! ---         archived dp_m is based on dp' (dp_m/oneta_m)
+              dp_m(i,j,k)   = dp_m(i,j,k)/onetaw_m(i,j)
+              dw_m(i,j,k)   = dw_m(i,j,k)/onetaw_m(i,j)
+                 p(i,j,k+1) = dw_m(i,j,k) + p(i,j,k)
             enddo
           else
              pbaro_m(i,j)   = spval
             kebaro_m(i,j)   = spval
              montg_m(i,j)   = spval
              srfht_m(i,j)   = spval
+            steric_m(i,j)   = spval
               dpbl_m(i,j)   = spval
             dpmixl_m(i,j)   = spval
               tmix_m(i,j)   = spval
@@ -808,12 +888,16 @@ c
              kemix_m(i,j)   = spval
             surflx_m(i,j)   = spval
             salflx_m(i,j)   = spval
+            wtrflx_m(i,j)   = spval
             covice_m(i,j)   = spval
             thkice_m(i,j)   = spval
             temice_m(i,j)   = spval
                si_um(i,j)   = spval
                si_vm(i,j)   = spval
 c
+             oneta_m(i,j)   = spval
+            onetaw_m(i,j)   = spval
+
                 dw_m(i,j,:) = spval
                 dp_m(i,j,:) = spval
               temp_m(i,j,:) = spval
@@ -880,6 +964,7 @@ c
             kebaro_m(i,j) = std(kebaro(i,j) - kebaro_m(i,j)**2)
              montg_m(i,j) = std( montg(i,j) -  montg_m(i,j)**2)
              srfht_m(i,j) = std( srfht(i,j) -  srfht_m(i,j)**2)
+            steric_m(i,j) = std(steric(i,j) - steric_m(i,j)**2)
               dpbl_m(i,j) = std(  dpbl(i,j) -   dpbl_m(i,j)**2)
             dpmixl_m(i,j) = std(dpmixl(i,j) - dpmixl_m(i,j)**2)
               tmix_m(i,j) = std(  tmix(i,j) -   tmix_m(i,j)**2)
@@ -888,9 +973,13 @@ c
              kemix_m(i,j) = std( kemix(i,j) -  kemix_m(i,j)**2)
             surflx_m(i,j) = std(surflx(i,j) - surflx_m(i,j)**2)
             salflx_m(i,j) = std(salflx(i,j) - salflx_m(i,j)**2)
+            wtrflx_m(i,j) = std(wtrflx(i,j) - wtrflx_m(i,j)**2)
             covice_m(i,j) = std(covice(i,j) - covice_m(i,j)**2)
             thkice_m(i,j) = std(thkice(i,j) - thkice_m(i,j)**2)
             temice_m(i,j) = std(temice(i,j) - temice_m(i,j)**2)
+c
+            onetaw_m(i,j) =                   onetaw_m(i,j)
+             oneta_m(i,j) = std( oneta(i,j) -  oneta_m(i,j)**2)
                si_um(i,j) = std(  si_u(i,j) -    si_um(i,j)**2)
                si_vm(i,j) = std(  si_v(i,j) -    si_vm(i,j)**2)
           endif
