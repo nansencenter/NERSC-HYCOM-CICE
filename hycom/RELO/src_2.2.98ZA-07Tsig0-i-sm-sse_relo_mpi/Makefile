@@ -25,18 +25,20 @@ include ./hycom_feature_flags
 CPPFLAGS:=$(CPPFLAGS) $(HYCOM_FEATURE_FLAGS)
 
 MODS =   mod_dimensions.o mod_xc.o mod_za.o mod_cb_arrays.o mod_pipe.o \
+	 mod_NERSCnml.o \
          mod_incupd.o \
          mod_floats.o  m_get_erfc.o mod_stokes.o mod_tides.o mod_mean.o mod_archiv.o \
          mod_tsadvc.o mod_momtum.o \
-         mod_hycom.o mod_esmf_utils.o mod_netcdf_util.o mod_prgrad.o mod_NERSCnml.o
+         mod_hycom.o mod_esmf_utils.o mod_netcdf_util.o mod_prgrad.o 
 # ----------------------------------------------------
 # Mostafa added this in order to use standalone hycom
 # ----------------------------------------------------
 MODS_HYCOM =   mod_dimensions.o mod_xc.o mod_za.o mod_cb_arrays.o mod_pipe.o \
+	 mod_NERSCnml.o \
          mod_incupd.o \
          mod_floats.o m_get_erfc.o  mod_stokes.o mod_tides.o mod_mean.o mod_archiv.o \
          mod_tsadvc.o mod_momtum.o \
-         mod_hycom.o  mod_netcdf_util.o mod_prgrad.o mod_NERSCnml.o
+         mod_hycom.o  mod_netcdf_util.o mod_prgrad.o
 
 # Mostafa ----------------------------------------------------
 
@@ -136,13 +138,13 @@ trcupd.o:  trcupd.F  mod_xc.o mod_cb_arrays.o                     mod_pipe.o
 wtime.o:   wtime.F
 mod_hycom.o: \
         mod_hycom.F  mod_xc.o mod_cb_arrays.o            mod_za.o mod_pipe.o \
+								  mod_NERSCnml.o \
 	                                                          mod_incupd.o \
 	                                                          mod_mean.o \
 	                                                          mod_floats.o \
 	                                                          mod_momtum.o \
 	                                                          mod_tsadvc.o \
-	                                                          mod_stokes.o \
-                                                                  mod_NERSCnml.o
+	                                                          mod_stokes.o
 mod_hycom_dummy.o: \
         mod_hycom_dummy.F  mod_xc.o mod_cb_arrays.o      mod_za.o mod_pipe.o \
 	                                                          mod_incupd.o \
@@ -156,7 +158,7 @@ mod_momtum.o: \
 	mod_momtum.F mod_xc.o mod_cb_arrays.o stmt_fns.h          mod_pipe.o \
 	                                                          mod_tides.o \
 	                                                          mod_stokes.o \
-																				 mod_prgrad.o
+								  mod_prgrad.o
 mod_tsadvc.o: \
 	mod_tsadvc.F mod_xc.o mod_cb_arrays.o stmt_fns.h          mod_pipe.o
 mod_incupd.o: \
