@@ -79,6 +79,7 @@ if __name__ == "__main__" :
    scpy=gfile.read_field("scpy")
    plon=gfile.read_field("plon")
    plat=gfile.read_field("plat")
+   [jdm,idm]=np.shape(scpx)
    #
 
    lons=plon
@@ -87,10 +88,10 @@ if __name__ == "__main__" :
    #----------------- read from ab file 
    #---- ERAI TRIP
    file_TRIP_river=args.Trip_river_afile
-   afile_trip = abf.AFile(800,760,file_TRIP_river,"r")
+   afile_trip = abf.AFile(idm,jdm,file_TRIP_river,"r")
     # compute monthly flux:
    Greenland_trip_discharge_month = np.NaN * np.ones([12,])
-   Greenland_trip_riverflux=np.zeros((12,760,800))
+   Greenland_trip_riverflux=np.zeros((12,jdm,idm))
    Green_trip_total_riverflux=np.zeros(lons.shape)
    countr=0
    for record in range(12) :
@@ -114,10 +115,10 @@ if __name__ == "__main__" :
    #-------------- Read from Ahype-Ehype
    #-- Ahype
    file_AEhype_river=args.Hype_river_afile
-   afile_ahy = abf.AFile(800,760,file_AEhype_river,"r")
+   afile_ahy = abf.AFile(idm,jdm,file_AEhype_river,"r")
     # compute monthly flux:
    ahy_afil_total_riverflux=np.zeros(lons.shape)
-   tot_hyp_trip_riverflux=np.zeros((12,760,800))
+   tot_hyp_trip_riverflux=np.zeros((12,jdm,idm))
    countr=0
    for record in range(12) :
       ahyfld = afile_ahy.read_record(record)
@@ -134,10 +135,10 @@ if __name__ == "__main__" :
    
    #-------------- Read from Greenland ice melt griver
    file_griver=args.griver_afile
-   afile_gr = abf.AFile(800,760,file_griver,"r")
+   afile_gr = abf.AFile(idm,jdm,file_griver,"r")
    Greenland_icemelt_month = np.NaN * np.ones([12,])
    # compute monthly flux:
-   ice_griverflux=np.zeros((12,760,800))
+   ice_griverflux=np.zeros((12,jdm,idm))
    gice_total_riverflux=np.zeros(lons.shape)
    for record in range(12) :
       grfld = afile_gr.read_record(record)

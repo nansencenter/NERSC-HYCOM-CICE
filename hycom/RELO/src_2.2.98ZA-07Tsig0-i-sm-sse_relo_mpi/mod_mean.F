@@ -43,6 +43,7 @@ c
 c
       real,    allocatable, dimension(:,:,:),
      &         save, private ::
+
      &   u_m,v_m,ke_m,temp_m,saln_m,th3d_m,dp_m,dpu_m,dpv_m
      &   ,dift_m,difs_m,vcty_m
 #if defined(STOKES)

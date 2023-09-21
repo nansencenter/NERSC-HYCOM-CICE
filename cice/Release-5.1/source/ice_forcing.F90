@@ -369,16 +369,22 @@
          call ocn_data_ncar_init_3D
       endif
 
+      if (trim(sst_data_type) == 'hycom' .or. &
+          trim(sss_data_type) == 'hycom') then
+         call ocn_data_hycom_init
+      endif
+
+
       end subroutine init_forcing_ocn
 
 !=======================================================================
 
       subroutine ocn_freezing_temperature
 
- ! Compute ocean freezing temperature Tf based on tfrz_option
- ! 'minus1p8'         Tf = -1.8 C (default)
- ! 'linear_salt'      Tf = -depressT * sss
- ! 'mushy'            Tf conforms with mushy layer thermo (ktherm=2)
+! Compute ocean freezing temperature Tf based on tfrz_option
+! 'minus1p8'         Tf = -1.8 C (default)
+! 'linear_salt'      Tf = -depressT * sss
+! 'mushy'            Tf conforms with mushy layer thermo (ktherm=2)
 
       use ice_blocks, only: nx_block, ny_block
       use ice_constants, only: depressT, c1000
@@ -3318,8 +3324,73 @@
         call abort_ice ('new ocean forcing is netcdf only')
 
       endif
-
       end subroutine ocn_data_ncar_init_3D
+
+!-----------------------------------------------------
+
+      subroutine ocn_data_hycom_init
+        ! Read SSS+SST from a HYCOM file converted to NetCDF format.
+        ! HYCOM binary2NetCDF: hcdata2ncdf2d (or hcdata2ncdf3z)
+        !   + rename/link file
+        use ice_blocks, only: nx_block, ny_block
+        use ice_domain, only: nblocks
+        use ice_flux, only: sss, sst, Tf
+        use ice_constants, only: field_loc_center, field_type_scalar
+
+
+        integer (kind=int_kind) :: &
+           i, j, iblk       , & ! horizontal indices
+           fid                  ! file id for netCDF file
+
+        character (char_len) :: &
+           fieldname            ! field name in netcdf file
+
+        character(len=*), parameter :: subname = '(ocn_data_hycom_init)'
+
+        if (my_task == master_task) &
+           write(nu_diag,*) subname,'Read initial sss and sst'
+
+        if (trim(sss_data_type) == 'hycom') then
+           sss_file = trim(ocn_data_dir)//'ice_initial.nc'
+
+           if (my_task == master_task) then
+             write (nu_diag,*)' '
+             write (nu_diag,*)'Initial SSS file: ',trim(sss_file)
+           endif
+
+           fieldname = 'sss'
+           call ice_open_nc (sss_file, fid)
+           call ice_read_nc (fid, 1 , fieldname, sss, dbug, &
+                             field_loc_center, field_type_scalar)
+           call ice_close_nc(fid)
+
+           call ocn_freezing_temperature
+
+           sst_file = trim(ocn_data_dir)//'ice_initial.nc'
+
+           if (my_task == master_task) then
+             write (nu_diag,*)' '
+             write (nu_diag,*)'Initial SST file: ',trim(sst_file)
+           endif
+           fieldname = 'sst'
+           call ice_open_nc (sst_file, fid)
+           call ice_read_nc (fid, 1 , fieldname, sst, dbug, &
+                                field_loc_center, field_type_scalar)
+           call ice_close_nc(fid)
+
+           ! Make sure sst is not less than freezing temperature Tf
+           !$OMP PARALLEL DO PRIVATE(iblk,i,j)
+           do iblk = 1, nblocks
+              do j = 1, ny_block
+              do i = 1, nx_block
+                 sst(i,j,iblk) = max(sst(i,j,iblk),Tf(i,j,iblk))
+              enddo
+              enddo
+           enddo
+           !$OMP END PARALLEL DO
+        endif
+
+      end subroutine ocn_data_hycom_init
 
 !=======================================================================
 
