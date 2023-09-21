@@ -7,33 +7,70 @@ import datetime
 import warnings
 import argparse
 import getpass
+import _BETZY_the_mapping_loop_with_ice
 import _FRAM_the_mapping_loop_with_ice
 from numpy import dtype
 import os
+import socket
 ########################
 warnings.filterwarnings('ignore')
 user = getpass.getuser()
 
-def main(region,experiment,year,day,workdir,satdir,debug):
+'''
+CAGLAR: Nov22
+how to use:
 
+_FORTRAN_subroutine_
+
+The code uses a fortran loop for a higly efficient loop for mapping satellite to model grid.
+To use the fortran subroutine, notice that at the top, we imported machine specific library (e.g. _BETZY_the_mapping_loop_with_ice)
+You need to import your own machine library. To create it (inside the bin/chl_profiling_satellite/ folder) specify the MACHINE as your own
+
+>>  f2py -c -m _MACHINE_the_mapping_loop_with_ice satellite_map.f90
+
+This should create .so file  with a long name, rename it to '_MACHINE_the_mapping_loop_with_ice.so' format 
+
+You can then add this machine specific library to the code. Search in the code 'gethostname' and copy/modify the if statement following the others. 
+____________________
+
+The code works with mandatory inputs. 
+You need to specify these:
+
+domain, experiment, year and day
+
+Also consider the following options:
+
+--nerscdir=/cluster/home/cagyum/NERSC-HYCOM-CICE
+--satdir=/cluster/work/users/cagyum/OCCCI/L3/copernicus_globcolor_daily_rep/chl/
+
+--opendap_rep # this overwrites user satdir and gets the Copernicus L3 reprocessed data through opendap
+              # you need to have a Copernicus account.
+              # the code will use your username and password.
+              # you can provide your user and password as a system variable 
+              # e.g. in bash: export copernicus_user=XXX  && export copernicus_pass=XXX  
+
+--opendap_rep # this overwrites user satdir and gets the Copernicus L3 NRT data through opendap
+              # you need to have a Copernicus account.
+              # the code will use your username and password.
+              # you can provide your user and password as a system variable 
+              # e.g. in bash: export copernicus_user=XXX  && export copernicus_pass=XXX
+
+--debug       # save a netcdf file containing satellite, old chl and new chl.
+
+
+
+# The script has been tested with the following inside the experiment folder with a link to bin folder in the upper directory:
+
+python ../bin/chl_profiling_satellite/chl_profile.py /cluster/work/users/cagyum/TP5a0.06 020 $y $nn --nerscdir=/cluster/home/cagyum/NERSC-HYCOM-CICE --opendap_nrt --debug
+ 
+'''
+def main(experiment,year,day,satdir,nerscdir,domain,debug,opendap_rep,opendap_nrt):
+
+    global PARAMS_Ardyna, PARAMS_Caglar, depthm, plat, plon, regions, REGmask, profdep
     experiment = 'expt_'+experiment[0:2]+'.'+experiment[2]
-    
-    if region == "TP0":
-        region = "TP0a1.00"
-    if region == "TP2":
-        region = "TP2a0.10"
-#    if region == "TP4":
-#        region = "TP4a0.12"
-    if region == "TP5":
-        region = "TP5a0.06"
-    if region == "NAT":
-        region = "NATa1.00"
-#    if region == "NA2":
-#        region = "NA2a0.80"
 
     # get domain dimensions
-    abgrid = abfile.ABFileGrid(workdir + user + "/" + \
-        region + "/topo/regional.grid","r")
+    abgrid = abfile.ABFileGrid(domain + "/" + experiment + "/data/regional.grid","r")
     plon=abgrid.read_field("plon")
     plat=abgrid.read_field("plat")
     scpx=abgrid.read_field("scpx")
@@ -41,40 +78,70 @@ def main(region,experiment,year,day,workdir,satdir,debug):
     jdm,idm=plon.shape
 
     # get domain depth
-    abdepth = abfile.ABFileBathy(workdir + user + "/" + \
-        region + "/" + experiment + "/data/regional.depth.b", \
+    abdepth = abfile.ABFileBathy(domain  + "/" + experiment +  "/data/regional.depth.b", \
             "r",idm=idm,jdm=jdm)
     depthm=abdepth.read_field("depth")
 
+    # get the profiling parameters
+    f = open(nerscdir+'/bin/chl_profiling_satellite/Ardyna_parameters.pckl','rb')
+    PARAMS_Ardyna = pickle.load(f)  
+    f.close()
+
+    f = open(nerscdir+'/bin/chl_profiling_satellite/Caglar_parameters.pckl','rb')
+    PARAMS_Caglar = pickle.load(f)  
+    f.close()
+
+    # get Ardyna regions
+    regions = assign_regions()
+
+    # get HYCOM TP5 regions
+    f=open(nerscdir + '/input/region_masks_TP5.pckl','rb')
+    REGmask = pickle.load(f)
+    f.close()
+
+    profdep = 201 # estimated profile level number 
+
+
     # read in satellite data
     timecal = ( datetime.datetime(int(year), 1, 1) + datetime.timedelta(int(day)-1) )
-    globchl = satdir+year+'/'+year+'-'+\
+    if opendap_rep or opendap_nrt:
+       if opendap_rep:
+          satfile = 'https://{}:{}@my.cmems-du.eu/thredds/dodsC/cmems_obs-oc_glo_bgc-plankton_my_l3-multi-4km_P1D'.format(str(os.environ['copernicus_user']),str(os.environ['copernicus_pass']))
+       if opendap_nrt:
+          satfile = 'https://{}:{}@nrt.cmems-du.eu/thredds/dodsC/cmems_obs-oc_glo_bgc-plankton_nrt_l3-multi-4km_P1D'.format(str(os.environ['copernicus_user']),str(os.environ['copernicus_pass']))
+       nc = NetCDFFile(satfile)
+       satlat = nc.variables['lat'][:]
+       satlon = nc.variables['lon'][:]
+       time = nc.variables['time'][:]
+       time_index = np.abs(time-(timecal - datetime.datetime(1900,1,1)).days).argmin()
+       satchl = nc.variables['CHL'][time_index,:,:]
+    else:
+       globchl = satdir+year+'/'+year+'-'+\
                  str(timecal.month).zfill(2)+'-'+str(timecal.day).zfill(2)+'.nc'
-    nc = NetCDFFile(globchl)
-    satlat = nc.variables['lat'][:]
-    satlon = nc.variables['lon'][:]
-    satchl = nc.variables['CHL'][0,:,:]
+       nc = NetCDFFile(globchl)
+       satlat = nc.variables['lat'][:]
+       satlon = nc.variables['lon'][:]
+       satchl = nc.variables['CHL'][0,:,:]
     #
     satlon_2d,satlat_2d=np.meshgrid(satlon,satlat)
-    if debug:
-       kdfile = satdir[:-4]+'kd/'+year+'/'+year+'-'+\
-                 str(timecal.month).zfill(2)+'-'+str(timecal.day).zfill(2)+'.nc'
-       nckd = NetCDFFile(kdfile)
-       kd = nckd.variables['KD490'][0,:,:]
+#    if debug:
+#       kdfile = satdir[:-4]+'kd/'+year+'/'+year+'-'+\
+#                 str(timecal.month).zfill(2)+'-'+str(timecal.day).zfill(2)+'.nc'
+#       nckd = NetCDFFile(kdfile)
+#       kd = nckd.variables['KD490'][0,:,:]
     
     # mask out high latitudes ( >=70 ) from mid September to avoid artificial high CHL due to angle of the sun
     if int(day)>=259:
         satchl = np.ma.masked_where(satlat_2d>=70.,satchl)
-        if debug:
-           kd  = np.ma.masked_where(satlat_2d>=70.,kd)
+#        if debug:
+#           kd  = np.ma.masked_where(satlat_2d>=70.,kd)
         
     # load restart file
-    oldfile = workdir + user + "/" + \
-        region + "/" + experiment + "/data/"+region[0:3]+"restart."+year+"_"+day.zfill(3)+"_00_0000.a"
+    oldfile = domain + "/" + experiment + "/data/restart."+year+"_"+day.zfill(3)+"_00_0000.a"
     f = abfile.ABFileRestart(oldfile,"r",\
         idm=idm,jdm=jdm)
     kdm  = max(f.fieldlevels)
-    prok = 21
+
     dia3D = np.zeros((kdm,jdm,idm))
     fla3D = np.zeros((kdm,jdm,idm))
     diachl3D = np.zeros((kdm,jdm,idm))
@@ -86,8 +153,8 @@ def main(region,experiment,year,day,workdir,satdir,debug):
     diachlnew = np.zeros((kdm,jdm,idm))
     flanew    = np.zeros((kdm,jdm,idm))
     flachlnew = np.zeros((kdm,jdm,idm))
-    estimated = np.zeros((prok,jdm,idm))
-    d_estimated = np.zeros((prok,jdm,idm))
+    estimated = np.zeros((profdep,jdm,idm))
+    d_estimated = np.zeros((profdep,jdm,idm))
     for k in range(kdm):
        dia3D[k,:,:]    = f.read_field('ECO_dia',k+1)
        fla3D[k,:,:]    = f.read_field('ECO_fla',k+1)
@@ -112,192 +179,46 @@ def main(region,experiment,year,day,workdir,satdir,debug):
     satlonf = np.asfortranarray(satlon)
     scpxf   = np.asfortranarray(scpx)
     scpyf   = np.asfortranarray(scpy)
-    if debug:
-       kdf     = np.asfortranarray(kd)
-    icefile = workdir + user + "/" + \
-        region + "/" + experiment + "/data/cice/iced." + year + "-"+ \
+#    if debug:
+#       kdf     = np.asfortranarray(kd)
+    icefile = domain + "/" + experiment + "/data/cice/iced." + year + "-"+ \
             str(timecal.month).zfill(2)+'-'+str(timecal.day).zfill(2)+'-00000.nc'
     ic = NetCDFFile(icefile)
     icemask = ic.variables["iceumask"][:,:]
     icf = np.asfortranarray(icemask)
 
-    satout = _FRAM_the_mapping_loop_with_ice.main(depthmf,scpxf,scpyf,platf,plonf,icf,satlatf,satlonf,satchlf)
+    if 'betzy' in socket.gethostname():
+       satout = _BETZY_the_mapping_loop_with_ice.main(depthmf,scpxf,scpyf,platf,plonf,icf,satlatf,satlonf,satchlf)
+    if 'fram' in socket.gethostname():
+       satout = _FRAM_the_mapping_loop_with_ice.main(depthmf,scpxf,scpyf,platf,plonf,icf,satlatf,satlonf,satchlf)
     satout = np.ma.masked_where(satout>1000.,satout)
     satout = np.ma.masked_where(satout<0.,satout)
     satout = np.ma.masked_array(satout,depthm.mask)
-    if debug:
-       kdout = _the_mapping_loop.main(depthmf,scpxf,scpyf,platf,plonf,icf,satlatf,satlonf,kdf)
-       kdout = np.ma.masked_where(kdout>1E4,kdout)
-       kdout = np.ma.masked_array(kdout,depthm.mask) 
-       kdout = 1./kdout
-##############################
+#    if debug:
+#       kdout = _the_mapping_loop.main(depthmf,scpxf,scpyf,platf,plonf,icf,satlatf,satlonf,kdf)
+#       kdout = np.ma.masked_where(kdout>1E4,kdout)
+#       kdout = np.ma.masked_array(kdout,depthm.mask) 
+#       kdout = 1./kdout
+##########################################################################################
 # NOW BEGINS THE CHL PROFILING
 #
-##############################
+##########################################################################################
 
-    # read mld climatology #############################################
-    ncmld = NetCDFFile('./mld_DR003_c1m_reg2.0.nc')
-    ncmld.set_auto_mask(False)
-    mldlat = ncmld.variables['lat'][:]
-    mldlon = ncmld.variables['lon'][:]
-    mld3D = ncmld.variables['mld'][:,:,:]
-    ncmld.close()
-    for l in range(mldlon.shape[0]):  # make longitudes compatible with hycom model
-        if mldlon[l]>180. :
-           mldlon[l] = -( 360. - mldlon[l] )
-    # following two lines will be used to interpolate mld between months
-    dayofyear = int(timecal.strftime('%-j'))                                
-    mldt = np.array([-15,15,46,74,105,135,166,196,227,258,288,319,349,380]) # day of year every 15th 
-    ####################################################################
-
-    # read mixed water profile curves #################################
-    # below are parameters taken from Uitz et al., 2006
-    # they are stored in a text file and here we read them
-    # Uitz classify profiles are 'mixed' and 'stratified'
-    # this chunk simply reads in for 'mixed' profiles
-    # we will determine whether the profile is mixed later
-    Mchlsigma = np.zeros((20,5)) ; Msigma = np.zeros((20,5))
-    k=0
-    with open("./M_profiles", "r") as filestream:
-         for line in filestream:
-             currentline = line.split(",")
-    
-             Msigma[k,0] = float(currentline[1]); 
-             Msigma[k,1] = float(currentline[3]);
-             Msigma[k,2] = float(currentline[5]); 
-             Msigma[k,3] = float(currentline[7]); 
-             Msigma[k,4] = float(currentline[9])
-             Mchlsigma[k,0] = float(currentline[0]); 
-             Mchlsigma[k,1] = float(currentline[2]);
-             Mchlsigma[k,2] = float(currentline[4]); 
-             Mchlsigma[k,3] = float(currentline[6]); 
-             Mchlsigma[k,4] = float(currentline[8]);
-             k=k+1
-    
-    Mchlave = np.array([0.244,0.592,0.885,1.881,6.32])
-    zeu_ave = np.array([77.1,53.2,44.,31.5,16.9]) # average EZ depth for the mixing conditions - taken from Uitz et al., 2006
-    ####################################################################
-
-
-# NOW WE BEGIN THE LOOP FOR EACH MODEL POINT
-
-    print 'adjusting profiles'
+    print('adjusting profiles')
+    print('this may take a few minutes')
     for j in range(jdm):
        for i in range(idm):
-    #      print j,i
-    ##################################################################
-    # get mld from climatology
-          JJ = np.abs(plon[j,i]-mldlon).argmin()
-          II = np.abs(plat[j,i]-mldlat).argmin()
-          # for each model point, interpolate MLD values to the exact dayofyear
-          # for continuity, last month is concatenated to the front of the year
-          # and first month to the back of the year
-          mld = np.interp(dayofyear,mldt,\
-                np.concatenate((mld3D[11,II,JJ],mld3D[:,II,JJ],mld3D[0,II,JJ]),axis=None))
-          # masked mld have very high values, I keep it that way, 
-          # so later water column is assigned "mixed" to avoid code malfunction
-    ###################################################################
 
-    ##################################################################
-    # true/false whether mixed or stratified
           surf = satout[j,i] # copy the local satellite chl
           if np.ma.is_masked(surf):
             pass
           else:
-            eup  = 4.61 / (0.041 + 0.04*surf) # taken from ECOSMO - kw=0.041 kb=0.04 ln(1%)=4.61
-    
-            stratified = 'false'
-            # initial estimation of euphotic depth to determine whether mixed or not
-            # later on in the code, Morel and Maritorena,2001 estimation will be used
-            if eup > mld :
-               stratified = 'true'
+            # get the shape pf the profile
+            cz = profiler( surf, plat[j,i], plon[j,i], year, day, plon,use_caglar_parameters=True)
+            # convert it to chlorophyll a
+            chl_profile       = cz * (surf/(cz[0]))
+            chl_profile_depth = np.arange(profdep)
 
-            if stratified : # if stratified, we need to assign different parameters (from Uitz et al., 2006)
-                            # I suggest at this point, it is worth to look at the paper and have an idea on 
-                            # what is happening below. Basically a different gaussian shaped curve is assigned
-                            # based on the surface CHL value. From what I understand, it is safe to interpolate
-                            # between curves, so any surface CHL value from satellite will be fit to an individual
-                            # interpolated profile     
-              if surf <= 1.0 :
-                 A10 = 36.1 ; B10 = 0.357
-                 A15 = 42.0 ; B15 = 0.248
-              else :
-                 A10 = 37.7 ; B10 = 0.615
-                 A15 = 43.5 ; B15 = 0.847
-    
-              Cbc = np.zeros((9)); sc = np.zeros((9)); Cmaxc = np.zeros((9)); 
-              sigma_maxc = np.zeros((9)); deltac = np.zeros((9)); sigma_avec = np.zeros((9)); zeu_ave = np.zeros((9))
-              Cbc[0] = 0.471; sc[0] = 0.135; Cmaxc[0] = 1.572; sigma_maxc[0] = 0.969; deltac[0] = 0.393; sigma_avec[0] = 0.032; zeu_ave[0] = 119.1
-              Cbc[1] = 0.533; sc[1] = 0.172; Cmaxc[1] = 1.194; sigma_maxc[1] = 0.921; deltac[1] = 0.435; sigma_avec[1] = 0.062; zeu_ave[1] = 99.9
-              Cbc[2] = 0.428; sc[2] = 0.138; Cmaxc[2] = 1.015; sigma_maxc[2] = 0.905; deltac[2] = 0.630; sigma_avec[2] = 0.098; zeu_ave[2] = 91.0
-              Cbc[3] = 0.570; sc[3] = 0.173; Cmaxc[3] = 0.766; sigma_maxc[3] = 0.814; deltac[3] = 0.586; sigma_avec[3] = 0.158; zeu_ave[3] = 80.2
-              Cbc[4] = 0.611; sc[4] = 0.214; Cmaxc[4] = 0.676; sigma_maxc[4] = 0.663; deltac[4] = 0.539; sigma_avec[4] = 0.244; zeu_ave[4] = 70.3
-              Cbc[5] = 0.390; sc[5] = 0.109; Cmaxc[5] = 0.788; sigma_maxc[5] = 0.521; deltac[5] = 0.681; sigma_avec[5] = 0.347; zeu_ave[5] = 63.4
-              Cbc[6] = 0.569; sc[6] = 0.183; Cmaxc[6] = 0.608; sigma_maxc[6] = 0.452; deltac[6] = 0.744; sigma_avec[6] = 0.540; zeu_ave[6] = 54.4
-              Cbc[7] = 0.835; sc[7] = 0.298; Cmaxc[7] = 0.382; sigma_maxc[7] = 0.512; deltac[7] = 0.625; sigma_avec[7] = 1.235; zeu_ave[7] = 39.8
-              Cbc[8] = 0.188; sc[8] = 0.   ; Cmaxc[8] = 0.885; sigma_maxc[8] = 0.378; deltac[8] = 1.081; sigma_avec[8] = 2.953; zeu_ave[8] = 26.1
-    
-              if surf <= sigma_avec[0] :
-                 Cb = Cbc[0]; s = sc[0]; Cmax = Cmaxc[0]; sigma_max = sigma_maxc[0]; delta = deltac[0]; sigma_ave = sigma_avec[0]; zeu = zeu_ave[0]
-              elif surf >= sigma_avec[8] :
-                 Cb = Cbc[8]; s = sc[8]; Cmax = Cmaxc[8]; sigma_max = sigma_maxc[8]; delta = deltac[8]; sigma_ave = sigma_avec[8]; zeu = zeu_ave[8]
-              else :
-                 Cb        = np.interp( surf,sigma_avec,Cbc )
-                 s         = np.interp( surf,sigma_avec,sc )
-                 sigma_max = np.interp( surf,sigma_avec,sigma_maxc)
-                 Cmax      = np.interp( surf,sigma_avec,Cmaxc )
-                 delta     = np.interp( surf,sigma_avec,deltac )
-                 zeu       = np.interp( surf,sigma_avec,zeu_ave )
-              sigma   = np.arange(prok)/10.
-              # the shape of the dimensionless profile for stratified waters based on surface chl
-              c_sigma = Cb - s*sigma + Cmax*np.exp( -( (sigma - sigma_max)/delta )**2 ) 
-              '''
-              plt.plot(c_sigma,-sigma)
-              plt.scatter(c_sigma,-sigma)
-              '''
-              chl_int_eup       = A10 * surf**B10 # integrated chl within the euphotic depth for stratified waters
-              #chl_ave_eup       = chl_int_eup / eup # mean chl within the euphotic depth for stratified waters
-              chl_ave_eup       = chl_int_eup / zeu 
-              chl_profile       = chl_ave_eup * c_sigma # chl profile estimated from satellite chl for stratified waters
-              #chl_profile_depth = sigma * eup # chl profile sample depth for stratified waters
-              chl_profile_depth = sigma * zeu
-              '''
-              plt.plot(chl_profile,-chl_profile_depth)
-              plt.scatter(chl_profile,-chl_profile_depth)
-              '''
-            else: # if water column is mixed we use below CHL profile shapes 
-    
-              A10 = 42.1 ; B10 = 0.538
-              A15 = 58.5 ; B15 = 0.546
-    
-              sigma = np.zeros((20)) ; c_sigma = zeros((20))
-              if surf <= Mchlave[0] :
-                sigma   = Msigma[:,0]
-                c_sigma = Mchlsigma[:,0]
-                zeu     = zeu_ave[0]
-              elif surf >= Mchlave[4] :
-                sigma   = Msigma[:,4]
-                c_sigma = Mchlsigma[:,4]
-                zeu     = zeu_ave[4]
-              else:
-                for k in range(20):
-                    sigma[k]   = np.interp( surf,Mchlave,Msigma[k,:] )
-                    c_sigma[k] = np.interp( surf,Mchlave,Mchlsigma[k,:] ) # the shape of the dimensionless profile for mixed waters based on surface chl
-                    zeu = np.interp( surf,Mchlave,zeu_ave )
-              '''
-              plt.plot(c_sigma,-sigma)
-              plt.scatter(c_sigma,-sigma)
-              '''
-              chl_int_eup = A10 * surf**B10 # integrated chl within the euphotic depth for mixed waters
-              #chl_ave_eup = chl_int_eup / eup # mean chl within the euphotic depth for stratified waters
-              chl_ave_eup       = chl_int_eup / zeu
-              chl_profile       = chl_ave_eup * c_sigma # chl profile estimated from satellite chl for mixed waters
-              #chl_profile_depth = sigma * eup # chl profile sample depth for mixed waters
-              chl_profile_depth = sigma * zeu
-              '''
-              plt.plot(chl_profile,-chl_profile_depth)
-              plt.scatter(chl_profile,-chl_profile_depth)
-              '''
             ################################################
             # now we fit the model towards the estimated profile
             # I used a 30% fit towards the estimated profile
@@ -319,8 +240,8 @@ def main(region,experiment,year,day,workdir,satdir,debug):
             fla_adjsuted = np.zeros((kdm))
             dia_adjsuted = np.zeros((kdm))
             for k in range(kdm):
-                if d1D[k] <= np.max(chl_profile_depth) : # profile estimation is limited to the euphotic depth
-                                                         # we need to keep model values below
+                if d1D[k] <= np.max(chl_profile_depth) : # profile estimation is limited to the profdep depth
+                                                         # we need to keep model values below as they are
                    chl_adjusted[k] = chl_estimated[k] * 0.3 + chl[k] * 0.7
                 else :
                    chl_adjusted[k] = chl[k]
@@ -336,19 +257,10 @@ def main(region,experiment,year,day,workdir,satdir,debug):
             flachlnew[:,j,i] = flachl_adjsuted
             estimated[:,j,i] = chl_profile
             d_estimated[:,j,i] = chl_profile_depth
-    
-#    dianew[dianew>1E25] = 0.; dianew[dianew<-1E15] = 0.
-#    dianew[diachlnew>1E25] = 0.; dianew[diachlnew<-1E15] = 0.
-#    flanew[flanew>1E25] = 0.; flanew[flanew<-1E15] = 0.
-#    flanew[flachlnew>1E25] = 0.; flanew[flachlnew<-1E15] = 0.
 
-#    dianew = np.ma.masked_array(dianew,np.repeat(depthm[np.newaxis,:], kdm, 0).mask)
-#    flanew = np.ma.masked_array(flanew,np.repeat(depthm[np.newaxis,:], kdm, 0).mask)
-#    flachlnew = np.ma.masked_array(flachlnew,np.repeat(depthm[np.newaxis,:], kdm, 0).mask)
-#    diachlnew = np.ma.masked_array(diachlnew,np.repeat(depthm[np.newaxis,:], kdm, 0).mask)
-    # finally replace the old model values with the estimated one in the restart file
-    newfile = workdir + user + "/" + \
-        region + "/" + experiment + "/data/"+region[0:3]+"restart."+year+"_"+day.zfill(3)+"_00_0000_NEW"
+    ################################################
+    # now copy the new information to a new restart file
+    newfile = domain + "/" + experiment + "/data/restart."+year+"_"+day.zfill(3)+"_00_0000_NEW"
     new_abfile = abfile.ABFileRestart(newfile,"w",idm=idm,jdm=jdm)
     new_abfile.write_header(f._iexpt,f._iversn,f._yrflag,f._sigver,f._nstep,f._dtime,f._thbase)
     
@@ -387,7 +299,8 @@ def main(region,experiment,year,day,workdir,satdir,debug):
     f.close() 
     new_abfile.close()
 
-# now replace restart files
+    ################################################
+    # now replace restart files
     os.rename(oldfile[:-2]+'.a',oldfile[:-2]+'_OLD.a')
     os.rename(oldfile[:-2]+'.b',oldfile[:-2]+'_OLD.b')
     os.rename(newfile+'.a',newfile[:-4]+'.a')
@@ -395,16 +308,15 @@ def main(region,experiment,year,day,workdir,satdir,debug):
    
     if debug:
 
-       namencout = workdir + user + "/" + \
-        region + "/" + experiment + "/data/"+region[0:3]+"restart."+year+"_"+day.zfill(3)+"_00_0000_NEW.nc" 
+       namencout = domain + "/" + experiment + "/data/restart."+year+"_"+day.zfill(3)+"_00_0000_NEW.nc" 
        ncout = NetCDFFile(namencout, "w", format="NETCDF4")
 
        ncout.createDimension("JJ",jdm)
        ncout.createDimension("II",idm)
        ncout.createDimension("dpth",kdm)
-       ncout.createDimension("dpro",prok)
+       ncout.createDimension("dpro",profdep)
        sat_mapped    = ncout.createVariable('sat_mapped', dtype('double').char, ("JJ","II"))
-       kd_mapped     = ncout.createVariable('kd_mapped', dtype('double').char, ("JJ","II"))
+#       kd_mapped     = ncout.createVariable('kd_mapped', dtype('double').char, ("JJ","II"))
        latitude      = ncout.createVariable('latitude', dtype('double').char, ("JJ","II"))
        longitude     = ncout.createVariable('longitude', dtype('double').char, ("JJ","II"))
        chlold        = ncout.createVariable('chlold', dtype('double').char, ("dpth","JJ","II"))
@@ -418,8 +330,8 @@ def main(region,experiment,year,day,workdir,satdir,debug):
        old         = np.ma.masked_array(old,np.repeat(depthm[np.newaxis,:], kdm, 0).mask)
        new         = diachlnew + flachlnew
        new         = np.ma.masked_array(new,np.repeat(depthm[np.newaxis,:], kdm, 0).mask)
-       estimated   = np.ma.masked_array(estimated,np.repeat(depthm[np.newaxis,:], prok, 0).mask)
-       d_estimated = np.ma.masked_array(d_estimated,np.repeat(depthm[np.newaxis,:], prok, 0).mask)
+       estimated   = np.ma.masked_array(estimated,np.repeat(depthm[np.newaxis,:], profdep, 0).mask)
+       d_estimated = np.ma.masked_array(d_estimated,np.repeat(depthm[np.newaxis,:], profdep, 0).mask)
 
        ncout.variables["longitude"][:]  = plon
        ncout.variables["latitude"][:]   = plat
@@ -429,27 +341,190 @@ def main(region,experiment,year,day,workdir,satdir,debug):
        ncout.variables["depth"][:]      = depth3D
        ncout.variables["profile"][:]    = estimated
        ncout.variables["profile_depth"][:] = d_estimated 
-       ncout.variables["kd_mapped"][:] = kdout
+#       ncout.variables["kd_mapped"][:] = kdout
 
        ncout.sync()
        ncout.close()
-    
+##########################################################################################
+# NOW ENDS THE CHL PROFILING
+#
+##########################################################################################
+
+def select_model_region(lat,lon):
+    cooINDEX = abs( plat-lat ) + abs( plon-lon )
+    JJ,II = np.unravel_index(cooINDEX.argmin(), cooINDEX.shape)
+
+    location = 'NONE'
+    for key in REGmask.keys():
+        if REGmask[key][JJ,II] == 1: location = key
+
+    return location
+
+def profiler(surf,lat,lon,year,day, *args, **kwargs):
+
+    timecal = ( datetime.datetime(int(year), 1, 1) + datetime.timedelta(int(day)-1) )
+    month = timecal.month
+
+    cooINDEX = abs( plat-lat ) + abs( plon-lon )
+    JJ,II = np.unravel_index(cooINDEX.argmin(), cooINDEX.shape)
+
+    if regions[JJ,II] == 0 : location = 'CENTRAL'
+    if regions[JJ,II] == 1 : location = 'BAFFIN'
+    if regions[JJ,II] == 2 : location = 'HUDSON'
+    if regions[JJ,II] == 3 : location = 'CANADA'
+    if regions[JJ,II] == 4 : location = 'BEAUFORT'
+    if regions[JJ,II] == 5 : location = 'CHUKCHI'
+    if regions[JJ,II] == 6 : location = 'BERING'
+    if regions[JJ,II] == 7 : location = 'RUSSIAN'
+    if regions[JJ,II] == 8 : location = 'BARENTS'
+    if regions[JJ,II] == 9 : location = 'NORDIC'    
+
+    if np.ma.is_masked(regions[JJ,II]):
+       #print('Water depth below 50 metes, no profiling will be done')
+       pass
+    else:
+      if surf < 0.1:
+         bins = 'C1'
+      elif surf >= 0.1 and surf < 0.3:
+         bins = 'C2'
+      elif surf >= 0.3 and surf < 0.5:
+         bins = 'C3'
+      elif surf >= 0.5 and surf < 0.7:
+         bins = 'C4'
+      elif surf >= 0.7 and surf < 1.0:
+         bins = 'C5'
+      elif surf >= 1.0 and surf < 3.0:
+         bins = 'C6'
+      elif surf >= 3.0 and surf < 8.0:
+         bins = 'C7'
+      elif surf >= 8.0:
+         bins = 'C8'
+
+      if surf >= 0.7 :
+         season = 'ALL'
+         area = 'FULL'
+      else:
+         if month >= 2 and month <= 4:
+            season = 'PRE'
+            area = 'FULL'
+         elif month >= 5 and month <= 9:
+            season = 'POST'
+            if bins == 'C3' or bins == 'C4':
+               area = 'FULL'
+            if bins == 'C1' or bins == 'C2':
+               area = location
+         else:
+            season = 'WINTER'
+            area = 'FULL'
+      
+      cb    = PARAMS_Ardyna[season][area][bins]['cb']
+      s     = PARAMS_Ardyna[season][area][bins]['s']
+      cmax  = PARAMS_Ardyna[season][area][bins]['cmax']
+      zmax  = PARAMS_Ardyna[season][area][bins]['zmax']
+      delta = PARAMS_Ardyna[season][area][bins]['delta']
+
+      if kwargs.get('use_caglar_parameters',None):
+         region = 'outside'
+         if season == 'ALL' or season == 'POST' or season == 'PRE' or season == 'WINTER':
+            region = select_model_region(lat,lon)         
+            if region == 'Barents' or region == 'NorwegianN' or region == 'NorwegianS':
+
+                  try:
+                      PARAM_caglar_1[region][season][bins]['cb']
+                      # retrieve caglar's modified parameters 
+                      cb    = PARAM_Caglar[region][season][bins]['cb']
+                      s     = PARAM_Caglar[region][season][bins]['s']
+                      cmax  = PARAM_Caglar[region][season][bins]['cmax']
+                      zmax  = PARAM_Caglar[region][season][bins]['zmax']
+                      delta = PARAM_Caglar[region][season][bins]['delta']
+                  except Exception:
+                      pass
+        
+
+         #print(timecal,season,area,bins,region,'   model J:',JJ,' model I:',II)
+      else:
+         #print(timecal,season,area,bins)
+         pass   
+
+      z = np.arange(profdep)
+      cz = cb - s*z + cmax * np.exp(-((z - zmax)/delta)**2)
+
+      return cz
+
+def assign_regions():
+   # DEFINE REGIONS (www.biogeosciences.net/10/4383/2013/)
+   '''
+   the order of assigning regions is important. Do not rearrange.
+   '''
+   regions = depthm*0.
+
+     # BAFFIN BAY - assigned number = 1
+   regions[ np.logical_and( np.logical_and(plon>=-80.,plon<=-50),np.logical_and(plat>=70.,plat<=82.) )  ] = 1.
+   regions[ np.logical_and( np.logical_and(plon>=-70.,plon<=-50),np.logical_and(plat>=63.,plat<=70.) )  ] = 1.
+   regions[ np.logical_and( np.logical_and(plon>=-65.,plon<=-50),np.logical_and(plat>=45.,plat<=63.) )  ] = 1.
+   regions = np.ma.masked_where(depthm<50.,regions)
+
+     # HUDSON BAY - assigned number = 2
+   regions[ np.logical_and( np.logical_and(plon>=-100.,plon<=-76.5),np.logical_and(plat>=45.,plat<=64.) )  ] = 2.
+   regions = np.ma.masked_where(depthm<50.,regions)
+
+     # CANADIAN ARCHIPELAGO - assigned number = 3
+   regions[ np.logical_and( np.logical_and( np.logical_and(plon>=-120.,plon<=-60),np.logical_and(plat>=45.,plat<=79.) ),regions==0.)  ] = 3.
+   regions[ np.logical_and( np.logical_and(plon>=-128.,plon<=-120),np.logical_and(plat>=45.,plat<=72.) )  ] = 3.
+   regions = np.ma.masked_where(depthm<50.,regions)
+
+     # BEAUFORT SEA - assigned number = 4
+   regions[ np.logical_and( np.logical_and(plon>=-150.,plon<=-128),np.logical_and(plat>=60.,plat<=72.) )  ] = 4.
+   regions = np.ma.masked_where(depthm<50.,regions)
+
+     # CHUKCHI SEA - assigned number = 5
+   regions[ np.logical_and( np.logical_and(plon>=-180.,plon<=-150),np.logical_and(plat>=67.,plat<=80.) )  ] = 5.
+   regions = np.ma.masked_where(depthm<50.,regions)
+
+     # BERING SEA - assigned number = 6
+   regions[ np.logical_and( plon>=160.,np.logical_and(plat>=45.,plat<=67.) )  ] = 6.
+   regions[ np.logical_and( plon<=-150.,np.logical_and(plat>=45.,plat<=67.) )  ] = 6.
+   regions = np.ma.masked_where(depthm<50.,regions)
+
+     # RUSSIAN SEAS - assigned number = 7
+   regions[ np.logical_and( np.logical_and(plon>=69.,plon<=180),np.logical_and(plat>=70.,plat<=80.) )  ] = 7.
+   regions[ np.logical_and( np.logical_and(plon>=66.,plon<=180),np.logical_and(plat>=70.,plat<=76.5) )  ] = 7.
+   regions[ np.logical_and( np.logical_and(plon>=64.,plon<=180),np.logical_and(plat>=65.,plat<=76.) )  ] = 7.
+   regions[ np.logical_and( np.logical_and(plon>=62.,plon<=180),np.logical_and(plat>=65.,plat<=76.) )  ] = 7.
+   regions[ np.logical_and( np.logical_and(plon>=60.,plon<=180),np.logical_and(plat>=65.,plat<=76.) )  ] = 7.
+   regions[ np.logical_and( np.logical_and(plon>=58.,plon<=180),np.logical_and(plat>=65.,plat<=75.) )  ] = 7.
+   regions[ np.logical_and( np.logical_and(plon>=56.,plon<=180),np.logical_and(plat>=65.,plat<=75.) )  ] = 7.
+   regions[ np.logical_and( np.logical_and(plon>=56.,plon<=180),np.logical_and(plat>=65.,plat<=74.) )  ] = 7.
+   regions = np.ma.masked_where(depthm<50.,regions)
+
+     # BARENTS SEA - assigned number = 8
+   regions[ np.logical_and( np.logical_and( np.logical_and(plon>=17.,plon<=70),np.logical_and(plat>=65.5,plat<=80.) ),regions==0.)  ] = 8.
+   regions[ np.logical_and( np.logical_and( np.logical_and(plon>=31.,plon<=45),np.logical_and(plat>=63,plat<=66.) ),regions==0.)  ] = 8.
+   regions = np.ma.masked_where(depthm<50.,regions)
+
+     # NORWEGIAN & GREENLAND SEA + NORTH ATLANTIC - assigned number = 9
+   regions[ np.logical_and( np.logical_and( np.logical_and(plon>=-50.,plon<=17.),np.logical_and(plat>=45.,plat<=80.) ),regions==0.)  ] = 9.
+   regions = np.ma.masked_where(depthm<50.,regions)
+
+   return regions
+
+
 if __name__ == "__main__" :
 
     parser = argparse.ArgumentParser(description='')
-    parser.add_argument('region',  type=str)
+    parser.add_argument('domain',  type=str)
     parser.add_argument('experiment',  type=str)
     parser.add_argument('year',  type=str)
     parser.add_argument('day',  type=str)
-    parser.add_argument('--workdir', type=str, \
-        default="/cluster/work/users/", \
-            help="machine specific work directory (above user folder)")
     parser.add_argument('--satdir', type=str, \
         default="/cluster/work/users/cagyum/OCCCI/L3/copernicus_globcolor_daily_rep/chl/", \
             help="satellite file directory, should have separate year folders")
+    parser.add_argument('--nerscdir', type=str, \
+        default="/cluster/home/cagyum/NERSC-HYCOM-CICE/", \
+            help="user specific hycom directory")
     parser.add_argument('--debug', action="store_true",default=False)
+    parser.add_argument('--opendap_rep', action="store_true",default=False)
+    parser.add_argument('--opendap_nrt', action="store_true",default=False)
     args = parser.parse_args()
 
-    main(args.region,args.experiment,args.year,args.day,workdir=args.workdir,satdir=args.satdir,debug=args.debug)
-
-
+    main(args.experiment,args.year,args.day,satdir=args.satdir,nerscdir=args.nerscdir,domain=args.domain,debug=args.debug,opendap_rep=args.opendap_rep,opendap_nrt=args.opendap_nrt)

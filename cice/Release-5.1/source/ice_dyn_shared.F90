@@ -38,8 +38,11 @@
       real (kind=dbl_kind), parameter, public :: &
          eyc = 0.36_dbl_kind, &
                          ! coefficient for calculating the parameter E
-         cosw = c1   , & ! cos(ocean turning angle)  ! turning angle = 0
-         sinw = c0   , & ! sin(ocean turning angle)  ! turning angle = 0
+         !cosw = c1   , & ! cos(ocean turning angle)  ! turning angle = 0
+         !sinw = c0   , & ! sin(ocean turning angle)  ! turning angle = 0
+         cosw = 0.9848_dbl_kind, & ! cos(ocean turning angle)  ! turning angle 10 deg
+         sinw = 0.1736_dbl_kind, & ! sin(ocean turning angle)  ! turning angle 10 deg
+
          a_min = p001, & ! minimum ice area
          m_min = p01     ! minimum ice mass (kg/m^2)
 

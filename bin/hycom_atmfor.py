@@ -70,7 +70,14 @@ def atmfor(start,end,af,grid_file="regional.grid",blkdat_file="blkdat.input",plo
 
    # Standard case, use names and units directly from hycom module
    else :
-
+      print(" ") 
+      #ALFATI Start (Setting minimum limit)
+      logger.info("#AA: SSRD must always be positive : otherwise this may cause  thermo-convergence CICE crash")
+      modeltools.hycom.variable_limits["ssrd"]=[0,None] #ALFATI shwflx is downwanrd with 0 minmum
+      logger.info("#AA: STRD must be positive")
+      modeltools.hycom.variable_limits["strd"]=[0,None] #ALFATI radflx is downwanrd with 0 minmum
+      #ALFATI END
+      print(" ")
       forcingpropertyset = modeltools.forcing.atmosphere.ForcingPropertySet(
          modeltools.hycom.variable_names,
          modeltools.hycom.variable_units,
@@ -102,7 +109,8 @@ def atmfor(start,end,af,grid_file="regional.grid",blkdat_file="blkdat.input",plo
    dt = start
    while dt <= end :
        
-       logger.info("Reading at %s"%str(dt))
+       logger.info("-------------------Reading at %s--------------------------"%str(dt))
+       logger.info("-----------------------------------------------------------")
        #print af.known_names
 
        # Read variables
@@ -121,11 +129,17 @@ def atmfor(start,end,af,grid_file="regional.grid",blkdat_file="blkdat.input",plo
           if "relhum" not in af.known_names_explicit : af.calculate_relhum()
        #  Forcing used by new version 
        else :
-          if "vapmix" not in af.known_names_explicit : af.calculate_vapmix()
-          if "ssrd"   not in af.known_names_explicit : af.calculate_ssrd()
+          if "vapmix" not in af.known_names_explicit :
+             logger.info(">>>> vapmix is not present in xml file, thus it will be caluclated")
+             af.calculate_vapmix()
+          if "ssrd"   not in af.known_names_explicit :
+             logger.info(">>>> ssrd is not present in xml file, thus it will be caluclated")
+             af.calculate_ssrd()
 
           if lwflag == -1 :
-           if "strd"   not in af.known_names_explicit : af.calculate_strd()
+             if "strd"   not in af.known_names_explicit :
+                logger.info(">>>> strd is not present in xml file, thus it will be caluclated")
+                af.calculate_strd()
           else :
               raise ValueError("TODO: lwflag!=-1 not supported")
 
