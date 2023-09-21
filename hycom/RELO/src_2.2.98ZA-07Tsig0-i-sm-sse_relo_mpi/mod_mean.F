@@ -43,7 +43,8 @@ c
 c
       real,    allocatable, dimension(:,:,:),
      &         save, private ::
-     &   u_m,v_m,ke_m,temp_m,saln_m,th3d_m,dp_m
+
+     &   u_m,v_m,ke_m,temp_m,saln_m,th3d_m,dp_m,dpu_m,dpv_m
      &   ,dift_m,difs_m,vcty_m
 #if defined(STOKES)
      &  ,usdp_m,vsdp_m
@@ -86,6 +87,8 @@ c
       allocate(   saln_m(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kdm) )
       allocate(   th3d_m(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kdm) )
       allocate(     dp_m(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kdm) )
+      allocate(     dpu_m(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kdm) )
+      allocate(     dpv_m(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kdm) )
       call mem_stat_add(     7*(idm+2*nbdy)*(jdm+2*nbdy)*kdm )
       if (difout) then
          allocate(   vcty_m(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kdm) )
@@ -165,6 +168,8 @@ c
         do k= 1,kk
           do i=1,ii
               dp_m(i,j,k) = 0.0
+             dpu_m(i,j,k) = 0.0
+             dpv_m(i,j,k) = 0.0
             temp_m(i,j,k) = 0.0
             saln_m(i,j,k) = 0.0
             th3d_m(i,j,k) = 0.0
@@ -287,10 +292,12 @@ c
             if (SEA_U) then
                        q = s*dpu(i,j,k,n)
               u_m(i,j,k) = u_m(i,j,k) + q*(u(i,j,k,n) + ubavg(i,j,n))
+              dpu_m(i,j,k)=dpu_m(i,j,k) +                   q
             endif !iu
             if (SEA_V) then
                        q = s*dpv(i,j,k,n)
               v_m(i,j,k) = v_m(i,j,k) + q*(v(i,j,k,n) + vbavg(i,j,n))
+              dpv_m(i,j,k)=dpv_m(i,j,k) +                   q
             endif !iv
           enddo !i
         enddo !k
@@ -418,20 +425,22 @@ c
               endif !dpthin:else
             endif !ip
             if (SEA_U) then
-              qdp = min(depthu(i,j), 0.5*(p(i,j,k+1)+p(i-1,j,k+1))) -
-     &              min(depthu(i,j), 0.5*(p(i,j,k  )+p(i-1,j,k  )))
-              if     (qdp.ge.dpthin) then
-                qdp = q/qdp
+!              qdp = min(depthu(i,j), 0.5*(p(i,j,k+1)+p(i-1,j,k+1))) -
+!     &              min(depthu(i,j), 0.5*(p(i,j,k  )+p(i-1,j,k  )))
+              dpu_m(i,j,k) = dpu_m(i,j,k) * q
+              if     (dpu_m(i,j,k).ge.dpthin) then
+                qdp = q/dpu_m(i,j,k)
                 u_m(i,j,k) = u_m(i,j,k) * qdp
               else 
                 u_m(i,j,k) = u_m(i,j,k-1)
               endif
             endif !iu
             if (SEA_V) then
-              qdp = min(depthv(i,j), 0.5*(p(i,j,k+1)+p(i,j-1,k+1))) -
-     &              min(depthv(i,j), 0.5*(p(i,j,k  )+p(i,j-1,k  )))
-              if     (qdp.ge.dpthin) then
-                qdp = q/qdp
+!              qdp = min(depthv(i,j), 0.5*(p(i,j,k+1)+p(i,j-1,k+1))) -
+!     &              min(depthv(i,j), 0.5*(p(i,j,k  )+p(i,j-1,k  )))
+              dpv_m(i,j,k) = dpv_m(i,j,k) * q
+              if     (dpv_m(i,j,k).ge.dpthin) then
+                qdp = q/dpv_m(i,j,k)
                 v_m(i,j,k) = v_m(i,j,k) * qdp
               else 
                 v_m(i,j,k) = v_m(i,j,k-1)

@@ -213,7 +213,6 @@ class ConformalMapping(object) :
 
       return lat_o,lon_o
 
-   
    def pivotp(self,lat_n,lon_n) :
       # This subroutine computes the pivot point of each of the observations
       # in the temporary array tmpobs of type observation. The pivot point
