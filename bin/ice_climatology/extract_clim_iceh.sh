@@ -89,10 +89,10 @@ Isst=0   # Switch on sss/sst processing ofr Isst=1,otherwise switch off
 if [ -s ${Fini} -a -s ${Ftmpmask} ]; then
    [ -s ${Fout} ] && rm ${Fout}
    echo "interpolating ... "
-   #module load CDO/1.9.9-iompi-2020a
+   module load CDO/1.9.9-iompi-2020a
    cdo remapbil,${Ftmpmask} ${Fini} ${Fout}
 
-   #ml load NCO/4.9.7-iomkl-2020a
+   ml load NCO/4.9.7-iomkl-2020a
    echo "Defaulting the values for different masks ... "
    ncks -v ${Vars} ${Fout} ${Ftmp}  
    ncrename -h -O -v siconc,aice_raw -v sithick,hi_raw ${Ftmp}  

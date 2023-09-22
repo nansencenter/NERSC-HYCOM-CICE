@@ -321,7 +321,7 @@ rm stmt_fns.h
 ln -s ALT_CODE/$stmt stmt_fns.h
 echo "Now compiling cice in $targetdir. $ICEFLG" 
 echo $sourcedir
-if [ $ICEFLG -eq 2 ] ; then
+if [ ${ICEFLG} -eq 2 ] ; then
 	echo $MACROID
 	# 1) Compile CICE. Environment variables need to be passe to script
 	cd $targetdir/CICE/
