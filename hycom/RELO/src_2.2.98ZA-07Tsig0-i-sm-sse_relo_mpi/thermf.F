@@ -14,7 +14,7 @@
       subroutine thermf_oi(m,n)
       use mod_xc         ! HYCOM communication interface
       use mod_cb_arrays  ! HYCOM saved arrays
-      use mod_NERSCnml, only : sss_underice, nersc_init
+      use mod_NERSCnml, only : sss_underice
       implicit none
 c
       integer m,n
