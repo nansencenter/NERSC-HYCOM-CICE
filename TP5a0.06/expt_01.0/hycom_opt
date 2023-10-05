@@ -1,3 +1,5 @@
 &hycom_nml
-    write_arche= .false.
+    write_arche= .true.,
+    relative_wnd_coef = 0.7 ! Coupling coefficient in Renault et al. JPO 2017 https://doi.org/10.1175/JPO-D-16-0168.1
+                            ! 0.0 is absolute winds, 1.0 is relative winds.
 /
