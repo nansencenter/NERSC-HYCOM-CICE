@@ -905,7 +905,7 @@ call check_finite("AFTER ROBERT", n)
 
       logical :: valid_int, valid_sf, valid_bt, repair_dsnk
       real :: spdk
-      integer :: i, j, k, ivar, old_index, indDET, indDSNK, kb
+      integer :: i, j, k, ivar, old_index, indDET, indDSNK, kb, indTA, indc
 
       old_index = current_time_index
       call update_fabm_state(index)
@@ -956,6 +956,12 @@ call check_finite("AFTER ROBERT", n)
              indDSNK = ivar
              repair_dsnk = .true.
           end if
+          if ( fabm_model%state_variables(ivar)%name == "CO2_TA" ) then
+             indTA = ivar
+          end if
+          if ( fabm_model%state_variables(ivar)%name == "CO2_c" ) then
+             indc = ivar
+          end if
         end do
 
         do j=1,jj
@@ -998,6 +1004,12 @@ call check_finite("AFTER ROBERT", n)
                          end do
                       end if
                    end if
+                end if
+                if (ivar == indTA .or. ivar == indc) then
+                         do k=1, kk
+                            tracer(i, j, k, index, indTA) = max( min( tracer(i, j, k, index, indTA), 2600.0 ), 900.0)
+                            tracer(i, j, k, index, indc)  = max( min( tracer(i, j, k, index, indc), 2600.0 ), 900.0)
+                         end do
                 end if
               end do
             end if
