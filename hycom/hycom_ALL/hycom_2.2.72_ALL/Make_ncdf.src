@@ -14,19 +14,7 @@
 #setenv NCDF /common/netcdf/pgi11.8/3.6.3
 #
 #
-#module restore system
-#module load NCL/6.4.0-intel-2017a 
-#module load FFTW/3.3.6-intel-2017a
-#module load ESMF/6.3.0rp1-intel-2017a-HDF5-1.8.18
-#setenv NCDF "/cluster/software/netCDF-Fortran/4.4.4-intel-2017a-HDF5-1.8.18"
-#setenv NCARG_ROOT "/cluster/software/NCL/6.4.0-intel-2017a"
-
-setenv NCDF /cluster/software/netCDF-Fortran/4.4.4-intel-2018b 
-
-
-#module swap netCDF-Fortran/4.4.4-intel-2017a-HDF5-1.8.18 netCDF-Fortran/4.4.4-intel-2017a
-#setenv NCDF /cluster/software/netCDF-Fortran/4.4.4-intel-2017a
-
+setenv NCDF /cluster/software/netCDF-Fortran/4.6.0-iimpi-2022a
 #
 #
 #
