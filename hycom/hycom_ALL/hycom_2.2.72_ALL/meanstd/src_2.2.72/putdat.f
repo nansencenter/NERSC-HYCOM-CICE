@@ -255,12 +255,22 @@ c
         call zaiowr(si_um,ip,.true., xmin,xmax, nop, .false.)
         write (nop,117) 'si_u    ',nmean,time,0,0.0,xmin,xmax
         call flush(nop)
-        write ( lp,117) 'si_v    ',nmean,time,0,0.0,xmin,xmax
+        write ( lp,117) 'si_u    ',nmean,time,0,0.0,xmin,xmax
         call flush( lp)
         call zaiowr(si_vm,ip,.true., xmin,xmax, nop, .false.)
         write (nop,117) 'si_v    ',nmean,time,0,0.0,xmin,xmax
         call flush(nop)
         write ( lp,117) 'si_v    ',nmean,time,0,0.0,xmin,xmax
+        call flush( lp)
+        call zaiowr(surtxm,ip,.true., xmin,xmax, nop, .false.)
+        write (nop,117) 'surtx    ',nmean,time,0,0.0,xmin,xmax
+        call flush(nop)
+        write ( lp,117) 'surtx    ',nmean,time,0,0.0,xmin,xmax
+        call flush( lp)
+        call zaiowr(surtym,ip,.true., xmin,xmax, nop, .false.)
+        write (nop,117) 'surty    ',nmean,time,0,0.0,xmin,xmax
+        call flush(nop)
+        write ( lp,117) 'surty    ',nmean,time,0,0.0,xmin,xmax
         call flush( lp)
       endif
  117  format (a8,' =',i11,f11.2,i3,f7.3,1p2e16.7)

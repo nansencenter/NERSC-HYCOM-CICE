@@ -563,6 +563,22 @@ c
         call getfld(work, ni, hminb,hmaxb, .false.)
         call extrct(work,idm,jdm,iorign,jorign, 
      &              si_v,ii,jj)
+c
+        read (ni,'(a)',end=6) cline
+        write(lp,'(a)')       cline(1:len_trim(cline))
+        i = index(cline,'=')
+        read (cline(i+1:),*)  nstep,time(3),layer,thet,hminb,hmaxb
+        call getfld(work, ni, hminb,hmaxb, .false.)
+        call extrct(work,idm,jdm,iorign,jorign, 
+     &              surtx,ii,jj)
+c
+        read (ni,'(a)',end=6) cline
+        write(lp,'(a)')       cline(1:len_trim(cline))
+        i = index(cline,'=')
+        read (cline(i+1:),*)  nstep,time(3),layer,thet,hminb,hmaxb
+        call getfld(work, ni, hminb,hmaxb, .false.)
+        call extrct(work,idm,jdm,iorign,jorign, 
+     &              surty,ii,jj)
 
       endif
 

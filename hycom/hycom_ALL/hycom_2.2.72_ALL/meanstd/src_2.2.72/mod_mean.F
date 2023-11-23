@@ -42,8 +42,10 @@ c
      &   tmix_m,smix_m,thmix_m,umix_m,vmix_m,kemix_m,
      &   surflx_m,salflx_m,wtrflx_m,covice_m,thkice_m,temice_m,
      &   oneta_m,onetaw_m,onetaw_u,onetaw_v,
-     &   si_u, si_um, si_v, si_vm
+     &   si_u, si_um, si_v, si_vm,
+     &   surtx, surtxm, surty, surtym
 c    add two sea-ice variables for drift
+c    add x-/y surface stress
 c
       real,    save, allocatable, dimension (:)     :: 
      &   theta
@@ -128,6 +130,8 @@ c
       allocate( temice(ii,jj) )
       allocate(   si_u(ii,jj) )
       allocate(   si_v(ii,jj) )
+      allocate(  surtx(ii,jj) )
+      allocate(  surty(ii,jj) )
 c
       allocate(  ubaro_m(ii,jj) );    ubaro_m = 0.0
       allocate(  vbaro_m(ii,jj) );    vbaro_m = 0.0
@@ -156,6 +160,8 @@ c
       allocate( temice_m(ii,jj) );   temice_m = 0.0
       allocate(    si_um(ii,jj) );      si_um = 0.0
       allocate(    si_vm(ii,jj) );      si_vm = 0.0
+      allocate(   surtxm(ii,jj) );     surtxm = 0.0
+      allocate(   surtym(ii,jj) );     surtym = 0.0
 c
       allocate(     ip(ii,jj) )
       allocate(     iq(ii,jj) )
@@ -279,6 +285,8 @@ c
             temice_m(i,j)   = temice_m(i,j)   + temice(i,j)   * s
                si_um(i,j)   =    si_um(i,j)   +   si_u(i,j)   * s
                si_vm(i,j)   =    si_vm(i,j)   +   si_v(i,j)   * s
+              surtxm(i,j)   =    surtxm(i,j)  +  surtx(i,j)   * s
+              surtym(i,j)   =    surtym(i,j)  +  surty(i,j)   * s
 c
              oneta_m(i,j)   =  oneta_m(i,j)   +  oneta(i,j)   * s
             onetaw_m(i,j)   = onetaw_m(i,j)   + onetaw(i,j)   * s
@@ -415,6 +423,8 @@ c
             temice_m(i,j)   = temice_m(i,j)   + temice(i,j)**2   * s
                si_um(i,j)   =    si_um(i,j)   +   si_u(i,j)**2   * s
                si_vm(i,j)   =    si_vm(i,j)   +   si_v(i,j)**2   * s
+              surtxm(i,j)   =   surtxm(i,j)   +  surtx(i,j)**2   * s
+              surtym(i,j)   =   surtym(i,j)   +  surty(i,j)**2   * s
 c
              oneta_m(i,j)   =  oneta_m(i,j)   +  oneta(i,j)**2   * s
             onetaw_m(i,j)   = onetaw_m(i,j)   + onetaw(i,j)      * s
@@ -591,6 +601,8 @@ c
       onetaw_m = onetaw
          si_um =   si_u
          si_vm =   si_v 
+        surtxm =  surtx
+        surtym =  surty
 *
 *     write(6,*) 'mean_copy  -    dp_m = ',   dp_m(54, 1,1),
 *    &                                        dp(  54, 1,1)
@@ -709,6 +721,8 @@ c
             temice_m(i,j) = q*(temice_m(i,j) - temice(i,j))
                si_um(i,j) = q*(   si_um(i,j) -   si_u(i,j))
                si_vm(i,j) = q*(   si_vm(i,j) -   si_v(i,j))
+              surtxm(i,j) = q*(  surtxm(i,j) -  surtx(i,j))
+              surtym(i,j) = q*(  surtym(i,j) -  surty(i,j))
           endif
         enddo !i
       enddo !j
@@ -753,6 +767,8 @@ c
         call mean_box(temice_m,ii,jj, 1,nbox,larctic,lperiod)
         call mean_box(   si_um,ii,jj, 1,nbox,larctic,lperiod)
         call mean_box(   si_vm,ii,jj, 1,nbox,larctic,lperiod)
+        call mean_box(  surtxm,ii,jj, 1,nbox,larctic,lperiod)
+        call mean_box(  surtym,ii,jj, 1,nbox,larctic,lperiod)
       endif !nbox
 *
 *     write(6,*) 'mean_diff  -    dp_m = ',   dp_m(54, 1,1),
@@ -847,6 +863,8 @@ c
             onetaw_m(i,j)   = onetaw_m(i,j)   * s
                si_um(i,j)   =    si_um(i,j)   * s
                si_vm(i,j)   =    si_vm(i,j)   * s
+               surtxm(i,j)  =   surtxm(i,j)   * s
+               surtym(i,j)  =   surtym(i,j)   * s
 c
             do k= 1,kk
               dw_m(i,j,k) = dw_m(i,j,k) * s
@@ -894,6 +912,8 @@ c
             temice_m(i,j)   = spval
                si_um(i,j)   = spval
                si_vm(i,j)   = spval
+              surtxm(i,j)   = spval
+              surtym(i,j)   = spval
 c
              oneta_m(i,j)   = spval
             onetaw_m(i,j)   = spval
@@ -982,6 +1002,7 @@ c
              oneta_m(i,j) = std( oneta(i,j) -  oneta_m(i,j)**2)
                si_um(i,j) = std(  si_u(i,j) -    si_um(i,j)**2)
                si_vm(i,j) = std(  si_v(i,j) -    si_vm(i,j)**2)
+              surtxm(i,j) = std( surtx(i,j) -   surtxm(i,j)**2)
           endif
         enddo
       enddo
