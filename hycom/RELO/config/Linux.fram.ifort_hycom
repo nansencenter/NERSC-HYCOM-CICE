@@ -15,25 +15,23 @@
 # LDFLAGS:    Loader flags.
 # EXTRALIBS:  Extra local libraries (if any).
 #
-#INCLUDES      = -I/cluster/software/netCDF-Fortran/4.4.4-intel-2017a-HDF5-1.8.18/include  -I${ESMF_MOD_DIR} -I${ESMF_DIR}include -I./CICE/rundir/compile
-
-# --- Mostafa: flags required for standalone HYCOM
-INCLUDES      = -I${ESMF_MOD_DIR} -I${ESMF_DIR}include -I./CICE/rundir/compile
+OASIS_DIR     = /cluster/projects/nn9878k/guibou/NANUK/oa3-mct_iimpi2022a/
+LIBPSMILE     = $(OASIS_DIR)/lib/libpsmile.MPI1.a $(OASIS_DIR)/lib/libmct.a $(OASIS_DIR)/lib/libmpeu.a $(OASIS_DIR)/lib/libscrip.
+a
+LIBBUILD      = $(OASIS_DIR)/build/lib
+INCLUDES      = -I$(NETCFD_DIR)/include/
 
 FC            = mpiifort 
-#FCFFLAGS      =	-traceback -g -O2 -fp-model source -warn nogeneral -convert big_endian -assume byterecl -real-size 64 -integer-size 32 
-FCFFLAGS      =	-g -convert big_endian -assume byterecl -cm -vec_report0 -w -O3 -tpp7 -xW -r8 
-#FCFFLAGS      =	-traceback -g -O2 -check all -fp-stack-check -fp-model source -warn nogeneral -convert big_endian -assume byterecl -real-size 64 -integer-size 32 
-#FCFFLAGS      =	-O2 -fconvert=big-endian -fdefault-real-8 -fdefault-double-8
-
-FCFFLAGS     :=	$(FCFFLAGS) $(INCLUDES)
-
+FCFFLAGS      =	-g -convert big_endian -assume byterecl -cm -vec_report0 -w -O3 -tpp7 -xW -r8
+FCFFLAGS     :=	$(FCFFLAGS) $(INCLUDES)  # -I$(LIBBUILD)
+FCFFLAGS_OASIS     = $(FCFFLAGS) -I$(LIBBUILD) -I$(OASIS_DIR)/build/lib/psmile.MPI1
 CC            = mpicc	
-CCFLAGS       =	-O 
+CCFLAGS       =	-O2 
+CCFLAGS_OASIS       = -O2 -I. -cpp  -Duse_comm_MPI1 -D__VERBOSE  -DTREAT_OVERLAY -DDECOMP_APPLE -DUSE_DOUBLE_PRECISION
+
 
 CPP           =	cpp -P
 LD            =	$(FC)
-#LDFLAGS       =	-V $(FCFFLAGS) -shared-intel -mcmodel=medium
 LDFLAGS       =	$(FCFFLAGS) -mcmodel=medium
 
 # ENDIAN_IO         not needed due to byteswap compiler flag
@@ -42,20 +40,15 @@ LDFLAGS       =	$(FCFFLAGS) -mcmodel=medium
 #
 # if no STOKES:
 # --- Mostafa: flags required for standalone HYCOM
-CPPFLAGS      = -DIA32 -DREAL8 -DMPI -DSERIAL_IO -DNAN2003 -DTIMER -DRELO -DNERSC_HYCOM_CICE
 
-#CPPFLAGS      = -DIA32 -DREAL8 -DMPI -DSERIAL_IO -DNAN2003 -DTIMER -DRELO -DUSE_ESMF -DUSE_ESMF_5 -DNERSC_HYCOM_CICE
+CPPFLAGS      = -DIA32 -DREAL8 -DMPI -DSERIAL_IO -DNAN2003 -DTIMER -DRELO -DNERSC_HYCOM_CICE -DCPL_OASIS_HYCOM -DOFFICEField
 # for STOKES flag use
 #CPPFLAGS      = -DIA32 -DREAL8 -DMPI -DSERIAL_IO -DNAN2003 -DTIMER -DRELO -DUSE_ESMF -DUSE_ESMF_5 -DNERSC_HYCOM_CICE -DSTOKES
-#EXTRALIBS     = -L${ESMF_LIB_DIR}/ -lesmf -pgcpplibs  
-#EXTRALIBS     = -L${ESMF_LIB_DIR}/ -lesmf -lfftw3 -lmkl -lnetcdff -lnetcdf -lmpi -lmpifort
 # --- Mostafa: flags required for standalone HYCOM
-EXTRALIBS     =  -lfftw3 -lmkl -lnetcdff -lnetcdf -lmpi -lmpifort
-
-
-# from fabm 
-#CPPFLAGS      += -D_FABM_ -I${HOME}/local/fabm/hycom/include
-#EXTRALIBS     += -L${HOME}/local/fabm/hycom/lib -lfabm
+EXTRALIBS     =  $(LIBPSMILE)  -lfftw3 -lnetcdf -lnetcdff
+# from fabm
+CPPFLAGS      += -D_FABM_ -I${HOME}/local/fabm/hycom/include
+EXTRALIBS     += -L${HOME}/local/fabm/hycom/lib -lfabm
 
 #
 # --- generic make definitions
@@ -67,19 +60,22 @@ RM            = \rm -f
 # rules.
 #
 
+#mod_cpl_oasis:
+
 .c.o:
 	$(CC) $(CPPFLAGS) $(CCFLAGS)  -c $*.c
 
 .f.o:
 	$(FC)             $(FCFFLAGS) -c $*.f
 
-.F.o:
-	$(FC) $(CPPFLAGS) $(FCFFLAGS) -c $*.F
+.F.o: 
+	$(FC) $(CPPFLAGS) $(FCFFLAGS) -c $*.F 
+
    
 #======= for Fabm use these
 
 .f90.o:
-	$(FC)             $(FCFFLAGS) -c $*.f90
+	$(FC)  $(CCFLAGS_OASIS) $(FCFFLAGS_OASIS) -c $*.f90
 
 .F90.o:
 	$(FC) $(CPPFLAGS) $(FCFFLAGS) -c $*.F90
