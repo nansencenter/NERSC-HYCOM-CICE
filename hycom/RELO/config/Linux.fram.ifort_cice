@@ -44,9 +44,15 @@ CPPFLAGS      = -DIA32 -DREAL8 -DMPI -DSERIAL_IO -DNAN2003 -DTIMER -DRELO -DUSE_
 #CPPFLAGS      = -DIA32 -DREAL8 -DMPI -DSERIAL_IO -DNAN2003 -DTIMER -DRELO -DUSE_ESMF -DUSE_ESMF_5 -DNERSC_HYCOM_CICE -DSTOKES
 #EXTRALIBS     = -L${ESMF_LIB_DIR}/ -lesmf -pgcpplibs  
 EXTRALIBS     = -L${ESMF_LIB_DIR}/ -lesmf -lfftw3 -lmkl -lnetcdff -lnetcdf -lmpi -lmpifort
-# from fabm 
-#CPPFLAGS      += -D_FABM_ -I${HOME}/local/fabm/hycom/include
-#EXTRALIBS     += -L${HOME}/local/fabm/hycom/lib -lfabm
+
+# if you want to include ECOSMO, then you should
+# add to EXPT.src or execute in the shell the following:
+# export COMPILE_BIOMODEL="yes"
+
+ifeq ($(COMPILE_BIOMODEL), yes) 
+   CPPFLAGS      += -D_FABM_ -I${HOME}/local/fabm/hycom/include
+   EXTRALIBS     += -L${HOME}/local/fabm/hycom/lib -lfabm
+endif
 
 #
 # --- generic make definitions
