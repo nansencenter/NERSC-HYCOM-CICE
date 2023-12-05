@@ -746,16 +746,16 @@ call check_finite("AFTER VERTICAL", n)
         do i=1,ii
           if (kbottom(i, j, n) > 0) then
             fabm_bottom_state(i, j, n, :) = fabm_bottom_state(i, j, n, :) + delt1 * sms_bt(i, :) ! update sediment layer
-            if ( dp(i, j, kbottom(i,j,n), n)/onem >= 3.0 ) then ! check if the bottom layer is thicker than 3 meters,
+            if ( dp(i, j, kbottom(i,j,n), n)/onem >= 6.0 ) then ! check if the bottom layer is thicker than 6 meters,
                                                                 ! if so, apply the flux as usual (I will decrease the criteria in time)
                 tracer(i, j, kbottom(i,j,n), n, :) = tracer(i, j, kbottom(i,j,n), n, :) + delt1 * flux(i, :)/dp(i, j, kbottom(i,j,n), n)*onem
-            else ! in case less than 3 meters, to avoid accumulation at the bottom thin layers,
-                 ! distribute the flux into multiple layers that add up to > 3 meters thickness
+            else ! in case less than 6 meters, to avoid accumulation at the bottom thin layers,
+                 ! distribute the flux into multiple layers that add up to > 6 meters thickness
               hbottom = 0
               nbottom = 0
               do k = kbottom(i,j,n),1,-1
                 hbottom = hbottom + dp(i ,j , k, n)/onem
-                if ( hbottom >= 3.0 ) exit
+                if ( hbottom >= 6.0 ) exit
                 nbottom = nbottom + 1
               end do
               do k = kbottom(i,j,n)-nbottom , kbottom(i,j,n) ! distribute the flux to total height, and to multiple layers
@@ -1114,20 +1114,20 @@ call check_finite("AFTER ROBERT", n)
                 else
                   ! Prevent accumulation of settling particles in thin layers 
                   if ( flux(i, k) < 0 .and. k == kbottom(i, j, n)-1 ) then ! if settling and if at the layer above the bottom
-                    if ( dp(i, j, k+1, n)/onem >= 3.0 ) then ! check if the bottom layer is actually < 10 meters, if not, apply the regular flux additions
+                    if ( dp(i, j, k+1, n)/onem >= 6.0 ) then ! check if the bottom layer is actually < 6 meters, if not, apply the regular flux additions
                       tracer(i, j, kabove, n, ivar) = tracer(i, j, kabove, n, ivar) + flux(i, k)*timestep/(dp(i, j, kabove, n)/onem)
                       tracer(i, j, k+1, n, ivar) = tracer(i, j, k+1, n, ivar) - flux(i, k)*timestep/(dp(i, j, k+1, n)/onem)
-                      else ! if < 10 meters
+                      else ! if < 6 meters
                         hbottom = 0
                         nbottom = 0 
-                        do kb = kbottom(i, j, n),1,-1 ! find number of layers that add up to > 10 meters, and store the total height
+                        do kb = kbottom(i, j, n),1,-1 ! find number of layers that add up to > 6 meters, and store the total height
                           hbottom = hbottom + dp(i ,j , kb, n)/onem
-                          if ( hbottom >= 3.0 ) exit
+                          if ( hbottom >= 6.0 ) exit
                           nbottom = nbottom + 1
                         end do
                         ! Settle the particles from kabove
                         tracer(i, j, kabove, n, ivar) = tracer(i, j, kabove, n, ivar) + flux(i, k)*timestep/(dp(i, j, kabove, n)/onem) 
-                        ! and distribute that flux to multiple layers which the depths add up to > 10 meters
+                        ! and distribute that flux to multiple layers which the depths add up to > 6 meters
                         do kb = kbottom(i, j, n) - nbottom , kbottom(i, j, n)
                           tracer(i, j, kb, n, ivar) = tracer(i, j, kb, n, ivar) - flux(i, k)*timestep/hbottom
                         end do
