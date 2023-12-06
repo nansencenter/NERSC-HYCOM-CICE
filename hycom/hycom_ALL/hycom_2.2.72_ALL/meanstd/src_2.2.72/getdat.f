@@ -147,11 +147,61 @@ c
 c
       read (ni,'(a)',end=6) cline
       write(lp,'(a)')       cline(1:len_trim(cline))
-      if     (cline(1:8).eq.'steric  ') then  !skip steric
-        call zaiosk(ni)
+      if     (cline(1:8).eq.'steric  ') then  !optional
+        i = index(cline,'=')
+        read (cline(i+1:),*)  nstep,time(3),layer,thet,hminb,hmaxb
+        call getfld(steric,ni, hminb,hmaxb, .false.)
+c          call xctilr(steric,1,1,nbdy,nbdy, halo_ps)
+        write(lp,'("input  ",a," into ",a)') cline(1:8),'steric  '
+        lsteric = .true.  !assume all input archives have steric
+c
         read (ni,'(a)',end=6) cline
         write(lp,'(a)')       cline(1:len_trim(cline))
-      endif
+      endif  !steric
+c
+      if     (cline(1:8).eq.'oneta   ') then  !optional
+        i = index(cline,'=')
+        read (cline(i+1:),*)  nstep,time(3),layer,thet,hminb,hmaxb
+        call getfld(work, ni, hminb,hmaxb, .false.)
+        call extrct(work,idm,jdm,iorign,jorign,
+     &              oneta,ii,jj)
+        write(lp,'("input  ",a," into ",a)') cline(1:8),'oneta   '
+        loneta = .true.  !assume all input archives have oneta
+c
+        if (mntype.eq.2) then  ! mnsq
+          read (ni,'(a)',end=6) cline
+          write(lp,'(a)')       cline(1:len_trim(cline))
+          if     (cline(1:8).ne.'mnoneta ') then
+            write(lp,*)
+            write(lp,*)
+     &        'error in getdat - must have mnoneta in mnsq archive'
+            write(lp,*)
+            call flush(lp)
+            call xcstop('error - must have mnoneta in mnsq archive')
+            stop
+          endif
+          i = index(cline,'=')
+          read (cline(i+1:),*)  nstep,time(3),layer,thet,hminb,hmaxb
+          call getfld(work,ni, hminb,hmaxb, .false.)
+          call extrct(work,idm,jdm,iorign,jorign,
+     &              onetaw,ii,jj)
+
+c            vland = 1.0
+c            call xctilr(onetaw,1,1,nbdy,nbdy, halo_ps)
+c            vland = 0.0
+          write(lp,'("input  ",a," into ",a)') cline(1:8),'mnoneta '
+        else
+          onetaw(:,:) = oneta(:,:)
+        endif !mnsq:else
+c
+ 
+        read (ni,'(a)',end=6) cline
+        write(lp,'(a)')       cline(1:len_trim(cline))
+      else
+         oneta(:,:) = 1.0
+        onetaw(:,:) = 1.0
+      endif  !loneta:else
+
       i = index(cline,'=')
       read (cline(i+1:),*)  nstep,time(3),layer,thet,hminb,hmaxb
       call getfld(work, ni, hminb,hmaxb, .false.)
@@ -161,6 +211,20 @@ c
 c
       read (ni,'(a)',end=6) cline
       write(lp,'(a)')       cline(1:len_trim(cline))
+      if     (cline(1:8).ne.'wtrflx  ') then
+        wtrflx(:,:) = 0.0
+      else
+        lwtrflx = .true.  !output wrtflx if any input archive contains it
+        i = index(cline,'=')
+        read (cline(i+1:),*)  nstep,time(3),layer,thet,hminb,hmaxb
+        call getfld(work, ni, hminb,hmaxb, .false.)
+        call extrct(work,idm,jdm,iorign,jorign,
+     &            wtrflx,ii,jj)
+        write(lp,'("input  ",a," into ",a)') cline(1:8),'wtrflx  '
+c
+        read (ni,'(a)',end=6) cline
+        write(lp,'(a)')       cline(1:len_trim(cline))
+      endif  !wtrflx
       i = index(cline,'=')
       read (cline(i+1:),*)  nstep,time(3),layer,thet,hminb,hmaxb
       call getfld(work, ni, hminb,hmaxb, .false.)
@@ -455,7 +519,7 @@ c
             call flush(lp)
             theta(k)=thet
             goto 114  ! archive containing only 1 layer
-          elseif (cline(1:8).ne.'tracer  ' .and.
+          elseif (cline(1:6).ne.'tracer'   .and.
      &            cline(1:8).ne.'viscty  ' .and.
      &            cline(1:8).ne.'t-diff  ' .and.
      &            cline(1:8).ne.'s-diff  '      ) then
@@ -499,6 +563,22 @@ c
         call getfld(work, ni, hminb,hmaxb, .false.)
         call extrct(work,idm,jdm,iorign,jorign, 
      &              si_v,ii,jj)
+c
+        read (ni,'(a)',end=6) cline
+        write(lp,'(a)')       cline(1:len_trim(cline))
+        i = index(cline,'=')
+        read (cline(i+1:),*)  nstep,time(3),layer,thet,hminb,hmaxb
+        call getfld(work, ni, hminb,hmaxb, .false.)
+        call extrct(work,idm,jdm,iorign,jorign, 
+     &              surtx,ii,jj)
+c
+        read (ni,'(a)',end=6) cline
+        write(lp,'(a)')       cline(1:len_trim(cline))
+        i = index(cline,'=')
+        read (cline(i+1:),*)  nstep,time(3),layer,thet,hminb,hmaxb
+        call getfld(work, ni, hminb,hmaxb, .false.)
+        call extrct(work,idm,jdm,iorign,jorign, 
+     &              surty,ii,jj)
 
       endif
 

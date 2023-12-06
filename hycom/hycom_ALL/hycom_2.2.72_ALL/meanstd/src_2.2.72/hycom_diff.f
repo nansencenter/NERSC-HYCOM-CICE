@@ -5,7 +5,7 @@
 c
 c --- Form the differnce of two standard or mean HYCOM archive files.
 c
-      character label*81,text*18,flnm*80
+      character label*81,text*18,flnm*240
       logical   meansq,trcout,icegln,hisurf
       integer   mntype,iweight
 c
