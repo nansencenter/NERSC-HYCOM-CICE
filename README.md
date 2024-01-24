@@ -16,7 +16,7 @@ The following tools are necessary
 
 * A working installation of the Eearth System Modelling Framework: https://github.com/esmf-org/esmf. Some info on installing ESMF can be found [here](doc/ESMF.md)
 
-* A working python 2.7 installation and several python modules, [installation info can be found here](doc/python.md)
+* A working python 3.7 installation and several python modules, [installation info can be found here](doc/python.md)
 
 * Input data for the model [TODO](TODO)
 

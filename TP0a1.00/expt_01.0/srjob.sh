@@ -7,7 +7,7 @@
 #SBATCH -N 1   # number of nodes
 #SBATCH -n 4 # number of cores
 #SBATCH  --mail-type=END
-#SBATCH --mail-user=achref.othmani@nersc.no
+#SBATCH --mail-user=
 
 #SBATCH -o log/HY_CICE.out
 #SBATCH -e log/HY_CICE.err
@@ -15,11 +15,15 @@
 #
 #  Give the job a name
 #
-#         
-module restore system
-module load NCL/6.6.2-intel-2018b
-module load FFTW/3.3.8-intel-2018b
-module load Python/2.7.15-intel-2018b
+#
+# To load the right modules - please consult the README.machinname that can be found here: 
+# https://github.com/nansencenter/NERSC-HYCOM-CICE/tree/develop/
+
+module restore system	
+module load FFTW/3.3.8-intel-2020a
+module load Python/3.8.2-GCCcore-9.3.0
+module load ESMF/8.0.1-intel-2020a
+module load intel/2021a
 
 export NMPI=4
 export SLURM_SUBMIT_DIR=$(pwd)
