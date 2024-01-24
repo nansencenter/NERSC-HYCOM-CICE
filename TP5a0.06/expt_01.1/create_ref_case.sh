@@ -113,13 +113,37 @@ res=$?
 [ $res -ne 0 ] && echo "Failure..."
 echo ".."
 
+iceclim=1
+# Create a climatology ice cover used by initialization
+cd $EDIR
+echo "Prepare the sea ice cover from climatology:"
+if [ ${iceclim} -eq 1 ]; then
+   echo "It requires to access the cice_kmd.nc,TP4b_1991-2020_AssimSurf.nc, and so on..."
+   [ -r ice_clim ] && rm -rf ice_clim
+   [ ! -s ice_clim ] && mkdir ice_clim
+   cd ice_clim
+   ln -sf ${BINDIR}ice_climatology/TP4b_1991-2020_AssimSurf.nc .
+   ln -sf ${BINDIR}ice_climatology/createmask.py .
+   ln -sf ${EDIR}/../topo/regional.* .
+   if [ -s ${EDIR}/SCRATCH/cice_kmd.nc ]; then
+      ln -sf ${EDIR}/SCRATCH/cice_kmd.nc .
+   else
+      ml load matplotlib/3.2.1-intel-2020a-Python-3.8.2
+      ${BINDIR}cice_kmt.py regional.depth.a
+   fi
+   prg=${BINDIR}ice_climatology/extract_clim_iceh_update.sh
+   ${prg} ${EDIR}
+   cd ${EDIR}
+   [ -r ice_clim ] && rm -rf ice_clim
+fi
+
 # Create simple river forcing
 cd $EDIR
 echo "river forcing, if biology active, may take some time"
 if [ $NTRACR -ne 0 ] ; then
    river_nersc.sh 100 300 $INPUTDIR/rivers_ahype-ehype_clim_rev2.dat $INPUTDIR/biorivers.dat > $EDIR/log/ref_river_nersc.out 2>&1
    riverfolder=$(echo $X | cut -c1-2)$(echo $X | cut -c4)
-   python $BINDIR/spread_river.py $BASEDIR/force/rivers/${riverfolder}/ > $EDIR/log/spread_river.out 2>&1  # Spreads Ob River nutrients to outer bay
+   python $BINDIR/spread_Ob_river_nutrients.py $BASEDIR/force/rivers/${riverfolder}/ > $EDIR/log/spread_river.out 2>&1  # Spreads Ob River nutrients to outer bay
    python $BINDIR/add_atmdep_to_river.py $BASEDIR/force/rivers/${riverfolder}/  $INPUTDIR/emep_2010_annual_1degree_rv4_17gfecl1p0.nc  > $EDIR/log/add_atmospheric_deposition.out 2>&1
 else
    river_nersc.sh 100 300 $INPUTDIR/rivers_ahype-ehype_clim_rev2.dat > $EDIR/log/ref_river_nersc.out 2>&1
