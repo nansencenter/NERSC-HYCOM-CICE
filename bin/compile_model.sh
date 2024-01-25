@@ -21,8 +21,11 @@ if [ "${V}" == "2.2.98" ]; then
 	sourcedir=$NHCROOT/hycom/RELO/src_${V}ZA-07Tsig0-i-sm-sse_relo_mpi/
 elif [ "${V}" == "2.2.98.01" ]; then
         sourcedir=$NHCROOT/hycom/RELO/src_${V}ZA-07Tsig0-i-sm-sse_relo_mpi/
+elif [ "${V}" == "3.1" ]; then
+        sourcedir=$NHCROOT/hycom/RELO/HYCOM_NERSC_src_v3.1/
+        sourcedir_cice=$NHCROOT/cice/Release-5.1/
 else
-	sourcedir=$NHCROOT/hycom/RELO/src_${V}G-17Tsig2-SD-i_relo_mpi/ 
+	sourcedir=$NHCROOT/hycom/RELO/src_${V}G-17Tsig2-SD-i_relo_mpi/
 fi
 sourceconfdir=$NHCROOT/hycom/RELO/config/
 
@@ -268,16 +271,19 @@ echo $sourceconfdir "  ##############"
 # Copy code to expt dir
 targetdir=$(source_dir $V $TERMS $THFLAG)
 targetdir=$EDIR/build/$targetdir
+targetcicedir=$EDIR/build/CICE/
 targetconfdir=$EDIR/build/config/
 if [ ! -d $EDIR/build/ ] ; then 
    mkdir $EDIR/build
    echo "build dir $EDIR/build not found. Setting it up with repo code from $sourcedir"
    rsync -avhL $sourcedir/ $targetdir/
+   rsync -avhL $sourcedir_cice/ $targetcicedir/
    rsync -avhL $sourceconfdir/ $targetconfdir/
 else 
    if [ "$update" == "update" ] ; then
       echo "build dir $EDIR/build found. Updating code in that subdirectory"
       rsync -avhL $sourcedir/ $targetdir/
+      rsync -avhL $sourcedir_cice/ $targetcicedir/
       rsync -avhL $sourceconfdir/ $targetconfdir/
    else 
       echo "build dir $EDIR/build found. Using code in that subdirectory [not updated with code in $sourcedir]"
@@ -314,17 +320,16 @@ fi
 [ -f $EDIR/hycom_feature_flags  ] && cp $EDIR/hycom_feature_flags $targetdir
 
 # Set up correct eq of state for hycom
-stmt=stmt_fns_SIGMA${MYTHFLAG}_${TERMS}term.h
-cd $targetdir
-echo "Now setting up stmt_fns.h in $targetdir"
-rm stmt_fns.h
-ln -s ALT_CODE/$stmt stmt_fns.h
-echo "Now compiling cice in $targetdir. $ICEFLG" 
-echo $sourcedir
+#stmt=stmt_fns_SIGMA${MYTHFLAG}_${TERMS}term.h
+#cd $targetdir
+#echo "Now setting up stmt_fns.h in $targetdir"
+#rm stmt_fns.h
+#ln -s ALT_CODE/$stmt stmt_fns.h
+echo "Now compiling cice in $targetcicedir. $ICEFLG" 
 if [ ${ICEFLG} -eq 2 ] ; then
 	echo $MACROID
 	# 1) Compile CICE. Environment variables need to be passe to script
-	cd $targetdir/CICE/
+	cd $targetcicedir
  	env RES=gx3 GRID=${IDM}x${JDM} SITE=$SITE MACROID=$MACROID ./comp_ice.esmf
 	res=$?
 	if [ $res -ne 0 ] ; then 
@@ -332,13 +337,16 @@ if [ ${ICEFLG} -eq 2 ] ; then
    		echo "Error when compiling CICE, see above "
   		 exit $res
 	fi
+# renove cice.o as this contains main and it is not needed for coupled runs
+rm $targetcicedir/rundir/compile/CICE.o
 fi
 # Create hycom objects and final hycom_cice executable. 
 cd $targetdir
 if [ $ICEFLG -ne 0 ] ; then
     echo "Now compiling hycom_cice in $targetdir."
     #env ARCH=$MACROID csh Make_cice.csh
-    env csh Make_cice.csh ${MACROID} ${ICEFLG}
+#    env csh Make_cice.csh ${MACROID} ${ICEFLG}
+    env csh Make_nersc_hycom_cice.csh ${MACROID} ${ICEFLG}
     res=$?
     if [ $res -ne 0 ] ; then
         echo
@@ -359,4 +367,3 @@ else
         exit $res
     fi
 fi
-
