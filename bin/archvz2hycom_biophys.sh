@@ -11,7 +11,7 @@
 # --- M. Bakhoday-Paskyabi 9 September 2017.
 # --- M. Bakhoday-Paskyabi 11 July 2019.
 #
-
+ulimit -s 4000000
 
 iscan=15
 usage="
@@ -110,21 +110,33 @@ echo ${newregionpath}/topo/depth_${U}_${T}.b
 #
 #   From outer region
 #
-cp  ${BASEDIR}/topo/regional.grid.a           $D/regional.grid.a
-cp  ${BASEDIR}/topo/regional.grid.b           $D/regional.grid.b
-cp  ${BASEDIR}/topo/depth_${RR}_${RT}.a       $D/regional.depth.a
-cp  ${BASEDIR}/topo/depth_${RR}_${RT}.b       $D/regional.depth.b
+if [ ! -f $D/regional.grid.a -o ! -f $D/regional.grid.b ] ; then
+   cp  ${BASEDIR}/topo/regional.grid.a           $D/regional.grid.a
+   cp  ${BASEDIR}/topo/regional.grid.b           $D/regional.grid.b
+fi
+if [ ! -f $D/regional.depth.a -o ! -f $D/regional.depth.b ] ; then
+   cp  ${BASEDIR}/topo/depth_${RR}_${RT}.a       $D/regional.depth.a
+   cp  ${BASEDIR}/topo/depth_${RR}_${RT}.b       $D/regional.depth.b
+fi
 #
 #   From inner region
 #
-cp  ${BASEDIR}/topo/ZL50.txt                  $N/ZL50.txt
-cp  ${BASEDIR}/subregion/${U}.gmap.a          $N/regional.gmap.a
-cp  ${BASEDIR}/subregion/${U}.gmap.b          $N/regional.gmap.b
-cp  ${EXPTNEW}/blkdat.input                   $N/blkdat.input
-cp  ${newregionpath}/topo/regional.grid.a     $N/regional.grid.a
-cp  ${newregionpath}/topo/regional.grid.b     $N/regional.grid.b
-cp  ${newregionpath}/topo/depth_${U}_${T}.a   $N/regional.depth.a
-cp  ${newregionpath}/topo/depth_${U}_${T}.b   $N/regional.depth.b
+if [ ! -f $N/regional.grid.a -o ! -f $N/regional.grid.b ] ; then
+   cp  ${newregionpath}/topo/regional.grid.a     $N/regional.grid.a
+   cp  ${newregionpath}/topo/regional.grid.b     $N/regional.grid.b
+fi
+if [ ! -f $N/regional.depth.a -o ! -f $N/regional.depth.b ] ; then
+   cp  ${newregionpath}/topo/depth_${U}_${T}.a   $N/regional.depth.a
+   cp  ${newregionpath}/topo/depth_${U}_${T}.b   $N/regional.depth.b
+fi
+if [ ! -f $N/regional.gmap.a -o ! -f $N/regional.gmap.b ] ; then
+   cp  ${BASEDIR}/subregion/${U}.gmap.a          $N/regional.gmap.a
+   cp  ${BASEDIR}/subregion/${U}.gmap.b          $N/regional.gmap.b
+fi
+if [ ! -f $N/ZL50.txt -o ! -f $N/blkdat.input ] ; then
+   cp  ${BASEDIR}/topo/ZL50.txt                  $N/ZL50.txt
+   cp  ${EXPTNEW}/blkdat.input                   $N/blkdat.input
+fi
 echo "Inner domain topo: depth_${U}_${T}.b" 
 #
 #   idm, jdm, & kdm from target xperiment blkdat.input
@@ -173,7 +185,7 @@ if [ ${hinterp_method} -eq 1 ]; then
 touch ${N}/${target_archv}${L}.a && rm ${N}/${target_archv}${L}.a
 touch ${N}/${target_archv}${L}.b && rm ${N}/${target_archv}${L}.b
     
-logfile=${N}/isubaregion.log
+logfile=${N}/isubaregion_${target_archv}.log
 touch $logfile && rm $logfile
 #
 # --- 'flnm_reg'  = target sub-region grid       filename
@@ -225,52 +237,66 @@ touch   ${target_archv}.b && rm ${target_archv}.b
 logfile=${N}/nemo_archv.log
 touch $logfile && rm $logfile
 
-
-
-# Retrieve blkdat.input and create subset
-touch blkdat.subset
-rm    blkdat.subset
-#echo "" > blkdat.subset
-echo "NEMO Relaxation fields"                              > blkdat.subset
-echo "  $SIGVERSN        'sigver ' = Version of eqn of state  "                        >> blkdat.subset
-echo "  1        'levtop ' = top level of input clim. to use (optional, default 1)"  >> blkdat.subset
-egrep "'iversn'"    blkdat.input >> blkdat.subset
-egrep "'iexpt '"    blkdat.input >> blkdat.subset
-egrep "'mapflg'"    blkdat.input >> blkdat.subset
-egrep "'yrflag'"    blkdat.input >> blkdat.subset
-egrep "'idm   '"    blkdat.input >> blkdat.subset
-egrep "'jdm   '"    blkdat.input >> blkdat.subset
-echo "  0        'jdw    ' = width of zonal average (optional, default 0)"  >> blkdat.subset
-echo "  -1       'itest  ' = grid point where detailed diagnostics are desired"  >> blkdat.subset
-echo "  -1       'jtest  ' = grid point where detailed diagnostics are desired"  >> blkdat.subset
-egrep "'kdm   '"    blkdat.input >> blkdat.subset
-egrep "'nhybrd'"    blkdat.input >> blkdat.subset
-egrep "'nsigma'"    blkdat.input >> blkdat.subset
-egrep "'isotop'"    blkdat.input >> blkdat.subset
-egrep "'dp00  '"    blkdat.input >> blkdat.subset
-egrep "'dp00x '"    blkdat.input >> blkdat.subset
-egrep "'dp00f '"    blkdat.input >> blkdat.subset
-egrep "'ds00  '"    blkdat.input >> blkdat.subset
-egrep "'ds00x '"    blkdat.input >> blkdat.subset
-egrep "'ds00f '"    blkdat.input >> blkdat.subset
-egrep "'ds0k  '"    blkdat.input >> blkdat.subset
-egrep "'dp0k  '"    blkdat.input >> blkdat.subset
-egrep "'dp00i '"    blkdat.input >> blkdat.subset
-egrep "'thflag'"    blkdat.input >> blkdat.subset
-egrep "'thbase'"    blkdat.input >> blkdat.subset
-egrep "'vsigma'"    blkdat.input >> blkdat.subset
-egrep "'sigma '"    blkdat.input >> blkdat.subset
-egrep "'thkmin'"    blkdat.input >> blkdat.subset
-if [ ! -s  blkdat.subset ] ; then
-echo "Couldnt get blkdat.input " ; exit 1 ;
+# modified for shell parallel runs
+create_blkdat_subset_function(){
+      echo "Retrieve blkdat.input and create subset"
+      touch blkdat.subset
+      rm    blkdat.subset
+      #echo "" > blkdat.subset
+      echo "NEMO Relaxation fields"                              > blkdat.subset
+      echo "  $SIGVERSN        'sigver ' = Version of eqn of state  "                        >> blkdat.subset
+      echo "  1        'levtop ' = top level of input clim. to use (optional, default 1)"  >> blkdat.subset
+      egrep "'iversn'"    blkdat.input >> blkdat.subset
+      egrep "'iexpt '"    blkdat.input >> blkdat.subset
+      egrep "'mapflg'"    blkdat.input >> blkdat.subset
+      egrep "'yrflag'"    blkdat.input >> blkdat.subset
+      egrep "'idm   '"    blkdat.input >> blkdat.subset
+      egrep "'jdm   '"    blkdat.input >> blkdat.subset
+      echo "  0        'jdw    ' = width of zonal average (optional, default 0)"  >> blkdat.subset
+      echo "  -1       'itest  ' = grid point where detailed diagnostics are desired"  >> blkdat.subset
+      echo "  -1       'jtest  ' = grid point where detailed diagnostics are desired"  >> blkdat.subset
+      egrep "'kdm   '"    blkdat.input >> blkdat.subset
+      egrep "'nhybrd'"    blkdat.input >> blkdat.subset
+      egrep "'nsigma'"    blkdat.input >> blkdat.subset
+      egrep "'isotop'"    blkdat.input >> blkdat.subset
+      egrep "'dp00  '"    blkdat.input >> blkdat.subset
+      egrep "'dp00x '"    blkdat.input >> blkdat.subset
+      egrep "'dp00f '"    blkdat.input >> blkdat.subset
+      egrep "'ds00  '"    blkdat.input >> blkdat.subset
+      egrep "'ds00x '"    blkdat.input >> blkdat.subset
+      egrep "'ds00f '"    blkdat.input >> blkdat.subset
+      egrep "'ds0k  '"    blkdat.input >> blkdat.subset
+      egrep "'dp0k  '"    blkdat.input >> blkdat.subset
+      egrep "'dp00i '"    blkdat.input >> blkdat.subset
+      egrep "'thflag'"    blkdat.input >> blkdat.subset
+      egrep "'thbase'"    blkdat.input >> blkdat.subset
+      egrep "'vsigma'"    blkdat.input >> blkdat.subset
+      egrep "'sigma '"    blkdat.input >> blkdat.subset
+      egrep "'thkmin'"    blkdat.input >> blkdat.subset
+      if [ ! -s  blkdat.subset ] ; then
+         echo "Couldnt get blkdat.input " ; exit 1 ;
+      fi
+      rm -rf fort.*
+      mv blkdat.subset fort.99
+}
+# Extract 'iexpt' value from blkdat.input and fort.99
+iexpt_blkdat_input=$(grep "'iexpt '" blkdat.input | awk '{print $1}')
+if [ -f fort.99 ] ; then
+   iexpt_fort99=$(grep "'iexpt '" fort.99 | awk '{print $1}')
+   # Compare the 'iexpt' values
+   if [ "$iexpt_blkdat_input" -eq "$iexpt_fort99" ]; then
+      echo "fort.99 file is uptodate. Skipping making a new one."
+   else
+      echo "fort.99 file is from an old experiment. Make a new one now."
+      create_blkdat_subset_function
+   fi
+else
+   echo "fort.99 does not exist. Make a new one now."
+   create_blkdat_subset_function
 fi
 
-
-
-rm -rf fort.*
-mv blkdat.subset fort.99
-
-logfile=${NEST}/nest_archvz.log
+#logfile=${NEST}/nest_archvz.log
+logfile=${NEST}/nest_${target_archv}.log
 touch $logfile && rm $logfile
 
 echo $logfile
@@ -338,10 +364,11 @@ else
     rm -rf ${D}/${source_archv_i}.*
     echo "Succesfully created archive file: $2"
 
-    cd $newexptpath
-    echo ${newregionpath}/topo/depth_${U}_${T}.a
-    python ${BINDIR}/fix_montg1.py ${NEST}/${target_archv}.a ${INPUTDIR}montg_regress.pckl ./ ${newregionpath}/topo/depth_${U}_${T}.a 
-    cd $BASEDIR
+    # using montg_regress.pckl(for TP5)/TP2_montg_regress.pckl is not recommended;for now the solution is to use ${BINDIR}/calc_montg1.py afterwards with a restart file 
+    #cd $newexptpath
+    #echo ${newregionpath}/topo/depth_${U}_${T}.a
+    #python ${BINDIR}/fix_montg1.py ${NEST}/${target_archv}.a ${INPUTDIR}montg_regress.pckl ./ ${newregionpath}/topo/depth_${U}_${T}.a 
+    #cd $BASEDIR
 fi
 echo
 #

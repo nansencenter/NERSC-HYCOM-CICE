@@ -17,12 +17,12 @@
 # USAGE:
 #  WITH BIO
 #
-# ../bin/nemo2archvz_regular.py ../../MERCATOR_REGULAR/GLO_MFC_001_24_MESH.nc ../../MERCATOR_REGULAR/MERCATOR-PHY-24-2018-01-01-12.nc  --bio_path ./
-# ../bin/nemo2archvz_regular.py PATH-ON-FRAM/GLO_MFC_001_24_MESH.nc PHY-NCFILE-WITH-NC-EXTENSION  --bio_path BIO-FILE-ONLY-PATH
+# ../bin/nemo2archvz_regular.py  $mercator_regular_mesh $source_archv --bio_file=${bio_file} 
+# e.g. ../bin/nemo2archvz_regular.py /nird/projects/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO_MFC_001_24_MESH.nc /nird/projects/NS9481K/MERCATOR_DATA/PHY/2018/MERCATOR-PHY-24-2018-01-01-12.nc  --bio_file=/nird/projects/NS9481K/MERCATOR_DATA/BIO/DAILY/2018/global_analysis_forecast_bio_20180101.nc
 #
 # WITHOUT BIO
-# ../bin/nemo2archvz_regular.py ../../MERCATOR_REGULAR/GLO_MFC_001_24_MESH.nc ../../MERCATOR_REGULAR/MERCATOR-PHY-24-2018-01-01-12.nc
-# ../bin/nemo2archvz_regular.py PATH-ON-FRAM/GLO_MFC_001_24_MESH.nc PHY-NCFILE-WITH-NC-EXTENSION
+# ../bin/nemo2archvz_regular.py $mercator_regular_mesh $source_archv 
+# e.g. ../bin/nemo2archvz_regular.py /nird/projects/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO_MFC_001_24_MESH.nc /nird/projects/NS9481K/MERCATOR_DATA/PHY/2018/MERCATOR-PHY-24-2018-01-01-12.nc
 
 
 # Refrences:
@@ -75,17 +75,6 @@ timeavg_method   = 0             # (1) time average of two consecutive netcdf fi
 #
 
 
-def search_biofile(bio_path,dt):
-
-   logger.info("BIO")
-   # filename format MERCATOR-BIO-14-2013-01-05-00
-   lst=glob.glob(bio_path+"/MERCATOR-BIO-14-%s*.nc"%str(dt[:-2]))
-   df = numpy.zeros(len(lst))*numpy.nan 
-   for num,myfile in enumerate(lst):
-      tmp = datetime.datetime.strptime(myfile[-16:-6],'%Y-%M-%d')-datetime.datetime.strptime(dt,'%Y-%M-%d')
-      df[num]=tmp.days
-   val, idx = min((val, idx) for (idx, val) in enumerate(numpy.abs(df)))
-   return idx,lst[idx]
 
 def check_inputs(x, y, Z, points, mode, bounds_error):
     """Check inputs for interpolate2d function
@@ -410,7 +399,7 @@ def read_grid(filemesh) :
     return hdept,gdept,mbathy,mbathy_u,mbathy_v,mask,e3t,plon,plat
 
 
-def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_path=None) :
+def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_file=None) :
     
     #
     # Trim input netcdf file name being appropriate for reading
@@ -533,26 +522,19 @@ def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_path=None) :
     model_day= deltat-datetime.datetime(refy,refm,refd,0,0,0)
     model_day=model_day.days
     logger.info("Model day in HYCOM is %s"%str(model_day))
-    if bio_path:
+    if bio_file:
        jdm,idm=numpy.shape(plon)
        points = numpy.transpose(((plat.flatten(),plon.flatten())))
-       delta = mydt.strftime( '%Y-%m-%d')
-       # filename format MERCATOR-BIO-14-2013-01-05-00
-       print((bio_path,delta))
-       idx,biofname=search_biofile(bio_path,delta)
-       if idx >7: 
-          msg="No available BIO file within a week difference with PHY"
-          logger.error(msg)
-          raise ValueError(msg)
-       logger.info("BIO file %s reading & interpolating to 1/12 deg grid cells ..."%biofname)
-       ncidb=netCDF4.Dataset(biofname,"r")
+       print(bio_file)
+       logger.info("BIO file %s reading & interpolating to 1/12 deg grid cells ..."%bio_file)
+       ncidb=netCDF4.Dataset(bio_file,"r")
        blon=ncidb.variables["longitude"][:];
        blat=ncidb.variables["latitude"][:]
        minblat=blat.min()
-       no3=ncidb.variables["NO3"][0,:,:,:];
+       no3=ncidb.variables["no3"][0,:,:,:];
        no3[numpy.abs(no3)>1e+10]=numpy.nan
-       po4=ncidb.variables["PO4"][0,:,:,:]
-       si=ncidb.variables["Si"][0,:,:,:]
+       po4=ncidb.variables["po4"][0,:,:,:]
+       si=ncidb.variables["si"][0,:,:,:]
        po4[numpy.abs(po4)>1e+10]=numpy.nan
        si[numpy.abs(si)>1e+10]=numpy.nan
        # TODO: Ineed to improve this part
@@ -573,7 +555,7 @@ def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_path=None) :
 # TODO:  Note that the coordinate files are for global configuration while
 #        the data file saved for latitude larger than 30. In the case you change your data file coordinate
 #        configuration you need to modify the following lines
-       bio_coordfile=bio_path[:-4]+"/GLOBAL_ANALYSIS_FORECAST_BIO_001_014_COORD/GLO-MFC_001_014_mask.nc"
+       bio_coordfile=bio_file[:-51]+"/GLOBAL_ANALYSIS_FORECAST_BIO_001_029_COORD/GLOBAL_REANALYSIS_BIO_001_029_mask.nc"
        biocrd=netCDF4.Dataset(bio_coordfile,"r")
        blat2 = biocrd.variables['latitude'][:]
        index=numpy.where(blat2>=minblat)[0]
@@ -647,12 +629,12 @@ def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_path=None) :
     outfile.write_field(ubaro,                   iu,"u_btrop" ,0,model_day,0,0)
     outfile.write_field(vbaro,                   iv,"v_btrop" ,0,model_day,0,0)
     #
-    if bio_path:
+    if bio_file:
        logger.info("Calculate baroclinic velocities, temperature, and salinity data as well as BIO field.")
     else:
        logger.info("Calculate baroclinic velocities, temperature, and salinity data.")
     for k in numpy.arange(u.shape[0]) :
-        if bio_path:
+        if bio_file:
            no3k=interpolate2d(blat, blon, no3[k,:,:], points).reshape((jdm,idm))
            no3k = maplev(no3k)
            po4k=interpolate2d(blat, blon, po4[k,:,:], points).reshape((jdm,idm))
@@ -730,7 +712,7 @@ def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_path=None) :
         outfile.write_field(dtl*onem,ip,"thknss",0,model_day,k+1,0)
         outfile.write_field(tl      ,ip,"temp" , 0,model_day,k+1,0)
         outfile.write_field(sl      ,ip,"salin" ,0,model_day,k+1,0)
-        if bio_path :
+        if bio_file :
            outfile.write_field(no3k      ,ip,"ECO_no3" ,0,model_day,k+1,0)
            outfile.write_field(po4k      ,ip,"ECO_pho" ,0,model_day,k+1,0)
            outfile.write_field(si_k      ,ip,"ECO_sil" ,0,model_day,k+1,0)
@@ -742,7 +724,7 @@ def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_path=None) :
     ncid0.close()
     if timeavg_method==1 and os.path.isfile(fileinput1)  :
         ncid1.close()
-    if bio_path :
+    if bio_file :
        ncidb.close()
 
 
@@ -753,7 +735,7 @@ if __name__ == "__main__" :
     parser.add_argument('--iexpt',    type=int,default=10,  help="    ")
     parser.add_argument('--iversn',   type=int,default=22,  help="    ")
     parser.add_argument('--yrflag',   type=int,default=3,   help="    ")
-    parser.add_argument('--bio_path', type=str,             help="    ")
+    parser.add_argument('--bio_file', type=str,             help="    ")
     args = parser.parse_args()
-    main(args.meshfile,args.file,iexpt=args.iexpt,iversn=args.iversn,yrflag=args.yrflag,bio_path=args.bio_path)
+    main(args.meshfile,args.file,iexpt=args.iexpt,iversn=args.iversn,yrflag=args.yrflag,bio_file=args.bio_file)
 
