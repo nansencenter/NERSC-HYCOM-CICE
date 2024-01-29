@@ -608,7 +608,7 @@ class ABFileArchv(ABFile) :
    """ Class for doing input/output on pairs of hycom .a and .b files. This is for archv files"""
    fieldkeys=["field","step","day","k","dens","min","max"]
    def __init__(self,basename,action,mask=True,real4=True,endian="big",
-         iversn=None,iexpt=None,yrflag=None,cline1="",cline2="",cline3="") :
+         iversn=None,iexpt=None,yrflag=None,idm=None,jdm=None,cline1="",cline2="",cline3="") :
 
       self._cline1=cline1
       self._cline2=cline2
@@ -616,8 +616,12 @@ class ABFileArchv(ABFile) :
       self._iversn=iversn
       self._iexpt =iexpt 
       self._yrflag=yrflag
+      self._idm=idm
+      self._jdm=jdm
 
       super(ABFileArchv,self).__init__(basename,action,mask=mask,real4=real4,endian=endian)
+      self._idm=idm
+      self._jdm=jdm
       if self._action == "r" :
          self.read_header() # Sets internal metadata. Overrides those on input
          self.read_field_info()
@@ -678,9 +682,9 @@ class ABFileArchv(ABFile) :
 
 
    def write_header(self) :
-      self._fileb.write(self._cline1+"\n")
-      self._fileb.write(self._cline2+"\n")
-      self._fileb.write(self._cline3+"\n")
+      self._fileb.write(self._cline1)
+      self._fileb.write(self._cline2)
+      self._fileb.write(self._cline3)
       self._fileb.write("12345678901234567890123456789012345678901234567890123456789012345678901234567890\n")
       self.writeitem("iversn",self._iversn)
       self.writeitem("iexpt" ,self._iexpt)
@@ -898,8 +902,8 @@ class ABFileRestart(ABFile) :
       self._header.append(self.readline())
       self._header.append(self.readline())
 
-      logger.info(self._header[0].strip())
-      logger.info(self._header[1].strip())
+      #logger.info(self._header[0].strip())
+      #logger.info(self._header[1].strip())
       m=re.match("RESTART2: iexpt,iversn,yrflag,sigver[ ]*=[ ]*([0-9]+)[ ]+([0-9]+)[ ]+([0-9]+)[ ]+([0-9]+)",self._header[0])
       self._iexpt=int(m.group(1))
       self._iversn=int(m.group(2))
