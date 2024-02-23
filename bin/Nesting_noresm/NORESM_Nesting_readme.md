@@ -17,4 +17,4 @@ Receipt of how to generate nesting conditions from an ESM:
 		
 	2. Download the nesting-files needed: for physics: uo, vo, zos, thetao, so, these are annual files.
 		a. In order to have files that have values at all ocean points from the coarse ESM-grid, the annual files are pre-processed before generating the boundary conditions.
-../bin/Nesting_noresm/separate_and_extrapolate_files_year.sh  $varible $year, can also be called in the  script:![image](https://github.com/nansencenter/NERSC-HYCOM-CICE/assets/23171975/e9b02ed3-0572-410b-a945-08a2b8e1d46e)
+../bin/Nesting_noresm/separate_and_extrapolate_files_year.sh  $varible $year, can also be called on an interactive node using  /bin/Nesting_noresm/Generate_nesting_files_year.sh
