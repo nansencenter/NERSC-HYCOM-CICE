@@ -15,3 +15,7 @@
 ## Generating the physical nesting files
 - Download the nesting-files needed: for physics: uo, vo, zos, thetao, so, these are annual files.
 - In order to have files that have values at all ocean points from the coarse ESM-grid, the annual files are pre-processed before generating the boundary conditions: ../bin/Nesting_noresm/separate_and_extrapolate_files_year.sh  $varible $year, can also be called on an interactive node using  /bin/Nesting_noresm/Generate_nesting_files_year.sh
+- The script above also bias-corrects temperature and salinity.  It is imprtant that this is done before making the nesting files because altering temperture and salinity will also alter the layer structure of HYCOM. The bias of the climate model ca be found here: /cluster/projects/nn9481k/NORESM_bias/
+
+## Making files used for bias correction.
+
