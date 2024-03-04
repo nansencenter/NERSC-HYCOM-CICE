@@ -2,33 +2,18 @@
 # must be sourced before compiling and running
  export MACHINE_FRAM=1 # compile of core is slightly different on fram
 
-# Load the right modules
-module restore system
-module load GCC/6.3.0-2.27
-module load Boost/1.63.0-foss-2017a-Python-2.7.13 
-module load netCDF-C++4/4.3.0-foss-2017a-HDF5-1.8.18
-module load CMake/3.9.1 
-module load netCDF-Fortran/4.4.4-foss-2017a-HDF5-1.8.18
-#AS
-module load PETSc/3.8.0-foss-2017a-Python-2.7.13
-#AS
-
-
 # Linking module and neXtSIM envinronment variables
 CLUSTER_ROOT_DIR=/cluster/projects/nn2993k/sim
-export PETSC_DIR=$EBROOTPETSC  #AS#$CLUSTER_ROOT_DIR/packages/petsc/
+export EBROOTBOOST=/opt/nextsim_intel/boost-1.67/
 export BOOST_INCDIR=$EBROOTBOOST/include
 export BOOST_LIBDIR=$EBROOTBOOST/lib
-export NETCDF_DIR=$EBROOTNETCDFMINCPLUSPLUS4
-export NETCDF_FOR_DIR=$EBROOTNETCDF
-export OPENMPI_DIR=$EBROOTOPENMPI
+export NETCDF_DIR=/cluster/software/netCDF/4.9.0-iimpi-2022a
 
 # User or use-case specific directories
 export NEXTSIMDIR=$HOME/Progs/NeXtSIM/nextsim
 export NEXTSIMTOOLS_ROOT_DIR=$HOME/Progs/NeXtSIM/nextsim-tools
 export NEXTSIMF_ROOT_DIR=$HOME/Progs/NeXtSIM/nextsimf
 export NEXTSIM_ENV_ROOT_DIR=$HOME/Progs/NeXtSIM/nextsim-env
-export SWARP_ROUTINES=$HOME/Progs/NeXtSIM/SWARP-routines
 export INPUT_DATA_DIR=$CLUSTER_ROOT_DIR/data
 export XSIM_COMP_VERBOSE=no
 
@@ -38,7 +23,7 @@ export NEXTSIM_MESH_DIR=$CLUSTER_ROOT_DIR/mesh
 export NEXTSIM_DATA_DIR=$CLUSTER_ROOT_DIR/data_links
 
 # GMSH related variables
-export GMSH_DIR=$CLUSTER_ROOT_DIR/packages/gmsh/
+export GMSH_DIR=/opt/nextsim_intel/gmsh-3.0.6/
 export PATH=$PATH:$GMSH_DIR/bin
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$GMSH_DIR/lib
 
@@ -48,7 +33,7 @@ export AEROBULK_DIR=$CLUSTER_ROOT_DIR/packages/aerobulk/
 
 # Oasis related variables
 export USE_OASIS=true
-export OASIS_DIR=/cluster/projects/nn9481k/oasis3-mct/oa3-mct_gfortran/
+export OASIS_DIR=/cluster/projects/nn9878k/guibou/NANUK/oa3-mct_iimpi2022a/
 
 # email for slurm jobs
-export MY_EMAIL="annette.samuelsen@nersc.no"
+export MY_EMAIL=""
