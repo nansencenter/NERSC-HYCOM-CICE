@@ -128,7 +128,7 @@ if [ ${iceclim} -eq 1 ]; then
    if [ -s ${EDIR}/SCRATCH/cice_kmd.nc ]; then
       ln -sf ${EDIR}/SCRATCH/cice_kmd.nc .
    else
-      ml load matplotlib/3.2.1-intel-2020a-Python-3.8.2
+      ml load matplotlib/3.5.2-foss-2022a
       ${BINDIR}cice_kmt.py regional.depth.a
    fi
    prg=${BINDIR}ice_climatology/extract_clim_iceh_update.sh
