@@ -12,7 +12,7 @@
 #setenv NCDF /common/netcdf-3.6.2-amd64pg
 #setenv NCDF /common/netcdf/deprecated/netcdf-3.6.2-amd64pg
 #setenv NCDF /common/netcdf/pgi11.8/3.6.3
-setenv NCDF /cluster/software/netCDF-Fortran/4.6.0-iimpi-2022a 
+setenv NCDF /cluster/software/netCDF-Fortran/4.6.0-iompi-2022a 
 #
 #
 #
