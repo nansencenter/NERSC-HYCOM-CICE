@@ -21,8 +21,8 @@ if [ "${V}" == "2.2.98" ]; then
 	sourcedir=$NHCROOT/hycom/RELO/src_${V}ZA-07Tsig0-i-sm-sse_relo_mpi/
 elif [ "${V}" == "2.2.98.01" ]; then
         sourcedir=$NHCROOT/hycom/RELO/src_${V}ZA-07Tsig0-i-sm-sse_relo_mpi/
-elif [ "${V}" == "3.1" ]; then
-        sourcedir=$NHCROOT/hycom/RELO/HYCOM_NERSC_src_v3.1/
+elif [ "${V}" == "2.3" ]; then
+        sourcedir=$NHCROOT/hycom/RELO/HYCOM_NERSC_src_v${V}/
         sourcedir_cice=$NHCROOT/cice/Release-5.1/
 else
 	sourcedir=$NHCROOT/hycom/RELO/src_${V}G-17Tsig2-SD-i_relo_mpi/
@@ -367,3 +367,4 @@ else
         exit $res
     fi
 fi
+exit
