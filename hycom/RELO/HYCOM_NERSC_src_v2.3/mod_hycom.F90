@@ -863,7 +863,7 @@
 #else
 ! standard - only valid for linear freezing point
             t2f  = (spcifh*hfrz)/(baclin*icefrq*g)
-! ---       average both available time steps, to avoid time splitting.
+!           average both available time steps, to avoid time splitting.
             smxl = 0.5*(saln(i,j,1,n)+saln(i,j,1,m))
             tmxl = 0.5*(temp(i,j,1,n)+temp(i,j,1,m))
             tfrz = tfrz_0 + smxl*tfrz_s  !salinity dependent freezing point
@@ -1662,7 +1662,7 @@
 ! --- initialize hycom message passing.
       call xcspmd(mpiCommunicator)
 !
-#else if defined(CPL_OASIS_HYCOM)
+#elif defined(CPL_OASIS_HYCOM)
       if (present(localComm)) then
          call xcspmd(mpiCommunicator)
       else
@@ -2803,7 +2803,7 @@
       type(ESMF_State)     :: expState
       type(ESMF_Clock)     :: extClock
       integer, intent(out) :: rc
-#else 
+#else
       subroutine HYCOM_Run  &
                  (endtime,pointer_filename,restart_write)
 !

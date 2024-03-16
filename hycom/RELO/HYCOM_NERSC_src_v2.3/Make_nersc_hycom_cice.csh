@@ -77,7 +77,10 @@ setenv NERSC_FLAG "-DNERSC_HYCOM_CICE -DNERSC_USE_ESMF -DNERSC_ATM_CPL -DNERSC_s
 # --- make HYCOM component, and update hycom_cice
 #
 # --- force a relink, because CICE is not in the dependencies
+touch hycom_cice
+touch hycom_cice_nersc
 /bin/rm hycom_cice
+-/bin/rm hycom_cice_nersc
 if ($CICE_FLAG == 0) then
 	echo "only hycom"
       	make ARCH=$ARCH TYPE=$TYPE CICE_FLAG=$CICE_FLAG hycom
