@@ -1370,7 +1370,7 @@
               temice = r_init
               flxice = r_init
               fswice = r_init
-              wflice = r_init
+              wflice = 0.0
               wflfrz = 0.0     !diagnostic, icloan only
               sflice = r_init
                 si_c = 0.0 !r_init

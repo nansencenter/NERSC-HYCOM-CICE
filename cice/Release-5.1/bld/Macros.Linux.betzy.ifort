@@ -18,9 +18,11 @@ endif
 #FIXEDFLAGS := -132
 FREEFLAGS  := -FR
 #FFLAGS     := 	-O2 -fconvert=big-endian -fdefault-real-8 -fdefault-double-8
-FFLAGS     := -traceback -g -O2 -fp-model source -warn nogeneral -convert big_endian -assume byterecl -real-size 64 -integer-size 32	
-#
-
+ifeq ($(BLDDEBUG), true)
+  FFLAGS     := -convert big_endian -assume byterecl -O0 -g -check -fpe0 -ftrapuv -fp-model except -check noarg_temp_created -fp-model source -ftz -traceback -no-wrap-margin
+else
+  FFLAGS     := -traceback -g -O2 -fp-model source -warn nogeneral -convert big_endian -assume byterecl -real-size 64 -integer-size 32	
+endif
 ifeq ($(THRD), yes)
    FFLAGS  :=  $(FFLAGS) -openmp
 #cesm   CPPDEFS :=  $(CPPDEFS) -DTHREADED_OMP

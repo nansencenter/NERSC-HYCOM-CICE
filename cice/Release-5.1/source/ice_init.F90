@@ -1265,7 +1265,7 @@
              write (nu_diag,*) ' '
              write (nu_diag,*) 'Initial ice cover ', trim(ice_init_file)
          endif
-                   call ice_open_nc(ice_init_file,fid)
+         call ice_open_nc(ice_init_file,fid)
          fieldname = 'aice'
          call ice_read_nc &
              (fid, 1, fieldname, abar2d(:,:,:), .true., &
