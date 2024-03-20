@@ -29,12 +29,12 @@ setenv TYPE cice
 #setenv ARCH Linux.sisu.intel   
 setenv CICE_FLAG $2
 setenv ARCH $1
+setenv debug $3
 echo "(1) ARCH = $ARCH"
-echo "if error: make sure to set the correct ARCH in Make_cice.csh"
-echo "Make_cice.csh: Environment variable TYPE=$TYPE"
-echo "Make_cice.csh: Environment variable ARCH=$ARCH"
-
-
+echo "if error: make sure to set the correct ARCH in Make_nersc_hycom_cice.csh"
+echo "Make_nersc_hycom_cice.csh: Environment variable TYPE=$TYPE"
+echo "Make_nersc_hycom_cice.csh: Environment variable ARCH=$ARCH"
+echo "Make_nersc_hycom_cice.csh: Environment variable debug=$debug"
 
 if     ($TYPE != "cice") then
   echo "TYPE must be cice to invoke cice make target"
@@ -80,7 +80,7 @@ setenv NERSC_FLAG "-DNERSC_HYCOM_CICE -DNERSC_USE_ESMF -DNERSC_ATM_CPL -DNERSC_s
 touch hycom_cice
 touch hycom_cice_nersc
 /bin/rm hycom_cice
--/bin/rm hycom_cice_nersc
+/bin/rm hycom_cice_nersc
 if ($CICE_FLAG == 0) then
 	echo "only hycom"
       	make ARCH=$ARCH TYPE=$TYPE CICE_FLAG=$CICE_FLAG hycom

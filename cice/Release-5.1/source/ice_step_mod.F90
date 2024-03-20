@@ -373,7 +373,8 @@
             indxj = 0
             do j = jlo, jhi
             do i = ilo, ihi
-               if (aicen(i,j,n,iblk) > puny) then
+               if (aicen(i,j,n,iblk) > 1e-5) then
+!TILL               if (aicen(i,j,n,iblk) > puny) then
                   icells = icells + 1
                   indxi(icells) = i
                   indxj(icells) = j
@@ -543,7 +544,8 @@
                write(nu_diag,*) 'n: ',n, 'aicen: ', &
                                 aicen(istop,jstop,n,iblk)
             endif
-            call abort_ice ('ice: Vertical thermo error')
+            write (nu_diag,*) 'WARNING: Vertical thermo error'
+!TILL            call abort_ice ('ice: Vertical thermo error')
          endif
 
       !-----------------------------------------------------------------

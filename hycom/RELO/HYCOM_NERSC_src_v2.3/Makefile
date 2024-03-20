@@ -41,8 +41,6 @@ OBJS =	                   bigrid.o blkdat.o  cnuity.o convec.o \
 	thermf.o trcupd.o  \
        machine.o  wtime.o machi_c.o  isnan.o s8gefs.o
 
-hycom:	$(MODS) $(OBJS) hycom.o
-	$(LD)  $(LDFLAGS) -o hycom  hycom.o $(MODS) $(OBJS) $(EXTRALIBS)
 # CAGLAR - ADDED FABM SUPPORT -
 ifneq (,$(findstring -D_FABM_,$(CPPFLAGS)))
   MODS  := $(MODS) mod_hycom_fabm.o
