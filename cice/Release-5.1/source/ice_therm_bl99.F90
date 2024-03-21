@@ -146,7 +146,9 @@
       ! local variables
 
       integer (kind=int_kind), parameter :: &
-         nitermax = 100, & ! max number of iterations in temperature solver
+! TILL ORIGnitermax = 100, & ! max number of iterations in temperature
+! solver
+         nitermax = 200, & ! max number of iterations in temperature solver
          nmat = nslyr + nilyr + 1  ! matrix dimension
 
       real (kind=dbl_kind), parameter :: &
