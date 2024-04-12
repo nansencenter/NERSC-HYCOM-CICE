@@ -8,6 +8,8 @@ import datetime
 import cfunits
 import netcdftime
 import scipy
+import metpy.calc as mpcalc
+from metpy.units import units
 import modeltools.tools
 
 # Set up logger
@@ -47,7 +49,8 @@ _all_known_names = [
       "ustar",
       "sradtop",
       "vapmix",
-      "relhum"
+      "relhum",
+      "spchum"
       ]
 
 # Units used by internal calculations in this module
@@ -71,7 +74,8 @@ _assumed_units = {
       "ustar":"m s**-1",
       "sradtop":"W m**-2",
       "vapmix":"kg kg**-1",
-      "relhum":"1"
+      "relhum":"1",
+      "spchum":"kg kg**-1"
       }
 
 
@@ -227,7 +231,6 @@ class AtmosphericForcing(object) :
       else :
          raise AtmosphericForcingError("Can not calculate wind stress without 10 meter winds")
 
-
    def calculate_windspeed(self) :
       logger.info("Calculating wind speed (wspd) from wind fields")
       if "10u" in self.known_names and "10v" in self.known_names :
@@ -248,13 +251,41 @@ class AtmosphericForcing(object) :
 
    def calculate_vapmix(self) :
       logger.info("Calculating vapmix")
-      if "msl" in self.known_names and "2d" in self.known_names:
+      if "msl" in self.known_names_explicit and "2d" in self.known_names_explicit:
          e = satvap(self["2d"].data) 
          self._fields["vapmix"]    = modeltools.tools.ForcingFieldCopy("vapmix",self["2t"],_assumed_units["vapmix"])
          self["vapmix"].set_data(vapmix(e,self["msl"].data))
+      elif "msl" in self.known_names_explicit and "relhum" in self.known_names_explicit:
+         t_dp=mpcalc.dewpoint_from_relative_humidity(numpy.array(self["2t"].data) * units.degK, 
+                                                     100.0 * numpy.array(self["relhum"].data) * units.percent).to(units("degK"))
+         e = satvap(numpy.array(t_dp))
+         self._fields["vapmix"]    = modeltools.tools.ForcingFieldCopy("vapmix",self["2t"],_assumed_units["vapmix"])
+         self["vapmix"].set_data(vapmix(e,self["msl"].data))
+      elif "msl" in self.known_names_explicit and "spchum" in self.known_names_explicit:
+         t_dp=mpcalc.dewpoint_from_specific_humidity(numpy.array(self["msl"].data) * units.Pa,
+                                                     numpy.array(self["2t"].data) * units.degK, 
+                                                     numpy.array(self["spchum"].data)).to(units("degK"))
+         e = satvap(numpy.array(t_dp))
+         self._fields["vapmix"]    = modeltools.tools.ForcingFieldCopy("vapmix",self["2t"],_assumed_units["vapmix"])
+         self["vapmix"].set_data(vapmix(e,self["msl"].data))
       else :
-         raise AtmosphericForcingError("Can not calculate wind stress without 10 meter winds")
-     
+         raise AtmosphericForcingError("Can not calculate vapmix without atmospheric pressure and either dew point or relative humidity")
+
+   def calculate_dewpt(self) :
+      logger.info("Calculating dewpt")
+      if "msl" in self.known_names_explicit and "relhum" in self.known_names_explicit:
+         t_dp=mpcalc.dewpoint_from_relative_humidity(numpy.array(self["2t"].data) * units.degK,
+                                                     100.0 * numpy.array(self["relhum"].data) * units.percent).to(units("degK"))
+         self._fields["2d"]    = modeltools.tools.ForcingFieldCopy("2d",self["2t"],_assumed_units["2d"])
+         self["2d"].set_data(numpy.array(t_dp))
+      elif "msl" in self.known_names_explicit and "spchum" in self.known_names_explicit:
+         t_dp=mpcalc.dewpoint_from_specific_humidity(numpy.array(self["msl"].data) * units.Pa,
+                                                     numpy.array(self["2t"].data) * units.degK,
+                                                     numpy.array(self["spchum"].data)).to(units("degK"))
+         self._fields["2d"]    = modeltools.tools.ForcingFieldCopy("2d",self["2t"],_assumed_units["2d"])
+         self["2d"].set_data(numpy.array(t_dp))
+      else :
+         raise AtmosphericForcingError("Can not calculate dewpoint without atmospheric pressure and relative humidity")
      
    def calculate_strd(self) :
       logger.info("Calculating strd")
@@ -262,6 +293,19 @@ class AtmosphericForcing(object) :
       if "tcc" in self.known_names and "2t" in self.known_names and "2d" in self.known_names :
          e = satvap(self["2d"].data)
          self._fields["strd"]    = modeltools.tools.ForcingFieldCopy("strd",self["2d"],_assumed_units["strd"])
+         self._fields["strd"].set_data(strd_efimova_jacobs(self["2t"].data,e,self["tcc"].data))
+      elif "tcc" in self.known_names and "2t" in self.known_names and "relhum" in self.known_names :
+         t_dp=mpcalc.dewpoint_from_relative_humidity(numpy.array(self["2t"].data) * units.degK,
+                                                     numpy.array(self["relhum"].data) * units.percent ).to(units("degK"))
+         e = satvap(numpy.array(t_dp))
+         self._fields["strd"]    = modeltools.tools.ForcingFieldCopy("strd",self["2t"],_assumed_units["strd"])
+         self._fields["strd"].set_data(strd_efimova_jacobs(self["2t"].data,e,self["tcc"].data))
+      elif "tcc" in self.known_names and "2t" in self.known_names and "spchum" in self.known_names :
+         t_dp=mpcalc.dewpoint_from_specific_humidity(numpy.array(self["msl"].data) * units.Pa,
+                                                     numpy.array(self["2t"].data) * units.degK,
+                                                     numpy.array(self["spchum"].data)).to(units("degK"))
+         e = satvap(numpy.array(t_dp))
+         self._fields["strd"]    = modeltools.tools.ForcingFieldCopy("strd",self["2t"],_assumed_units["strd"])
          self._fields["strd"].set_data(strd_efimova_jacobs(self["2t"].data,e,self["tcc"].data))
       # Estimate from surface parameters
       elif "tcc" in self.known_names and "2t" in self.known_names :
@@ -348,7 +392,7 @@ class AtmosphericForcing(object) :
          ed= satvap(self["2d"].data)
          #print self["2d"].data.max(),self["2t"].data.max(),self["msl"].data.max()
          self._fields["relhum"]    = modeltools.tools.ForcingFieldCopy("relhum",self["2t"],_assumed_units["relhum"])
-         self["relhum"].set_data(relhumid(e,ed,self["msl"].data)/100.)
+         self["relhum"].set_data(relhumid(e,ed,self["msl"].data)/100.0)
       else :
          raise AtmosphericForcingError("Can not calculate wind stress without 10 meter winds")
 

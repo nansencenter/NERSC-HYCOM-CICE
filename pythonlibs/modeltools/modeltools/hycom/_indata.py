@@ -12,8 +12,9 @@ variable_names = {
       "strd"    : "radflx",
       "ssr"     : "nswrad",
       "str"     : "nlwrad",
-      "taux"    : "taux",
-      "tauy"    : "tauy",
+      "taux"    : "tauewd",
+      "tauy"    : "taunwd",
+      "wspd"    : "wndspd",
       "2d"      : "dewpt"
       }
 
@@ -22,6 +23,7 @@ variable_names = {
 variable_units = {
       "10u"     : "m s**-1",
       "10v"     : "m s**-1",
+      "wspd"    : "m s**-1",
       "2t"      : "degree_Celsius",
       "vapmix"  : "kg kg**-1",
       "msl"     : "Pa",

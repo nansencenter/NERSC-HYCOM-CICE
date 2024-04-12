@@ -8,7 +8,7 @@ import modeltools.tools
 import modeltools.forcing.atmosphere
 import logging
 import abfile.abfile as abf
-
+import os
 
 _loglevel=logging.DEBUG
 logger = logging.getLogger(__name__)
@@ -48,8 +48,9 @@ def atmfor(start,end,af,grid_file="regional.grid",blkdat_file="blkdat.input",plo
       mynames["10v"] = "vwind"
       mynames["msl"] = "slp"
       mynames["tcc"] = "clouds"
-      #mynames["wspd"] = "wndspd"
+      mynames["wspd"] = "wndspd"
       mynames["relhum"] = "relhum"
+      mynames["spchum"] = "spchum"
       mynames["taux"] = "tauewd"
       mynames["tauy"] = "taunwd"
 
@@ -57,8 +58,9 @@ def atmfor(start,end,af,grid_file="regional.grid",blkdat_file="blkdat.input",plo
       myunits = dict(modeltools.hycom.variable_units)
       myunits["msl"]  = "hPa"
       myunits["tcc"]  = "1"
-      #myunits["wspd"] = "m s-1"
+      myunits["wspd"] = "m s-1"
       myunits["relhum"] = "1"
+      myunits["spchum"] = "kg kg**-1"
 
       mylimits = dict(modeltools.hycom.variable_limits)
       mylimits["tcc"] = [0.,1.]
@@ -87,11 +89,14 @@ def atmfor(start,end,af,grid_file="regional.grid",blkdat_file="blkdat.input",plo
    # Open hycom grid file, read longitude and latitude@
    # TODO: HYCOM-specific
    #za = modeltools.hycom.io.ABFileRegionalGrid(grid_file,"r")
+   print("Grid_file",grid_file)
+   print("PWD",os.getcwd())
    za = abf.ABFileGrid(grid_file,"r")
    mlon = za.read_field("plon")
    mlat = za.read_field("plat")
    Nx=mlon.shape[1]
    Ny=mlon.shape[0]
+   print(Nx,Ny,numpy.max(mlon),numpy.min(mlon),numpy.max(mlat),numpy.min(mlat))
    za.close()
 
    # parse blkdat to get yearflag
@@ -101,8 +106,8 @@ def atmfor(start,end,af,grid_file="regional.grid",blkdat_file="blkdat.input",plo
    wndflg = blkd["wndflg"]
    lwflag  = blkd["lwflag"]
    # Main loop 
-   always_calculate_interpolator = False
-   always_calculate_rotator = False
+   always_calculate_interpolator = True
+   always_calculate_rotator = True
    field_interpolator={}
    vector_rotator={}
    ffiles={}
@@ -120,8 +125,10 @@ def atmfor(start,end,af,grid_file="regional.grid",blkdat_file="blkdat.input",plo
        # radflx is downwelling longwave radiation
        # TODO: HYCOM-specific
        if wndflg in [1,2,3] :
-           af.calculate_windstress()
-           af.calculate_windspeed()
+           if "taux" not in af.known_names_explicit or "tauy" not in af.known_names_explicit: 
+               af.calculate_windstress()
+           if "wspd" not in af.known_names_explicit:
+               af.calculate_windspeed()
            af.calculate_ustar()
 
        #  Forcing used by old NERSC-HYCOM
@@ -135,6 +142,9 @@ def atmfor(start,end,af,grid_file="regional.grid",blkdat_file="blkdat.input",plo
           if "ssrd"   not in af.known_names_explicit :
              logger.info(">>>> ssrd is not present in xml file, thus it will be caluclated")
              af.calculate_ssrd()
+          if "2d"     not in af.known_names_explicit : 
+             logger.info(">>>> 2d (dewpoint) is not present in xml file, thus it will be caluclated")
+             af.calculate_dewpt()
 
           if lwflag == -1 :
              if "strd"   not in af.known_names_explicit :
@@ -166,7 +176,6 @@ def atmfor(start,end,af,grid_file="regional.grid",blkdat_file="blkdat.input",plo
           if kn not in field_interpolator.keys() or always_calculate_interpolator:
              lo,la=af[kn].coords
              field_interpolator[kn]=modeltools.tools.FieldInterpolatorBilinear(lo,la,mlon,mlat)
-
           #Actual interpolation
           newfld[kn]=field_interpolator[kn].interpolate(fld)
 
