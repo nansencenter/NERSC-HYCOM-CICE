@@ -89,26 +89,9 @@ def v_to_hycom_v(field2d,extrapolate="none")  :
    
    return myfield
 
-# NB: field.shape=(jdm,idm)
-def f_to_hycom_q(field,extrapolate="none")  :
-   myfield=u_to_hycom_u(field)
-   myfield=v_to_hycom_v(myfield)
-   return myfield
-
-
 def periodic_i_shift_right(field,istep) :
    # shift field left by istep steps
    field2  = np.roll(field,istep,axis=1)
-   return field2
-
-
-def arctic_patch_shift_up(field,jstep) :
-   # shift field down
-   if jstep !=1 :
-      raise NameError("Arctic_patch_shift only with jstep=1 for now")
-   field2 = np.copy(field)
-   field2[1:,:] = field2[0:-1,:] # Shift up
-   # NB:  row 0 is same as row 1 (extrapolated
    return field2
 
 def arctic_patch_shift_down(field,jstep) :
@@ -120,7 +103,6 @@ def arctic_patch_shift_down(field,jstep) :
    tmp=field2[-1,:]              # Top row as top ...
    field2[-1,:] = tmp[::-1]      # .. but reversed direction
    return field2
-
 
 def depth_u_points(depth) :
    depthip1  = periodic_i_shift_right(depth ,-1)    # noresm values at cell i+1
@@ -155,8 +137,8 @@ def read_mesh(filemesh):
 def search_biofile(bio_path,dt):
 
    logger.info("BIO")
-   # filename format MERCATOR-BIO-14-2013-01-05-00
-   lst=glob.glob(bio_path+"/MERCATOR-BIO-14-%s*.nc"%str(dt[:-2]))
+   # filename format for NORESM: var_id+"_Omon_NorESM2-MM_historical_r1i1p1f1_gr_195408_extrap.nc"
+   lst=glob.glob(bio_path+"no3_Omon_NorESM2-MM_historical_r1i1p1f1_gr_195408_extrap%s_extrap.nc"%str(dt[:-2]))
    df = np.zeros(len(lst))*np.nan 
    val, idx = min((val, idx) for (idx, val) in enumerate(np.abs(df)))
    return idx,lst[idx]
@@ -247,123 +229,6 @@ def check_inputs(x, y, Z, points, mode, bounds_error):
     return x, y, Z, xi, eta
 
 
-def interpolate2d(x, y, Z, points, mode='linear', bounds_error=False):
-    """Fundamental 2D interpolation routine
-    Input
-        x: 1D array of x-coordinates of the mesh on which to interpolate
-        y: 1D array of y-coordinates of the mesh on which to interpolate
-        Z: 2D array of values for each x, y pair
-        points: Nx2 array of coordinates where interpolated values are sought
-        mode: Determines the interpolation order. Options are
-              'constant' - piecewise constant nearest neighbour interpolation
-              'linear' - bilinear interpolation using the four
-                         nearest neighbours (default)
-        bounds_error: Boolean flag. If True (default) an exception will
-                      be raised when interpolated values are requested
-                      outside the domain of the input data. If False, nan
-                      is returned for those values
-    Output
-        1D array with same length as points with interpolated values
-    Notes
-        Input coordinates x and y are assumed to be monotonically increasing,
-        but need not be equidistantly spaced.
-        Z is assumed to have dimension M x N, where M = len(x) and N = len(y).
-        In other words it is assumed that the x values follow the first
-        (vertical) axis downwards and y values the second (horizontal) axis
-        from left to right.
-        If this routine is to be used for interpolation of raster grids where
-        data is typically organised with longitudes (x) going from left to
-        right and latitudes (y) from left to right then user
-        interpolate_raster in this module
-    """
-
-    # Input checks
-    x, y, Z, xi, eta = check_inputs(x, y, Z, points, mode, bounds_error)
-
-    # Identify elements that are outside interpolation domain or NaN
-    outside = (xi < x[0]) + (eta < y[0]) + (xi > x[-1]) + (eta > y[-1])
-    outside += np.isnan(xi) + np.isnan(eta)
-
-    inside = ~outside
-    xi = xi[inside]
-    eta = eta[inside]
-
-    # Find upper neighbours for each interpolation point
-    idx = np.searchsorted(x, xi, side='left')
-    idy = np.searchsorted(y, eta, side='left')
-
-    # Internal check (index == 0 is OK)
-    msg = ('Interpolation point outside domain. This should never happen. '
-           'Please email Ole.Moller.Nielsen@gmail.com')
-    if len(idx) > 0:
-        if not max(idx) < len(x):
-            raise RuntimeError(msg)
-    if len(idy) > 0:
-        if not max(idy) < len(y):
-            raise RuntimeError(msg)
-
-    # Get the four neighbours for each interpolation point
-    x0 = x[idx - 1]
-    x1 = x[idx]
-    y0 = y[idy - 1]
-    y1 = y[idy]
-
-    z00 = Z[idx - 1, idy - 1]
-    z01 = Z[idx - 1, idy]
-    z10 = Z[idx, idy - 1]
-    z11 = Z[idx, idy]
-
-    # Coefficients for weighting between lower and upper bounds
-    oldset = np.seterr(invalid='ignore')  # Suppress warnings
-    alpha = (xi - x0) / (x1 - x0)
-    beta = (eta - y0) / (y1 - y0)
-    np.seterr(**oldset)  # Restore
-
-    if mode == 'linear':
-        # Bilinear interpolation formula
-        dx = z10 - z00
-        dy = z01 - z00
-        z = z00 + alpha * dx + beta * dy + alpha * beta * (z11 - dx - dy - z00)
-    else:
-        # Piecewise constant (as verified in input_check)
-
-        # Set up masks for the quadrants
-        left = alpha < 0.5
-        right = -left
-        lower = beta < 0.5
-        upper = -lower
-
-        lower_left = lower * left
-        lower_right = lower * right
-        upper_left = upper * left
-
-        # Initialise result array with all elements set to upper right
-        z = z11
-
-        # Then set the other quadrants
-        z[lower_left] = z00[lower_left]
-        z[lower_right] = z10[lower_right]
-        z[upper_left] = z01[upper_left]
-
-    # Self test
-    if len(z) > 0:
-        mz = np.nanmax(z)
-        mZ = np.nanmax(Z)
-        msg = ('Internal check failed. Max interpolated value %.15f '
-               'exceeds max grid value %.15f ' % (mz, mZ))
-        if not(np.isnan(mz) or np.isnan(mZ)):
-            if not mz <= mZ:
-                raise RuntimeError(msg)
-
-    # Populate result with interpolated values for points inside domain
-    # and NaN for values outside
-    r = np.zeros(len(points))
-    r[inside] = z
-    r[outside] = np.nan
-
-    return r
-
-
 def main(filemesh,grid2dfiles,first_j=0,mean_file=True,iexpt=10,iversn=22,yrflag=3,bio_path=None) :
 
    if mean_file :
@@ -397,6 +262,12 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=True,iexpt=10,iversn=22,yrflag
       files  =filepath + "/so" + filename[6:]
       fileu  =filepath + "/uo" + filename[6:]
       filev  =filepath + "/vo" + filename[6:]
+      if bio_path:
+         file_no3 = bio_path + "no3"  + filename[6:]
+         file_po4 = bio_path + "po4"  + filename[6:]
+         file_si  = bio_path + "si"  + filename[6:]
+         file_o2  = bio_path + "o2"  + filename[6:]
+ 
       lenstr=len(filename); bsubstr=lenstr-18; esubstr=lenstr-17;
       print(lenstr,bsubstr,esubstr)
       filessh  =filepath + "/zos" + filename[6:bsubstr]+"n"+filename[esubstr:]
@@ -409,6 +280,11 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=True,iexpt=10,iversn=22,yrflag
       ncidt=Dataset(filet,"r")
       ncidu=Dataset(fileu,"r")
       ncidv=Dataset(filev,"r")
+      if bio_path:
+         ncidno3=Dataset(file_no3,"r")
+         ncidsi =Dataset(file_si,"r")
+         ncidpo4=Dataset(file_po4,"r")
+         ncido2 =Dataset(file_o2,"r")
 
       # time from gridT file. 
       time = ncidt.variables["time"][0]
@@ -421,9 +297,19 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=True,iexpt=10,iversn=22,yrflag
       u=np.squeeze(ncidu.variables["uo"][:,:,:,:])
       v=np.squeeze(ncidv.variables["vo"][:,:,:,:])
       t=np.squeeze(ncidt.variables["thetao"][:,:,:,:])
-      t_fill=ncidt.variables["thetao"]._FillValue
+#      t_fill=ncidt.variables["thetao"]._FillValue
       s=np.squeeze(ncids.variables["so"][:,:,:,:])
-      s_fill=ncids.variables["so"]._FillValue
+#      s_fill=ncids.variables["so"]._FillValue
+
+      if bio_path:
+          no3=np.squeeze(ncidno3.variables["no3"][:,:,:,:])
+          no3=no3 * 6.625 * 12.01 * 1000.0 # convert from mol/m3 to mg C/m3
+          si=np.squeeze(ncidsi.variables["si"][:,:,:,:])
+          si=si * 6.625 * 12.01 * 1000.0 # convert from mol/m3 to mg C/m3 
+          po4=np.squeeze(ncidpo4.variables["po4"][:,:,:,:])
+          po4=po4 * 106.0 * 12.01 * 1000.0 # convert from mol/m3 to mg C/m3 
+          o2=np.squeeze(ncido2.variables["o2"][:,:,:,:])
+          o2=o2 * 1000.0 # convert from mol/m3 to mmol/m3 
 
       lev_bnds=ncidu.variables["lev_bnds"][:,:]
       lev=ncidu.variables["lev"][:]
@@ -550,12 +436,14 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=True,iexpt=10,iversn=22,yrflag
       error=np.zeros((ny,nx))
       for k in np.arange(uu_x.shape[0]) :
          if bio_path:
-            no3k=interpolate2d(blat, blon, no3[k,:,:], points).reshape((jdm,idm))
-            no3k = maplev(no3k)
-            po4k=interpolate2d(blat, blon, po4[k,:,:], points).reshape((jdm,idm))
-            po4k = maplev(po4k)
-            si_k=interpolate2d(blat, blon, si[k,:,:], points).reshape((jdm,idm))
-            si_k = maplev(si_k)
+            no3l=np.squeeze(no3[k,:,:])
+            no3l=maplev(no3l)
+            po4l=np.squeeze(po4[k,:,:])
+            po4l=maplev(po4l)
+            sil=np.squeeze(si[k,:,:])
+            sil=maplev(sil)
+            o2l=np.squeeze(o2[k,:,:])
+            o2l=maplev(o2l)
             if k%10==0 : logger.info("Writing 3D variables including BIO, level %d of %d"%(k+1,uu_x.shape[0]))
          else:
             if k%10==0 : logger.info("Writing 3D variables, level %d of %d"%(k+1,uu_x.shape[0]))
@@ -574,9 +462,7 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=True,iexpt=10,iversn=22,yrflag
             J,I = np.where(mbathy==k)
             dzl[J,I] = depth[J,I]-lev_bnds[k,0]
          
-         tmpfill=s_fill#ncids.variables["vosaline"]._FillValue
          sl = np.squeeze(s[k,:,:])
-         tmpfill=t_fill#ncidt.variables["votemper"]._FillValue
          tl = np.squeeze(t[k,:,:])
          sl = np.where(sl<1e2,sl,np.nan)
          sl = np.minimum(np.maximum(maplev(sl),25),80.)
@@ -588,7 +474,13 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=True,iexpt=10,iversn=22,yrflag
             K= np.where(dzl < 1e-4)
 
             tl[K] = tl_above[K]
-
+            sl[K] = sl_above[K]
+            if bio_path:
+               no3l[K] = no3_above[K]
+               po4l[K] = po4_above[K]
+               sil[K] = si_above[K]
+               o2l[K] = o2_above[K]
+   
 
          onem=9806.
          outfile.write_field(ul      ,iu,"u-vel.",0,model_day,k+1,0) # u: nemo in cell i is hycom in cell i+1
@@ -597,12 +489,18 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=True,iexpt=10,iversn=22,yrflag
          outfile.write_field(tl      ,ip,"temp"  ,0,model_day,k+1,0)
          outfile.write_field(sl      ,ip,"salin" ,0,model_day,k+1,0)
          if bio_path :
-            outfile.write_field(no3k      ,ip,"ECO_no3"  ,0,model_day,k+1,0)
-            outfile.write_field(po4k      ,ip,"ECO_pho" ,0,model_day,k+1,0)
-            outfile.write_field(si_k      ,ip,"ECO_sil" ,0,model_day,k+1,0)
+            outfile.write_field(no3l      ,ip,"ECO_no3" ,0,model_day,k+1,0)
+            outfile.write_field(po4l      ,ip,"ECO_pho" ,0,model_day,k+1,0)
+            outfile.write_field(sil       ,ip,"ECO_sil" ,0,model_day,k+1,0)
+            outfile.write_field(o2l       ,ip,"ECO_oxy" ,0,model_day,k+1,0)
 
          tl_above=np.copy(tl)
          sl_above=np.copy(sl)
+         if bio_path:
+            no3_above=np.copy(no3l)
+            po4_above=np.copy(po4l)
+            si_above=np.copy(sil)
+            o2_above=np.copy(o2l)
          
 
       # TODO: Process ice data
@@ -612,7 +510,11 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=True,iexpt=10,iversn=22,yrflag
       ncids.close()
       ncidu.close()
       ncidv.close()
-      if bio_path:ncidb.close()
+      if bio_path:
+         ncidno3.close()
+         ncidsi.close()
+         ncidpo4.close()
+         ncido2.close()
    nemo_mesh = []
 
 
