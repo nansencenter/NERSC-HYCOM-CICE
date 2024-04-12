@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<xml>
+<!-- Please note that the rootPath here is overwritten by the one defined in REGION.src file. So, Don't worry about the path definition here -->
+   <forcing_datasets>
+      <forcing_dataset name="noresm_3h" rootPath="/cluster/work/users/annettes/NORESM_forcing/" format="netcdf" timestep="3h">
+<!--     <field name="internal name known by routine"   file="path to file"  varname="name of variable in netcdf file" unit="udunit"/> -->
+         <field known_name="10u"    file="[rootPath]U_nt_y%Y.nc"       varname="UBOT"  units="m s**-1"/>
+         <field known_name="10v"    file="[rootPath]V_nt_y%Y.nc"       varname="VBOT"  units="m s**-1"/>
+         <field known_name="2t"     file="[rootPath]TREFHT_nt_y%Y.nc"  varname="TREFHT"   units="K"/>
+         <field known_name="spchum" file="[rootPath]QREFHT_nt_y%Y.nc"  varname="QREFH"   units="kg kg**-1"/>
+         <field known_name="msl"    file="[rootPath]PS_nt_y%Y.nc"      varname="PS"  units="Pa"/>
+         <field known_name="tp"     file="[rootPath]TPRECIP_nt_y%Y.nc" varname="TPRECIP"   units="m s**-1"/> 
+         <field known_name="ssrd"   file="[rootPath]FSDS_nt_y%Y.nc"    varname="FSDS" units="W m**-2"/>
+      </forcing_dataset>
+
+
+   <!-- As above, but includes strd (surface thermal downwelling radiation) as well-->
+      <forcing_dataset name="noresm_3h+lw" rootPath="/cluster/work/users/annettes/NORESM_forcing/" format="netcdf" timestep="3h">
+<!--     <field name="internal name known by routine"   file="path to file"  varname="name of variable in netcdf file" unit="udunit"/> -->
+         <field known_name="10u"    file="[rootPath]U_nt_y%Y.nc"       varname="UBOT"  units="m s**-1"/>
+         <field known_name="10v"    file="[rootPath]V_nt_y%Y.nc"       varname="VBOT"  units="m s**-1"/>
+         <field known_name="2t"     file="[rootPath]TREFHT_nt_y%Y.nc"  varname="TREFHT"   units="K"/>
+         <field known_name="spchum" file="[rootPath]QREFHT_nt_y%Y.nc"  varname="QREFHT"   units="kg kg**-1"/>
+         <field known_name="msl"    file="[rootPath]PS_nt_y%Y.nc"      varname="PS"  units="Pa"/>
+         <field known_name="tp"     file="[rootPath]TPRECIP_nt_y%Y.nc" varname="TPRECIP" units="m s**-1"/> 
+         <field known_name="ssrd"   file="[rootPath]/FSDS_nt_y%Y.nc"   varname="FSDS" units="W m**-2"/>
+         <field known_name="strd"   file="[rootPath]/FLDS_nt_y%Y.nc"   varname="FLDS" units="W m**-2"/>
+      </forcing_dataset>
+
+   </forcing_datasets>
+</xml>
+
+
+
