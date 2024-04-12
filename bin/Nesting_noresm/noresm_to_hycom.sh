@@ -114,14 +114,27 @@ for source_archv in $@ ; do
    # (1) Create archive [ab] files from the MERCATOR netcdf file.
    #
    ########################
-   ${BASEDIR}/bin/Nesting_noresm/noresm2archvz.py ${noresm_gridfile} $source_archv --iexpt ${iexpt} --iversn ${iversn} --yrflag ${yrflag}
-   ########################
-   #                                       
-   # (2) Based on generated archive files in (1) the grid and topography files are generated.
-   #
-   echo  $(model_datetime "$source_archv")                                              
-   ########################                                                                                                         
-   ${BASEDIR}/bin/archvz2hycom_biophys.sh $nest_expt $(model_datetime "$source_archv")
-   ########################
-
+   if [[ "${bio_path}" == "" ]] ; then
+      ${BASEDIR}/bin/Nesting_noresm/noresm2archvz.py ${noresm_gridfile} $source_archv \
+          --iexpt ${iexpt} --iversn ${iversn} --yrflag ${yrflag}
+      ########################
+      #                                       
+      # (2) Based on generated archive files in (1) the grid and topography files are generated.
+      #
+      echo  $(model_datetime "$source_archv")                                              
+      ########################                                                            
+      ${BASEDIR}/bin/archvz2hycom_biophys.sh $nest_expt $(model_datetime "$source_archv")
+      ########################
+   else
+      ${BASEDIR}/bin/Nesting_noresm/noresm2archvz.py ${noresm_gridfile} $source_archv \
+          --bio_path=${bio_path} --iexpt ${iexpt} --iversn ${iversn} --yrflag ${yrflag}
+      ########################                                                            
+      #                                                                                     
+      # (2) Based on generated archive files in (1) the grid and topography files are generated.
+      #                                                           
+      echo  $(model_datetime "$source_archv")
+      ########################                                                                                             
+      ${BASEDIR}/bin/archvz2hycom_biophys.sh $nest_expt $(model_datetime "$source_archv") -b 1   
+      ########################                                                                                 
+   fi
 done
