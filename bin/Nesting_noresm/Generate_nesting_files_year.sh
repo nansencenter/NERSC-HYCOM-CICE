@@ -2,8 +2,8 @@
 
 #SBATCH --account=nn9481k
 #SBATCH --job-name=gennest
-#SBATCH -t 0:60:00
-#SBATCH --qos=short
+#SBATCH -t 0:30:00
+#SBATCH --qos=devel
 #SBATCH --nodes=1   # number of nodes
 #SBATCH  --mail-type=ALL
 #SBATCH --mail-user=lilleannette.xpkww@sync.omnigroup.com
@@ -26,12 +26,12 @@
 
 year=$1
 
-#lname=NorESM2-MM_historical_r1i1p1f1
-lname=NorESM2-MM_ssp585_r1i1p1f1
+lname=NorESM2-MM_historical_r1i1p1f1
+#lname=NorESM2-MM_ssp585_r1i1p1f1
 genphynest=false
 genbgcnest=true
 #Generate the physical nesting files
-if ( $genphynest = true); then
+if [ "$genphynest" = "true" ]; then
 ### Make sure all the files are prepared:
 cd /cluster/work/users/annettes/NORESM_Nesting/
 for vari in thetao so uo vo zos; do
@@ -61,7 +61,7 @@ cd $SLURM_SUBMIT_DIR
 fi
 
 #Generate the biogeochemical nesting files
-if (genbgcnest); then
+if [ "$genbgcnest" = "true" ]; then
 ### Make sure all the files are prepared:                                                                                  
 cd /cluster/work/users/annettes/NORESM_Nesting/
 for vari in no3 po4 o2 si; do
@@ -69,7 +69,7 @@ for vari in no3 po4 o2 si; do
    echo $year $vari $num
    if [ $num -ne 12 ]; then
      echo "Number of files incorrect for variable " $vari
-     srun -n1 -c2 --./separate_and_extrapolate_files_year.sh $year $vari
+     srun -n1 -c2 --overlap ./separate_and_extrapolate_files_year.sh $year $vari
    fi
 done
 fi
