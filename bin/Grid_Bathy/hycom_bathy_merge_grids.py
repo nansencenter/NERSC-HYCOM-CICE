@@ -45,6 +45,7 @@ def main(infile_coarse,gridfile_coarse,infile_fine,
    logger.info("Bathy threshold is %12.4f"%bathy_threshold)
 
    # Read plon,plat
+   logger.info("Reading fine grid")
    gfile=abf.ABFileGrid("regional.grid","r")
    plon=gfile.read_field("plon")
    plon[np.where(plon<=-180)]=plon[np.where(plon<=-180)]+360.0
@@ -52,6 +53,7 @@ def main(infile_coarse,gridfile_coarse,infile_fine,
    gfile.close()
 
    # Read input bathymetry - fine version
+   logger.info("Reading fine bathy")
    m=re.match( "^(.*)(\.[ab])", infile_fine)
    if m : infile_fine=m.group(1)
    bfile=abf.ABFileBathy(infile_fine,"r",idm=gfile.idm,jdm=gfile.jdm,mask=True)
@@ -61,6 +63,7 @@ def main(infile_coarse,gridfile_coarse,infile_fine,
    bfile.close()
 
    # Read plon and plat from coarse grid
+   logger.info("Reading coarse grid")
    gfile=abf.ABFileGrid(gridfile_coarse,"r")
    c_plon=np.ndarray.flatten(gfile.read_field("plon"))
    c_plon[np.where(c_plon>=180)]=c_plon[np.where(c_plon>=180)]-360.0
@@ -68,6 +71,7 @@ def main(infile_coarse,gridfile_coarse,infile_fine,
    gfile.close()
 
    # Read input bathymetry - coarse version
+   logger.info("Reading coarse bathy")
    m=re.match( "^(.*)(\.[ab])", infile_coarse)
    if m : infile_coarse=m.group(1)
    bfile=abf.ABFileBathy(infile_coarse,"r",idm=gfile.idm,jdm=gfile.jdm)
@@ -85,8 +89,11 @@ def main(infile_coarse,gridfile_coarse,infile_fine,
    c_py=c_pxy[:,1]
 
    # interpolate coarse bathymetry to the finer grid
+   logger.info("Interpolate coarse bathymetry to the finer grid ")
    coarse_depth_int=np.ma.zeros(fine_depth.shape)
+   logger.info("Before griddata")
    coarse_depth_int=griddata((c_px,c_py),coarse_depth_m, (px,py), method='linear')
+   logger.info("After griddata")
    del coarse_depth_m
    coarse_depth_m=np.ma.array(coarse_depth_int)
    coarse_depth_m.mask=False
@@ -94,6 +101,7 @@ def main(infile_coarse,gridfile_coarse,infile_fine,
    coarse_depth=np.ma.filled(coarse_depth_m,bathy_threshold)
 
    # create relaxation mask (rmu)
+   logger.info("create relaxation mask (rmu)")
    tmp=np.linspace(0.,1.,ncells_linear)
    tmp=np.concatenate((np.zeros((ncells_exact,)),tmp)) # ie: hree first cells will match outer bathymetry
    ncells=ncells_linear+ncells_exact
@@ -104,6 +112,7 @@ def main(infile_coarse,gridfile_coarse,infile_fine,
    rmu[-ncells:,:] = np.minimum(tmp[::-1],rmu[-ncells:,:].transpose()).transpose()
 
    ## Only allow points where both models are defined in the boundaruy
+   logger.info("Only allow points where both models are defined in the boundaruy ")
    rmumask=fine_depth_m.mask
    rmumask[:,0:ncells] = np.logical_or(rmumask[:,0:ncells],coarse_depth_m.mask[:,0:ncells])
    rmumask[0:ncells,:] = np.logical_or(rmumask[0:ncells,:],coarse_depth_m.mask[0:ncells,:])
@@ -117,6 +126,7 @@ def main(infile_coarse,gridfile_coarse,infile_fine,
    figure.canvas.print_figure("tst.png")
 
    # Modify bathy in mask region
+   logger.info("Modify bathy in mask region ")
    newbathy = (1.-rmu) * coarse_depth + rmu * fine_depth
    newbathy[rmumask] = bathy_threshold
    newbathy[:,0]=bathy_threshold
@@ -128,6 +138,7 @@ def main(infile_coarse,gridfile_coarse,infile_fine,
 
 
    # Make call to consistency routine
+   logger.info("Make call to consistency routine ")
    if check_consistency :
       logger.info("Passing merged bathymetry to consistency check ")
       import hycom_bathy_consistency # Normally in same dir as this python routine, so ok
@@ -141,6 +152,7 @@ def main(infile_coarse,gridfile_coarse,infile_fine,
 
 
    # Mask data where depth below threshold
+   logger.info("Mask data where depth below threshold")
    newbathy_m=np.ma.masked_where(newbathy<=bathy_threshold,newbathy)
 
    # Create netcdf file with all  stages for analysis
