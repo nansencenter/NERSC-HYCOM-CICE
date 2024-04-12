@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<xml>
+   <forcing_datasets>
+      <forcing_dataset name="noresm_hist" rootPath="/cluster/work/users/annettes/NORESM_forcing/" format="netcdf" timestep="24h">
+<!--     <field name="internal name known by routine"   file="path to file"  varname="name of variable in netcdf file" unit="udunit"/> -->
+         <field known_name="taux"   file="[rootPath]tauu_Eday_nt_ocn_NorESM2-MM_historical_r1i1p1f1_gn_%Y.nc"  varname="tauu"  units="Pa"/>
+         <field known_name="tauy"   file="[rootPath]tauv_Eday_nt_ocn_NorESM2-MM_historical_r1i1p1f1_gn_%Y.nc"  varname="tauv"  units="Pa"/>
+         <field known_name="wspd"   file="[rootPath]sfcWind_day_nt_NorESM2-MM_historical_r1i1p1f1_gn_%Y.nc"  varname="sfcWind"  units="m s**-1"/>
+         <field known_name="2t"     file="[rootPath]tas_day_nt_NorESM2-MM_historical_r1i1p1f1_gn_%Y.nc"    varname="tas"   units="K"/>
+         <field known_name="relhum" file="[rootPath]hurs_day_nt_NorESM2-MM_historical_r1i1p1f1_gn_%Y.nc"   varname="hurs"   units="%"/>
+         <field known_name="msl"    file="[rootPath]psl_day_nt_NorESM2-MM_historical_r1i1p1f1_gn_%Y.nc"    varname="psl"  units="Pa"/>
+         <field known_name="tp"     file="[rootPath]pru_day_nt_NorESM2-MM_historical_r1i1p1f1_gn_%Y.nc"     varname="pr"   units="m s**-1"/>  
+         <field known_name="ssrd"  file="[rootPath]rsds_day_nt_NorESM2-MM_historical_r1i1p1f1_gn_%Y.nc" varname="rsds" units="W m**-2"/>
+      </forcing_dataset>
+
+   <!-- As above, but includes strd (surface thermal downwelling radiation) as well-->
+      <forcing_dataset name="noresm_hist+lw" rootPath="/projects/NS9034K/CMIP6/CMIP/NCC/NorESM2-MM/historical/r1i1p1f1/" format="netcdf" timestep="24h">
+<!--     <field name="internal name known by routine"   file="path to file"  varname="name of variable in netcdf file" unit="udunit"/> -->
+         <field known_name="taux"   file="[rootPath]tauu_Eday_nt_ocn_NorESM2-MM_historical_r1i1p1f1_gn_%Y.nc"  varname="tauu"  units="Pa"/>
+         <field known_name="tauy"   file="[rootPath]tauv_Eday_nt_ocn_NorESM2-MM_historical_r1i1p1f1_gn_%Y.nc"  varname="tauv"  units="Pa"/>
+         <field known_name="wspd"   file="[rootPath]sfcWind_day_nt_NorESM2-MM_historical_r1i1p1f1_gn_%Y.nc"  varname="sfcWind"  units="m s**-1"/>
+         <field known_name="2t"     file="[rootPath]tas_day_nt_NorESM2-MM_historical_r1i1p1f1_gn_%Y.nc"    varname="tas"   units="K"/>
+         <field known_name="relhum" file="[rootPath]hurs_day_nt_NorESM2-MM_historical_r1i1p1f1_gn_%Y.nc"   varname="hurs"   units="%"/>
+         <field known_name="msl"    file="[rootPath]psl_day_nt_NorESM2-MM_historical_r1i1p1f1_gn_%Y.nc"    varname="psl"  units="Pa"/>
+         <field known_name="tp"     file="[rootPath]pru_day_nt_NorESM2-MM_historical_r1i1p1f1_gn_%Y.nc"     varname="pr"   units="m s**-1"/>
+         <field known_name="ssrd"  file="[rootPath]rsds_day_nt_NorESM2-MM_historical_r1i1p1f1_gn_%Y.nc" varname="rsds" units="W m**-2"/>
+         <field known_name="strd"  file="[rootPath]rlds_day_nt_NorESM2-MM_historical_r1i1p1f1_gn_%Y.nc" varname="rlds" units="W m**-2"/>
+      </forcing_dataset>
+   </forcing_datasets>
+</xml>
+
+
+
