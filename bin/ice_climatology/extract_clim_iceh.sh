@@ -15,8 +15,8 @@
 # Basic software requires:
 # 1) python 3; cdo and nco modules; 
 #    For example on Betzy:
-#    ml load CDO/1.9.9-iompi-2020a
-#    ml load NCO/4.9.7-iomkl-2020a
+#    ml load CDO/1.9.10-iimpi-2022a
+#    ml load NCO/5.1.3-iimpi-2022a
 # 2) target model grid information and ice grid files;
 # 3) link the ice_kmt.nc to the present work directory;
 # 4) the iceh climatology file as the source file for interpolation.
@@ -89,10 +89,10 @@ Isst=0   # Switch on sss/sst processing ofr Isst=1,otherwise switch off
 if [ -s ${Fini} -a -s ${Ftmpmask} ]; then
    [ -s ${Fout} ] && rm ${Fout}
    echo "interpolating ... "
-   module load CDO/1.9.9-iompi-2020a
+   module load CDO/1.9.10-iimpi-2022a
    cdo remapbil,${Ftmpmask} ${Fini} ${Fout}
 
-   ml load NCO/4.9.7-iomkl-2020a
+   ml load NCO/5.1.3-iimpi-2022a
    echo "Defaulting the values for different masks ... "
    ncks -v ${Vars} ${Fout} ${Ftmp}  
    ncrename -h -O -v siconc,aice_raw -v sithick,hi_raw ${Ftmp}  
