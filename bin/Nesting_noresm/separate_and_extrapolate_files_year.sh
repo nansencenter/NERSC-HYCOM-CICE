@@ -30,22 +30,37 @@ if [ "$vari" != "zos" ]; then
    done
 
 #### Bias correct temperature and salinity
+#### Bias correct nutrient and oxygen, but make sure thye are not negative.
    for ((mon=1; mon<=12; mon+=1)); do
       smon=`echo -n 0$mon | tail -2c`
       if [ "$vari" == "thetao" ]; then BIASCORR=true; fi
       if [ "$vari" == "so" ]; then BIASCORR=true; fi
+      if [ "$vari" == "no3" -o "$vari" == "si" ]; then BIASCORR=true; fi
+      if [ "$vari" == "po4" -o "$vari" == "o2" ]; then BIASCORR=true; fi
       if [ $BIASCORR = true ]; then
          cdo sub ${vari}_Omon_${lname}_${year}${smon}_grid.nc \
-                 Climatology/bias_${vari}_decal_${smon}.nc \
+                 /cluster/projects/nn9481k/NORESM_bias/bias_${vari}_decal_${smon}.nc \
                  ${vari}_Omon_${lname}_${year}${smon}_gridbc.nc
       fi
    done
+
+   #### For nutrients and oxygen, set negative values to a small value.
+   if [ $BIASCORR = true ]; then
+      for ((mon=1; mon<=12; mon+=1)); do
+         smon=`echo -n 0$mon | tail -2c`
+         if [ "$vari" == "no3" -o "$vari" == "po4" -o "$vari" == "o2" -o "$vari" == "si" ]; then
+            cdo setrtoc,-inf,0.0001,0.0001 ${vari}_Omon_${lname}_${year}${smon}_gridbc.nc ${vari}_Omon_${lname}_${year}${smon}_gridbc2.nc
+         else
+            cp ${vari}_Omon_${lname}_${year}${smon}_gridbc.nc ${vari}_Omon_${lname}_${year}${smon}_gridbc2.nc
+	 fi
+     done
+   fi
 
 #### Extrapolate missing data
    for ((mon=1; mon<=12; mon+=1)); do
       smon=`echo -n 0$mon | tail -2c`
       if  [ $BIASCORR = true ]; then
-         cdo setmisstonn ${varie}_${lname}_${year}${smon}_gridbc.nc \
+         cdo setmisstonn ${varie}_${lname}_${year}${smon}_gridbc2.nc \
                          ${varie}_${lname}_${year}${smon}_extrap.nc
       else
          cdo setmisstonn ${varie}_${lname}_${year}${smon}_grid.nc \
@@ -53,6 +68,7 @@ if [ "$vari" != "zos" ]; then
       fi
    done
 else
+
 # Variables on native grid
 #   lname=NorESM2-MM_historical_r1i1p1f1_gn
    lname=NorESM2-MM_ssp585_r1i1p1f1_gn
