@@ -2,7 +2,7 @@
 
 # Prerequisites
 
-You will need a  working python 2.7 installation, with the following packages.
+You will need a  working python 3.7 installation, with the following packages.
 
 * [numpy](https://pypi.python.org/pypi/numpy)
 
@@ -19,6 +19,8 @@ You will need a  working python 2.7 installation, with the following packages.
 * [matplotlib](https://pypi.python.org/pypi/matplotlib)
 
 * [netCDF4](https://pypi.python.org/pypi/netCDF4)
+
+* [metpy](https://pypi.org/project/metpy/)
 
 These depend on other non-python packages being installed, such as udunits and netcdf4. Most of these packages are usually installed on a linux system. If they are missing, you can ask an IT guy to install them on the system  or install them yourself.
 
