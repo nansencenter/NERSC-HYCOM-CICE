@@ -29,6 +29,7 @@ usage="
    Optional argument 'iscan' has default value of 15. This is the distance that will be scanned on
    this region grid to find  a sea point for the new region grid points.
 "
+nlayers=50
 grid_type=native
 bio_flag=0
 
@@ -117,7 +118,7 @@ cp  ${BASEDIR}/topo/depth_${RR}_${RT}.b       $D/regional.depth.b
 #
 #   From inner region
 #
-cp  ${BASEDIR}/topo/ZL50.txt                  $N/ZL50.txt
+cp  ${BASEDIR}/topo/ZL${nlayers}.txt                  $N/ZL${nlayers}.txt
 cp  ${BASEDIR}/subregion/${U}.gmap.a          $N/regional.gmap.a
 cp  ${BASEDIR}/subregion/${U}.gmap.b          $N/regional.gmap.b
 cp  ${EXPTNEW}/blkdat.input                   $N/blkdat.input
@@ -284,8 +285,8 @@ if [[ "${bio_flag}" -eq 0 ]] ; then
 ${prog_nemo}  >> $logfile  <<EOF
 ${N}/${target_archv}${L}.a
 ${NEST}/${target_archv}.a
-50
-${N}/ZL50.txt
+${nlayers}
+${N}/ZL${nlayers}.txt
 T
 T
 T
@@ -308,8 +309,8 @@ rm -rf ${NEST}/${target_bioarchv}.*
 ${prog_nemo}  >> $logfile  <<EOF
 ${N}/${target_archv}${L}.a
 ${NEST}/${target_archv}.a
-50
-${N}/ZL50.txt
+${nlayers}
+${N}/ZL${nlayers}.txt
 T
 T
 T
