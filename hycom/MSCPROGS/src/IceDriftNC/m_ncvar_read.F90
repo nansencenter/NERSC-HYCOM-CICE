@@ -32,8 +32,6 @@ contains
       forcerec=-100 ! dimensions IDs are from 0 (1?) and up, -100 should give no match
       if (present(forcerecopt)) forcerec=forcerecopt
 
-      
-
       !print *,'ncvar_read entry'
       ! Error checks
       if (rec2-rec1> nrec ) then 
@@ -108,16 +106,16 @@ contains
         call nf90_handle_err( &
              nf90_Inquire_Dimension(ncid, dimids(i), len=dimsizes(i)), &
              ' Error on inquiring dimension for var '//varname)
-       if (dimids(i)==rdim .or. i==forcerec)  then
-          !recdim=rdim
-          recdim=i
+       !if (dimids(i)==rdim .or. i==forcerec)  then
+       if (dimids(i)==rdim )  then
+          recdim=rdim
           lvec=lvec*nrec
           alloc_size(i)=nrec
-          !print *,i,alloc_size(i),lvec,nrec
+         ! print *,'lvec=',i,alloc_size(i),lvec,nrec,dimids(i)
        else
           lvec=lvec*dimsizes(i)
           alloc_size(i)=dimsizes(i)
-          !print *,i,alloc_size(i),lvec
+         ! print *,i,alloc_size(i),lvec
        end if
      end do
 
@@ -158,12 +156,7 @@ contains
       end do
 
 
-
       ! Finally read field 
-      !print *,startvec(1:ndims)
-      !print *,dimsizes(1:ndims)
-      !print *,alloc_size(1:ndims)
-      !print *,nx,ny,nrec,rec1,rec2,lvec
       if (ndims==1) then
          allocate(tmp1(alloc_size(1)))
          call nf90_handle_err( &
@@ -189,14 +182,21 @@ contains
 
       else if (ndims==3) then
          allocate(tmp3(alloc_size(1),alloc_size(2),alloc_size(3)))
-         call nf90_handle_err( &
-              NF90_GET_VAR(ncid,varid,tmp3,&
-              start=startvec(1:ndims)),                        &
-              'Error in retrieving '//varname//' values')      
-        field = reshape(tmp3,(/nx,ny,nrec/))
-        !print *,scale_factor,add_offset,maxval(field),minval(field)
-        field = field * scale_factor + add_offset
-        deallocate(tmp3)
+         if (forcerec>0) then
+            call nf90_handle_err( &
+                 NF90_GET_VAR(ncid,varid,tmp3,&
+                 start=(/1,1,forcerec/),count=(/nx,ny,1/)),                        &
+                 'Error in retrieving '//varname//' values')      
+         else
+            call nf90_handle_err( &
+                 NF90_GET_VAR(ncid,varid,tmp3,&
+                 start=startvec(1:ndims)),                        &
+                 'Error in retrieving '//varname//' values')      
+         endif
+         field = reshape(tmp3,(/nx,ny,nrec/))
+         !print *,scale_factor,add_offset,maxval(field),minval(field)
+         field = field * scale_factor + add_offset
+         deallocate(tmp3)
       end if
 
 
@@ -207,10 +207,6 @@ contains
 
       !print *,'ncvar_read exit'
    end subroutine ncvar_read
-
-
-
-
 
 
 

@@ -14,6 +14,7 @@
       subroutine thermf_oi(m,n)
       use mod_xc         ! HYCOM communication interface
       use mod_cb_arrays  ! HYCOM saved arrays
+      use mod_NERSCnml, only : sss_underice
       implicit none
 c
       integer m,n
@@ -69,17 +70,24 @@ c
               surflx(i,j) = (1.0-covice(i,j))*surflx(i,j) +
      &                                        flxice(i,j)   !cell average
               sstflx(i,j) = (1.0-covice(i,j))*sstflx(i,j)   !relax over ocean
+              if (sss_underice==.false.) then
+                 if (covice(i,j)>=0.15) then
+                    sssflx(i,j)=0.0                            !skip relaxation bellow sea ice
+                 else
+                    sssflx(i,j)=(1.0-covice(i,j))*sssflx(i,j)  !skip relaxation bellow sea ice
+                 endif
+              endif
               if     (rivers(i,j,1).eq.0.0) then  !usual case
-                salflx(i,j) =
+                 salflx(i,j) =
      &                      (1.0-covice(i,j))*salflx(i,j) +
      &                                        sflice(i,j) + !cell average
      &                                        rivflx(i,j) + !rivers everywhere
-     &                                        sssflx(i,j)   !relax  everywhere
+     &                                        sssflx(i,j)   !relax everywhere 
               else !a river point
-                salflx(i,j) =                 salflx(i,j) + !might be a river
+                 salflx(i,j) =                 salflx(i,j) + !might be a river
      &                                        sflice(i,j) + !cell average
      &                                        rivflx(i,j) + !rivers evrywhere
-     &                                        sssflx(i,j)   !relax  evrywhere
+     &                                        sssflx(i,j)   !relax evrywhere
               endif !rivers
                util1(i,j) = surflx(i,j)*scp2(i,j)
                util2(i,j) = salflx(i,j)*scp2(i,j)

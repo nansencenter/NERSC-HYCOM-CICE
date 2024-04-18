@@ -1,0 +1,16 @@
+  50    'kk    ' = number of layers involved
+  1     'single' = treat input mean archive as a single sample
+  0     'meansq' = form meansq, rather than mean (0=F,1=T)
+  10     'narchs' = number of archives to read (==0 to end input)
+TP5archm.2023_253_12_mem000.a
+TP5archm.2023_253_12_mem001.a
+TP5archm.2023_253_12_mem002.a
+TP5archm.2023_253_12_mem003.a
+TP5archm.2023_253_12_mem004.a
+TP5archm.2023_253_12_mem005.a
+TP5archm.2023_253_12_mem006.a
+TP5archm.2023_253_12_mem007.a
+TP5archm.2023_253_12_mem008.a
+TP5archm.2023_253_12_mem009.a
+  0     'narchs' = number of archives to read (==0 to end input)
+TP5archm.2023_253_12_ensmean

@@ -83,9 +83,12 @@ def main(path):
     dist = np.ma.masked_where(depthm<0.,dist)
 
 
-    dist = np.ma.masked_where(plat>=74.,dist)
+#   the small river discharge area defined by la's and lo's above, and the mass within,
+#   will be distributed to the area defined below by dist.
+#   tests reveal that the mass is completely conserved
+    dist = np.ma.masked_where(plat>=77.5,dist)
     dist = np.ma.masked_where(plon<=70.,dist)
-    dist = np.ma.masked_where(plon>=90.,dist)
+    dist = np.ma.masked_where(plon>=95.,dist)
     dist = dist/dist.max()
     dist = np.abs(dist-1.)
     totaldist = np.sum(dist)
