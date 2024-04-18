@@ -186,8 +186,11 @@ cp relax_dic_m01.a relax.CO2_dic.a
 for MM in  02 03 04 05 06 07 08 09 10 11 12 ; do
   cat relax_dic_m${MM}.a >> relax.CO2_dic.a
 done
-${pput} relax.CO2_dic.b ${D}/relax.CO2_dic.b
-${pput} relax.CO2_dic.a ${D}/relax.CO2_dic.a
+# CAGLAR: In 2023, we switched using PML CO2 to ERSEM CO2
+#         Thus CO2_dic variable changed to CO2_c
+#         The code is the same, only the filename changed in relax forder
+${pput} relax.CO2_dic.b ${D}/relax.CO2_c.b 
+${pput} relax.CO2_dic.a ${D}/relax.CO2_c.a
 #
 # --- delete the monthly files
 #

@@ -431,7 +431,7 @@ fi
 #
 if [ $TRCRLX -ne 0 -o $NTRACR -eq -1 ] ; then
    echo "**Setting up tracer relaxation"
-   for i in ECO_no3 ECO_pho ECO_sil ECO_oxy CO2_dic CO2_alk; do
+   for i in ECO_no3 ECO_pho ECO_sil ECO_oxy CO2_TA CO2_c; do
       j=$(echo $i | head -c7)
       [ ! -f  $BASEDIR/relax/${E}/relax.$j.a ] && tellerror "$BASEDIR/relax/${E}/relax.$j.a does not exist"
       [ ! -f  $BASEDIR/relax/${E}/relax.$j.b ] && tellerror "$BASEDIR/relax/${E}/relax.$j.b does not exist"
@@ -624,6 +624,7 @@ else
         fi
         for dn in `seq -w ${start_oday} ${end_day}`; do
          python ../calc_montg1.py /cluster/work/users/achoth/TP5a0.06/nest/080_NewMontg/archv.${yy}_${dn}_00.b  /cluster/work/users/achoth/TP5a0.06/expt_08.1/data/${filename}.b  ${nestdir}/
+#         python $BINDIR/calc_montg1.py $BASEDIR/nest/$E/archv.${yy}_${dn}_00.b  $BASEDIR/expt_$X/data/${filename}.b  ${nestdir}/
         done
        done
        echo " Nesting Files Modified Successfully "

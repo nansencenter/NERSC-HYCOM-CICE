@@ -1023,7 +1023,9 @@ contains
      is3DVar=.true.
    else if(cfld=='oxygen') then
      is3DVar=.true.
-   else if(cfld=='primprod') then
+   else if(cfld=='grosspp') then
+     is3DVar=.true.
+   else if(cfld=='netpp') then
      is3DVar=.true.
    else if(cfld=='attcoeff') then
      is3DVar=.true.
@@ -1576,16 +1578,26 @@ contains
          units='mmol m-3'
          limits=(/0.,1000./)
          stdname='mole_concentration_of_dissolved_molecular_oxygen_in_sea_water'
-         case ('pp_depth')
-         vname='npp'
+         case ('gpp_int')
+         vname='gpp'
          units='mg m-2 d-1'
          limits=(/0.,8460./)
+         stdname='gross_primary_productivity_of_biomass_expressed_as_carbon'
+         case ('npp_int')
+         vname='npp'
+         units='mg m-2 d-1'
+         limits=(/-8460.,8460./)
          stdname='net_primary_productivity_of_biomass_expressed_as_carbon'
-         case ('primprod')
+         case ('netpp')
          vname='nppv'
          units='mg m-3 day-1'
-         limits=(/0.,2000./)
+         limits=(/-2000.,2000./)
          stdname='net_primary_production_of_biomass_expressed_as_carbon_per_unit_volume_in_sea_water'
+         case ('grosspp')
+         vname='gppv'
+         units='mg m-3 day-1'
+         limits=(/0.,2000./)
+         stdname='gross_primary_production_of_biomass_expressed_as_carbon_per_unit_volume_in_sea_water'
          case ('attcoeff')
          vname='kd'
          units='m-1'

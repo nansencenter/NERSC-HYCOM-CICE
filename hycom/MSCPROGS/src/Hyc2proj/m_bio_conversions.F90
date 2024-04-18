@@ -3,7 +3,9 @@ module m_bio_conversions
    real, parameter :: cnit=14.01,cpho=30.97,csil=28.09, ccar=12.01
    real, parameter :: oxyml=44.6608009,oxygr=32.0,C2NIT=6.625 ! redfield
 ! _FABM__caglar_
-   real, parameter :: kd_fabm=0.04   ! light attenuation coeff. for chlorophyll
+   real, parameter :: kd_chla=0.05737798064012768   ! was 0.4 before Nov23 update, light attenuation coeff. for chlorophyll
+   real, parameter :: kd_det=0.16218644594775256   ! was 0.0 before Nov23 update, light attenuation coeff. for detritus
+   real, parameter :: kd_dom=0.18206465359221413   ! was 0.0 before Nov23 update, light attenuation coeff. for DOM
    real, parameter :: C2SIL=6.625    ! redfield C:Si mol ratio.
    real, parameter :: C2PHO=106.0    ! redfield C:P mol ratio
    real, parameter :: kd_water=0.041 ! light attenuation coeff. for Arctic sea water 
@@ -434,49 +436,58 @@ module m_bio_conversions
    end subroutine integrated_chlorophyll_eco
 !------------------------------------------------
 
-   subroutine det_bottom_flux(det,bot_flux,onem,idm,jdm,kdm)
+   subroutine det_bottom_flux(det,dsnk,bot_flux,onem,idm,jdm,kdm)
       implicit none
 
       integer, intent(in) :: idm,jdm,kdm
       real, intent(in) :: onem
-      real, dimension(idm,jdm,kdm)  , intent(in)  :: det
+      real, dimension(idm,jdm,kdm)  , intent(in)  :: det,dsnk
       real, dimension(idm,jdm,kdm)      , intent(out) :: bot_flux
-
+      real :: spd(idm,jdm,kdm)
       integer :: i,j,k
+! dsnk is the varible detritus sinking speed * detritus concentration
+! essentially it is the flux represented as a state variable
+! To prevent outlier values, we first calculate the sinking speed (dsnk/det) and
+! convert it to 1/d
+      spd = (dsnk/det)*86400.
+! and set minimum and maximum values, and convert mgC m-2 d-1 --> mmolC m-2 d-1 
+      spd = max(spd,0.5)
+      spd = min(spd,12.0)
+      bot_flux = det * spd / ccar
+       
 
-! compute flux of detritus to the seafloor mgC m-2 d-1 --> mmolC m-2 d-1                                                                                           
-      bot_flux=det * srdet_eco / ccar 
+!! compute flux of detritus to the seafloor mgC m-2 d-1 --> mmolC m-2 d-1                                                                                       !      bot_flux=det * srdet_eco / ccar 
 
    end subroutine det_bottom_flux
 
 !------------------------------------------------
 
 ! _FABM__caglar_
-      subroutine chlorophyll_fabm(dia,fla,chl_a,idm,jdm,kdm)
+      subroutine chlorophyll_fabm(dia,fla,ccl,chl_a,idm,jdm,kdm)
       !compute chlorophyll: mg m-3
         implicit none
 
         integer, intent(in) :: idm,jdm,kdm
-        real, dimension(idm,jdm,kdm)  , intent(in)  ::dia, fla
+        real, dimension(idm,jdm,kdm)  , intent(in)  ::dia, fla, ccl
         real, dimension(idm,jdm,kdm)  , intent(out) ::chl_a
         real, dimension(idm,jdm,kdm)  ::boss
         integer :: i,j,k
 
-        chl_a=dia+fla
+        chl_a=dia+fla+ccl
 
      end subroutine chlorophyll_fabm
 
-     subroutine chlorophyll(dia,fla,chl_a,idm,jdm,kdm)
+     subroutine chlorophyll(dia,fla,ccl,chl_a,idm,jdm,kdm)
 !compute chlorophyll: mg m-3
       implicit none
 
       integer, intent(in) :: idm,jdm,kdm
-      real, dimension(idm,jdm,kdm)  , intent(in)  ::dia, fla
+      real, dimension(idm,jdm,kdm)  , intent(in)  ::dia, fla, ccl
       real, dimension(idm,jdm,kdm)  , intent(out) ::chl_a
       real, dimension(idm,jdm,kdm)  ::boss
       integer :: i,j,k
 
-      chl_a=(dia+fla)
+      chl_a=(dia+fla+ccl)
 
      end subroutine chlorophyll
 
@@ -517,17 +528,29 @@ module m_bio_conversions
 
      end subroutine phosphate_conv
 
-     subroutine pbiomass(dia,fla,biomass,idm,jdm,kdm)
+     subroutine pbiomass(dia,fla,ccl,biomass,idm,jdm,kdm)
      !compute phytoplankton biomass: mmoleC m-3
       implicit none
 
       integer, intent(in) :: idm,jdm,kdm
-      real, dimension(idm,jdm,kdm)  , intent(in)  ::fla, dia !mgC m-3
+      real, dimension(idm,jdm,kdm)  , intent(in)  ::fla, dia, ccl !mgC m-3
       real, dimension(idm,jdm,kdm)  , intent(out) ::biomass
 
-      biomass=(fla+dia)/ccar
+      biomass=(fla+dia+ccl)/ccar
 
      end subroutine pbiomass
+
+     subroutine zbiomass(micro,meso,biomass,idm,jdm,kdm)
+     !compute zooplankton biomass: mmoleC m-3
+      implicit none
+
+      integer, intent(in) :: idm,jdm,kdm
+      real, dimension(idm,jdm,kdm)  , intent(in)  ::micro, meso !mgC m-3
+      real, dimension(idm,jdm,kdm)  , intent(out) ::biomass
+
+      biomass=(micro+meso)/ccar
+
+     end subroutine zbiomass
 
      subroutine oxygen_conv(oxy,mmol_oxy,idm,jdm,kdm)
 !compute dissolved oxygen: mmol m-3
@@ -549,19 +572,19 @@ module m_bio_conversions
       real, dimension(idm,jdm,kdm)  , intent(in)  ::pp ! mg m-3 s-1
       real, dimension(idm,jdm,kdm)  , intent(out) ::pp_daily
 
-      pp_daily=pp*24.*60.*60.*0.9
+      pp_daily=pp*24.*60.*60.
 
      end subroutine pp_conv
 
-     subroutine attenuation(dia,fla,attencoef,idm,jdm,kdm)
+     subroutine attenuation(dia,fla,ccl, det, dom,attencoef,idm,jdm,kdm)
 !compute the attenuation coefficient: m-1
       implicit none
 
       integer, intent(in) :: idm,jdm,kdm
-      real, dimension(idm,jdm,kdm)  , intent(in)  ::dia, fla
+      real, dimension(idm,jdm,kdm)  , intent(in)  ::dia, fla, ccl, det, dom
       real, dimension(idm,jdm,kdm)  , intent(out) ::attencoef
 
-      attencoef=kd_water+kd_fabm*(dia+fla)
+      attencoef=kd_water+kd_chl*(dia+fla+ccl)+(kd_det/1000.0)*det+(kd_dom/1000.0)*dom
 
      end subroutine attenuation
 
