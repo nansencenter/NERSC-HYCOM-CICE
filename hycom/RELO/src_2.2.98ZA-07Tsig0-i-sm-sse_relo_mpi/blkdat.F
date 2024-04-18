@@ -1149,7 +1149,7 @@ c
       trcrin = ntracr.gt.0  ! positive from restart, otherwise initialize
 #ifdef _FABM_
       call hycom_fabm_configure()
-      ntracr = size(fabm_model%state_variables)
+      ntracr = size(fabm_model%interior_state_variables)
 #else
       ntracr = abs(ntracr)
 #endif
