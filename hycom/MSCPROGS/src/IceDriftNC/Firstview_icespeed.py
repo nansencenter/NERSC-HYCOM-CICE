@@ -19,7 +19,7 @@ with open('Obs_drift.txt','r') as file:
 # reading the model result
 filename0='Mod_drift000.nc'
 ds=nc.Dataset(filename0,'r')
-dx0=ds['dX-ice'][:,:]; dy0=ds['dY-ice'][:,:]
+dx0=ds['dX'][:,:]; dy0=ds['dY'][:,:]
 lat=ds['lat'][:,:]; lon=ds['lon'][:,:]; dflg=ds['ObsFlg'][:,:]
 dsp0=N.sqrt(dx0*dx0+dy0*dy0)
 

@@ -25,8 +25,8 @@ logger.propagate=False
 
 """
 usage:
-python ../bin/topaz6_calc_montg1.py archv_file restart_file  output_path
-python ../bin/topaz6_calc_montg1.py ../nest/070/archv.2022_004_00.a ./data/TP6restart.2021_365_00_0000.a  ./
+python ../bin/calc_montg1.py archv_file restart_file  output_path
+python ../bin/calc_montg1.py ../nest/070/archv.2022_004_00.a ./data/TP6restart.2021_365_00_0000.a  ./
 
 python /cluster/home/achoth/pyScripts_AO_Betzy/ValidationFreq/Alf_calc_montg1.py /cluster/work/users/achoth/TP5a0.06/nest/080_NewMontg/archv.1997_001_00.b /cluster/work/users/achoth/TP5a0.06/expt_08.1/data/restart.1997_001_00_0000.b /cluster/work/users/achoth/TP5a0.06/nest/test_dir/
 
@@ -96,10 +96,6 @@ def main(archv_files,restart_file,out_path) :
    # Set paths using REGION.src environment (must be available at python invocation)
    
    # Open blkdat files. Get some properties
-   header_line1="HYCOM nested archive files"
-   header_line2="Compute montg1 from Nemo ssh"
-   header_line3="Expt 01.7  nhybrd=50 nsigma= 0 ds00= 1.00 dp00= 1.00 dp00x= 450.0 dp00f=1.150"
-   #
    bp=modeltools.hycom.BlkdatParser("blkdat.input")
    idm    = bp["idm"]
    jdm    = bp["jdm"]
@@ -126,6 +122,10 @@ def main(archv_files,restart_file,out_path) :
       print( "" )
       ##logger.debug("Reading nemo_srfhgt from %s"%(archvf_00))
       arcfile_in=abfile.ABFileArchv(archvf_00,"r")
+      #use the header of the archv_files
+      header_line1=arcfile_in._header[0]
+      header_line2=arcfile_in._header[1]
+      header_line3=arcfile_in._header[2]
       nemo_srfhgt=arcfile_in.read_field("srfhgt",0)
       #nemo_montg1=arcfile_in.read_field("montg1",thflag)
       # ---------------------------------------------------
@@ -163,7 +163,7 @@ def main(archv_files,restart_file,out_path) :
       archv_file_out = out_path+str(archvf_00[-19:])
       logger.info("----->Adding montg1 archv_file_out:%s"%archv_file_out)
       logger.info("Output file %s"%(archv_file_out))
-      arcfile_out=abfile.ABFileArchv(archv_file_out,"w",iversn=iversn,yrflag=yrflag,iexpt=iexpt,mask=False,cline1=header_line1,cline2=header_line2,cline3=header_line3)
+      arcfile_out=abfile.ABFileArchv(archv_file_out,"w",iversn=iversn,yrflag=yrflag,iexpt=iexpt,idm=idm,jdm=jdm,mask=False,cline1=header_line1,cline2=header_line2,cline3=header_line3)
       #
       ###AA regr = open("montg_regress_tide.pckl",'rb')
       ###AA a,b,nemomeandt = pickle.load(regr)

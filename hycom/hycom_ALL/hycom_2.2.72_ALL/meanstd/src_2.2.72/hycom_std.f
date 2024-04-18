@@ -5,7 +5,7 @@
 c
 c --- Form the std.dev. from a mean and a mean squared HYCOM archive file.
 c
-      character label*81,text*18,flnm*80
+      character label*81,text*18,flnm*240
       logical   meansq,trcout,icegln,hisurf
       integer   mntype,iweight
 c
