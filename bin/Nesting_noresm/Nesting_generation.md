@@ -15,12 +15,14 @@ This will generate the regional.depth and regional.grid-files for the global mod
 `../bin/isuba_gmapi.sh. $target_region` to genreate the mapping from the global model to the regional hycom.
 		
 		
-## Physical nesting: Download the nesting-files needed: for physics: uo, vo, zos, thetao, so, these are decadal files.
-		a. In order to have files that have values at all ocean points from the coarse ESM-grid, the annual files are pre-processed before generating the boundary conditions.
-		b. ../bin/Nesting_noresm/separate_and_extrapolate_files_year.sh  $varible $year, can also be called in the  script: ../bin/Nesting_noresm/Generate_nesting_files_year.sh
+## Physical nesting conditions 
+- Download the nesting-files needed: for physics: uo, vo, zos, thetao, so, these are decadal files.
+- In order to have files that have values at all ocean points from the coarse ESM-grid, the annual files are pre-processed before generating the boundary conditions
+`../bin/Nesting_noresm/separate_and_extrapolate_files_year.sh  $varible $year,
+- This caan also be called in the script: `../bin/Nesting_noresm/Generate_nesting_files_year.sh`
 		
 ## Biogeochamical nesting: Download the nesting-files needed: for physics: no3, po4, si, o2, these are decadal files.
 		a. In order to have files that have values at all ocean points from the coarse ESM-grid, the annual files are pre-processed before generating the boundary conditions.
-		b. ../bin/Nesting_noresm/separate_and_extrapolate_files_year.sh  $varible $year, can also be called in the  script:
+		b. ../bin/Nesting_noresm/separate_and_extrapolate_files_year.sh $varible $year, can also be called in the  script:
 	
 
