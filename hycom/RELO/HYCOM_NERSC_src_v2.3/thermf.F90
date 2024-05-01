@@ -1068,6 +1068,10 @@
 #else
       logical, parameter ::  cesmbeta =.false.
 #endif
+
+#if defined (NERSC_HYCOM_CICE)
+      real tmp_sssrlx
+#endif
 !
       integer i,ihr,it_a,ilat
       real    radfl,swfl,swflc,sstrlx,wind,airt,vpmx,prcp,xtau,ytau, &
@@ -1930,15 +1934,17 @@
 !           below the sea ice in the central Arctic where the climatology is of low quality
         ! add the limited relaxation no more than sssrmx
         ! on everywhere in the Arctic (WOA18 too fresher) 
-        if     (abs(sssdif).gt.abs(sssrmx(i,j))) then  !  large sss anomaly
-           if     (sssrmx(i,j).lt.0.0) then
-                sssdif = 0.0    !  turn off relaxation except under ice
-           elseif (sssdif .lt. 0.0) then
-                 sssdif = -sssrmx(i,j)   ! limit relaxation
-           else
-                 sssdif = -sssrmx(i,j)   ! limit relaxation
-           endif
-        endif
+!        if     (abs(sssdif).gt.abs(sssrmx(i,j))) then  !  large sss anomaly
+!           if     (sssrmx(i,j).lt.0.0) then
+!                sssdif = 0.0    !  turn off relaxation except under ice
+!           elseif (sssdif .lt. 0.0) then
+!                 sssdif = -sssrmx(i,j)   ! limit relaxation
+!           else
+!                 sssdif = sssrmx(i,j)   ! limit relaxation
+!           endif
+!        endif
+        tmp_sssrmx = max(0.0,sssrmx(i,j))
+        sssdif = sign(min(abs(sssdif),tmp_sssrxm),sssdif)
 #else
         if     (saln(i,j,1,n).gt.frac_clim*sssc .and.   &
                 abs(sssdif).gt.abs(sssrmx(i,j))) then  !large sss anomaly
