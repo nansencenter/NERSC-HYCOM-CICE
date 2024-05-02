@@ -1,0 +1,7 @@
+&hycom_fabm
+  do_vertical_movement = .true.
+  do_interior_sources = .true.
+  do_bottom_sources = .true.
+  do_surface_sources = .true.
+  nested_variables = 'ECO_no3','ECO_pho','ECO_sil'
+/
