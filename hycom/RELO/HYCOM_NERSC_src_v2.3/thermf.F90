@@ -1070,7 +1070,7 @@
 #endif
 
 #if defined (NERSC_HYCOM_CICE)
-      real tmp_sssrlx
+      real tmp_sssrmx
 #endif
 !
       integer i,ihr,it_a,ilat
@@ -1944,7 +1944,7 @@
 !           endif
 !        endif
         tmp_sssrmx = max(0.0,sssrmx(i,j))
-        sssdif = sign(min(abs(sssdif),tmp_sssrxm),sssdif)
+        sssdif = sign(min(abs(sssdif),tmp_sssrmx),sssdif)
 #else
         if     (saln(i,j,1,n).gt.frac_clim*sssc .and.   &
                 abs(sssdif).gt.abs(sssrmx(i,j))) then  !large sss anomaly
