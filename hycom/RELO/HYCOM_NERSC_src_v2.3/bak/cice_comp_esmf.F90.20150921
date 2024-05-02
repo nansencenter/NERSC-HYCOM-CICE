@@ -1,0 +1,963 @@
+module cice_comp_esmf
+USE ESMF
+use ice_kinds_mod,   only : int_kind, dbl_kind, char_len_long, log_kind
+IMPLICIT NONE
+!--Import Fields
+   integer, parameter :: numImpFields=7
+   character(ESMF_MAXSTR), save :: impFieldName(    numImpFields),    &
+                                   impFieldLongName(numImpFields), &
+                                   impFieldStdName( numImpFields), &
+                                   impFieldUnits(   numImpFields)
+   real(ESMF_KIND_R4),     save :: impFieldSclFac(  numImpFields), &
+                                   impFieldAddOff(  numImpFields)
+!   integer,                save :: impFieldHalo(    numImpFields)
+!
+!--Export Fields
+   integer, parameter :: numExpFields=11
+   character(ESMF_MAXSTR), save :: expFieldName(    numExpFields), &
+                                   expFieldLongName(numExpFields), &
+                                   expFieldStdName( numExpFields), &
+                                   expFieldUnits(   numExpFields)
+   real(ESMF_KIND_R4),     save :: expFieldSclFac(  numExpFields), &
+                                   expFieldAddOff(  numExpFields)
+!   integer,                save :: expFieldHalo(    numExpFields)
+!--Data types for Import/Export array pointers
+   type ArrayPtrReal2D
+     real(ESMF_KIND_R4), dimension(:,:), pointer :: p
+   end type ArrayPtrReal2D
+!--ESMF related variables
+   type(ESMF_FieldBundle), save :: expBundle, &
+                                   impBundle
+   type(ESMF_Field),       save :: expField(numExpFields), &
+                                   impField(numImpFields)
+   type(ArrayPtrReal2D),   save :: expData( numExpFields), &
+                                   impData( numImpFields)
+
+   integer,                save :: petCount, localPet,  mpiCommunicator
+   type(ESMF_DELayout),    save :: deLayout
+   type(ESMF_VM),          save :: vm
+   type(ESMF_Grid),        save :: grid2D
+   type(ESMF_DistGrid),    save :: distgrid2D
+   type(ESMF_ArraySpec),   save :: arraySpec2Dr
+
+
+
+!=======================================================================
+
+contains
+
+
+
+!=======================================================================
+subroutine cice_setservices(comp, rc)
+    type(ESMF_GridComp)  :: comp
+    integer, intent(out) :: rc
+    rc = ESMF_SUCCESS
+    print *, "In ice register routine"
+    ! Register the callback routines.
+
+    call ESMF_GridCompSetEntryPoint(comp, ESMF_METHOD_INITIALIZE, &
+      ice_init_esmf, phase=1, rc=rc)
+    if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
+
+    call ESMF_GridCompSetEntryPoint(comp, ESMF_METHOD_RUN, &
+      ice_run_esmf, phase=1, rc=rc)
+    if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
+
+    call ESMF_GridCompSetEntryPoint(comp, ESMF_METHOD_FINALIZE, &
+      ice_final_esmf, phase=1, rc=rc)
+    if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
+
+end subroutine
+
+  function ice_distgrid_esmf(gsize)
+    use ice_blocks,      only : block, get_block, nx_block, ny_block, nblocks_tot
+    use ice_domain,      only : blocks_ice, nblocks
+    use ice_domain_size, only : nx_global, ny_global
+    implicit none
+    !-------------------------------------------------------------------
+    !
+    ! Arguments
+    !
+    integer, intent(out)    :: gsize
+    !
+    ! Return
+    type(esmf_distgrid)     :: ice_distgrid_esmf
+    !
+    ! Local variables
+    !
+    integer,allocatable :: gindex(:)
+    integer     :: lat
+    integer     :: lon
+    integer     :: i, j, iblk, n, gi
+    integer     :: lsize
+    integer     :: rc
+    integer     :: ilo, ihi, jlo, jhi ! beginning and end of physical domain
+    type(block) :: this_block         ! block information for current block
+    integer     :: rc2
+    !-------------------------------------------------------------------
+
+    ! number the local grid
+
+    n=0
+    do iblk = 1, nblocks
+       this_block = get_block(blocks_ice(iblk),iblk)         
+       ilo = this_block%ilo
+       ihi = this_block%ihi
+       jlo = this_block%jlo
+       jhi = this_block%jhi
+       
+       do j = jlo, jhi
+          do i = ilo, ihi
+             n = n+1
+          enddo !i
+       enddo    !j
+    enddo        !iblk
+    lsize = n
+
+    ! not valid for padded decomps
+    !    lsize = block_size_x*block_size_y*nblocks
+    gsize = nx_global*ny_global
+
+    allocate(gindex(lsize))
+    n=0
+    do iblk = 1, nblocks
+       this_block = get_block(blocks_ice(iblk),iblk)         
+       ilo = this_block%ilo
+       ihi = this_block%ihi
+       jlo = this_block%jlo
+       jhi = this_block%jhi
+       
+       do j = jlo, jhi
+          do i = ilo, ihi
+             n = n+1
+             lon = this_block%i_glob(i)
+             lat = this_block%j_glob(j)
+             gi = (lat-1)*nx_global + lon
+             gindex(n) = gi
+          enddo !i
+       enddo    !j
+    enddo        !iblk
+   
+    print *,"nblocks=",nblocks
+    print *,"nblocks_tot=",nblocks_tot
+    !print *,"gindex=",gindex
+    ice_distgrid_esmf = ESMF_DistGridCreate(arbSeqIndexList=gindex, rc=rc)
+    !if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
+    if (ESMF_LogFoundError(rc, msg="cice_Setup_ESMF: ESMF_DistGridCreate", rcToReturn=rc2)) call ESMF_Finalize(rc=rc)
+
+    deallocate(gindex)
+
+  end function ice_DistGrid_esmf
+
+
+!KAL - my implementation of ice_distgrid_esmf ++, that avoids arbSeqIndexList logic
+  subroutine ice_grid_esmf()
+    use ice_blocks,      only : block, get_block_parameter, nblocks_tot, get_block
+    use ice_domain,      only : distrb_info, blocks_ice, nblocks
+    use ice_distribution,only : ice_DistributionGet
+    use ice_domain_size, only : nx_global, ny_global
+    use ice_grid,        only : tlon,tlat,tmask
+    use ice_communicate, only : my_task
+    implicit none
+    !-------------------------------------------------------------------
+    !
+    ! Arguments
+    !
+    ! Return
+    !
+    ! Local variables
+    !
+    integer(int_kind)     :: i, j,ig,jg
+    integer(int_kind)  :: ilo, ihi, jlo, jhi                   ! beginning and end of physical domain
+    integer(int_kind)  :: iblk,numassigned,assigned_id
+    integer(int_kind), dimension(:), pointer :: i_glob, j_glob ! global domain location for each point
+    integer(int_kind), dimension(:), pointer :: blockLocation
+    type(block) :: this_block                                  ! block information
+    integer(int_kind)     :: rc,rc2,processor
+    integer, allocatable ::  deBlockList(:,:,:), petMap(:)
+    integer                    :: lbnd(2),ubnd(2)
+    real(ESMF_KIND_R4),pointer :: Xcoord(:,:),Ycoord(:,:)
+    integer,           pointer :: mask_ptr(:,:)
+    character(ESMF_MAXSTR)     :: msg, gridName
+    integer                    :: localDECount
+    !-------------------------------------------------------------------
+
+    !Get number of active blocks from distribution
+    call ESMF_LogWrite("Setting up ESMF grid for CICE",ESMF_LOGMSG_INFO, rc=rc)
+    call ice_DistributionGet(distrb_info, blockLocation=blockLocation)
+    !print *,"task ",my_task," blocLocation: ",blockLocation
+    !print *,"task ",my_task," blocLocalId:  ",distrb_info%blockLocalId
+    !print *,"task ",my_task," blocGlobalId: ",distrb_info%blockGlobalId
+    !print *,"task ",my_task," size(blocLocalId) : ",size(distrb_info%blockLocalId)
+    !print *,"task ",my_task," size(blocGlobalId): ",size(distrb_info%blockGlobalId)
+    !print *,"task ",my_task," size(blocLocation):",size(blockLocation)
+
+    !Get number of active blocks. (Excludes land-only blocks)
+    numassigned=0
+    do iblk = 1, nblocks_tot ! loob global block id
+       if (blockLocation(iblk) /= 0) numassigned=numassigned+1
+    end do
+
+    !Calculate deBlocklist, which gives block domain mapping to domain grid
+    !Calculate petMap,      which gives block assignment to PETs
+    allocate(deBlockList(2, 2, numassigned))
+    allocate(petMap(numassigned))
+    assigned_id=1
+    do iblk = 1, nblocks_tot ! loob global block id
+       if (blockLocation(iblk) /= 0) then
+          call get_block_parameter(iblk,ilo=ilo,jlo=jlo,ihi=ihi,jhi=jhi, &
+                                   i_glob=i_glob,j_glob=j_glob)
+
+          ! Assign block location on distributed grid
+          deBlockList(1,:,assigned_id) = (/i_glob(ilo),i_glob(ihi)/)
+          deBlockList(2,:,assigned_id) = (/j_glob(jlo),j_glob(jhi)/)
+
+          ! Assign block to persistent execution thread. 
+          petMap(assigned_id) = blockLocation(iblk) - 1 !Starts from zero
+
+          !print '("my_task ",i4, ":glob ID =",i4, " asgn ID=",i4, " location=",i4)', &
+          !   my_task, iblk, assigned_id,blockLocation(iblk)
+          !print *,"iblk,deblocks i:",my_task,iblk,deBlockList(1,:,assigned_id)
+          !print *,"iblk,deblocks j:",my_task,iblk,deBlockList(2,:,assigned_id)
+          assigned_id=assigned_id+1
+       end if
+    enddo        !iblk
+    call ESMF_VMBarrier(vm, rc=rc)
+    print '("my_task ",i4, " deComp info: size petmap, my petmap count, nblocks =",i4,i4,i4)', &
+       my_task,size(petmap), count(petmap.eq.my_task), nblocks
+
+    ! The following for safety. Make sure nblocks matches count of tasks on this pet
+    !TODO: Create clean exit
+    !TODO: Assumption is that block ordering is increasing from 1
+    if (count(petmap.eq.my_task) .ne. nblocks) then
+       write(msg,'("ERROR my_task ",i4, ":my petmap and nblocks dont match. count=",i4, " nblocks=",i4)') &
+          my_task,count(petmap.eq.my_task),nblocks
+       print '(a)',msg
+       call ESMF_LogWrite(msg,ESMF_LOGMSG_ERROR, rc=rc)
+       !TODO: Create clean exit
+       call ESMF_Finalize(rc=rc,endflag=ESMF_END_ABORT)
+    end if
+
+
+    ! Create ESMF mapping from de/block region to PETs
+    call ESMF_LogWrite("Creating ESMF deLayout for CICE",ESMF_LOGMSG_INFO, rc=rc)
+    deLayout = ESMF_DELayoutCreate(petMap=petMap, rc=rc)
+    if (ESMF_LogFoundError(rc, msg="ice_grid_esmf: DELayoutCreate failed", rcToReturn=rc2)) &
+      call ESMF_Finalize(rc=rc)
+
+    ! Create ESMF mapping from de/block to grid locations
+    call ESMF_LogWrite("Creating ESMF distgrid for CICE",ESMF_LOGMSG_INFO, rc=rc)
+    distgrid2D = ESMF_DistGridCreate(   &
+        minIndex=(/1,1/),                          &
+        maxIndex=(/nx_global,ny_global/),          &
+        indexflag=ESMF_INDEX_GLOBAL,               &
+        deBlockList=deBlockList,&
+        deLayout=deLayout,&
+        rc = rc)
+    if (ESMF_LogFoundError(rc, msg="ice_grid_esmf: DistGridCreate failed", rcToReturn=rc2)) &
+      call ESMF_Finalize(rc=rc)
+
+   !create the 2D grid
+   call ESMF_LogWrite("Creating ESMF grid for CICE",ESMF_LOGMSG_INFO, rc=rc)
+   grid2D=ESMF_GridCreate(distGrid=distGrid2D,            &
+                          coordTypeKind=ESMF_TYPEKIND_R4, &
+                          coordDimCount=(/2,2/),          &
+                          indexflag=ESMF_INDEX_GLOBAL,    &
+                          rc=rc)
+   if (ESMF_LogFoundError(rc, msg="cice_comp_esmf:GridCreate failed",rcToReturn=rc2)) &
+      call ESMF_Finalize(rc=rc)
+
+   ! Double check de count 
+   call ESMF_GridGet(grid2D,localDECount=localDECount, rc=rc)
+   if (ESMF_LogFoundError(rc, msg="cice_comp_esmf:GridGet failed",rcToReturn=rc2)) &
+      call ESMF_Finalize(rc=rc)
+   print '("my_task ",i4, " deComp Info:decount        =",i4)',my_task,localdecount
+   if (nblocks.ne.localDECount) then
+      write(msg,'("ERROR my_task ",i4, ":my deCount and nblocks dont match? localdecount=",i4, " nblocks=",i4)') &
+         my_task,localDECount,nblocks
+      print '(a)', msg
+      call ESMF_LogWrite(msg,ESMF_LOGMSG_ERROR, rc=rc)
+      !TODO: Create clean exit
+      call ESMF_Finalize(rc=rc,endflag=ESMF_END_ABORT)
+   end if
+
+   ! Add coordinates for cell centers
+   call ESMF_GridAddCoord(grid=grid2D,                       &
+                          staggerloc=ESMF_STAGGERLOC_CENTER, &
+                          rc=rc)
+   if (ESMF_LogFoundError(rc, msg="ice_grid_esmf:GridAddCoord failed",rcToReturn=rc2)) &
+      call ESMF_Finalize(rc=rc)
+
+   ! Assing coordinate values ( x-coordinate )
+   call ESMF_LogWrite("Setting up ESMF grid x-coords for CICE",ESMF_LOGMSG_INFO, rc=rc)
+   !$OMP PARALLEL DO PRIVATE(iblk,i,j,ilo,ihi,jlo,jhi,ig,jg,this_block, &
+   !$OMP                     lbnd,ubnd,Xcoord)
+   do iblk=1,nblocks
+
+      ! Set grid coordinates from CICE coordinates. 
+      ! TODO: Not sure about the thread-safety of all this ...
+      ! Alternative is pointers to pointer 
+      call ESMF_GridGetCoord(grid=grid2D,                       &
+                             CoordDim=1,                        &
+                             localDe=iblk-1,                    &
+                             staggerloc=ESMF_STAGGERLOC_CENTER, &
+                             computationalLbound=lbnd,          &
+                             computationalUbound=ubnd,          &
+                             fArrayptr=Xcoord,                  &
+                             rc=rc)
+      if (ESMF_LogFoundError(rc,msg="cice_setup_esmf:GridGetCoord-1 failed",rcToReturn=rc2)) &
+         call ESMF_Finalize(rc=rc)
+
+
+      this_block = get_block(blocks_ice(iblk),iblk)         
+      ilo = this_block%ilo
+      ihi = this_block%ihi
+      jlo = this_block%jlo
+      jhi = this_block%jhi
+      if ( this_block%i_glob(ilo) .ne. lbnd(1)) then
+          write(msg,'("ERROR my_task ",i4, ":xcoord lower bound mismatch. lbnd(1)=",i4, "i_glob(ilo)=",i4)') &
+             my_task,lbnd(1),this_block%i_glob(ilo)
+          call ESMF_LogWrite(msg,ESMF_LOGMSG_ERROR, rc=rc)
+          print '(a)',msg
+          call ESMF_Finalize(rc=rc,endflag=ESMF_END_ABORT)
+      end if
+      if ( this_block%j_glob(jlo) .ne. lbnd(2)) then
+          write(msg,'("ERROR my_task ",i4, ":xcoord lower bound mismatch. lbnd(2)=",i4, "j_glob(jlo)=",i4)') &
+             my_task,lbnd(2),this_block%j_glob(jlo)
+          call ESMF_LogWrite(msg,ESMF_LOGMSG_ERROR, rc=rc)
+          print '(a)',msg
+          call ESMF_Finalize(rc=rc,endflag=ESMF_END_ABORT)
+      end if
+      if ( this_block%i_glob(ihi) .ne. ubnd(1)) then
+          write(msg,'("ERROR my_task ",i4, ":xcoord higher bound mismatch. ubnd(1)=",i4, "i_glob(ihi)=",i4)') &
+             my_task,ubnd(1),this_block%i_glob(ihi)
+          call ESMF_LogWrite(msg,ESMF_LOGMSG_ERROR, rc=rc)
+          print '(a)',msg
+          call ESMF_Finalize(rc=rc,endflag=ESMF_END_ABORT)
+      end if
+      if ( this_block%j_glob(jhi) .ne. ubnd(2)) then
+          write(msg,'("ERROR my_task ",i4, ":xcoord higher bound mismatch. ubnd(2)=",i4, "j_glob(jhi)=",i4)') &
+             my_task,ubnd(2),this_block%j_glob(jhi)
+          call ESMF_LogWrite(msg,ESMF_LOGMSG_ERROR, rc=rc)
+          print '(a)',msg
+          call ESMF_Finalize(rc=rc,endflag=ESMF_END_ABORT)
+      end if
+      !print '("my_task:",i4," xcoord lbnd=",2i4,"CICE i_glob(ilo),j_glob(jlo):",i4,i4)',my_task,lbnd, &
+      !   this_block%i_glob(ilo), this_block%j_glob(jlo)
+      !print '("my_task:",i4," xcoord lbnd=",2i4,"CICE i_glob(ihi),j_glob(jhi):",i4,i4)',my_task,ubnd, &
+      !   this_block%i_glob(ihi), this_block%j_glob(jhi)
+#if defined(ARCTIC)
+!---- Arctic (tripole) domain, top row is replicated (ignore it)
+      write(6,*) "cice_grid_esmf: ARCTIC tripole not supported yet"
+      call ESMF_Finalize(rc=rc)
+      !KAL - TODO - replace with cice equivalent
+      !jja = min( jj, jtdm-1-j0 )
+      ! jhi = min ( ...) ! (CICE equivalent, may be supported in block ! functions)
+#endif
+      do j= jlo,jhi
+        jg  = this_block%j_glob(j)
+        do i= ilo,ihi
+          ig  = this_block%i_glob(i)
+          Xcoord(ig,jg) = TLON(i,j,iblk)
+        enddo
+      enddo
+   enddo
+   !$OMP PARALLEL END DO
+
+   ! Assing coordinate values ( y-coordinate )
+   call ESMF_LogWrite("Setting up ESMF grid y-coords for CICE",ESMF_LOGMSG_INFO, rc=rc)
+   !$OMP PARALLEL DO PRIVATE(iblk,i,j,ilo,ihi,jlo,jhi,ig,jg,this_block, &
+   !$OMP                     lbnd,ubnd,Ycoord)
+   do iblk=1,nblocks
+      call ESMF_GridGetCoord(grid=grid2D,                       &
+                             CoordDim=2,                        &
+                             localDe=iblk-1,                    &
+                             staggerloc=ESMF_STAGGERLOC_CENTER, &
+                             computationalLbound=lbnd,          &
+                             computationalUbound=ubnd,          &
+                             fArrayptr=Ycoord,                  &
+                             rc=rc)
+      if (ESMF_LogFoundError(rc,  msg="GridGetCoord-2 failed",rcToReturn=rc2)) &
+         call ESMF_Finalize(rc=rc)
+
+      this_block = get_block(blocks_ice(iblk),iblk)         
+      ilo = this_block%ilo
+      ihi = this_block%ihi
+      jlo = this_block%jlo
+      jhi = this_block%jhi
+      if ( this_block%i_glob(ilo) .ne. lbnd(1)) then
+          write(msg,'("ERROR my_task ",i4, ":ycoord lower bound mismatch. lbnd(1)=",i4, "i_glob(ilo)=",i4)') &
+             my_task,lbnd(1),this_block%i_glob(ilo)
+          call ESMF_LogWrite(msg,ESMF_LOGMSG_ERROR, rc=rc)
+          print '(a)',msg
+          call ESMF_Finalize(rc=rc,endflag=ESMF_END_ABORT)
+      end if
+      if ( this_block%j_glob(jlo) .ne. lbnd(2)) then
+          write(msg,'("ERROR my_task ",i4, ":ycoord lower bound mismatch. lbnd(2)=",i4, "j_glob(jlo)=",i4)') &
+             my_task,lbnd(2),this_block%j_glob(jlo)
+          call ESMF_LogWrite(msg,ESMF_LOGMSG_ERROR, rc=rc)
+          print '(a)',msg
+          call ESMF_Finalize(rc=rc,endflag=ESMF_END_ABORT)
+      end if
+      if ( this_block%i_glob(ihi) .ne. ubnd(1)) then
+          write(msg,'("ERROR my_task ",i4, ":ycoord higher bound mismatch. ubnd(1)=",i4, "i_glob(ihi)=",i4)') &
+             my_task,ubnd(1),this_block%i_glob(ihi)
+          call ESMF_LogWrite(msg,ESMF_LOGMSG_ERROR, rc=rc)
+          print '(a)',msg
+          call ESMF_Finalize(rc=rc,endflag=ESMF_END_ABORT)
+      end if
+      if ( this_block%j_glob(jhi) .ne. ubnd(2)) then
+          write(msg,'("ERROR my_task ",i4, ":ycoord higher bound mismatch. ubnd(2)=",i4, "j_glob(jhi)=",i4)') &
+             my_task,ubnd(2),this_block%j_glob(jhi)
+          call ESMF_LogWrite(msg,ESMF_LOGMSG_ERROR, rc=rc)
+          print '(a)',msg
+          call ESMF_Finalize(rc=rc,endflag=ESMF_END_ABORT)
+      end if
+      !print '("my_task:",i4," ycoord lbnd=",2i4,"CICE i_glob(ilo),j_glob(jlo):",i4,i4)',my_task,lbnd, &
+      !   this_block%i_glob(ilo), this_block%j_glob(jlo)
+      !print '("my_task:",i4," ycoord lbnd=",2i4,"CICE i_glob(ihi),j_glob(jhi):",i4,i4)',my_task,ubnd, &
+      !   this_block%i_glob(ihi), this_block%j_glob(jhi)
+      do j= jlo,jhi
+        jg  = this_block%j_glob(j)
+        do i= ilo,ihi
+          ig  = this_block%i_glob(i)
+          Ycoord(ig,jg) = TLAT(i,j,iblk)
+        enddo
+      enddo
+   enddo
+   !$OMP PARALLEL END DO
+
+   ! Set up grid2D mask
+   call ESMF_LogWrite("Setting up ESMF grid mask for CICE",ESMF_LOGMSG_INFO, rc=rc)
+   CALL ESMF_GridAddItem(grid2D,                            &
+                         ESMF_GRIDITEM_MASK,                &
+                         staggerloc=ESMF_STAGGERLOC_CENTER, &
+                         rc=rc)
+   if (ESMF_LogFoundError(rc, msg="GridAddItem failed",rcToReturn=rc2)) &
+      call ESMF_Finalize(rc=rc)
+
+   ! Assing mask values
+   mask_ptr(:,:) = 0  !all land, outside active tile
+   !$OMP PARALLEL DO PRIVATE(iblk,i,j,ilo,ihi,jlo,jhi,ig,jg,this_block, &
+   !$OMP                     lbnd,ubnd,mask_ptr)
+   do iblk=1,nblocks
+      CALL ESMF_GridGetItem(grid2D,                             &
+                            ESMF_GRIDITEM_MASK,                 &
+                            localDE=iblk-1,                     &
+                            staggerloc=ESMF_STAGGERLOC_CENTER,  &
+                            computationalLbound=lbnd,          &
+                            computationalUbound=ubnd,          &
+                            fArrayptr=mask_ptr,                 &
+                            rc=rc)
+      if (ESMF_LogFoundError(rc, msg="GridGetItem failed",rcToReturn=rc2)) &
+         call ESMF_Finalize(rc=rc)
+       
+      ! Set grid mask from CICE mask
+      this_block = get_block(blocks_ice(iblk),iblk)         
+      ilo = this_block%ilo
+      ihi = this_block%ihi
+      jlo = this_block%jlo
+      jhi = this_block%jhi
+
+      ! Another test....
+      !print '("my_task:",i4," mask lbnd=",2i4,"CICE i_glob(ilo),j_glob(jlo):",i4,i4)',my_task,lbnd, &
+      !   this_block%i_glob(ilo), this_block%j_glob(jlo)
+      !print '("my_task:",i4," mask lbnd=",2i4,"CICE i_glob(ihi),j_glob(jhi):",i4,i4)',my_task,ubnd, &
+      !   this_block%i_glob(ihi), this_block%j_glob(jhi)
+      if ( this_block%i_glob(ilo) .ne. lbnd(1)) then
+          write(msg,'("ERROR my_task ",i4, ":mask lower bound mismatch. lbnd(1)=",i4, "i_glob(ilo)=",i4)') &
+             my_task,lbnd(1),this_block%i_glob(ilo)
+          call ESMF_LogWrite(msg,ESMF_LOGMSG_ERROR, rc=rc)
+          print '(a)',msg
+          call ESMF_Finalize(rc=rc,endflag=ESMF_END_ABORT)
+      end if
+      if ( this_block%j_glob(jlo) .ne. lbnd(2)) then
+          write(msg,'("ERROR my_task ",i4, ":mask lower bound mismatch. lbnd(2)=",i4, "j_glob(jlo)=",i4)') &
+             my_task,lbnd(2),this_block%j_glob(jlo)
+          call ESMF_LogWrite(msg,ESMF_LOGMSG_ERROR, rc=rc)
+          print '(a)',msg
+          call ESMF_Finalize(rc=rc,endflag=ESMF_END_ABORT)
+      end if
+      if ( this_block%i_glob(ihi) .ne. ubnd(1)) then
+          write(msg,'("ERROR my_task ",i4, ":mask higher bound mismatch. ubnd(1)=",i4, "i_glob(ihi)=",i4)') &
+             my_task,ubnd(1),this_block%i_glob(ihi)
+          call ESMF_LogWrite(msg,ESMF_LOGMSG_ERROR, rc=rc)
+          print '(a)',msg
+          call ESMF_Finalize(rc=rc,endflag=ESMF_END_ABORT)
+      end if
+      if ( this_block%j_glob(jhi) .ne. ubnd(2)) then
+          write(msg,'("ERROR my_task ",i4, ":xcoord higher bound mismatch. ubnd(2)=",i4, "j_glob(jhi)=",i4)') &
+             my_task,ubnd(2),this_block%j_glob(jhi)
+          call ESMF_LogWrite(msg,ESMF_LOGMSG_ERROR, rc=rc)
+          print '(a)',msg
+          call ESMF_Finalize(rc=rc,endflag=ESMF_END_ABORT)
+      end if
+
+
+      do j= jlo,jhi
+        jg  = this_block%j_glob(j)
+        do i= ilo,ihi
+          ig  = this_block%i_glob(i)
+          mask_ptr(ig,jg) = TMASK(i,j,iblk)
+        enddo
+      enddo
+   enddo
+   !$OMP PARALLEL END DO
+
+   ! Grid done and ready for use
+
+  deallocate(deBlockList)
+  deallocate(petMap)
+
+  end subroutine ice_Grid_esmf
+
+
+
+subroutine cice_setup_esmf(gridComp, impState, expState, extClock, rc)
+use ice_calendar   , only : dt
+use ice_domain_size, only : nx_global, ny_global
+use ice_blocks,      only : block, get_block, nx_block, ny_block
+use ice_domain,      only : blocks_ice, nblocks
+implicit none
+!KAL : based on hycom setup_esmf
+!
+!--Calling parameters
+   type(ESMF_GridComp)  :: gridComp
+   type(ESMF_State)     :: impState
+   type(ESMF_State)     :: expState
+   type(ESMF_Clock)     :: extClock
+   integer, intent(out) :: rc
+!
+!--set up ESMF data structures for HYCOM.
+!
+   integer                    :: i,j
+   character(10)              :: dimNames(2),dimUnits(2)
+   type(ESMF_Logical)         :: periodic(2)
+!  integer(ESMF_KIND_I4)      :: year,month,day,hour,minute
+!  integer(ESMF_KIND_I4)      :: sec,msec,usec,nsec
+!  real(8)                    :: dsec,dmsec,dusec,dnsec
+!  type(ESMF_TimeInterval)    :: timeStep, runDuration
+!  type(ESMF_Time)            :: startTime
+!  character(ESMF_MAXSTR)     :: msg, gridName
+   integer :: nts_day,rc2, gsize
+   integer :: iblk,ilo,jlo,ihi,jhi,ig,jg
+   real(kind=dbl_kind) :: fnts_day
+   character(ESMF_MAXSTR)     :: msg, gridName
+
+   !--Report
+   call ESMF_LogWrite("CICE ESMF Setup routine called",ESMF_LOGMSG_INFO, rc=rc)
+   call ESMF_LogFlush(rc=rc)
+
+   !---------------------------------------------------------------------
+   !--Set up attributes for import and export fields
+   !---------------------------------------------------------------------
+   expFieldAddOff(:) = 0.0     !default is no offset
+   expFieldSclFac(:) = 1.0     !default is no scale factor
+!   expFieldHalo(  :) = halo_ps !default is scalar p-grid
+   !
+   expFieldName(     1) = "sic"
+   expFieldLongName( 1) = "Sea Ice Concentration"
+   expFieldStdName(  1) = "sea_ice_area_fraction"
+   expFieldUnits(    1) = "1"
+   expFieldName(     2) = "sitx"
+   expFieldLongName( 2) = "Sea Ice X-Stress"
+   expFieldStdName(  2) = "downward_x_stress_at_sea_ice_base"
+   expFieldSclFac(   2) = -1.0  !field is upward
+   expFieldUnits(    2) = "Pa"
+!   expFieldHalo(     2) = halo_pv !vector p-grid
+   expFieldName(     3) = "sity"
+   expFieldLongName( 3) = "Sea Ice Y-Stress"
+   expFieldStdName(  3) = "downward_y_stress_at_sea_ice_base"
+   expFieldSclFac(   3) = -1.0  !field is upward
+   expFieldUnits(    3) = "Pa"
+!   expFieldHalo(     3) = halo_pv !vector p-grid
+   expFieldName(     4) = "siqs"
+   expFieldLongName( 4) = "Solar Heat Flux thru Ice to Ocean"
+   expFieldStdName(  4) = "downward_sea_ice_basal_solar_heat_flux"
+   expFieldUnits(    4) = "W m-2"
+   expFieldName(     5) = "sifh"
+   expFieldLongName( 5) = "Ice Freezing/Melting Heat Flux"
+   expFieldStdName(  5) = "upward_sea_ice_basal_heat_flux"
+   expFieldSclFac(   5) = -1.0  !field is downward
+   expFieldUnits(    5) = "W m-2"
+   expFieldName(     6) = "sifs"
+   expFieldLongName( 6) = "Ice Freezing/Melting Salt Flux"
+   expFieldStdName(  6) = "downward_sea_ice_basal_salt_flux"
+   expFieldUnits(    6) = "kg m-2 s-1"
+   expFieldName(     7) = "sifw"
+   expFieldLongName( 7) = "Ice Net Water Flux"
+   expFieldStdName(  7) = "downward_sea_ice_basal_water_flux"
+   expFieldUnits(    7) = "kg m-2 s-1"
+   expFieldName(     8) = "sit" !diagnostic
+   expFieldLongName( 8) = "Sea Ice Temperature"
+   expFieldStdName(  8) = "sea_ice_temperature"
+   expFieldAddOff(   8) = +273.15 !field is in degC
+   expFieldUnits(    8) = "K"
+   expFieldName(     9) = "sih" !diagnostic
+   expFieldLongName( 9) = "Sea Ice Thickness"
+   expFieldStdName(  9) = "sea_ice_thickness"
+   expFieldUnits(    9) = "m"
+   expFieldName(    10) = "siu" !diagnostic
+   expFieldLongName(10) = "Sea Ice X-Velocity"
+   expFieldStdName( 10) = "sea_ice_x_velocity"
+   expFieldUnits(   10) = "m s-1"
+!   expFieldHalo(    10) = halo_pv !vector p-grid
+   expFieldName(    11) = "siv" !diagnostic
+   expFieldLongName(11) = "Sea Ice Y-Velocity"
+   expFieldStdName( 11) = "sea_ice_y_velocity"
+   expFieldUnits(   11) = "m s-1"
+!   expFieldHalo(    11) = halo_pv !vector p-grid
+!
+!  expFieldName(    12) = "patm"
+!  expFieldLongName(12) = "Surface Air Pressure"
+!  expFieldStdName( 12) = "surface_air_pressure"
+!  expFieldUnits(   12) = "Pa"
+!  expFieldName(    13) = "xwnd"
+!  expFieldLongName(13) = "X-Wind"
+!  expFieldStdName( 13) = "x_wind"
+!  expFieldUnits(   13) = "m s-1"
+!  expFieldHalo(    13) = halo_pv !vector p-grid
+!  expFieldName(    14) = "ywnd"
+!  expFieldLongName(14) = "Y-Wind"
+!  expFieldStdName( 14) = "y_wind"
+!  expFieldUnits(   14) = "m s-1"
+!  expFieldHalo(    14) = halo_pv !vector p-grid
+!
+   !  Attributes for export fields, identical to CICE import fields
+   impFieldAddOff(:) = 0.0 !default is no offset
+   impFieldSclFac(:) = 1.0 !default is no scale factor
+!   impFieldHalo(  :) = halo_ps !default is scalar p-grid
+   !
+   impFieldName(     1) = "sst"
+   impFieldLongName( 1) = "Sea Surface Temperature"
+   impFieldStdName(  1) = "sea_surface_temperature"
+   impFieldAddOff(   1) = +273.15 !field is in degC
+   impFieldUnits(    1) = "K"
+   impFieldName(     2) = "sss"
+   impFieldLongName( 2) = "Sea Surface Salinity"
+   impFieldStdName(  2) = "sea_surface_salinity"
+   impFieldUnits(    2) = "1e-3"
+   impFieldName(     3) = "ssu"
+   impFieldLongName( 3) = "Sea Surface X-Current"
+   impFieldStdName(  3) = "sea_water_x_velocity"
+   impFieldUnits(    3) = "m s-1"
+!   impFieldHalo(     3) = halo_pv !vector p-grid
+   impFieldName(     4) = "ssv"
+   impFieldLongName( 4) = "Sea Surface Y-Current"
+   impFieldStdName(  4) = "sea_water_y_velocity"
+   impFieldUnits(    4) = "m s-1"
+!   impFieldHalo(     4) = halo_pv !vector p-grid
+   impFieldName(     5) = "ssh"
+   impFieldLongName( 5) = "Sea Surface Height"
+   impFieldStdName(  5) = "sea_surface_height_above_sea_level"
+   impFieldUnits(    5) = "m"
+   impFieldName(     6) = "ssfi"
+   impFieldLongName( 6) = "Oceanic Heat Flux Available to Sea Ice"
+   impFieldStdName(  6) = "upward_sea_ice_basal_available_heat_flux"
+   impFieldSclFac(   6) = -1.0  !field is downward
+   impFieldUnits(    6) = "W m-2"
+   impFieldName(     7) = "mlt"  !diagnostic
+   impFieldLongName( 7) = "Ocean Mixed Layer Thickness"
+   impFieldStdName(  7) = "ocean_mixed_layer_thickness"
+   impFieldUnits(    7) = "m"
+
+   !---------------------------------------------------------------------
+   !--Initial operations on VM
+   !---------------------------------------------------------------------
+
+   !--Get VM from gridComp
+   call ESMF_GridCompGet(gridComp, vm=vm, rc=rc)
+   if (ESMF_LogFoundError(rc, msg="HYCOM_Init: GridCompGet failed", rcToReturn=rc2)) &
+      call ESMF_Finalize(rc=rc)
+
+   !--Get VM info (local pe and pe count etc
+   call ESMF_VMGet(vm, petCount=petCount, localPET=localPet,  &
+        mpiCommunicator=mpiCommunicator, rc=rc)
+   if (ESMF_LogFoundError(rc,msg="HYCOM_Init: VMGet failed", rcToReturn=rc2)) &
+      call ESMF_Finalize(rc=rc)
+   write(msg,'(a,i4)') "HYCOM_Init: petCount = ",petCount
+   call ESMF_LogWrite(msg, ESMF_LOGMSG_INFO, rc=rc)
+   call ESMF_LogFlush(rc=rc)
+
+
+   !---------------------------------------------------------------------
+   !-- Set up distributed grid using CICE domain info
+   !---------------------------------------------------------------------
+
+   ! Create array specifications
+   call ESMF_ArraySpecSet(arraySpec2Dr, rank=2, typekind=ESMF_TYPEKIND_R4, rc=rc)
+   if (ESMF_LogFoundError(rc, msg="Setup_ESMF: ArraySpecSet failed", rcToReturn=rc2)) &
+      call ESMF_Finalize(rc=rc)
+
+   ! Create an ESMF grid that matches the HYCOM 2D grid
+   dimNames(1)="longitude";    dimNames(2)="latitude";
+   dimUnits(1)="degrees_east"; dimUnits(2)="degrees_north";
+   periodic(1)=ESMF_TRUE
+   periodic(2)=ESMF_FALSE
+
+   ! Create distributed grid
+   call ice_grid_esmf()
+
+   !---------------------------------------------------------------------
+   !-- Set up grid from distgrid.  Add grid coordinates and mask
+   !---------------------------------------------------------------------
+!
+!   ! Add Grid Coordinates
+!   call ESMF_GridAddCoord(grid=grid2D,                       &
+!                          staggerloc=ESMF_STAGGERLOC_CENTER, &
+!                          rc=rc)
+!   if (ESMF_LogFoundError(rc, msg="GridAddCoord failed",rcToReturn=rc2)) &
+!      call ESMF_Finalize(rc=rc)
+!
+!   ! Get (among other things) pointer to Grid coordinate array (1st)
+!   call ESMF_GridGetCoord(grid=grid2D,                       &
+!                          CoordDim=1,                        &
+!                          localDe=0,                         &
+!                          staggerloc=ESMF_STAGGERLOC_CENTER, &
+!                          computationalLbound=lbnd,          &
+!                          computationalUbound=ubnd,          &
+!                          fArrayptr=Xcoord,                  &
+!                          rc=rc)
+!
+!   ! Set grid coordinates from CICE coordinates
+!   if (ESMF_LogFoundError(rc,msg="cice_setup_esmf:GridGetCoord-1 failed",rcToReturn=rc2)) &
+!      call ESMF_Finalize(rc=rc)
+!   !$OMP PARALLEL DO PRIVATE(iblk,i,j,ilo,ihi,jlo,jhi,ig,jg,this_block)
+!   do iblk=1,nblocks
+!      this_block = get_block(blocks_ice(iblk),iblk)         
+!      ilo = this_block%ilo
+!      ihi = this_block%ihi
+!      jlo = this_block%jlo
+!      jhi = this_block%jhi
+!#if defined(ARCTIC)
+!!---- Arctic (tripole) domain, top row is replicated (ignore it)
+!      write(6,*) "cice_setup_esmf: ARCTIC tripole not supported yet"
+!      call ESMF_Finalize(rc=rc)
+!      !KAL - TODO - replace with cice equivalent
+!      !jja = min( jj, jtdm-1-j0 )
+!      ! jhi = min ( ...) ! (CICE equivalent, may be supported in block ! functions)
+!#endif
+!      do j= jlo,jhi
+!        jg  = this_block%j_glob(j)
+!        do i= ilo,ihi
+!          ig  = this_block%i_glob(i)
+!          Xcoord(ig,jg) = TLON(i,j,iblk)
+!        enddo
+!      enddo
+!   enddo
+!
+!   ! Get (among other things) pointer to Grid coordinate array (2nd)
+!   call ESMF_GridGetCoord(grid=grid2D,                       &
+!                          CoordDim=2,                        &
+!                          localDe=0,                         &
+!                          staggerloc=ESMF_STAGGERLOC_CENTER, &
+!                          computationalLbound=lbnd,          &
+!                          computationalUbound=ubnd,          &
+!                          fArrayptr=Ycoord,                  &
+!                          rc=rc)
+!   if (ESMF_LogFoundError(rc,  msg="GridGetCoord-2 failed",rcToReturn=rc2)) &
+!      call ESMF_Finalize(rc=rc)
+!
+!   ! Set grid coordinates from CICE coordinates
+!   !$OMP PARALLEL DO PRIVATE(iblk,i,j,ilo,ihi,jlo,jhi,ig,jg,this_block)
+!   do iblk=1,nblocks
+!      this_block = get_block(blocks_ice(iblk),iblk)         
+!      ilo = this_block%ilo
+!      ihi = this_block%ihi
+!      jlo = this_block%jlo
+!      jhi = this_block%jhi
+!      do j= jlo,jhi
+!        jg  = this_block%j_glob(j)
+!        do i= ilo,ihi
+!          ig  = this_block%i_glob(i)
+!          Ycoord(ig,jg) = TLAT(i,j,iblk)
+!        enddo
+!      enddo
+!   enddo
+!
+!   ! Set up grid2D mask
+!   CALL ESMF_GridAddItem(grid2D,                            &
+!                         ESMF_GRIDITEM_MASK,                &
+!                         staggerloc=ESMF_STAGGERLOC_CENTER, &
+!                         rc=rc)
+!   if (ESMF_LogFoundError(rc, msg="GridAddItem failed",rcToReturn=rc2)) &
+!      call ESMF_Finalize(rc=rc)
+!
+!   ! Get (among other things) pointer to Grid mask
+!   CALL ESMF_GridGetItem(grid2D,                             &
+!                         ESMF_GRIDITEM_MASK,                 &
+!                         localDE=0,                          &
+!                         staggerloc=ESMF_STAGGERLOC_CENTER,  &
+!                         fArrayptr=mask_ptr,                 &
+!                         rc=rc)
+!   if (ESMF_LogFoundError(rc, msg="GridGetItem failed",rcToReturn=rc2)) &
+!      call ESMF_Finalize(rc=rc)
+!    
+!   ! Set grid mask from CICE mask
+!   mask_ptr(:,:) = 0  !all land, outside active tile
+!   !$OMP PARALLEL DO PRIVATE(iblk,i,j,ilo,ihi,jlo,jhi,ig,jg,this_block)
+!   do iblk=1,nblocks
+!      this_block = get_block(blocks_ice(iblk),iblk)         
+!      ilo = this_block%ilo
+!      ihi = this_block%ihi
+!      jlo = this_block%jlo
+!      jhi = this_block%jhi
+!      do j= jlo,jhi
+!        jg  = this_block%j_glob(j)
+!        do i= ilo,ihi
+!          ig  = this_block%i_glob(i)
+!          mask_ptr(ig,jg) = TMASK(i,j,iblk)
+!        enddo
+!      enddo
+!   enddo
+
+!  Associate grid with ESMF gridded component
+   call ESMF_GridCompSet(gridComp, grid=grid2D, rc=rc)
+   if (ESMF_LogFoundError(rc, msg="cice_setup_Esmf: GridCompSet", rcToReturn=rc2)) &
+      call ESMF_Finalize(rc=rc)
+!
+!  Setup export fields, bundles & state
+   do i=1,numExpFields
+     expField(i)=ESMF_FieldCreate(grid=grid2D,                       &
+                                  arrayspec=arraySpec2Dr,            &
+                                  indexflag=ESMF_INDEX_GLOBAL,       &
+                                  staggerLoc=ESMF_STAGGERLOC_CENTER, &
+                                  name=trim(expFieldName(i)),        &
+                                  rc=rc)
+     call ESMF_FieldGet(expField(i),0,expData(i)%p,rc=rc)
+     if (ESMF_LogFoundError(rc, msg="cice_setup_Esmf: Fieldget export", rcToReturn=rc2)) &
+        call ESMF_Finalize(rc=rc)
+     expData(i)%p(:,:) = 0.0
+   enddo
+
+   !---------------------------------------------------------------------
+   !--Create bundle from list of export fields
+   !---------------------------------------------------------------------
+   expBundle=ESMF_FieldBundleCreate(                    &
+                    fieldList=expField(1:numExpFields), &
+                    name='CICE Export',                 &
+                    rc=rc)
+   if (ESMF_LogFoundError(rc,                               &
+      msg="cice_setup_Esmf: FieldBundleCreate CICE Export", &
+      rcToReturn=rc2))                                      & 
+      call ESMF_Finalize(rc=rc)
+!
+!--Add bundle to the export state
+   call ESMF_StateAdd(expState,fieldBundleList=(/expBundle/),rc=rc)
+
+
+!
+!--Setup import fields, bundles & state
+   do i = 1,numImpFields
+     impField(i)=ESMF_FieldCreate(grid2D,arraySpec2Dr,               &
+                                  StaggerLoc=ESMF_STAGGERLOC_CENTER, &
+                                  name=trim(impFieldName(i)),        &
+                                  rc=rc) 
+     call ESMF_FieldGet(impField(i),0,impData(i)%p,rc=rc)
+     if (ESMF_LogFoundError(rc, msg="cice_setup_Esmf: Fieldget import", rcToReturn=rc2)) &
+        call ESMF_Finalize(rc=rc)
+     impData(i)%p(:,:)=0.0 ! Initialize fields
+   enddo
+
+!  TODO: No local import arrays created here (is in hycom ...)
+!  Create bundle from list of fields
+   impBundle=ESMF_FieldBundleCreate(                      &
+                      fieldList=impField(1:numImpFields), &
+                      name='CICE Import',                 &
+                      rc=rc)
+   if (ESMF_LogFoundError(rc,                               &
+      msg="cice_setup_Esmf: FieldBundleCreate CICE Import", &
+      rcToReturn=rc2))                                      & 
+      call ESMF_Finalize(rc=rc)
+
+!--Add bundle to the import state
+   call ESMF_StateAdd(impState,fieldBundleList=(/impBundle/),rc=rc)
+   if (ESMF_LogFoundError(rc,                                 &
+      msg="cice_setup_Esmf: StateAdd bundle to import state", &
+      rcToReturn=rc2))                                        & 
+      call ESMF_Finalize(rc=rc)
+
+!--KAL Add nts_day to gridComp as attribute
+   fnts_day =86400_dbl_kind / dt
+   nts_day  =nint(86400_dbl_kind / dt)
+   if ( abs(nts_day-fnts_day) > 1e-14) then
+      call ESMF_LogWrite("ice_init_esmf: nts_day not an integer", &
+                         ESMF_LOGMSG_ERROR,rc=rc2)
+      call ESMF_Finalize(rc=rc)
+   end if
+   call ESMF_AttributeSet(gridComp, name="nts_day",value=nts_day,rc=rc)
+   if (ESMF_LogFoundError(rc,msg="ice_init_esmf: attributeset nts_day failed", rcToReturn=rc2)) &
+      call ESMF_Finalize(rc=rc)
+
+   !KAL Add grid dimensions to gridComp as attribute
+   call ESMF_AttributeSet(gridComp, name="nx",value=nx_global,rc=rc)
+   if (ESMF_LogFoundError(rc,msg="ice_init_esmf: attributeset nx failed", rcToReturn=rc2)) &
+      call ESMF_Finalize(rc=rc)
+   call ESMF_AttributeSet(gridComp, name="ny",value=ny_global,rc=rc)
+   if (ESMF_LogFoundError(rc,msg="ice_init_esmf: attributeset ny failed", rcToReturn=rc2)) &
+      call ESMF_Finalize(rc=rc)
+
+end subroutine cice_setup_esmf
+
+subroutine cice_put_export()
+end subroutine
+
+! --- Extract import state.
+subroutine cice_get_import()
+   implicit none
+   integer i,j,rc
+   call ESMF_LogWrite("HYCOM Import routine called", &
+                      ESMF_LOGMSG_INFO, rc=rc)
+   call ESMF_LogFlush(rc=rc)
+
+   stop '(cice_get_import)'
+end subroutine
+
+
+subroutine ice_init_esmf(comp, import_state, export_state, EClock, rc)
+use CICE_InitMod
+implicit none
+! !ARGUMENTS:
+    type(ESMF_GridComp)          :: comp
+    type(ESMF_State)             :: import_state
+    type(ESMF_State)             :: export_state
+    type(ESMF_Clock)             :: EClock
+    integer, intent(out)         :: rc
+
+
+    call CICE_Init()
+    call cice_setup_esmf(comp,import_state,export_state,EClock,rc)
+
+end subroutine
+
+
+subroutine ice_run_esmf(comp, import_state, export_state, EClock, rc)
+use CICE_RunMod
+implicit none
+! !ARGUMENTS:
+    type(ESMF_GridComp)          :: comp
+    type(ESMF_State)             :: import_state
+    type(ESMF_State)             :: export_state
+    type(ESMF_Clock)             :: EClock
+    integer, intent(out)         :: rc
+    ! Use import state
+    call CICE_Run()
+    ! Assign to export state
+end subroutine
+
+subroutine ice_final_esmf(comp, import_state, export_state, EClock, rc)
+use CICE_FinalMod
+implicit none
+! !ARGUMENTS:
+    type(ESMF_GridComp)          :: comp
+    type(ESMF_State)             :: import_state
+    type(ESMF_State)             :: export_state
+    type(ESMF_Clock)             :: EClock
+    integer, intent(out)         :: rc
+    ! Use import state
+    call CICE_Finalize()
+    ! A
+end subroutine
+
+end module
