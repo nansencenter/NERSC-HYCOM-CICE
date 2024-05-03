@@ -7,7 +7,7 @@
 - Make a directory called topo
 ```
 mkdir ESMMa1.00
-cd ESMMa1.00/
+cd ESMa1.00/
 ln -sf $HOME/NERSC-HYCOM-CICE/bin .
 mkdir expt_01.0
 mkdir topo
