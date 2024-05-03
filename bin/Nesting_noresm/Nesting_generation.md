@@ -5,6 +5,13 @@
 - Make a link to bin in you HYCOM-code
 - Make a directory called expt_01.0
 - Make a directory called topo
+```
+mkdir ESMMa1.00
+cd ESMMa1.00/
+ln -sf $HOME/NERSC-HYCOM-CICE/bin .
+mkdir expt_01.0
+mkdir topo
+```
 - Copy REGION.src to this directory
 - Get the grid information from the model in questions, this can be found on the CMIP6 server: you need the file for the varible "areacello" and "deptho" and put in the same folder.
 - From the experiment folder run script:
