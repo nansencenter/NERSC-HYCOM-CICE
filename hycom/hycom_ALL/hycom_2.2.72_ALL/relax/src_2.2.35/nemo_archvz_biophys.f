@@ -142,9 +142,9 @@ C --- MOSTAFA: BEGIN
       REAL*4    onem,spval
       PARAMETER (spval=2.0**100)
       REAL*4,    parameter   :: hspval=0.5*2.0**100  ! half spval
-      CHARACTER*40 flag_no3,flag_po4,flag_si
-      REAL*4,  ALLOCATABLE :: NO3(:,:,:),PO4(:,:,:),SI(:,:,:)
-      REAL*4,  ALLOCATABLE :: NO3M(:,:),PO4M(:,:),SIM(:,:)
+      CHARACTER*40 flag_no3,flag_po4,flag_si,flag_o2
+      REAL*4,  ALLOCATABLE :: NO3(:,:,:),PO4(:,:,:),SI(:,:,:),O2(:,:,:)
+      REAL*4,  ALLOCATABLE :: NO3M(:,:),PO4M(:,:),SIM(:,:),O2M(:,:)
       integer  dummy_index
       CHARACTER*80 dummy_name
 
@@ -226,6 +226,9 @@ C
          read (*,'(a)') flag_si
          write (6,'(2a)') 'BIO: SI: ',flag_si
 
+         read (*,'(a)') flag_o2
+         write (6,'(2a)') 'BIO: O2": ',flag_o2
+
 
          call flush(6)
 
@@ -283,6 +286,10 @@ C
       if     (flag_si.ne."NONE") then
           ALLOCATE(     SIM(IDM,JDM) )
           ALLOCATE(     SI(KZ+1,IDM,JDM) )
+      endif
+      if     (flag_o2.ne."NONE") then
+          ALLOCATE(     O2M(IDM,JDM) )
+          ALLOCATE(     O2(KZ+1,IDM,JDM) )
       endif
 
 
@@ -800,7 +807,7 @@ C /////////////////// NOW 3D /////////////////////////////
      +     BLDP,MIXDP,UBRTP,VBRTP,TZ,SZ,UV,VV,RZ,ZL,
      +     flag_t,flag_s,flag_th,flag_u,flag_v,ISOPYC,
      +     SIGVER,LEVTOP,SIG3D,DEPTH,TZ1,SZ1,UV1,VV1,TH,TH1,
-     +     flag_no3,flag_po4,flag_si,NO3,PO4,SI)
+     +     flag_no3,flag_po4,flag_si,flag_o2,NO3,PO4,SI,O2)
 C
 C    UV1 and VV1 are on P-cell and are converted into the u/v cells after
 C    subroutine GRIRD_REMAPPING
@@ -849,7 +856,7 @@ c ---   if you are using 'archm' for nesting use the following
 cc      dummy_index=index(archvfileo,'archm')
 c ---
       if (flag_no3.ne."NONE" .or.flag_po4.ne."NONE"
-     &    .or.flag_si.ne."NONE" ) then
+     &    .or.flag_si.ne."NONE".or.flag_o2.ne."NONE" ) then
          dummy_index=index(archvfileo,'archv')
          dummy_name=archvfileo(dummy_index:dummy_index+4)//"_fabm"
      +      //archvfileo(dummy_index+5:dummy_index+17)
@@ -1029,8 +1036,9 @@ C
      +          flag_u,flag_v,itest,jtest,SM(I,J),TM(I,J),
      +          PU(I,J),PV(I,J),UV(:,I,J),VV(:,I,J),
      +          ldebug,sigver,TZ(:,I,J),SZ(:,I,J),
-     +          flag_no3,flag_po4,flag_si,NO3(:,I,J),PO4(:,I,J),
-     +          SI(:,I,J),NO3M(I,J),PO4M(I,J),SIM(I,J))
+     +          flag_no3,flag_po4,flag_si,flag_o2,NO3(:,I,J),PO4(:,I,J),
+     +          SI(:,I,J),O2(:,I,J),NO3M(I,J),PO4M(I,J),SIM(I,J),
+     +          O2M(I,J))
 
             ENDIF  !DEPTH>0
 
@@ -1057,6 +1065,11 @@ C
            SIM(:,2)=SIM(:,3)
            CALL ZAIOWR(SIM,  MSK,.TRUE.,  XMIN,XMAX, 211, .FALSE.)
            WRITE(211,4201) 'ECO_sil    ',MONTH,TIME,K,SIGMA(K),XMIN,XMAX
+        endif
+        if     (flag_o2.ne."NONE") then
+           O2M(:,2)=O2M(:,3)
+           CALL ZAIOWR(O2M,  MSK,.TRUE.,  XMIN,XMAX, 211, .FALSE.)
+           WRITE(211,4201) 'ECO_oxy    ',MONTH,TIME,K,SIGMA(K),XMIN,XMAX
         endif
 
 C
@@ -1824,7 +1837,8 @@ C
      +  PCM0,PCM1,PCM2,PKM2,DP0K,DP00I,DS0K,flag_t,flag_s,
      +          flag_u,flag_v,itest,jtest,SM,TM,UM,VM,UV,VV,
      +          ldebug,sigver,TZ,SZ,
-     +  flag_no3,flag_po4,flag_si,NO3,PO4,SI,NO3M,PO4M,SIM)
+     +          flag_no3,flag_po4,flag_si,flag_o2,
+     +          NO3,PO4,SI,O2,NO3M,PO4M,SIM,O2M)
 
         IMPLICIT NONE
          
@@ -1834,14 +1848,14 @@ C
      +         ISOTOP,PKM1,PZTOP,RKM1,ZL(kz+1),
      +         DP0K(kdm+1),DP00I,DS0K(kdm+1),
      +         UV(kz+1),VV(kz+1),TZ(kz+1),SZ(kz+1),
-     +         NO3(kz+1),PO4(kz+1),SI(kz+1)
+     +         NO3(kz+1),PO4(kz+1),SI(kz+1),O2(kz+1)
 
         real*4, intent(inout) ::  PM,RM
         real*4,  intent(inout) :: PZBOT,PCM0,PkM2,PCM1,PCM2,
-     +         UM,VM,SM,TM,NO3M,PO4M,SIM
+     +         UM,VM,SM,TM,NO3M,PO4M,SIM,O2M
        logical    ::  ISOPYC,ldebug
         CHARACTER*40    :: flag_t,flag_s,flag_u,flag_v
-       CHARACTER*40    :: flag_no3,flag_po4,flag_si
+       CHARACTER*40    :: flag_no3,flag_po4,flag_si,flag_o2
 
        real*4 ::qdep,Q,sigmaa,RZLOC,DPMS,PZMID,THIKMN,THK
        integer :: L,kztop
@@ -2110,6 +2124,8 @@ C
      &                 PO4M=(1.0-Q)*PO4(L)+Q*PO4(L+1) ! from Z to isop.
                 if(flag_si.ne."NONE")
      &                 SIM=(1.0-Q)*SI(L)+Q*SI(L+1) ! from Z to isop.
+                if(flag_o2.ne."NONE")
+     &                 O2M=(1.0-Q)*O2(L)+Q*O2(L+1) ! from Z to isop.
                   if (ldebug.and.i.eq.itest.and. j.eq.jtest) then
                     WRITE(6,'(A,I4,3F8.4)')
      +                ' TM: L,Q =',L,Q,TM,RM
@@ -2135,7 +2151,7 @@ C
      +     BLDP,MIXDP,UBRTP,VBRTP,TZ,SZ,UV,VV,RZ,ZL,
      +     flag_t,flag_s,flag_th,flag_u,flag_v,ISOPYC,
      +     SIGVER,LEVTOP,SIG3D,DEPTH,TZ1,SZ1,UV1,VV1,TH,TH1,
-     +     flag_no3,flag_po4,flag_si,NO3,PO4,SI)
+     +     flag_no3,flag_po4,flag_si,flag_o2,NO3,PO4,SI,O2)
         IMPLICIT NONE
 C
         INTEGER :: nrec,KZ,IDM,JDM,KDM,
@@ -2151,7 +2167,8 @@ C
      +         VV(KZ+1,IDM,JDM),RZ(KZ+1,IDM,JDM),
      +         TH(KZ+1,IDM,JDM),SZ(KZ+1,IDM,JDM),
      +         TH1(IDM,JDM),TZ(KZ+1,IDM,JDM),
-     +         NO3(KZ+1,IDM,JDM),PO4(KZ+1,IDM,JDM),SI(KZ+1,IDM,JDM)
+     +         NO3(KZ+1,IDM,JDM),PO4(KZ+1,IDM,JDM),
+     +         SI(KZ+1,IDM,JDM),O2(KZ+1,IDM,JDM)
 
 
         REAL*4          :: SIG_V,TOFSIG_V,spval,spval_
@@ -2160,10 +2177,11 @@ C
 
         CHARACTER*40, INTENT(IN)::flag_t,flag_s,flag_u,
      +                      flag_v,flag_th,
-     +                      flag_no3,flag_po4,flag_si
+     +                      flag_no3,flag_po4,flag_si,flag_o2
         CHARACTER*256, INTENT(IN) :: ARCHVFILE
         CHARACTER(len=8), INTENT(IN) :: cfld(NREC)
-        REAL*4          :: NO1(IDM,JDM),PO1(IDM,JDM),SI1(IDM,JDM)
+        REAL*4          :: NO1(IDM,JDM),PO1(IDM,JDM),
+     +                     SI1(IDM,JDM),O21(IDM,JDM)
 C
         INTEGER   ::  K,I,J
 
@@ -2240,6 +2258,10 @@ C
          call FieldArchive(SI1,IDM,JDM,cfld,'ECO_sil    ',
      &     K,coord,1,tlevel1,nrec,trim(archvfile)//".a")
         endif
+        if     (flag_o2.ne."NONE") then
+         call FieldArchive(O21,IDM,JDM,cfld,'ECO_oxy    ',
+     &     K,coord,1,tlevel1,nrec,trim(archvfile)//".a")
+        endif
 
 
         ! CAUTION:  CONVERT VELOCITY COMPONENTS FROM  U- AND V-CELL TO P-CELL , RESPECTIVELY HERE
@@ -2274,11 +2296,13 @@ C ---    U AND V ARE NOW ON P-CELL
      &                  VV(K,I,J) = MIN(SPVAL_,PV(I,J)) ! v-velocity
 
                  if     (flag_no3.ne."NONE")
-     &                  NO3(K,I,J) = MIN(SPVAL_,NO1(I,J)) ! u-velocity
+     &                  NO3(K,I,J) = MIN(SPVAL_,NO1(I,J)) ! nitrate
                  if     (flag_po4.ne."NONE")
-     &                  PO4(K,I,J) = MIN(SPVAL_,PO1(I,J)) ! u-velocity
+     &                  PO4(K,I,J) = MIN(SPVAL_,PO1(I,J)) ! phosphate
                  if     (flag_si.ne."NONE")
-     &                  SI(K,I,J) = MIN(SPVAL_,SI1(I,J)) ! v-velocity
+     &                  SI(K,I,J) = MIN(SPVAL_,SI1(I,J)) ! silicate
+                 if     (flag_o2.ne."NONE")
+     &                  O2(K,I,J) = MIN(SPVAL_,O21(I,J)) ! oxygen
             ENDDO
          ENDDO
 
@@ -2341,6 +2365,8 @@ C ---    U AND V ARE NOW ON P-CELL
      &                                  PO4(K,I,J) = PO4(K-1,I,J)
                             if     (flag_si.ne."NONE")
      &                                  SI(K,I,J) = SI(K-1,I,J)
+                            if     (flag_o2.ne."NONE")
+     &                                  O2(K,I,J) = O2(K-1,I,J)
 
                             ELSE
                             RZ(K,I,J) = SIG3D(I,J,KDM)
