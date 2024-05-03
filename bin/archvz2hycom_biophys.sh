@@ -29,7 +29,7 @@ usage="
    Optional argument 'iscan' has default value of 15. This is the distance that will be scanned on
    this region grid to find  a sea point for the new region grid points.
 "
-nlayers=70
+nlayers=50
 grid_type=native
 bio_flag=0
 
