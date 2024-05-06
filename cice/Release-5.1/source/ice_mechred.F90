@@ -77,8 +77,8 @@
          Hstar  = c25        , & ! determines mean thickness of ridged ice (m) 
                                  ! (krdg_redist = 0) 
                                  ! Flato & Hibler (1995) have Hstar = 100 
-         Pstar = 2.75e4_dbl_kind, & ! constant in Hibler strength formula 
-         !Pstar = 2.2e4_dbl_kind, & ! constant in Hibler strength formula !NERSC new value
+         !Pstar = 2.75e4_dbl_kind, & ! constant in Hibler strength formula 
+         Pstar = 2.2e4_dbl_kind, & ! constant in Hibler strength formula 
                                  ! (kstrength = 0) 
          Cstar = c20             ! constant in Hibler strength formula 
                                  ! (kstrength = 0) 
