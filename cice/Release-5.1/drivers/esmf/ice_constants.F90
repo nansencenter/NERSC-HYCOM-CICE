@@ -61,8 +61,8 @@
          spval     = 1.0e30_real_kind   ! special value for netCDF output
 
       real (kind=dbl_kind), parameter, public :: &
-! suggested value        iceruf   = 0.00015_dbl_kind   ,&! ice surface roughness (m)
-         iceruf   = 0.0005_dbl_kind   ,&! ice surface roughness (m)
+         iceruf   = 0.00015_dbl_kind   ,&! ice surface roughness (m)
+
          ! (Ebert, Schramm and Curry JGR 100 15965-15975 Aug 1995)
          kappav = 1.4_dbl_kind ,&! vis extnctn coef in ice, wvlngth<700nm (1/m)
          !kappan = 17.6_dbl_kind,&! vis extnctn coef in ice, wvlngth<700nm (1/m)
