@@ -1,6 +1,7 @@
 #!/bin/bash
 # Script for quickly setting up model source code and compiling it. 
 
+
 # Must be in expt dir to run this script
 if [ -f EXPT.src ] ; then
    export BASEDIR=$(cd .. && pwd)
@@ -20,11 +21,8 @@ if [ "${V}" == "2.2.98" ]; then
 	sourcedir=$NHCROOT/hycom/RELO/src_${V}ZA-07Tsig0-i-sm-sse_relo_mpi/
 elif [ "${V}" == "2.2.98.01" ]; then
         sourcedir=$NHCROOT/hycom/RELO/src_${V}ZA-07Tsig0-i-sm-sse_relo_mpi/
-elif [ "${V}" == "2.3" ]; then
-        sourcedir=$NHCROOT/hycom/RELO/HYCOM_NERSC_src_v${V}/
-        sourcedir_cice=$NHCROOT/cice/Release-5.1/
 else
-	sourcedir=$NHCROOT/hycom/RELO/src_${V}G-17Tsig2-SD-i_relo_mpi/
+	sourcedir=$NHCROOT/hycom/RELO/src_${V}G-17Tsig2-SD-i_relo_mpi/ 
 fi
 sourceconfdir=$NHCROOT/hycom/RELO/config/
 
@@ -53,7 +51,6 @@ usage="
    optional arguments :
       -u              : update code in build dir from $sourcedir
       -m mpi_library  : on some machines you need to specify what mpi library to use
-      -d              : NOT IMPLEMENTED Run with debug version of ESMF, CICE and HYCOM. Available on Betzy. Maybe not on other machines
 
 
    Examples:
@@ -165,21 +162,6 @@ fi
 echo "$(basename $0) : SITE=$SITE"
 echo $MACROID
 
-###module rm ESMF
-if [[ "${debug}" == "debug" ]] ; then
-###   module load ESMF/8.3.0-intel-2022a-debug
-      exit
-else
-#module load ESMF/8.3.0-intel-2022a
-     module list
-     ml purge
-     module load Python/3.8.2-GCCcore-9.3.0
-     module load intel/2021a
-     module load ESMF/8.0.1-intel-2020a
-     module load FFTW/3.3.8-intel-2020a
-     module load UDUNITS/2.2.26-GCCcore-9.3.0
-     module load CMake/3.16.4-GCCcore-9.3.0
-fi
 # Deduce ESMF dir from SITE and possibly ARCH
 if [[ -n "${ESMF_DIR}" ]] &&  [[ -n "${ESMF_MOD_DIR}" ]] && [[ -n "${ESMF_LIB_DIR}" ]] ; then
    echo "Using preset ESMF_DIR    =$ESMF_DIR"
@@ -234,6 +216,7 @@ fi
 echo "$(basename $0) : ESMF_DIR=$ESMF_DIR"
 echo "$(basename $0) : ESMF_MOD_DIR=$ESMF_MOD_DIR"
 echo "$(basename $0) : ESMF_LIB_DIR=$ESMF_LIB_DIR"
+
 # Get some useful info from blkdat.input
 THFLAG=$(blkdat_get blkdat.input thflag)
 IDM=$(blkdat_get blkdat.input idm)
@@ -285,19 +268,16 @@ echo $sourceconfdir "  ##############"
 # Copy code to expt dir
 targetdir=$(source_dir $V $TERMS $THFLAG)
 targetdir=$EDIR/build/$targetdir
-targetcicedir=$EDIR/build/CICE/
 targetconfdir=$EDIR/build/config/
 if [ ! -d $EDIR/build/ ] ; then 
    mkdir $EDIR/build
    echo "build dir $EDIR/build not found. Setting it up with repo code from $sourcedir"
    rsync -avhL $sourcedir/ $targetdir/
-   rsync -avhL $sourcedir_cice/ $targetcicedir/
    rsync -avhL $sourceconfdir/ $targetconfdir/
 else 
    if [ "$update" == "update" ] ; then
       echo "build dir $EDIR/build found. Updating code in that subdirectory"
       rsync -avhL $sourcedir/ $targetdir/
-      rsync -avhL $sourcedir_cice/ $targetcicedir/
       rsync -avhL $sourceconfdir/ $targetconfdir/
    else 
       echo "build dir $EDIR/build found. Using code in that subdirectory [not updated with code in $sourcedir]"
@@ -334,33 +314,31 @@ fi
 [ -f $EDIR/hycom_feature_flags  ] && cp $EDIR/hycom_feature_flags $targetdir
 
 # Set up correct eq of state for hycom
-#stmt=stmt_fns_SIGMA${MYTHFLAG}_${TERMS}term.h
-#cd $targetdir
-#echo "Now setting up stmt_fns.h in $targetdir"
-#rm stmt_fns.h
-#ln -s ALT_CODE/$stmt stmt_fns.h
-echo "Now compiling cice in $targetcicedir. $ICEFLG" 
+stmt=stmt_fns_SIGMA${MYTHFLAG}_${TERMS}term.h
+cd $targetdir
+echo "Now setting up stmt_fns.h in $targetdir"
+rm stmt_fns.h
+ln -s ALT_CODE/$stmt stmt_fns.h
+echo "Now compiling cice in $targetdir. $ICEFLG" 
+echo $sourcedir
 if [ ${ICEFLG} -eq 2 ] ; then
 	echo $MACROID
 	# 1) Compile CICE. Environment variables need to be passe to script
-	cd $targetcicedir
-       env RES=gx3 GRID=${IDM}x${JDM} debug=${debug} SITE=$SITE MACROID=$MACROID ./comp_ice.esmf
+	cd $targetdir/CICE/
+ 	env RES=gx3 GRID=${IDM}x${JDM} SITE=$SITE MACROID=$MACROID ./comp_ice.esmf
 	res=$?
 	if [ $res -ne 0 ] ; then 
    		echo
    		echo "Error when compiling CICE, see above "
   		 exit $res
 	fi
-# renove cice.o as this contains main and it is not needed for coupled runs
-rm $targetcicedir/rundir/compile/CICE.o
 fi
 # Create hycom objects and final hycom_cice executable. 
 cd $targetdir
 if [ $ICEFLG -ne 0 ] ; then
     echo "Now compiling hycom_cice in $targetdir."
     #env ARCH=$MACROID csh Make_cice.csh
-    env csh Make_nersc_hycom_cice.csh ${MACROID} ${ICEFLG}
-    env csh Make_nersc_hycom_cice.csh ${MACROID} ${ICEFLG} ${debug}
+    env csh Make_cice.csh ${MACROID} ${ICEFLG}
     res=$?
     if [ $res -ne 0 ] ; then
         echo
@@ -372,6 +350,7 @@ else
     export ICEFLG=${ICEFLG}
     export ARCH=${MACROID}
     echo $ARCH
+ 
     csh Make_hycom.csh ${MACROID} ${ICEFLG}
     res=$?
     if [ $res -ne 0 ] ; then
@@ -380,4 +359,4 @@ else
         exit $res
     fi
 fi
-exit
+

@@ -16,28 +16,19 @@
 # EXTRALIBS:  Extra local libraries (if any).
 #
 #INCLUDES      = -I/cluster/software/netCDF-Fortran/4.4.4-intel-2017a-HDF5-1.8.18/include  -I${ESMF_MOD_DIR} -I${ESMF_DIR}include -I./CICE/rundir/compile
-INCLUDES      = -I${ESMF_MOD_DIR} -I${ESMF_DIR}include -I../CICE/rundir/compile
+INCLUDES      = -I${ESMF_MOD_DIR} -I${ESMF_DIR}include -I./CICE/rundir/compile
 
 FC            = mpifort 
 #FCFFLAGS      =	-traceback -g -O2 -fp-model source -warn nogeneral -convert big_endian -assume byterecl -real-size 64 -integer-size 32 
-#TILL OLD FCFFLAGS      =	-convert big_endian -assume byterecl -cm -vec_report0 -w -O3 -tpp7 -xW -r8 
-ifeq ($(debug), debug)
-FCFFLAGS      = -convert big_endian -traceback -xHost -g -fp-model precise -no-fma -ftz -align array64byte -r8 -warn nogeneral -diag-disable 10212 -qopenmp -check bounds -fpe0
-else
-FCFFLAGS      = -convert big_endian -O2 -fp-model precise -no-fma -ftz -align array64byte -qopenmp -r8 -warn nogeneral -diag-disable 10212
-endif
-
+FCFFLAGS      =	-g -convert big_endian -assume byterecl -cm -vec_report0 -w -O3 -tpp7 -xW -r8 
 #FCFFLAGS      =	-traceback -g -O2 -check all -fp-stack-check -fp-model source -warn nogeneral -convert big_endian -assume byterecl -real-size 64 -integer-size 32 
 #FCFFLAGS      =	-O2 -fconvert=big-endian -fdefault-real-8 -fdefault-double-8
 
 FCFFLAGS     :=	$(FCFFLAGS) $(INCLUDES)
 
-CC            = mpicc
-ifeq ($(debug), true)
-CCFLAGS       = -O -g
-else
+CC            = mpicc	
 CCFLAGS       =	-O 
-endif
+
 CPP           =	cpp -P
 LD            =	$(FC)
 #LDFLAGS       =	-V $(FCFFLAGS) -shared-intel -mcmodel=medium
@@ -48,8 +39,7 @@ LDFLAGS       =	$(FCFFLAGS) -mcmodel=medium
 #CPPFLAGS      =	-DIA32 -DREAL4
 #
 # if no STOKES:
-CPPFLAGS      = -DIA32 -DREAL8 -DMPI -DSERIAL_IO -DNAN2003 -DTIMER -DRELO -DEOS_SIG0 -DEOS_7T -DNERSC_HYCOM_CICE -DNERSC_USE_ESMF -DNERSC_ATM_CPL -DNERSC_saltflux -DNERSC_T2F
-#CPPFLAGS      = -DIA32 -DREAL8 -DMPI -DSERIAL_IO -DNAN2003 -DTIMER -DRELO -DEOS_SIG0 -DEOS_7T -DNERSC_HYCOM_CICE -DNERSC_USE_ESMF -DNERSC_ATM_CPL -DNERSC_T2F
+CPPFLAGS      = -DIA32 -DREAL8 -DMPI -DSERIAL_IO -DNAN2003 -DTIMER -DRELO -DUSE_ESMF -DUSE_ESMF_5 -DNERSC_HYCOM_CICE
 # for STOKES flag use
 #CPPFLAGS      = -DIA32 -DREAL8 -DMPI -DSERIAL_IO -DNAN2003 -DTIMER -DRELO -DUSE_ESMF -DUSE_ESMF_5 -DNERSC_HYCOM_CICE -DSTOKES
 #EXTRALIBS     = -L${ESMF_LIB_DIR}/ -lesmf -pgcpplibs  
