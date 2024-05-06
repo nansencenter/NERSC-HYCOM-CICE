@@ -107,6 +107,8 @@ module mod_hycom_fabm
    character(len=attribute_length) :: nested_variables(256)
    logical :: nested_bio
 
+   logical :: stop_here
+
    integer :: pCO2unit, yCO2init, nyearCO2,modelyear,modelmonth
    character(len=80)  :: co2str
    real    :: co2_seasonality(12),modelday,modeltime,pair
@@ -706,16 +708,21 @@ contains
 call check_finite("AFTER VERTICAL", m)
 call check_finite("AFTER VERTICAL", n)
 #ifdef FABM_CHECK_NAN
+    stop_here = .false.
     do j=1,jj
         do i=1,ii
             if (SEA_P) then
                 if (isnan(swflx_fabm(i,j))) then
                     write (*,*) 'NaN in swflx_fabm:', swflx_fabm(i,j), sswflx (i,j)
-                    stop
+                    stop_here = .true.
                 end if
             end if
         end do
     end do
+    if (stop_here) then
+       call xcstop('(FABM_CHECK_NAN)')
+       stop '(FABM_CHECK_NAN)'
+    end if
 #endif
 
 call fabm_model%prepare_inputs
@@ -767,14 +774,20 @@ call fabm_model%prepare_inputs
             end if
 
 #ifdef FABM_CHECK_NAN
+            stop_here = .false.
             if (any(isnan(tracer(i, j, kbottom(i,j,n), n, :)))) then
               write (*,*) 'NaN after do_bottom:', tracer(i, j, kbottom(i,j,n), n, :), flux(i, :), dp(i, j, kbottom(i,j,n), n)/onem
-              stop
+              stop_here=.true.
             end if
 #endif
           end if
         end do
       end do
+
+      if (stop_here) then
+         call xcstop('(FABM_CHECK_NAN)')
+         stop '(FABM_CHECK_NAN)'
+      end if
 
       if (do_check_state) call check_state('after bottom sources', n, .false.)
       end if
@@ -794,14 +807,21 @@ call check_finite("AFTER BOTTOM", n)
             fabm_surface_state(i, j, n, :) = fabm_surface_state(i, j, n, :) + delt1 * sms_sf(i, :)
             tracer(i, j, 1, n, :) = tracer(i, j, 1, n, :) + delt1 * flux(i, :)/dp(i, j, 1, n)*onem
 #ifdef FABM_CHECK_NAN
+            stop_here = .false.
             if (any(isnan(tracer(i, j, 1, n, :)))) then
               write (*,*) 'NaN after do_surface:', tracer(i, j, 1, n, :), flux(i, :), dp(i, j, 1, n)/onem
-              stop
+              stop_here = .true.
             end if
 #endif
           end if
         end do
       end do
+
+      if (stop_here) then
+         call xcstop('(FABM_CHECK_NAN)')
+         stop '(FABM_CHECK_NAN)'
+      end if
+
       if (do_check_state) call check_state('after surface sources', n, .false.)
       end if
 
@@ -817,6 +837,7 @@ call check_finite("BEFORE INTERIOR", n)
                tracer(1:ii, j, k, n, ivar) = tracer(1:ii, j, k, n, ivar) + delt1 * sms(1:ii, ivar)
             end do
 #ifdef FABM_CHECK_NAN
+            stop_here = .false.
             if (any(isnan(sms))) then
               do ivar=1,size(fabm_model%interior_state_variables)
                 if (any(isnan(sms(1:ii, ivar)))) write (*,*) 'NaN in sms:',ivar,sms(1:ii, ivar)
@@ -825,11 +846,17 @@ call check_finite("BEFORE INTERIOR", n)
               do ivar=1,size(fabm_model%interior_state_variables)
                 write (*,*) 'state:',ivar,tracer(1:ii, j, k, m, ivar)
               end do
-              stop
+              stop_here = .true.
             end if
 #endif
         end do
       end do
+
+      if (stop_here) then
+         call xcstop('(FABM_CHECK_NAN)')
+         stop '(FABM_CHECK_NAN)'
+      end if
+
 call check_finite("AFTER INTERIOR", m)
 call check_finite("AFTER INTERIOR", n)
       if (do_check_state) call check_state('after interior sources', n, .false.)
@@ -922,12 +949,13 @@ call fabm_model%finalize_outputs
         enddo
       enddo
 
+      stop_here = .false.
       do k=1,kk
         do j=1,jj
           call fabm_model%check_interior_state(1, ii, j, k, repair, valid_int)
           if (.not.(valid_int.or.repair)) then
             write (*,*) 'Invalid interior state '//location
-            stop
+            stop_here = .true.
           end if
         end do
       end do
@@ -936,9 +964,14 @@ call fabm_model%finalize_outputs
         call fabm_model%check_bottom_state(1, ii, j, repair, valid_bt)
         if (.not.(valid_sf.and.valid_bt).and..not.repair) then
           write (*,*) 'Invalid interface state '//location
-          stop
+          stop_here = .true.
         end if
       end do
+
+      if (stop_here) then
+         call xcstop('(check_state)')
+         stop '(check_state)'
+      end if
 
 !      do ivar=1,size(fabm_model%interior_state_variables)
 !        if (.not.all(ieee_is_finite(tracer(1:ii, 1:jj, 1:kk, index, ivar)))) then
@@ -1021,12 +1054,18 @@ call fabm_model%finalize_outputs
         end do
       end if
 
+      stop_here = .false.
       do ivar=1,size(fabm_model%interior_state_variables)
         if (.not.all(ieee_is_finite(tracer(1:ii, 1:jj, 1:kk, index, ivar)))) then
           write (*,*) location, 'Interior state variable not finite:', ivar,'range', minval(tracer(1:ii, 1:jj, 1:kk, index, ivar)), maxval(tracer(1:ii,1:jj, 1:kk, index, ivar)),fabm_model%interior_state_variables(ivar)%name
-          stop
+          stop_here = .true.
         end if
       end do
+
+      if (stop_here) then
+         call xcstop('(check_state)')
+         stop '(check_state)'
+      end if
 
       call update_fabm_state(old_index)
     end subroutine check_state
@@ -1036,6 +1075,8 @@ call fabm_model%finalize_outputs
       character(len=*), intent(in) :: location
       integer, intent(in) :: index
       integer:: ivar,i,j
+
+      stop_here = .false.
       do ivar=1,size(fabm_model%interior_state_variables)
         do i=1,ii
            do j=1,jj
@@ -1043,12 +1084,18 @@ call fabm_model%finalize_outputs
                  if (.not.all(ieee_is_finite(tracer(i, j, 1:kk, index, ivar)))) then
                     write (*,*) location, index,'Interior state variable not finite:', ivar,'range', minval(tracer(i, j, 1:kk, index, ivar)), maxval(tracer(i,j, 1:kk, index, ivar)),fabm_model%interior_state_variables(ivar)%name
                     write (*,*) location, index,'Interior state variable not finite:',kbottom(i,j,index),tracer(i, j, 1:kk, index, ivar)
-                    stop
+                    stop_here = .true.
                  end if
               end if
            end do
         end do
       end do
+
+      if (stop_here) then
+         call xcstop('(check_finite)')
+         stop '(check_finite)'
+      end if
+
     end subroutine check_finite
 
     subroutine check_dsnk(location,index)
