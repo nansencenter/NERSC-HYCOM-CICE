@@ -16,9 +16,11 @@ mkdir topo
 ```
 cp $HOME/NERSC-HYCOM-CICE/input/REGION.src .
 ```
-- Get the grid information from the model in questions, this can be found on the CMIP6 server: you need the file for the varible "areacello" and "deptho" and put in the same folder.
+- Get the grid information from the model in questions, this can be found on the CMIP6 server: you need the file for the varible "areacello" and "deptho" and put in topo-folder.
 - From the experiment folder run script:
-`../bin/Nesting_noresm/make_grid_noresm2hycom.py path_to_grid_files/areacello_file.nc` 
+```
+../bin/Nesting_noresm/make_grid_noresm2hycom.py ../topo/areacello_file.nc
+```
 This will generate the regional.depth and regional.grid-files for the global mode grid.
 - Place these in the topo-folder
 - From the experiment folder run script:
