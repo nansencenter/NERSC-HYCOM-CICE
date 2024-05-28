@@ -47,8 +47,21 @@ This will generate the regional.depth and regional.grid-files for the global mod
 
 		
 ## Biogeochamical nesting: Download the nesting-files needed: for physics: no3, po4, si, o2, these are decadal files.
-- In order to have files that have values at all ocean points from the coarse ESM-grid, the annual files are pre-processed before generating the boundary conditions.
-		b. ../bin/Nesting_noresm/separate_and_extrapolate_files_year.sh $varible $year, can also be called in the  script:
+- Download the nesting-files needed: for BGC: no3, po4, si, and o2, make sure you get the files on a with varibles on z-levels (if the model is not a z-level model).
+- In order to have files that have values at all ocean points from the coarse ESM-grid, the annual files are pre-processed before generating the boundary conditions:
+```
+../bin/Nesting_noresm/separate_and_extrapolate_files_year.sh  $varible $year
+```
+- This can also be called in the script:
+```
+../bin/Nesting_noresm/Generate_nesting_files_year.sh $year
+```
+- The bias corection happend in this step, see *Generating files with model bias used for bias correction* below for how to make files for bias correction.
+- For NorESM, the files for bias correction can be found on Fram in /cluster/projects/nn9481k/NORESM_bias/
+- Once the ESM files have been prepared the nesting condioting can be generated using the following command, which must be called from the experiment-directory of ESMa1.00:
+```
+../bin/Nesting_noresm/noresm_to_hycom.sh ../../TZ4a0.10/expt_01.1/ ../../NORESM_Nesting/thetao_Omon_NorESM2-MM_historical_r1i1p1f1_gr_195512_extrap.nc -b <path_to_bgc_files>
+```
 
 ## Generating files with model bias used for bias correction
 - Find the representaive period of the climatology you are using.
