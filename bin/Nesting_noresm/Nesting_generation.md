@@ -12,7 +12,10 @@ ln -sf $HOME/NERSC-HYCOM-CICE/bin .
 mkdir expt_01.0
 mkdir topo
 ```
-- Copy REGION.src to this directory
+- Copy REGION.src to this directory and make sure R and NHCROOT are defined correctly.
+```
+cp $HOME/NERSC-HYCOM-CICE/input/REGION.src .
+```
 - Get the grid information from the model in questions, this can be found on the CMIP6 server: you need the file for the varible "areacello" and "deptho" and put in the same folder.
 - From the experiment folder run script:
 `../bin/Nesting_noresm/make_grid_noresm2hycom.py path_to_grid_files/areacello_file.nc` 
