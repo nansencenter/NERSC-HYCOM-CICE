@@ -23,10 +23,11 @@ cp $HOME/NERSC-HYCOM-CICE/input/REGION.src .
 ```
 This will generate the regional.depth and regional.grid-files for the global mode grid.
 - Place these in the topo-folder
-- From the experiment folder run script:
-`../bin/isuba_gmapi.sh. $target_region` to genreate the mapping from the global model to the regional hycom.
-		
-		
+- From the experiment folder run the following script to genreate the mapping from the global model to the regional hycom.:
+```
+../bin/isuba_gmapi.sh. $target_region
+```
+			
 ## Physical nesting conditions 
 - Download the nesting-files needed: for physics: uo, vo, zos, thetao, so, these are decadal files.
 - In order to have files that have values at all ocean points from the coarse ESM-grid, the annual files are pre-processed before generating the boundary conditions
