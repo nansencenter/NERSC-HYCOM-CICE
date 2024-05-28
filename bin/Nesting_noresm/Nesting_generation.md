@@ -47,12 +47,12 @@ This will generate the regional.depth and regional.grid-files for the global mod
 
 		
 ## Biogeochamical nesting: Download the nesting-files needed: for physics: no3, po4, si, o2, these are decadal files.
-		a. In order to have files that have values at all ocean points from the coarse ESM-grid, the annual files are pre-processed before generating the boundary conditions.
+- In order to have files that have values at all ocean points from the coarse ESM-grid, the annual files are pre-processed before generating the boundary conditions.
 		b. ../bin/Nesting_noresm/separate_and_extrapolate_files_year.sh $varible $year, can also be called in the  script:
 
 ## Generating files with model bias used for bias correction
-- Find the representaive period of the climatology
-- Generate a climatology from the earth system model
+- Find the representaive period of the climatology you are using.
+- Generate a climatology from the earth system model for the represetative period.
 - Regrid the observational climatolgy to the ESM grid, below a certain depth, seasonal rather than monthly values must be used.
 - This can be done uaing the script `Create_climatology_for_bias_correction.sh'
 - 
