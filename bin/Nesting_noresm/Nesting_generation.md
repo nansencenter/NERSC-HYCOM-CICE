@@ -12,22 +12,30 @@ ln -sf $HOME/NERSC-HYCOM-CICE/bin .
 mkdir expt_01.0
 mkdir topo
 ```
-- Copy REGION.src to this directory and make sure R and NHCROOT are defined correctly.
+- Copy REGION.src to this directory and make sure R=ESMa1.00 and NHCROOT points to the HYCOM-code in your home directory.
 ```
 cp $HOME/NERSC-HYCOM-CICE/input/REGION.src .
 ```
-- Get the grid information from the model in questions, this can be found on the CMIP6 server: you need the file for the varible "areacello" and "deptho" and put in topo-folder.
+- Get the grid information from the model in questions, this can be found on the CMIP6 server: you need the file for the varible "areacello" and "deptho" and put in topo-folder. Find the spatial dimentions of these files as it is input to the routine below.
 - From the experiment folder run script:
 ```
-../bin/Nesting_noresm/make_grid_noresm2hycom.py ../topo/areacello_file.nc
+../bin/Nesting_noresm/make_grid_noresm2hycom.py ../topo/areacello_file.nc ../topo/deptho_file.nc --idm <x-dimention> --jdm <y-dimention>
 ```
-This will generate the regional.depth and regional.grid-files for the global mode grid.
-- Place these in the topo-folder
-- From the experiment folder run the following script to generate the mapping from the global model to the regional hycom.:
+This will generate the regional.depth and regional.grid-files for the global mode grid, copy these and move everyting to the topo-folder:
 ```
-../bin/isuba_gmapi.sh. $target_region
+cp dummped_depth_ESMa1.00_01.a depth_ESMa1.00_01.a
+cp dummped_depth_ESMa1.00_01.b depth_ESMa1.00_01.b
+cp dummped_regional.grid.a regional.grid.a
+cp dummped_regional.grid.b regional.grid.b
+mv dummped_* ../topo/
+mv depth_* ../topo/
+mv regional.* ../topo/
 ```
-do we need to copy blkdat to experimetn folder?
+
+- From the ESMa1.00-folder run the following script to generate the mapping from the global model to the regional hycom:
+```
+./bin/isuba_gmapi.sh. <path_to_regional_model_folder>
+```
 			
 ## Physical nesting conditions 
 - Download the nesting-files needed: for physics: uo, vo, zos, thetao, so, make sure you get the files on a with varibles on z-levels (if the model is not a z-level model).
