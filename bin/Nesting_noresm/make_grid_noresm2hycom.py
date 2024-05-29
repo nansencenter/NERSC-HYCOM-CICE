@@ -28,7 +28,7 @@ import geopy.distance as gpd
 #
 # Usage:
 #
-# ../bin/Nesting_noresm/make_grid_noresm2hycom.py /nird/projects/nird/NS9481K/annettes/O2OCEAN/grid/areacello_Ofx_NorESM2-MM_historical_r1i1p1f1_gn.nc
+# ../bin/Nesting_noresm/make_grid_noresm2hycom.py /nird/projects/nird/NS9481K/annettes/O2OCEAN/grid/areacello_Ofx_NorESM2-MM_historical_r1i1p1f1_gn.nc /nird/projects/nird/NS9481K/annettes/O2OCEAN/grid/deptho_Ofx_NorESM2-MM_historical_r3i1p1f1_gn.nc --idm 380 --jdm 365
 #
 # Mostafa Bakhoday-Paskyabi, 16 May 2019.
 # History:
@@ -56,7 +56,7 @@ def f_to_hycom_q(field,extrapolate="none")  :
 
 
 
-def make_grid(meshfile ,idm=360,jdm=385):
+def make_grid(meshfile,depthfile,idm,jdm):
     
     ncidg=netCDF4.Dataset(meshfile,"r")
     # AS: since the data are on a regular grid only plon and plat are needed.
@@ -156,8 +156,7 @@ def make_grid(meshfile ,idm=360,jdm=385):
     abfile.write_regional_grid(ddict)
 
     # Bathymetry
-    NORESM_depth="/nird/projects/nird/NS9481K/annettes/O2OCEAN/grid/deptho_Ofx_NorESM2-MM_historical_r3i1p1f1_gn.nc"
-    dncid=netCDF4.Dataset(NORESM_depth,"r")
+    dncid=netCDF4.Dataset(depthfile,"r")
     hdepw  = np.squeeze(dncid.variables["deptho"][:,:])
     mbathy = np.squeeze(dncid.variables["deptho"][:,:])
     dncid.close()
@@ -181,10 +180,11 @@ if __name__ == "__main__" :
     parser = argparse.ArgumentParser(
           description='This tool will convert NORESM netcdf files to hycom archive files. It will also create grid and topo files for hycom.'
           )
-    parser.add_argument('meshfile',   type=str,help="NEMO mesh file in netcdf format")
+    parser.add_argument('meshfile',   type=str,help="ESM mesh file in netcdf format")
+    parser.add_argument('depthfile',  type=str,help="ESM depth file in netcdf format")
     parser.add_argument('--idm',    type=int,default=360,  help="    ")
     parser.add_argument('--jdm',    type=int,default=385,  help="    ")
 
     args = parser.parse_args()
     
-    make_grid(args.meshfile,idm=args.idm,jdm=args.jdm )
+    make_grid(args.meshfile,args.depthfile,idm=args.idm,jdm=args.jdm )
