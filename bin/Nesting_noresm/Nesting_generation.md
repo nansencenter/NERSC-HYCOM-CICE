@@ -39,6 +39,7 @@ mv regional.* ../topo/
 			
 ## Physical nesting conditions 
 - Download the nesting-files needed: for physics: uo, vo, zos, thetao, so, make sure you get the files on a with varibles on z-levels (if the model is not a z-level model).
+- If you have not yet created bias-correction files for salinity and temperature, go to that step at the bottom.
 - In order to have files that have values at all ocean points from the coarse ESM-grid, the annual files are pre-processed before generating the boundary conditions:
 ```
 ../bin/Nesting_noresm/separate_and_extrapolate_files_year.sh  $varible $year
@@ -74,6 +75,7 @@ mv regional.* ../topo/
 
 ## Generating files with model bias used for bias correction
 - Find the representaive period of the climatology you are using.
+- Use the script Create_NORESM_climatology.sh, set "syear" start year, "eyear" end year, and "cstr" appropriate to the file names and run the script.
 - Generate a climatology from the earth system model for the represetative period.
 - Regrid the observational climatolgy to the ESM grid, below a certain depth, seasonal rather than monthly values must be used.
 - This can be done uaing the script `Create_climatology_for_bias_correction.sh'
