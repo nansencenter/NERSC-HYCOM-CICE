@@ -27,6 +27,7 @@ This will generate the regional.depth and regional.grid-files for the global mod
 ```
 ../bin/isuba_gmapi.sh. $target_region
 ```
+do we need to copy blkdat to experimetn folder?
 			
 ## Physical nesting conditions 
 - Download the nesting-files needed: for physics: uo, vo, zos, thetao, so, make sure you get the files on a with varibles on z-levels (if the model is not a z-level model).
