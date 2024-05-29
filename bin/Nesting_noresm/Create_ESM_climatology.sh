@@ -14,7 +14,7 @@ for ((year=$syear; year<=$eyear; year+=1)); do
       cdo selyear,${year} ${vari}${cstr}${dec}001-${dec}912.nc ${vari}${cstr}${year}.nc
       for ((mon=1; mon<=12;mon+=1)); do
          smon=`echo -n 0$mon | tail -2c`
-	 cdo selmon,${mon} ${vari}${cstr}${year}_grid.nc ${vari}${cstr}${year}_${smon}.nc
+	 cdo selmon,${mon} ${vari}${cstr}${year}.nc ${vari}${cstr}${year}_${smon}.nc
       done
    done
 done
