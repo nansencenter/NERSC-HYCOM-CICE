@@ -75,7 +75,7 @@ mv regional.* ../topo/
 
 ## Generating files with model bias used for bias correction
 - Find the representaive period of the climatology you are using.
-- Use the script Create_NORESM_climatology.sh, set "syear" start year, "eyear" end year, and "cstr" appropriate to the file names and run the script.
+- Use the script Create_ESM_climatology.sh, set "syear" start year, "eyear" end year, and "cstr" appropriate to the file names and run the script.
 - Generate a climatology from the earth system model for the represetative period.
 - Regrid the observational climatolgy to the ESM grid, below a certain depth, seasonal rather than monthly values must be used.
 - This can be done uaing the script `Create_climatology_for_bias_correction.sh'
