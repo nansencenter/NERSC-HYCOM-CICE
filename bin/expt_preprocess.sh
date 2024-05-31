@@ -241,7 +241,7 @@ echo "--------------------"
 
 # Check that start time is in September when starting from climatology                                                           
 if [ "$initstr" == "--init" ] ;then
-    if [ "start_month" != "09" ]; then
+    if [ "$start_month" != "09" ]; then
         tellerror "We recommend starting the model in September when starting from \                                             
 climatology. You can override September initilization by commenting out \                                                        
 this line in expt_preprocess.sh  and including the warning below"
