@@ -321,6 +321,7 @@ T
 NONE
 NONE
 NONE
+NONE
 EOF
 else
 test1=${target_archv:0:5}
