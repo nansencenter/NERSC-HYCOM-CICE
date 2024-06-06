@@ -215,8 +215,8 @@ S-Z(15-11): dp00/f/x/i=3m/1.125/12m/1m; ds=1m/1.125/4m; src_2.2.12;
    0      'priver' = rivers as a precipitation bogas      (0=F,1=T)
    0      'triver' = total river including Greenland      (0=F,1=T)
    0     'epmass' = treat evap-precip as a mass exchange (0=F,1=T)
-   0     'nmrsti' = 'restart'  Restart filename. Dot and date appended. Empty: use old hycom name.
-   0     'nmrsto' = 'restart'  Restart filename. Dot and date appended. Empty: use old hycom name.
-   0     'nmarcs' = '' Surface archive filename. Dot and date appended. Empty: use old hycom name.
-   0     'nmarcv' = '' Full    archive filename. Dot and date appended. Empty: use old hycom name.
-   0     'nmarcm' = '' Mean    archive filename. Dot and date appended. Empty: use old hycom name.
+   1   'nmrsti' = 'TP5restart'  Restart filename. Dot and date appended. Empty: use old hycom name.
+   1   'nmrsto' = 'TP5restart'  Restart filename. Dot and date appended. Empty: use old hycom name.
+   1    'nmarcs' = 'TP5archs' Surface archive filename. Dot and date appended. Empty: use old hycom name.
+   1    'nmarcv' = 'TP5archv' Full    archive filename. Dot and date appended. Empty: use old hycom name.
+   1    'nmarcm' = 'TP5archm' Mean    archive filename. Dot and date appended. Empty: use old hycom name.
