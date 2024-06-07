@@ -174,7 +174,7 @@ contains
     ! read atmospheric CO2 time-series
     pCO2unit = 2640
     yCO2init = 1948
-    nyearCO2 = 74 ! last data year = 2021
+    nyearCO2 = 76 ! last data year = 2023
     co2_seasonality = [1.8552,2.7411,3.7847,4.6522,4.2706,1.1206,-4.3468,-8.6286,-7.9663,-3.7896,1.8954,3.0054]
       
     end subroutine hycom_fabm_configure
