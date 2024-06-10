@@ -278,10 +278,15 @@ contains
          read(nop,316) ctitle,df%iversn,df%iexpt,df%yrflag
          !!get dump time from filename
          !!TODO: what if under 1 hour?
-         ! RUNID stamp in filebase:
-         read(df%filebase(10:13),'(i4.4)') df%iyear
-         read(df%filebase(15:17),'(i3.3)') df%iday
-         read(df%filebase(19:20),'(i2.2)') df%ihour
+         if (trim(df%filebase(1:4))=='arch') then
+            read(df%filebase(7:10),'(i4.4)') df%iyear
+            read(df%filebase(12:14),'(i3.3)') df%iday
+            read(df%filebase(16:17),'(i2.2)') df%ihour
+         else ! RUNID stamp in filebase:
+            read(df%filebase(10:13),'(i4.4)') df%iyear
+            read(df%filebase(15:17),'(i3.3)') df%iday
+            read(df%filebase(19:20),'(i2.2)') df%ihour
+         end if
          print*,'year is ', df%iyear
          print*,'day is ',df%iday
          print*,'hour is ',df%ihour
