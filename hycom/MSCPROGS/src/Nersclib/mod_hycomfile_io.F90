@@ -278,9 +278,15 @@ contains
          read(nop,316) ctitle,df%iversn,df%iexpt,df%yrflag
          !!get dump time from filename
          !!TODO: what if under 1 hour?
-         read(df%filebase(7:10),'(i4.4)') df%iyear
-         read(df%filebase(12:14),'(i3.3)') df%iday
-         read(df%filebase(16:17),'(i2.2)') df%ihour
+         if (trim(df%filebase(1:4))=='arch') then
+            read(df%filebase(7:10),'(i4.4)') df%iyear
+            read(df%filebase(12:14),'(i3.3)') df%iday
+            read(df%filebase(16:17),'(i2.2)') df%ihour
+         else ! RUNID stamp in filebase:
+            read(df%filebase(10:13),'(i4.4)') df%iyear
+            read(df%filebase(15:17),'(i3.3)') df%iday
+            read(df%filebase(19:20),'(i2.2)') df%ihour
+         end if
          print*,'year is ', df%iyear
          print*,'day is ',df%iday
          print*,'hour is ',df%ihour
@@ -1194,7 +1200,7 @@ contains
       case ('temp') 
          stdname='sea_water_potential_temperature' ; units='degrees_C' ; vname='thetao'
          longname='Sea Temperature'
-         limits=(/-3,50/)
+         limits=(/-2,50/)
       case ('levsaln')
          stdname='sea_water_salinity' ; units='1e-3' ; vname='levitus_salinity'
          limits=(/0,45/)
@@ -1353,7 +1359,7 @@ contains
 !Alfati. More accurate method for computing MLD using density         
       case ('mld')
          units='m' ; vname='mlotst'
-         limits=(/0.,3500./)
+         limits=(/2.9,3500./)
          stdname='ocean_mixed_layer_thickness_defined_by_sigma_theta'
       case ('dpmixl','dp_mixl','dpmix') 
          vname='dpmix'
