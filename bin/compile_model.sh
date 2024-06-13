@@ -117,6 +117,7 @@ echo "$(basename $0) : ARCH=$ARCH"
 # SITE deduced from hostname. 
 unames=$(uname -s)
 unamen=$(uname -n)
+hostnamed=$(hostname -d)
 
 echo $unamen
 # Hardcoded cases - hexagon
@@ -135,10 +136,10 @@ elif [ "${unamen:0:5}" == "alvin" ] ; then
 elif [ "${unamen:0:5}" == "elvis" ] ; then
    SITE="elvis"
    MACROID=$ARCH.$SITE.$compiler
-elif [ "${unamen:8:5}" == "betzy" ] ; then
+elif [ "${hostnamed:0:5}" == "betzy" ] ; then
    SITE="betzy"
    MACROID=$ARCH.$SITE.$compiler
-elif [ "${unamen:0:5}" == "login" ] ; then # fram
+elif [ "${hostnamed:0:4}" == "fram" ] ; then # fram
    SITE="fram"
    MACROID=$ARCH.$SITE.$compiler
 # Generic case. SITE is empty
