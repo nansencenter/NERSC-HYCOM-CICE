@@ -51,7 +51,7 @@ EXTRALIBS     = -L${ESMF_LIB_DIR}/ -lesmf_fullylinked -lfftw3 -lmkl -lnetcdff -l
 
 ifeq ($(COMPILE_BIOMODEL), yes) 
    CPPFLAGS      += -D_FABM_ -I${HOME}/local/fabm/hycom/include
-   EXTRALIBS     += -L${HOME}/local/fabm/hycom/lib -lfabm
+   EXTRALIBS     += -L${HOME}/local/fabm/hycom/lib64 -lfabm
 endif
 
 #
