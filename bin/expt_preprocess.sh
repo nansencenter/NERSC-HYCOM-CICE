@@ -239,6 +239,16 @@ echo "tstart is $tstart"
 echo "tstop  is $tstop"
 echo "--------------------"
 
+# Check that start time is in September when starting from climatology                                                           
+if [ "$initstr" == "--init" ] ;then
+    if [ "$start_month" != "09" ]; then
+        tellerror "We recommend starting the model in September when starting from \                                             
+climatology. You can override September initilization by commenting out \                                                        
+this line in expt_preprocess.sh  and including the warning below"
+#       tellwarn "We recommend starting the model in September when starting from climatology"                                   
+    fi
+fi
+
 #C
 #C --- turn on detailed debugging.
 #C
@@ -431,7 +441,7 @@ fi
 #
 if [ $TRCRLX -ne 0 -o $NTRACR -eq -1 ] ; then
    echo "**Setting up tracer relaxation"
-   for i in ECO_no3 ECO_pho ECO_sil ECO_oxy CO2_dic CO2_alk; do
+   for i in ECO_no3 ECO_pho ECO_sil ECO_oxy CO2_TA CO2_c; do
       j=$(echo $i | head -c7)
       [ ! -f  $BASEDIR/relax/${E}/relax.$j.a ] && tellerror "$BASEDIR/relax/${E}/relax.$j.a does not exist"
       [ ! -f  $BASEDIR/relax/${E}/relax.$j.b ] && tellerror "$BASEDIR/relax/${E}/relax.$j.b does not exist"
@@ -624,6 +634,7 @@ else
         fi
         for dn in `seq -w ${start_oday} ${end_day}`; do
          python ../calc_montg1.py /cluster/work/users/achoth/TP5a0.06/nest/080_NewMontg/archv.${yy}_${dn}_00.b  /cluster/work/users/achoth/TP5a0.06/expt_08.1/data/${filename}.b  ${nestdir}/
+#         python $BINDIR/calc_montg1.py $BASEDIR/nest/$E/archv.${yy}_${dn}_00.b  $BASEDIR/expt_$X/data/${filename}.b  ${nestdir}/
         done
        done
        echo " Nesting Files Modified Successfully "
@@ -633,7 +644,7 @@ else
 #     
    elif [ -f $D/${filename}_mem001.a -a -f $D/${filename}_mem001.b ]; then
       echo "using HYCOM restart files ${filename}_mem???.[ab] from data dir $D"
-      for f in ${plink} $D/${filename}_mem*.? ; do
+      for f in $D/${filename}_mem*.? ; do
          ${plink} $f .
       done
 

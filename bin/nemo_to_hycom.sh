@@ -26,13 +26,13 @@ options=$(getopt -o b:m -- "$@")
 }
 grid_type=native
 maxinc=50
-bio_path=""
+bio_file=""
 eval set -- "$options"
 while true; do
     case "$1" in
     -b)
        shift;  
-       bio_path=$1
+       bio_file=$1
         ;;
     -m) 
        grid_type=regular
@@ -58,9 +58,9 @@ if [ $# -lt 2 ] ; then
     echo "when running this script"
     echo ""
     echo "Example:"
-    echo "   ../bin/nemo_to_hycom.sh ../../TP5a0.06/expt_01.0/ ../MERCATOR-PHY-24-2011-01-02*.nc -m regular"
-    echo " ../bin/nemo_to_hycom.sh ../../TP5a0.06/expt_01.2/  /nird/projects/nird/NS9481K/MERCATOR_DATA/PHY/2007/ext-GLORYS12V1_1dAV_20070302_20070303_grid2D_R20070307.nc -m native"
-    echo "../bin/nemo_to_hycom.sh ../../TP5a0.06/expt_01.0/ /nird/projects/nird/NS9481K/MERCATOR_DATA/PHY/2013/ext-GLORYS12V1_1dAV_2013110*_grid2D*.nc -b /nird/projects/nird/NS2993K/MERCATOR_DATA/BIO/2013"
+    echo "   ../bin/nemo_to_hycom.sh ../../TP5a0.06/expt_01.0/ /nird/projects/NS9481K/MERCATOR_DATA/PHY/2011/MERCATOR-PHY-24-2011-01-02*.nc -m regular"
+    echo " ../bin/nemo_to_hycom.sh ../../TP5a0.06/expt_01.2/  /nird/projects/NS9481K/MERCATOR_DATA/PHY/2007/ext-GLORYS12V1_1dAV_20070302_20070303_grid2D_R20070307.nc -m native"
+    echo "../bin/nemo_to_hycom.sh ../../TP5a0.06/expt_01.0/ /nird/projects/NS9481K/MERCATOR_DATA/PHY/2013/ext-GLORYS12V1_1dAV_2013110*_grid2D*.nc -b /nird/projects/NS9481K/MERCATOR_DATA/BIO/DAILY/2013/global_analysis_forecast_bio_2013110*.nc"
     echo " NOTE YOU NEED TO RUN THIS SCRIPT WITHIN THE NEMO EXPERIMENT FOLDER"
     exit 1
 fi
@@ -158,7 +158,7 @@ for source_archv in $@ ; do
    #
    ########################
    if [ ${grid_type} == "native" ] ; then
-      if [[ "${bio_path}" == "" ]] ; then
+      if [[ "${bio_file}" == "" ]] ; then
       ${BASEDIR}/bin/nemo2archvz_native.py $mercator_gridfiles $source_archv --iexpt ${iexpt} --iversn ${iversn} --yrflag ${yrflag}
       ########################
       #
@@ -169,7 +169,7 @@ for source_archv in $@ ; do
       ########################
    
       else
-      ${BASEDIR}/bin/nemo2archvz_native.py $mercator_gridfiles $source_archv --bio_path=${bio_path}  --iexpt ${iexpt} --iversn ${iversn} --yrflag ${yrflag}
+      ${BASEDIR}/bin/nemo2archvz_native.py $mercator_gridfiles $source_archv --bio_file=${bio_file}  --iexpt ${iexpt} --iversn ${iversn} --yrflag ${yrflag}
       ########################
       #
       # (2) Based on generated archive files in (1) the grid and topography files are generated.
@@ -180,7 +180,7 @@ for source_archv in $@ ; do
 
       fi
    else
-      if [[ "${bio_path}" == "" ]] ; then
+      if [[ "${bio_file}" == "" ]] ; then
       ${BASEDIR}/bin/nemo2archvz_regular.py $mercator_regular_mesh $source_archv --iexpt ${iexpt} --iversn ${iversn} --yrflag ${yrflag}      
       ########################
       #
@@ -191,7 +191,7 @@ for source_archv in $@ ; do
       ########################
       else
 
-      ${BASEDIR}/bin/nemo2archvz_regular.py $mercator_regular_mesh $source_archv --bio_path=${bio_path}  --iexpt ${iexpt} --iversn ${iversn} --yrflag ${yrflag}
+      ${BASEDIR}/bin/nemo2archvz_regular.py $mercator_regular_mesh $source_archv --bio_file=${bio_file}  --iexpt ${iexpt} --iversn ${iversn} --yrflag ${yrflag}
       ########################
       #
       # (2) Based on generated archive files in (1) the grid and topography files are generated.
