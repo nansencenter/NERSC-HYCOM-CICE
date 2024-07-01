@@ -16,8 +16,7 @@
 # EXTRALIBS:  Extra local libraries (if any).
 #
 OASIS_DIR     = /cluster/projects/nn9878k/guibou/NANUK/oa3-mct_iimpi2022a/
-LIBPSMILE     = $(OASIS_DIR)/lib/libpsmile.MPI1.a $(OASIS_DIR)/lib/libmct.a $(OASIS_DIR)/lib/libmpeu.a $(OASIS_DIR)/lib/libscrip.
-a
+LIBPSMILE     = $(OASIS_DIR)/lib/libpsmile.MPI1.a $(OASIS_DIR)/lib/libmct.a $(OASIS_DIR)/lib/libmpeu.a $(OASIS_DIR)/lib/libscrip.a
 LIBBUILD      = $(OASIS_DIR)/build/lib
 INCLUDES      = -I$(NETCFD_DIR)/include/
 

@@ -1,1 +1,1 @@
-make.betzy.ifort
+make.fram.ifort
