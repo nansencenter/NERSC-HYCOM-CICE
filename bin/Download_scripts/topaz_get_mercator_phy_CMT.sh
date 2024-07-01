@@ -1,15 +1,15 @@
 #!/bin/bash
-#SBATCH --job-name=TPZ_get_mercator.9
+##--------------------------------User-Specification
+#SBATCH --job-name=TPZ_get_mercator
 #SBATCH --time=01:00:00
 #SBATCH -n 1
-#SBATCH -o  ./GETMERC_9_t.out 
+#SBATCH -o  ${HOME}/TOPAZ5/NEMO/GETMERC_t.out 
 
-exec 1> ${HOME}/sea/TOPAZ5/NEMO/get_mercator_phys_9.log 2>&1
+exec 1> ${HOME}/TOPAZ5/NEMO/get_mercator_phys_9.log 2>&1
 
-DATADIR=${HOME}/sea/TOPAZ5/NEMO
+DATADIR=${HOME}/TOPAZ5/NEMO
 start_time=`date +%s`
 
-#--------------------------------User-Specification
 # Define the start and end dates
 start_date="2024-01-01"
 end_date="2024-01-10"
@@ -104,10 +104,12 @@ for (( current_sec=$start_sec; current_sec<=$end_sec; current_sec+=86400 )); do
       echo "get mercator finished"
       # if exist merge files with CDO
       if [ -s ${DATADIR}/global_analysis_forecast_phy1_${date1}.nc ] ; then
+         pushd ${DATADIR} 
          echo "cdo -z zip_1 merge global_analysis_forecast_phy{1..4}_${date1}.nc global_analysis_forecast_phy_${date1}.nc"
          cdo -z zip_1 merge global_analysis_forecast_phy{1..4}_${date1}.nc global_analysis_forecast_phy_${date1}.nc
          # remove partial files
          rm -f global_analysis_forecast_phy[1234]_${date1}.nc
+         popd
       fi
       echo "get_mercator job FINISHED" > ${DATADIR}/get_mercator_9.end_msg
    else

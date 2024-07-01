@@ -1,15 +1,15 @@
 #!/bin/bash
-#SBATCH --job-name=TPZ_get_mercator.9
+##--------------------------------User-specification
+#SBATCH --job-name=TPZ_get_mercator_bio
 #SBATCH --time=01:00:00
 #SBATCH -n 1
-#SBATCH -o  ./GETMERC_9_t.out 
+#SBATCH -o  ${HOME}/TOPAZ5/NEMO/GETMERC_bio_t.out 
 
-exec 1> ${HOME}/sea/TOPAZ5/NEMO/get_mercator_bio_9.log 2>&1
+exec 1> ${HOME}/TOPAZ5/NEMO/get_mercator_bio.log 2>&1
 
-DATADIR=${HOME}/sea/TOPAZ5/NEMO
+DATADIR=${HOME}/TOPAZ5/NEMO
 start_time=`date +%s`
 
-#--------------------------------User-specification
 # Define the start and end dates
 start_date="2024-01-01"
 end_date="2024-01-10"
