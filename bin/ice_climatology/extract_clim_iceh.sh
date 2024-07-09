@@ -84,7 +84,7 @@ Isst=0   # Switch on sss/sst processing ofr Isst=1,otherwise switch off
 if [ -s ${Fini} -a -s ${Ftmpmask} ]; then
    [ -s ${Fout} ] && rm ${Fout}
    echo "interpolating ... "
-   module load CDO/1.9.10-iimpi-2022a
+   ml load CDO/2.0.6-gompi-2022a
    cdo remapbil,${Ftmpmask} ${Fini} ${Fout}
 
    ml load NCO/5.1.3-iimpi-2022a
