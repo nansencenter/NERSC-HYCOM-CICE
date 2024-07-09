@@ -172,5 +172,5 @@ echo ".."
 
 echo "If things went fine, you can now generate test forcing like this: "
 echo "    atmo_synoptic.sh erai 2001-01-01T00:00:00  2001-01-05T00:00:00"
-echo "Then edit the job script pbsjob.sh to read and make sure expt_preprocess.sh is called like this"
+echo "Then edit the job script srjob.sh to read and make sure expt_preprocess.sh is called like this"
 echo "    expt_preprocess.sh 2001-01-01T00:00:00 2001-01-05T00:00:00 --init "
