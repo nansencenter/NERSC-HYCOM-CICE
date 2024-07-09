@@ -121,25 +121,27 @@ hostnamed=$(hostname -d)
 
 echo $unamen
 # Hardcoded cases - hexagon
-if [ "${unamen:0:7}" == "hexagon" ] ; then
+if [[ "${unamen}" == *hexagon* ]] ; then
    SITE="hexagon"
    MACROID=$ARCH.$SITE.$compiler
 
-elif [ "${unamen:5:5}" == "bullx" ] ; then
+elif [[ "${unamen}" == *bullx* ]] ; then
    SITE="surfsara"
    MACROID=$ARCH.$SITE.$compiler
 
-elif [ "${unamen:0:5}" == "alvin" ] ; then
+elif [[ "${unamen}" == *alvin* ]] ; then
    SITE="alvin"
    MACROID=$ARCH.$SITE.$compiler
 
-elif [ "${unamen:0:5}" == "elvis" ] ; then
+elif [[ "${unamen}" == *elvis* ]] ; then
    SITE="elvis"
    MACROID=$ARCH.$SITE.$compiler
-elif [ "${hostnamed:0:5}" == "betzy" ] ; then
+
+elif [[ "${hostnamed}" == *betzy* ]] ; then
    SITE="betzy"
    MACROID=$ARCH.$SITE.$compiler
-elif [ "${hostnamed:0:4}" == "fram" ] ; then # fram
+
+elif [[ "${hostnamed}" == *fram* ]] ; then
    SITE="fram"
    MACROID=$ARCH.$SITE.$compiler
 # Generic case. SITE is empty
