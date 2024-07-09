@@ -34,10 +34,12 @@
 ##(( ncores = SLURM_NNODES * 24 ))
 ##(( ncores = SLURM_NNODES * 32 ))  #on Fram
 
-module load NCL/6.6.2-intel-2018b
-module load FFTW/3.3.8-intel-2018b
-module load Python/2.7.15-intel-2018b
-
+module restore system
+module load FFTW/3.3.10-GCC-11.3.0
+module load ESMF/8.3.0-intel-2022a
+module load Python/3.10.4-GCCcore-11.3.0
+module load UDUNITS/2.2.28-GCCcore-11.3.0
+module load intel/2022a
 
 export NMPI=220
 export SLURM_SUBMIT_DIR=$(pwd)
