@@ -15,8 +15,8 @@
 # Basic software requires:
 # 1) python 3; cdo and nco modules; 
 #    For example on Betzy:
-#    ml load CDO/1.9.9-iompi-2020a
-#    ml load NCO/4.9.7-iomkl-2020a
+#    ml load CDO/1.9.10-iimpi-2022a
+#    ml load NCO/5.1.3-iimpi-2022a
 # 2) target model grid information and ice grid files;
 # 3) link the ice_kmt.nc to the present work directory;
 # 4) the iceh climatology file as the source file for interpolation.
@@ -26,17 +26,12 @@
 ###############################################################################
 # First check the relevant model grid files:
 #
-echo "It requires the model grid files to be available!"
-if [ $# -eq 1 ]; then
-   Targetmoddir=$1
-else
-   echo "Default run in a test case in TP5"
-   Targetmoddir='/cluster/work/users/xiejp/TOPAZ/TP5a0.06/topo'
-fi
+echo "It requires the model grid files to be available under present directory !"
+Targetmoddir='./'
 files1="regional.grid regional.depth"
 i0=0
 for ifile in ${files1}; do
-   file0=${Targetmoddir}/${ifile}
+   file0=${Targetmoddir}${ifile}
    if [ ! -s ${file0}.a -o ! -s ${file0}.b ]; then
       (( i0 = i0 + 1 ))
    fi
@@ -89,10 +84,10 @@ Isst=0   # Switch on sss/sst processing ofr Isst=1,otherwise switch off
 if [ -s ${Fini} -a -s ${Ftmpmask} ]; then
    [ -s ${Fout} ] && rm ${Fout}
    echo "interpolating ... "
-   module load CDO/1.9.9-iompi-2020a
+   ml load CDO/2.0.6-gompi-2022a
    cdo remapbil,${Ftmpmask} ${Fini} ${Fout}
 
-   ml load NCO/4.9.7-iomkl-2020a
+   ml load NCO/5.1.3-iimpi-2022a
    echo "Defaulting the values for different masks ... "
    ncks -v ${Vars} ${Fout} ${Ftmp}  
    ncrename -h -O -v siconc,aice_raw -v sithick,hi_raw ${Ftmp}  
@@ -127,4 +122,29 @@ if [ -s ${Fini} -a -s ${Ftmpmask} ]; then
        rm ice_?.nc inter_mask
      fi
    fi 
+
+   # removing the target file to updirectory
+   if [ $# -eq 1 -a -s ${Fnew} ]; then
+      Edir=$1
+      mv ${Fnew} ${Edir}.
+      cd ${Edir} 
+      if [ -s ice_in ]; then
+         iice=$(grep -n "ocn_data_dir" ice_in | awk -F ":" '{print $1}')
+         if [ ${iice} -gt 0 ]; then
+            [ -s ice_new ] && rm ice_new
+            awk -F " " '{
+               if (FNR=='$iice') 
+                  {print " ",$1,$2,"  ",$3,"\047../\047"}
+               else
+                  {print $0}
+            }' ice_in | tr -d '\r' > ice_new
+            [ -s ice_new ] && mv ice_new ice_in
+         fi
+      else
+         echo "Warning: missing ice_in!"
+         echo "Please manually check 'ocn_data_dir' accessible to ice_initial.nc"
+         echo ""
+      fi
+
+   fi
 fi
