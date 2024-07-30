@@ -2,8 +2,8 @@
 module load CDO/1.9.10-iimpi-2022a
 
 # Variables on regular grid
-lname=NorESM2-MM_historical_r1i1p1f1_gr
-#lname=NorESM2-MM_ssp585_r1i1p1f1_gr
+#lname=NorESM2-MM_historical_r1i1p1f1_gr
+lname=NorESM2-MM_ssp585_r1i1p1f1_gr
 
 year=$1
 vari=$2
@@ -15,13 +15,16 @@ if [ $year -le 2014 ]; then
 elif [ $(($year % 10)) -eq 0 ]; then
    dyear=$((year-1))
    d1=${dyear:0:3}
+   d2=${year:0:3}
 else
    d1=${year:0:3}
+   dyear=$((year+10))
+   d2=${dyear:0:3}
 fi
 
 if [ "$vari" != "zos" ]; then
 #### Extract to monthly files for 3D varibales
-   cdo selyear,${year} ${varie}_${lname}_${d1}001-${d1}912.nc \
+   cdo selyear,${year} ${varie}_${lname}_${d1}101-${d2}012.nc \
                       ${varie}_${lname}_${year}_grid.nc
    for ((mon=1; mon<=12; mon+=1)); do
       smon=`echo -n 0$mon | tail -2c`

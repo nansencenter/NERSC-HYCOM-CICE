@@ -1,6 +1,6 @@
 #! /bin/bash
-# Name: noresm2archvz.py
-# Purpose: Convert NORESM data to HYCOM archive files in isopycnal coordinates
+#
+# Purpose: Convert ESM data to HYCOM archive files in isopycnal coordinates
 # Author: Mostafa Bakhoday-Paskyabi (Mostafa.Bakhoday@nersc.no)
 # Created: October 2017
 # Copyright: (c) NERSC Norway 2017
@@ -17,7 +17,8 @@
 # (2) May 2019: some correction on biophys [ab] files, Mostafa Bakhoday-Paskyabi
 # (3) July 9 2019, accounting for both bio & phy nesting.
 # (4) July 11 2019, further imporvment.
-# (5) August 2022, Modify to work with output from NORESM.
+# (5) Annette: August 2022 - Modify to work with output from NORESM.
+# (5) Annette: June 2024 - Modify to work with output from any ESM.
 
 options=$(getopt -o b:m -- "$@")
 [ $? -eq 0 ] || {
@@ -53,7 +54,7 @@ if [ $# -lt 2 ] ; then
     echo "    and 3D fields of temperaure, salinity, thickness, and two components of velocities."
     echo ""
     echo "Example:"
-    echo " ../bin/Nesting_noresm/noresm_to_hycom.sh ../../TZ2a0.10/expt_06.0/  ../../NORESM_Nesting/thetao_Omon_NorESM2-MM_historical_r1i1p1f1_gr_194001_extrap.nc"
+    echo " ../bin/Nesting_noresm/esm_to_hycom.sh ../../TZ2a0.10/expt_06.0/  ../../NORESM_Nesting/thetao_Omon_NorESM2-MM_historical_r1i1p1f1_gr_194001_extrap.nc"
     echo " NOTE YOU NEED TO RUN THIS SCRIPT WITHIN THE ESMa1.00 EXPERIMENT FOLDER"
     exit 1
 fi
@@ -77,7 +78,7 @@ data_path=$expt_path/data
 #
 export nest_expt=$1
 export ncfiles=$2
-export esm_gridfile=${ESM_NATIVE_MESH}   #areacello_Ofx_NorESM2-MM_historical_r1i1p1f1_gn.nc
+export esm_gridfile=${ESM_NATIVE_MESH}   #This is set in REGION.src of the global model
 #
 iexpt=01        #$T
 iversn=22
@@ -106,21 +107,21 @@ END
 #
 for source_archv in $@ ; do
    fn=$(echo ${source_archv})
-   [[ $source_archv != *"Omon_NorESM2-MM"*"extrap.nc" ]] && continue
+   [[ $source_archv != *${ESM_ID}*"extrap.nc" ]] && continue
    filename=$source_archv 
    #
    # (1) Create archive [ab] files from the MERCATOR netcdf file.
    #
    ########################
    if [[ "${bio_path}" == "" ]] ; then
-      ${BASEDIR}/bin/Nesting_noresm/noresm2archvz.py ${esm_gridfile} $source_archv \
-          --iexpt ${iexpt} --iversn ${iversn} --yrflag ${yrflag}
+      ${BASEDIR}/bin/Nesting_noresm/esm2archvz.py ${esm_gridfile} $source_archv \
+          --iexpt ${iexpt} --iversn ${iversn} --yrflag ${yrflag} --esm_id ${ESM_ID}
       ########################
       #                                       
       # (2) Based on generated archive files in (1) the grid and topography files are generated.
       #
       echo  $(model_datetime "$source_archv")                                              
-      ########################                                                            
+      ########################
       ${BASEDIR}/bin/archvz2hycom_biophys.sh $nest_expt $(model_datetime "$source_archv")
       ########################
    else

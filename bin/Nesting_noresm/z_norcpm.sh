@@ -2,14 +2,14 @@
 
 # KAL - get X from input
 if [ $# -ne 3 ] ; then
-   echo "This script will set up relaxation files from the NORESM monthly files. The "
+   echo "This script will set up relaxation files from the NORCPM monthly files. The "
    echo "fileds will be given on z-levels, and interpolated in "
    echo "the horizontal - also onto land points. The resulting files"
    echo "are needed for setting up the relaxation files to be used in"
    echo "HYCOM."
    echo
    echo "The input is ksigma (0 or 2) and the start and end year"
-   echo "netcdf-filed have been regridded to a regular grid from NORESM"
+   echo "netcdf-filed have been regridded to a regular grid from NORCPM"
    exit
 fi
 export KSIGMA=$1
@@ -54,7 +54,7 @@ pget=cp
 pput=cp
 
 #
-# --- Interpolate NORESM filed to a HYCOM region.
+# --- Interpolate NORCPM filed to a HYCOM region.
 # --- KSIGMA=0 for _sig0_ fields
 #
 #
@@ -63,18 +63,18 @@ pput=cp
 # --- D is permanent directory,
 # --- L is Levitus   directory (LEVITUS_PATH)
 #
-D=$BASEDIR/relax/noresm/
+D=$BASEDIR/relax/norcpm/
 S=$D/SCRATCH
-L=$NORESM_CLIM_PATH/
-[  "${L}" == ""  ] && { echo "NORESM_PATH is not set " ; exit 1; }
-[ ! -d $L ] && { echo "Cant find NORESM_PATH directory $L" ; exit 1; }
+L=$NORCPM_CLIM_PATH/
+[  "${L}" == ""  ] && { echo "NORCPM_CLIM_PATH is not set " ; exit 1; }
+[ ! -d $L ] && { echo "Cant find NORCPM_CLIM_PATH directory $L" ; exit 1; }
 
 mkdir -p $S
 cd       $S || { echo " Could not descend scratch dir $S" ; exit 1;}
 
 
-touch   z_noresm
-/bin/rm z_noresm
+touch   z_norcpm
+/bin/rm z_norcpm
 touch regional.grid.a regional.grid.b
 rm    regional.grid.a regional.grid.b
 #
@@ -92,8 +92,8 @@ echo MONTH=$CMM
    # --- ftp://obelix.rsmas.miami.edu/awall/hycom/levitus_for_hycom.tar.gz
    #
    
-   export CDF_TEMP=$NORESM_PATH/Relax/thetao_Omon_NorESM2-MM_historical_r1i1p1f1_gr_${year}${CMM}_rgrid.nc
-   export CDF_SALN=$NORESM_PATH/Relax/so_Omon_NorESM2-MM_historical_r1i1p1f1_gr_${year}${CMM}_rgrid.nc
+   export CDF_TEMP=${NORCPM_CLIM_PATH}thetao_Omon_NorCPM1_historical_r20i1p1f1_gr_${year}s${CMM}_rgrid.nc
+   export CDF_SALN=${NORCPM_CLIM_PATH}so_Omon_NorCPM1_historical_r20i1p1f1_gr_${year}s${CMM}_rgrid.nc
 
    if [ ! -s regional.grid.b ] ; then
      ${pget} ${BASEDIR}/topo/regional.grid.b regional.grid.b || { echo "Cant copy regional.grid.b "; exit 1 ; }
@@ -101,22 +101,22 @@ echo MONTH=$CMM
    if [ ! -s regional.grid.a ] ; then
      ${pget} ${BASEDIR}//topo/regional.grid.a regional.grid.a || { echo "Cant copy regional.grid.a "; exit 1 ; }
    fi
-   touch z_noresm
+   touch z_norcpm
    if [ ! -s  z_woa2013_bio ] ; then
-     ${pget} ${MSCPROGS}/src/Relax/z_noresm .  || { echo "Cant copy z_woa2013_bio "; exit 1 ; }
+     ${pget} ${MSCPROGS}/src/Relax/z_norcpm .  || { echo "Cant copy z_woa2013_bio "; exit 1 ; }
    fi
    wait
 
-   chmod a+rx z_noresm
+   chmod a+rx z_norcpm
    /bin/rm -f core
    touch core
 
    /bin/rm -f fort.10 fort.010a fort.11 fort.011a fort.12 fort.012a
 
-   ./z_noresm <<E-o-D
+   ./z_norcpm <<E-o-D
     &AFTITL
      CTITLE = '1234567890123456789012345678901234567890',
-     CTITLE = 'NORESM     monthly',
+     CTITLE = 'NORCPM     monthly',
     /
     &AFFLAG
      ICTYPE =   3,
