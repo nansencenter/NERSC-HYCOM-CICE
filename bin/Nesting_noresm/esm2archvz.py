@@ -138,7 +138,7 @@ def search_biofile(bio_path,dt):
 
    logger.info("BIO")
    # filename format for NORESM: var_id+"_Omon_NorESM2-MM_historical_r1i1p1f1_gr_195408_extrap.nc"
-   lst=glob.glob(bio_path+"no3_Omon_NorESM2-MM_historical_r1i1p1f1_gr_195408_extrap%s_extrap.nc"%str(dt[:-2]))
+   lst=glob.glob(bio_path+"no3_"+esm_id_+"_gr_195408_extrap%s_extrap.nc"%str(dt[:-2]))
    df = np.zeros(len(lst))*np.nan 
    val, idx = min((val, idx) for (idx, val) in enumerate(np.abs(df)))
    return idx,lst[idx]
@@ -229,7 +229,7 @@ def check_inputs(x, y, Z, points, mode, bounds_error):
     return x, y, Z, xi, eta
 
 
-def main(filemesh,grid2dfiles,first_j=0,mean_file=True,iexpt=10,iversn=22,yrflag=3,bio_path=None) :
+def main(filemesh,grid2dfiles,first_j=0,mean_file=True,iexpt=10,iversn=22,yrflag=3,bio_path=None,esm_id=None) :
 
    if mean_file :
       fnametemplate="archm.%Y_%j_%H"
@@ -247,9 +247,7 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=True,iexpt=10,iversn=22,yrflag
 
       # See if actually a grid2D file
       dirname=os.path.dirname(file2d)
-      print(dirname)
-      print(os.path.basename(file2d))
-      m=re.match("(thetao_Omon_NorESM2-MM)(_.*\.nc)",os.path.basename(file2d))
+      m=re.match("(thetao)(_.*\.nc)",os.path.basename(file2d))
       if not m :
          msg="File %s is not a grid2D file, aborting"%file2d
          logger.error(msg)  
@@ -257,6 +255,8 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=True,iexpt=10,iversn=22,yrflag
 
       filepath=os.path.dirname(file2d)
       filename=os.path.basename(file2d)
+      print(filepath)
+      print(filename)
       # Construct remaining files
       filet  =file2d
       files  =filepath + "/so" + filename[6:]
@@ -536,13 +536,14 @@ if __name__ == "__main__" :
          )
    parser.add_argument('--first-j',   type=int,default=0,help="first j-index to process. Defaults to 0")
    parser.add_argument('--mean',   action="store_true",default=False,help="if mean flag is set, a mean archive will be created")
-   parser.add_argument('meshfile',   type=str,help="NEMO mesh file in netcdf format")
-   parser.add_argument('grid2dfile', type=str, nargs="+",help="NEMO 2D data file in netcdf format")
+   parser.add_argument('meshfile',   type=str,help="ESM mesh file in netcdf format")
+   parser.add_argument('grid2dfile', type=str, nargs="+",help="ESM 2D data file in netcdf format")
    parser.add_argument('--iexpt',    type=int,default=10,  help="    ")
    parser.add_argument('--iversn',   type=int,default=22,  help="    ")
    parser.add_argument('--yrflag',   type=int,default=3,   help="    ")
    parser.add_argument('--bio_path',   type=str,   help="    ")
    parser.add_argument('--interp_method',   type=int,default=3,   help="    ")
+   parser.add_argument('--esm_id',   type=str,default="thetao_Omon_NorESM2-MM_historical_r1i1p1f1",   help="    ")
 
    args = parser.parse_args()
-   main(args.meshfile,args.grid2dfile,first_j=args.first_j,mean_file=args.mean,iexpt=args.iexpt,iversn=args.iversn,yrflag=args.yrflag,bio_path=args.bio_path)
+   main(args.meshfile,args.grid2dfile,first_j=args.first_j,mean_file=args.mean,iexpt=args.iexpt,iversn=args.iversn,yrflag=args.yrflag,bio_path=args.bio_path,esm_id=args.esm_id)
