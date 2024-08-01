@@ -57,7 +57,7 @@ ifeq ($(IO_TYPE), netcdf)
 endif
 
 INCLDIR := $(INCLDIR) -I$(ESMF_DIR)include -I$(ESMF_MOD_DIR)
-SLIBS := -lesmf  $(SLIBS) -L$(ESMF_LIB_DIR) 
+SLIBS := -lesmf_fullylinked  $(SLIBS) -L$(ESMF_LIB_DIR) 
 
 
 

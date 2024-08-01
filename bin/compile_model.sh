@@ -117,6 +117,7 @@ echo "$(basename $0) : ARCH=$ARCH"
 # SITE deduced from hostname. 
 unames=$(uname -s)
 unamen=$(uname -n)
+hostnamed=$(hostname -d)
 
 echo $unamen
 # Hardcoded cases - hexagon
@@ -135,10 +136,10 @@ elif [ "${unamen:0:5}" == "alvin" ] ; then
 elif [ "${unamen:0:5}" == "elvis" ] ; then
    SITE="elvis"
    MACROID=$ARCH.$SITE.$compiler
-elif [ "${unamen:8:5}" == "betzy" ] ; then
+elif [ "${hostnamed:0:5}" == "betzy" ] ; then
    SITE="betzy"
    MACROID=$ARCH.$SITE.$compiler
-elif [ "${unamen:0:5}" == "login" ] ; then # fram
+elif [ "${hostnamed:0:4}" == "fram" ] ; then # fram
    SITE="fram"
    MACROID=$ARCH.$SITE.$compiler
 # Generic case. SITE is empty
@@ -184,7 +185,6 @@ elif [ "$SITE" == "fram" ] ; then
    export ESMF_LIB_DIR=${ESMF_DIR}lib/
 
 elif [ "$SITE" == "betzy" ] ; then
-   ##export ESMF_DIR=/cluster/software/ESMF/8.0.1-intel-2020a/
    export ESMF_DIR=${EBROOTESMF}/
    export ESMF_MOD_DIR=${ESMF_DIR}mod/
    export ESMF_LIB_DIR=${ESMF_DIR}lib/
@@ -321,7 +321,7 @@ rm stmt_fns.h
 ln -s ALT_CODE/$stmt stmt_fns.h
 echo "Now compiling cice in $targetdir. $ICEFLG" 
 echo $sourcedir
-if [ $ICEFLG -eq 2 ] ; then
+if [ ${ICEFLG} -eq 2 ] ; then
 	echo $MACROID
 	# 1) Compile CICE. Environment variables need to be passe to script
 	cd $targetdir/CICE/

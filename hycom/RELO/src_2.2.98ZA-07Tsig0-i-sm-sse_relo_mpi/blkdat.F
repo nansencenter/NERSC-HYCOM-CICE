@@ -1149,7 +1149,7 @@ c
       trcrin = ntracr.gt.0  ! positive from restart, otherwise initialize
 #ifdef _FABM_
       call hycom_fabm_configure()
-      ntracr = size(fabm_model%state_variables)
+      ntracr = size(fabm_model%interior_state_variables)
 #else
       ntracr = abs(ntracr)
 #endif
@@ -2131,7 +2131,6 @@ c
       endif
 #endif 
 
-CMOSTAFA: BEGIN
 c ---  s w i t c h e s  for calculating net radiation fluxes  (0=not,
 c ---  1=using black body & input SST, 2=using HYCOM SST)
 c

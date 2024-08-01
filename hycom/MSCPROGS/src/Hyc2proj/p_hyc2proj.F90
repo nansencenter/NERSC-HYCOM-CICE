@@ -70,9 +70,9 @@ program p_hyc2proj
    real, allocatable, dimension(:,:,:) :: hy3d, regu3d, regusp3d, depthint, &
       hy3d2,pres, levint, temp, sal, dens
 !AS06092011 - adding biological variables for MyOcean
-   real, allocatable, dimension(:,:,:) :: fla, dia, nit, pho, oxy, pp, biovar,s1000
+   real, allocatable, dimension(:,:,:) :: fla, dia, nit, pho, oxy, pp, biovar,s1000,ccl
    real, allocatable, dimension(:,:,:) :: u,v
-   real, allocatable, dimension(:,:,:) :: micro, meso, sil,dic,ph,det, pco2
+   real, allocatable, dimension(:,:,:) :: micro, meso, sil,dic,ph,det, pco2,dsnk,dom
    real, allocatable, dimension(:,:)   :: biovar2d
    real, allocatable, dimension(:,:)   :: hy2d, hy2d2, regu2d, strmf, &
       mld1, mld2, dplayer, meanssh, sla, ub, vb, mqlon, mqlat
@@ -487,8 +487,11 @@ program p_hyc2proj
                   do k=1,kdm
                     call HFReaduvtot(hfile,u(:,:,k),v(:,:,k),idm,jdm,k,1)
                   end do
-                  call vertical_velocity(u,v,pres,biovar,scpx,scpy,scux,scvy,plon,plat,depths,onem,idm,jdm,kdm)
+                  call w_velocity(u,v,pres,biovar,scpx,scpy,scux,scuy,scvx,scvy,plon,plat,depths,onem,idm,jdm,kdm)
+                  !call vertical_velocity(u,v,pres,biovar,scpx,scpy,scux,scvy,plon,plat,depths,onem,idm,jdm,kdm)
                   hy3d=biovar
+                  !convert units from m s-1 to m day-1
+                  hy3d=hy3d*24.0*3600.0
                   deallocate(u,v,biovar)
 
                else if (trim(fld(ifld)%fextract)=='oxy_nor') then 
@@ -524,12 +527,14 @@ program p_hyc2proj
                   ! Compute chlorophyll a (mg m-3)
                   allocate(dia(idm,jdm,kdm))
                   allocate(fla(idm,jdm,kdm))
+                  allocate(ccl(idm,jdm,kdm))
                   allocate(biovar(idm,jdm,kdm))
                   call HFReadField3D(hfile,dia,idm,jdm,kdm,'ECO_diac     ',1)
                   call HFReadField3D(hfile,fla,idm,jdm,kdm,'ECO_flac     ',1)
-                  call chlorophyll(fla,dia,biovar,idm,jdm,kdm)
+                  call HFReadField3D(hfile,ccl,idm,jdm,kdm,'ECO_cclc     ',1)
+                  call chlorophyll(fla,dia,ccl,biovar,idm,jdm,kdm)
                   hy3d=biovar
-                  deallocate(dia,fla,biovar)
+                  deallocate(dia,fla,ccl,biovar)
                else if (trim(fld(ifld)%fextract)=='nitrate') then
                   ! Compute nitrate (mmole m-3)
                   allocate(nit(idm,jdm,kdm))
@@ -558,12 +563,14 @@ program p_hyc2proj
                   ! Compute phytoplankton biomass (mmoleC m-3)
                   allocate(dia(idm,jdm,kdm))
                   allocate(fla(idm,jdm,kdm))
+                  allocate(ccl(idm,jdm,kdm))
                   allocate(biovar(idm,jdm,kdm))
                   call HFReadField3D(hfile,dia,idm,jdm,kdm,'ECO_dia     ',1)
                   call HFReadField3D(hfile,fla,idm,jdm,kdm,'ECO_fla     ',1)
-                  call pbiomass(dia,fla,biovar,idm,jdm,kdm)
+                  call HFReadField3D(hfile,ccl,idm,jdm,kdm,'ECO_ccl     ',1)
+                  call pbiomass(dia,fla,ccl,biovar,idm,jdm,kdm)
                   hy3d=biovar
-                  deallocate(dia,fla,biovar)
+                  deallocate(dia,fla,ccl,biovar)
                else if (trim(fld(ifld)%fextract)=='zbiomass') then
                   ! Compute zooplankton biomass (mmole C m-3)
                   allocate(micro(idm,jdm,kdm))
@@ -571,7 +578,7 @@ program p_hyc2proj
                   allocate(biovar(idm,jdm,kdm))
                   call HFReadField3D(hfile,micro,idm,jdm,kdm,'ECO_micr   ',1)
                   call HFReadField3D(hfile,meso,idm,jdm,kdm,'ECO_meso    ',1)
-                  call pbiomass(micro,meso,biovar,idm,jdm,kdm)
+                  call zbiomass(micro,meso,biovar,idm,jdm,kdm)
                   hy3d=biovar
                   deallocate(micro,meso,biovar)
                else if (trim(fld(ifld)%fextract)=='oxygen') then
@@ -582,7 +589,15 @@ program p_hyc2proj
                   call oxygen_conv(oxy,biovar,idm,jdm,kdm)
                   hy3d=biovar
                   deallocate(oxy,biovar)
-               else if (trim(fld(ifld)%fextract)=='primprod') then
+               else if (trim(fld(ifld)%fextract)=='netpp') then
+                  ! Compute net primary production (mg m-3 d-1)
+                  allocate(pp(idm,jdm,kdm))
+                  allocate(biovar(idm,jdm,kdm))
+                  call HFReadField3D(hfile,pp,idm,jdm,kdm,'ECO_netp',1)
+                  call pp_conv(pp,biovar,idm,jdm,kdm)
+                  hy3d=biovar
+                  deallocate(pp,biovar)
+               else if (trim(fld(ifld)%fextract)=='grosspp') then
                   ! Compute gross primary production (mg m-3 d-1)
                   allocate(pp(idm,jdm,kdm))
                   allocate(biovar(idm,jdm,kdm))
@@ -594,17 +609,23 @@ program p_hyc2proj
                   ! Compute attenuation coefficient (m-1)
                   allocate(dia(idm,jdm,kdm))
                   allocate(fla(idm,jdm,kdm))
+                  allocate(ccl(idm,jdm,kdm))
+                  allocate(det(idm,jdm,kdm))
+                  allocate(dom(idm,jdm,kdm))
                   allocate(biovar(idm,jdm,kdm))
                   call HFReadField3D(hfile,dia,idm,jdm,kdm,'ECO_diac     ',1)
                   call HFReadField3D(hfile,fla,idm,jdm,kdm,'ECO_flac     ',1)
-                  call attenuation(dia,fla,biovar,idm,jdm,kdm)
+                  call HFReadField3D(hfile,ccl,idm,jdm,kdm,'ECO_cclc     ',1)
+                  call HFReadField3D(hfile,det,idm,jdm,kdm,'ECO_det     ',1)
+                  call HFReadField3D(hfile,dom,idm,jdm,kdm,'ECO_dom     ',1)
+                  call attenuation(dia,fla,ccl,det,dom,biovar,idm,jdm,kdm)
                   hy3d=biovar
-                  deallocate(dia,fla,biovar)
+                  deallocate(dia,fla,ccl,det,dom,biovar)
                else if (trim(fld(ifld)%fextract)=='dic') then
                   ! Compute dissolved inorganic carbon (m-1)
                   allocate(dic(idm,jdm,kdm))
                   allocate(biovar(idm,jdm,kdm))
-                  call HFReadField3D(hfile,dic,idm,jdm,kdm,'CO2_dic     ',1)
+                  call HFReadField3D(hfile,dic,idm,jdm,kdm,'CO2_c     ',1)
                   call dic_conv(dic,biovar,idm,jdm,kdm)
                   hy3d=biovar
                   deallocate(dic,biovar)
@@ -617,9 +638,11 @@ program p_hyc2proj
                 else if (trim(fld(ifld)%fextract)=='detvflux') then
                   ! Compute detritus flux (mg C m-2 day-1)   
                   allocate(det(idm,jdm,kdm))
+                  allocate(dsnk(idm,jdm,kdm))
                   allocate(biovar(idm,jdm,kdm))
                   call HFReadField3D(hfile,det,idm,jdm,kdm,'ECO_det ',1)
-                  call det_bottom_flux(det,biovar,onem,idm,jdm,kdm)
+                  call HFReadField3D(hfile,dsnk,idm,jdm,kdm,'ECO_dsnk ',1)
+                  call det_bottom_flux(det,dsnk,biovar,onem,idm,jdm,kdm)
                   hy3d=biovar
                   deallocate(det,biovar)
                 else if (trim(fld(ifld)%fextract)=='spco2') then
@@ -728,11 +751,19 @@ program p_hyc2proj
                   hy2d=biovar2d
                   deallocate(pp,biovar2d)
 ! FABM
-               else if (trim(fld(ifld)%fextract)=='pp_depth') then
+               else if (trim(fld(ifld)%fextract)=='gpp_int') then
                   ! Compute gross primary production (mgC m-2 d-1)
                   allocate(pp(idm,jdm,kdm))
                   allocate(biovar2D(idm,jdm))
                   call HFReadField3D(hfile,pp,idm,jdm,kdm,'ECO_prim',1)
+                  call primary_production(pp,pres,biovar2d,onem,idm,jdm,kdm)
+                  hy2d=biovar2d
+                  deallocate(pp,biovar2d)
+               else if (trim(fld(ifld)%fextract)=='npp_int') then
+                  ! Compute net primary production (mgC m-2 d-1)
+                  allocate(pp(idm,jdm,kdm))
+                  allocate(biovar2D(idm,jdm))
+                  call HFReadField3D(hfile,pp,idm,jdm,kdm,'ECO_netp',1)
                   call primary_production(pp,pres,biovar2d,onem,idm,jdm,kdm)
                   hy2d=biovar2d
                   deallocate(pp,biovar2d)

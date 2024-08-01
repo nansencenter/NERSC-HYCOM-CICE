@@ -35,7 +35,7 @@ module mod_hycom_fabm
    public hycom_fabm_allocate_mean_output, hycom_fabm_zero_mean_output, hycom_fabm_increment_mean_output, hycom_fabm_end_mean_output, hycom_fabm_write_mean_output
    public fabm_surface_state, fabm_bottom_state
 
-   class (type_model), pointer, save, public :: fabm_model => null()
+   class (type_fabm_model), pointer, save, public :: fabm_model => null()
    real, allocatable :: swflx_fabm(:, :)
    real, allocatable :: wspd_fabm(:,:)
    real, allocatable :: bottom_stress(:, :)
@@ -50,6 +50,7 @@ module mod_hycom_fabm
    real, allocatable :: mass_before_check_state(:, :, :, :)
    real, allocatable :: mass_after_check_state(:)
    real              :: mass_diff_check_state
+   real, allocatable :: spd(:)
 !
    real :: wndstr,strspd
    real, allocatable :: h(:, :,:),delZ(:),codepth(:,:,:),cotemp(:,:,:),cosal(:,:,:),codens(:,:,:)
@@ -63,7 +64,7 @@ module mod_hycom_fabm
    integer, save :: current_time_index = -1
 
    type type_horizontal_output
-      class (type_external_variable), pointer :: metadata => null()
+      class (type_fabm_variable), pointer :: metadata => null()
       real, pointer :: data2d(:,:) => null()
       real, pointer :: data3d(:,:,:) => null()
       real, allocatable :: mean(:,:)
@@ -72,7 +73,7 @@ module mod_hycom_fabm
    type (type_horizontal_output), pointer, save :: first_horizontal_output => null()
 
    type type_interior_output
-      class (type_external_variable), pointer :: metadata => null()
+      class (type_fabm_variable), pointer :: metadata => null()
       real, pointer :: data3d(:,:,:) => null()
       real, pointer :: data4d(:,:,:,:) => null()
       real, allocatable :: mean(:,:,:)
@@ -147,11 +148,11 @@ contains
       select case (configuration_method)
       case (0)
         ! From namelists in fabm.nml - DEPRECATED!!
-        fabm_model => fabm_create_model_from_file(namlst, '../fabm.nml')
+        fabm_model => fabm_create_model('../fabm.nml')
       case (1)
         ! From YAML file fabm.yaml
         allocate(fabm_model)
-        call fabm_create_model_from_yaml_file(fabm_model, '../fabm.yaml')
+        fabm_model => fabm_create_model('../fabm.yaml')
       end select
 
       nested_number=0
@@ -165,15 +166,15 @@ contains
 
       allocate(istate_dev(nested_number))
       do nestn = 1,nested_number
-        do istate=1, size(fabm_model%state_variables)
-        if (nested_variables(nestn) == fabm_model%state_variables(istate)%name) istate_dev(nestn) = istate
+        do istate=1, size(fabm_model%interior_state_variables)
+        if (nested_variables(nestn) == fabm_model%interior_state_variables(istate)%name) istate_dev(nestn) = istate
         enddo
       enddo
 
     ! read atmospheric CO2 time-series
     pCO2unit = 2640
     yCO2init = 1948
-    nyearCO2 = 74 ! last data year = 2021
+    nyearCO2 = 76 ! last data year = 2023
     co2_seasonality = [1.8552,2.7411,3.7847,4.6522,4.2706,1.1206,-4.3468,-8.6286,-7.9663,-3.7896,1.8954,3.0054]
       
     end subroutine hycom_fabm_configure
@@ -200,7 +201,7 @@ contains
         allocate(atmco2(nyearCO2))
         allocate(atmco2_fabm(ii, jj))
 ! used for check_state mass balance
-        allocate(mass_before_check_state(ii,jj,kk,size(fabm_model%state_variables)))
+        allocate(mass_before_check_state(ii,jj,kk,size(fabm_model%interior_state_variables)))
         allocate(mass_after_check_state(kk))
 !
     end subroutine hycom_fabm_allocate
@@ -214,32 +215,33 @@ contains
       integer :: yCO2,tmpyear
 
         ! Provide extents of the spatial domain (number of layers nz for a 1D column)
-        call fabm_set_domain(fabm_model, ii, jj, kk, baclin)
+        call fabm_model%set_domain(ii, jj, kk, baclin)
 
         ! Specify vertical index of surface (constant during simulation)
-        call fabm_model%set_surface_index(1)
+        !call fabm_model%set_surface_index(1)
 
-        call fabm_model%link_interior_data(standard_variables%cell_thickness, h(1:ii, 1:jj, 1:kk))
-        call fabm_model%link_horizontal_data(standard_variables%surface_downwelling_shortwave_flux, swflx_fabm(1:ii, 1:jj))
-        call fabm_model%link_horizontal_data(standard_variables%wind_speed,wspd_fabm(1:ii, 1:jj))
-        call fabm_model%link_horizontal_data(standard_variables%mole_fraction_of_carbon_dioxide_in_air,atmco2_fabm(1:ii,1:jj))
-        call fabm_model%link_horizontal_data(standard_variables%bottom_stress, bottom_stress(1:ii, 1:jj))
+        call fabm_model%link_interior_data(fabm_standard_variables%cell_thickness, h(1:ii, 1:jj, 1:kk))
+        call fabm_model%link_horizontal_data(fabm_standard_variables%surface_downwelling_shortwave_flux, swflx_fabm(1:ii, 1:jj))
+        call fabm_model%link_horizontal_data(fabm_standard_variables%wind_speed,wspd_fabm(1:ii, 1:jj))
+        call fabm_model%link_horizontal_data(fabm_standard_variables%mole_fraction_of_carbon_dioxide_in_air,atmco2_fabm(1:ii,1:jj))
+        call fabm_model%link_horizontal_data(fabm_standard_variables%bottom_stress, bottom_stress(1:ii, 1:jj))
         call fabm_model%link_scalar(type_global_standard_variable(name='time_step', units='s'), delt1)
 
         call update_fabm_data(1, initializing=.true.)  ! initialize the entire column of wet points, including thin layers
 
         ! Check whether FABM has all dependencies fulfilled
         ! (i.e., whether all required calls for fabm_link_*_data have been made)
-        call fabm_check_ready(fabm_model)
+        !call fabm_check_ready(fabm_model)
+        call fabm_model%start
 
         last_interior_output => null()
-        do ivar=1, size(fabm_model%state_variables)
-          if (add_interior_output(fabm_model%state_variables(ivar))) &
+        do ivar=1, size(fabm_model%interior_state_variables)
+          if (add_interior_output(fabm_model%interior_state_variables(ivar))) &
             last_interior_output%data4d => tracer(1:ii, 1:jj, 1:kk, :, ivar)
         end do
-        do ivar=1, size(fabm_model%diagnostic_variables)
-          if (add_interior_output(fabm_model%diagnostic_variables(ivar))) &
-            last_interior_output%data3d => fabm_get_interior_diagnostic_data(fabm_model, ivar)
+        do ivar=1, size(fabm_model%interior_diagnostic_variables)
+          if (add_interior_output(fabm_model%interior_diagnostic_variables(ivar))) &
+            last_interior_output%data3d => fabm_model%get_interior_diagnostic_data(ivar)
         end do
 
         last_horizontal_output => null()
@@ -253,7 +255,7 @@ contains
         end do
         do ivar=1, size(fabm_model%horizontal_diagnostic_variables)
           if (add_horizontal_output(fabm_model%horizontal_diagnostic_variables(ivar))) &
-            last_horizontal_output%data2d => fabm_get_horizontal_diagnostic_data(fabm_model, ivar)
+            last_horizontal_output%data2d => fabm_model%get_horizontal_diagnostic_data(ivar)
         end do
 
         open(unit=pCO2unit, file='co2_annmean_gl.txt',form='formatted')                                                 
@@ -275,7 +277,7 @@ contains
     contains
 
       function add_interior_output(variable) result(saved)
-        class (type_external_variable), target, intent(in) :: variable
+        class (type_fabm_variable), target, intent(in) :: variable
         logical :: saved
 
         type (type_interior_output), pointer :: interior_output
@@ -293,7 +295,7 @@ contains
       end function
 
       function add_horizontal_output(variable) result(saved)
-        class (type_external_variable), target, intent(in) :: variable
+        class (type_fabm_variable), target, intent(in) :: variable
         logical :: saved
 
         type (type_horizontal_output), pointer :: horizontal_output
@@ -320,12 +322,12 @@ contains
       tracer = 0
       do k=1,kk
         do j=1,jj
-            call fabm_initialize_state(fabm_model, 1, ii, j, k)
+            call fabm_model%initialize_interior_state(1, ii, j, k)
         end do
       end do
       do j=1,jj
-          call fabm_initialize_bottom_state(fabm_model, 1, ii, j)
-          call fabm_initialize_surface_state(fabm_model, 1, ii, j)
+          call fabm_model%initialize_bottom_state( 1, ii, j)
+          call fabm_model%initialize_surface_state(1, ii, j)
       end do
 
       ! Copy state from time step = 1 to time step = 2
@@ -342,29 +344,29 @@ contains
       character preambl(5)*79
 
       ! Allocate array to holds units for relaxation files of every pelagic state variable
-      allocate(hycom_fabm_relax(size(fabm_model%state_variables)))
+      allocate(hycom_fabm_relax(size(fabm_model%interior_state_variables)))
 
       ! Default: no relaxation
       hycom_fabm_relax = -1
 
       if (mnproc.eq.1) write (lp,*) 'Looking for relaxation data for pelagic FABM state variables...'
-      do ivar=1,size(fabm_model%state_variables)
+      do ivar=1,size(fabm_model%interior_state_variables)
         ! Check for existence of a file named "relax.<FABMNAME>.a". If present, this will contain the relaxation field (one variable; all k levels)
-        inquire(file=trim(flnmforw)//'relax.'//trim(fabm_model%state_variables(ivar)%name)//'.a', exist=file_exists)
+        inquire(file=trim(flnmforw)//'relax.'//trim(fabm_model%interior_state_variables(ivar)%name)//'.a', exist=file_exists)
         if (file_exists) then
-          if (mnproc.eq.1) write (lp,*) '  - '//trim(fabm_model%state_variables(ivar)%name)//': ON, ' &
-            //trim(flnmforw)//'relax.'//trim(fabm_model%state_variables(ivar)%name)//'.a was found.'
+          if (mnproc.eq.1) write (lp,*) '  - '//trim(fabm_model%interior_state_variables(ivar)%name)//': ON, ' &
+            //trim(flnmforw)//'relax.'//trim(fabm_model%interior_state_variables(ivar)%name)//'.a was found.'
 
           ! Relaxation file exist; assign next available unit.
           hycom_fabm_relax(ivar) = next_unit
           next_unit = next_unit + 1
 
           ! Open binary file (.a)
-          call zaiopf(trim(flnmforw)//'relax.'//trim(fabm_model%state_variables(ivar)%name)//'.a', 'old', hycom_fabm_relax(ivar))
+          call zaiopf(trim(flnmforw)//'relax.'//trim(fabm_model%interior_state_variables(ivar)%name)//'.a', 'old', hycom_fabm_relax(ivar))
 
           ! Open metadata (.b)
           if (mnproc.eq.1) then  ! .b file from 1st tile only
-            open (unit=uoff+hycom_fabm_relax(ivar),file=trim(flnmforw)//'relax.'//trim(fabm_model%state_variables(ivar)%name)//'.b', &
+            open (unit=uoff+hycom_fabm_relax(ivar),file=trim(flnmforw)//'relax.'//trim(fabm_model%interior_state_variables(ivar)%name)//'.b', &
                status='old', action='read')
             read (uoff+hycom_fabm_relax(ivar),'(a79)') preambl
           end if !1st tile
@@ -376,8 +378,8 @@ contains
           end do
         else
           ! Disable relaxation for this tracer
-          if (mnproc.eq.1) write (lp,*) '  - '//trim(fabm_model%state_variables(ivar)%name)//': OFF, ' &
-            //trim(flnmforw)//'relax.'//trim(fabm_model%state_variables(ivar)%name)//'.a not found.'
+          if (mnproc.eq.1) write (lp,*) '  - '//trim(fabm_model%interior_state_variables(ivar)%name)//': OFF, ' &
+            //trim(flnmforw)//'relax.'//trim(fabm_model%interior_state_variables(ivar)%name)//'.a not found.'
           rmutr(:,:,ivar) = 0.0
         end if
       end do
@@ -405,19 +407,19 @@ contains
 
       ! Detect river forcing for pelagic state variables
       if (mnproc.eq.1) write (lp,*) 'Looking for river loadings for pelagic FABM state variables...'
-      do ivar=1,size(fabm_model%state_variables)
+      do ivar=1,size(fabm_model%interior_state_variables)
         ! Check for existence of a file named "rivers.<FABMNAME>.a". If present, this will contain the river loadings for this variable across the entire model grid (one 2d variable; units <UNITS>*m/s)
-        inquire(file=trim(flnmforw)//'rivers.'//trim(fabm_model%state_variables(ivar)%name)//'.a', exist=file_exists)
+        inquire(file=trim(flnmforw)//'rivers.'//trim(fabm_model%interior_state_variables(ivar)%name)//'.a', exist=file_exists)
         if (file_exists) then
-          if (mnproc.eq.1) write (lp,*) '  - '//trim(fabm_model%state_variables(ivar)%name)//': ON, ' &
-            //trim(flnmforw)//'rivers.'//trim(fabm_model%state_variables(ivar)%name)//'.a was found.'
-          input => add_input(trim(flnmforw)//'rivers.'//trim(fabm_model%state_variables(ivar)%name)//'.a', .true.)
+          if (mnproc.eq.1) write (lp,*) '  - '//trim(fabm_model%interior_state_variables(ivar)%name)//': ON, ' &
+            //trim(flnmforw)//'rivers.'//trim(fabm_model%interior_state_variables(ivar)%name)//'.a was found.'
+          input => add_input(trim(flnmforw)//'rivers.'//trim(fabm_model%interior_state_variables(ivar)%name)//'.a', .true.)
           input%roleriver = role_river
           input%ivariable = ivar
         else
           ! Disable river input for this tracer
-          if (mnproc.eq.1) write (lp,*) '  - '//trim(fabm_model%state_variables(ivar)%name)//': OFF, ' &
-            //trim(flnmforw)//'rivers.'//trim(fabm_model%state_variables(ivar)%name)//'.a not found.'
+          if (mnproc.eq.1) write (lp,*) '  - '//trim(fabm_model%interior_state_variables(ivar)%name)//': OFF, ' &
+            //trim(flnmforw)//'rivers.'//trim(fabm_model%interior_state_variables(ivar)%name)//'.a not found.'
         end if
       end do
     end subroutine hycom_fabm_input_init
@@ -550,7 +552,7 @@ contains
       use mod_za
       integer :: ivar
 
-      do ivar=1,size(fabm_model%state_variables)
+      do ivar=1,size(fabm_model%interior_state_variables)
         if (hycom_fabm_relax(ivar) /= -1) then
           if (mnproc.eq.1) then
             rewind uoff+hycom_fabm_relax(ivar)
@@ -568,7 +570,7 @@ contains
     subroutine hycom_fabm_relax_skmonth()
       integer :: ivar, k
 
-      do ivar=1,size(fabm_model%state_variables)
+      do ivar=1,size(fabm_model%interior_state_variables)
         if (hycom_fabm_relax(ivar) /= -1) then
           do k=1,kk
             call skmonth(hycom_fabm_relax(ivar))
@@ -584,7 +586,7 @@ contains
 
       integer :: ivar, k
 
-      do ivar=1,size(fabm_model%state_variables)
+      do ivar=1,size(fabm_model%interior_state_variables)
         if (hycom_fabm_relax(ivar) /= -1) then
           do k= 1,kk
             call hycom_fabm_rdmonthck(trwall(1-nbdy,1-nbdy,k,lslot,ivar), hycom_fabm_relax(ivar), mnth, is_2d=.false.)
@@ -662,10 +664,10 @@ contains
     subroutine hycom_fabm_update(m, n, ibio)
       integer, intent(in) :: m, n, ibio
       integer :: i, k, j, ivar
-
+   
       real :: extinction(ii)
-      real :: sms(ii, size(fabm_model%state_variables))
-      real :: flux(ii, size(fabm_model%state_variables))
+      real :: sms(ii, size(fabm_model%interior_state_variables))
+      real :: flux(ii, size(fabm_model%interior_state_variables))
       real :: sms_bt(ii, size(fabm_model%bottom_state_variables))
       real :: sms_sf(ii, size(fabm_model%surface_state_variables))
       type (type_input), pointer :: input
@@ -699,7 +701,10 @@ contains
         call vertical_movement(n, m, delt1)
         if (do_check_state) call check_state('after vertical_movement', n, .false.)
       end if
-
+!call check_dsnk("AFTER VERTICAL",m)
+!call check_dsnk("AFTER VERTICAL",n)
+call check_finite("AFTER VERTICAL", m)
+call check_finite("AFTER VERTICAL", n)
 #ifdef FABM_CHECK_NAN
     do j=1,jj
         do i=1,ii
@@ -713,24 +718,25 @@ contains
     end do
 #endif
 
-      do k=1,kk
-        do j=1,jj
-          call fabm_get_light_extinction(fabm_model, 1, ii, j, k, extinction)
-#ifdef FABM_CHECK_NAN
-          if (any(isnan(extinction))) then
-            write (*,*) 'NaN in extinction:', extinction
-            stop
-          end if
-#endif
-        end do
-      end do
+call fabm_model%prepare_inputs
+!      do k=1,kk
+!        do j=1,jj
+!          call fabm_get_light_extinction(fabm_model, 1, ii, j, k, extinction)
+!#ifdef FABM_CHECK_NAN
+!          if (any(isnan(extinction))) then
+!            write (*,*) 'NaN in extinction:', extinction
+!            stop
+!          end if
+!#endif
+!        end do
+!      end do
 
-      ! Update light field
-      do i=1,ii
-        do j=1,jj
-            call fabm_get_light(fabm_model, 1, kk, i, j)
-        end do
-      end do
+!      ! Update light field
+!      do i=1,ii
+!        do j=1,jj
+!            call fabm_get_light(fabm_model, 1, kk, i, j)
+!        end do
+!      end do
 
       ! Compute bottom source terms
       if (do_bottom_sources) then
@@ -738,20 +744,20 @@ contains
       do j=1,jj
         flux = 0
         sms_bt = 0
-        call fabm_do_bottom(fabm_model, 1, ii, j, flux, sms_bt)
+        call fabm_model%get_bottom_sources(1, ii, j, flux, sms_bt)
         do i=1,ii
           if (kbottom(i, j, n) > 0) then
             fabm_bottom_state(i, j, n, :) = fabm_bottom_state(i, j, n, :) + delt1 * sms_bt(i, :) ! update sediment layer
-            if ( dp(i, j, kbottom(i,j,n), n)/onem >= 3.0 ) then ! check if the bottom layer is thicker than 3 meters,
+            if ( dp(i, j, kbottom(i,j,n), n)/onem >= 6.0 ) then ! check if the bottom layer is thicker than 6 meters,
                                                                 ! if so, apply the flux as usual (I will decrease the criteria in time)
                 tracer(i, j, kbottom(i,j,n), n, :) = tracer(i, j, kbottom(i,j,n), n, :) + delt1 * flux(i, :)/dp(i, j, kbottom(i,j,n), n)*onem
-            else ! in case less than 3 meters, to avoid accumulation at the bottom thin layers,
-                 ! distribute the flux into multiple layers that add up to > 3 meters thickness
+            else ! in case less than 6 meters, to avoid accumulation at the bottom thin layers,
+                 ! distribute the flux into multiple layers that add up to > 6 meters thickness
               hbottom = 0
               nbottom = 0
               do k = kbottom(i,j,n),1,-1
                 hbottom = hbottom + dp(i ,j , k, n)/onem
-                if ( hbottom >= 3.0 ) exit
+                if ( hbottom >= 6.0 ) exit
                 nbottom = nbottom + 1
               end do
               do k = kbottom(i,j,n)-nbottom , kbottom(i,j,n) ! distribute the flux to total height, and to multiple layers
@@ -773,12 +779,16 @@ contains
       if (do_check_state) call check_state('after bottom sources', n, .false.)
       end if
 
+!call check_dsnk("AFTER BOTTOM",m)
+!call check_dsnk("AFTER BOTTOM",n)
+call check_finite("AFTER BOTTOM", m)
+call check_finite("AFTER BOTTOM", n)
       ! Compute surface source terms
       if (do_surface_sources) then
       do j=1,jj
         flux = 0
         sms_sf = 0
-        call fabm_do_surface(fabm_model, 1, ii, j, flux, sms_sf)
+        call fabm_model%get_surface_sources(1, ii, j, flux, sms_sf)
         do i=1,ii
           if (kbottom(i, j, n) > 0) then
             fabm_surface_state(i, j, n, :) = fabm_surface_state(i, j, n, :) + delt1 * sms_sf(i, :)
@@ -796,21 +806,23 @@ contains
       end if
 
       ! Compute source terms and update state
+call check_finite("BEFORE INTERIOR", m)
+call check_finite("BEFORE INTERIOR", n)
       if (do_interior_sources) then
       do k=1,kk
         do j=1,jj
             sms = 0
-            call fabm_do(fabm_model, 1, ii, j, k, sms)
-            do ivar=1,size(fabm_model%state_variables)
+            call fabm_model%get_interior_sources(1, ii, j, k, sms)
+            do ivar=1,size(fabm_model%interior_state_variables)
                tracer(1:ii, j, k, n, ivar) = tracer(1:ii, j, k, n, ivar) + delt1 * sms(1:ii, ivar)
             end do
 #ifdef FABM_CHECK_NAN
             if (any(isnan(sms))) then
-              do ivar=1,size(fabm_model%state_variables)
+              do ivar=1,size(fabm_model%interior_state_variables)
                 if (any(isnan(sms(1:ii, ivar)))) write (*,*) 'NaN in sms:',ivar,sms(1:ii, ivar)
               end do
               write (*,*) 'NaN in sms'
-              do ivar=1,size(fabm_model%state_variables)
+              do ivar=1,size(fabm_model%interior_state_variables)
                 write (*,*) 'state:',ivar,tracer(1:ii, j, k, m, ivar)
               end do
               stop
@@ -818,9 +830,12 @@ contains
 #endif
         end do
       end do
+call check_finite("AFTER INTERIOR", m)
+call check_finite("AFTER INTERIOR", n)
       if (do_check_state) call check_state('after interior sources', n, .false.)
       end if
-
+call check_finite("AFTER INTERIOR CHECK STATE", m)
+call check_finite("AFTER INTERIOR CHECK STATE", n)
       input => first_input
       do while (associated(input))
         if (input%roleriver == role_river) then
@@ -841,31 +856,35 @@ contains
         input => input%next
       end do
 
+!call check_dsnk("AFTER INTERIOR",m)
+!call check_dsnk("AFTER INTERIOR",n)
+call check_finite("AFTER RIVER", m)
+call check_finite("AFTER RIVER", n)
 ! FABM tracer concentration at the bottom layer is copied to thin layers below by check_sate
 ! To preserve mass, total mass difference is distributed among the bottom layer and below
-      do i=1,ii
-        do j=1,jj
-          do ivar=1,size(fabm_model%state_variables)
-            mass_before_check_state(i, j, :, ivar) = tracer(i, j, :, n, ivar) * dp(i, j, :, n)/onem
-          enddo
-        enddo
-      enddo
+!      do i=1,ii
+!        do j=1,jj
+!          do ivar=1,size(fabm_model%interior_state_variables)
+!            mass_before_check_state(i, j, :, ivar) = tracer(i, j, :, n, ivar) * dp(i, j, :, n)/onem
+!          enddo
+!        enddo
+!      enddo
       
       call check_state('after hycom_fabm_update', n, .true.)
       
-      do i=1,ii
-        do j=1,jj
-          if (SEA_P) then
-             do ivar=1,size(fabm_model%state_variables)
-               mass_after_check_state(:) = tracer(i, j, :, n, ivar) * dp(i, j, :, n)/onem
-               mass_diff_check_state = sum(mass_after_check_state(:)) - sum(mass_before_check_state(i, j, :, ivar))
-               do k=kbottom(i,j,n),kk
-                  tracer(i, j, k, n, ivar) = tracer(i, j, k, n, ivar) - mass_diff_check_state / sum(dp(i, j, kbottom(i,j,n):kk, n)/onem)
-               enddo
-             enddo
-           endif
-        enddo
-      enddo
+!      do i=1,ii
+!        do j=1,jj
+!          if (SEA_P) then
+!             do ivar=1,size(fabm_model%interior_state_variables)
+!               mass_after_check_state(:) = tracer(i, j, :, n, ivar) * dp(i, j, :, n)/onem
+!               mass_diff_check_state = sum(mass_after_check_state(:)) - sum(mass_before_check_state(i, j, :, ivar))
+!               do k=kbottom(i,j,n),kk
+!                  tracer(i, j, k, n, ivar) = tracer(i, j, k, n, ivar) - mass_diff_check_state / sum(dp(i, j, kbottom(i,j,n):kk, n)/onem)
+!               enddo
+!             enddo
+!           endif
+!        enddo
+!      enddo
 !! --------
 
       ! Apply the Robert-Asselin filter to the surface and bottom state.
@@ -874,6 +893,12 @@ contains
       fabm_surface_state(1:ii, 1:jj, m, :) = fabm_surface_state(1:ii, 1:jj, m, :) + 0.5*ra2fac*(fabm_surface_state_old(1:ii, 1:jj, :)+fabm_surface_state(1:ii, 1:jj, n, :)-2.0*fabm_surface_state(1:ii, 1:jj, m, :))
       fabm_bottom_state(1:ii, 1:jj, m, :) = fabm_bottom_state(1:ii, 1:jj, m, :) + 0.5*ra2fac*(fabm_bottom_state_old(1:ii, 1:jj, :)+fabm_bottom_state(1:ii, 1:jj, n, :)-2.0*fabm_bottom_state(1:ii, 1:jj, m, :))
 
+!call check_dsnk("AFTER ROBERT",m)
+!call check_dsnk("AFTER ROBERT",n)
+call check_finite("AFTER ROBERT", m)
+call check_finite("AFTER ROBERT", n)
+
+call fabm_model%finalize_outputs
     end subroutine hycom_fabm_update
 
     subroutine check_state(location, index, repair)
@@ -882,15 +907,24 @@ contains
       integer, intent(in) :: index
       logical, intent(in) :: repair
 
-      logical :: valid_int, valid_sf, valid_bt
-
-      integer :: i, j, k, ivar, old_index
+      logical :: valid_int, valid_sf, valid_bt, repair_dsnk
+      real :: spdk
+      integer :: i, j, k, ivar, old_index, indDET, indDSNK, kb, indTA, indc
 
       old_index = current_time_index
       call update_fabm_state(index)
+
+      do i=1,ii
+        do j=1,jj
+          do ivar=1,size(fabm_model%interior_state_variables)
+            mass_before_check_state(i, j, :, ivar) = tracer(i, j, :, index, ivar) * dp(i, j, :, index)/onem
+          enddo
+        enddo
+      enddo
+
       do k=1,kk
         do j=1,jj
-          call fabm_check_state(fabm_model, 1, ii, j, k, repair, valid_int)
+          call fabm_model%check_interior_state(1, ii, j, k, repair, valid_int)
           if (.not.(valid_int.or.repair)) then
             write (*,*) 'Invalid interior state '//location
             stop
@@ -898,44 +932,153 @@ contains
         end do
       end do
       do j=1,jj
-        call fabm_check_surface_state(fabm_model, 1, ii, j, repair, valid_sf)
-        call fabm_check_bottom_state(fabm_model, 1, ii, j, repair, valid_bt)
+        call fabm_model%check_surface_state(1, ii, j, repair, valid_sf)
+        call fabm_model%check_bottom_state(1, ii, j, repair, valid_bt)
         if (.not.(valid_sf.and.valid_bt).and..not.repair) then
           write (*,*) 'Invalid interface state '//location
           stop
         end if
       end do
 
-      do ivar=1,size(fabm_model%state_variables)
-        if (.not.all(ieee_is_finite(tracer(1:ii, 1:jj, 1:kk, index, ivar)))) then
-          write (*,*) location, 'Interior state variable not finite:', ivar, 'range', minval(tracer(1:ii, 1:jj, 1:kk, index, ivar)), maxval(tracer(1:ii, 1:jj, 1:kk, index, ivar))
-          stop
-        end if
-      end do
+!      do ivar=1,size(fabm_model%interior_state_variables)
+!        if (.not.all(ieee_is_finite(tracer(1:ii, 1:jj, 1:kk, index, ivar)))) then
+!          write (*,*) location, 'Interior state variable not finite:', ivar, 'range', minval(tracer(1:ii, 1:jj, 1:kk, index, ivar)), maxval(tracer(1:ii, 1:jj, 1:kk, index, ivar)),fabm_model%interior_state_variables(ivar)%name
+!          stop
+!        end if
+!      end do
 
       if (repair) then
         ! FABM will have placed "missing value" for all state variables in all masked cells.
         ! However, as these can be revived later in the simulation, make sure their value is valid by
         ! copying bottom value for pelagic tracers to all layers below bottom.
+
+        do ivar=1,size(fabm_model%interior_state_variables)
+          if ( fabm_model%interior_state_variables(ivar)%name == "ECO_det" ) then
+             indDET = ivar
+          end if
+          if ( fabm_model%interior_state_variables(ivar)%name == "ECO_dsnk" ) then
+             indDSNK = ivar
+             repair_dsnk = .true.
+          end if
+          if ( fabm_model%interior_state_variables(ivar)%name == "CO2_TA" ) then
+             indTA = ivar
+          end if
+          if ( fabm_model%interior_state_variables(ivar)%name == "CO2_c" ) then
+             indc = ivar
+          end if
+        end do
+
         do j=1,jj
           do i=1,ii
             if (SEA_P) then
               do k=kbottom(i, j, index)+1, kk
                 tracer(i, j, k, index, :) = tracer(i, j, kbottom(i, j, index), index, :)
               end do
+              do ivar=1,size(fabm_model%interior_state_variables)
+                mass_after_check_state(:) = tracer(i, j, :, index, ivar) * dp(i,j,:, index)/onem
+                mass_diff_check_state = sum(mass_after_check_state(:)) - sum(mass_before_check_state(i, j, :, ivar))
+                do k=kbottom(i,j,index)+1,kk
+                  tracer(i, j, k, index, ivar) = tracer(i, j, k, index, ivar) - mass_diff_check_state / sum(dp(i, j, kbottom(i,j,index):kk, index)/onem)
+                enddo
+
+                if ( ivar == indDSNK) then
+                   if (repair_dsnk) then
+                      spd = tracer(i, j, :, index, indDSNK) / tracer(i, j, :,index, indDET) * 24.*60.*60. 
+                      if (i == itest .and. j == jtest) then
+                         write(*,*)"SPD",spd
+                      end if
+                      if (minval(spd).lt.0.5 .or. maxval(spd).gt.15.0 ) then
+                         k=1
+                         spdk = tracer(i, j, k, index, indDSNK) / tracer(i,j,k,index, indDET) * 24.*60.*60.
+                         if (spdk .lt.0.5 .or. spdk .gt.12.0 ) then
+                            spdk = 5.0
+                            tracer(i, j, k, index, indDSNK) = tracer(i,j,k,index, indDET) * spdk / 24. / 60. / 60.
+                         end if
+                         do k=2, kk
+                            spdk = tracer(i, j, k, index, indDSNK) / tracer(i, j,k,index, indDET) * 24.*60.*60.
+                            if (spdk .lt.0.5 .or. spdk .gt.12.0 ) then
+                               spdk = tracer(i, j, k-1, index, indDSNK) / tracer(i, j,k-1,index, indDET) * 24.*60.*60.
+                               tracer(i, j, k, index, indDSNK) = tracer(i, j,k,index, indDET) * spdk / 24. / 60. / 60.
+                            end if
+                         end do
+                         do k=1, kk
+                            if (tracer(i, j, k, index, indDSNK) / tracer(i, j, k,index, indDET) * 24.*60.*60. .lt.0.5 .or. tracer(i, j, k, index, indDSNK) / tracer(i, j, k,index, indDET) * 24.*60.*60. .gt.15.0 ) then
+                               write(*,*)"OUTSIDE REPAIR",tracer(i, j, k, index,indDSNK) / tracer(i, j, k,index, indDET) * 24.*60.*60.,k,kbottom(i, j, index)
+                            end if
+                         end do
+                      end if
+                   end if
+                end if
+                if (ivar == indTA .or. ivar == indc) then
+                         do k=1, kk
+                            tracer(i, j, k, index, indTA) = max( min( tracer(i, j, k, index, indTA), 2600.0 ), 900.0)
+                            tracer(i, j, k, index, indc)  = max( min( tracer(i, j, k, index, indc), 2600.0 ), 900.0)
+                         end do
+                end if
+              end do
             end if
           end do
         end do
       end if
 
+      do ivar=1,size(fabm_model%interior_state_variables)
+        if (.not.all(ieee_is_finite(tracer(1:ii, 1:jj, 1:kk, index, ivar)))) then
+          write (*,*) location, 'Interior state variable not finite:', ivar,'range', minval(tracer(1:ii, 1:jj, 1:kk, index, ivar)), maxval(tracer(1:ii,1:jj, 1:kk, index, ivar)),fabm_model%interior_state_variables(ivar)%name
+          stop
+        end if
+      end do
+
       call update_fabm_state(old_index)
     end subroutine check_state
+
+    subroutine check_finite(location, index)
+      use, intrinsic :: ieee_arithmetic
+      character(len=*), intent(in) :: location
+      integer, intent(in) :: index
+      integer:: ivar,i,j
+      do ivar=1,size(fabm_model%interior_state_variables)
+        do i=1,ii
+           do j=1,jj
+              if (SEA_P) then
+                 if (.not.all(ieee_is_finite(tracer(i, j, 1:kk, index, ivar)))) then
+                    write (*,*) location, index,'Interior state variable not finite:', ivar,'range', minval(tracer(i, j, 1:kk, index, ivar)), maxval(tracer(i,j, 1:kk, index, ivar)),fabm_model%interior_state_variables(ivar)%name
+                    write (*,*) location, index,'Interior state variable not finite:',kbottom(i,j,index),tracer(i, j, 1:kk, index, ivar)
+                    stop
+                 end if
+              end if
+           end do
+        end do
+      end do
+    end subroutine check_finite
+
+    subroutine check_dsnk(location,index)
+      character(len=*), intent(in) :: location
+      integer, intent(in) :: index
+      integer :: i, j, k
+        do j=1,jj
+          do i=1,ii
+            if (SEA_P) then
+               spd = tracer(i, j, :, index, 20) / tracer(i, j, :,index, 17) * 24.*60.*60.
+               if (i == itest .and. j == jtest) then
+                  write(*,*)"SPD",index,location,spd
+               end if
+                      if (minval(spd).lt.0.5 .or. maxval(spd).gt.15.0 ) then
+                         do k=1, kk
+                            if (tracer(i, j, k, index, 20) / tracer(i, j, k,index, 17) * 24.*60.*60. .lt.0.5 .or. tracer(i, j, k, index, 20) / tracer(i, j, k,index, 17) * 24.*60.*60. .gt.15.0 ) then
+                               write(*,*)location,index,tracer(i, j, k, index,20) / tracer(i, j, k,index, 17) * 24.*60.*60.,k,kbottom(i, j,index)
+                            end if
+                         end do
+                      end if
+            end if
+          end do
+        end do
+    end subroutine check_dsnk
 
     subroutine vertical_movement(n, m, timestep)
       integer, intent(in) :: n, m
       real, intent(in) :: timestep
 
-      real :: w(ii, kk, size(fabm_model%state_variables))
+      real :: w(ii, kk, size(fabm_model%interior_state_variables))
       real :: flux(ii, 0:kk)
       integer :: i, j, k, ivar, kabove, kb
       real, parameter :: epsilon = 1e-8
@@ -943,10 +1086,10 @@ contains
       do j=1,jj
         ! Get vertical velocities per tracer (m/s, > 0 for floating, < 0  for sinking)
         do k=1,kk
-          call fabm_get_vertical_movement(fabm_model, 1, ii, j, k, w(1:ii, k, :))
+          call fabm_model%get_vertical_movement(1, ii, j, k, w(1:ii, k, :))
         end do
 
-        do ivar=1,size(fabm_model%state_variables)
+        do ivar=1,size(fabm_model%interior_state_variables)
           ! Compute tracer flux over layer interfaces
           flux = 0
           do k=1,kk
@@ -975,20 +1118,20 @@ contains
                 else
                   ! Prevent accumulation of settling particles in thin layers 
                   if ( flux(i, k) < 0 .and. k == kbottom(i, j, n)-1 ) then ! if settling and if at the layer above the bottom
-                    if ( dp(i, j, k+1, n)/onem >= 3.0 ) then ! check if the bottom layer is actually < 10 meters, if not, apply the regular flux additions
+                    if ( dp(i, j, k+1, n)/onem >= 6.0 ) then ! check if the bottom layer is actually < 6 meters, if not, apply the regular flux additions
                       tracer(i, j, kabove, n, ivar) = tracer(i, j, kabove, n, ivar) + flux(i, k)*timestep/(dp(i, j, kabove, n)/onem)
                       tracer(i, j, k+1, n, ivar) = tracer(i, j, k+1, n, ivar) - flux(i, k)*timestep/(dp(i, j, k+1, n)/onem)
-                      else ! if < 10 meters
+                      else ! if < 6 meters
                         hbottom = 0
                         nbottom = 0 
-                        do kb = kbottom(i, j, n),1,-1 ! find number of layers that add up to > 10 meters, and store the total height
+                        do kb = kbottom(i, j, n),1,-1 ! find number of layers that add up to > 6 meters, and store the total height
                           hbottom = hbottom + dp(i ,j , kb, n)/onem
-                          if ( hbottom >= 3.0 ) exit
+                          if ( hbottom >= 6.0 ) exit
                           nbottom = nbottom + 1
                         end do
                         ! Settle the particles from kabove
                         tracer(i, j, kabove, n, ivar) = tracer(i, j, kabove, n, ivar) + flux(i, k)*timestep/(dp(i, j, kabove, n)/onem) 
-                        ! and distribute that flux to multiple layers which the depths add up to > 10 meters
+                        ! and distribute that flux to multiple layers which the depths add up to > 6 meters
                         do kb = kbottom(i, j, n) - nbottom , kbottom(i, j, n)
                           tracer(i, j, kb, n, ivar) = tracer(i, j, kb, n, ivar) - flux(i, k)*timestep/hbottom
                         end do
@@ -1062,7 +1205,7 @@ contains
         end if
 
         if (.not.initializing) then
-          call fabm_update_time(fabm_model, real(nstep))
+          !call fabm_update_time(fabm_model, real(nstep))
           call fabm_gettime() 
 
 
@@ -1133,10 +1276,10 @@ contains
         ! Transfer pointer to environmental data
         ! Do this for all variables on FABM's standard variable list that the model can provide.
         ! For this list, visit http://fabm.net/standard_variables
-        call fabm_model%link_interior_data(standard_variables%temperature,cotemp(1:ii,1:jj, 1:kk))
-        call fabm_model%link_interior_data(standard_variables%practical_salinity,cosal(1:ii,1:jj,1:kk))
-        call fabm_model%link_interior_data(standard_variables%density,codens(1:ii,1:jj, 1:kk))
-        call fabm_model%link_interior_data(standard_variables%pressure,codepth(1:ii,1:jj, 1:kk))
+        call fabm_model%link_interior_data(fabm_standard_variables%temperature,cotemp(1:ii,1:jj, 1:kk))
+        call fabm_model%link_interior_data(fabm_standard_variables%practical_salinity,cosal(1:ii,1:jj,1:kk))
+        call fabm_model%link_interior_data(fabm_standard_variables%density,codens(1:ii,1:jj, 1:kk))
+        call fabm_model%link_interior_data(fabm_standard_variables%pressure,codepth(1:ii,1:jj, 1:kk))
 
         call update_fabm_state(index)
     end subroutine update_fabm_data
@@ -1147,7 +1290,7 @@ contains
         if (current_time_index == index) return
 
         ! Update mask and index of bottommost layer
-        call fabm_set_mask(fabm_model, mask(:, :, :, index), mask(:, :, 1, index))
+        call fabm_model%set_mask(mask(:, :, :, index), mask(:, :, 1, index))
         call fabm_model%set_bottom_index(kbottom(:, :, index))
 
         ! Send pointers to state variable data to FABM

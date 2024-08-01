@@ -45,6 +45,7 @@
 #ifdef _FABM_
       use mod_hycom_fabm
 #endif
+      use mod_NERSCnml, only : write_arche, nersc_init
 c
 c --- -----------------------------------------
 c --- MICOM-based HYbrid Coordinate Ocean Model
@@ -1742,6 +1743,7 @@ c --- machine-specific initialization
 c
 c --- initialize scalars
       call blkdat  !must call before zaiost
+      call NERSC_init
 c
 c --- initialize array i/o.
       call zaiost
@@ -3165,7 +3167,9 @@ cKAL
           call momtum_hs(n,m)
           time=dtime0
           call forday(dtime0,yrflag, iyear,jday,ihour)
-          call Archive_ESMF(iyear,jday,ihour)
+          if (write_arche) then
+             call Archive_ESMF(iyear,jday,ihour)
+          endif
           time=dtime
         endif !initial ESMF Archive
       endif !get_import
@@ -4309,7 +4313,9 @@ c ---   fill the ESMF Export State.
 c
         call Export_ESMF
         call forday(dtime,yrflag, iyear,jday,ihour)
-        call Archive_ESMF(iyear,jday,ihour)
+        if (write_arche) then 
+           call Archive_ESMF(iyear,jday,ihour)
+        endif 
       endif
 #endif
 c

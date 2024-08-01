@@ -278,9 +278,15 @@ contains
          read(nop,316) ctitle,df%iversn,df%iexpt,df%yrflag
          !!get dump time from filename
          !!TODO: what if under 1 hour?
-         read(df%filebase(7:10),'(i4.4)') df%iyear
-         read(df%filebase(12:14),'(i3.3)') df%iday
-         read(df%filebase(16:17),'(i2.2)') df%ihour
+         if (trim(df%filebase(1:4))=='arch') then
+            read(df%filebase(7:10),'(i4.4)') df%iyear
+            read(df%filebase(12:14),'(i3.3)') df%iday
+            read(df%filebase(16:17),'(i2.2)') df%ihour
+         else ! RUNID stamp in filebase:
+            read(df%filebase(10:13),'(i4.4)') df%iyear
+            read(df%filebase(15:17),'(i3.3)') df%iday
+            read(df%filebase(19:20),'(i2.2)') df%ihour
+         end if
          print*,'year is ', df%iyear
          print*,'day is ',df%iday
          print*,'hour is ',df%ihour
@@ -1023,7 +1029,9 @@ contains
      is3DVar=.true.
    else if(cfld=='oxygen') then
      is3DVar=.true.
-   else if(cfld=='primprod') then
+   else if(cfld=='grosspp') then
+     is3DVar=.true.
+   else if(cfld=='netpp') then
      is3DVar=.true.
    else if(cfld=='attcoeff') then
      is3DVar=.true.
@@ -1192,7 +1200,7 @@ contains
       case ('temp') 
          stdname='sea_water_potential_temperature' ; units='degrees_C' ; vname='thetao'
          longname='Sea Temperature'
-         limits=(/-3,50/)
+         limits=(/-2,50/)
       case ('levsaln')
          stdname='sea_water_salinity' ; units='1e-3' ; vname='levitus_salinity'
          limits=(/0,45/)
@@ -1228,8 +1236,8 @@ contains
          limits=(/-3,3/)
       case ('wtotl') 
          stdname='upward_sea_water_velocity' 
-         units='m s-1' ; vname='wo'
-         limits=(/-1,1/)
+         units='m day-1' ; vname='wo'
+         limits=(/-40,40/)
       case ('u','u-vel.') 
          if (.not.gridrotate) then
             stdname='baroclinic_eastward_sea_water_velocity' 
@@ -1351,7 +1359,7 @@ contains
 !Alfati. More accurate method for computing MLD using density         
       case ('mld')
          units='m' ; vname='mlotst'
-         limits=(/0.,3500./)
+         limits=(/2.9,3500./)
          stdname='ocean_mixed_layer_thickness_defined_by_sigma_theta'
       case ('dpmixl','dp_mixl','dpmix') 
          vname='dpmix'
@@ -1576,16 +1584,26 @@ contains
          units='mmol m-3'
          limits=(/0.,1000./)
          stdname='mole_concentration_of_dissolved_molecular_oxygen_in_sea_water'
-         case ('pp_depth')
-         vname='npp'
+         case ('gpp_int')
+         vname='gpp'
          units='mg m-2 d-1'
          limits=(/0.,8460./)
+         stdname='gross_primary_productivity_of_biomass_expressed_as_carbon'
+         case ('npp_int')
+         vname='npp'
+         units='mg m-2 d-1'
+         limits=(/-8460.,8460./)
          stdname='net_primary_productivity_of_biomass_expressed_as_carbon'
-         case ('primprod')
+         case ('netpp')
          vname='nppv'
          units='mg m-3 day-1'
-         limits=(/0.,2000./)
+         limits=(/-2000.,2000./)
          stdname='net_primary_production_of_biomass_expressed_as_carbon_per_unit_volume_in_sea_water'
+         case ('grosspp')
+         vname='gppv'
+         units='mg m-3 day-1'
+         limits=(/0.,2000./)
+         stdname='gross_primary_production_of_biomass_expressed_as_carbon_per_unit_volume_in_sea_water'
          case ('attcoeff')
          vname='kd'
          units='m-1'

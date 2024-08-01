@@ -2,7 +2,7 @@
 
 # Prerequisites
 
-You will need a  working python 2.7 installation, with the following packages.
+You will need a  working python 3.7 installation, with the following packages.
 
 * [numpy](https://pypi.python.org/pypi/numpy)
 
@@ -14,25 +14,23 @@ You will need a  working python 2.7 installation, with the following packages.
 
 * [cfunits](https://pypi.python.org/pypi/cfunits)
 
-* [basemap](https://pypi.python.org/pypi/basemap)
-
 * [matplotlib](https://pypi.python.org/pypi/matplotlib)
 
 * [netCDF4](https://pypi.python.org/pypi/netCDF4)
 
+* [netcdftime](https://pypi.python.org/pypi/netcdftime)
+
 These depend on other non-python packages being installed, such as udunits and netcdf4. Most of these packages are usually installed on a linux system. If they are missing, you can ask an IT guy to install them on the system  or install them yourself.
 
-In addition, these packages are required (developed by Knut and available on github):
+In addition, these packages are required (developed by Knut and available on github), and as a part of the hycom-code under the directory NERSC-HYCOM-CICE/pythonlibs/:
 
-* [gridxsec](https://github.com/knutalnersc/gridxsec), a tool for creating cross-sections on 2D grids 
+* [gridxsec](https://github.com/nansencenter/NERSC-HYCOM-CICE/tree/master/pythonlibs/gridxsec), a tool for creating cross-sections on 2D grids 
 
-* [abfile](https://github.com/knutalnersc/abfile), a tool for reading HYCOM .[ab] files 
+* [abfile](https://github.com/nansencenter/NERSC-HYCOM-CICE/tree/master/pythonlibs/abfile), a tool for reading HYCOM .[ab] files 
 
-* [modelgrid](https://github.com/knutalnersc/modelgrid), a tool for creating modelgrids using Bentsen et al conformal mapping or standard projections 
+* [modelgrid](https://github.com/nansencenter/NERSC-HYCOM-CICE/tree/master/pythonlibs/modelgrid), a tool for creating modelgrids using Bentsen et al conformal mapping or standard projections 
 
-* [modeltools](https://github.com/knutalnersc/modeltools), a collection of various tools .. 
-
-* [modeltools](https://github.com/MostafaBakhoda/modeltools), a collection of various tools, few changes done by Mostafa ..
+* [modeltools](https://github.com/nansencenter/NERSC-HYCOM-CICE/tree/master/pythonlibs/modeltools), a collection of various tools .. 
 
 # Checking for missing python modules
 

@@ -242,6 +242,8 @@
       call broadcast_scalar (f_flwup_ai, master_task)
       call broadcast_scalar (f_evap, master_task)
       call broadcast_scalar (f_evap_ai, master_task)
+      ! Added rhoa Till RAsmussen 22/8/2022
+      call broadcast_scalar (f_rhoa, master_task)
       call broadcast_scalar (f_Tair, master_task)
       call broadcast_scalar (f_Tref, master_task)
       call broadcast_scalar (f_Qref, master_task)
@@ -541,7 +543,13 @@
              "evaporative water flux",                                    &
              "weighted by ice area", mps_to_cmpdy/rhofresh, c0,           &
              ns1, f_evap_ai)
-      
+     
+! Added rhoa Till RAsmussen 22/8/2022
+          call define_hist_field(n_rhoa,"rhoa","kg/m³",tstr2D, tcstr, &
+             "air density",                                &
+             "none", c1, c0,                             &
+             ns1, f_rhoa)
+          
          call define_hist_field(n_Tair,"Tair","C",tstr2D, tcstr, &
              "air temperature",                                &
              "none", c1, -Tffresh,                             &
@@ -1133,7 +1141,7 @@
       use ice_dyn_shared, only: kdyn, principal_stress
       use ice_flux, only: fsw, flw, fsnow, frain, sst, sss, uocn, vocn, &
           frzmlt_init, fswfac, fswabs, fswthru, alvdr, alvdf, alidr, alidf, &
-          albice, albsno, albpnd, coszen, flat, fsens, flwout, evap, &
+          albice, albsno, albpnd, coszen, flat, fsens, flwout, evap, rhoa, &
           Tair, Tref, Qref, congel, frazil, snoice, dsnow, &
           melts, meltb, meltt, meltl, fresh, fsalt, fresh_ai, fsalt_ai, &
           fhocn, fhocn_ai, uatm, vatm, &
@@ -1368,6 +1376,9 @@
              call accum_hist_field(n_evap,   iblk, evap(:,:,iblk), a2D)
          if (f_evap_ai(1:1) /= 'x') &
              call accum_hist_field(n_evap_ai,iblk, evap(:,:,iblk)*workb(:,:), a2D)
+         ! added rhoa Till Rasmussen 22/8/2022
+         if (f_rhoa   (1:1) /= 'x') &
+             call accum_hist_field(n_rhoa,   iblk, rhoa(:,:,iblk), a2D)
 
          if (f_Tair   (1:1) /= 'x') &
              call accum_hist_field(n_Tair,   iblk, Tair(:,:,iblk), a2D)

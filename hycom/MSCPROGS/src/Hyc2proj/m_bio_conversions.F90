@@ -3,7 +3,9 @@ module m_bio_conversions
    real, parameter :: cnit=14.01,cpho=30.97,csil=28.09, ccar=12.01
    real, parameter :: oxyml=44.6608009,oxygr=32.0,C2NIT=6.625 ! redfield
 ! _FABM__caglar_
-   real, parameter :: kd_fabm=0.04   ! light attenuation coeff. for chlorophyll
+   real, parameter :: kd_chla=0.05737798064012768   ! was 0.4 before Nov23 update, light attenuation coeff. for chlorophyll
+   real, parameter :: kd_det=0.16218644594775256   ! was 0.0 before Nov23 update, light attenuation coeff. for detritus
+   real, parameter :: kd_dom=0.18206465359221413   ! was 0.0 before Nov23 update, light attenuation coeff. for DOM
    real, parameter :: C2SIL=6.625    ! redfield C:Si mol ratio.
    real, parameter :: C2PHO=106.0    ! redfield C:P mol ratio
    real, parameter :: kd_water=0.041 ! light attenuation coeff. for Arctic sea water 
@@ -434,49 +436,58 @@ module m_bio_conversions
    end subroutine integrated_chlorophyll_eco
 !------------------------------------------------
 
-   subroutine det_bottom_flux(det,bot_flux,onem,idm,jdm,kdm)
+   subroutine det_bottom_flux(det,dsnk,bot_flux,onem,idm,jdm,kdm)
       implicit none
 
       integer, intent(in) :: idm,jdm,kdm
       real, intent(in) :: onem
-      real, dimension(idm,jdm,kdm)  , intent(in)  :: det
+      real, dimension(idm,jdm,kdm)  , intent(in)  :: det,dsnk
       real, dimension(idm,jdm,kdm)      , intent(out) :: bot_flux
-
+      real :: spd(idm,jdm,kdm)
       integer :: i,j,k
+! dsnk is the varible detritus sinking speed * detritus concentration
+! essentially it is the flux represented as a state variable
+! To prevent outlier values, we first calculate the sinking speed (dsnk/det) and
+! convert it to 1/d
+      spd = (dsnk/det)*86400.
+! and set minimum and maximum values, and convert mgC m-2 d-1 --> mmolC m-2 d-1 
+      spd = max(spd,0.5)
+      spd = min(spd,12.0)
+      bot_flux = det * spd / ccar
+       
 
-! compute flux of detritus to the seafloor mgC m-2 d-1 --> mmolC m-2 d-1                                                                                           
-      bot_flux=det * srdet_eco / ccar 
+!! compute flux of detritus to the seafloor mgC m-2 d-1 --> mmolC m-2 d-1                                                                                       !      bot_flux=det * srdet_eco / ccar 
 
    end subroutine det_bottom_flux
 
 !------------------------------------------------
 
 ! _FABM__caglar_
-      subroutine chlorophyll_fabm(dia,fla,chl_a,idm,jdm,kdm)
+      subroutine chlorophyll_fabm(dia,fla,ccl,chl_a,idm,jdm,kdm)
       !compute chlorophyll: mg m-3
         implicit none
 
         integer, intent(in) :: idm,jdm,kdm
-        real, dimension(idm,jdm,kdm)  , intent(in)  ::dia, fla
+        real, dimension(idm,jdm,kdm)  , intent(in)  ::dia, fla, ccl
         real, dimension(idm,jdm,kdm)  , intent(out) ::chl_a
         real, dimension(idm,jdm,kdm)  ::boss
         integer :: i,j,k
 
-        chl_a=dia+fla
+        chl_a=dia+fla+ccl
 
      end subroutine chlorophyll_fabm
 
-     subroutine chlorophyll(dia,fla,chl_a,idm,jdm,kdm)
+     subroutine chlorophyll(dia,fla,ccl,chl_a,idm,jdm,kdm)
 !compute chlorophyll: mg m-3
       implicit none
 
       integer, intent(in) :: idm,jdm,kdm
-      real, dimension(idm,jdm,kdm)  , intent(in)  ::dia, fla
+      real, dimension(idm,jdm,kdm)  , intent(in)  ::dia, fla, ccl
       real, dimension(idm,jdm,kdm)  , intent(out) ::chl_a
       real, dimension(idm,jdm,kdm)  ::boss
       integer :: i,j,k
 
-      chl_a=(dia+fla)
+      chl_a=(dia+fla+ccl)
 
      end subroutine chlorophyll
 
@@ -517,17 +528,29 @@ module m_bio_conversions
 
      end subroutine phosphate_conv
 
-     subroutine pbiomass(dia,fla,biomass,idm,jdm,kdm)
+     subroutine pbiomass(dia,fla,ccl,biomass,idm,jdm,kdm)
      !compute phytoplankton biomass: mmoleC m-3
       implicit none
 
       integer, intent(in) :: idm,jdm,kdm
-      real, dimension(idm,jdm,kdm)  , intent(in)  ::fla, dia !mgC m-3
+      real, dimension(idm,jdm,kdm)  , intent(in)  ::fla, dia, ccl !mgC m-3
       real, dimension(idm,jdm,kdm)  , intent(out) ::biomass
 
-      biomass=(fla+dia)/ccar
+      biomass=(fla+dia+ccl)/ccar
 
      end subroutine pbiomass
+
+     subroutine zbiomass(micro,meso,biomass,idm,jdm,kdm)
+     !compute zooplankton biomass: mmoleC m-3
+      implicit none
+
+      integer, intent(in) :: idm,jdm,kdm
+      real, dimension(idm,jdm,kdm)  , intent(in)  ::micro, meso !mgC m-3
+      real, dimension(idm,jdm,kdm)  , intent(out) ::biomass
+
+      biomass=(micro+meso)/ccar
+
+     end subroutine zbiomass
 
      subroutine oxygen_conv(oxy,mmol_oxy,idm,jdm,kdm)
 !compute dissolved oxygen: mmol m-3
@@ -549,19 +572,19 @@ module m_bio_conversions
       real, dimension(idm,jdm,kdm)  , intent(in)  ::pp ! mg m-3 s-1
       real, dimension(idm,jdm,kdm)  , intent(out) ::pp_daily
 
-      pp_daily=pp*24.*60.*60.*0.9
+      pp_daily=pp*24.*60.*60.
 
      end subroutine pp_conv
 
-     subroutine attenuation(dia,fla,attencoef,idm,jdm,kdm)
+     subroutine attenuation(dia,fla,ccl, det, dom,attencoef,idm,jdm,kdm)
 !compute the attenuation coefficient: m-1
       implicit none
 
       integer, intent(in) :: idm,jdm,kdm
-      real, dimension(idm,jdm,kdm)  , intent(in)  ::dia, fla
+      real, dimension(idm,jdm,kdm)  , intent(in)  ::dia, fla, ccl, det, dom
       real, dimension(idm,jdm,kdm)  , intent(out) ::attencoef
 
-      attencoef=kd_water+kd_fabm*(dia+fla)
+      attencoef=kd_water+kd_chl*(dia+fla+ccl)+(kd_det/1000.0)*det+(kd_dom/1000.0)*dom
 
      end subroutine attenuation
 
@@ -683,9 +706,8 @@ module m_bio_conversions
 
    end subroutine vertical_velocity
 !   
-!   subroutine w_velocity(u,v,pres,w,scpx,scpy,scux,scvy,plon,plat,depth,onem,idm,jdm,kdm)
    subroutine w_velocity(u,v,pres,w,scpx,scpy,scux,scuy,scvx,scvy,plon,plat,depth,onem,idm,jdm,kdm)
-      
+!-- from archv2ncdf3      
 !diagnose vertical velocity: m/s
       implicit none
       
@@ -696,7 +718,7 @@ module m_bio_conversions
       real, dimension(idm,jdm,kdm+1)  :: lpres
       real, dimension(idm,jdm)  , intent(in)        :: scpx,scpy,scux,scuy,scvx,scvy,plon,plat,depth
       real, dimension(idm,jdm,kdm)    , intent(out) :: w
-      real, dimension(idm,jdm)                      :: dpdx,dpdy
+      real, dimension(idm,jdm)                      :: dpdx,dpdy, work
       real             dudxdn,dudxup,dvdydn,dvdyup        
       real, dimension(idm,jdm,kdm)   :: dplayer
       !real :: idsum, tasum
@@ -711,8 +733,8 @@ module m_bio_conversions
       end do
       
 !      if     (iowvlin.ne.0) then
-      do j= 2,jdm-1
-        do i= 2,idm-1
+      do j= 1,jdm-1
+        do i= 1,idm-1
           if (depth(i,j)>0) then
           !if     (ip(i,j).eq.1) then
             dudxdn= &
@@ -721,16 +743,16 @@ module m_bio_conversions
             dvdydn= &
                  (v(i  ,j+1,1)*scvx(i  ,j+1)-v(i,j,1)*scvx(i,j))&
                  /(scpx(i,j)*scpy(i,j))
-            w(i,j,1)=     dplayer(i,j,1)*(dudxdn+dvdydn) ! layer interface
-            !w(i,j,1)=0.5*dplayer(i,j,1)*(dudxdn+dvdydn) ! layer center
+            !w(i,j,1)=     dplayer(i,j,1)*(dudxdn+dvdydn) ! layer interface intfwv=1
+            w(i,j,1)=0.5*dplayer(i,j,1)*(dudxdn+dvdydn) ! layer center  intfwv=0
           else
             w(i,j,1) = flag
           endif
         enddo
       enddo
       do k= 2,kdm
-        do j= 2,jdm-1
-          do i= 2,idm-1
+        do j= 1,jdm-1
+          do i= 1,idm-1
             !if     (iu(i,j).eq.1) then
             if (depth(i,j)>0) then
               dpdx(i,j)=&
@@ -739,8 +761,8 @@ module m_bio_conversions
             endif
           enddo
         enddo
-        do j= 2,jdm-1
-          do i= 2,idm-1
+        do j= 1,jdm-1
+          do i= 1,idm-1
             if (depth(i,j)>0) then
             !if     (iv(i,j).eq.1) then
               dpdy(i,j)=&
@@ -783,23 +805,23 @@ module m_bio_conversions
                    /(scpx(i,j)*scpy(i,j))
               dudxdn=&
                    (u(i+1,j  ,k  )*scuy(i+1,j  )-&
-                    u(i  ,j  ,k  )*scuy(i  ,j  ))&
+                    u(i  ,j  ,k  )*scuy(i   ,j  ))&
+                   /(scpx(i,j)*scpy(i,j)) 
+              dvdydn=&                    
+                   (v(i  ,j+1,k  )*scvx(i   ,j+1)-&
+                    v(i  ,j  ,k  )*scvx(i   ,j  ))&
                    /(scpx(i,j)*scpy(i,j))
-              dvdydn=&
-                   (v(i  ,j+1,k  )*scvx(i  ,j+1)-&
-                    v(i  ,j  ,k  )*scvx(i  ,j  ))&
-                   /(scpx(i,j)*scpy(i,j))
-             w(i,j,k)=w(i,j,k-1)+0.5*(2.0*dplayer(i,j,k)*(dudxup+dvdyup)-&  !intfwv=0
-                      (u(i  ,j  ,k)-u(i  ,j  ,k-1))*dpdx(i  ,j  )-&
-                      (u(i+1,j  ,k)-u(i+1,j  ,k-1))*dpdx(i+1,j  )-&
-                      (v(i  ,j  ,k)-v(i  ,j  ,k-1))*dpdy(i  ,j  )-&
-                      (v(i  ,j+1,k)-v(i  ,j+1,k-1))*dpdy(i  ,j+1))
-             !w(i,j,k)=w(i,j,k-1)+0.5*(dplayer(i,j,k-1)*(dudxup+dvdyup)+& !intfwv=0 
-             !                         dplayer(i,j,k  )*(dudxdn+dvdydn)-&
+             !w(i,j,k)=w(i,j,k-1)+0.5*(2.0*dplayer(i,j,k)*(dudxdn+dvdydn)-&  !intfwv=1
              !         (u(i  ,j  ,k)-u(i  ,j  ,k-1))*dpdx(i  ,j  )-&
              !         (u(i+1,j  ,k)-u(i+1,j  ,k-1))*dpdx(i+1,j  )-&
              !         (v(i  ,j  ,k)-v(i  ,j  ,k-1))*dpdy(i  ,j  )-&
              !         (v(i  ,j+1,k)-v(i  ,j+1,k-1))*dpdy(i  ,j+1))
+             w(i,j,k)=w(i,j,k-1)+0.5*(dplayer(i,j,k-1)*(dudxup+dvdyup)+& !intfwv=0 
+                                      dplayer(i,j,k  )*(dudxdn+dvdydn)-&
+                      (u(i  ,j  ,k)-u(i  ,j  ,k-1))*dpdx(i  ,j  )-&
+                      (u(i+1,j  ,k)-u(i+1,j  ,k-1))*dpdx(i+1,j  )-&
+                      (v(i  ,j  ,k)-v(i  ,j  ,k-1))*dpdy(i  ,j  )-&
+                      (v(i  ,j+1,k)-v(i  ,j+1,k-1))*dpdy(i  ,j+1))
             else
               w(i,j,k) = flag
             endif
@@ -811,23 +833,65 @@ module m_bio_conversions
         do j= 1,jdm
           w(idm,j ,k) = flag
         enddo
+      enddo !k
+!
+! --- w is noisy - smooth at least twice.
+      do k= 1,kdm
+        !call psmoo(w(1,1,k),work)
+        !call psmoo(w(1,1,k),work)
+        work(:,:)=w(:,:,k)
+        w(:,:,k)=psmoo(work(:,:),idm,jdm)
+        work(:,:)=w(:,:,k)
+        w(:,:,k)=psmoo(work(:,:),idm,jdm)
+      enddo
+!     !iowvlin 
+   end subroutine w_velocity
+!---   
+   function psmoo(alist,idm,jdm)
+!
+      integer idm,jdm
+      real alist(idm,jdm),blist(idm,jdm), psmoo(idm,jdm)
+      real, parameter :: wgt  = 0.25
+      real, parameter :: flag = 2.0**100
+      integer i,ia,ib,j,ja,jb
+!     copy the code that does the smmothing from archv2ncdf3
+!     entry psmoo(alist,blist)
+!c ---this entry is set up to smooth data carried at -p- points
+!c
+      do i=1,idm
+         do j=1,jdm
+            if (alist(i,j).ne.flag) then
+               !ja=max(jfp(i,l),j-1)
+               !jb=min(jlp(i,l),j+1)
+               ja=j-1
+               jb=j+1
+               if (alist(i,ja).eq.flag) ja=j
+               if (alist(i,jb).eq.flag) jb=j
+               blist(i,j)=(1.-wgt-wgt)*alist(i,j)+wgt*(alist(i,ja)+alist(i,jb))
+            endif
+         enddo
       enddo
 !
-! --- w is noisy - smooth at least once.
-!
-!      if     (smooth) then
-!        do k= 1,kkin
-!          call psmoo(w(1,1,k),work)
-!          call psmoo(w(1,1,k),work)
-!        enddo
-!      else
-!        do k= 1,kkin
-!          call psmoo(w(1,1,k),work)
-!        enddo
-!      endif
-!      endif !iowvlin 
-
-   end subroutine w_velocity
+      do j=1,jdm
+         do i=1,idm
+            if (alist(i,j).ne.flag) then
+               !ia=max(ifp(j,l),i-1)
+               !ib=min(ilp(j,l),i+1)
+               ia=i-1
+               ib=i+1
+               if (alist(ia,j).eq.flag) ia=i
+               if (alist(ib,j).eq.flag) ib=i
+               alist(i,j)=(1.-wgt-wgt)*blist(i,j)+wgt*(blist(ia,j)+blist(ib,j))
+            endif
+         enddo
+      enddo
+      psmoo(:,:)=alist(:,:)
+   end
+!  function std(x,ldim)
+!  real x(ldim)
+!  xmean=sum(x)/ldim
+!  std=sqrt(sum((x-xmean)*(x-xmean))/(ldim-1))
+!  end
 !------------------------------------------------
 end module
 
