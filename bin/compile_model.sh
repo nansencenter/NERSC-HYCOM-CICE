@@ -345,12 +345,25 @@ if [ $ICEFLG -ne 0 ] ; then
         echo "Error when compiling HYCOM, see above "
         exit $res
     fi
-else
-    echo "Now compiling hycom in $targetdir."
+elif [ $ICEFLG -eq 3 ] ; then
+    echo "Now compiling hycom with oasis in $targetdir."
     export ICEFLG=${ICEFLG}
     export ARCH=${MACROID}
     echo $ARCH
  
+    csh Make_hycom.csh ${MACROID} ${ICEFLG}
+    res=$?
+    if [ $res -ne 0 ] ; then
+        echo
+        echo "Error when compiling HYCOM, see above "
+        exit $res
+    fi
+else
+    echo "Now compiling hycom alone in $targetdir."
+    export ICEFLG=${ICEFLG}
+    export ARCH=${MACROID}
+    echo $ARCH
+
     csh Make_hycom.csh ${MACROID} ${ICEFLG}
     res=$?
     if [ $res -ne 0 ] ; then
