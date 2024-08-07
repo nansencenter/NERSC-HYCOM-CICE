@@ -1,5 +1,5 @@
 # CO2 expressed as a mole fraction in dry air, micromol/mol, abbreviated as ppm.
-# CO2-concetraions are from NORESM2-MM SSP245 scenario.
+# CO2-concetraions are from NORESM2-MM historic and SSP245 scenario.
 # year     mean      unc
   1948   312.53      0.00
   1949   312.64      0.00
