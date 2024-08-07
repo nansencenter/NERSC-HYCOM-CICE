@@ -30,6 +30,11 @@ export S=$P/SCRATCH                  # Scratch area
 
 export SIGVER=1   # Version of equation of state (this is 7-term sigma 2). Must not cause conflict with thflag in blkdat.input
 export NMPI=4
+export MXBLCKS=1  # The maximal number of ice blocks relates to the MPI cores distribution, 
+                  # and could be recommened by the error message in a model run.
+export COMPILE_BIOMODEL="no"
+export DOWNSCALING="no"
+export DS_scenario="esm_hist_SSP585"
 
 # Consistency check. Ensures expt dir ends in expt_X
 #echo $tmp
