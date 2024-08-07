@@ -454,7 +454,14 @@ if [ $TRCRLX -ne 0 -o $NTRACR -eq -1 ] ; then
    ln -sf $BASEDIR/relax/${E}/relax_rmu.a relax.rmutr.a  || tellerror "Could not get relax.rmutr.a"
    ln -sf $BASEDIR/relax/${E}/relax_rmu.b relax.rmutr.b  || tellerror "Could not get relax.rmutr.b"
 
-   [ ! -f  $INPUTDIR/co2_annmean_gl.txt ] && tellerror "$INPUTDIR/co2_annmean_gl.txt does not exist"
+   if [ $DOWNSCALING == "yes" ] ; then
+     [ ! -f  $INPUTDIR/co2_annmean_gl.txt ] && tellerror "$INPUTDIR/co2_annmean_gl.txt does not exist"
+     ln -sf $INPUTDIR/co2_annmean_${DS_scenario}.txt co2_annmean_gl.txt || tellerror "Could not get co2_annmean_gl.txt"
+   else
+     [ ! -f  $INPUTDIR/co2_annmean_gl.txt ] && tellerror "$INPUTDIR/co2_annmean_gl.txt does not exist"
+     ln -sf $INPUTDIR/co2_annmean_gl.txt co2_annmean_gl.txt || tellerror "Could not get co2_annmean_gl.txt"
+   fi 
+fi[ ! -f  $INPUTDIR/co2_annmean_gl.txt ] && tellerror "$INPUTDIR/co2_annmean_gl.txt does not exist"
    ln -sf $INPUTDIR/co2_annmean_gl.txt co2_annmean_gl.txt || tellerror "Could not get co2_annmean_gl.txt"
 fi
 #
