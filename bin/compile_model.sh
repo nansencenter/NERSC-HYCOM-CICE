@@ -142,6 +142,9 @@ elif [ "${hostnamed:0:5}" == "betzy" ] ; then
 elif [ "${hostnamed:0:4}" == "fram" ] ; then # fram
    SITE="fram"
    MACROID=$ARCH.$SITE.$compiler
+elif [ "${hostnamed:0:4}" == "cm.c" ] ; then # fram
+   SITE="chpc"
+   MACROID=$ARCH.$SITE.$compiler
 # Generic case. SITE is empty
 elif [[ "${ARCH}" == "Linux" ]] ; then
    SITE=""
@@ -195,11 +198,14 @@ elif [ "$SITE" == "surfsara" ] ; then
    export ESMF_MOD_DIR=${ESMF_DIR}mod/
    export ESMF_LIB_DIR=${ESMF_DIR}lib/
    
+elif [[ "${unames:0:5}" == "Linux" ]] && [[ "$SITE" == "chpc" ]] ; then
+   export ESMF_DIR=#${EBROOTESMF}/
+   export ESMF_MOD_DIR=#${ESMF_DIR}mod/
+   export ESMF_LIB_DIR=#${ESMF_DIR}lib/
 elif [[ "${unames:0:5}" == "Linux" ]] && [[ "$SITE" == "fram" ]] ; then
    export ESMF_DIR=${EBROOTESMF}/
    export ESMF_MOD_DIR=${ESMF_DIR}mod/
    export ESMF_LIB_DIR=${ESMF_DIR}lib/
-
 # If site is not given, try to use a generic setup. Macro names composed of compiler name and mpi lib name (openmpi, mpich, lam, etc etc(
 elif [[ "${unames:0:5}" == "Linux" ]] && [[ "$SITE" == "" ]] ; then
    if [ -z "${ESMF_DIR}" ] ; then
