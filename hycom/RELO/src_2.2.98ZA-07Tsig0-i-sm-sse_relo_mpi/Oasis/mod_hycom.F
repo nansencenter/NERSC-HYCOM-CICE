@@ -1933,7 +1933,7 @@ c ---     use CICE fields for ice statistics when available
 !AS give hycom the sea ice concentration
             covice(1:idm,1:jdm)=cplts_recv(1:idm,1:jdm,i2o_sico)
             si_c(1:idm,1:jdm)=cplts_recv(1:idm,1:jdm,i2o_sico)
-#elif
+#else
             si_c(:,:) = covice(:,:)
 #endif
             si_h(:,:) = thkice(:,:)

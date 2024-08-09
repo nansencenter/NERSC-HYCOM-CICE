@@ -105,7 +105,7 @@ S-Z(15-11): dp00/f/x/i=3m/1.125/12m/1m; ds=1m/1.125/4m; src_2.2.12;
    6.0	  'thkriv' = nominal thickness of river inflow (m)
    3.0    'thkcdw' = thickness for near-surface currents in ice-ocean stress (m)
   20.0	  'thkfrz' = maximum thickness of near-surface freezing zone (m)
-   0	  'iceflg' = sea ice model flag (0=none,1=energy loan,2=coupled/esmf)
+   0	  'iceflg' = sea ice model flag (0=none,1=energy loan,2=coupled/esmf,3=nextsim)
    0.0    'tfrz_0' = ENLN: ice melting point (degC) at S=0psu
   -0.054  'tfrz_s' = ENLN: gradient of ice melting point (degC/psu)
    0.25   'frzifq' = e-folding time scale back to tfrz (days or -ve time steps)

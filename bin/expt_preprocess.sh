@@ -714,9 +714,12 @@ compdir=$P/build/${compdir}
 if [ $ICEFLG -eq 2 ] ; then
   echo "Retrieving  hycom_cice from $compdir"
   /bin/cp $compdir/hycom_cice  . || tellerror "Could not get hycom_cice executable at "
-elif [ $ICEFLG -eq 0 ] ; then
+elif [ $ICEFLG -eq 3 ] ; then
   echo "Retrieving  hycom_oasis from $compdir"
   /bin/cp $compdir/hycom_oasis  . || tellerror "Could not get hycom_oasis executable at "
+elif [ $ICEFLG -eq 0 ] ; then
+  echo "Retrieving  hycom_alone from $compdir"
+  /bin/cp $compdir/hycom_alone  . || tellerror "Could not get hycom_alone executable at "
 fi
 
 
