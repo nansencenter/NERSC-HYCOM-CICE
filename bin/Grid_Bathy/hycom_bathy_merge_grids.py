@@ -144,7 +144,7 @@ def main(infile_coarse,gridfile_coarse,infile_fine,
    newbathy_m=np.ma.masked_where(newbathy<=bathy_threshold,newbathy)
 
    # Create netcdf file with all  stages for analysis
-  logger.info("Writing bathymetry to diagnostic file bathy_merged.nc")
+   logger.info("Writing bathymetry to diagnostic file bathy_merged.nc")
    ncid = netCDF4.Dataset("bathy_merged.nc","w")
    ncid.createDimension("idm",newbathy.shape[1])
    ncid.createDimension("jdm",newbathy.shape[0])
@@ -171,6 +171,7 @@ def main(infile_coarse,gridfile_coarse,infile_fine,
    ncid.variables["rmu"][:] = rmu
    ncid.close()
    
+   logger.info("Writing bathymetry plot to file newbathy.png")
    figure = matplotlib.pyplot.figure(figsize=(8,8))
    ax=figure.add_subplot(111)
    P=ax.pcolormesh(newbathy)
