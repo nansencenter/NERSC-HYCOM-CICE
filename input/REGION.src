@@ -57,6 +57,7 @@ export NCEP_CLIM_PATH=/work/shared/nersc/NCEP_Clim/
 export ERAI_PATH=${Sysdir_nn2993k}/ERA-I/
 export ERA5_PATH=${Sysdir_nn9481k}/ERA5_6h/
 export NORESM_PATH=${Sysdir_nn9481k}/NORESM_atmo/
+export NORESM_CLIM_PAT='' #Path to directory with regridded climtology files from a climate model
 export WOA2005_PATH=${Sysdir_nn2993k}/ModelInput/WOA2005/
 export ECNC_PATH=/work/shared/nersc/ECMWFR_T799/
 export NCEP_PATH=/work/shared/nersc/NCEP/
