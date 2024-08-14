@@ -34,8 +34,10 @@ endif
 TARGET = rmunew
 TARGET2 = z_woa2013_bio
 TARGET3 = z_glodap_co2
+TARGET4 = z_norcpm
+TARGET5 = z_noresm
 
-all: $(TARGET) $(TARGET2) $(TARGET3)
+all: $(TARGET) $(TARGET2) $(TARGET3) $(TARGET4) $(TARGET5)
 
 
 ###############################################################################
@@ -59,12 +61,28 @@ OBJECTS3= z_glodap_co2.o \
 $(TARGET3):  $(OBJECTS3)  
 	cd ./TMP ; $(LD) $(LINKFLAGS) -o ../$(TARGET3)  $(OBJECTS3) $(LIBS) 
 ###############################################################################
+OBJECTS4= z_norcpm.o \
+			zh.o \
+			interp.o
+
+$(TARGET4):  $(OBJECTS4)  
+	cd ./TMP ; $(LD) $(LINKFLAGS) -o ../$(TARGET4)  $(OBJECTS4) $(LIBS) 
+###############################################################################
+OBJECTS5= z_noresm.o \
+			zh.o \
+			interp.o
+
+$(TARGET5):  $(OBJECTS5)  
+	cd ./TMP ; $(LD) $(LINKFLAGS) -o ../$(TARGET5)  $(OBJECTS5) $(LIBS) 
+###############################################################################
 
 clean:
-	rm ./TMP/*.o TMP/*.mod  $(TARGET) $(TARGET2) $(TARGET3) 
+	rm ./TMP/*.o TMP/*.mod  $(TARGET) $(TARGET2) $(TARGET3) $(TARGET5) $(TARGET5) 
 
 install : all
 	mkdir -p ../../bin_setup/
 	cp $(TARGET) ../../bin_setup/
 	cp $(TARGET2) ../../bin_setup/
 	cp $(TARGET3) ../../bin_setup/
+	cp $(TARGET4) ../../bin_setup/
+	cp $(TARGET5) ../../bin_setup/
