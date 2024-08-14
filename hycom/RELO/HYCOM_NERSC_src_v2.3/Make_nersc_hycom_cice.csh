@@ -29,12 +29,12 @@ setenv TYPE cice
 #setenv ARCH Linux.sisu.intel   
 setenv CICE_FLAG $2
 setenv ARCH $1
+setenv debug $3
 echo "(1) ARCH = $ARCH"
-echo "if error: make sure to set the correct ARCH in Make_cice.csh"
-echo "Make_cice.csh: Environment variable TYPE=$TYPE"
-echo "Make_cice.csh: Environment variable ARCH=$ARCH"
-
-
+echo "if error: make sure to set the correct ARCH in Make_nersc_hycom_cice.csh"
+echo "Make_nersc_hycom_cice.csh: Environment variable TYPE=$TYPE"
+echo "Make_nersc_hycom_cice.csh: Environment variable ARCH=$ARCH"
+echo "Make_nersc_hycom_cice.csh: Environment variable debug=$debug"
 
 if     ($TYPE != "cice") then
   echo "TYPE must be cice to invoke cice make target"
@@ -71,10 +71,13 @@ endif
 
 # --- KAL. Touch this file to make sure it exists. It may be empty, but the makefile will look for it
 touch ./hycom_feature_flags
+# setup cpp flags
+#setenv NERSC_FLAG "-DNERSC_HYCOM_CICE -DNERSC_USE_ESMF -DNERSC_ATM_CPL -DNERSC_saltflux -DNERSC_T2F"
 #
 # --- make HYCOM component, and update hycom_cice
 #
 # --- force a relink, because CICE is not in the dependencies
+touch hycom_cice
 /bin/rm hycom_cice
 if ($CICE_FLAG == 0) then
 	echo "only hycom"
@@ -82,7 +85,8 @@ if ($CICE_FLAG == 0) then
       	echo "Replacing HYCOM with HYCOM_CICE ..."
       	mv hycom hycom_cice
 else
-	make ARCH=$ARCH TYPE=$TYPE CICE_DIR=../CICE/ hycom_cice
+	make ARCH=$ARCH TYPE=$TYPE CICE_DIR=../CICE hycom_cice_nersc
+      	mv hycom_cice_nersc hycom_cice
 endif
 # --- some machines require gmake
 #gmake ARCH=$ARCH TYPE=$TYPE hycom_cice

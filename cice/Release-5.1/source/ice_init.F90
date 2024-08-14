@@ -1270,7 +1270,7 @@
          call ice_read_nc &
              (fid, 1, fieldname, abar2d(:,:,:), .true., &
              field_loc_center, field_type_scalar)
-             fieldname = 'hi'
+         fieldname = 'hi'
          call ice_read_nc &
              (fid, 1, fieldname, hbar2d(:,:,:), .true., &
              field_loc_center, field_type_scalar)

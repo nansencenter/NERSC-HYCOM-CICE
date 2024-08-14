@@ -6,10 +6,10 @@ module mod_NERSCnml
   implicit none
   private
  
+
   logical,save, public :: &
     write_arche, &      ! print arche files or not
-    sss_underice        ! relaxtion under ice (false if no) 
-
+    sss_underice     ! relaxtion under ice (false if no) 
   public NERSC_init
 
   contains
@@ -38,7 +38,7 @@ module mod_NERSCnml
       if (nml_err > 0) then
         if (mnproc.eq.1) then
           write (lp,'(a)') &
-          'NERSC HYCOM ERROR: Can not read namelist: hycom_opt'
+          'NERSC HYCOM ERROR: Can not read namelist: ../hycom_opt'
           call flush(lp)
           call xcstop('(NERSC_nml)')
           stop '(NERSC_nml)'
@@ -49,7 +49,7 @@ module mod_NERSCnml
     if (mnproc.eq.1) then
       write (lp,*)'NERSC HYCOM: Reading hycom_nml from: ../hycom_opt'
       write (lp,*)'NERSC HYCOM: Write arche    = ',write_arche
-      write (lp,*)'      HYCOM: sss_underice   = ',sss_underice
+      write (lp,*)'             sss_underice   = ',sss_underice
     endif !1st tile
     call xcsync(flush_lp)
 
