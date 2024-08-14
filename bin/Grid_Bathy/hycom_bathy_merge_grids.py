@@ -130,6 +130,7 @@ def main(infile_coarse,gridfile_coarse,infile_fine,
    # Make call to consistency routine
    if check_consistency :
       import hycom_bathy_consistency # Normally in same dir as this python routine, so ok
+      logger.info("Passing merged bathymetry to consistency check ")
       newbathy=hycom_bathy_consistency.main("",[],[],
             remove_isolated_basins=True,
             remove_one_neighbour_cells=True,
