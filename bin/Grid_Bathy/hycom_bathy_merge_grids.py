@@ -129,8 +129,8 @@ def main(infile_coarse,gridfile_coarse,infile_fine,
 
    # Make call to consistency routine
    if check_consistency :
-      import hycom_bathy_consistency # Normally in same dir as this python routine, so ok
       logger.info("Passing merged bathymetry to consistency check ")
+      import hycom_bathy_consistency # Normally in same dir as this python routine, so ok
       newbathy=hycom_bathy_consistency.main("",[],[],
             remove_isolated_basins=True,
             remove_one_neighbour_cells=True,
@@ -144,6 +144,7 @@ def main(infile_coarse,gridfile_coarse,infile_fine,
    newbathy_m=np.ma.masked_where(newbathy<=bathy_threshold,newbathy)
 
    # Create netcdf file with all  stages for analysis
+  logger.info("Writing bathymetry to diagnostic file bathy_merged.nc")
    ncid = netCDF4.Dataset("bathy_merged.nc","w")
    ncid.createDimension("idm",newbathy.shape[1])
    ncid.createDimension("jdm",newbathy.shape[0])
