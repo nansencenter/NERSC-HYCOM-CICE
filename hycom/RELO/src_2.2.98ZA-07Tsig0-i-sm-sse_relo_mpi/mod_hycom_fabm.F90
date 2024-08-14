@@ -55,6 +55,7 @@ module mod_hycom_fabm
    real :: wndstr,strspd
    real, allocatable :: h(:, :,:),delZ(:),codepth(:,:,:),cotemp(:,:,:),cosal(:,:,:),codens(:,:,:)
    real, allocatable :: hriver(:, :)
+   real, allocatable :: coice_conc(:, :)
    real, allocatable, target :: fabm_surface_state(:, :, :, :)
    real, allocatable, target :: fabm_bottom_state(:, :, :, :)
    real, allocatable :: fabm_surface_state_old(:, :, :)
@@ -192,6 +193,7 @@ contains
         allocate(cotemp(ii,jj,kk))
         allocate(cosal(ii,jj,kk))
         allocate(codens(ii,jj,kk))
+        allocate(coice_conc(ii,jj))
         allocate(hriver(ii, jj))
         allocate(fabm_surface_state(1-nbdy:idm+nbdy, 1-nbdy:jdm+nbdy, 2, size(fabm_model%surface_state_variables)))
         allocate(fabm_bottom_state(1-nbdy:idm+nbdy, 1-nbdy:jdm+nbdy, 2, size(fabm_model%bottom_state_variables)))
@@ -1256,7 +1258,7 @@ call fabm_model%finalize_outputs
                        atmco2_3 = pair / 9.81 * 10.**(-2.0)
                        atmco2_fabm(i,j) = atmco2_0 * (atmco2_3 - atmco2_2) * 0.997                     
 
-
+                       coice_conc(i,j)=covice(i,j)
                        do k=1,kk
                           delZ(k) = dp(i,j,k,index)/onem                    !
                           if(k.eq.1)then                                    !
@@ -1280,6 +1282,7 @@ call fabm_model%finalize_outputs
         call fabm_model%link_interior_data(fabm_standard_variables%practical_salinity,cosal(1:ii,1:jj,1:kk))
         call fabm_model%link_interior_data(fabm_standard_variables%density,codens(1:ii,1:jj, 1:kk))
         call fabm_model%link_interior_data(fabm_standard_variables%pressure,codepth(1:ii,1:jj, 1:kk))
+        call fabm_model%link_horizontal_data(fabm_standard_variables%ice_area_fraction, coice_conc(1:ii, 1:jj))
 
         call update_fabm_state(index)
     end subroutine update_fabm_data
