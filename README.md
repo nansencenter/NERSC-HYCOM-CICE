@@ -58,6 +58,8 @@ Before you attempt this, make sure that the HYCOM-CICE support programs are
 compiled, that the MSCPROGS programs are compiled, and that you have the other prerequisites described above. 
 The compilation is handled by the script compile_model.sh in NHCROOT/bin, and is described in [./doc/HYCOM-CICE-compilation.md](./doc/HYCOM-CICE-compilation.md)
 
+Relating to two HYCOM versions of 2.2.98 and 2.3, the settings in EPT.src and blkdat.input should be consistent with the version chosen.
+
 
 # Compiling HYCOM alone from the HYCOM-CICE model
 
