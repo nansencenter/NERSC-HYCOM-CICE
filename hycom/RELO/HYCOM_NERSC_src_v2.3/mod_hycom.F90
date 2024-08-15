@@ -1217,6 +1217,7 @@
         call xctilr(fswice,1,1,nbdy,nbdy,halo_ps)  !Solar Heat Flux thru Ice to Ocean
         call xctilr(flxice,1,1,nbdy,nbdy,halo_ps)  !Ice Freezing/Melting Heat Flux
         call xctilr(sflice,1,1,nbdy,nbdy,halo_ps)  !Ice Virtual Salt Flux
+        call xctila(wflice,1,1,nbdy,nbdy,halo_ps)  !Sea Ice Water Flux
         call xctilr(temice,1,1,nbdy,nbdy,halo_ps)  !Sea Ice Temperature
         call xctilr(  si_t,1,1,nbdy,nbdy,halo_ps)  !Sea Ice Temperature
         call xctilr(thkice,1,1,nbdy,nbdy,halo_ps)  !Sea Ice Thickness
