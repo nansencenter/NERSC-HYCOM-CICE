@@ -83,11 +83,19 @@
       elseif (iceflg.ne.0) then
           ! switch off the sssflx under sea ice
           if (sss_underice==.false.) then
-             if (covice(i,j)>=0.15) then
-                sssflx(i,j)=0.0                            !skip relaxation bellow sea ice
-             else
-                sssflx(i,j)=(1.0-covice(i,j))*sssflx(i,j)  !skip relaxation bellow sea ice
-             endif
+!$OMP PARALLEL DO PRIVATE(j,i)
+            do j=1,jj
+               do i=1,ii
+                  if (SEA_P) then
+                     if (covice(i,j)>=0.15) then
+                        sssflx(i,j)=0.0                            !skip relaxation bellow sea ice
+                     else
+                        sssflx(i,j)=(1.0-covice(i,j))*sssflx(i,j)  !skip relaxation bellow sea ice
+                     endif
+                  endif
+               enddo !i
+            enddo
+!$OMP END PARALLEL DO
           endif
           if ( cpl_swflx  .and. cpl_lwmdnflx .and. cpl_lwmupflx &
                           .and. cpl_precip   .and. cesmbeta ) then
