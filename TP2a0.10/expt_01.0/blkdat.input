@@ -90,7 +90,7 @@ S-Z(15-11): dp00/f/x/i=3m/1.125/12m/1m; ds=1m/1.125/4m; src_2.2.12;
   -12     'cplifq' = number of days (or time steps) between sea ice coupling
  600.0	  'baclin' = baroclinic time step (seconds), int. divisor of 86400
   25.0	  'batrop' = barotropic time step (seconds), int. div. of baclin/2
-   0	  'incflg' = incremental update flag (0=no, 1=yes, 2=full-velocity)
+   0	  'incflg' = sea ice model flag (0=none,1=energy loan,2=coupled/esmf,3=nextsim)
  100	  'incstp' = no. timesteps for full update (1=direct insertion)
    1	  'incupf' = number of days of incremental updating input
    0.125  'ra2fac' = weight for Robert-Asselin time filter
