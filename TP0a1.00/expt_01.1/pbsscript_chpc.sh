@@ -6,10 +6,10 @@
 #PBS -l select=1:ncpus=4:mpiprocs=4
 
 ## System message output file
-#PBS -o /mnt/lustre/users/asamuelsen/AGUa1.00/expt_01.0/log/HYCOM-CICE.out
+#PBS -o log/HYCOM-CICE.out
 
 ## System error message file
-#PBS -e /mnt/lustre/users/asamuelsen/AGUa1.00/expt_01.0/log/HYCOM-CICE.err
+#PBS -e log/HYCOM-CICE.err
 
 ## How long job takes, wallclock time hh:mm:ss
 #PBS -l walltime=0:30:00
