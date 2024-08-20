@@ -703,6 +703,7 @@ contains
         call vertical_movement(n, m, delt1)
         if (do_check_state) call check_state('after vertical_movement', n, .false.)
       end if
+
 !call check_dsnk("AFTER VERTICAL",m)
 !call check_dsnk("AFTER VERTICAL",n)
 call check_finite("AFTER VERTICAL", m)
@@ -750,7 +751,7 @@ call fabm_model%prepare_inputs
         do i=1,ii
           if (kbottom(i, j, n) > 0) then
             fabm_bottom_state(i, j, n, :) = fabm_bottom_state(i, j, n, :) + delt1 * sms_bt(i, :) ! update sediment layer
-            if ( dp(i, j, kbottom(i,j,n), n)/onem >= 6.0 ) then ! check if the bottom layer is thicker than 6 meters,
+            if ( dp(i, j, kbottom(i,j,n), n)/onem >= min(6.0,depths(i,j)-1.0)) then ! check if the bottom layer is thicker than 6 meters,
                                                                 ! if so, apply the flux as usual (I will decrease the criteria in time)
                 tracer(i, j, kbottom(i,j,n), n, :) = tracer(i, j, kbottom(i,j,n), n, :) + delt1 * flux(i, :)/dp(i, j, kbottom(i,j,n), n)*onem
             else ! in case less than 6 meters, to avoid accumulation at the bottom thin layers,
@@ -759,7 +760,7 @@ call fabm_model%prepare_inputs
               nbottom = 0
               do k = kbottom(i,j,n),1,-1
                 hbottom = hbottom + dp(i ,j , k, n)/onem
-                if ( hbottom >= 6.0 ) exit
+                if ( hbottom >= min(6.0,depths(i,j)-1.0)) exit
                 nbottom = nbottom + 1
               end do
               do k = kbottom(i,j,n)-nbottom , kbottom(i,j,n) ! distribute the flux to total height, and to multiple layers
@@ -1082,7 +1083,7 @@ call fabm_model%finalize_outputs
 
       real :: w(ii, kk, size(fabm_model%interior_state_variables))
       real :: flux(ii, 0:kk)
-      integer :: i, j, k, ivar, kabove, kb
+      integer :: i, j, k, ivar, kabove, kb, kabl
       real, parameter :: epsilon = 1e-8
 
       do j=1,jj
@@ -1109,7 +1110,8 @@ call fabm_model%finalize_outputs
           ! Update state
           do i=1,ii
             kabove = 0
-            do k=1,kbottom(i, j, n)-1
+!            do k=1,kbottom(i, j, n)-1
+            do k=kbottom(i, j, n)-1,1,-1
               if (dp(i, j, k, n) > 0) kabove = k
               if (flux(i, k) /= 0) then
                 ! non-zero flux across interface
@@ -1118,17 +1120,19 @@ call fabm_model%finalize_outputs
                 !  flux(i, k+1) = 0.!flux(i, k+1) + flux(i, k)
                 flux(i, k) = 0
                 else
-                  ! Prevent accumulation of settling particles in thin layers 
+                   ! Prevent accumulation of settling particles in thin layers
+                  kabl=kbottom(i, j, n)-1
                   if ( flux(i, k) < 0 .and. k == kbottom(i, j, n)-1 ) then ! if settling and if at the layer above the bottom
-                    if ( dp(i, j, k+1, n)/onem >= 6.0 ) then ! check if the bottom layer is actually < 6 meters, if not, apply the regular flux additions
+                    if ( dp(i, j, k+1, n)/onem >= min(3.0,depths(i,j)-1.0)) then ! check if the bottom layer is actually < 6 meters, if not, apply the regular flux additions
                       tracer(i, j, kabove, n, ivar) = tracer(i, j, kabove, n, ivar) + flux(i, k)*timestep/(dp(i, j, kabove, n)/onem)
                       tracer(i, j, k+1, n, ivar) = tracer(i, j, k+1, n, ivar) - flux(i, k)*timestep/(dp(i, j, k+1, n)/onem)
+                      kabl=kbottom(i, j, n)-2 ! k above bottom layer
                       else ! if < 6 meters
                         hbottom = 0
                         nbottom = 0 
                         do kb = kbottom(i, j, n),1,-1 ! find number of layers that add up to > 6 meters, and store the total height
                           hbottom = hbottom + dp(i ,j , kb, n)/onem
-                          if ( hbottom >= 6.0 ) exit
+                          if ( hbottom >= min(3.0,depths(i,j)-1.0)) exit
                           nbottom = nbottom + 1
                         end do
                         ! Settle the particles from kabove
@@ -1137,10 +1141,13 @@ call fabm_model%finalize_outputs
                         do kb = kbottom(i, j, n) - nbottom , kbottom(i, j, n)
                           tracer(i, j, kb, n, ivar) = tracer(i, j, kb, n, ivar) - flux(i, k)*timestep/hbottom
                         end do
+                      kabl=kbottom(i, j, n) - nbottom -1 ! k above bottom layer 
                     end if  
                   else ! this applies to all other layers including floating particles
+                    if (k <= kabl) then
                     tracer(i, j, kabove, n, ivar) = tracer(i, j, kabove, n, ivar) + flux(i, k)*timestep/(dp(i, j, kabove, n)/onem)
                     tracer(i, j, k+1, n, ivar) = tracer(i, j, k+1, n, ivar) - flux(i, k)*timestep/(dp(i, j, k+1, n)/onem)
+                    endif
                   endif
                 end if
               end if
@@ -1267,7 +1274,7 @@ call fabm_model%finalize_outputs
                              codepth(i,j,k) = codepth(i,j,k-1)+delZ(k)      ! water depth
                           end if                                            !
                           cotemp(i,j,k) = max(-3.999,temp(i, j, k, index))  ! water temparature
-                          cosal(i,j,k)  = saln(i, j, k, index)              ! salinity
+                          cosal(i,j,k)  = max(5.0,saln(i, j, k, index))       ! salinity
                           codens(i,j,k) = th3d(i, j, k, index)+thbase+1000. ! water density
 
                        end do
