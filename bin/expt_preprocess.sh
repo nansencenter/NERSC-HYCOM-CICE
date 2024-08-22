@@ -240,7 +240,7 @@ echo "tstop  is $tstop"
 echo "--------------------"
 
 # Check that start time is in September when starting from climatology                                                           
-if [ "$initstr" == "--init" ] ;then
+if [ "$initstr" == "--init" && $ICEFLG != 0] ;then
     if [ "$start_month" != "09" ]; then
         tellerror "We recommend starting the model in September when starting from \                                             
 climatology. You can override September initilization by commenting out \                                                        
