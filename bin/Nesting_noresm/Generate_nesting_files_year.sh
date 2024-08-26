@@ -6,7 +6,6 @@
 #SBATCH --qos=devel
 #SBATCH --nodes=1   # number of nodes
 #SBATCH  --mail-type=ALL
-#SBATCH --mail-user=lilleannette.xpkww@sync.omnigroup.com
 
 #SBATCH -o log/gnnjob.out
 #SBATCH -e log/gnnjob.err
@@ -25,51 +24,68 @@
 #year=$((2090+$SLURM_ARRAY_TASK_ID))
 
 year=$1
+target_region=$2 # target region (e.g. TP2a0.10) 
+target_experiment=$3 # target experiment (e.g. 010)
+experiment_full_name="expt_${target_experiment:0:2}.${target_experiment:2}"
+source_nesting_experiment_path=$PWD
+#
+echo ''
+echo 'Using '${ESM_Scenario}' scenario'
+echo 'The script will look for bias corrections under '${Nesting_Files_PATH}'. Modify REGION.src if necessary'
+echo 'The script assumes you are running in an experiment folder located in the Nesting Region (e.g. ESMa1.00/expt_01.0)'
+echo ''
+#
 
-lname=NorESM2-MM_historical_r1i1p1f1
-#lname=NorESM2-MM_ssp585_r1i1p1f1
+
 genphynest=false
 genbgcnest=true
 #Generate the physical nesting files
 if [ "$genphynest" = "true" ]; then
+
 ### Make sure all the files are prepared:
-cd /cluster/work/users/annettes/NORESM_Nesting/
+cd $Nesting_Files_PATH
 for vari in thetao so uo vo zos; do
-   num=`ls ${vari}_Omon_${lname}_g*_${year}*extrap* | wc -l`
+   num=`ls ${vari}_Omon_${ESM_Scenario}_g*_${year}*extrap* | wc -l`
    echo $year $vari $num
    if [ $num -ne 12 ]; then
      echo "Number of files incorrect for variable " $vari
-     ./separate_and_extrapolate_files_year.sh $year $vari
+     ${BINDIR}/Nesting_noresm/separate_and_extrapolate_files_year.sh $year $vari
    fi
 done
 
 # Compute the nesting files
-cd /cluster/work/users/annettes/ESMa1.00/expt_01.0
-../bin/Nesting_noresm/noresm_to_hycom.sh ../../TZ4a0.10/expt_01.1/  \
-../../NORESM_Nesting/thetao_Omon_${lname}_gr_${year}*_extrap.nc
+cd $source_nesting_experiment_path
+
+${BINDIR}/Nesting_noresm/noresm_to_hycom.sh /cluster/work/users/$USER/$target_region/$experiment_full_name  \
+   ${Nesting_Files_PATH}/thetao_Omon_${ESM_Scenario}_gr_${year}*_extrap.nc
 
 # Compute the montgomery potential
-cd /cluster/work/users/annettes/TZ4a0.10/nest/011
+#mkdir -p /cluster/work/users/${USER}/$target_region/nest
+#mkdir -p /cluster/work/users/${USER}/$target_region/nest/$target_experiment
+cd /cluster/work/users/${USER}/$target_region/nest/$target_experiment
+#mkdir -p /cluster/work/users/${USER}/$target_region/nest/$target_experiment/Orig
 for sday in 016 046 075 106 136 167 197 228 259 289 320 350 ; do
    mv archv.${year}_${sday}_00.* Orig/
 done
 
-cd /cluster/work/users/annettes/TZ4a0.10/expt_01.1/
-python ./bin/calc_montg1.py ../nest/011/Orig/archv.${year}_*_00.b data/restart.2005_079_12_0000.b ../nest/011/Montg/
+cd /cluster/work/users/${USER}/$target_region/$experiment_full_name/
+python ${BINDIR}/calc_montg1.py /cluster/work/users/${USER}/$target_region/nest/$target_experiment/Orig/archv.${year}_*_00.b \
+       /cluster/work/users/${USER}/$target_region/$experiment_full_name/data/restart.2010_001_12_0000.b \
+          /cluster/work/users/${USER}/$target_region/nest/$target_experiment/Montg/
 
-cd $SLURM_SUBMIT_DIR
+cd $source_nesting_experiment_path #$SLURM_SUBMIT_DIR
 fi
 
 #Generate the biogeochemical nesting files
 if [ "$genbgcnest" = "true" ]; then
 ### Make sure all the files are prepared:                                                                                  
-cd /cluster/work/users/annettes/NORESM_Nesting/
+cd ${Nesting_Files_PATH}
 for vari in no3 po4 o2 si; do
-   num=`ls ${vari}_Omon_${lname}_g*_${year}*extrap* | wc -l`
+   num=`ls ${vari}_Omon_${ESM_Scenario}_g*_${year}*extrap* | wc -l`
    echo $year $vari $num
    if [ $num -ne 12 ]; then
      echo "Number of files incorrect for variable " $vari
-     srun -n1 -c2 --overlap ./separate_and_extrapolate_files_year.sh $year $vari
+     srun -n1 -c2 --overlap ${BINDIR}/Nesting_noresm/separate_and_extrapolate_files_year.sh $year $vari
    fi
 done
 fi

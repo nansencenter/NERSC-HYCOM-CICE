@@ -78,6 +78,10 @@ export NEMO_EXAMPLE_NATIVE_FOLDER=/nird/projects/nird/NS9481K/MERCATOR_DATA/NMa0
 export MERCATOR_REGULAR_MESH=/nird/projects/nird/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO_MFC_001_24_MESH.nc
 export NEMO_EXAMPLE_REGULAR_FOLDER=/nird/projects/nird/NS9481K/MERCATOR_DATA/NMb0.08
 
+# Nesting to ESMs
+export ESM_Scenario=NorESM2-MM_historical_r1i1p1f1
+export Nesting_Files_PATH=/cluster/work/users/$USER/$R/Nesting_files/ # This assumes that in a nesting to ESM scenario, files are stored in the region folder.
+
 # These variables sets climatology to use when setting up the model. Sourced by run script
 # Note that NERSC forcing is (for now) also experiment-dependent 
 # (or to be specific: topography dependent)
