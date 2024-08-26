@@ -2,8 +2,7 @@
 module load CDO/1.9.10-iimpi-2022a
 
 # Variables on regular grid
-#lname=NorESM2-MM_historical_r1i1p1f1_gr
-lname=NorESM2-MM_ssp585_r1i1p1f1_gr
+lname=${ESM_Scenario}_gr
 
 year=$1
 vari=$2
@@ -73,8 +72,7 @@ if [ "$vari" != "zos" ]; then
 else
 
 # Variables on native grid
-#   lname=NorESM2-MM_historical_r1i1p1f1_gn
-   lname=NorESM2-MM_ssp585_r1i1p1f1_gn
+   lname=${ESM_Scenario}_gn
 
 #### Extract to monthly files
    cdo selyear,${year} ${varie}_${lname}_${d1}101-${year:0:1}10012.nc \
