@@ -789,7 +789,9 @@ fi
 if [ $numerr -eq 0 ] ; then
    echo "No fatal errors. Ok to start model set up in $S"
 else
-   echo "Some fatal errors occured. See above"
+   echo "Some fatal errors occured. The error message is: "
+   echo $FATALERROR
+   echo "For more details see above."
 fi
 
 # Tell where stuff ended up

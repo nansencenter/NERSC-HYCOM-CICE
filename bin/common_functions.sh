@@ -293,6 +293,7 @@ tellerror () {
   echo "[FATAL  ] $1" 
   let numerr=$numerr+1; 
   #echo "[FATAL  ] $1" >> $logfile
+  FATALERROR=$1
 }
 
 tellwarn () {
