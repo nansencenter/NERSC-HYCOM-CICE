@@ -27,17 +27,25 @@ year=$1
 target_region=$2 # target region (e.g. TP2a0.10) 
 target_experiment=$3 # target experiment (e.g. 010)
 experiment_full_name="expt_${target_experiment:0:2}.${target_experiment:2}"
+
 source_nesting_experiment_path=$PWD
+source ../REGION.src
 #
 echo ''
 echo 'Using '${ESM_Scenario}' scenario'
-echo 'The script will look for bias corrections under '${Nesting_Files_PATH}'. Modify REGION.src if necessary'
+echo 'The script will look for decadal files under '${Nesting_Files_PATH}'. Modify REGION.src if necessary'
 echo 'The script assumes you are running in an experiment folder located in the Nesting Region (e.g. ESMa1.00/expt_01.0)'
 echo ''
 #
+# Ensure Nesting_Files_PATH is set
+if [ -z "$Nesting_Files_PATH" ]; then
+    echo "Error: Nesting_Files_PATH is not set."
+    exit 1
+fi
 
+sleep 5 # so the user can read whats above
 
-genphynest=false
+genphynest=true
 genbgcnest=true
 #Generate the physical nesting files
 if [ "$genphynest" = "true" ]; then
@@ -50,6 +58,9 @@ for vari in thetao so uo vo zos; do
    if [ $num -ne 12 ]; then
      echo "Number of files incorrect for variable " $vari
      ${BINDIR}/Nesting_noresm/separate_and_extrapolate_files_year.sh $year $vari
+   else
+     echo "Extrapolation was already performed for "${vari}" before"
+     echo ""
    fi
 done
 
