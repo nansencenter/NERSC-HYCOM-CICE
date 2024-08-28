@@ -83,8 +83,9 @@ mv regional.* ../topo/
 ../bin/Nesting_noresm/Create_ESM_climatology.sh  2000 2009 _Omon_NorESM2-MM_historical_r1i1p1f1_gr_
 ```
 - Regrid the observational climatolgy to the ESM grid, below a certain depth, seasonal rather than monthly values must be used.
-- This can be done uaing the script `Create_climatology_for_bias_correction.sh'
-
-
+- This can be done uaing the script `Create_climatology_for_bias_correction.sh', using the keywords: *temperature, salinity, oxygen, nitrate, phosphate, silicate* separately.
+```
+../bin/Nesting_noresm/Create_climatology_for_bias_correction.sh silicate woa=/path/to/WOA
+```
 	
 
