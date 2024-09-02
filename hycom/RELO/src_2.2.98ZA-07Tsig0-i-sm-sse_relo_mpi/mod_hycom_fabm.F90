@@ -1267,7 +1267,7 @@ call fabm_model%finalize_outputs
                              codepth(i,j,k) = codepth(i,j,k-1)+delZ(k)      ! water depth
                           end if                                            !
                           cotemp(i,j,k) = max(-3.999,temp(i, j, k, index))  ! water temparature
-                          cosal(i,j,k)  = saln(i, j, k, index)              ! salinity
+                          cosal(i,j,k)  = max(5.0,saln(i, j, k, index))     ! salinity
                           codens(i,j,k) = th3d(i, j, k, index)+thbase+1000. ! water density
 
                        end do
