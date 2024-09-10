@@ -502,9 +502,9 @@
             history_file(1:lenstr(history_file)), &
              '.',iyear,'-',imonth,'-',iday,'.',suffix
           elseif (histfreq(ns) == 'h'.or.histfreq(ns) == 'H') then ! hourly
-           write(ncfile,'(a,a,i2.2,a,i4.4,a,i2.2,a,i2.2,a,i5.5,a,a)')  &
+           write(ncfile,'(a,a,i2.2,a,i4.4,a,i2.2,a,i2.2,a,i2.2,a,a)')  &
             history_file(1:lenstr(history_file)),'_',histfreq_n(ns),'h.', &
-             iyear,'-',imonth,'-',iday,'-',sec,'.',suffix
+             iyear,'-',imonth,'-',iday,'-',floor(sec/3600.),'.',suffix
           elseif (histfreq(ns) == 'm'.or.histfreq(ns) == 'M') then ! monthly
            write(ncfile,'(a,a,i4.4,a,i2.2,a,a)')  &
             history_file(1:lenstr(history_file)),'.', &
