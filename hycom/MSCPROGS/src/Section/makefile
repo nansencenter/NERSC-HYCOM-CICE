@@ -14,7 +14,7 @@ LIBS:= -L../../../lib/ -lhycnersc $(LIBS)
 INCLUDE:= -I../ -I../../../include/ $(INCLUDE)
 
 # This puts on the "scalar  transport" feature
-CPPFLAGS:=$(CPPFLAGS)  -USCALAR_TRANS
+CPPFLAGS:=$(CPPFLAGS)  -DSCALAR_TRANS
 
 # AIX (xlf) peculiarities. NB: Only necessary for Fortran files
 ifneq (,$(findstring -DAIX,$(CPPFLAGS)))
