@@ -450,6 +450,7 @@
                               year_init, new_year, new_month, new_day, &
                               dt
       use ice_restart_shared, only: lenstr
+      use ice_constants,      only: c3600
 
       character (char_len_long), intent(inout) :: ncfile
       character (len=2), intent(in) :: suffix
