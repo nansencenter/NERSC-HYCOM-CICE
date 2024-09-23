@@ -239,6 +239,16 @@ echo "tstart is $tstart"
 echo "tstop  is $tstop"
 echo "--------------------"
 
+# Check that start time is in September when starting from climatology                                                           
+if [ "$initstr" == "--init" ] ;then
+    if [ "$start_month" != "09" ]; then
+        tellerror "We recommend starting the model in September when starting from \                                             
+climatology. You can override September initilization by commenting out \                                                        
+this line in expt_preprocess.sh  and including the warning below"
+#       tellwarn "We recommend starting the model in September when starting from climatology"                                   
+    fi
+fi
+
 #C
 #C --- turn on detailed debugging.
 #C
@@ -431,7 +441,7 @@ fi
 #
 if [ $TRCRLX -ne 0 -o $NTRACR -eq -1 ] ; then
    echo "**Setting up tracer relaxation"
-   for i in ECO_no3 ECO_pho ECO_sil ECO_oxy CO2_dic CO2_alk; do
+   for i in ECO_no3 ECO_pho ECO_sil ECO_oxy CO2_TA CO2_c; do
       j=$(echo $i | head -c7)
       [ ! -f  $BASEDIR/relax/${E}/relax.$j.a ] && tellerror "$BASEDIR/relax/${E}/relax.$j.a does not exist"
       [ ! -f  $BASEDIR/relax/${E}/relax.$j.b ] && tellerror "$BASEDIR/relax/${E}/relax.$j.b does not exist"
@@ -444,8 +454,13 @@ if [ $TRCRLX -ne 0 -o $NTRACR -eq -1 ] ; then
    ln -sf $BASEDIR/relax/${E}/relax_rmu.a relax.rmutr.a  || tellerror "Could not get relax.rmutr.a"
    ln -sf $BASEDIR/relax/${E}/relax_rmu.b relax.rmutr.b  || tellerror "Could not get relax.rmutr.b"
 
-   [ ! -f  $INPUTDIR/co2_annmean_gl.txt ] && tellerror "$INPUTDIR/co2_annmean_gl.txt does not exist"
-   ln -sf $INPUTDIR/co2_annmean_gl.txt co2_annmean_gl.txt || tellerror "Could not get co2_annmean_gl.txt"
+   if [ $DOWNSCALING == "yes" ] ; then
+     [ ! -f  $INPUTDIR/co2_annmean_gl.txt ] && tellerror "$INPUTDIR/co2_annmean_gl.txt does not exist"
+     ln -sf $INPUTDIR/co2_annmean_${DS_scenario}.txt co2_annmean_gl.txt || tellerror "Could not get co2_annmean_gl.txt"
+   else
+     [ ! -f  $INPUTDIR/co2_annmean_gl.txt ] && tellerror "$INPUTDIR/co2_annmean_gl.txt does not exist"
+     ln -sf $INPUTDIR/co2_annmean_gl.txt co2_annmean_gl.txt || tellerror "Could not get co2_annmean_gl.txt"
+   fi 
 fi
 #
 # - thermobaric reference state?
@@ -608,25 +623,26 @@ else
 # --- For operatinal runs and other rund where it is certain that there has been no 
 # --- changes to the model setup, this part should be commented out. 
 #
-      if [ $tmp -eq 1 -o $tmp2 -eq 1 ] ; then
-       echo "debug: $(pwd)" 
-       ### "Calculate and Write Montgometry potential into the nesting files"
-       echo "filename="${filename}
-       for yy in `seq ${start_year} ${end_year}`; do
-        y=$(( $yy % 4 ))
-        if [ $y -eq 0 ]
-        then
-        echo "$yy is Leap Year!"
-        end_day=366
-        else
-        end_day=365
-        echo "$yy is not a Leap Year!"
-        fi
-        for dn in `seq -w ${start_oday} ${end_day}`; do
-         python ../calc_montg1.py /cluster/work/users/achoth/TP5a0.06/nest/080_NewMontg/archv.${yy}_${dn}_00.b  /cluster/work/users/achoth/TP5a0.06/expt_08.1/data/${filename}.b  ${nestdir}/
-        done
-       done
-       echo " Nesting Files Modified Successfully "
+      imontg=0
+      if [ [ $tmp -eq 1 -o $tmp2 -eq 1 ] -a [ $imontg -eq 1] ]; then
+         echo "debug: $(pwd)" 
+         ### "Calculate and Write Montgometry potential into the nesting files"
+         echo "filename="${filename}
+         for yy in `seq ${start_year} ${end_year}`; do
+           y=$(( $yy % 4 ))
+           if [ $y -eq 0 ]; then
+              echo "$yy is Leap Year!"
+              end_day=366
+           else
+              end_day=365
+              echo "$yy is not a Leap Year!"
+           fi
+           for dn in `seq -w ${start_oday} ${end_day}`; do
+              python ../calc_montg1.py /cluster/work/users/achoth/TP5a0.06/nest/080_NewMontg/archv.${yy}_${dn}_00.b  /cluster/work/users/achoth/TP5a0.06/expt_08.1/data/${filename}.b  ${nestdir}/
+#             python $BINDIR/calc_montg1.py $BASEDIR/nest/$E/archv.${yy}_${dn}_00.b  $BASEDIR/expt_$X/data/${filename}.b  ${nestdir}/
+           done
+         done
+         echo " Nesting Files Modified Successfully "
       fi
 #
 # --- End compute Montg. on the go, to be sure it is computed from the right nesting file.

@@ -6,10 +6,9 @@ module mod_NERSCnml
   implicit none
   private
  
-
   logical,save, public :: &
     write_arche, &      ! print arche files or not
-    sss_underice     ! relaxtion under ice (false if no) 
+    sss_underice        ! relaxtion under ice (false if no) 
 
   public NERSC_init
 

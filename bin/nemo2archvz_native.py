@@ -280,17 +280,6 @@ def make_grid(filemesh):
    shutil.move("regional.grid.a","../topo/regional.grid.a")
    shutil.move("regional.grid.b","../topo/regional.grid.b")
 
-def search_biofile(bio_path,dt):
-
-   logger.info("BIO")
-   # filename format MERCATOR-BIO-14-2013-01-05-00
-   lst=glob.glob(bio_path+"/MERCATOR-BIO-14-%s*.nc"%str(dt[:-2]))
-   df = numpy.zeros(len(lst))*numpy.nan 
-   for num,myfile in enumerate(lst):
-      tmp = datetime.datetime.strptime(myfile[-16:-6],'%Y-%M-%d')-datetime.datetime.strptime(dt,'%Y-%M-%d')
-      df[num]=tmp.days
-   val, idx = min((val, idx) for (idx, val) in enumerate(numpy.abs(df)))
-   return idx,lst[idx]
 
 def check_inputs(x, y, Z, points, mode, bounds_error):
     """Check inputs for interpolate2d function
@@ -495,7 +484,7 @@ def interpolate2d(x, y, Z, points, mode='linear', bounds_error=False):
     return r
 
 
-def main(filemesh,grid2dfiles,first_j=0,mean_file=False,iexpt=10,iversn=22,yrflag=3,makegrid=None,bio_path=None) :
+def main(filemesh,grid2dfiles,first_j=0,mean_file=False,iexpt=10,iversn=22,yrflag=3,makegrid=None,bio_file=None) :
 
    if mean_file :
       fnametemplate="archm.%Y_%j_%H"
@@ -558,27 +547,21 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=False,iexpt=10,iversn=22,yrfla
       tmp3=cfunits.Units.conform(time,tmp,tmp2)                                       # Transform to new new unit 
       tmp3=int(numpy.round(tmp3))
       mydt = datetime.datetime(refy,refm,refd,0,0,0) + datetime.timedelta(hours=tmp3) # Then calculate dt. Phew!
-      if bio_path:
+      if bio_file:
          jdm,idm=numpy.shape(plon)
          points = numpy.transpose(((plat.flatten(),plon.flatten())))
-         delta = mydt.strftime( '%Y-%m-%d')
-         # filename format MERCATOR-BIO-14-2013-01-05-00
-         idx,biofname=search_biofile(bio_path,delta)
-         if idx >7: 
-            msg="No available BIO file within a week difference with PHY"
-            logger.error(msg)
-            raise ValueError(msg)
-         logger.info("BIO file %s reading & interpolating to 1/12 deg grid cells ..."%biofname)
-         ncidb=netCDF4.Dataset(biofname,"r")
+         print(bio_file) 
+         logger.info("BIO file %s reading & interpolating to 1/12 deg grid cells ..."%bio_file)
+         ncidb=netCDF4.Dataset(bio_file,"r")
          blon=ncidb.variables["longitude"][:];
          blat=ncidb.variables["latitude"][:]
          minblat=blat.min()
-         no3=ncidb.variables["NO3"][0,:,:,:];
-         no3[numpy.abs(no3)>1e+5]=numpy.nan
-         po4=ncidb.variables["PO4"][0,:,:,:]
-         si=ncidb.variables["Si"][0,:,:,:]
-         po4[numpy.abs(po4)>1e+5]=numpy.nan
-         si[numpy.abs(si)>1e+5]=numpy.nan
+         no3=ncidb.variables["no3"][0,:,:,:];
+         no3[numpy.abs(no3)>1e+10]=numpy.nan
+         po4=ncidb.variables["po4"][0,:,:,:]
+         si=ncidb.variables["si"][0,:,:,:]
+         po4[numpy.abs(po4)>1e+10]=numpy.nan
+         si[numpy.abs(si)>1e+10]=numpy.nan
          # TODO: The following piece will be optimised and replaced soon. 
          nz,ny,nx=no3.shape
          dummy=numpy.zeros((nz,ny,nx+1))
@@ -597,7 +580,7 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=False,iexpt=10,iversn=22,yrfla
 # TODO:  Note that the coordinate files are for global configuration while
 #        the data file saved for latitude larger than 30. In the case you change your data file coordinate
 #        configuration you need to modify the following lines
-         bio_coordfile=bio_path[:-4]+"/GLOBAL_ANALYSIS_FORECAST_BIO_001_014_COORD/GLO-MFC_001_014_mask.nc"
+         bio_coordfile=bio_file[:-51]+"/GLOBAL_ANALYSIS_FORECAST_BIO_001_029_COORD/GLOBAL_REANALYSIS_BIO_001_029_mask.nc"
          biocrd=netCDF4.Dataset(bio_coordfile,"r")
          blat2 = biocrd.variables['latitude'][:]
          index=numpy.where(blat2>=minblat)[0]
@@ -628,6 +611,7 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=False,iexpt=10,iversn=22,yrfla
       #   field_interpolator=FieldInterpolatorBilinear(blon,blat,plon.flatten(),plat.flatten())
       # Read and calculculate U in hycom U-points. 
       logger.info("gridU, gridV, gridT & gridS  file")
+      logger.info("Read, trim, rotate NEMO velocities.")
       ncidu=netCDF4.Dataset(fileu,"r")
       u=numpy.zeros((nlev,mbathy.shape[0],mbathy.shape[1]))
       ncidv=netCDF4.Dataset(filev,"r")
@@ -712,7 +696,7 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=False,iexpt=10,iversn=22,yrfla
       ny=mbathy.shape[0];nx=mbathy.shape[1]
       error=numpy.zeros((ny,nx))
       for k in numpy.arange(u.shape[0]) :
-         if bio_path:
+         if bio_file:
             no3k=interpolate2d(blat, blon, no3[k,:,:], points).reshape((jdm,idm))
             no3k = maplev(no3k)
             po4k=interpolate2d(blat, blon, po4[k,:,:], points).reshape((jdm,idm))
@@ -759,7 +743,7 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=False,iexpt=10,iversn=22,yrfla
          outfile.write_field(dtl*onem,ip,"thknss",0,model_day,k+1,0)
          outfile.write_field(tl      ,ip,"temp"  ,0,model_day,k+1,0)
          outfile.write_field(sl      ,ip,"salin" ,0,model_day,k+1,0)
-         if bio_path :
+         if bio_file :
             outfile.write_field(no3k      ,ip,"ECO_no3"  ,0,model_day,k+1,0)
             outfile.write_field(po4k      ,ip,"ECO_pho" ,0,model_day,k+1,0)
             outfile.write_field(si_k      ,ip,"ECO_sil" ,0,model_day,k+1,0)
@@ -775,7 +759,7 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=False,iexpt=10,iversn=22,yrfla
       ncids.close()
       ncidu.close()
       ncidv.close()
-      if bio_path:ncidb.close()
+      if bio_file:ncidb.close()
    nemo_mesh = []
 
 
@@ -795,8 +779,8 @@ if __name__ == "__main__" :
    parser.add_argument('--makegrid',    type=int,  help="    ")
    parser.add_argument('--iversn',   type=int,default=22,  help="    ")
    parser.add_argument('--yrflag',   type=int,default=3,   help="    ")
-   parser.add_argument('--bio_path',   type=str,   help="    ")
+   parser.add_argument('--bio_file',   type=str,   help="    ")
    parser.add_argument('--interp_method',   type=int,default=3,   help="    ")
 
    args = parser.parse_args()
-   main(args.meshfile,args.grid2dfile,first_j=args.first_j,mean_file=args.mean,iexpt=args.iexpt,makegrid=args.makegrid,iversn=args.iversn,yrflag=args.yrflag,bio_path=args.bio_path)
+   main(args.meshfile,args.grid2dfile,first_j=args.first_j,mean_file=args.mean,iexpt=args.iexpt,makegrid=args.makegrid,iversn=args.iversn,yrflag=args.yrflag,bio_file=args.bio_file)

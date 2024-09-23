@@ -16,7 +16,7 @@
 # EXTRALIBS:  Extra local libraries (if any).
 #
 #INCLUDES      = -I/cluster/software/netCDF-Fortran/4.4.4-intel-2017a-HDF5-1.8.18/include  -I${ESMF_MOD_DIR} -I${ESMF_DIR}include -I./CICE/rundir/compile
-INCLUDES      = -I${ESMF_MOD_DIR} -I${ESMF_DIR}include -I./CICE/rundir/compile
+INCLUDES      = -I${ESMF_MOD_DIR} -I${ESMF_DIR}include -I../CICE/rundir/compile
 
 FC            = mpiifort 
 #FCFFLAGS      =	-traceback -g -O2 -fp-model source -warn nogeneral -convert big_endian -assume byterecl -real-size 64 -integer-size 32 
@@ -44,9 +44,15 @@ CPPFLAGS      = -DIA32 -DREAL8 -DMPI -DSERIAL_IO -DNAN2003 -DTIMER -DRELO -DUSE_
 #CPPFLAGS      = -DIA32 -DREAL8 -DMPI -DSERIAL_IO -DNAN2003 -DTIMER -DRELO -DUSE_ESMF -DUSE_ESMF_5 -DNERSC_HYCOM_CICE -DSTOKES
 #EXTRALIBS     = -L${ESMF_LIB_DIR}/ -lesmf -pgcpplibs  
 EXTRALIBS     = -L${ESMF_LIB_DIR}/ -lesmf_fullylinked -lfftw3 -lmkl -lnetcdff -lnetcdf -lmpi -lmpifort
-# from fabm 
-#CPPFLAGS      += -D_FABM_ -I${HOME}/local/fabm/hycom/include
-#EXTRALIBS     += -L${HOME}/local/fabm/hycom/lib -lfabm
+
+# if you want to include ECOSMO, then you should
+# add to EXPT.src or execute in the shell the following:
+# export COMPILE_BIOMODEL="yes"
+
+ifeq ($(COMPILE_BIOMODEL), yes) 
+   CPPFLAGS      += -D_FABM_ -I${HOME}/local/fabm/hycom/include
+   EXTRALIBS     += -L${HOME}/local/fabm/hycom/lib64 -lfabm
+endif
 
 #
 # --- generic make definitions
