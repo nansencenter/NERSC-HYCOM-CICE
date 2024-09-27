@@ -289,8 +289,9 @@ ${pget} $BASEDIR/topo/regional.grid.b regional.grid.b || tellerror "no grid file
 ${pget} $BASEDIR/topo/depth_${R}_${T}.a regional.depth.a || tellerror "no topo file depth_${R}_${T}.a" 
 ${pget} $BASEDIR/topo/depth_${R}_${T}.b regional.depth.b || tellerror "no topo file depth_${R}_${T}.b" 
 ${pget} $BASEDIR/topo/kmt_${R}_${T}.nc cice_kmt.nc     || tellerror "no kmt file $BASEDIR/topo/kmt_${R}_${T}.nc "
-${pget} $BASEDIR/topo/cice_grid.nc cice_grid.nc        || tellerror "no cice grid file $BASEDIR/topo/cice_grid.nc "
-
+if [ $ICEFLG != 0 ] ; then
+   ${pget} $BASEDIR/topo/cice_grid.nc cice_grid.nc        || tellerror "no cice grid file $BASEDIR/topo/cice_grid.nc "
+fi
 
 if [ "$SSTRLX" -eq 3 ] ; then
    [ -f  $CLMDIR/seatmp.a ] || tellerror "File $CLMDIR/seatmp.a does not exist"
