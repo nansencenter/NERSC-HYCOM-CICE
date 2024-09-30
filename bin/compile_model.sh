@@ -23,7 +23,7 @@ elif [ "${V}" == "2.3" ]; then
         sourcedir=$NHCROOT/hycom/RELO/HYCOM_NERSC_src_v${V}/
         sourcedir_cice=$NHCROOT/cice/Release-5.1/
 else
-	sourcedir=$NHCROOT/hycom/RELO/src_${V}G-17Tsig2-SD-i_relo_mpi/ 
+	sourcedir=$NHCROOT/hycom/RELO/src_${V}G-17Tsig2-SD-i_relo_mpi/
 fi
 sourceconfdir=$NHCROOT/hycom/RELO/config/
 
