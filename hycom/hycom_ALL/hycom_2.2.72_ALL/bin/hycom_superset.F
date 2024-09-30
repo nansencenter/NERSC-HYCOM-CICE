@@ -71,8 +71,8 @@ C
         WRITE(6,'(2a)')
      &    'Usage:  ',
      &    'hycom_superset[_raw] or hycom_mergeset[_raw]'
-        write(6,(a)) CARG(L-8:L)
-        write(6,(a)) CARG(L-12:L)
+        write(6,'(a)') CARG(L-8:L)
+        write(6,'(a)') CARG(L-12:L)
         CALL EXIT(1)
       ENDIF
 C

@@ -18,9 +18,6 @@ ulimit -s 2000000   ## if needed
    csh Make_all.com
 
    !! NOT COMPLETE
-	The csh script above does not complete because it gets stuck in archive folder.
-        Normally it should fail and continue but not this time.
-        You can compile each folder individually for the time being until the problem is resolved.
 
         Netcdf routines are partly compiled right, 
         csh Make_ncdf.com
