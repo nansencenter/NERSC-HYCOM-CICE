@@ -421,7 +421,10 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=True,iexpt=10,iversn=22,yrflag
       montg1=np.zeros(ssh.shape)
 
       # Write to abfile
-      outfile = abf.ABFileArchv("./data/"+oname,"w",iexpt=iexpt,iversn=iversn,yrflag=yrflag,)
+      header1="Converted ESM: " + esm_id + " files to HYCOM abfiles\n"
+      header2="Archive files for interpolation\n"
+      header3="NorESM nesting\n"
+      outfile = abf.ABFileArchv("./data/"+oname,"w",iexpt=iexpt,iversn=iversn,yrflag=yrflag,cline1=header1,cline2=header2,cline3=header3)
 
       logger.info("Writing 2D variables")
       outfile.write_field(montg1,                ip,"montg1"  ,0,model_day,1,0)
