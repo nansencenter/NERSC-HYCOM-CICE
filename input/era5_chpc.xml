@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<xml>
+<!-- Please note that the rootPath here is overwritten by the one defined in REGION.src file. So, Don't worry about the path definition here -->
+   <forcing_datasets>
+   <!-- Includes strd (surface thermal downwelling radiation)-->
+      <forcing_dataset name="era5_chpc" rootPath="/mnt/lustre/groups/ERTH0904/hycom/ERA5_6h/" format="netcdf" timestep="6h">
+<!--     <field name="internal name known by routine"   file="path to file"  varname="name of variable in netcdf file" unit="udunit"/> -->
+         <field known_name="10u"   file="[rootPath]u10_%Y_6h.nc"  varname="u10"  units="m s**-1"/>
+         <field known_name="10v"   file="[rootPath]v10_%Y_6h.nc"  varname="v10"  units="m s**-1"/>
+         <field known_name="2t"    file="[rootPath]2mtemp_%Y_6h.nc"   varname="t2m"   units="K"/>
+         <field known_name="2d"    file="[rootPath]2mdewpoint_%Y_6h.nc"   varname="d2m"   units="K"/>
+         <field known_name="msl"   file="[rootPath]mean_sealevelpressure_%Y_6h.nc"  varname="msl"  units="Pa"/>
+         <field known_name="tp"    file="[rootPath]total_preci_%Y_6h.nc"   varname="tp"   units="m"      accumulated="6h"/> <!--6 hour accumulated precip: double the source whether hourly or not !!-->
+         <field known_name="ssrd"  file="[rootPath]surface_solar_rad_dw_%Y_6h.nc" varname="ssrd" units="J m**-2" accumulated="6h"/> <!-- 6 hour accumulated flux-->
+	  <field known_name="strd" file="[rootPath]surface_thermal_rad_dw_%Y_6h.nc" varname="strd" units="J m**-2" accumulated="6h"/> <!-- 6 hour accumulated flux-->
+      </forcing_dataset>
+   </forcing_datasets>
+</xml>
+
+
+
