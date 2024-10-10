@@ -31,8 +31,8 @@ cd $SLURM_SUBMIT_DIR       ||  { echo "Could not go to dir $SLURM_O_WORKDIR  "; 
 # Initialize environment (sets Scratch dir ($S), Data dir $D ++ )
 source ../REGION.src  || { echo "Could not source ../REGION.src "; exit 1; }
 source ./EXPT.src  || { echo "Could not source EXPT.src"; exit 1; }
-source $NHCROOT/betzy_env.sh || { echo "Could not source ~/betzy_env.sh "; exit 1; }
-#source $NHCROOT/fram_env.sh || { echo "Could not source ~/fram_env.sh "; exit 1; }
+source $NHCROOT/environment/betzy_env.sh || { echo "Could not source betzy_env.sh "; exit 1; }
+#source $NHCROOT/environment/fram_env.sh || { echo "Could not source fram_env.sh "; exit 1; }
 
 echo "NMPI =$NMPI (Number of MPI tasks needed for running job) "
 
