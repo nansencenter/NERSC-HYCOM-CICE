@@ -131,7 +131,7 @@ if [ ${iceclim} -eq 1 ]; then
       ml load matplotlib/3.5.2-intel-2022a
       ${BINDIR}/Grid_Bathy/cice_kmt.py regional.depth.a
    fi
-   prg=${BINDIR}ice_climatology/extract_clim_iceh_update.sh
+   prg=${BINDIR}ice_climatology/extract_clim_iceh.sh
    ${prg} ${EDIR}
    cd ${EDIR}
    [ -r ice_clim ] && rm -rf ice_clim

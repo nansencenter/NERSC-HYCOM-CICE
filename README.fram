@@ -1,14 +1,16 @@
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-1) Recommended .bashrc content for FRAM
+1) Recommended environment for FRAM
 
-ml purge
-module load Python/3.10.4-GCCcore-11.3.0
-module load ESMF/8.3.0-intel-2022a
-module load FFTW/3.3.10-GCC-11.3.0
-module load UDUNITS/2.2.28-GCCcore-11.3.0
-module load CMake/3.23.1-GCCcore-11.3.0
-module load intel/2022a
+   ml purge
+   module load Python/3.10.4-GCCcore-11.3.0
+   module load ESMF/8.3.0-intel-2022a
+   module load FFTW/3.3.10-GCC-11.3.0
+   module load UDUNITS/2.2.28-GCCcore-11.3.0
+   module load CMake/3.23.1-GCCcore-11.3.0
+   module load intel/2022a
 
+   execute the following line to get the environment (adjust the path if needed):
+      source ~/NERSC_HYCOM_CICE/fram_env.sh
 
 2) Compiling hycom_all under NERSC-HYCOM-CICE/hycom/hycom_ALL/hycom_2.2.72_ALL
 
