@@ -40,14 +40,14 @@
       real*8  d1,d2,d3,d4,ssum(2),s1(2)
 !
       if     (ishelf.ne.0) then  !sea ice and an ice shelf
-!$OMP PARALLEL DO PRIVATE(j,i)
+!$OMP   PARALLEL DO PRIVATE(j,i) &
+!$OMP            SCHEDULE(STATIC,jblk)
         do j=1,jj
           do i=1,ii
             if (SEA_P) then
               if     (ishlf(i,j).eq.1) then  !standard ocean point
                 if ( cpl_swflx  .and. cpl_lwmdnflx .and. cpl_lwmupflx &
                                 .and. cpl_precip   .and. cesmbeta ) then
-
                   sstflx(i,j) = (1.0-covice(i,j))*sstflx(i,j)   !relax over ocean
                   surflx(i,j) =     surflx(i,j) + flxice(i,j)   !ocn/ice frac. in coupler
                   salflx(i,j) =                   sflice(i,j) +  & !ocn/ice frac. in coupler
@@ -55,7 +55,6 @@
                   wtrflx(i,j) =     wtrflx(i,j) + wflice(i,j) +  & !ocn/ice frac. in coupler
                                                   rivflx(i,j)   !rivers evrywhere 
                 else
-
                   sswflx(i,j) = (1.0-covice(i,j))*sswflx(i,j) +  & !ocean
                                                   fswice(i,j)   !ice cell average
                   surflx(i,j) = (1.0-covice(i,j))*surflx(i,j) +  & !ocean
@@ -79,7 +78,7 @@
             endif !ip
           enddo !i
         enddo !j
-!$OMP END PARALLEL DO
+!$OMP   END PARALLEL DO
       elseif (iceflg.ne.0) then
           ! switch off the sssflx under sea ice
           if (sss_underice==.false.) then
@@ -99,8 +98,9 @@
           endif
           if ( cpl_swflx  .and. cpl_lwmdnflx .and. cpl_lwmupflx &
                           .and. cpl_precip   .and. cesmbeta ) then
-! ---     allow for sea ice
-!$OMP PARALLEL DO PRIVATE(j,i)
+! ---       allow for sea ice
+!$OMP       PARALLEL DO PRIVATE(j,i) &
+!$OMP                SCHEDULE(STATIC,jblk)
             do j=1,jj
                do i=1,ii
                   if (SEA_P) then
@@ -115,9 +115,10 @@
                   endif
                enddo !i
             enddo
-!$OMP END PARALLEL DO
+!$OMP       END PARALLEL DO
           else
-!$OMP PARALLEL DO PRIVATE(j,i)
+!$OMP       PARALLEL DO PRIVATE(j,i) &
+!$OMP                SCHEDULE(STATIC,jblk)
             do j=1,jj
                do i=1,ii
                  if (SEA_P) then
@@ -134,12 +135,13 @@
                   util1(i,j) = surflx(i,j)*scp2(i,j)
                   util2(i,j) = wtrflx(i,j)*scp2(i,j)
                   endif
-             enddo !i
-           enddo !j
-!$OMP END PARALLEL DO
+              enddo !i
+            enddo !j
+!$OMP       END PARALLEL DO
           endif ! .not. cpl
       else !no sea ice
-!$OMP PARALLEL DO PRIVATE(j,i)
+!$OMP   PARALLEL DO PRIVATE(j,i) &
+!$OMP            SCHEDULE(STATIC,jblk)
         do j=1,jj
           do i=1,ii
             if (SEA_P) then  !sswflx, surflx and sstflx unchanged
@@ -150,10 +152,42 @@
             endif !ip
           enddo !i
         enddo !j
-!$OMP END PARALLEL DO
+!$OMP   END PARALLEL DO
       endif !ishlf:iceflg
 !
-      if     (epmass .and. empbal.eq.1) then
+      if     (epmass.eq.2) then
+!
+! ---   balance rivflx, via a region-wide offset:
+!
+!$OMP   PARALLEL DO PRIVATE(j,i) &
+!$OMP            SCHEDULE(STATIC,jblk)
+        do j=1,jj
+          do i=1,ii
+            if (SEA_P) then
+              util3(i,j) = rivflx(i,j)*scp2(i,j)
+            endif
+          enddo !i
+        enddo !j
+        call xcsum(d2, util3,ipa)
+        d2 = d2/area
+        q  = -d2
+!$OMP   PARALLEL DO PRIVATE(j,i) &
+!$OMP            SCHEDULE(STATIC,jblk)
+        do j=1,jj
+          do i=1,ii
+            if (SEA_P) then
+              rivflx(i,j) = rivflx(i,j) + q
+            endif
+          enddo !i
+        enddo !j
+        if     (ldebug_empbal .and. &
+                mnproc.eq.1 .and. mod(nstep,100).le.1) then
+          write (lp,'(i9,a,1pe12.5)')  &
+           nstep,' offset rivflx by ',q
+        endif !master
+      endif
+!
+      if     (epmass.eq.1 .and. empbal.eq.1) then
 !
 ! ---   balance wtrflx to emptgt, via a region-wide offset:
 !
@@ -177,16 +211,23 @@
              nstep,' offset wtrflx by ',q
           endif !master
         endif !not already balanced
-      elseif (.not.epmass .and. empbal.eq.1) then
+      elseif (epmass.ne.1 .and. empbal.eq.1) then
 !
 ! ---   balance wtrflx to emptgt, via a region-wide offset:
 ! ---   virtual salt flux case, balance sss*wtrflx
 !
+!$OMP   PARALLEL DO PRIVATE(j,i) &
+!$OMP            SCHEDULE(STATIC,jblk)
         do j=1,jj
           do i=1,ii
             if (SEA_P) then
-              util3(i,j) = wtrflx(i,j)*saln(i,j,1,n)*scp2(i,j)
-              util4(i,j) =             saln(i,j,1,n)*scp2(i,j)
+              if     (epmass.eq.0) then
+                util3(i,j) = wtrflx(i,j)*saln(i,j,1,n)*scp2(i,j)
+              else !river only as mass exchange
+                util3(i,j) = (wtrflx(i,j)-rivflx(i,j))* &
+                             saln(i,j,1,n)*scp2(i,j)
+              endif
+              util4(i,j) = saln(i,j,1,n)*scp2(i,j)
             endif
           enddo !i
         enddo !j
@@ -211,13 +252,15 @@
              nstep,' offset wtrflx by ',q
           endif !master
         endif !not already balanced
-      elseif (epmass .and. empbal.eq.2) then
+      elseif (epmass.eq.1 .and. empbal.eq.2) then
 !
 ! ---   balance wtrflx to emptgt, by scaling down +ve or -ve anomalies
 !
         call xcsum(d2, util2,ipa)  !total
         d2 = d2/area               !basin-wide average
         if     (d2.ne.emptgt) then  !not balanced at emptgt
+!$OMP     PARALLEL DO PRIVATE(j,i) &
+!$OMP              SCHEDULE(STATIC,jblk)
           do j=1,jj
             do i=1,ii
               if (SEA_P) then
@@ -270,18 +313,25 @@
             endif !master
           endif !reduce -ve:reduce +ve
         endif !not already balanced
-      elseif (.not.epmass .and. empbal.eq.2) then
+      elseif (epmass.ne.1 .and. empbal.eq.2) then
 !
 ! ---   balance wtrflx to emptgt, by scaling down +ve or -ve anomalies
 ! ---   virtual salt flux case, balance sss*wtrflx
 !
+!$OMP   PARALLEL DO PRIVATE(j,i) &
+!$OMP            SCHEDULE(STATIC,jblk)
         do j=1,jj
           do i=1,ii
             if (SEA_P) then
-              util2(i,j) =     wtrflx(i,j)*saln(i,j,1,n)*scp2(i,j)
-              util3(i,j) = max(wtrflx(i,j)-emptgt,0.0)* &
-                                           saln(i,j,1,n)*scp2(i,j)
-              util4(i,j) =                 saln(i,j,1,n)*scp2(i,j)
+              if     (epmass.eq.0) then
+                util5(i,j) = wtrflx(i,j)
+              else !river only as mass exchange
+                util5(i,j) = wtrflx(i,j)-rivflx(i,j)
+              endif
+              util2(i,j) =     util5(i,j)*saln(i,j,1,n)*scp2(i,j)
+              util3(i,j) = max(util5(i,j)-emptgt,0.0)* &
+                                          saln(i,j,1,n)*scp2(i,j)
+              util4(i,j) =                saln(i,j,1,n)*scp2(i,j)
             endif
           enddo !i
         enddo !j
@@ -299,8 +349,8 @@
           do j=1,jj
             do i=1,ii
               if (SEA_P) then
-                if     (wtrflx(i,j).lt.emptgt) then
-                  wtrflx(i,j) = emptgt + q*(wtrflx(i,j)-emptgt)
+                if     (util5(i,j).lt.emptgt) then
+                  wtrflx(i,j) = emptgt + q*(util5(i,j)-emptgt)
                 endif
                 util2(i,j) = wtrflx(i,j)*scp2(i,j)
               endif
@@ -319,8 +369,8 @@
           do j=1,jj
             do i=1,ii
               if (SEA_P) then
-                if     (wtrflx(i,j).gt.emptgt) then
-                  wtrflx(i,j) = emptgt + q*(wtrflx(i,j)-emptgt)
+                if     (util5(i,j).gt.emptgt) then
+                  wtrflx(i,j) = emptgt + q*(util5(i,j)-emptgt)
                 endif
                 util2(i,j) = wtrflx(i,j)*scp2(i,j)
               endif
@@ -333,13 +383,13 @@
           endif !master
         endif !reduce -ve:reduce +ve
       endif !empbal
-
+!
 !!Alex New calculation of epmass, with E-P applied to the top layer
 !!AJW  Modified new epmass calculation to use actual dp rather than h
 !!AJW  updates pbavg, dp and S.1
 !!AJW  When E-P>0 and layer 1 is thin, some may get merged deeper
 !
-      if     (epmass) then  !requires btrlfr=.true., see blkdat.F
+      if     (epmass.gt.0) then  !requires btrlfr=.true., see blkdat.F
 !$OMP   PARALLEL DO PRIVATE(j,i,k,k1,emnp,dpemnp,dpemnp1,dplay1, &
 !$OMP                       onetanew,onetaold,pbanew,pbaold,q)
         do j=1,jj
@@ -350,7 +400,11 @@
 ! ---         This only works if pbavg and dp have just been integrated from
 ! ---         the same time, hence btrlfr=false is not allowed
 !
-              emnp   = -wtrflx(i,j)*svref  !m/s
+              if     (epmass.eq.1) then
+                emnp   = -wtrflx(i,j)*svref  !m/s
+              else !river only
+                emnp   = -rivflx(i,j)*svref  !m/s
+              endif
               pbaold = pbavg(i,j,n)
               pbanew = pbaold - emnp*delt1*onem  !emnp mass = rho0*vol
               if     (.false. .and. i.eq.itest.and.j.eq.jtest) then
@@ -361,9 +415,11 @@
                             pbaold - emaxfr*(pbot(i,j) + pbaold) )
               onetaold = 1.0 + pbaold/pbot(i,j)
               onetanew = 1.0 + pbanew/pbot(i,j)
-              !some evap may have been discarded
-              emnp        = (pbaold - pbanew)/(delt1*onem)
-              wtrflx(i,j) = -emnp/svref
+              if     (epmass.eq.1) then
+                !some evap may have been discarded
+                emnp        = (pbaold - pbanew)/(delt1*onem)
+                wtrflx(i,j) = -emnp/svref
+              endif
               if     (.false. .and. i.eq.itest.and.j.eq.jtest) then
                 write(lp,'(i9,a,1p5g12.4)') &
                   nstep,' pba,emnp = ',pbanew*qonem, &
@@ -1324,7 +1380,6 @@
                  +imp_lwdflx(i,j,1) &
                  +imp_lwuflx(i,j,1)
         elseif (natm.eq.2) then
-
           radfl=(radflx(i,j,l0)*w0+radflx(i,j,l1)*w1)
         else
           radfl=(radflx(i,j,l0)*w0+radflx(i,j,l1)*w1 &
@@ -1341,7 +1396,6 @@
           else
              radfl = radfl - sb_cst*(temp(i,j,1,n)+tzero)**4 + swfl
           endif
-
           sstflx(i,j) = 0.0
         elseif (lwflag.gt.0) then
 ! ---     over-ocean longwave correction to radfl (Qsw+Qlw).
@@ -1521,7 +1575,6 @@
         if     (empflg.lt.0) then
           evape = slat*clh*wind*(0.97*qsatur(esst)-vpmx)
         endif
-
 ! ---   Latent Heat flux (W/m2)
         if(cesmbeta .and. cpl_latflx) then
            evap=imp_latflx(i,j,1)
@@ -1789,7 +1842,7 @@
         ce_n10 = 34.6 *cd_n10_rt*1.e-3                      !L-Y eqn. 6b
         stab   = 0.5 + sign(0.5,airt-temp(i,j,1,n))
         ch_n10 = (18.0*stab+32.7*(1-stab))*cd_n10_rt*1.e-3  !L-Y eqn. 6c
-
+!
         cd10 = cd_n10  !first guess for exchange coeff's at z
         ch10 = ch_n10
         ce10 = ce_n10
@@ -1827,7 +1880,7 @@
           ce10 = ce_n10/(1.0+ce_n10*xx/cd_n10_rt) * &
                               sqrt(cd10/cd_n10)       !L-Y 10c
         end do !it_a
-
+!
 ! ---  Latent Heat flux
         slat = evaplh*rair
         if     (empflg.lt.0) then
@@ -1838,7 +1891,7 @@
         else
           evap = slat*ce10*wind*(qsatur5(temp(i,j,1,n),qrair)-vpmx)
         endif
-
+!
 ! --- Sensible Heat flux
         ssen   = cpcore*rair
         if(cesmbeta .and. cpl_sensflx) then
@@ -1846,7 +1899,7 @@
         else
           snsibl = ssen*ch10*wind*(temp(i,j,1,n)-airt)
         endif
-
+!
 ! --- Total surface fluxes
         surflx(i,j) = radfl - snsibl - evap
       elseif (flxflg.eq.3) then
@@ -2386,3 +2439,4 @@
 !> Dec. 2023 - add cesmbeta as a master switch to cpl_
 !> Jan. 2024 - evap with epmass==1 can extend below a thin enough layer 1
 !> Jan. 2024 - evap with epmass==1 may be clipped for small oneta
+!> May  2024 - added epmass=2 for river only mass exchange
