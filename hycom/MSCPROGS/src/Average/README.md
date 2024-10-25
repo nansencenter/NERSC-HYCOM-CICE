@@ -27,7 +27,7 @@ are a list of input hycom a files and
 file_mean
 ```
 
-is the mean file generated.
+is a name of mean ab file (```file_mean.a```,```file_mean.b```) generated.
 
 Here is a sample command line script:
 
