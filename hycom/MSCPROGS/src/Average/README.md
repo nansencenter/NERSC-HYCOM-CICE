@@ -14,14 +14,14 @@ file_mem002.a
 file_mean
 ```
 
-where 
+where ```narchs``` is number of hycom ab files to be averaged
 
 ```
 file_mem001.a
 file_mem002.a
 ```
 
-are a list of input hycom a files and
+are a list of input hycom a files,
 
 ```
 file_mean
