@@ -2,7 +2,7 @@
 
 ```hycom_mean``` is F90 version of ```hycom/hycom_ALL/hycom_2.2.72_ALL/meanstd/src/hycom_mean``` for making an ensemble average of hycom archive files. Note that other options, such as meanstd or meansq, available in the original ```hycom_mean``` are not available at this moment.
 
-### Step1 ### Prepare configuration file ```mean_hycom.in``` first:
+### Step1. Prepare configuration file ```mean_hycom.in```:
 
 ```
   50    'kk    ' = number of layers involved
@@ -29,7 +29,7 @@ file_mean
 
 is a name of mean ab file (```file_mean.a```,```file_mean.b```) generated.
 
-Here is a sample command line script:
+### Step 2. Run a command line script:
 
 ```bash
 hycom_mean < mean_hycom.in
