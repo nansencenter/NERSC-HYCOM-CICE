@@ -37,7 +37,7 @@ hycom_mean < mean_hycom.in
 
 Upon change of BGC variables list on hycom b file, you need to modify variable registraion in ```mod_mean.F90```.
 
-In order to use this only to HYCOM-CICE setup without ECOSMO, you need to turn off ECOSMO option set in ```hycom_mean.F90``` by changing:
+In order to use this with HYCOM-CICE setup without ECOSMO, you need to turn off ECOSMO option set in ```hycom_mean.F90``` by changing:
 
 ```
 lecosmo = .true.
