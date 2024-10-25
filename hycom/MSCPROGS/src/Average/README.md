@@ -35,6 +35,8 @@ is a name of mean ab file (```file_mean.a```,```file_mean.b```) generated.
 hycom_mean < mean_hycom.in
 ```
 
+### Notes
+
 Upon change of BGC variables list on hycom b file, you need to modify variable registraion in ```mod_mean.F90```.
 
 In order to use this with HYCOM-CICE setup without ECOSMO, you need to turn off ECOSMO option set in ```hycom_mean.F90``` by changing:
