@@ -1,6 +1,6 @@
 ## hycom_mean
 
-```hycom_mean``` is F90 version of ```hycom/hycom_ALL/hycom_2.2.72_ALL/meanstd/src/hycom_mean```. for makeing an ensemble average of hycom archive files. Note that other options, such as meanstd or meansq, available in the orifinal ```hycom_mean``` are not available at this moment.
+```hycom_mean``` is F90 version of ```hycom/hycom_ALL/hycom_2.2.72_ALL/meanstd/src/hycom_mean``` for makeing an ensemble average of hycom archive files. Note that other options, such as meanstd or meansq, available in the orifinal ```hycom_mean``` are not available at this moment.
 
 Prepare input file ```mean_hycom.in``` first:
 
