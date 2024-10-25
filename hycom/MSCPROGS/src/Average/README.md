@@ -14,7 +14,7 @@ file_mem002.a
 file_mean
 ```
 
-where ```narchs``` is number of hycom ab files to be averaged
+where ```narchs``` is number of hycom ab files to be averaged,
 
 ```
 file_mem001.a
