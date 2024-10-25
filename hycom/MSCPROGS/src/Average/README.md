@@ -1,0 +1,50 @@
+## hycom_mean
+
+```hycom_mean``` is F90 version of ```hycom/hycom_ALL/hycom_2.2.72_ALL/meanstd/src/hycom_mean```. for makeing an ensemble average of hycom archive files. Note that other options, such as meanstd or meansq, available in the orifinal ```hycom_mean``` are not available at this moment.
+
+Prepare input file ```mean_hycom.in``` first:
+
+```
+  50    'kk    ' = number of layers involved
+  0     'meansq' = form meansq, rather than mean (0=F,1=T)
+  2     'narchs' = number of archives to read (==0 to end input)
+file_mem001.a
+file_mem002.a
+  0     'narchs' = number of archives to read (==0 to end input)
+file_mean
+```
+
+where 
+
+```
+file_mem001.a
+file_mem002.a
+```
+
+are a list of input hycom a files and
+
+```
+file_mean
+```
+
+is the mean file generated.
+
+Here is a sample command line script:
+
+```bash
+hycom_mean < mean_hycom.in
+```
+
+Upon change of BGC variables list on hycom b file, you need to modify variable registraion in ```mod_mean.F90```.
+
+In order to use this only to HYCOM-CICE setup without ECOSMO, you need to turn off ECOSMO option set in ```hycom_mean.F90``` by changing:
+
+```
+lecosmo = .true.
+```
+
+to
+
+```
+lecosmo = .false.
+```

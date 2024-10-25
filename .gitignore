@@ -604,3 +604,7 @@ hycom/hycom_ALL/hycom_2.2.72_ALL/topo/src_2.2.72/topo_smooth_skip
 hycom/hycom_ALL/hycom_2.2.72_ALL/topo/src_2.2.72/topo_subset
 hycom/hycom_ALL/hycom_2.2.72_ALL/topo/src_2.2.72/topo_zcells
 hycom/hycom_ALL/hycom_2.2.72_ALL/topo/src_2.2.72/topo_zthin 
+
+hycom/MSCPROGS/src/Hyc2proj/TMP/*
+hycom/MSCPROGS/src/IceDriftNC/TMP/*
+

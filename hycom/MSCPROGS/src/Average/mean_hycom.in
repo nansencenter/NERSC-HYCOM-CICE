@@ -1,0 +1,8 @@
+  50    'kk    ' = number of layers involved
+  0     'meansq' = form meansq, rather than mean (0=F,1=T)
+  2     'narchs' = number of archives to read (==0 to end input)
+file_mem001.a
+file_mem002.a
+  0     'narchs' = number of archives to read (==0 to end input)
+file
+

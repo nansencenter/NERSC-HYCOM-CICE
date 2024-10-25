@@ -33,7 +33,8 @@ endif
 
 TARGET = hycave
 TARGET2 = ensave
-all: $(TARGET) $(TARGET2)
+TARGET3 = hycom_mean
+all: $(TARGET) $(TARGET2) $(TARGET3)
 
 
 ###############################################################################
@@ -48,10 +49,16 @@ OBJECTS2= p_ensave.o
 $(TARGET2):  $(OBJECTS2)
 	   cd ./TMP ; $(LD) $(LINKFLAGS) -o ../$(TARGET2)  $(OBJECTS2) $(LIBS) 
 		###############################################################################
+###############################################################################
+OBJECTS3= mod_mean.o bigrid.o blkin.o extrct.o getdat.o putdat.o hycom_mean.o
+
+$(TARGET3):  $(OBJECTS3)
+	   cd ./TMP ; $(LD) $(LINKFLAGS) -o ../$(TARGET3)  $(OBJECTS3) $(LIBS) 
+		###############################################################################
 
 clean:
 	rm ./TMP/*.o TMP/*.mod TMP/*.f TMP/*.f90 $(TARGET) $(TARGET2)
 
 install : all
 	mkdir -p ../../bin
-	cp $(TARGET) $(TARGET2) ../../bin
+	cp $(TARGET) $(TARGET2) $(TARGET3) ../../bin
