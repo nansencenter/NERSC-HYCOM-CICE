@@ -29,7 +29,7 @@ file_mean
 
 is a name of mean ab file (```file_mean.a```,```file_mean.b```) generated.
 
-### Step 2. Run a command line script:
+### Step 2. Run script at command line:
 
 ```bash
 hycom_mean < mean_hycom.in
