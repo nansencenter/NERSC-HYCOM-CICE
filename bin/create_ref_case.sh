@@ -13,8 +13,9 @@ else
    echo "Could not find EXPT.src. This script must be run in expt dir"
    exit 1
 fi
+
 EDIR=$(pwd)/                           # Location of this script
-BASEDIR=$(cd $(dirname $0)/.. && pwd)/ # Location of basedir
+BASEDIR=$(cd .. && pwd)/               # Location of basedir
 source $BASEDIR/REGION.src
 source $EDIR/EXPT.src
 
@@ -113,7 +114,7 @@ res=$?
 [ $res -ne 0 ] && echo "Failure..."
 echo ".."
 
-iceclim=1
+iceclim=0
 # Create a climatology ice cover used by initialization
 cd $EDIR
 echo "Prepare the sea ice cover from climatology:"
@@ -140,14 +141,17 @@ fi
 # Create simple river forcing
 cd $EDIR
 echo "river forcing, if biology active, may take some time"
-if [ $NTRACR -ne 0 ] ; then
-   river_nersc.sh 100 300 $INPUTDIR/rivers_ahype-ehype_clim_rev2.dat $INPUTDIR/biorivers.dat > $EDIR/log/ref_river_nersc.out 2>&1
-   riverfolder=$(echo $X | cut -c1-2)$(echo $X | cut -c4)
-   python $BINDIR/spread_Ob_river_nutrients.py $BASEDIR/force/rivers/${riverfolder}/ > $EDIR/log/spread_river.out 2>&1  # Spreads Ob River nutrients to outer bay
-   python $BINDIR/add_atmdep_to_river.py $BASEDIR/force/rivers/${riverfolder}/  $INPUTDIR/emep_2010_annual_1degree_rv4_17gfecl1p0.nc  > $EDIR/log/add_atmospheric_deposition.out 2>&1
-else
-   river_nersc.sh 100 300 $INPUTDIR/rivers_ahype-ehype_clim_rev2.dat > $EDIR/log/ref_river_nersc.out 2>&1
-fi
+./bin/river_trip.sh  -t 300 -n 150 era5  > $EDIR/log/ref_river_trip.out 2>&1 
+cp ${BASEDIR}/force/rivers/$E/forcing.rivers.a ${BASEDIR}/force/rivers/$E/rivers.a
+cp ${BASEDIR}/force/rivers/$E/forcing.rivers.b ${BASEDIR}/force/rivers/$E/rivers.b
+#if [ $NTRACR -ne 0 ] ; then
+#   river_nersc.sh 100 300 $INPUTDIR/rivers_ahype-ehype_clim_rev2.dat $INPUTDIR/biorivers.dat > $EDIR/log/ref_river_nersc.out 2>&1
+#   riverfolder=$(echo $X | cut -c1-2)$(echo $X | cut -c4)
+#   python $BINDIR/spread_Ob_river_nutrients.py $BASEDIR/force/rivers/${riverfolder}/ > $EDIR/log/spread_river.out 2>&1  # Spreads Ob River nutrients to outer bay
+#   python $BINDIR/add_atmdep_to_river.py $BASEDIR/force/rivers/${riverfolder}/  $INPUTDIR/emep_2010_annual_1degree_rv4_17gfecl1p0.nc  > $EDIR/log/add_atmospheric_deposition.out 2>&1
+#else
+#   river_nersc.sh 100 300 $INPUTDIR/rivers_ahype-ehype_clim_rev2.dat > $EDIR/log/ref_river_nersc.out 2>&1
+#fi
 
 res=$?
 [ $res -eq 0 ] && echo "Success"
