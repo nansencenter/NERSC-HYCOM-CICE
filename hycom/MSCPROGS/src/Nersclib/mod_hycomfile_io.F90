@@ -1014,16 +1014,28 @@ contains
      is3DVar=.true.
    else if(cfld=='detvflux') then
      is3DVar=.true.
+   else if(cfld=='detvfxia') then
+     is3DVar=.true.
 ! _FABM__caglar_
    else if(cfld=='chla') then
      is3DVar=.true.
+   else if(cfld=='chla_ia') then
+     is3DVar=.true.
    else if(cfld=='nitrate') then
+     is3DVar=.true.
+   else if(cfld=='nit_ia') then
      is3DVar=.true.
    else if(cfld=='silicate') then
      is3DVar=.true.
+   else if(cfld=='sil_ia') then
+     is3DVar=.true.
    else if(cfld=='phosphat') then
      is3DVar=.true.
+   else if(cfld=='pho_ia') then
+     is3DVar=.true.
    else if(cfld=='pbiomass') then
+     is3DVar=.true.
+   else if(cfld=='piabiom') then
      is3DVar=.true.
    else if(cfld=='zbiomass') then
      is3DVar=.true.
@@ -1031,9 +1043,15 @@ contains
      is3DVar=.true.
    else if(cfld=='grosspp') then
      is3DVar=.true.
+   else if(cfld=='grospia') then
+     is3DVar=.true.
    else if(cfld=='netpp') then
      is3DVar=.true.
+   else if(cfld=='netppia') then
+     is3DVar=.true.
    else if(cfld=='attcoeff') then
+     is3DVar=.true.
+   else if(cfld=='atten_ia') then
      is3DVar=.true.
    else if(cfld=='dic') then
      is3DVar=.true.
@@ -1485,7 +1503,7 @@ contains
          units='psu / 1000'
          limits=(/0.,0.045/)
          stdname='standard_salinity_divideby_1000'
-      case ('detvflux')
+      case ('detvflux','detvfxia')
          vname='expc'
          units='mol m-2 d-1'
          limits=(/0.0,1500.0/)
@@ -1549,27 +1567,27 @@ contains
          stdname='mean_wave_from_direction'
          cellmethod='area: mean'
 ! _FABM__caglar_
-         case ('chla')
+         case ('chla','chla_ia')
          vname='chl'
          units='mg m-3'
          limits=(/0.,100./)
          stdname='mass_concentration_of_chlorophyll_a_in_sea_water'
-         case ('nitrate')
+         case ('nitrate','nit_ia')
          vname='no3'
          units='mmol m-3'
          limits=(/0.,50./)
          stdname='mole_concentration_of_nitrate_in_sea_water'
-         case ('silicate')
+         case ('silicate','sil_ia')
          vname='si'
          units='mmol m-3'
          limits=(/0.,250./)
          stdname='mole_concentration_of_silicate_in_sea_water'
-         case ('phosphat')
+         case ('phosphat','pho_ia')
          vname='po4'
          units='mmol m-3'
          limits=(/0.,10./)
          stdname='mole_concentration_of_phosphate_in_sea_water'
-         case ('pbiomass')
+         case ('pbiomass','piabiom')
          vname='phyc'
          units='mmol m-3'
          limits=(/0.,500./)
@@ -1594,17 +1612,17 @@ contains
          units='mg m-2 d-1'
          limits=(/-8460.,8460./)
          stdname='net_primary_productivity_of_biomass_expressed_as_carbon'
-         case ('netpp')
+         case ('netpp','netppia')
          vname='nppv'
          units='mg m-3 day-1'
          limits=(/-2000.,2000./)
          stdname='net_primary_production_of_biomass_expressed_as_carbon_per_unit_volume_in_sea_water'
-         case ('grosspp')
+         case ('grosspp','grospia')
          vname='gppv'
          units='mg m-3 day-1'
          limits=(/0.,2000./)
          stdname='gross_primary_production_of_biomass_expressed_as_carbon_per_unit_volume_in_sea_water'
-         case ('attcoeff')
+         case ('attcoeff','atten_ia')
          vname='kd'
          units='m-1'
          limits=(/0.,1./)

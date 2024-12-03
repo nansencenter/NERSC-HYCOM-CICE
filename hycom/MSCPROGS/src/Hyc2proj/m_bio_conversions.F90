@@ -8,8 +8,10 @@ module m_bio_conversions
    real, parameter :: kd_dom=0.18206465359221413   ! was 0.0 before Nov23 update, light attenuation coeff. for DOM
    real, parameter :: C2SIL=6.625    ! redfield C:Si mol ratio.
    real, parameter :: C2PHO=106.0    ! redfield C:P mol ratio
+   real, parameter :: C2CHLA_IA=38.0    ! C:Chla ratio for ice-algae (Delille et al., 2002)
    real, parameter :: kd_water=0.041 ! light attenuation coeff. for Arctic sea water 
    real, parameter :: srdet_eco=5.0  ! Sinking rate of detritus
+   real, parameter :: sinkIdet=5.0  ! Sinking rate of detritus from ice-algae
 ! _FABM__caglar_
    contains
 
@@ -460,6 +462,30 @@ module m_bio_conversions
 
    end subroutine det_bottom_flux
 
+   subroutine det_ia_bottom_flux(det2,det1,dsnk,bot_flux,onem,idm,jdm,kdm)
+! compute flux of detritus to the seafloor including ice_algae: mmolC m-2 d-1
+      implicit none
+
+      integer, intent(in) :: idm,jdm,kdm
+      real, intent(in) :: onem
+      real, dimension(idm,jdm,kdm)  , intent(in)  :: det2,det1,dsnk
+      real, dimension(idm,jdm,kdm)      , intent(out) :: bot_flux
+      real :: spd(idm,jdm,kdm)
+      integer :: i,j,k
+! dsnk is the varible detritus sinking speed * detritus concentration
+! essentially it is the flux represented as a state variable
+! To prevent outlier values, we first calculate the sinking speed (dsnk/det) and
+! convert it to 1/d
+      spd = (dsnk/det2)*86400.
+! and set minimum and maximum values, and convert mgC m-2 d-1 --> mmolC m-2 d-1 
+      spd = max(spd,0.5)
+      spd = min(spd,12.0)
+      bot_flux = det2 * spd / ccar
+   
+      bot_flux = bot_flux + det1 * sinkIdet / ccar    
+
+   end subroutine det_ia_bottom_flux
+
 !------------------------------------------------
 
 ! _FABM__caglar_
@@ -491,6 +517,28 @@ module m_bio_conversions
 
      end subroutine chlorophyll
 
+     subroutine chlorophyll_ia(dia,fla,ccl,ia,chl_a,idm,jdm,kdm,pres,onem)
+!compute chlorophyll including ice-algae: mg m-3
+      implicit none
+
+      integer, intent(in) :: idm,jdm,kdm
+      real, dimension(idm,jdm,kdm)  , intent(in)  ::dia, fla, ccl
+      real, dimension(idm,jdm)  , intent(in)  ::ia
+      real, dimension(idm,jdm,kdm)  , intent(in)  ::pres
+      real, intent(in) :: onem
+      real, dimension(idm,jdm,kdm)   :: dplayer
+      real, dimension(idm,jdm,kdm)  , intent(out) ::chl_a
+      real, dimension(idm,jdm,kdm)  ::boss
+      integer :: i,j,k
+     
+      ! calculate surface layer thickness in meters
+      dplayer(:,:,1)=(pres(:,:,2)-pres(:,:,1))/onem
+      chl_a=dia+fla+ccl
+      where (dplayer(:,:,1) /= 0.0)
+        chl_a(:,:,1)=chl_a(:,:,1) + ia / C2CHLA_IA / dplayer(:,:,1)   
+      end where
+
+     end subroutine chlorophyll_ia
 
      subroutine nitrate_conv(nit,nitrate,idm,jdm,kdm)
      !compute nitrate: mmole m-3
@@ -504,6 +552,28 @@ module m_bio_conversions
 
      end subroutine nitrate_conv
 
+     subroutine nitrate_ia_conv(nit,nit_ia,nitrate,idm,jdm,kdm,pres,onem)
+     !compute nitrate including ice-algae nit: mmole m-3
+      implicit none
+
+      integer, intent(in) :: idm,jdm,kdm
+      real, dimension(idm,jdm,kdm)  , intent(in)  ::nit !mgC m-3
+      real, dimension(idm,jdm)      , intent(in)  ::nit_ia !mmol N m-2
+      real, dimension(idm,jdm,kdm)  , intent(in)  ::pres
+      real, intent(in) :: onem
+      real, dimension(idm,jdm,kdm)   :: dplayer
+      real, dimension(idm,jdm,kdm)  , intent(out) ::nitrate
+
+      ! calculate surface layer thickness in meters
+      dplayer(:,:,1)=(pres(:,:,2)-pres(:,:,1))/onem
+
+      nitrate=nit/ccar/C2NIT
+      where (dplayer(:,:,1) /= 0.0)
+        nitrate(:,:,1)=nitrate(:,:,1) + nit_ia / dplayer(:,:,1)
+      end where
+
+     end subroutine nitrate_ia_conv
+
      subroutine silicate_conv(sil,silicate,idm,jdm,kdm)
      !compute silicate: mmole m-3
       implicit none
@@ -515,6 +585,28 @@ module m_bio_conversions
       silicate=sil/ccar/C2SIL
 
      end subroutine silicate_conv
+
+     subroutine silicate_ia_conv(sil,sil_ia,silicate,idm,jdm,kdm,pres,onem)
+     !compute silicate including ice-algae sil: mmole m-3
+      implicit none
+
+      integer, intent(in) :: idm,jdm,kdm
+      real, dimension(idm,jdm,kdm)  , intent(in)  ::sil !mgC m-3
+      real, dimension(idm,jdm)      , intent(in)  ::sil_ia !mmol Si m-2
+      real, dimension(idm,jdm,kdm)  , intent(in)  ::pres
+      real, intent(in) :: onem
+      real, dimension(idm,jdm,kdm)   :: dplayer
+      real, dimension(idm,jdm,kdm)  , intent(out) ::silicate
+
+      ! calculate surface layer thickness in meters
+      dplayer(:,:,1)=(pres(:,:,2)-pres(:,:,1))/onem
+
+      silicate=sil/ccar/C2SIL
+      where (dplayer(:,:,1) /= 0.0)
+        silicate(:,:,1) = silicate(:,:,1) + sil_ia / dplayer(:,:,1)
+      end where
+
+     end subroutine silicate_ia_conv
 
      subroutine phosphate_conv(pho,phosphate,idm,jdm,kdm)
      !compute phosphate: mmole m-3
@@ -528,6 +620,28 @@ module m_bio_conversions
 
      end subroutine phosphate_conv
 
+     subroutine phosphate_ia_conv(pho,pho_ia,phosphate,idm,jdm,kdm,pres,onem)
+     !compute phosphate including ice-algae pho: mmole m-3
+      implicit none
+
+      integer, intent(in) :: idm,jdm,kdm
+      real, dimension(idm,jdm,kdm)  , intent(in)  ::pho !mgC m-3
+      real, dimension(idm,jdm)      , intent(in)  ::pho_ia !mmol P m-2
+      real, dimension(idm,jdm,kdm)  , intent(in)  ::pres
+      real, intent(in) :: onem
+      real, dimension(idm,jdm,kdm)   :: dplayer
+      real, dimension(idm,jdm,kdm)  , intent(out) ::phosphate
+
+      ! calculate surface layer thickness in meters
+      dplayer(:,:,1)=(pres(:,:,2)-pres(:,:,1))/onem
+
+      phosphate=pho/ccar/C2PHO
+      where (dplayer(:,:,1) /= 0.0)
+        phosphate(:,:,1) = phosphate(:,:,1) + pho_ia / dplayer(:,:,1)
+      end where
+
+     end subroutine phosphate_ia_conv
+
      subroutine pbiomass(dia,fla,ccl,biomass,idm,jdm,kdm)
      !compute phytoplankton biomass: mmoleC m-3
       implicit none
@@ -539,6 +653,27 @@ module m_bio_conversions
       biomass=(fla+dia+ccl)/ccar
 
      end subroutine pbiomass
+
+     subroutine piabiom(dia,fla,ccl,ia,biomass,idm,jdm,kdm,pres,onem)
+     !compute phytoplankton biomass including ice-algae: mmoleC m-3
+      implicit none
+
+      integer, intent(in) :: idm,jdm,kdm
+      real, dimension(idm,jdm,kdm)  , intent(in)  ::fla, dia, ccl !mgC m-3
+      real, dimension(idm,jdm)      , intent(in)  ::ia !mgC m-2
+      real, dimension(idm,jdm,kdm)  , intent(in)  ::pres
+      real, intent(in) :: onem
+      real, dimension(idm,jdm,kdm)   :: dplayer
+      real, dimension(idm,jdm,kdm)  , intent(out) ::biomass
+     
+      ! calculate surface layer thickness in meters
+      dplayer(:,:,1)=(pres(:,:,2)-pres(:,:,1))/onem
+      biomass=(fla+dia+ccl)/ccar
+      where (dplayer(:,:,1) /= 0.0)
+        biomass(:,:,1)=biomass(:,:,1) + ia / dplayer(:,:,1) / ccar   
+      end where
+     
+     end subroutine piabiom
 
      subroutine zbiomass(micro,meso,biomass,idm,jdm,kdm)
      !compute zooplankton biomass: mmoleC m-3
@@ -576,6 +711,47 @@ module m_bio_conversions
 
      end subroutine pp_conv
 
+     subroutine ppia_conv(pp,ppia,ia,pp_daily,idm,jdm,kdm,pres,onem)
+!compute net primary production (gross PP * 0.9 as net pp) including ice-algae: mg m-3 d-1
+      implicit none
+
+      integer, intent(in) :: idm,jdm,kdm
+      real, dimension(idm,jdm,kdm)  , intent(in)  ::pp ! mg m-3 s-1
+      real, dimension(idm,jdm)      , intent(in)  ::ppia ! mg m-2 s-1
+      real, dimension(idm,jdm)      , intent(in)  ::ia ! mg m-2
+      real, dimension(idm,jdm,kdm)  , intent(in)  ::pres
+      real, intent(in) :: onem
+      real, dimension(idm,jdm,kdm)   :: dplayer
+      real, dimension(idm,jdm,kdm)  , intent(out) ::pp_daily
+
+      dplayer(:,:,1)=(pres(:,:,2)-pres(:,:,1))/onem
+      pp_daily=pp*24.*60.*60.
+      where (dplayer(:,:,1) /= 0.0)
+        pp_daily(:,:,1) = pp_daily(:,:,1) + (ppia*24.*60.*60. - 0.1 * ia)/dplayer(:,:,1)
+      end where
+
+     end subroutine ppia_conv
+
+     subroutine grossppia_conv(pp,ppia,pp_daily,idm,jdm,kdm,pres,onem)
+!compute gross primary production including ice-algae : mg m-3 d-1
+      implicit none
+
+      integer, intent(in) :: idm,jdm,kdm
+      real, dimension(idm,jdm,kdm)  , intent(in)  ::pp ! mg m-3 s-1
+      real, dimension(idm,jdm)      , intent(in)  ::ppia ! mg m-2 s-1
+      real, dimension(idm,jdm,kdm)  , intent(in)  ::pres
+      real, intent(in) :: onem
+      real, dimension(idm,jdm,kdm)   :: dplayer
+      real, dimension(idm,jdm,kdm)  , intent(out) ::pp_daily
+
+      dplayer(:,:,1)=(pres(:,:,2)-pres(:,:,1))/onem
+      pp_daily=pp*24.*60.*60.
+      where (dplayer(:,:,1) /= 0.0)
+        pp_daily(:,:,1) = pp_daily(:,:,1) + (ppia*24.*60.*60.) /dplayer(:,:,1)
+      end where
+
+     end subroutine grossppia_conv
+
      subroutine attenuation(dia,fla,ccl, det, dom,attencoef,idm,jdm,kdm)
 !compute the attenuation coefficient: m-1
       implicit none
@@ -584,9 +760,23 @@ module m_bio_conversions
       real, dimension(idm,jdm,kdm)  , intent(in)  ::dia, fla, ccl, det, dom
       real, dimension(idm,jdm,kdm)  , intent(out) ::attencoef
 
-      attencoef=kd_water+kd_chl*(dia+fla+ccl)+(kd_det/1000.0)*det+(kd_dom/1000.0)*dom
+      attencoef=kd_water+kd_chla*(dia+fla+ccl)+(kd_det/1000.0)*det+(kd_dom/1000.0)*dom
 
      end subroutine attenuation
+
+     subroutine attenuation_ia(dia,fla,ccl,det,dom,iatt,attencoef,idm,jdm,kdm)
+!compute the attenuation coefficient including ice-algae: m-1
+      implicit none
+
+      integer, intent(in) :: idm,jdm,kdm
+      real, dimension(idm,jdm,kdm)  , intent(in)  ::dia, fla, ccl, det, dom
+      real, dimension(idm,jdm)      , intent(in)  ::iatt
+      real, dimension(idm,jdm,kdm)  , intent(out) ::attencoef
+
+      attencoef=kd_water+kd_chla*(dia+fla+ccl)+(kd_det/1000.0)*det+(kd_dom/1000.0)*dom
+      attencoef(:,:,1) = attencoef(:,:,1) + iatt
+
+     end subroutine attenuation_ia
 
      subroutine dic_conv(dic,dissic,idm,jdm,kdm)
      !compute dic: mole m-3
