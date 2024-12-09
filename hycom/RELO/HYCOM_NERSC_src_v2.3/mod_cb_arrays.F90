@@ -769,7 +769,6 @@
 ! --- 'iceflg' = sea ice model flag   (0=none,1=energy loan,2=coupled/esmf)
 ! --- 'ishelf' = ice shelf flag       (0=none,1=ice shelf over ocean)
 ! --- 'wndflg' = wind stress input flag (0=none,1=uv-grid,2,3=p-grid,4,5=wnd10m)
-! --- 'amoflg' = relative wind     flag (0=U10:wndflg=-4,-5;1=U10-Uocn:wndflg=4,5)
 ! --- 'ustflg' = ustar forcing flag          (3=input,1=wndspd,2=stress)
 ! --- 'flxflg' = thermal forcing flag (0=none,3=net-flux,1,2,4=sst-based)
 ! --- 'empflg' = E-P     forcing flag (0=none,3=net_E-P, 1,2,4=sst-based_E)
@@ -816,7 +815,7 @@
                      ntracr,mtracr,trcflg(mxtrcr),itracr(801:899), &
                      clmflg,dypflg,iniflg,lbflag,mapflg,yrflag,sshflg, &
                      iversn,iexpt,jerlv0, &
-                     iceflg,ishelf,icmflg,wndflg,amoflg,ustflg, &
+                     iceflg,ishelf,icmflg,wndflg,ustflg, &
                      flxflg,empflg,dswflg,albflg,lwflag,sstflg,sssflg, &
                      epmass,empbal,sssbal, &
                      difsmo,disp_count
@@ -1929,3 +1928,4 @@
 !> May  2024 - added epmass=2 for river only mass exchange
 !> Aug. 2024 - added ocnscl
 !> Sep. 2024 - added hybthk
+!> Dec. 2024 - removed amoflg

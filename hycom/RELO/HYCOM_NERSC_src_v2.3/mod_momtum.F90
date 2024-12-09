@@ -370,7 +370,7 @@
         do j=1-margin,jj+margin
           do i=1-margin,ii+margin
             if (SEA_P) then
-              if     (amoflg.ne.0 .or. &
+              if     (ocnscl.ne.0.0 .or. &
                       (iceflg.eq.2 .and. si_c(i,j).gt.0.0)) then
 ! ---           average currents over top thkcdw meters
                 thksur = onem*min( thkcdw, depths(i,j) )
@@ -495,7 +495,7 @@
                 endif
 !
                 if     (wndflg.eq.4 .and. flxflg.eq.6) then
-                  if     (amoflg.ne.0) then
+                  if     (ocnscl.ne.0.0) then
 ! ---               use wind-current in place of wind for everything
 ! ---               set ocnscl to 1.0 for full relative wind
                     samo  = sqrt( (wndx-ocnscl*usur)**2 +&
@@ -508,14 +508,14 @@
                   else
 ! ---               use wind for everything
                     cdw   = 1.0e-3*cd_coarep(wind,vpmx,airt,pair, &
-                                             temp(i,j,1,n))
+                                              temp(i,j,1,n))
                     surtx( i,j) = rair*cdw*wind*wndx
                     surty( i,j) = rair*cdw*wind*wndy
-                  endif !amoflg
+                  endif !ocnscl
                 elseif (wndflg.eq.4) then
                   cdw  = 1.0e-3*cd_coare(wind,vpmx,airt, &
-                                          temp(i,j,1,n))
-                  if     (amoflg.ne.0) then
+                                         temp(i,j,1,n))
+                  if     (ocnscl.ne.0.0) then
 ! ---               use wind-current magnitude and direction for stress 
 ! ---               set ocnscl to 1.0 for full relative wind
                     samo = sqrt( (wndx-ocnscl*usur)**2 +&
@@ -526,12 +526,12 @@
 ! ---               use wind for everything
                     surtx(i,j) = rair*cdw*wind*wndx
                     surty(i,j) = rair*cdw*wind*wndy
-                  endif !amoflg
+                  endif !ocnscl
                 else  ! wndflg.eq.5
 ! ---             vpmx assumed to contain specific humidity
                   cdw  = 1.0e-3*cd_core2(wind,vpmx,airt, &
                                           temp(i,j,1,n))
-                  if     (amoflg.ne.0) then
+                  if     (ocnscl.ne.0.0) then
 ! ---               use wind-current magnitude and direction for stress 
 ! ---               set ocnscl to 1.0 for full relative wind
                     samo = sqrt( (wndx-ocnscl*usur)**2 +&
@@ -539,10 +539,10 @@
                     surtx(i,j) = rair*cdw*samo*(wndx-ocnscl*usur)
                     surty(i,j) = rair*cdw*samo*(wndy-ocnscl*vsur)
                   else
-! ---               use U10 magnitude and direction for stress 
+! ---               use U10 magnitude and direction for stress
                     surtx(i,j) = rair*cdw*wind*wndx
                     surty(i,j) = rair*cdw*wind*wndy
-                  endif !amoflg
+                  endif
                 endif
 
               endif !wndflg
@@ -5733,3 +5733,4 @@
 !> Mar. 2023 - added momtum_cfl in a CPP macro
 !> Dec. 2023 - add cesmbeta as a master switch to cpl_
 !> Aug. 2024 - replace U10-Uocn with U10-ocnscl*Uocn
+!> Dec. 2024 - Replace amoflg with ocnscl 

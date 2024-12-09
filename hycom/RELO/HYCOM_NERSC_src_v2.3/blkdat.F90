@@ -1844,9 +1844,8 @@
 !
 ! --- 'clmflg' = climatology frequency flag (6=bimonthly,12=monthly)
 ! --- 'wndflg' = wind stress input flag (0=none,1=uv-grid,2,3=p-grid,4,5=wnd10m)
-! ---             (=3 wind speed from wind stress; =4,5 wind stress from wind)
+! ---             (=3 wind speed from wind stress; =4,5 relative wind stress from wind U10-Uocn)
 ! ---             (=4 for COARE 3.0; =5 for COREv2 bulk parameterization)
-! ---             (4,5 use relative wind U10-Uocn; -4,-5 use absolute wind U10)
 ! --- 'ocnscl' = scale factor for Uocn in relative wind (0.0: absolute wind)
 ! --- 'ustflg' = ustar forcing   flag          (3=input,1,2=wndspd,4=stress)
 ! --- 'flxflg' = thermal forcing flag   (0=none,3=net_flux,1-2,4-6=sst-based)
@@ -1877,11 +1876,11 @@
       call blkini(clmflg,'clmflg')
       call blkini(wndflg,'wndflg')
       call blkinr(ocnscl,'ocnscl','(a6," =",f10.4," ")')
-      if     (ocnscl.eq.0.0 .and. wndflg.ge.4) then
+      if (wndflg.lt.0 .or. wndflg.gt.5) then
         if (mnproc.eq.1) then
-        write(lp,'(/ a /)')  &
-         &'error - ocnscl must be >0.0 for relative winds (wndflg=4,5)'
-        call flush(lp)
+           write(lp,'(/ a /)')  &
+            &'error - wndflg must be between 0 and 5'
+            call flush(lp)
         endif !1st tile
         call xcstop('(blkdat)')
                stop '(blkdat)'
@@ -1895,12 +1894,7 @@
         call xcstop('(blkdat)')
                stop '(blkdat)'
       endif
-      wndflg = abs(wndflg)
-      if     (ocnscl.eq.0.0) then
-        amoflg = 0  !U10
-      else
-        amoflg = 1  !U10-Uocn
-      endif
+      wndflg = wndflg
       call blkini(ustflg,'ustflg')
       call blkini(flxflg,'flxflg')
       call blkini(empflg,'empflg')
@@ -1963,15 +1957,6 @@
         if (mnproc.eq.1) then
         write(lp,'(/ a /)')  &
           'error - sshflg must be 2 if baro nesting archives have this'
-        call flush(lp)
-        endif !1st tile
-        call xcstop('(blkdat)')
-               stop '(blkdat)'
-      endif
-      if (wndflg.lt.0 .or. wndflg.gt.5) then
-        if (mnproc.eq.1) then
-        write(lp,'(/ a /)')  &
-         &'error - wndflg must be between 0 and 5'
         call flush(lp)
         endif !1st tile
         call xcstop('(blkdat)')
@@ -2960,3 +2945,4 @@
 !> May  2024 - added epmass=2 for river only mass exchange
 !> Aug. 2024 - added ocnscl
 !> Sep. 2024 - added hybthk
+!> Dec. 2024 - Removed negative wndflg and amoflg due to inclusion of ocnscl
