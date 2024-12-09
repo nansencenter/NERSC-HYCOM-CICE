@@ -1314,7 +1314,7 @@
       if (SEA_P) then
       if     (flxflg.gt.0) then
 ! ---   wind = wind, or wind-ocean, speed (m/s)
-        if     (flxflg.eq.6 .and. amoflg.ne.0) then
+        if     (flxflg.eq.6 .and. ocnscl.ne.0.0) then
           wind=wndocn(i,j)  !magnitude of wind minus ocean current
         elseif(cesmbeta .and. cpl_wndspd) then
           wind=imp_wndspd(i,j,1)
