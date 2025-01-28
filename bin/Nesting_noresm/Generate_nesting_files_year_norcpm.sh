@@ -6,7 +6,7 @@
 #SBATCH --qos=devel
 #SBATCH --nodes=1   # number of nodes
 #SBATCH  --mail-type=ALL
-#SBATCH --mail-user=lilleannette.xpkww@sync.omnigroup.com
+#SBATCH --mail-user=
 
 #SBATCH -o log/gnnjob.out
 #SBATCH -e log/gnnjob.err
