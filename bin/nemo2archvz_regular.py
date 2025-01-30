@@ -619,7 +619,11 @@ def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_file=None) :
     #flnm.close()
     ssh = numpy.where(numpy.abs(ssh)>1000,0.,ssh*9.81) # NB: HYCOM srfhgt is in geopotential ...
     #
-    outfile = abf.ABFileArchv("./data/"+oname,"w",iexpt=iexpt,iversn=iversn,yrflag=yrflag,)
+    header1="Converted NEMO files to HYCOM abfiles\n"
+    header2="Archive files for interpolation\n"
+    header3="NEMO nesting\n"
+    #outfile = abf.ABFileArchv("./data/"+oname,"w",iexpt=iexpt,iversn=iversn,yrflag=yrflag,)
+    outfile = abf.ABFileArchv("./data/"+oname,"w",iexpt=iexpt,iversn=iversn,yrflag=yrflag,cline1=header1,cline2=header2,cline3=header3)
     outfile.write_field(zeros,                   ip,"montg1"  ,0,model_day,1,0)
     outfile.write_field(ssh,                     ip,"srfhgt"  ,0,model_day,0,0)
     outfile.write_field(zeros,                   ip,"surflx"  ,0,model_day,0,0) # Not used
