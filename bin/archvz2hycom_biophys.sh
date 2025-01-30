@@ -11,7 +11,6 @@
 # --- M. Bakhoday-Paskyabi 9 September 2017.
 # --- M. Bakhoday-Paskyabi 11 July 2019.
 #
-ulimit -s 4000000
 
 iscan=15
 usage="
