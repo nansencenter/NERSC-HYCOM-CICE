@@ -230,6 +230,7 @@ contains
         call fabm_model%link_scalar(type_global_standard_variable(name='time_step', units='s'), delt1)
 
         call update_fabm_data(1, initializing=.true.)  ! initialize the entire column of wet points, including thin layers
+        call fabm_model%prepare_inputs( )
 
         ! Check whether FABM has all dependencies fulfilled
         ! (i.e., whether all required calls for fabm_link_*_data have been made)
@@ -695,6 +696,9 @@ contains
       fabm_surface_state_old = fabm_surface_state(:, :, n, :)
       fabm_bottom_state_old = fabm_bottom_state(:, :, n, :)
       ! Make sure the biogeochemical state is valid (uses clipping if necessary)
+!      call check_state('when entering fabm_hycom_update', current_time_index, .true.)
+
+      call fabm_model%prepare_inputs( real(nstep) )
       call check_state('when entering fabm_hycom_update', current_time_index, .true.)
 
       ! Vertical movement (includes sinking and floating)
@@ -721,7 +725,7 @@ call check_finite("AFTER VERTICAL", n)
     end do
 #endif
 
-call fabm_model%prepare_inputs
+!call fabm_model%prepare_inputs
 !      do k=1,kk
 !        do j=1,jj
 !          call fabm_get_light_extinction(fabm_model, 1, ii, j, k, extinction)
@@ -914,7 +918,7 @@ call fabm_model%finalize_outputs
       logical, intent(in) :: repair
 
       logical :: valid_int, valid_sf, valid_bt, repair_dsnk
-      real :: spdk
+      real :: spdk, left_to_remove
       integer :: i, j, k, ivar, old_index, indDET, indDSNK, kb, indTA, indc
 
       old_index = current_time_index
@@ -960,21 +964,21 @@ call fabm_model%finalize_outputs
         ! However, as these can be revived later in the simulation, make sure their value is valid by
         ! copying bottom value for pelagic tracers to all layers below bottom.
 
-        do ivar=1,size(fabm_model%interior_state_variables)
-          if ( fabm_model%interior_state_variables(ivar)%name == "ECO_det" ) then
-             indDET = ivar
-          end if
-          if ( fabm_model%interior_state_variables(ivar)%name == "ECO_dsnk" ) then
-             indDSNK = ivar
-             repair_dsnk = .true.
-          end if
-          if ( fabm_model%interior_state_variables(ivar)%name == "CO2_TA" ) then
-             indTA = ivar
-          end if
-          if ( fabm_model%interior_state_variables(ivar)%name == "CO2_c" ) then
-             indc = ivar
-          end if
-        end do
+        ! do ivar=1,size(fabm_model%interior_state_variables)
+        !   if ( fabm_model%interior_state_variables(ivar)%name == "ECO_det" ) then
+        !      indDET = ivar
+        !   end if
+        !   if ( fabm_model%interior_state_variables(ivar)%name == "ECO_dsnk" ) then
+        !      indDSNK = ivar
+        !      repair_dsnk = .true.
+        !   end if
+        !   if ( fabm_model%interior_state_variables(ivar)%name == "CO2_TA" ) then
+        !      indTA = ivar
+        !   end if
+        !   if ( fabm_model%interior_state_variables(ivar)%name == "CO2_c" ) then
+        !      indc = ivar
+        !   end if
+        ! end do
 
         do j=1,jj
           do i=1,ii
@@ -985,44 +989,64 @@ call fabm_model%finalize_outputs
               do ivar=1,size(fabm_model%interior_state_variables)
                 mass_after_check_state(:) = tracer(i, j, :, index, ivar) * dp(i,j,:, index)/onem
                 mass_diff_check_state = sum(mass_after_check_state(:)) - sum(mass_before_check_state(i, j, :, ivar))
-                do k=kbottom(i,j,index)+1,kk
-                  tracer(i, j, k, index, ivar) = tracer(i, j, k, index, ivar) - mass_diff_check_state / sum(dp(i, j, kbottom(i,j,index):kk, index)/onem)
+                do k=kbottom(i,j,index),kk
+                  tracer(i, j, k, index, ivar) = max(0.0,tracer(i, j, k, index, ivar) - mass_diff_check_state / sum(dp(i, j, kbottom(i,j,index):kk, index)/onem))
                 enddo
 
-                if ( ivar == indDSNK) then
-                   if (repair_dsnk) then
-                      spd = tracer(i, j, :, index, indDSNK) / tracer(i, j, :,index, indDET) * 24.*60.*60. 
-                      if (i == itest .and. j == jtest) then
-                         write(*,*)"SPD",spd
-                      end if
-                      if (minval(spd).lt.0.5 .or. maxval(spd).gt.15.0 ) then
-                         k=1
-                         spdk = tracer(i, j, k, index, indDSNK) / tracer(i,j,k,index, indDET) * 24.*60.*60.
-                         if (spdk .lt.0.5 .or. spdk .gt.12.0 ) then
-                            spdk = 5.0
-                            tracer(i, j, k, index, indDSNK) = tracer(i,j,k,index, indDET) * spdk / 24. / 60. / 60.
-                         end if
-                         do k=2, kk
-                            spdk = tracer(i, j, k, index, indDSNK) / tracer(i, j,k,index, indDET) * 24.*60.*60.
-                            if (spdk .lt.0.5 .or. spdk .gt.12.0 ) then
-                               spdk = tracer(i, j, k-1, index, indDSNK) / tracer(i, j,k-1,index, indDET) * 24.*60.*60.
-                               tracer(i, j, k, index, indDSNK) = tracer(i, j,k,index, indDET) * spdk / 24. / 60. / 60.
-                            end if
-                         end do
-                         do k=1, kk
-                            if (tracer(i, j, k, index, indDSNK) / tracer(i, j, k,index, indDET) * 24.*60.*60. .lt.0.5 .or. tracer(i, j, k, index, indDSNK) / tracer(i, j, k,index, indDET) * 24.*60.*60. .gt.15.0 ) then
-                               write(*,*)"OUTSIDE REPAIR",tracer(i, j, k, index,indDSNK) / tracer(i, j, k,index, indDET) * 24.*60.*60.,k,kbottom(i, j, index)
-                            end if
-                         end do
-                      end if
-                   end if
-                end if
-                if (ivar == indTA .or. ivar == indc) then
-                         do k=1, kk
-                            tracer(i, j, k, index, indTA) = max( min( tracer(i, j, k, index, indTA), 2600.0 ), 900.0)
-                            tracer(i, j, k, index, indc)  = max( min( tracer(i, j, k, index, indc), 2600.0 ), 900.0)
-                         end do
-                end if
+                ! if (mass_diff_check_state > 0.0 ) then
+
+                !   do k = kbottom(i,j,index),1,-1
+
+                !     if ( sum(tracer(i, j, k:kk, index, ivar) * dp(i,j,k:kk, index)/onem) > mass_diff_check_state) then
+                !       left_to_remove = mass_diff_check_state - sum(tracer(i, j, k+1:kk, index, ivar) * dp(i,j,k+1:kk, index)/onem)
+                !       tracer(i, j, k+1:kk, index, ivar) = 0.0
+                !       tracer(i, j, k, index, ivar) = tracer(i, j, k, index, ivar) - left_to_remove / dp(i,j,k, index)/onem
+                !       exit 
+                !     end if
+                  
+                !   end do
+
+                ! else
+                !   do k=kbottom(i,j,index),kk
+                !     tracer(i, j, k, index, ivar) = tracer(i, j, k, index, ivar) - mass_diff_check_state / sum(dp(i, j, kbottom(i,j,index):kk, index)/onem)
+                !   enddo                  
+                ! end if
+
+
+                ! if ( ivar == indDSNK) then
+                !    if (repair_dsnk) then
+                !       spd = tracer(i, j, :, index, indDSNK) / tracer(i, j, :,index, indDET) * 24.*60.*60. 
+                !       if (i == itest .and. j == jtest) then
+                !          write(*,*)"SPD",spd
+                !       end if
+                !       if (minval(spd).lt.0.5 .or. maxval(spd).gt.15.0 ) then
+                !          k=1
+                !          spdk = tracer(i, j, k, index, indDSNK) / tracer(i,j,k,index, indDET) * 24.*60.*60.
+                !          if (spdk .lt.0.5 .or. spdk .gt.12.0 ) then
+                !             spdk = 5.0
+                !             tracer(i, j, k, index, indDSNK) = tracer(i,j,k,index, indDET) * spdk / 24. / 60. / 60.
+                !          end if
+                !          do k=2, kk
+                !             spdk = tracer(i, j, k, index, indDSNK) / tracer(i, j,k,index, indDET) * 24.*60.*60.
+                !             if (spdk .lt.0.5 .or. spdk .gt.12.0 ) then
+                !                spdk = tracer(i, j, k-1, index, indDSNK) / tracer(i, j,k-1,index, indDET) * 24.*60.*60.
+                !                tracer(i, j, k, index, indDSNK) = tracer(i, j,k,index, indDET) * spdk / 24. / 60. / 60.
+                !             end if
+                !          end do
+                !          do k=1, kk
+                !             if (tracer(i, j, k, index, indDSNK) / tracer(i, j, k,index, indDET) * 24.*60.*60. .lt.0.5 .or. tracer(i, j, k, index, indDSNK) / tracer(i, j, k,index, indDET) * 24.*60.*60. .gt.15.0 ) then
+                !                write(*,*)"OUTSIDE REPAIR",tracer(i, j, k, index,indDSNK) / tracer(i, j, k,index, indDET) * 24.*60.*60.,k,kbottom(i, j, index)
+                !             end if
+                !          end do
+                !       end if
+                !    end if
+                ! end if
+                ! if (ivar == indTA .or. ivar == indc) then
+                !          do k=1, kk
+                !             tracer(i, j, k, index, indTA) = max( min( tracer(i, j, k, index, indTA), 2600.0 ), 900.0)
+                !             tracer(i, j, k, index, indc)  = max( min( tracer(i, j, k, index, indc), 2600.0 ), 900.0)
+                !          end do
+                ! end if
               end do
             end if
           end do
@@ -1060,28 +1084,28 @@ call fabm_model%finalize_outputs
       end do
     end subroutine check_finite
 
-    subroutine check_dsnk(location,index)
-      character(len=*), intent(in) :: location
-      integer, intent(in) :: index
-      integer :: i, j, k
-        do j=1,jj
-          do i=1,ii
-            if (SEA_P) then
-               spd = tracer(i, j, :, index, 20) / tracer(i, j, :,index, 17) * 24.*60.*60.
-               if (i == itest .and. j == jtest) then
-                  write(*,*)"SPD",index,location,spd
-               end if
-                      if (minval(spd).lt.0.5 .or. maxval(spd).gt.15.0 ) then
-                         do k=1, kk
-                            if (tracer(i, j, k, index, 20) / tracer(i, j, k,index, 17) * 24.*60.*60. .lt.0.5 .or. tracer(i, j, k, index, 20) / tracer(i, j, k,index, 17) * 24.*60.*60. .gt.15.0 ) then
-                               write(*,*)location,index,tracer(i, j, k, index,20) / tracer(i, j, k,index, 17) * 24.*60.*60.,k,kbottom(i, j,index)
-                            end if
-                         end do
-                      end if
-            end if
-          end do
-        end do
-    end subroutine check_dsnk
+    ! subroutine check_dsnk(location,index)
+    !   character(len=*), intent(in) :: location
+    !   integer, intent(in) :: index
+    !   integer :: i, j, k
+    !     do j=1,jj
+    !       do i=1,ii
+    !         if (SEA_P) then
+    !            spd = tracer(i, j, :, index, 20) / tracer(i, j, :,index, 17) * 24.*60.*60.
+    !            if (i == itest .and. j == jtest) then
+    !               write(*,*)"SPD",index,location,spd
+    !            end if
+    !                   if (minval(spd).lt.0.5 .or. maxval(spd).gt.15.0 ) then
+    !                      do k=1, kk
+    !                         if (tracer(i, j, k, index, 20) / tracer(i, j, k,index, 17) * 24.*60.*60. .lt.0.5 .or. tracer(i, j, k, index, 20) / tracer(i, j, k,index, 17) * 24.*60.*60. .gt.15.0 ) then
+    !                            write(*,*)location,index,tracer(i, j, k, index,20) / tracer(i, j, k,index, 17) * 24.*60.*60.,k,kbottom(i, j,index)
+    !                         end if
+    !                      end do
+    !                   end if
+    !         end if
+    !       end do
+    !     end do
+    ! end subroutine check_dsnk
 
     subroutine vertical_movement(n, m, timestep)
       integer, intent(in) :: n, m
@@ -1167,27 +1191,27 @@ call fabm_model%finalize_outputs
         integer :: i, j, k
 
         lkbottom = 0
-       ! do j=1,jj
-       !     do i=1,ii
-       !       if (SEA_P) then
-       !         do k = kk, 1, -1
-       !           if (dp(i, j, k, index)/onem > h_min) exit
-       !         end do
-       !         kbottom(i, j) = max(k, 2)
-       !       end if
-       !     end do
-       ! end do
-        do j=1,jj       ! CAGLAR - I did it from top to bottom in order to avoid having < 0.1 m layer in the water column.
-            do i=1,ii   
+        do j=1,jj
+            do i=1,ii
               if (SEA_P) then
-                do k = 1,kk
-                  if (dp(i, j, k, index)/onem <= h_min) exit
-                  lkbottom(i, j) = k
+                do k = kk, 1, -1
+                  if (dp(i, j, k, index)/onem > h_min) exit
                 end do
-                lkbottom(i, j) = max(lkbottom(i,j), 2)
+                lkbottom(i, j) = max(k, 2)
               end if
             end do
         end do
+!        do j=1,jj       ! CAGLAR - I did it from top to bottom in order to avoid having < 0.1 m layer in the water column.
+!            do i=1,ii   
+!              if (SEA_P) then
+!                do k = 1,kk
+!                  if (dp(i, j, k, index)/onem <= h_min) exit
+!                  lkbottom(i, j) = k
+!                end do
+!                lkbottom(i, j) = max(lkbottom(i,j), 2)
+!              end if
+!            end do
+!        end do
 
         lmask = .false.
         do j=1,jj
@@ -1290,6 +1314,7 @@ call fabm_model%finalize_outputs
         call fabm_model%link_interior_data(fabm_standard_variables%density,codens(1:ii,1:jj, 1:kk))
         call fabm_model%link_interior_data(fabm_standard_variables%pressure,codepth(1:ii,1:jj, 1:kk))
         call fabm_model%link_horizontal_data(fabm_standard_variables%ice_area_fraction, coice_conc(1:ii, 1:jj))
+        call fabm_model%link_horizontal_data(fabm_standard_variables%bottom_depth, codepth(1:ii, 1:jj, kk))
 
         call update_fabm_state(index)
     end subroutine update_fabm_data
