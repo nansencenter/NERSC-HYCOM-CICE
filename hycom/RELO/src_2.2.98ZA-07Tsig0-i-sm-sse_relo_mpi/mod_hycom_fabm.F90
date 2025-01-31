@@ -918,7 +918,7 @@ call fabm_model%finalize_outputs
       logical, intent(in) :: repair
 
       logical :: valid_int, valid_sf, valid_bt, repair_dsnk
-      real :: spdk, left_to_remove
+      real :: spdk, left_to_remove, added_bottom_mass, epsilon
       integer :: i, j, k, ivar, old_index, indDET, indDSNK, kb, indTA, indc
 
       old_index = current_time_index
@@ -987,11 +987,43 @@ call fabm_model%finalize_outputs
                 tracer(i, j, k, index, :) = tracer(i, j, kbottom(i, j, index), index, :)
               end do
               do ivar=1,size(fabm_model%interior_state_variables)
-                mass_after_check_state(:) = tracer(i, j, :, index, ivar) * dp(i,j,:, index)/onem
-                mass_diff_check_state = sum(mass_after_check_state(:)) - sum(mass_before_check_state(i, j, :, ivar))
-                do k=kbottom(i,j,index),kk
-                  tracer(i, j, k, index, ivar) = max(0.0,tracer(i, j, k, index, ivar) - mass_diff_check_state / sum(dp(i, j, kbottom(i,j,index):kk, index)/onem))
-                enddo
+                ! mass_after_check_state(:) = tracer(i, j, :, index, ivar) * dp(i,j,:, index)/onem
+                ! mass_diff_check_state = sum(mass_after_check_state(:)) - sum(mass_before_check_state(i, j, :, ivar))
+                ! if (mass_diff_check_state < 0.0 ) then
+                !   epsilon = 0.0
+                ! else
+                !   epsilon = 1.0E-8
+                ! end if
+                ! if ( dp(i, j, kbottom(i,j,index), index)/onem >= 6.0 ) then ! check if the bottom layer is thicker than 6 meters,
+                !   do k=kbottom(i,j,index),kk
+                !     tracer(i, j, k, index, ivar) = max(epsilon,tracer(i, j, k, index, ivar) - mass_diff_check_state / sum(dp(i, j, kbottom(i,j,index):kk, index)/onem))
+                !   enddo
+                ! else 
+                !   hbottom = 0
+                !   nbottom = 0
+                !   do k = kbottom(i,j,index),1,-1
+                !     hbottom = hbottom + dp(i ,j , k, index)/onem
+                !     if ( hbottom >= 6.0 ) exit
+                !       nbottom = nbottom + 1
+                !   end do
+                !   do k = kbottom(i,j,index)-nbottom , kk ! distribute the mass to total height, and to multiple layers
+                !     tracer(i, j, k, index, ivar) = max(epsilon,tracer(i, j, k, index, ivar) - mass_diff_check_state / sum(dp(i, j, (kbottom(i,j,index)-nbottom):kk, index)/onem))
+                !   end do
+                ! end if
+
+                hbottom = 0
+                nbottom = 0
+                added_bottom_mass = 0.0
+                do k = kk,1,-1
+                  hbottom = hbottom + dp(i ,j , k, index)/onem
+                  added_bottom_mass = added_bottom_mass + dp(i ,j , k, index)/onem * tracer(i, j, k, index, ivar)
+                  if ( hbottom >= 6.0 ) exit
+                    nbottom = nbottom + 1
+                end do
+                do k = kk-nbottom , kk ! distribute the mass to total height, and to multiple layers
+                  tracer(i, j, k, index, ivar) = added_bottom_mass / sum( dp(i ,j , (kk-nbottom):kk, index)/onem )
+                end do
+
 
                 ! if (mass_diff_check_state > 0.0 ) then
 
