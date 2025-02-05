@@ -30,6 +30,8 @@
 # M. Bakhoday-Paskyabi et al., 2017 (under preparation), Effects of nesting and open boundary conditions: a comparative study between TOPAZ4 and TOPAZ5 systems
 # M. Bakhoday-Paskyabi, 11 July 2019, adding bio fields
 #
+
+import numpy.matlib as matlib
 from   matplotlib import pyplot as plt
 import abfile.abfile as abf
 import numpy
@@ -329,8 +331,8 @@ def calc_uvbaro(uo,vo,e3t,iu,iv) :
         vtmp = vo[k,:,:]
         utmp = numpy.where(abs(utmp)>10,0.,utmp)
         vtmp = numpy.where(abs(vtmp)>10,0.,vtmp)
-        utemp[k,:,:]=e3t[k,:,:]*utmp[:,:]
-        vtemp[k,:,:]=e3t[k,:,:]*vtmp[:,:]
+        utemp[k,:,:]=e3t[k]*utmp[:,:]
+        vtemp[k,:,:]=e3t[k]*vtmp[:,:]
     #
     dsum=numpy.nansum(e3t,axis=0)
     # Avoid divide by zero warning
@@ -373,30 +375,104 @@ def p2v_2d(var_p) :
     return var_u
 
 
+
+
+
+
 def read_grid(filemesh) :
     
-    ncid0=netCDF4.Dataset(filemesh[:-7]+"COORD.nc","r")
+    ncid0=netCDF4.Dataset("/home/staukoor/erth0904_taukoor/hycom/coords.nc","r")
     numpy.seterr(invalid='ignore')
-    e3t=ncid0.variables["e3t"][:,:,:]
+    e3t=ncid0.variables["e3t"][:]
+    lev_bnds=numpy.cumsum(e3t)
+    lon=ncid0.variables["longitude"][:]
+    lat=ncid0.variables["latitude"][:]
+   
+    plon=matlib.repmat(lon,len(lat),1)
+
+    plat=numpy.transpose(matlib.repmat(lat,len(lon),1))
+    idm,jdm=numpy.shape(plon)
+ 
+    
+
     ncid0.close()
     
-    ncid0=netCDF4.Dataset(filemesh,"r")
-    plon=ncid0.variables["lon"][:,:]
-    plat=ncid0.variables["lat"][:,:]
+    ncid0=netCDF4.Dataset("/home/staukoor/erth0904_taukoor/hycom/bathy.nc","r")
     with numpy.errstate(invalid='ignore'):
-        hdept=ncid0.variables["Bathymetry"][:,:]
+        hdept=ncid0.variables["deptho"][:,:]
         gdept=ncid0.variables["depth"][:]
         mask=ncid0.variables["mask"][:,:]
-        mbathy=numpy.int8(ncid0.variables["mbathy"][:,:])
-        mbathy_u=numpy.int8(ncid0.variables["mbathy_u"][:,:])
-        mbathy_v=numpy.int8(ncid0.variables["mbathy_v"][:,:])
+        mbathy=numpy.int8(ncid0.variables["deptho_lev"][:,:])
+	
+    depthu=depth_u_points(hdept)
+    depthv=depth_v_points(hdept)
+    mbathy_u=numpy.zeros(numpy.shape(depthu))
+    mbathy_u[numpy.where(depthu>=1.0e15)]=0.0
+    mbathy_u[numpy.where((depthu<1.0e15) & (depthu >= numpy.max(lev_bnds[:])))]=numpy.size(e3t)-1
+    for i in range(idm):
+        for j in range(jdm):
+            if depthu[i,j] < numpy.max(lev_bnds[:]):
+                mbathy_u[i,j]=numpy.min(numpy.where(lev_bnds[:]>depthu[i,j]))-1
+
+    mbathy_v=numpy.zeros(numpy.shape(depthv))
+    mbathy_v[numpy.where(depthv>=1.0e15)]=0.0
+    mbathy_v[numpy.where((depthv<1.0e15) & (depthv >= numpy.max(lev_bnds[:])))]=numpy.size(e3t)-1
+    for i in range(idm):
+        for j in range(jdm):
+            if depthv[i,j] < numpy.max(lev_bnds[:]):
+                mbathy_v[i,j]=numpy.min(numpy.where(lev_bnds[:]>depthv[i,j]))-1
+
+    mbathy_u=mbathy_u.astype(int)
+    mbathy_v=mbathy_v.astype(int)
+
 
     mbathy   = mbathy  -1
     mbathy_u = mbathy_u-1
     mbathy_v = mbathy_v-1
     ncid0.close()
     
+    
     return hdept,gdept,mbathy,mbathy_u,mbathy_v,mask,e3t,plon,plat
+    
+
+def depth_u_points(depth) :
+   depthip1  = shift_right(depth ,-1)    # values at cell i-1
+   depthu  =numpy.mean(numpy.array([depth ,depthip1]),axis=0)
+   return depthu
+
+def depth_v_points(depth) :
+   depthjp1  = shift_down(depth ,1)    # values at cell j+1 
+   depthv  =numpy.mean(numpy.array([depth ,depthjp1]),axis=0)
+   return depthv
+
+def shift_right(field,istep) :
+   # shift field roll by istep steps 
+   idm,jdm=numpy.shape(field)
+   field2  = numpy.roll(field,istep,axis=1)
+   if istep==-1:
+      field2[:,jdm-1]=field[:,jdm-2]  
+   elif istep==1:
+      field2[:,0]=field[:,1]  
+   else:
+      "shift_right: Step must be -1 of 1"
+      exit()
+   return field2
+
+def shift_down(field,istep) :
+   # shift field down by istep steps
+   idm,jdm=numpy.shape(field)
+   field2  = numpy.roll(field,istep,axis=0)
+   if istep==-1:
+      field2[idm-1,:]=field[idm-2,:]  
+   elif istep==1:
+      field2[0,:]=field[1,:]  
+   else:
+      "shift_right: Step must be -1 of 1"
+      exit()
+   return field2
+
+
+
 
 
 def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_file=None) :
@@ -441,7 +517,7 @@ def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_file=None) :
     logger.debug("file name is {}".format(file))
     logger.debug("dirname is {}".format(dirname))
     logger.debug("basename is {}".format(os.path.basename(file)))
-    m=re.match("(MERCATOR-PHY-24-)(.*\.nc)",os.path.basename(file))
+    m=re.match("(Y)(.*\.nc)",os.path.basename(file))
     logger.debug("file prefix is {}".format(file_pre))
 ###    m=re.match(file_pre,os.path.basename(file))
     if not m:
@@ -450,12 +526,13 @@ def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_file=None) :
         raise ValueError(msg)
     
     #fileinput0=os.path.join(dirname+"/"+"MERCATOR-PHY-24-"+m.group(2))
-    file_date=file[-16:-6]
+    file_date=file[-12:-3]
     fileinput0=file
-    print((file_date,file))
-    next_day=datetime.datetime.strptime(file_date, '%Y-%m-%d')+datetime.timedelta(days=1)
-    fileinput1=datetime.datetime.strftime(next_day,'%Y%m%d')
+    print('mynameis',file_date,file)
+    next_day=datetime.datetime.strptime(file_date, 'Y%yM%mD%d')+datetime.timedelta(days=1)
+    fileinput1=datetime.datetime.strftime(next_day,'Y%yM%mD%d')
     fileinput1=os.path.join(dirname+"/"+file_pre+fileinput1+'.nc')
+    
     
     logger.info("Reading from %s"%(fileinput0))
     ncid0=netCDF4.Dataset(fileinput0,"r")
@@ -618,8 +695,12 @@ def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_file=None) :
     #flnm.write(oname)
     #flnm.close()
     ssh = numpy.where(numpy.abs(ssh)>1000,0.,ssh*9.81) # NB: HYCOM srfhgt is in geopotential ...
+
     #
-    outfile = abf.ABFileArchv("./data/"+oname,"w",iexpt=iexpt,iversn=iversn,yrflag=yrflag,)
+    header1="Converted NEMO files to HYCOM abfiles\n"
+    header2="Archive files for interpolation\n"
+    header3="NEMO nesting\n"
+    outfile = abf.ABFileArchv("./data/"+oname,"w",iexpt=iexpt,iversn=iversn,yrflag=yrflag,cline1=header1,cline2=header2,cline3=header3)
     outfile.write_field(zeros,                   ip,"montg1"  ,0,model_day,1,0)
     outfile.write_field(ssh,                     ip,"srfhgt"  ,0,model_day,0,0)
     outfile.write_field(zeros,                   ip,"surflx"  ,0,model_day,0,0) # Not used
@@ -663,18 +744,18 @@ def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_file=None) :
         if thickness_method==1:
             if k < u.shape[0]-1 :
                 J,I = numpy.where(mbathy>k)
-                e3=(e3t[k,:,:])
+                e3=(e3t[k])
                 dtl[J,I]=dt[k]
                 J,I = numpy.where(mbathy==k)
                 dtl[J,I]=e3[J,I]
             else:
-                e3=(e3t[k,:,:])
+                e3=(e3t[k])
                 J,I = numpy.where(mbathy==k)
                 dtl[J,I]=e3[J,I]
 	# Use partial cells for the whole water column.
         else :
             J,I = numpy.where(mbathy>=k)
-            dtl[J,I]=e3t[k,J,I]
+            dtl[J,I]=e3t[k]
 
         # Salinity
         sl = salt[k,:,:]
