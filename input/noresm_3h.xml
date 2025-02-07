@@ -16,7 +16,7 @@
 
 
    <!-- As above, but includes strd (surface thermal downwelling radiation) as well-->
-      <forcing_dataset name="noresm_3h+lw" rootPath="/cluster/work/users/annettes/NORESM_forcing/" format="netcdf" timestep="3h">
+      <forcing_dataset name="noresm_3h+lw" rootPath="/cluster/work/users/uname/NORESM_forcing/" format="netcdf" timestep="3h">
 <!--     <field name="internal name known by routine"   file="path to file"  varname="name of variable in netcdf file" unit="udunit"/> -->
          <field known_name="10u"    file="[rootPath]U_nt_y%Y.nc"       varname="UBOT"  units="m s**-1"/>
          <field known_name="10v"    file="[rootPath]V_nt_y%Y.nc"       varname="VBOT"  units="m s**-1"/>
