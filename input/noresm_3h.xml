@@ -2,7 +2,8 @@
 <xml>
 <!-- Please note that the rootPath here is overwritten by the one defined in REGION.src file. So, Don't worry about the path definition here -->
    <forcing_datasets>
-      <forcing_dataset name="noresm_3h" rootPath="/cluster/work/users/annettes/NORESM_forcing/" format="netcdf" timestep="3h">
+      <!-- The atmospherice data must be stored on work for access during submitted runs: 3h atm from NORESM can be found here:/nird/projects/NS9481K/NORESM_3h_Atm/ -->
+      <forcing_dataset name="noresm_3h" rootPath="/cluster/work/users/uname/NORESM_forcing/" format="netcdf" timestep="3h">
 <!--     <field name="internal name known by routine"   file="path to file"  varname="name of variable in netcdf file" unit="udunit"/> -->
          <field known_name="10u"    file="[rootPath]U_nt_y%Y.nc"       varname="UBOT"  units="m s**-1"/>
          <field known_name="10v"    file="[rootPath]V_nt_y%Y.nc"       varname="VBOT"  units="m s**-1"/>
