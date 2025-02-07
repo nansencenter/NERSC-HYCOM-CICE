@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <xml>
    <forcing_datasets>
-      <!-- The atmospherice data must be stored on work for access during submitted runs: 3-h atm from NORESM can be found here:/nird/projects/NS9481K/NORESM_3h_Atm/ -->
+      <!-- The atmospherice data must be stored on work for access during submitted runs: atm from NORESM can be found here:/nird/projects/NS9481K/NORESM_3h_Atm/ -->
       <forcing_dataset name="noresm_hist" rootPath="/cluster/work/users/uname/NORESM_forcing/" format="netcdf" timestep="24h">
 <!--     <field name="internal name known by routine"   file="path to file"  varname="name of variable in netcdf file" unit="udunit"/> -->
          <field known_name="taux"   file="[rootPath]tauu_Eday_nt_ocn_NorESM2-MM_historical_r1i1p1f1_gn_%Y.nc"  varname="tauu"  units="Pa"/>
