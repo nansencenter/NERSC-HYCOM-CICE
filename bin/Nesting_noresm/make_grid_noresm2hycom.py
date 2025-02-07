@@ -28,7 +28,7 @@ import geopy.distance as gpd
 #
 # Usage:
 #
-# ../bin/Nesting_noresm/make_grid_noresm2hycom.py /nird/projects/NS9481K/NORESM_forcing/Grid/areacello_Ofx_NorESM2-MM_historical_r1i1p1f1_gn.nc /nird/projects/nird/NS9481K/annettes/O2OCEAN/grid/deptho_Ofx_NorESM2-MM_historical_r3i1p1f1_gn.nc --idm 380 --jdm 365
+# ../bin/Nesting_noresm/make_grid_noresm2hycom.py /nird/projects/NS9481K/NORESM_forcing/Grid/areacello_Ofx_NorESM2-MM_historical_r1i1p1f1_gn.nc /nird/projects/NS9481K/NORESM_forcing/Grid/deptho_Ofx_NorESM2-MM_historical_r3i1p1f1_gn.nc --idm 380 --jdm 365
 #
 # Mostafa Bakhoday-Paskyabi, 16 May 2019.
 # History:
