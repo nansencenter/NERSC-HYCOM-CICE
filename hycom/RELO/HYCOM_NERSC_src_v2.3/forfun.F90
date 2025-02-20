@@ -325,7 +325,7 @@
           enddo !j
         endif !stroff:else
 !
-      endif				!  windf = .true.
+      endif     !  windf = .true.
 !
       if (thermo) then
 !
