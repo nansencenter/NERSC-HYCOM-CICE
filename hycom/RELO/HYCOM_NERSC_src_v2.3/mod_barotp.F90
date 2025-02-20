@@ -727,7 +727,7 @@
 !           Barotropic Stokes flow included here
 !
             pbudel = (ubavg(i+1,j,ml)+usdbavg(i+1,j))* &
-                          depthu(i+1,j)*scuy(i+1,j)) &
+                          (depthu(i+1,j)*scuy(i+1,j)) &
                     -(ubavg(i,  j,ml)+usdbavg(i,  j))* &
                            (depthu(i ,j)*scuy(i,  j))
             pbvdel = (vbavg(i,j+1,ml)+vsdbavg(i,j+1))* &

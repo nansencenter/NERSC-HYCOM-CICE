@@ -352,7 +352,7 @@
 !
       logical, save :: &
                     btrlfr,btrmas,diagno,thermo,windf,mslprf, &
-                    pcipf,epmass,priver,rivera,kparan,lbmont, &
+                    pcipf,priver,rivera,kparan,lbmont, &
                     relax,srelax,trelax,trcrlx,relaxf,relaxs,relaxt, &
                     locsig,vsigma,hybrid,isopyc,icegln,hybraf,isopcm, &
                     mxl_no,mxlkta,mxlktb,mxlkrt,pensol, &
@@ -670,6 +670,7 @@
 ! ---'qhybrlx' = HYBGEN: relaxation coefficient (inverse baroclinic time steps)
 ! --- 'hybiso' = HYBGEN: Use PCM if layer is within hybiso of target density
 ! --- 'hybthn' = HYBGEN: ratio of layer thicknesses to select the thiner
+! --- 'hybthk' = HYBGEN: thick-thin-thick ratio to expand the thin layer
 ! --- 'visco2' = deformation-dependent Laplacian  viscosity factor
 ! --- 'visco4' = deformation-dependent biharmonic viscosity factor
 ! --- 'facdf4' =       speed-dependent biharmonic viscosity factor
@@ -722,6 +723,7 @@
 ! --- 'thkbot' = thickness of bottom boundary layer (m)
 ! --- 'sigjmp' = minimum density jump across interfaces   (theta units)
 ! --- 'tmljmp' = equivalent temperature jump across the mixed layer (degC)
+! --- 'ocnscl' = scale factor for Uocn in relative wind (0.0 for absolute wind)
 ! --- 'prsbas' = msl pressure is input field + prsbas (Pa)
 ! --- 'salmin' = minimum salinity allowed in an isopycnic layer (psu)
 ! --- 'dx00'   = maximum layer thickness minimum, optional (m)
@@ -767,7 +769,6 @@
 ! --- 'iceflg' = sea ice model flag   (0=none,1=energy loan,2=coupled/esmf)
 ! --- 'ishelf' = ice shelf flag       (0=none,1=ice shelf over ocean)
 ! --- 'wndflg' = wind stress input flag (0=none,1=uv-grid,2,3=p-grid,4,5=wnd10m)
-! --- 'amoflg' = relative wind     flag (0=U10:wndflg=-4,-5;1=U10-Uocn:wndflg=4,5)
 ! --- 'ustflg' = ustar forcing flag          (3=input,1=wndspd,2=stress)
 ! --- 'flxflg' = thermal forcing flag (0=none,3=net-flux,1,2,4=sst-based)
 ! --- 'empflg' = E-P     forcing flag (0=none,3=net_E-P, 1,2,4=sst-based_E)
@@ -780,6 +781,7 @@
 ! --- 'sstflg' = SST relaxation  flag (0=none,1=clim,2=atmos,3=obs)
 ! --- 'icmflg' = ice mask        flag (0=none,1=clim,2=atmos,3=obs)
 ! --- 'difsmo' = KPROF: number of layers with horiz smooth diff coeffs
+! --- 'epmass' = E-P mass exchange flag (0=no,1=yes,2=river)
 !
 #if defined(RELO)
       real, save, allocatable, dimension(:) ::  &
@@ -791,7 +793,7 @@
 !
       real, save :: &
                      thbase,saln0,baclin,batrop, &
-                     qhybrlx,hybiso,hybthn, &
+                     qhybrlx,hybiso,hybthn,hybthk, &
                      visco2,visco4,veldf2,veldf4,facdf4, &
                      temdf2,temdfc,thkdf2,thkdf4,vertmx,diapyc, &
                      tofset,sofset,dtrate,slip,cb,cbar, &
@@ -804,7 +806,7 @@
                      thkcdw,thkfrz,tfrz_0,tfrz_s,ticegr,hicemn,hicemx, &
                      dx00,dx00f,dx00x, &
                      dp00,dp00f,dp00x,ds00,ds00f,ds00x,dp00i,isotop, &
-                     oneta0,sigjmp,tmljmp,prsbas,emptgt
+                     oneta0,sigjmp,tmljmp,ocnscl,prsbas,emptgt
 !
       integer, save :: &
                      tsofrq,mixfrq,icefrq,icpfrq,nhybrd,nsigma, &
@@ -813,9 +815,9 @@
                      ntracr,mtracr,trcflg(mxtrcr),itracr(801:899), &
                      clmflg,dypflg,iniflg,lbflag,mapflg,yrflag,sshflg, &
                      iversn,iexpt,jerlv0, &
-                     iceflg,ishelf,icmflg,wndflg,amoflg,ustflg, &
+                     iceflg,ishelf,icmflg,wndflg,ustflg, &
                      flxflg,empflg,dswflg,albflg,lwflag,sstflg,sssflg, &
-                     empbal,sssbal, &
+                     epmass,empbal,sssbal, &
                      difsmo,disp_count
 !
       real,    parameter :: &
@@ -1923,3 +1925,7 @@
 !> July 2023 - added mtracr and itracr
 !> Sep. 2023 - initialize si_h to zero
 !> Jan. 2024 - added pbotmin
+!> May  2024 - added epmass=2 for river only mass exchange
+!> Aug. 2024 - added ocnscl
+!> Sep. 2024 - added hybthk
+!> Dec. 2024 - removed amoflg

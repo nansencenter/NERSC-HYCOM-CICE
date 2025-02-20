@@ -106,6 +106,7 @@ S-Z(15-11): dp00/f/x/i=3m/1.125/12m/1m; ds=1m/1.125/4m; src_2.2.12;
    8.0    'hybrlx' = HYBGEN: inverse relaxation coefficient (time steps)
    0.01	  'hybiso' = HYBGEN: Use PCM if layer is within hybiso of target density
    1.0    'hybthn' = HYBGEN: ratio of layer thicknesses to select the thiner
+   0.0    'hybthk' = HYBGEN: thick-thin-thick ratio to expand the thin layer
    3	  'hybmap' = hybrid   remapper  flag (0=PCM, 1=PLM,  2=PPM)
    0	  'hybflg' = hybrid   generator flag (0=T&S, 1=th&S, 2=th&T)
    0	  'advflg' = thermal  advection flag (0=T&S, 1=th&S, 2=th&T)
@@ -205,6 +206,7 @@ S-Z(15-11): dp00/f/x/i=3m/1.125/12m/1m; ds=1m/1.125/4m; src_2.2.12;
    0.0	  'tid_t0' = TIDES: origin for ramp time (model day)
   12	  'clmflg' = climatology frequency flag   (6=bimonthly, 12=monthly)
    4	  'wndflg' = wind stress input flag (0=none,1=u/v-grid,2,3=p-grid,4,5=wnd10m)
+   1.0    'ocnscl' = scale factor for Uocn in relative wind (0.0: absolute wind)
    2      'ustflg' = ustar forcing     flag        (3=input,1,2=wndspd,4=stress)
    6	  'flxflg' = thermal forcing   flag (0=none,3=net_flux,1-2,4-6=sst-based)
    6      'empflg' = E-P     forcing   flag (0=none,3=net_E-P, 1-2,4-6=sst-based_E)
