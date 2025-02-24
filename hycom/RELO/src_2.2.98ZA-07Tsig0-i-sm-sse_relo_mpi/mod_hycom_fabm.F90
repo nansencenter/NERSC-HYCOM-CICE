@@ -696,6 +696,17 @@ contains
       call get_mask(m, mask(:, :, :, m), kbottom(:, :, m))
       call get_mask(n, mask(:, :, :, n), kbottom(:, :, n))
 
+      ! mask(:, :, :, m) = .false.
+      ! mask(:, :, :, n) = .false.
+      ! do j=1,jj
+      !     do i=1,ii
+      !       kbottom(i, j, m) = min( kbottom(i, j, m), kbottom(i, j, n) )
+      !       kbottom(i, j, n) = kbottom(i, j, m)
+      !       mask(i,j,1:kbottom(i, j, m),m) = .true.
+      !       mask(i,j,1:kbottom(i, j, m),n) = .true.
+      !     end do
+      ! end do
+
       ! Store old surface/bottom state for later application of Robert-Asselin filter.
       fabm_surface_state_old = fabm_surface_state(:, :, n, :)
       fabm_bottom_state_old = fabm_bottom_state(:, :, n, :)
@@ -883,7 +894,19 @@ call check_finite("AFTER RIVER", n)
 !          enddo
 !        enddo
 !      enddo
-      
+! do j=1,jj
+!   do i=1,ii
+!     if (SEA_P) then
+
+!       do k=kbottom(i, j, n)+1, kk
+!         tracer(i, j, k, n, :) = tracer(i, j, kbottom(i, j, n), n, :)
+!       end do
+!       do k=kbottom(i, j, m)+1, kk
+!         tracer(i, j, k, m, :) = tracer(i, j, kbottom(i, j, m), m, :)
+!       end do      
+!     end if
+!   end do
+! end do          
       call check_state('after hycom_fabm_update', n, .true.)
       
 !      do i=1,ii
@@ -922,17 +945,23 @@ call fabm_model%finalize_outputs
       logical, intent(in) :: repair
 
       logical :: valid_int, valid_sf, valid_bt, repair_dsnk,repair_this
-      real :: spdk, left_to_remove, added_bottom_mass, epsilon
+      real :: spdk, left_to_remove, added_bottom_mass, epsilon, bottom_thickness
       integer :: i, j, k, ivar, old_index, indDET, indDSNK, kb, indTA, indc
       integer :: average_here_and_below, average_here_and_below_positive, average_here_and_below_negative
+      real :: total_mass_before, total_mass_after
 
       old_index = current_time_index
       call update_fabm_state(index)
 
+
       do i=1,ii
         do j=1,jj
           do ivar=1,size(fabm_model%interior_state_variables)
-            mass_before_check_state(i, j, :, ivar) = tracer(i, j, :, index, ivar) * dp(i, j, :, index)/onem
+            !mass_before_check_state(i, j, :, ivar) = tracer(i, j, :, index, ivar) * dp(i, j, :, index)/onem
+            total_mass_before = 0.0
+            do k = 1,kbottom(i, j, index)
+              total_mass_before = total_mass_before + tracer(i, j, k, index, ivar) * dp(i, j, k, index)/onem
+            end do 
           enddo
         enddo
       enddo
@@ -957,37 +986,33 @@ call fabm_model%finalize_outputs
         end if
       end do
 
-!      do ivar=1,size(fabm_model%interior_state_variables)
-!        if (.not.all(ieee_is_finite(tracer(1:ii, 1:jj, 1:kk, index, ivar)))) then
-!          write (*,*) location, 'Interior state variable not finite:', ivar, 'range', minval(tracer(1:ii, 1:jj, 1:kk, index, ivar)), maxval(tracer(1:ii, 1:jj, 1:kk, index, ivar)),fabm_model%interior_state_variables(ivar)%name
-!          stop
-!        end if
-!      end do
-
-      if (repair) then
+      if (.true.) then
         ! FABM will have placed "missing value" for all state variables in all masked cells.
         ! However, as these can be revived later in the simulation, make sure their value is valid by
         ! copying bottom value for pelagic tracers to all layers below bottom.
 
-        ! do ivar=1,size(fabm_model%interior_state_variables)
-        !   if ( fabm_model%interior_state_variables(ivar)%name == "ECO_det" ) then
-        !      indDET = ivar
-        !   end if
-        !   if ( fabm_model%interior_state_variables(ivar)%name == "ECO_dsnk" ) then
-        !      indDSNK = ivar
-        !      repair_dsnk = .true.
-        !   end if
-        !   if ( fabm_model%interior_state_variables(ivar)%name == "CO2_TA" ) then
-        !      indTA = ivar
-        !   end if
-        !   if ( fabm_model%interior_state_variables(ivar)%name == "CO2_c" ) then
-        !      indc = ivar
-        !   end if
-        ! end do
-
         do j=1,jj
           do i=1,ii
             if (SEA_P) then
+              do ivar=1,size(fabm_model%interior_state_variables)
+
+                ! mass_after_check_state(:) = tracer(i, j, :, index, ivar) * dp(i,j,:, index)/onem
+                ! total_mass_after = sum(mass_after_check_state(1:kbottom(i, j, index)))
+                ! total_mass_before = sum(mass_before_check_state(i, j, 1:kbottom(i, j, index), ivar))
+                ! mass_diff_check_state = total_mass_after - total_mass_before
+
+                total_mass_after = 0.0
+                do k = 1,kbottom(i, j, index)
+                  total_mass_after = total_mass_after + tracer(i, j, k, index, ivar) * dp(i, j, k, index)/onem
+                end do
+
+                mass_diff_check_state = total_mass_after - total_mass_before
+
+                do k = 1, kbottom(i, j, index)
+                  tracer(i, j, k, index, ivar) = tracer(i, j, k, index, ivar) - tracer(i, j, k, index, ivar) * (mass_diff_check_state / total_mass_after)
+                end do
+
+              end do
 
               do k=kbottom(i, j, index)+1, kk
                 tracer(i, j, k, index, :) = tracer(i, j, kbottom(i, j, index), index, :)
@@ -1191,66 +1216,101 @@ call fabm_model%finalize_outputs
 
 ! ÇALIŞMADI 3
 
+! ÇALIŞMADI 4
+              ! do ivar=1,size(fabm_model%interior_state_variables)
+              !   hbottom = 0
+              !   nbottom = 0
+              !   bottom_thickness = 6.0 !max(6.0, codepth(i,j,kk)*0.05)
+              !   added_bottom_mass = 0.0
+              !   do k = kk,1,-1
+              !     hbottom = hbottom + max(1.0E-20,(dp(i ,j , k, index)/onem))
+              !     added_bottom_mass = added_bottom_mass + max(1.0E-20,(dp(i ,j , k, index)/onem)) * max(0.0, tracer(i, j, k, index, ivar))
+              !     if ( hbottom >= bottom_thickness ) exit
+              !       nbottom = nbottom + 1
+              !   end do
+              !   do k = kk-nbottom , kk ! distribute the mass to total height, and to multiple layers
+              !     !tracer(i, j, k, index, ivar) = added_bottom_mass / sum( dp(i ,j , (kk-nbottom):kk, index)/onem )
+              !     tracer(i, j, k, index, ivar) = added_bottom_mass / hbottom
+              !   end do              
+! ÇALIŞMADI 4
+
 ! ÇALIŞTI
-                do ivar=1,size(fabm_model%interior_state_variables)
-                 repair_this = .true.
-                 if ( fabm_model%interior_state_variables(ivar)%name == "ECO_dsnk" ) repair_this = .false.
-                 hbottom = 0
-                 nbottom = 0
-                 added_bottom_mass = 0.0
-                 do k = kk,1,-1
-                   hbottom = hbottom + dp(i ,j , k, index)/onem
-                   added_bottom_mass = added_bottom_mass + dp(i ,j , k, index)/onem * tracer(i, j, k, index, ivar)
-                   if ( hbottom >= 6.0 ) exit
-                     nbottom = nbottom + 1
-                 end do
-                 do k = kk-nbottom , kk ! distribute the mass to total height, and to multiple layers
-                   tracer(i, j, k, index, ivar) = added_bottom_mass / sum( dp(i ,j , (kk-nbottom):kk, index)/onem )
-                 end do
+!                 do ivar=1,size(fabm_model%interior_state_variables)
+!                  repair_this = .true.
+!                  if ( fabm_model%interior_state_variables(ivar)%name == "ECO_dsnk" ) repair_this = .false.
+!                  hbottom = 0
+!                  nbottom = 0
+!                  added_bottom_mass = 0.0
+!                  bottom_thickness = 6.0 !max(6.0, codepth(i,j,kk)*0.05)
+!                  do k = kk,1,-1
+!                    hbottom = hbottom + max(1.0E-20,(dp(i ,j , k, index)/onem))
+!                    added_bottom_mass = added_bottom_mass + max(1.0E-20,(dp(i ,j , k, index)/onem)) * tracer(i, j, k, index, ivar)
+!                    if ( hbottom >= bottom_thickness ) exit
+!                      nbottom = nbottom + 1
+!                  end do
+!                  do k = kk-nbottom , kk ! distribute the mass to total height, and to multiple layers
+!                    !tracer(i, j, k, index, ivar) = added_bottom_mass / sum( dp(i ,j , (kk-nbottom):kk, index)/onem )
+!                    tracer(i, j, k, index, ivar) = added_bottom_mass / hbottom
+!                  end do
 
-                 mass_after_check_state(:) = tracer(i, j, :, index, ivar) * dp(i,j,:, index)/onem
-                 mass_diff_check_state = sum(mass_after_check_state(:)) - sum(mass_before_check_state(i, j, :, ivar))
-!                 !if (mass_diff_check_state < 0.0 ) then
-!                   epsilon = 0.0
-!                 !else
-!                 !  epsilon = 1.0E-8
-!                 !end if
+!                  do k = 1,kk
+!                   mass_after_check_state(:) = tracer(i, j, :, index, ivar) * max(1.0E-20,(dp(i,j,:, index)/onem))
+!                  end do
+!                  mass_diff_check_state = sum(mass_after_check_state(:)) - sum(mass_before_check_state(i, j, :, ivar))
+! !                 !if (mass_diff_check_state < 0.0 ) then
+! !                   epsilon = 0.0
+! !                 !else
+! !                 !  epsilon = 1.0E-8
+! !                 !end if
 
-! ! if (mass_diff_check_state < 0.0 ) then
-                 if (repair_this) then
-                   if ( dp(i, j, kbottom(i,j,index), index)/onem >= 6.0 ) then ! check if the bottom layer is thicker than 6 meters,
-                     do k=kbottom(i,j,index),kk
-                       tracer(i, j, k, index, ivar) = tracer(i, j, k, index, ivar) - mass_diff_check_state / sum(dp(i, j, kbottom(i,j,index):kk, index)/onem)
-                     enddo
-                   else 
-                     hbottom = 0
-                     nbottom = 0
-                     do k = kbottom(i,j,index),1,-1
-                       hbottom = hbottom + dp(i ,j , k, index)/onem
-                       if ( hbottom >= 6.0 ) exit
-                         nbottom = nbottom + 1
-                     end do
-                     do k = kbottom(i,j,index)-nbottom , kk ! distribute the mass to total height, and to multiple layers
-                       tracer(i, j, k, index, ivar) = tracer(i, j, k, index, ivar) - mass_diff_check_state / sum(dp(i, j, (kbottom(i,j,index)-nbottom):kk, index)/onem)
-                     end do
-                   end if
-                 end if
+! ! ! if (mass_diff_check_state < 0.0 ) then
+!                  if (repair_this) then
+!                    bottom_thickness = 6.0 !max(6.0, codepth(i,j,kk)*0.05)
+!                    if ( dp(i, j, kbottom(i,j,index), index)/onem >= bottom_thickness ) then ! check if the bottom layer is thicker than 6 meters,
+!                      hbottom = 0
+!                      do k=kbottom(i,j,index),kk
+!                       hbottom = hbottom + max(1.0E-20,(dp(i ,j , k, index)/onem))
+!                      end do
+!                      do k=kbottom(i,j,index),kk
+!                        !tracer(i, j, k, index, ivar) = tracer(i, j, k, index, ivar) - mass_diff_check_state / sum(dp(i, j, kbottom(i,j,index):kk, index)/onem)
+!                       tracer(i, j, k, index, ivar) = tracer(i, j, k, index, ivar) - mass_diff_check_state / hbottom 
+!                      enddo
+!                    else 
+!                      hbottom = 0
+!                      nbottom = 0
+!                      bottom_thickness = 6.0 !max(6.0, codepth(i,j,kk)*0.05)
+!                      do k = kbottom(i,j,index),1,-1
+!                        hbottom = hbottom + max(1.0E-20,(dp(i ,j , k, index)/onem))
+!                        if ( hbottom >= bottom_thickness ) exit
+!                          nbottom = nbottom + 1
+!                      end do
+!                      do k = kbottom(i,j,index)-nbottom , kk ! distribute the mass to total height, and to multiple layers
+!                        !tracer(i, j, k, index, ivar) = tracer(i, j, k, index, ivar) - mass_diff_check_state / sum(dp(i, j, (kbottom(i,j,index)-nbottom):kk, index)/onem)
+!                       tracer(i, j, k, index, ivar) = tracer(i, j, k, index, ivar) - mass_diff_check_state / hbottom 
+!                     end do
+!                    end if
+!                  end if
 
-                 hbottom = 0
-                 nbottom = 0
-                 added_bottom_mass = 0.0
-                 do k = kk,1,-1
-                   hbottom = hbottom + dp(i ,j , k, index)/onem
-                   added_bottom_mass = added_bottom_mass + dp(i ,j , k, index)/onem * tracer(i, j, k, index, ivar)
-                   if ( hbottom >= 6.0 ) exit
-                     nbottom = nbottom + 1
-                 end do
-                 do k = kk-nbottom , kk ! distribute the mass to total height, and to multiple layers
-                   tracer(i, j, k, index, ivar) = added_bottom_mass / sum( dp(i ,j , (kk-nbottom):kk, index)/onem )
-                 end do
+!                  hbottom = 0
+!                  nbottom = 0
+!                  added_bottom_mass = 0.0
+!                  bottom_thickness = 6.0 !max(6.0, codepth(i,j,kk)*0.05)
+!                  do k = kk,1,-1
+!                    hbottom = hbottom + max(1.0E-20,(dp(i ,j , k, index)/onem))
+!                    added_bottom_mass = added_bottom_mass + max(1.0E-20,(dp(i ,j , k, index)/onem)) * tracer(i, j, k, index, ivar)
+!                    if ( hbottom >= bottom_thickness ) exit
+!                      nbottom = nbottom + 1
+!                  end do
+!                  do k = kk-nbottom , kk ! distribute the mass to total height, and to multiple layers
+!                    !tracer(i, j, k, index, ivar) = added_bottom_mass / sum( dp(i ,j , (kk-nbottom):kk, index)/onem )
+!                    tracer(i, j, k, index, ivar) = added_bottom_mass / hbottom
+!                    if ( fabm_model%interior_state_variables(ivar)%name /= "ECO_oxy" .and. tracer(i, j, k, index, ivar) < 0.0) then
+!                     tracer(i, j, k, index, ivar) = 1.0E-14
+!                    end if
+!                  end do
               
 
-! ÇALIŞTI
+!  ÇALIŞTI
 
                 ! if (mass_diff_check_state > 0.0 ) then
 
@@ -1306,7 +1366,7 @@ call fabm_model%finalize_outputs
                 !             tracer(i, j, k, index, indc)  = max( min( tracer(i, j, k, index, indc), 2600.0 ), 900.0)
                 !          end do
                 ! end if
-              end do
+              !end do
             end if
           end do
         end do
@@ -1366,7 +1426,7 @@ call fabm_model%finalize_outputs
     !     end do
     ! end subroutine check_dsnk
 
-    subroutine vertical_movement_old(n, m, timestep)
+    subroutine vertical_movement(n, m, timestep)
       integer, intent(in) :: n, m
       real, intent(in) :: timestep
 
@@ -1439,9 +1499,9 @@ call fabm_model%finalize_outputs
         end do ! ivar
       end do ! j
 
-    end subroutine vertical_movement_old
+    end subroutine vertical_movement
 
-    subroutine vertical_movement(n, m, timestep)
+    subroutine vertical_movement_new(n, m, timestep)
       integer, intent(in) :: n, m
       real, intent(in) :: timestep
 
@@ -1560,7 +1620,7 @@ call fabm_model%finalize_outputs
      end do ! ivar
    end do ! j
 
- end subroutine vertical_movement
+ end subroutine vertical_movement_new
 
 
     subroutine get_mask(index, lmask, lkbottom)
@@ -1610,7 +1670,7 @@ call fabm_model%finalize_outputs
         integer :: ivar
         real, parameter :: rho_0 = 1025.   ! [kg/m3]
         ! Update cell thicknesses (m)
-        h(:, :, :) = dp(1:ii, 1:jj, 1:kk, index)/onem
+        h(:, :, :) = max(dp(1:ii, 1:jj, 1:kk, index)/onem,1.0E-20)
 
         if (initializing) then
           ! Make sure everything is unmasked, so that the state is initialized everywhere
