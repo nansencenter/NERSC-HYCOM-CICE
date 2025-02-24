@@ -957,11 +957,11 @@ call fabm_model%finalize_outputs
       do i=1,ii
         do j=1,jj
           do ivar=1,size(fabm_model%interior_state_variables)
-            !mass_before_check_state(i, j, :, ivar) = tracer(i, j, :, index, ivar) * dp(i, j, :, index)/onem
-            total_mass_before = 0.0
-            do k = 1,kbottom(i, j, index)
-              total_mass_before = total_mass_before + tracer(i, j, k, index, ivar) * dp(i, j, k, index)/onem
-            end do 
+            mass_before_check_state(i, j, 1:kbottom(i, j, index), ivar) = tracer(i, j, 1:kbottom(i, j, index), index, ivar) * dp(i, j, 1:kbottom(i, j, index), index)/onem
+            !total_mass_before = 0.0
+            ! do k = 1,kbottom(i, j, index)
+            !   total_mass_before = total_mass_before + tracer(i, j, k, index, ivar) * dp(i, j, k, index)/onem
+            ! end do 
           enddo
         enddo
       enddo
@@ -998,12 +998,14 @@ call fabm_model%finalize_outputs
 
                 ! mass_after_check_state(:) = tracer(i, j, :, index, ivar) * dp(i,j,:, index)/onem
                 ! total_mass_after = sum(mass_after_check_state(1:kbottom(i, j, index)))
-                ! total_mass_before = sum(mass_before_check_state(i, j, 1:kbottom(i, j, index), ivar))
+                !total_mass_before = sum(mass_before_check_state(i, j, 1:kbottom(i, j, index), ivar))
                 ! mass_diff_check_state = total_mass_after - total_mass_before
 
                 total_mass_after = 0.0
+                total_mass_before = 0.0
                 do k = 1,kbottom(i, j, index)
                   total_mass_after = total_mass_after + tracer(i, j, k, index, ivar) * dp(i, j, k, index)/onem
+                  total_mass_before = total_mass_before + mass_before_check_state(i, j, k, ivar) 
                 end do
 
                 mass_diff_check_state = total_mass_after - total_mass_before
