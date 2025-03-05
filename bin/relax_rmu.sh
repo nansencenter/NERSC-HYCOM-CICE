@@ -144,14 +144,16 @@ else
    echo "Input relaxation time scale maximum  in days (typically 20)"
    echo "This time scale will be reduced linearly towards zero away from the wall"
    read rscale
+   echo "Dots with relaxation"
+   read npdot 
 
    echo $least  >  rmu.in
    echo $lwest  >> rmu.in
    echo $lsouth >> rmu.in
    echo $lnorth >> rmu.in
    echo $rwidth >> rmu.in
-   echo $rwidth >> rmu.in
    echo $rscale >> rmu.in
+   echo $npdot  >> rmu.in
 fi
 
 $MSCPROGS/src/Relax/rmunew

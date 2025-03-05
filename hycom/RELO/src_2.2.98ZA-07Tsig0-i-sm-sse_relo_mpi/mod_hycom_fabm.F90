@@ -713,7 +713,8 @@ call check_finite("AFTER VERTICAL", n)
             if (SEA_P) then
                 if (isnan(swflx_fabm(i,j))) then
                     write (*,*) 'NaN in swflx_fabm:', swflx_fabm(i,j), sswflx (i,j)
-                    stop
+                   call xchalt('(FABM varible is NaN)')
+                   stop '(FABM varible is NaN)'
                 end if
             end if
         end do
@@ -771,7 +772,8 @@ call fabm_model%prepare_inputs
 #ifdef FABM_CHECK_NAN
             if (any(isnan(tracer(i, j, kbottom(i,j,n), n, :)))) then
               write (*,*) 'NaN after do_bottom:', tracer(i, j, kbottom(i,j,n), n, :), flux(i, :), dp(i, j, kbottom(i,j,n), n)/onem
-              stop
+              call xchalt('(FABM varible is NaN)')
+              stop '(FABM varible is NaN)'
             end if
 #endif
           end if
@@ -798,7 +800,8 @@ call check_finite("AFTER BOTTOM", n)
 #ifdef FABM_CHECK_NAN
             if (any(isnan(tracer(i, j, 1, n, :)))) then
               write (*,*) 'NaN after do_surface:', tracer(i, j, 1, n, :), flux(i, :), dp(i, j, 1, n)/onem
-              stop
+              call xchalt('(FABM varible is NaN)')
+              stop '(FABM varible is NaN)'
             end if
 #endif
           end if
@@ -827,7 +830,8 @@ call check_finite("BEFORE INTERIOR", n)
               do ivar=1,size(fabm_model%interior_state_variables)
                 write (*,*) 'state:',ivar,tracer(1:ii, j, k, m, ivar)
               end do
-              stop
+              call xchalt('(FABM varible is NaN)')
+              stop '(FABM varible is NaN)'
             end if
 #endif
         end do
@@ -929,7 +933,8 @@ call fabm_model%finalize_outputs
           call fabm_model%check_interior_state(1, ii, j, k, repair, valid_int)
           if (.not.(valid_int.or.repair)) then
             write (*,*) 'Invalid interior state '//location
-            stop
+            call xchalt('(FABM interior varible is invalid)')
+            stop '(FABM interior varible is invalid)'
           end if
         end do
       end do
@@ -938,7 +943,8 @@ call fabm_model%finalize_outputs
         call fabm_model%check_bottom_state(1, ii, j, repair, valid_bt)
         if (.not.(valid_sf.and.valid_bt).and..not.repair) then
           write (*,*) 'Invalid interface state '//location
-          stop
+          call xchalt('(FABM interface  varible is invalid)')
+          stop '(FABM interface varible is invalid)'
         end if
       end do
 
@@ -1026,7 +1032,7 @@ call fabm_model%finalize_outputs
       do ivar=1,size(fabm_model%interior_state_variables)
         if (.not.all(ieee_is_finite(tracer(1:ii, 1:jj, 1:kk, index, ivar)))) then
           write (*,*) location, 'Interior state variable not finite:', ivar,'range', minval(tracer(1:ii, 1:jj, 1:kk, index, ivar)), maxval(tracer(1:ii,1:jj, 1:kk, index, ivar)),fabm_model%interior_state_variables(ivar)%name
-          stop
+          
         end if
       end do
 
@@ -1045,7 +1051,8 @@ call fabm_model%finalize_outputs
                  if (.not.all(ieee_is_finite(tracer(i, j, 1:kk, index, ivar)))) then
                     write (*,*) location, index,'Interior state variable not finite:', ivar,'range', minval(tracer(i, j, 1:kk, index, ivar)), maxval(tracer(i,j, 1:kk, index, ivar)),fabm_model%interior_state_variables(ivar)%name
                     write (*,*) location, index,'Interior state variable not finite:',kbottom(i,j,index),tracer(i, j, 1:kk, index, ivar)
-                    stop
+                    call xchalt('(FABM interior varible is not finite)')
+                    stop '(FABM interior varible is not finite)'
                  end if
               end if
            end do
