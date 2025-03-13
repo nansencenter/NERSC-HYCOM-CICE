@@ -45,7 +45,7 @@
 #ifdef _FABM_
       use mod_hycom_fabm
 #endif
-      use mod_NERSCnml, only : write_arche, nersc_init
+      use mod_NERSCnml, only : write_arche, highfq_river, nersc_init
 c
 c --- -----------------------------------------
 c --- MICOM-based HYbrid Coordinate Ocean Model
@@ -1744,6 +1744,16 @@ c
 c --- initialize scalars
       call blkdat  !must call before zaiost
       call NERSC_init
+      if     (priver .and. highfq_river) then
+        if (mnproc.eq.1) then
+          write(lp,*)
+     &    'error - priver must be .false. for highg_river=.true.'
+          call flush(lp)
+        endif !1st tile
+        call xcstop('(blkdat)')
+               stop '(blkdat)'
+      endif
+      
 c
 c --- initialize array i/o.
       call zaiost
