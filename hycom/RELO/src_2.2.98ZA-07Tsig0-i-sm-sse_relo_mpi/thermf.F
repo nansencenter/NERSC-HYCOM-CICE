@@ -672,6 +672,7 @@ c
       subroutine thermfj(m,n,dtime, j)
       use mod_xc         ! HYCOM communication interface
       use mod_cb_arrays  ! HYCOM saved arrays
+      use mod_NERSCnml, only : highfq_river
 #if defined(STOKES)
       use mod_stokes  !    HYCOM Stokes Drift
 #endif
@@ -1438,6 +1439,11 @@ c --- allow for rivers as a precipitation bogas
       if     (priver) then
         rivflx(i,j) = - ( rivers(i,j,lr0)*wr0+rivers(i,j,lr1)*wr1
      &                   +rivers(i,j,lr2)*wr2+rivers(i,j,lr3)*wr3) *
+     &                  (saln(i,j,1,n)*qthref)
+*       salflx(i,j) = salflx(i,j)+rivflx(i,j) !update rivflx in thermf_oi
+      elseif (highfq_river) then
+        rivflx(i,j) = - ( rivers(i,j,l0)*w0+rivers(i,j,l1)*w1
+     &                   +rivers(i,j,l2)*w2+rivers(i,j,l3)*w3) *
      &                  (saln(i,j,1,n)*qthref)
 *       salflx(i,j) = salflx(i,j)+rivflx(i,j) !update rivflx in thermf_oi
       else

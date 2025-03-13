@@ -14,6 +14,7 @@
       subroutine icloan(m,n)
       use mod_xc         ! HYCOM communication interface
       use mod_cb_arrays  ! HYCOM saved arrays
+      use mod_NERSCnml, only : highfq_river
       implicit none
 c
       integer m,n
@@ -324,6 +325,10 @@ c ---         no evap (sublimation) over ice, all precip enters ocean
               if     (priver) then
                 emnp = emnp - ( rivers(i,j,lr0)*wr0+rivers(i,j,lr1)*wr1
      &                         +rivers(i,j,lr2)*wr2+rivers(i,j,lr3)*wr3)
+              endif
+              if     (highfq_river) then
+                emnp = emnp - ( rivers(i,j,l0)*w0+rivers(i,j,l1)*w1
+     &                         +rivers(i,j,l2)*w2+rivers(i,j,l3)*w3)
               endif
 c ---         sflice = salt flux (10**-3 kg/m**2/sec) into ocean under ice
               sflice(i,j) = sflice(i,j) +
