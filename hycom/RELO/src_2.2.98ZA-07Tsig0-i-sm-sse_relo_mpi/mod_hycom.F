@@ -1747,7 +1747,7 @@ c --- initialize scalars
       if     (priver .and. highfq_river) then
         if (mnproc.eq.1) then
           write(lp,*)
-     &    'error - priver must be .false. for highg_river=.true.'
+     &    'error - priver must be .false. for highfq_river=.true.'
           call flush(lp)
         endif !1st tile
         call xcstop('(blkdat)')
