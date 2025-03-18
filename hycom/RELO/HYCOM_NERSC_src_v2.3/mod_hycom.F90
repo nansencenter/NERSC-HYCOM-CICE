@@ -38,7 +38,7 @@
       use mod_hycom_fabm
 #endif
 #if defined(NERSC_HYCOM_CICE)
-      use mod_NERSCnml, only : write_arche, nersc_init
+      use mod_NERSCnml, only : write_arche, highfq_river, nersc_init
 #endif
 !
 ! --- -----------------------------------------
@@ -1768,6 +1768,15 @@
       call blkdat(linit)  !must call before zaiost
 #if defined(NERSC_HYCOM_CICE)
       call NERSC_init
+      if     (priver .and. highfq_river) then
+        if (mnproc.eq.1) then
+          write(lp,*)
+     &    'error - priver must be .false. for highfq_river=.true.'
+          call flush(lp)
+        endif !1st tile
+        call xcstop('(blkdat)')
+               stop '(blkdat)'
+      endif
 #endif
 !
 ! --- initialize array i/o.

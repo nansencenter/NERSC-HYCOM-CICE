@@ -631,6 +631,9 @@
       use mod_xc         ! HYCOM communication interface
       use mod_cb_arrays  ! HYCOM saved arrays
       use mod_za         ! HYCOM I/O interface
+#if defined(NERSC_HYCOM_CICE)
+      use mod_NERSCnml, only : highfq_river
+#endif
       implicit none
 !
       real*8    dtime
@@ -955,6 +958,20 @@
           call preambl_print(preambl)
         endif !surtmp
 !
+#if defined(NERSC_HYCOM_CICE)
+!Alfatih  --- read high frequency rivers----
+        if (highfq_river) then
+           !write (lp,*) 'Reading  highfq_river   = ',highfq_river
+          call zaiopf(flnmfor(1:lgth)//'forcing.riverh.a', 'old', 918)
+          if     (mnproc.eq.1) then  ! .b file from 1st tile only
+          open (unit=uoff+918,file=flnmfor(1:lgth)//'forcing.riverh.b',
+     &       status='old', action='read')
+          read (uoff+918,'(a79)') preambl
+          endif !1st tile
+          call preambl_print(preambl)
+        endif
+!End A --- read high frequency rivers----
+#endif
 #ifdef _FABM_
 !     CAGLAR: BEGIN (MAY2019)
           call zaiopf(flnmfor(1:lgth)//'forcing.dewpt.a', 'old', 926)
@@ -1120,6 +1137,13 @@
             call skmonth(909)
           enddo
         endif !surtmp
+#if defined(NERSC_HYCOM_CICE)
+        if (highfq_river) then
+          do i= 1,nrec-2
+            call skmonth(918)
+          enddo
+        endif
+#endif
         if     (sstflg.eq.3) then
           do i= 1,nrec-2
             call skmonth(910)
@@ -2902,6 +2926,9 @@
       subroutine rdpall(dtime0,dtime1)
       use mod_xc         ! HYCOM communication interface
       use mod_cb_arrays  ! HYCOM saved arrays
+#if defined(NERSC_HYCOM_CICE)
+      use mod_NERSCnml, only : highfq_river
+#endif
       implicit none
 !
       real*8  dtime0,dtime1
@@ -2912,7 +2939,7 @@
 !
       integer i,j,k
       real    albw,degtorad
-      real*8  dtime(895:910)
+      real*8  dtime(895:926)
 !
       integer, save :: icall = -1
 !
@@ -2971,6 +2998,13 @@
       else
         dtime(906) = dtime(905)
       endif
+#if defined(NERSC_HYCOM_CICE)
+!Alfatih  --- read high frequency rivers----
+      if (highfq_river) then
+        call rdpall1(rivers,dtime(918),918,mod(icall,3).eq.1)
+      endif
+!End A --- read high frequency rivers----
+#endif
 #ifdef _FABM_
 !CAGLAR
       dtime(917) = dtime(905)
