@@ -953,7 +953,7 @@ call check_finite("AFTER RIVER", n)
             sum_zoo_n = 0.0
             sum_zoo_n_after = 0.0
             sum_diff_n = 0.0
-            if (SEA_P .and. tracer(i, j, 1, n, trac) > -1E2 .and. tracer(i, j, 1, n, trac) < 1E6) then
+            if (SEA_P .and. tracer(i, j, 1, n, trac) > -1E2 .and. tracer(i, j, 1, n, trac) < 2500.0) then
               if (idx ==1) s_counter = s_counter + 1
               sum_zoo_n = sum( tracer(i, j, 1:kbottom(i,j,n), n, trac) * dp(i ,j , 1:kbottom(i,j,n), n)/onem )
               last_thick_n = 1
@@ -974,7 +974,7 @@ call check_finite("AFTER RIVER", n)
               sum_zoo_n_after = sum( tracer_new_n(1:kbottom(i,j,n)) * dp(i ,j , 1:kbottom(i,j,n), n)/onem )
               sum_diff_n = sum_zoo_n_after - sum_zoo_n
               do k = 1, kbottom(i,j,n) !kk
-                if ( abs(sum_diff_n/sum_zoo_n) < 0.025 ) then
+                if ( abs(sum_diff_n/sum_zoo_n) < 0.01 ) then
                   tracer(i, j, k, n, trac) = tracer_new_n(k) * (1.0 - sum_diff_n / sum_zoo_n_after )
                 else
                   if (idx ==1 .and. k==1) n_counter = n_counter + 1
