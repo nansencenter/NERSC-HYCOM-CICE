@@ -234,12 +234,13 @@ contains
         call fabm_model%link_scalar(fabm_standard_variables%number_of_days_since_start_of_the_year,modelday)
 
         call update_fabm_data(1, initializing=.true.)  ! initialize the entire column of wet points, including thin layers
-        call fabm_model%prepare_inputs( )
+!        call fabm_model%prepare_inputs( )
 
         ! Check whether FABM has all dependencies fulfilled
         ! (i.e., whether all required calls for fabm_link_*_data have been made)
         !call fabm_check_ready(fabm_model)
         call fabm_model%start
+        call fabm_model%prepare_inputs( )
 
         last_interior_output => null()
         do ivar=1, size(fabm_model%interior_state_variables)
@@ -669,6 +670,7 @@ contains
     end subroutine hycom_fabm_rdmonthck
 
     subroutine hycom_fabm_update(m, n, ibio)
+      use, intrinsic :: ieee_arithmetic
       integer, intent(in) :: m, n, ibio
       integer :: i, k, j, ivar
    
@@ -677,6 +679,16 @@ contains
       real :: flux(ii, size(fabm_model%interior_state_variables))
       real :: sms_bt(ii, size(fabm_model%bottom_state_variables))
       real :: sms_sf(ii, size(fabm_model%surface_state_variables))
+
+      real    :: dw_migrator_random_weights(ii,jj,kk)
+      real    :: dw_migrator_integral_random_weights(ii,jj)
+      integer :: ivar_zoo, ivar_migc, ivar_weights, ivar_integral_weights, last_thick_m, last_thick_n
+      real    :: sum_zoo_m, sum_zoo_n, sum_diff_m, sum_diff_n
+      real    :: ratio_weights,sum_zoo_n_after,sum_zoo_m_after
+      real    :: tracer_new_m(kk), tracer_new_n(kk)
+      integer :: n_counter,m_counter,s_counter
+      integer :: migrating_indexes(2)  
+    
       type (type_input), pointer :: input
 
             if (mnproc.eq.1) write (lp,*) 'hycom_fabm_update', nstep, time
@@ -906,7 +918,68 @@ call check_finite("AFTER RIVER", n)
 !       end do      
 !     end if
 !   end do
-! end do          
+! end do         
+
+!! THIS PART OF THE CODE TEMPORARILY HANDLES DIEL VERTICAL MIGRATION !!
+!! 
+      do ivar=1, size(fabm_model%interior_diagnostic_variables)
+        if ( fabm_model%interior_diagnostic_variables(ivar)%name== "dw_migrator_random_weights") ivar_weights = ivar        
+      end do
+      dw_migrator_random_weights = fabm_model%get_interior_diagnostic_data(ivar_weights) 
+
+      do ivar=1, size(fabm_model%horizontal_diagnostic_variables)
+        if ( fabm_model%horizontal_diagnostic_variables(ivar)%name== "dw_migrator_integral_random_weights") ivar_integral_weights = ivar        
+      end do
+      dw_migrator_integral_random_weights = fabm_model%get_horizontal_diagnostic_data(ivar_integral_weights)  
+
+      do ivar=1, size(fabm_model%interior_state_variables) 
+        if ( fabm_model%interior_state_variables(ivar)%name == "migrator_c" ) ivar_migc = ivar
+        if ( fabm_model%interior_state_variables(ivar)%name == "ECO_mesozoo" ) ivar_zoo = ivar
+      end do
+
+      n_counter = 0
+      s_counter = 0
+      tracer_new_n = 0.0
+      do j=1,jj
+        do i=1,ii
+          if (SEA_P .and. tracer(i, j, 1, n, ivar_zoo) > -1E2 .and. tracer(i, j, 1, n, ivar_zoo) < 1E6) then
+            s_counter = s_counter + 1
+            sum_zoo_n = sum( tracer(i, j, 1:kbottom(i,j,n), n, ivar_zoo) * dp(i ,j , 1:kbottom(i,j,n), n)/onem )
+            last_thick_n = 1
+
+            do k = 1, kbottom(i,j,n) !kk
+              ratio_weights = dw_migrator_random_weights(i, j, k) / dw_migrator_integral_random_weights(i, j)
+              !write(*,*)'RATIO',dw_migrator_random_weights(i, j, k),dw_migrator_integral_random_weights(i, j)
+              if (ieee_is_finite(ratio_weights)) then
+                if (dp(i ,j , k, n)/onem >= 1.0) then
+                  last_thick_n = k
+                  tracer_new_n(k) = tracer(i, j, k, n, ivar_zoo) * 0.5
+                  tracer_new_n(k) = tracer_new_n(k) + ( sum_zoo_n * ratio_weights * 0.5 / max(1E-20,dp(i ,j , k, n)/onem ) )
+                else
+                  tracer_new_n(k) = tracer_new_n(last_thick_n)
+                end if
+              end if
+            end do
+            sum_zoo_n_after = sum( tracer_new_n(1:kbottom(i,j,n)) * dp(i ,j , 1:kbottom(i,j,n), n)/onem )
+            sum_diff_n = sum_zoo_n_after - sum_zoo_n
+            do k = 1, kbottom(i,j,n) !kk
+              if ( abs(sum_diff_n/sum_zoo_n) < 0.025 ) then
+                tracer(i, j, k, n, ivar_zoo) = tracer_new_n(k) * (1.0 - sum_diff_n / sum_zoo_n_after )
+              else
+                if (k==1) n_counter = n_counter + 1
+              end if
+            end do
+
+            do k = kbottom(i,j,n), kk
+              tracer(i, j, k, n, ivar_zoo) = tracer(i, j, kbottom(i,j,n), n, ivar_zoo)
+            end do
+          end if
+        end do
+      end do 
+      write(*,*)'NOT MIGRATED n', n_counter,' of ',s_counter 
+!!              
+!! THIS PART OF THE CODE TEMPORARILY HANDLES DIEL VERTICAL MIGRATION !!
+
       call check_state('after hycom_fabm_update', n, .true.)
       
 !      do i=1,ii
@@ -954,17 +1027,17 @@ call fabm_model%finalize_outputs
       call update_fabm_state(index)
 
 
-      do i=1,ii
-        do j=1,jj
-          do ivar=1,size(fabm_model%interior_state_variables)
-            mass_before_check_state(i, j, 1:kbottom(i, j, index), ivar) = tracer(i, j, 1:kbottom(i, j, index), index, ivar) * dp(i, j, 1:kbottom(i, j, index), index)/onem
-            !total_mass_before = 0.0
-            ! do k = 1,kbottom(i, j, index)
-            !   total_mass_before = total_mass_before + tracer(i, j, k, index, ivar) * dp(i, j, k, index)/onem
-            ! end do 
-          enddo
-        enddo
-      enddo
+      ! do i=1,ii
+      !   do j=1,jj
+      !     do ivar=1,size(fabm_model%interior_state_variables)
+      !       mass_before_check_state(i, j, 1:kbottom(i, j, index), ivar) = tracer(i, j, 1:kbottom(i, j, index), index, ivar) * dp(i, j, 1:kbottom(i, j, index), index)/onem
+      !       !total_mass_before = 0.0
+      !       ! do k = 1,kbottom(i, j, index)
+      !       !   total_mass_before = total_mass_before + tracer(i, j, k, index, ivar) * dp(i, j, k, index)/onem
+      !       ! end do 
+      !     enddo
+      !   enddo
+      ! enddo
 
       do k=1,kk
         do j=1,jj
@@ -994,28 +1067,36 @@ call fabm_model%finalize_outputs
         do j=1,jj
           do i=1,ii
             if (SEA_P) then
-              do ivar=1,size(fabm_model%interior_state_variables)
+              ! do ivar=1,size(fabm_model%interior_state_variables)
 
-                ! mass_after_check_state(:) = tracer(i, j, :, index, ivar) * dp(i,j,:, index)/onem
-                ! total_mass_after = sum(mass_after_check_state(1:kbottom(i, j, index)))
-                !total_mass_before = sum(mass_before_check_state(i, j, 1:kbottom(i, j, index), ivar))
-                ! mass_diff_check_state = total_mass_after - total_mass_before
+              !   ! mass_after_check_state(:) = tracer(i, j, :, index, ivar) * dp(i,j,:, index)/onem
+              !   ! total_mass_after = sum(mass_after_check_state(1:kbottom(i, j, index)))
+              !   !total_mass_before = sum(mass_before_check_state(i, j, 1:kbottom(i, j, index), ivar))
+              !   ! mass_diff_check_state = total_mass_after - total_mass_before
 
-                total_mass_after = 0.0
-                total_mass_before = 0.0
-                do k = 1,kbottom(i, j, index)
-                  total_mass_after = total_mass_after + tracer(i, j, k, index, ivar) * dp(i, j, k, index)/onem
-                  total_mass_before = total_mass_before + mass_before_check_state(i, j, k, ivar) 
-                end do
+              !   total_mass_after = 0.0
+              !   total_mass_before = 0.0
+              !   do k = 1,kbottom(i, j, index)
+              !     total_mass_after = total_mass_after + tracer(i, j, k, index, ivar) * dp(i, j, k, index)/onem
+              !     total_mass_before = total_mass_before + mass_before_check_state(i, j, k, ivar) 
+              !   end do
 
-                mass_diff_check_state = total_mass_after - total_mass_before
+              !   mass_diff_check_state = total_mass_after - total_mass_before
 
-                do k = 1, kbottom(i, j, index)
-                  tracer(i, j, k, index, ivar) = tracer(i, j, k, index, ivar) - tracer(i, j, k, index, ivar) * (mass_diff_check_state / total_mass_after)
-                end do
+              !   do k = 1, kbottom(i, j, index)
+              !     tracer(i, j, k, index, ivar) = tracer(i, j, k, index, ivar) - tracer(i, j, k, index, ivar) * (mass_diff_check_state / total_mass_after)
+              !   end do
 
-              end do
-
+              ! end do
+              ! do k=2,kbottom(i, j, index)
+                
+              !   if ( ((dp(i, j, k, index)/onem) / dp(i, j, k-1, index)/onem) <0.001 ) then
+              !     tracer(i, j, k, index, :) = tracer(i, j, k-1, index, :)
+              !   end if
+              !   do ivar=1,size(fabm_model%interior_state_variables)
+              !     if (tracer(i, j, k, index, ivar)  < -1.0E2) tracer(i, j, k, index, ivar) = tracer(i, j, k-1, index, ivar) 
+              !   end do
+              ! end do 
               do k=kbottom(i, j, index)+1, kk
                 tracer(i, j, k, index, :) = tracer(i, j, kbottom(i, j, index), index, :)
               end do
