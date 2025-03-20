@@ -682,12 +682,12 @@ contains
 
       real    :: dw_migrator_random_weights(ii,jj,kk)
       real    :: dw_migrator_integral_random_weights(ii,jj)
-      integer :: ivar_zoo, ivar_migc, ivar_weights, ivar_integral_weights, last_thick_m, last_thick_n
+      integer :: ivar_weights, ivar_integral_weights, last_thick_m, last_thick_n
       real    :: sum_zoo_m, sum_zoo_n, sum_diff_m, sum_diff_n
       real    :: ratio_weights,sum_zoo_n_after,sum_zoo_m_after
       real    :: tracer_new_m(kk), tracer_new_n(kk)
       integer :: n_counter,m_counter,s_counter
-      integer :: migrating_indexes(2)  
+      integer :: migrating_indexes(2), idx, trac  
     
       type (type_input), pointer :: input
 
@@ -921,10 +921,14 @@ call check_finite("AFTER RIVER", n)
 ! end do         
 
 !! THIS PART OF THE CODE TEMPORARILY HANDLES DIEL VERTICAL MIGRATION !!
-!! 
+!!
+      ivar_weights = 0
       do ivar=1, size(fabm_model%interior_diagnostic_variables)
         if ( fabm_model%interior_diagnostic_variables(ivar)%name== "dw_migrator_random_weights") ivar_weights = ivar        
       end do
+
+      if (ivar_weights > 0) then ! checks if DVM is active on FABM side
+      write(*,*)'DVM is actived by FABM coupler'
       dw_migrator_random_weights = fabm_model%get_interior_diagnostic_data(ivar_weights) 
 
       do ivar=1, size(fabm_model%horizontal_diagnostic_variables)
@@ -933,50 +937,59 @@ call check_finite("AFTER RIVER", n)
       dw_migrator_integral_random_weights = fabm_model%get_horizontal_diagnostic_data(ivar_integral_weights)  
 
       do ivar=1, size(fabm_model%interior_state_variables) 
-        if ( fabm_model%interior_state_variables(ivar)%name == "migrator_c" ) ivar_migc = ivar
-        if ( fabm_model%interior_state_variables(ivar)%name == "ECO_mesozoo" ) ivar_zoo = ivar
+        if ( fabm_model%interior_state_variables(ivar)%name == "migrator_c" ) migrating_indexes(2) = ivar
+        if ( fabm_model%interior_state_variables(ivar)%name == "ECO_mesozoo" ) migrating_indexes(1) = ivar
       end do
 
       n_counter = 0
       s_counter = 0
-      tracer_new_n = 0.0
-      do j=1,jj
+
+       do j=1,jj
         do i=1,ii
-          if (SEA_P .and. tracer(i, j, 1, n, ivar_zoo) > -1E2 .and. tracer(i, j, 1, n, ivar_zoo) < 1E6) then
-            s_counter = s_counter + 1
-            sum_zoo_n = sum( tracer(i, j, 1:kbottom(i,j,n), n, ivar_zoo) * dp(i ,j , 1:kbottom(i,j,n), n)/onem )
-            last_thick_n = 1
+          do idx = 1, size(migrating_indexes)
+            trac = migrating_indexes(idx)
 
-            do k = 1, kbottom(i,j,n) !kk
-              ratio_weights = dw_migrator_random_weights(i, j, k) / dw_migrator_integral_random_weights(i, j)
-              !write(*,*)'RATIO',dw_migrator_random_weights(i, j, k),dw_migrator_integral_random_weights(i, j)
-              if (ieee_is_finite(ratio_weights)) then
-                if (dp(i ,j , k, n)/onem >= 1.0) then
-                  last_thick_n = k
-                  tracer_new_n(k) = tracer(i, j, k, n, ivar_zoo) * 0.5
-                  tracer_new_n(k) = tracer_new_n(k) + ( sum_zoo_n * ratio_weights * 0.5 / max(1E-20,dp(i ,j , k, n)/onem ) )
-                else
-                  tracer_new_n(k) = tracer_new_n(last_thick_n)
+            tracer_new_n = 0.0
+            sum_zoo_n = 0.0
+            sum_zoo_n_after = 0.0
+            sum_diff_n = 0.0
+            if (SEA_P .and. tracer(i, j, 1, n, trac) > -1E2 .and. tracer(i, j, 1, n, trac) < 1E6) then
+              if (idx ==1) s_counter = s_counter + 1
+              sum_zoo_n = sum( tracer(i, j, 1:kbottom(i,j,n), n, trac) * dp(i ,j , 1:kbottom(i,j,n), n)/onem )
+              last_thick_n = 1
+
+              do k = 1, kbottom(i,j,n) !kk
+                ratio_weights = dw_migrator_random_weights(i, j, k) / dw_migrator_integral_random_weights(i, j)
+                !write(*,*)'RATIO',dw_migrator_random_weights(i, j, k),dw_migrator_integral_random_weights(i, j)
+                if (ieee_is_finite(ratio_weights)) then
+                  if (dp(i ,j , k, n)/onem >= 1.0) then
+                    last_thick_n = k
+                    tracer_new_n(k) = tracer(i, j, k, n, trac) * 0.5
+                    tracer_new_n(k) = tracer_new_n(k) + ( sum_zoo_n * ratio_weights * 0.5 / max(1E-20,dp(i ,j , k, n)/onem ) )
+                  else
+                    tracer_new_n(k) = tracer_new_n(last_thick_n)
+                  end if
                 end if
-              end if
-            end do
-            sum_zoo_n_after = sum( tracer_new_n(1:kbottom(i,j,n)) * dp(i ,j , 1:kbottom(i,j,n), n)/onem )
-            sum_diff_n = sum_zoo_n_after - sum_zoo_n
-            do k = 1, kbottom(i,j,n) !kk
-              if ( abs(sum_diff_n/sum_zoo_n) < 0.025 ) then
-                tracer(i, j, k, n, ivar_zoo) = tracer_new_n(k) * (1.0 - sum_diff_n / sum_zoo_n_after )
-              else
-                if (k==1) n_counter = n_counter + 1
-              end if
-            end do
+              end do
+              sum_zoo_n_after = sum( tracer_new_n(1:kbottom(i,j,n)) * dp(i ,j , 1:kbottom(i,j,n), n)/onem )
+              sum_diff_n = sum_zoo_n_after - sum_zoo_n
+              do k = 1, kbottom(i,j,n) !kk
+                if ( abs(sum_diff_n/sum_zoo_n) < 0.025 ) then
+                  tracer(i, j, k, n, trac) = tracer_new_n(k) * (1.0 - sum_diff_n / sum_zoo_n_after )
+                else
+                  if (idx ==1 .and. k==1) n_counter = n_counter + 1
+                end if
+              end do
 
-            do k = kbottom(i,j,n), kk
-              tracer(i, j, k, n, ivar_zoo) = tracer(i, j, kbottom(i,j,n), n, ivar_zoo)
-            end do
-          end if
+              do k = kbottom(i,j,n), kk
+                tracer(i, j, k, n, trac) = tracer(i, j, kbottom(i,j,n), n, trac)
+              end do
+            end if
+          end do
         end do
-      end do 
-      write(*,*)'NOT MIGRATED n', n_counter,' of ',s_counter 
+       end do 
+       write(*,*)'NOT MIGRATED n', n_counter,' of ',s_counter
+      end if ! DVM switch
 !!              
 !! THIS PART OF THE CODE TEMPORARILY HANDLES DIEL VERTICAL MIGRATION !!
 
