@@ -552,6 +552,42 @@ module m_bio_conversions
 
      end subroutine zbiomass
 
+     subroutine mesozoobiomass(meso,biomass,idm,jdm,kdm)
+      !compute mesozooplankton biomass: mmoleC m-3
+       implicit none
+ 
+       integer, intent(in) :: idm,jdm,kdm
+       real, dimension(idm,jdm,kdm)  , intent(in)  ::meso !mgC m-3
+       real, dimension(idm,jdm,kdm)  , intent(out) ::biomass
+ 
+       biomass=(meso)/ccar
+ 
+      end subroutine mesozoobiomass
+
+     subroutine poc(micro,meso,dia,fla,ccl,det,biomass,idm,jdm,kdm)
+      !compute POC biomass: mmoleC m-3
+       implicit none
+ 
+       integer, intent(in) :: idm,jdm,kdm
+       real, dimension(idm,jdm,kdm)  , intent(in)  ::micro, meso, dia, fla, ccl, det !mgC m-3
+       real, dimension(idm,jdm,kdm)  , intent(out) ::biomass
+ 
+       biomass=(micro+meso+dia+fla+ccl+det)/ccar
+ 
+      end subroutine poc
+
+      subroutine docc(dom,biomass,idm,jdm,kdm)
+        !compute DOC biomass: mmoleC m-3
+         implicit none
+   
+         integer, intent(in) :: idm,jdm,kdm
+         real, dimension(idm,jdm,kdm)  , intent(in)  ::dom !mgC m-3
+         real, dimension(idm,jdm,kdm)  , intent(out) ::biomass
+   
+         biomass=(dom)/ccar
+   
+        end subroutine docc
+
      subroutine oxygen_conv(oxy,mmol_oxy,idm,jdm,kdm)
 !compute dissolved oxygen: mmol m-3
       implicit none

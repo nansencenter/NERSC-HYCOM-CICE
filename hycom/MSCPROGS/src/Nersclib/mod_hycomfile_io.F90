@@ -1027,6 +1027,12 @@ contains
      is3DVar=.true.
    else if(cfld=='zbiomass') then
      is3DVar=.true.
+   else if(cfld=='poc') then
+      is3DVar=.true.
+   else if(cfld=='doc') then
+      is3DVar=.true.
+   else if(cfld=='mesozoo') then
+      is3DVar=.true.
    else if(cfld=='oxygen') then
      is3DVar=.true.
    else if(cfld=='grosspp') then
@@ -1578,7 +1584,22 @@ contains
          vname='zooc'
          units='mmol m-3'
          limits=(/0.,500./)
-         stdname='mole_concentration_of_zooplankton_expressed_as_carbon_in_sea_water' 
+         stdname='mole_concentration_of_zooplankton_expressed_as_carbon_in_sea_water'
+         case ('mesozoo')
+         vname='mesozooc'
+         units='mmol m-3'
+         limits=(/0.,500./)
+         stdname='mole_concentration_of_mesozooplankton_expressed_as_carbon_in_sea_water'
+         case ('poc')
+         vname='poc'
+         units='mmol m-3'
+         limits=(/0.,500./)
+         stdname='mole_concentration_of_particulate_organic_carbon_expressed_as_carbon_in_sea_water'
+         case ('doc')
+         vname='doc'
+         units='mmol m-3'
+         limits=(/0.,500./)
+         stdname='mole_concentration_of_dissolved_organic_carbon_expressed_as_carbon_in_sea_water' 
          case ('oxygen')
          vname='o2'
          units='mmol m-3'
