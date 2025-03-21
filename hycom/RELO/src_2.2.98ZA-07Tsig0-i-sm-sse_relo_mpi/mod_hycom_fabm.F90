@@ -970,19 +970,6 @@ call fabm_model%finalize_outputs
       old_index = current_time_index
       call update_fabm_state(index)
 
-
-      ! do i=1,ii
-      !   do j=1,jj
-      !     do ivar=1,size(fabm_model%interior_state_variables)
-      !       mass_before_check_state(i, j, 1:kbottom(i, j, index), ivar) = tracer(i, j, 1:kbottom(i, j, index), index, ivar) * dp(i, j, 1:kbottom(i, j, index), index)/onem
-      !       !total_mass_before = 0.0
-      !       ! do k = 1,kbottom(i, j, index)
-      !       !   total_mass_before = total_mass_before + tracer(i, j, k, index, ivar) * dp(i, j, k, index)/onem
-      !       ! end do 
-      !     enddo
-      !   enddo
-      ! enddo
-
       do k=1,kk
         do j=1,jj
           call fabm_model%check_interior_state(1, ii, j, k, repair, valid_int)
