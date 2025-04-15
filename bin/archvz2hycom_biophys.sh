@@ -344,7 +344,7 @@ T
 T
 T
 T
-NONE
+T
 EOF
 fi
 
