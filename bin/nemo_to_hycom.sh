@@ -49,7 +49,7 @@ if [ $# -lt 2 ] ; then
     echo "This script will set up the final nesting files from MERCATOR 1/12 degree to be used by HYCOM."
     echo "The code contains the following steps:"
     echo "(1) Create archive [ab] files from the MERCATOR netcdf file."
-    echo "    The final archive files includes all 2D fields (filled with zero except baraotropic velocities)."
+    echo "    The final archive files includes all 2D fields (filled with zero except barotropic velocities)."
     echo "    and 3D fields of temperaure, salinity, thickness, and two components of velocities."
     echo "(2) Based on generated archive files in (1) the grid and topography files are generated."
     echo "    Note that the grids are non-native and interpolated into a rectilinear mercator grids horizontally."
@@ -64,7 +64,6 @@ if [ $# -lt 2 ] ; then
     echo " NOTE YOU NEED TO RUN THIS SCRIPT WITHIN THE NEMO EXPERIMENT FOLDER"
     exit 1
 fi
-
 
 # Must be in expt dir to run this script
 if [ -f EXPT.src ] ; then
@@ -84,10 +83,6 @@ data_path=$expt_path/data
 #
 export nest_expt=$1
 export ncfiles=$2
-export mercator_gridfiles=${MERCATOR_NATIVE_MESH}   #${MERCATOR_OLD_PATH}/GRID/GLO_MFC_001_24_MESH.nc
-export mercator_regular_mesh=${MERCATOR_REGULAR_MESH}   #${MERCATOR_OLD_PATH}/GRID/GLO_MFC_001_24_MESH.nc
-
-
 #
 iexpt=01        #$T
 iversn=22
@@ -98,26 +93,13 @@ jdm=$(blkdat_get blkdat.input jdm)
 # Reading file name using time field of netcdf file. 
 #
 if [ ${grid_type} == "native" ] ; then
-function model_datetime() {
-fname="$1" python - <<END
-import cfunits
-import datetime
-import numpy
-import netCDF4
-ncid0=netCDF4.Dataset("$1","r")
-time=ncid0.variables["time_counter"][0]
-unit=ncid0.variables["time_counter"].units
-tmp=cfunits.Units(unit)
-refy,refm,refd=(1950,1,1)
-tmp2=cfunits.Units("hours since %d-%d-%d 00:00:00"%(refy,refm,refd))
-tmp3=int(numpy.round(cfunits.Units.conform(time,tmp,tmp2)))
-fnametemplate="archv.%Y_%j"
-deltat=datetime.datetime(refy,refm,refd,0,0,0)+datetime.timedelta(hours=tmp3)
-oname=deltat.strftime(fnametemplate)+"_00"
-print(oname)
-END
-}
+	timevar="time_counter"
+	export mercator_mesh="/nird/projects/NS9481K/MERCATOR_DATA/GRID_COORD/ext-GL12V1_mesh_zgr.nc"
 else
+	timevar="time"
+	export mercator_mesh="/nird/projects/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/"
+fi
+
 function model_datetime() {
 fname="$1" python - <<END
 import cfunits
@@ -125,8 +107,8 @@ import datetime
 import numpy
 import netCDF4
 ncid0=netCDF4.Dataset("$1","r")
-time=ncid0.variables["time"][0]
-unit=ncid0.variables["time"].units
+time=ncid0.variables["${timevar}"][0]
+unit=ncid0.variables["${timevar}"].units
 tmp=cfunits.Units(unit)
 refy,refm,refd=(1950,1,1)
 tmp2=cfunits.Units("hours since %d-%d-%d 00:00:00"%(refy,refm,refd))
@@ -138,18 +120,15 @@ print(oname)
 END
 }
 
-fi
-#
-#
-#
+# Changed from $@ to @ncfiles (skip the first arguments 
 for source_archv in $@ ; do
    # TODO: following 2 lines are for native grid. It needs simply to be modified to be general.
    if [ ${grid_type} == "native" ] ; then
-   fn=$(echo ${source_archv:${#source_archv}-32})
+#   fn=$(echo ${source_archv:${#source_archv}-32})
    [[ $source_archv != *"ext-GLORYS12V1_1dAV_"* ]] && continue
    echo $source_archv
    else
-   fn=$(echo ${source_archv:${#source_archv}-29})
+#   fn=$(echo ${source_archv:${#source_archv}-29})
    [[ $source_archv != *"MERCATOR-PHY-24"* ]] && continue
    fi
    filename=$source_archv 
@@ -159,45 +138,44 @@ for source_archv in $@ ; do
    ########################
    if [ ${grid_type} == "native" ] ; then
       if [[ "${bio_file}" == "" ]] ; then
-      ${BASEDIR}/bin/nemo2archvz_native.py $mercator_gridfiles $source_archv --iexpt ${iexpt} --iversn ${iversn} --yrflag ${yrflag}
+      ${BINDIR}/nemo2archvz_native.py $mercator_mesh $source_archv --iexpt ${iexpt} --iversn ${iversn} --yrflag ${yrflag} --makegrid
       ########################
       #
       # (2) Based on generated archive files in (1) the grid and topography files are generated.
       #
       ########################
-      ${BASEDIR}/bin/archvz2hycom_biophys.sh $nest_expt $(model_datetime "$filename")
+      ${BINDIR}/archvz2hycom_biophys.sh $nest_expt $(model_datetime "$filename")
       ########################
-   
       else
-      ${BASEDIR}/bin/nemo2archvz_native.py $mercator_gridfiles $source_archv --bio_file=${bio_file}  --iexpt ${iexpt} --iversn ${iversn} --yrflag ${yrflag}
+      ${BINDIR}/nemo2archvz_native.py $mercator_mesh $source_archv --bio_file=${bio_file}  --iexpt ${iexpt} --iversn ${iversn} --yrflag ${yrflag}
       ########################
       #
       # (2) Based on generated archive files in (1) the grid and topography files are generated.
       #
       ########################
-      ${BASEDIR}/bin/archvz2hycom_biophys.sh $nest_expt $(model_datetime "$filename") -b 1  
+      ${BINDIR}/archvz2hycom_biophys.sh $nest_expt $(model_datetime "$filename") -b 1  
       ########################
 
       fi
    else
       if [[ "${bio_file}" == "" ]] ; then
-      ${BASEDIR}/bin/nemo2archvz_regular.py $mercator_regular_mesh $source_archv --iexpt ${iexpt} --iversn ${iversn} --yrflag ${yrflag}      
+      ${BINDIR}/nemo2archvz_regular.py $mercator_regular_mesh $source_archv --iexpt ${iexpt} --iversn ${iversn} --yrflag ${yrflag}      
       ########################
       #
       # (2) Based on generated archive files in (1) the grid and topography files are generated.
       #
       ########################
-      ${BASEDIR}/bin/archvz2hycom_biophys.sh $nest_expt $(model_datetime "$filename") -m regular
+      ${BINDIR}/archvz2hycom_biophys.sh $nest_expt $(model_datetime "$filename") -m regular
       ########################
       else
 
-      ${BASEDIR}/bin/nemo2archvz_regular.py $mercator_regular_mesh $source_archv --bio_file=${bio_file}  --iexpt ${iexpt} --iversn ${iversn} --yrflag ${yrflag}
+      ${BINDIR}/nemo2archvz_regular.py $mercator_regular_mesh $source_archv --bio_file=${bio_file}  --iexpt ${iexpt} --iversn ${iversn} --yrflag ${yrflag}
       ########################
       #
       # (2) Based on generated archive files in (1) the grid and topography files are generated.
       #
       ########################
-      ${BASEDIR}/bin/archvz2hycom_biophys.sh $nest_expt $(model_datetime "$filename") -b 1 -m regular
+      ${BINDIR}/archvz2hycom_biophys.sh $nest_expt $(model_datetime "$filename") -b 1 -m regular
       ########################
 
    fi

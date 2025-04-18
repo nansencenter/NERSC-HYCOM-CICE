@@ -139,9 +139,7 @@ C --- MOSTAFA: BEGIN
       INTEGER   KNEMO,NRECL,indx
       CHARACTER*240 flnm_z,flnm_o
       CHARACTER*40 flag_t,flag_s,flag_u,flag_v,flag_th
-      REAL*4    onem,spval
-      PARAMETER (spval=2.0**100)
-      REAL*4,    parameter   :: hspval=0.5*2.0**100  ! half spval
+      REAL*4, parameter :: onem = 9806.0, spval = 2.0**100, hspval=0.5*2.0**100
       CHARACTER*40 flag_no3,flag_po4,flag_si,flag_o2
       REAL*4,  ALLOCATABLE :: NO3(:,:,:),PO4(:,:,:),SI(:,:,:),O2(:,:,:)
       REAL*4,  ALLOCATABLE :: NO3M(:,:),PO4M(:,:),SIM(:,:),O2M(:,:)
@@ -154,10 +152,8 @@ C --- MOSTAFA: END
      +        PAVE,XAVE,XMAX,XMIN,TMIN,SMIN,PMIN,ZJ,ZZ,Q,
      +        PINTEG,SIGMAA,SIGMAB,ZBOT,ZTOP
 C
-      REAL*4  SIG_V,SOFSIG_V,TOFSIG_V
       CHARACTER*512 archvfile , archvfileo
       CHARACTER*80 fldname
-      real   :: lrdens
 c     INTEGER, EXTERNAL  :: IARGC
       INTEGER, INTRINSIC  :: IARGC
 
@@ -165,8 +161,6 @@ c     INTEGER, EXTERNAL  :: IARGC
 C
       CALL XCSPMD
 C
-      onem  = 9806.0   ! g/thref
-
       if (IARGC() == 1)  THEN
          call getarg(1,archvfile)
          i = index(archvfile,".",back=.true.)
@@ -232,7 +226,6 @@ C
 
          call flush(6)
 
-         ! exit(1)
       end if
 
       CALL INIT_SPEC(ARCHVFILE,NREC,KZ,CFLD,COORD,TLEVEL1,MODEL_DAY)
@@ -273,8 +266,7 @@ C
       ALLOCATE(   PZTOP(IDM,JDM) )
       ALLOCATE(    WORK(IDM,JDM) )
       ALLOCATE(     MSK(IDM,JDM) )
-!Mostafa TODO: need to becoem more clever in distingishing between phy &
-!bio variables
+
       if     (flag_no3.ne."NONE") then
           ALLOCATE(   NO3M(IDM,JDM) )
           ALLOCATE(   NO3(KZ+1,IDM,JDM) )
@@ -321,7 +313,6 @@ C --- 'kdm   ' = longitudinal array size
 C --- 'nhybrd' = number of hybrid levels (0=all isopycnal)
 C --- 'nsigma' = number of sigma  levels (nhybrd-nsigma z-levels)
 C
-      WRITE(6,*)
       CALL BLKINI(SIGVER, 'sigver')
       CALL BLKINI2(I,J,  'levtop','iversn')
       IF     (J.EQ.1) THEN
@@ -801,19 +792,15 @@ C /////////////////// NOW 3D /////////////////////////////
       ALLOCATE(      UV(KZ+1,IDM,JDM) )
       ALLOCATE(      VV(KZ+1,IDM,JDM) )
 
-
       CALL READ_ARCHIVE(KZ,IDM,JDM,NREC,KDM,COORD,
      +     tlevel1,ARCHVFILE,cfld,MTG1,SRFH,SUFLX,SAFLX,
      +     BLDP,MIXDP,UBRTP,VBRTP,TZ,SZ,UV,VV,RZ,ZL,
      +     flag_t,flag_s,flag_th,flag_u,flag_v,ISOPYC,
      +     SIGVER,LEVTOP,SIG3D,DEPTH,TZ1,SZ1,UV1,VV1,TH,TH1,
-     +     flag_no3,flag_po4,flag_si,flag_o2,NO3,PO4,SI,O2)
+     +     flag_no3,flag_po4,flag_si,flag_o2,NO3,PO4,SI,O2,MSK)
 C
 C    UV1 and VV1 are on P-cell and are converted into the u/v cells after
 C    subroutine GRIRD_REMAPPING
-C
-
-
 C
 C     DIAGNOSTIC PRINTOUT.
 C
@@ -944,8 +931,6 @@ C
         ENDDO
       ENDDO
 
-!      CALL ZAIOWR(WORK,MSK,.TRUE.,  XMIN,XMAX, 21, .FALSE.)
-
       CALL ZAIOWR(MTG1,MSK,.TRUE.,  XMIN,XMAX, 21, .FALSE.)
       WRITE(21,4201) 'montg1  ',MONTH,TIME,0,ZERO,XMIN,XMAX
       CALL ZAIOWR(SRFH,MSK,.TRUE.,  XMIN,XMAX, 21, .FALSE.)
@@ -1028,7 +1013,7 @@ C
             IF     ((DEPTH(I,J)).GT.ZERO) THEN
 
             SIG3D_TMP=SIG3D(I,J,:)
-            call GRIRD_REMAPPING(i,j,K,KDM,KZ,NSIGMA,SIG3D_TMP,RM(I,J),
+            call GRIRD_REMAPPING(I,J,K,KDM,KZ,NSIGMA,SIG3D_TMP,RM(I,J),
      +          PM(I,J),RZ(:,I,J),DEPTH(I,J),DSCK,DPCK,ISOTOP,
      +          ISOPYC,PKM1(I,J),PZBOT(I,J),PZTOP(I,J),RKM1(I,J),
      +          ZL,PMIX(I,J),PCM0(I,J),PCM1(I,J),PCM2(I,J),
@@ -1036,9 +1021,8 @@ C
      +          flag_u,flag_v,itest,jtest,SM(I,J),TM(I,J),
      +          PU(I,J),PV(I,J),UV(:,I,J),VV(:,I,J),
      +          ldebug,sigver,TZ(:,I,J),SZ(:,I,J),
-     +          flag_no3,flag_po4,flag_si,flag_o2,NO3(:,I,J),PO4(:,I,J),
-     +          SI(:,I,J),O2(:,I,J),NO3M(I,J),PO4M(I,J),SIM(I,J),
-     +          O2M(I,J))
+     +          flag_no3,flag_po4,flag_si,flag_o2,NO3,PO4,
+     +          SI,O2,NO3M,PO4M,SIM,O2M)
 
             ENDIF  !DEPTH>0
 
@@ -1138,14 +1122,15 @@ C
 C
 
       CALL ZAIOCL(21)
+      IF (flag_no3.ne."NONE" .or.flag_po4.ne."NONE"
+     &    .or.flag_si.ne."NONE".or.flag_o2.ne."NONE" ) THEN
 
-      CALL ZAIOCL(211)
+          CALL ZAIOCL(211)
+      ENDIF
       stop
 C
 C
 C
-
-
 C
  4000 FORMAT('Expt ',I2.2,'.',I1.1,
      +       '  nhybrd=',I2,
@@ -1178,20 +1163,8 @@ C
      +   '   (k,sigma =',i3,F7.2,')')
  8200 FORMAT(' k =',I3.2,' j = ',I4.4,' to ',I4.4,
      +       ' sig =',F7.3,' lat =',F6.1,' inf =',F8.2)
-C     END OF PROGRAM WNDINT.
-      END
-
-
-
-
-
-
-
-
-
-
-
-
+C     END OF PROGRAM NEMO_ARCHVZ
+      contains
 
 
       SUBROUTINE LAYSTAT(PM, THICK, IDM,JDM, PMIN,PAVE,PMAX)
@@ -1308,8 +1281,6 @@ C
 C     SIGVER WRAPPER FOR SIG
 C
       REAL*8 SS8,TT8
-      REAL*8 SIG_1,SIG_2,SIG_3,SIG_4,SIG_5,SIG_6,SIG_7,SIG_8,
-     &       SIG_46,SIG_48
 C
       TT8 = TT
       SS8 = SS
@@ -1350,9 +1321,6 @@ C
 C     SIGVER WRAPPER FOR SOFSIG
 C
       REAL*8 RR8,TT8
-      REAL*8 SOFSIG_1,SOFSIG_2,SOFSIG_3,SOFSIG_4,
-     &       SOFSIG_5,SOFSIG_6,SOFSIG_7,SOFSIG_8,
-     &       SOFSIG_46,SOFSIG_48
 C
       RR8 = RR
       TT8 = TT
@@ -1393,9 +1361,6 @@ C
 C     SIGVER WRAPPER FOR TOFSIG
 C
       REAL*8 RR8,SS8
-      REAL*8 TOFSIG_1,TOFSIG_2,TOFSIG_3,TOFSIG_4,
-     &       TOFSIG_5,TOFSIG_6,TOFSIG_7,TOFSIG_8,
-     &       TOFSIG_46,TOFSIG_48
 C
       RR8 = RR
       SS8 = SS
@@ -1476,7 +1441,6 @@ C
       REAL*8, PARAMETER :: TOL=1.D-6
       INTEGER NN
       REAL*8  SN,SO
-      REAL*8  SOFSIG_7
       INCLUDE '../../include/stmt_fns_SIGMA0_17term.h'
 C     sofsig via Newton iteration from a 12-term 1st guess
       SN = SOFSIG_7(RR8,TT8)  !non-negative
@@ -1495,7 +1459,6 @@ C     sofsig via Newton iteration from a 12-term 1st guess
       REAL*8, PARAMETER :: TOL=1.D-6
       INTEGER NN
       REAL*8  TN,TO
-      REAL*8  TOFSIG_7
       INCLUDE '../../include/stmt_fns_SIGMA0_17term.h'
 C     sofsig via Newton iteration from a 12-term 1st guess
       TN = TOFSIG_7(RR8,SS8)  !non-negative
@@ -1574,7 +1537,6 @@ C     sofsig via Newton iteration from a 12-term 1st guess
       REAL*8, PARAMETER :: TOL=1.D-6
       INTEGER NN
       REAL*8  SN,SO
-      REAL*8  SOFSIG_8
       INCLUDE '../../include/stmt_fns_SIGMA2_17term.h'
 C     sofsig via Newton iteration from a 12-term 1st guess
       SN = SOFSIG_8(RR8,TT8)  !non-negative
@@ -1593,7 +1555,6 @@ C     sofsig via Newton iteration from a 12-term 1st guess
       REAL*8, PARAMETER :: TOL=1.D-6
       INTEGER NN
       REAL*8  TN,TO
-      REAL*8  TOFSIG_8
       INCLUDE '../../include/stmt_fns_SIGMA2_17term.h'
 C     sofsig via Newton iteration from a 12-term 1st guess
       TN = TOFSIG_8(RR8,SS8)  !non-negative
@@ -1636,7 +1597,6 @@ C     sofsig via Newton iteration from a 12-term 1st guess
       REAL*8, PARAMETER :: TOL=1.D-6
       INTEGER NN
       REAL*8  SN,SO
-      REAL*8  SOFSIG_48
       INCLUDE '../../include/stmt_fns_SIGMA4_17term.h'
 C     sofsig via Newton iteration from a 12-term 1st guess
       SN = SOFSIG_48(RR8,TT8)  !non-negative
@@ -1655,7 +1615,6 @@ C     sofsig via Newton iteration from a 12-term 1st guess
       REAL*8, PARAMETER :: TOL=1.D-6
       INTEGER NN
       REAL*8  TN,TO
-      REAL*8  TOFSIG_48
       INCLUDE '../../include/stmt_fns_SIGMA4_17term.h'
 C     sofsig via Newton iteration from a 12-term 1st guess
       TN = TOFSIG_48(RR8,SS8)  !non-negative
@@ -1715,16 +1674,16 @@ C     sofsig via Newton iteration from a 12-term 1st guess
       real,             intent(out) :: field(idm,jdm)
       character(len=*), intent(in)  :: fldname,cfld(nrec)
       character(len=*), intent(in)  :: filebase
-      real*4 :: A(idm,jdm), AMN, AMX, spval,undef
+
+      real*4 :: A(idm,jdm), AMN, AMX
+      real*4, parameter :: spval = 2.0**100
       integer :: indx
       call indexFromH(cfld,fldname,coord,localcoord,tlevel1,tlevel,
      & indx,nrec)
         if (indx/=-1) then
-            spval=1e30 !! CAREFUL HERE, ORIGINALLY IT WAS
-                       !! spval = undef
-                       !! COULDN'T COMPILE LIKE THAT
-            call READRAW(A,AMN,AMX,IDM,JDM,.false.,spval,
+            call READRAW(A,AMN,AMX,IDM,JDM, spval,
      &                  trim(filebase),indx)
+
             field=A
         else
             print '(A)', 'Could not get field "'
@@ -1737,40 +1696,29 @@ C     sofsig via Newton iteration from a 12-term 1st guess
       subroutine indexFromH(cfld,fldname,coord,localcoord,
      &           tlevel1,tlevel,indx,nrec)
       implicit none
-      integer :: irec,nrec
       character(len=*), intent(in)  :: cfld(nrec),fldname
       integer         , intent(in)  :: coord(nrec),tlevel1(nrec)
-      integer         , intent(in)  :: localcoord,tlevel
+      integer         , intent(in)  :: localcoord,tlevel, nrec
       integer         , intent(out) :: indx
+      integer                       :: irec 
       indx=-1
       do irec=1,nrec
-C --- BEGIN: MOSTAFA
-c      if (trim(fldname)==trim(cfld(irec)) .and.
-c     &   tlevel1(irec)==tlevel) then
-c         indx=irec
-c      end if
-C --- END: MOSTAFA
          if (trim(fldname)==trim(cfld(irec)) .and.
      &   localcoord==coord(irec) .and. tlevel1(irec)==tlevel ) then
             indx=irec
+            exit
          end if
       end do
       end subroutine
 
 C
-C
-C
-      SUBROUTINE READRAW(A,AMN,AMX,IDM,JDM,LSPVAL,SPVAL,CFILE1,K)
+      SUBROUTINE READRAW(A,AMN,AMX,IDM,JDM,SPVAL,CFILE1,K)
       IMPLICIT NONE
-!
-      REAL*4     SPVALH
-      PARAMETER (SPVALH=2.0**99)
-c!
+C
       REAL*4,           INTENT(OUT) :: A(IDM,JDM)
       REAL*4,           INTENT(OUT) :: AMN,AMX
       INTEGER,          INTENT(IN)  :: IDM,JDM
-      LOGICAL,          INTENT(IN)  :: LSPVAL
-      REAL*4,           INTENT(INOUT)  :: SPVAL
+      REAL*4,           INTENT(IN)  :: SPVAL
       INTEGER,          INTENT(IN)  :: K
       CHARACTER(len=*), INTENT(IN)  :: CFILE1
 !
@@ -1779,11 +1727,7 @@ c!
 !
 
       INTEGER      I,J,IOS,NRECL
-      INTEGER NPAD,GET_NPAD
-!
-      IF(.NOT.LSPVAL) THEN
-        SPVAL = SPVALH
-      ENDIF
+      INTEGER NPAD
 !
 !!! Calculate the number of elements padded!!!!!!!!!!!!!!!!!!!!!!!!
       NPAD=GET_NPAD(IDM,JDM)
@@ -1792,7 +1736,7 @@ c!
       OPEN(UNIT=73, FILE=CFILE1, FORM='UNFORMATTED', STATUS='old',
      &     ACCESS='DIRECT', RECL=NRECL,IOSTAT=IOS)
       IF     (IOS.NE.0) THEN
-        write(6,*) 'Error: can''t open ',CFILE1(1:LEN_TRIM(CFILE1))
+        write(6,*) 'Error: cant open ',CFILE1(1:LEN_TRIM(CFILE1))
         write(6,*) 'ios   = ',ios
         write(6,*) 'nrecl = ',nrecl
         CALL EXIT(3)
@@ -1807,16 +1751,14 @@ c!
         CALL EXIT(4)
       ENDIF
 !
-      AMN =  SPVALH
-      AMX = -SPVALH
+      AMN =  SPVAL
+      AMX = -SPVAL
       DO J= 1,JDM
       DO I=1,IDM
-         IF     (A(I,J).LE.SPVALH) THEN
-            AMN = MIN( AMN, A(I,J) )
-            AMX = MAX( AMX, A(I,J) )
-         ELSEIF (LSPVAL) THEN
-            A(I,J) = SPVAL
-         ENDIF
+      IF (abs(A(I,J))<SPVAL) then
+          AMN = MIN( AMN, A(I,J))
+          AMX = MAX( AMX, A(I,J))
+      ENDIF
       END DO
       END DO
 !                 
@@ -1847,20 +1789,26 @@ C
      +         depth, DSCK(0:kdm+1),   DPCK(0:kdm+1),
      +         ISOTOP,PKM1,PZTOP,RKM1,ZL(kz+1),
      +         DP0K(kdm+1),DP00I,DS0K(kdm+1),
-     +         UV(kz+1),VV(kz+1),TZ(kz+1),SZ(kz+1),
-     +         NO3(kz+1),PO4(kz+1),SI(kz+1),O2(kz+1)
+     +         UV(kz+1),VV(kz+1),TZ(kz+1),SZ(kz+1)
+
+        real*4, intent(in),allocatable :: 
+     +     NO3(:,:,:),PO4(:,:,:),SI(:,:,:),O2(:,:,:)
 
         real*4, intent(inout) ::  PM,RM
         real*4,  intent(inout) :: PZBOT,PCM0,PkM2,PCM1,PCM2,
-     +         UM,VM,SM,TM,NO3M,PO4M,SIM,O2M
+     +         UM,VM,SM,TM
+
+        real*4, intent(inout),allocatable ::
+     +     NO3M(:,:),PO4M(:,:),SIM(:,:),O2M(:,:)
+
        logical    ::  ISOPYC,ldebug
         CHARACTER*40    :: flag_t,flag_s,flag_u,flag_v
        CHARACTER*40    :: flag_no3,flag_po4,flag_si,flag_o2
 
        real*4 ::qdep,Q,sigmaa,RZLOC,DPMS,PZMID,THIKMN,THK
        integer :: L,kztop
-       REAL*4     ZERO,ONE,SOFSIG_V,dmin
-       PARAMETER (ZERO=0.0, ONE=1.0)
+       REAL*4     dmin
+       REAL*4, PARAMETER :: ZERO=0.0, ONE=1.0
 C
 C               BEGIN SUBROUTINE
 C
@@ -1878,11 +1826,15 @@ C
 C             FIND RM AND PM (I).
 C
 
-
-
-              QDEP = MAX( 0.0, MIN( 1.0,
-     +                    (DEPTH  - DSCK(NSIGMA)) /
-     +                    (DPCK(NSIGMA) - DSCK(NSIGMA))  ) )
+! TILL NUMERICAL FIX: CAN END UP WITH DPCK(NSIGMA) - DSCK(NSIGMA) = 0.
+! TILL In this case QDEP qill be 1.0
+              if (DPCK(NSIGMA) - DSCK(NSIGMA)<1.0**(-10)) then
+                 QDEP=1.0
+              else
+                 QDEP = MAX( 0.0, MIN( 1.0,
+     +                     (DEPTH  - DSCK(NSIGMA)) /
+     +                     (DPCK(NSIGMA) - DSCK(NSIGMA))  ) )
+              ENDIF
               DMIN = (1.0-QDEP)*DSCK(K-1) + QDEP*DPCK(K-1)
                 if (i.eq.600 .and. j.eq.2) then
                   WRITE(6,'(A,I3,F10.3,F8.3)')
@@ -2119,13 +2071,13 @@ C
                 if(flag_v.ne."NONE")
      &                 VM=(1.0-Q)*VV(L)+Q*VV(L+1) !
                 if(flag_no3.ne."NONE")
-     &                 NO3M=(1.0-Q)*NO3(L)+Q*NO3(L+1) ! from Z to isop.
+     &                 NO3M(I,J)=(1.0-Q)*NO3(L,I,J)+Q*NO3(L+1,I,J) ! from Z to isop.
                 if(flag_po4.ne."NONE")
-     &                 PO4M=(1.0-Q)*PO4(L)+Q*PO4(L+1) ! from Z to isop.
+     &                 PO4M(I,J)=(1.0-Q)*PO4(L,I,J)+Q*PO4(L+1,I,J) ! from Z to isop.
                 if(flag_si.ne."NONE")
-     &                 SIM=(1.0-Q)*SI(L)+Q*SI(L+1) ! from Z to isop.
+     &                 SIM(I,J) =(1.0-Q)*SI (L,I,J)+Q*SI(L+1,I,J) ! from Z to isop.
                 if(flag_o2.ne."NONE")
-     &                 O2M=(1.0-Q)*O2(L)+Q*O2(L+1) ! from Z to isop.
+     &                 O2M(I,J) =(1.0-Q)*O2 (L,I,J)+Q*O2(L+1,I,J) ! from Z to isop.
                   if (ldebug.and.i.eq.itest.and. j.eq.jtest) then
                     WRITE(6,'(A,I4,3F8.4)')
      +                ' TM: L,Q =',L,Q,TM,RM
@@ -2145,13 +2097,13 @@ C
 C      READ 2D and 3D fields from ARCHIVE FILE
 C
 
-
         SUBROUTINE READ_ARCHIVE(KZ,IDM,JDM,NREC,KDM,COORD,
      +     tlevel1,ARCHVFILE,cfld,MTG1,SRFH,SUFLX,SAFLX,
      +     BLDP,MIXDP,UBRTP,VBRTP,TZ,SZ,UV,VV,RZ,ZL,
      +     flag_t,flag_s,flag_th,flag_u,flag_v,ISOPYC,
      +     SIGVER,LEVTOP,SIG3D,DEPTH,TZ1,SZ1,UV1,VV1,TH,TH1,
-     +     flag_no3,flag_po4,flag_si,flag_o2,NO3,PO4,SI,O2)
+     +     flag_no3,flag_po4,flag_si,flag_o2,NO3,PO4,SI,O2,MSK)
+
         IMPLICIT NONE
 C
         INTEGER :: nrec,KZ,IDM,JDM,KDM,
@@ -2162,16 +2114,16 @@ C
      +              SUFLX(IDM,JDM),UBRTP(IDM,JDM),VBRTP(IDM,JDM)
         REAL*4, intent(in) ::  ZL(KZ+1),SIG3D(IDM,JDM,KDM+1),
      +         DEPTH(IDM,JDM)
+        INTEGER, intent(in) :: MSK(IDM,JDM)
         REAL*4, intent(out) ::TZ1(IDM,JDM),SZ1(IDM,JDM),
      +         UV1(IDM,JDM),VV1(IDM,JDM),UV(KZ+1,IDM,JDM),
      +         VV(KZ+1,IDM,JDM),RZ(KZ+1,IDM,JDM),
      +         TH(KZ+1,IDM,JDM),SZ(KZ+1,IDM,JDM),
-     +         TH1(IDM,JDM),TZ(KZ+1,IDM,JDM),
-     +         NO3(KZ+1,IDM,JDM),PO4(KZ+1,IDM,JDM),
-     +         SI(KZ+1,IDM,JDM),O2(KZ+1,IDM,JDM)
+     +         TH1(IDM,JDM),TZ(KZ+1,IDM,JDM)
 
+        REAL*4, intent(inout),allocatable :: NO3(:,:,:),
+     +                   PO4(:,:,:),SI(:,:,:),O2(:,:,:)
 
-        REAL*4          :: SIG_V,TOFSIG_V,spval,spval_
         REAL*4          :: PU(IDM,JDM),PV(IDM,JDM)
         LOGICAL         :: ISOPYC
 
@@ -2180,21 +2132,17 @@ C
      +                      flag_no3,flag_po4,flag_si,flag_o2
         CHARACTER*256, INTENT(IN) :: ARCHVFILE
         CHARACTER(len=8), INTENT(IN) :: cfld(NREC)
-        REAL*4          :: NO1(IDM,JDM),PO1(IDM,JDM),
-     +                     SI1(IDM,JDM),O21(IDM,JDM)
+        REAL*4,allocatable :: NO1(:,:),PO1(:,:),
+     +                        SI1(:,:),O21(:,:)
 C
         INTEGER   ::  K,I,J
+        REAL*4,parameter    ::  spval = 2.0**100
 
 C
 C        2D FIELDS
 C
-         spval_=2.00**99
-         spval=2.00**99
-
-
          call FieldArchive(MTG1,IDM,JDM,cfld,'montg1    ',
      &     1,coord,1,tlevel1,nrec,trim(archvfile)//".a")
-
          call FieldArchive(SRFH,IDM,JDM,cfld,'srfhgt    ',
      &     0,coord,1,tlevel1,nrec,trim(archvfile)//".a")
 
@@ -2246,7 +2194,9 @@ C
          call FieldArchive(SZ1,IDM,JDM,cfld,'salin    ',
      &     K,coord,1,tlevel1,nrec,trim(archvfile)//".a")
         endif
+    
         if     (flag_no3.ne."NONE") then
+         allocate(NO1(IDM,JDM))
          call FieldArchive(NO1,IDM,JDM,cfld,'ECO_no3    ',
      &     K,coord,1,tlevel1,nrec,trim(archvfile)//".a")
         endif
@@ -2262,13 +2212,9 @@ C
          call FieldArchive(O21,IDM,JDM,cfld,'ECO_oxy    ',
      &     K,coord,1,tlevel1,nrec,trim(archvfile)//".a")
         endif
-
-
         ! CAUTION:  CONVERT VELOCITY COMPONENTS FROM  U- AND V-CELL TO P-CELL , RESPECTIVELY HERE
         ! TODO:  
         CALL UV2P(IDM,JDM,UV1,VV1,PU,PV)
-
-
          ! CAUTION: for some reason temperature at level-75 is FILL_value
          !          but salinity is not. check the code
          !          READING NOT DONE PROPERLY ??
@@ -2283,26 +2229,31 @@ C
          ! ADDED LATER.
 
 C ---    U AND V ARE NOW ON P-CELL
+       
          DO J= 1,JDM
             DO I= 1,IDM               ! assign 3D
                  if     (flag_t.ne."NONE")
-     &                  TH(K,I,J) = MIN(SPVAL_,TH1(I,J)) ! layer thickness
+     &                  TH(K,I,J) = MIN(SPVAL,TH1(I,J)) ! layer thickness
                  if     (flag_s.ne."NONE")
-     &                  SZ(K,I,J) = MIN(SPVAL_,SZ1(I,J)) ! salinity
+     &                  SZ(K,I,J) = MIN(SPVAL,SZ1(I,J)) ! salinity
                  if     (flag_u.ne."NONE")
-     &                  UV(K,I,J) = MIN(SPVAL_,PU(I,J)) ! u-velocity
+     &                  UV(K,I,J) = MIN(SPVAL,PU(I,J)) ! u-velocity
 
                  if     (flag_v.ne."NONE")
-     &                  VV(K,I,J) = MIN(SPVAL_,PV(I,J)) ! v-velocity
+     &                  VV(K,I,J) = MIN(SPVAL,PV(I,J)) ! v-velocity
+                 if     (flag_no3.ne."NONE") then
+                        NO3(K,I,J) = MIN(SPVAL,NO1(I,J)) ! nitrate
+                 endif
+                 if     (flag_po4.ne."NONE") then
+                        PO4(K,I,J) = MIN(SPVAL,PO1(I,J)) ! phosphate
+                 endif
+                 if     (flag_si.ne."NONE") then
+                        SI(K,I,J) = MIN(SPVAL,SI1(I,J)) ! silicate
+                 endif
+                 if     (flag_o2.ne."NONE") then
+                        O2(K,I,J) = MIN(SPVAL,O21(I,J)) ! oxygen
+                 endif
 
-                 if     (flag_no3.ne."NONE")
-     &                  NO3(K,I,J) = MIN(SPVAL_,NO1(I,J)) ! nitrate
-                 if     (flag_po4.ne."NONE")
-     &                  PO4(K,I,J) = MIN(SPVAL_,PO1(I,J)) ! phosphate
-                 if     (flag_si.ne."NONE")
-     &                  SI(K,I,J) = MIN(SPVAL_,SI1(I,J)) ! silicate
-                 if     (flag_o2.ne."NONE")
-     &                  O2(K,I,J) = MIN(SPVAL_,O21(I,J)) ! oxygen
             ENDDO
          ENDDO
 
@@ -2310,33 +2261,45 @@ C ---    U AND V ARE NOW ON P-CELL
          IF     (K.EQ.1) THEN
             DO J= 1,JDM
                DO I= 1,IDM
-                    TZ(K,I,J) = TZ1(I,J) ! temperature is retrieved here
+
+                 TZ(K,I,J) = TZ1(I,J) ! temperature is retrieved here
+                                      ! in the original code
+
                                          ! in the original code
+                if (MSK(I,J).eq.1) then
                     RZ(K,I,J) = SIG_V(TZ(K,I,J),SZ(K,I,J),SIGVER)
+                else ! MSK = 0
+                    RZ(K,I,J) = SPVAL
+
+                endif
                END DO
             END DO
 
-            ELSEIF (.NOT.ISOPYC) THEN !
+         ELSEIF (.NOT.ISOPYC) THEN !
                                       ! BLKDAT I USE SELECTS THIS CONDITION
                                       !
             ! RZ MUST BE MONOTONICALLY NON-DECREASING (NEAR THE BOTTOM).
                DO J= 1,JDM
                   DO I= 1,IDM
+                     IF (MSK(I,J).eq.1) THEN
                        TZ(K,I,J) = TZ1(I,J)
                        RZ(K,I,J) = SIG_V(TZ(K,I,J),SZ(K,I,J),SIGVER)   
-                     IF (RZ(K,I,J).LT.RZ(K-1,I,J) .AND.
-     &                  ZL(MIN(K+3,KZ+1)).GE.DEPTH(I,J)) THEN
-                        RZ(K,I,J) = RZ(K-1,I,J)
-                        TZ(K,I,J) = TZ(K-1,I,J)
+                       IF (RZ(K,I,J).LT.RZ(K-1,I,J) .AND.
+     &                     ZL(MIN(K+3,KZ+1)).GE.DEPTH(I,J)) THEN
+                           RZ(K,I,J) = RZ(K-1,I,J)
+                           TZ(K,I,J) = TZ(K-1,I,J)
+                       ENDIF
+                     ELSE
+                       RZ(K,I,J) = RZ(K-1,I,J) ! THIS SHOULD BE set to SPVAL
                      ENDIF
                   END DO
                END DO
 
-               ELSE
+         ELSE
                ! LIMIT MAXIMUM DENSITY TO SIGMA(KDM)
                DO J= 1,JDM
                   DO I= 1,IDM
-                       TZ(K,I,J) = MIN(SPVAL_,TZ1(I,J))
+                       TZ(K,I,J) = MIN(SPVAL,TZ1(I,J))
 
 !                        IF     (MAX(TZ(K,I,J),
 !     &                        SZ(K,I,J) ).GT.2.0**90) THEN
@@ -2367,7 +2330,6 @@ C ---    U AND V ARE NOW ON P-CELL
      &                                  SI(K,I,J) = SI(K-1,I,J)
                             if     (flag_o2.ne."NONE")
      &                                  O2(K,I,J) = O2(K-1,I,J)
-
                             ELSE
                             RZ(K,I,J) = SIG3D(I,J,KDM)
                             TZ(K,I,J) = TOFSIG_V(RZ(K,I,J),
@@ -2376,7 +2338,7 @@ C ---    U AND V ARE NOW ON P-CELL
                        END IF
                   END DO
                END DO
-           END IF
+         END IF
  
       END DO ! END OF LEVEL LOOP
 
@@ -2399,8 +2361,6 @@ C ---    U AND V ARE NOW ON P-CELL
           TZ(KZ+1,I,J) = TZ(KZ,I,J)
         ENDDO
       ENDDO
-
-
 
         END SUBROUTINE READ_ARCHIVE
         
@@ -2604,7 +2564,6 @@ c
         CHARACTER(len=8), INTENT(OUT)  :: cfld(NREC)
 C
         INTEGER, INTENT(OUT) :: TLEVEL1(NREC),COORD(NREC)
-C        REAL, INTENT(OUT) :: MINVALUE(NREC),MAXVALUE(NREC)
         INTEGER     :: I,IOS,tlevel,K,ISTEP,inrec
         REAL*4 :: LRDENS,HMINB,HMAXB,RDAY
         CHARACTER*256 :: CLINE,fldname
@@ -2634,5 +2593,5 @@ C
         CLOSE(72)
 	     END SUBROUTINE FIELDS_SPEC
 
-
+             END PROGRAM NEMO_ARCHVZ
 
