@@ -2,9 +2,6 @@
 import modeltools.nemo
 import argparse
 import datetime
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot
 import modeltools.forcing.bathy
 import abfile.abfile as abf
 import numpy
@@ -18,7 +15,6 @@ import cfunits
 import sys
 import shutil
 import glob
-from matplotlib import pyplot as plt
 from netCDF4 import Dataset, MFDataset, num2date,date2num
 import scipy.io as io
 from scipy import ndimage
@@ -484,7 +480,7 @@ def interpolate2d(x, y, Z, points, mode='linear', bounds_error=False):
     return r
 
 
-def main(filemesh,grid2dfiles,first_j=0,mean_file=False,iexpt=10,iversn=22,yrflag=3,makegrid=None,bio_file=None) :
+def main(filemesh,grid2dfiles,first_j=0,mean_file=False,iexpt=10,iversn=22,yrflag=3,makegrid=False,bio_file=None) :
 
    if mean_file :
       fnametemplate="archm.%Y_%j_%H"
@@ -493,7 +489,7 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=False,iexpt=10,iversn=22,yrfla
    itest=1
    jtest=200
    gdept,gdepw,e3t_ps,e3w_ps,mbathy,hdepw,depth,plon,plat=read_mesh(filemesh)
-   if makegrid is not None: 
+   if makegrid:
       logger.info("Making NEMO grid & bathy [ab] files ...")
       make_grid(filemesh)
    mbathy = mbathy -1                       # python indexing starts from 0
@@ -682,8 +678,7 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=False,iexpt=10,iversn=22,yrfla
       montg1=numpy.zeros(ssh.shape)
 
       # Write to abfile
-      outfile = abf.ABFileArchv("./data/"+oname,"w",iexpt=iexpt,iversn=iversn,yrflag=yrflag,)
-
+      outfile = abf.ABFileArchv("./data/"+oname,"w",iexpt=iexpt,iversn=iversn,yrflag=yrflag,cline1="a\n",cline2="b\n",cline3="c\n")
       logger.info("Writing 2D variables")
       outfile.write_field(montg1,                ip,"montg1"  ,0,model_day,1,0)
       outfile.write_field(ssh,                   ip,"srfhgt"  ,0,model_day,0,0)
@@ -776,7 +771,7 @@ if __name__ == "__main__" :
    parser.add_argument('meshfile',   type=str,help="NEMO mesh file in netcdf format")
    parser.add_argument('grid2dfile', type=str, nargs="+",help="NEMO 2D data file in netcdf format")
    parser.add_argument('--iexpt',    type=int,default=10,  help="    ")
-   parser.add_argument('--makegrid',    type=int,  help="    ")
+   parser.add_argument('--makegrid', default=False, action=argparse.BooleanOptionalAction)
    parser.add_argument('--iversn',   type=int,default=22,  help="    ")
    parser.add_argument('--yrflag',   type=int,default=3,   help="    ")
    parser.add_argument('--bio_file',   type=str,   help="    ")
