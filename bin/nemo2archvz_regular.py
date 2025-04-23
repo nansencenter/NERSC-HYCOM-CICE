@@ -534,9 +534,11 @@ def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_file=None) :
        no3=ncidb.variables["no3"][0,:,:,:];
        no3[numpy.abs(no3)>1e+10]=numpy.nan
        po4=ncidb.variables["po4"][0,:,:,:]
-       si=ncidb.variables["si"][0,:,:,:]
        po4[numpy.abs(po4)>1e+10]=numpy.nan
+       si=ncidb.variables["si"][0,:,:,:]
        si[numpy.abs(si)>1e+10]=numpy.nan
+       o2=ncidb.variables["o2"][0,:,:,:]
+       o2[numpy.abs(o2)>1e+10]=numpy.nan
        # TODO: Ineed to improve this part
        nz,ny,nx=no3.shape
        dummy=numpy.zeros((nz,ny,nx+1))
@@ -548,6 +550,9 @@ def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_file=None) :
        dummy=numpy.zeros((nz,ny,nx+1))
        dummy[:,:,:nx]=si;dummy[:,:,-1]=si[:,:,-1]
        si=dummy
+       dummy=numpy.zeros((nz,ny,nx+1))
+       dummy[:,:,:nx]=o2;dummy[:,:,-1]=o2[:,:,-1]
+       o2=dummy
        dummy=numpy.zeros((nx+1))
        dummy[:nx]=blon
        blon=dummy
@@ -571,19 +576,23 @@ def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_file=None) :
        dummy_no3=no3
        dummy_po4=po4
        dummy_si=si
+       dummy_o2=o2
        for j in range(ny):
           for i in range(nx):
              dummy_no3[depth_lev[j,i]:nz-2,j,i]=no3[depth_lev[j,i]-1,j,i]
              dummy_po4[depth_lev[j,i]:nz-2,j,i]=po4[depth_lev[j,i]-1,j,i]
              dummy_si[depth_lev[j,i]:nz-2,j,i]=si[depth_lev[j,i]-1,j,i]
+             dummy_o2[depth_lev[j,i]:nz-2,j,i]=o2[depth_lev[j,i]-1,j,i]
        no3=dummy_no3
        po4=dummy_po4
        si=dummy_si
+       o2=dummy_o2
 
 #
        po4 = po4 * 106.0 * 12.01
        si = si   * 6.625 * 12.01
-       no3 = no3 * 6.625 * 12.01
+       no3 = no3 * 6.625 * 12.01 # mmol N/m3 --> mgC/m3
+       # o2 unit conversion do not needed (mmol O2/m3) 
 
 
     logger.info("Read, trim, rotate NEMO velocities.")
@@ -644,6 +653,8 @@ def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_file=None) :
            po4k = maplev(po4k)
            si_k=interpolate2d(blat, blon, si[k,:,:], points).reshape((jdm,idm))
            si_k = maplev(si_k)
+           o2k=interpolate2d(blat, blon, o2[k,:,:], points).reshape((jdm,idm))
+           o2k = maplev(o2k)
            if k%10==0 : logger.info("Writing 3D variables including BIO, level %d of %d"%(k+1,u.shape[0]))
         else:
            if k%10==0 : logger.info("Writing 3D variables, level %d of %d"%(k+1,u.shape[0]))
@@ -719,6 +730,7 @@ def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_file=None) :
            outfile.write_field(no3k      ,ip,"ECO_no3" ,0,model_day,k+1,0)
            outfile.write_field(po4k      ,ip,"ECO_pho" ,0,model_day,k+1,0)
            outfile.write_field(si_k      ,ip,"ECO_sil" ,0,model_day,k+1,0)
+           outfile.write_field(o2k       ,ip,"ECO_oxy" ,0,model_day,k+1,0)
                 
         tl_above=numpy.copy(tl)
         sl_above=numpy.copy(sl)

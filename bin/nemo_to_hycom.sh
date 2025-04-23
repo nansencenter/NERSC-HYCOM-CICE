@@ -17,54 +17,93 @@
 # (2) May 2019: some correction on biophys [ab] files, Mostafa Bakhoday-Paskyabi
 # (3) July 9 2019, accounting for both bio & phy nesting.
 # (4) July 11 2019, further imporvment.
-
-options=$(getopt -o b:m -- "$@")
-[ $? -eq 0 ] || {
-    echo "$usage"
-    echo "Error: Incorrect options provided"
-    exit 1
-}
+OPTSTRING=":b:m:g:d:nh"
+echo "Set defaults that assume grid_type=native"
 grid_type=native
+export mercator_mesh="/nird/projects/NS9481K/MERCATOR_DATA/GRID_COORD/ext-GL12V1_mesh_zgr.nc"
 maxinc=50
 bio_file=""
-eval set -- "$options"
-while true; do
-    case "$1" in
-    -b)
-       shift;  
-       bio_file=$1
-        ;;
-    -m) 
-       grid_type=regular
-        ;;
-    --)
-        shift
-        break 
-        ;;
-    esac
-    shift
+while getopts ${OPTSTRING} opt; do
+  case ${opt} in
+    b)
+      echo "Option -b biofile was triggered, Argument: ${OPTARG}"
+      bio_file=${OPTARG}
+      ;;
+    d)
+      echo "Option -d Destination experiment triggered, Argument: ${OPTARG}"
+      nest_expt=${OPTARG}
+      ;;
+    g)
+      echo "Option -g grid_type was triggered, Argument: ${OPTARG}"
+      echo " Should be either native or regular"
+      grid_type=${OPTARG}
+      ;;
+    m)
+      echo "Option -m mercator_mesh was triggered, Argument: ${OPTARG}"
+      mercator_mesh=${OPTARG}
+      ;;
+    n)
+      echo "Option -n netcdf pattern of netcdf file was triggered, Argument: ${OPTARG}"
+      export ncfile=${OPTARG}
+      ;;
+    h) 
+     echo "This script will set up the final nesting files from MERCATOR 1/12 degree to be used by HYCOM."
+     echo "The code contains the following steps:"
+     echo "(1) Create archive [ab] files from the MERCATOR netcdf file."
+     echo "    The final archive files includes all 2D fields (filled with zero except barotropic velocities)."
+     echo "    and 3D fields of temperaure, salinity, thickness, and two components of velocities."
+     echo "(2) Based on generated archive files in (1) the grid and topography files are generated."
+     echo "    Note that the grids are non-native and interpolated into a rectilinear mercator grids horizontally."
+     echo "(3) "
+     echo "You must input climatology (phc or levitus)"
+     echo "when running this script"
+     echo ""
+     echo "Example:"
+     echo "   pathtobin/nemo_to_hycom.sh -d ../../TP5a0.06/expt_01.0/ -n /nird/projects/NS9481K/MERCATOR_DATA/PHY/2011/MERCATOR-PHY-24-2011-01-02*.nc -m regular"
+     echo "   pathtobin/nemo_to_hycom.sh -d ../../TP5a0.06/expt_01.2/ -n /nird/projects/NS9481K/MERCATOR_DATA/PHY/2007/ext-GLORYS12V1_1dAV_20070302_20070303_grid2D_R20070307.nc -m native"
+     echo "../bin/nemo_to_hycom.sh -d../../TP5a0.06/expt_01.0/ -n /nird/projects/NS9481K/MERCATOR_DATA/PHY/2013/ext-GLORYS12V1_1dAV_2013110*_grid2D*.nc -b /nird/projects/NS9481K/MERCATOR_DATA/BIO/DAILY/2013/global_analysis_forecast_bio_2013110*.nc"
+     echo " NOTE YOU NEED TO RUN THIS SCRIPT WITHIN THE NEMO EXPERIMENT FOLDER"
+     echo " The following arguments are valid:"
+     echo "-b: bio file including path"
+     echo "-d: Mandatory, Destination experiment including path e.g. TP5a0.06/expt_xx.x/"
+     echo "-g: grid_type. Either native or regular"
+     echo "-h: This message (help)"
+     echo "-m: mercator_mesh file. Default (native):  /nird/projects/NS9481K/MERCATOR_DATA/GRID_COORD/ext-GL12V1_mesh_zgr.nc"
+     echo "-n: Mandatory: Path and Pattern of Mercator input netCDF files."
+     exit 1
+     ;;
+    :)
+      echo "Option -${OPTARG} requires an argument."
+      exit 1
+      ;;
+    ?)
+      echo "Invalid option: -${OPTARG}."
+      exit 1
+      ;;
+  esac
 done
-
-if [ $# -lt 2 ] ; then
-    echo "This script will set up the final nesting files from MERCATOR 1/12 degree to be used by HYCOM."
-    echo "The code contains the following steps:"
-    echo "(1) Create archive [ab] files from the MERCATOR netcdf file."
-    echo "    The final archive files includes all 2D fields (filled with zero except barotropic velocities)."
-    echo "    and 3D fields of temperaure, salinity, thickness, and two components of velocities."
-    echo "(2) Based on generated archive files in (1) the grid and topography files are generated."
-    echo "    Note that the grids are non-native and interpolated into a rectilinear mercator grids horizontally."
-    echo "(3) "
-    echo "You must input climatology (phc or levitus)"
-    echo "when running this script"
-    echo ""
-    echo "Example:"
-    echo "   ../bin/nemo_to_hycom.sh ../../TP5a0.06/expt_01.0/ /nird/projects/NS9481K/MERCATOR_DATA/PHY/2011/MERCATOR-PHY-24-2011-01-02*.nc -m regular"
-    echo " ../bin/nemo_to_hycom.sh ../../TP5a0.06/expt_01.2/  /nird/projects/NS9481K/MERCATOR_DATA/PHY/2007/ext-GLORYS12V1_1dAV_20070302_20070303_grid2D_R20070307.nc -m native"
-    echo "../bin/nemo_to_hycom.sh ../../TP5a0.06/expt_01.0/ /nird/projects/NS9481K/MERCATOR_DATA/PHY/2013/ext-GLORYS12V1_1dAV_2013110*_grid2D*.nc -b /nird/projects/NS9481K/MERCATOR_DATA/BIO/DAILY/2013/global_analysis_forecast_bio_2013110*.nc"
-    echo " NOTE YOU NEED TO RUN THIS SCRIPT WITHIN THE NEMO EXPERIMENT FOLDER"
-    exit 1
+# Check sanity of input
+#if [ -z "$nest_expt" ] || [ -z "$user" ]; then
+if [ -z "$nest_expt" ]; then 
+        echo "Missing Mandatory argument -d - Path to local domain experiment"
+	echo " See nemo_to_hycom -h"
+        exit 1
+fi
+if [ -z "$nest_expt" ]; then
+        echo "Missing Mandatory argument -n - Path and pattern fo Mercator netcdf files"
+        echo " See nemo_to_hycom -h"
+        exit 1
+fi
+if [ "$grid_type" != "native" ] && [ "$grid_type" != "regular" ]; then
+	echo "grid_type (-g) can only be native or regular"
+	exit
 fi
 
+   echo "Mercator_mesh is set"
+   echo $mercator_mesh
+   echo $grid_type
+   echo $bio_file
+   echo $nest_expt
 # Must be in expt dir to run this script
 if [ -f EXPT.src ] ; then
     export BASEDIR=$(cd .. && pwd)
@@ -77,12 +116,9 @@ source EXPT.src || { echo "Could not source ./EXPT.src" ; exit 1 ; }
 source ${BINDIR}/common_functions.sh || { echo "Could not source ${BINDIR}/common_functions.sh" ; exit 1 ; }
 #
 N="depth_${R}_${T}"
-export CDF_NEMO=$1
+#export CDF_NEMO=$1
 expt_path=${BASEDIR}/expt_$X
 data_path=$expt_path/data
-#
-export nest_expt=$1
-export ncfiles=$2
 #
 iexpt=01        #$T
 iversn=22
@@ -97,7 +133,7 @@ if [ ${grid_type} == "native" ] ; then
 	export mercator_mesh="/nird/projects/NS9481K/MERCATOR_DATA/GRID_COORD/ext-GL12V1_mesh_zgr.nc"
 else
 	timevar="time"
-	export mercator_mesh="/nird/projects/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/"
+	export mercator_mesh="/nird/projects/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO_MFC_001_24_MESH.nc"
 fi
 
 function model_datetime() {
@@ -120,7 +156,6 @@ print(oname)
 END
 }
 
-# Changed from $@ to @ncfiles (skip the first arguments 
 for source_archv in $@ ; do
    # TODO: following 2 lines are for native grid. It needs simply to be modified to be general.
    if [ ${grid_type} == "native" ] ; then
