@@ -105,6 +105,7 @@ END
 }
 #
 #
+echo 'HERE1'
 for source_archv in $@ ; do
    fn=$(echo ${source_archv})
    [[ $source_archv != *${ESM_ID}*"extrap.nc" ]] && continue
@@ -116,16 +117,19 @@ for source_archv in $@ ; do
    if [[ "${bio_path}" == "" ]] ; then
       ${BASEDIR}/bin/Nesting_noresm/esm2archvz.py ${esm_gridfile} $source_archv \
           --iexpt ${iexpt} --iversn ${iversn} --yrflag ${yrflag} --esm_id ${ESM_ID}
+    echo 'HERE2'
       ########################
       #                                       
       # (2) Based on generated archive files in (1) the grid and topography files are generated.
       #
       echo  $(model_datetime "$source_archv")                                              
       ########################
-      ${BASEDIR}/bin/archvz2hycom_biophys.sh $nest_expt $(model_datetime "$source_archv")
+      ${BASEDIR}/bin/archvz2hycom_biophys.sh $nest_expt $(model_datetime "$source_archv") -n 70
       ########################
+      echo 'HERE3'
    else
-      ${BASEDIR}/bin/Nesting_noresm/noresm2archvz.py ${esm_gridfile} $source_archv \
+   echo 'BIOPATH BIOPATH '$bio_path
+      ${BASEDIR}/bin/Nesting_noresm/esm2archvz.py ${esm_gridfile} $source_archv \
           --bio_path=${bio_path} --iexpt ${iexpt} --iversn ${iversn} --yrflag ${yrflag}
       ########################                                                            
       #                                                                                     
@@ -133,7 +137,7 @@ for source_archv in $@ ; do
       #                                                           
       echo  $(model_datetime "$source_archv")
       ########################                                                                                             
-      ${BASEDIR}/bin/archvz2hycom_biophys.sh $nest_expt $(model_datetime "$source_archv") -b 1   
+      ${BASEDIR}/bin/archvz2hycom_biophys.sh $nest_expt $(model_datetime "$source_archv") -b 1 -n 70  
       ########################                                                                                 
    fi
 done
