@@ -12,7 +12,7 @@ fi
 sleep 5 # so the user can read whats above
 
 # Variables on regular grid
-lname=${ESM_Scenario}_gr
+lname=${ESM_ID}_gr
 
 year=$1
 vari=$2
@@ -108,7 +108,7 @@ if [ "$vari" != "zos" ]; then
    done
 else
 # Variables on native grid
-   lname=${ESM_Scenario}_gn
+   lname=${ESM_ID}_gn
    # Calculate the start of the decade
    d1=$(( (year / 10) * 10 ))
    # Calculate the end of the decade

@@ -5,7 +5,7 @@ source_nesting_experiment_path=$PWD
 source ../REGION.src
 #
 echo ''
-echo 'Using '${ESM_Scenario}' scenario'
+echo 'Using '${ESM_ID}' scenario'
 echo 'The script will look for decadal files under '${Nesting_Files_PATH}'. Modify REGION.src if necessary'
 echo 'The script assumes you are running in an experiment folder located in the Nesting Region (e.g. ESMa1.00/expt_01.0)'
 echo ''
@@ -14,6 +14,8 @@ echo ''
 if [ -z "$Nesting_Files_PATH" ]; then
     echo "Error: Nesting_Files_PATH is not set."
     exit 1
+else
+    echo $Nesting_Files_PATH' found'
 fi
 
 sleep 5 # so the user can read whats above
