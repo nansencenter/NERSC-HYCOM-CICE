@@ -78,7 +78,7 @@ def maplev(a,lpp=1):
     jp1=list(range(2,jm))
     im1=list(range(0,im-2))
     jm1=list(range(0,jm-2))
-    
+
     cc=numpy.zeros(a.shape)
     for k in range(lpp):
         cc[1:-2,1:-2]=b[1:-2,1:-2]+.5/4*( b[1:-2,2:-1]+b[0:-3,1:-2]+b[1:-2,0:-3]+b[2:-1,1:-2]-4.*b[1:-2,1:-2] )
@@ -780,10 +780,7 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=False,iexpt=10,iversn=22,yrfla
 
 
 if __name__ == "__main__" :
-
-   parser = argparse.ArgumentParser(
-         description='This tool will convert NEMO netcdf files to hycom archive files. It will also create grid and topo files for hycom.'
-         )
+   parser = argparse.ArgumentParser(description='This tool will convert native NEMO netcdf files to hycom archive files. It will also create grid and topo files for hycom.')
    parser.add_argument('--first-j',   type=int,default=0,help="first j-index to process. Defaults to 0")
    parser.add_argument('--mean',   action="store_true",default=False,help="if mean flag is set, a mean archive will be created")
    parser.add_argument('meshfile',   type=str,help="NEMO mesh file in netcdf format")
@@ -794,6 +791,5 @@ if __name__ == "__main__" :
    parser.add_argument('--yrflag',   type=int,default=3,   help="    ")
    parser.add_argument('--bio_file',   type=str,   help="    ")
    parser.add_argument('--interp_method',   type=int,default=3,   help="    ")
-
    args = parser.parse_args()
    main(args.meshfile,args.grid2dfile,first_j=args.first_j,mean_file=args.mean,iexpt=args.iexpt,makegrid=args.makegrid,iversn=args.iversn,yrflag=args.yrflag,bio_file=args.bio_file)
