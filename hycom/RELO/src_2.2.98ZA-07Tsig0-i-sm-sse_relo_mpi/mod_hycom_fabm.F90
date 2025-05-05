@@ -876,7 +876,7 @@ contains
       end do
 
       if (ivar_weights > 0) then ! checks if DVM is active on FABM side
-      write(*,*)'DVM is actived by FABM coupler'
+      !write(*,*)'DVM is actived by FABM coupler'
       dw_migrator_random_weights = fabm_model%get_interior_diagnostic_data(ivar_weights) 
 
       do ivar=1, size(fabm_model%horizontal_diagnostic_variables)
@@ -936,7 +936,7 @@ contains
           end do
         end do
        end do 
-       write(*,*)'NOT MIGRATED n', n_counter,' of ',s_counter
+       !write(*,*)'NOT MIGRATED n', n_counter,' of ',s_counter
       end if ! DVM switch
 !!              
 !! THIS PART OF THE CODE TEMPORARILY HANDLES DIEL VERTICAL MIGRATION !!
@@ -1354,8 +1354,9 @@ call fabm_model%finalize_outputs
         call fabm_model%link_interior_data(fabm_standard_variables%practical_salinity,cosal(1:ii,1:jj,1:kk))
         call fabm_model%link_interior_data(fabm_standard_variables%density,codens(1:ii,1:jj, 1:kk))
         call fabm_model%link_interior_data(fabm_standard_variables%pressure,codepth(1:ii,1:jj, 1:kk))
+        call fabm_model%link_interior_data(fabm_standard_variables%depth,codepth(1:ii,1:jj, 1:kk))
         call fabm_model%link_horizontal_data(fabm_standard_variables%ice_area_fraction, coice_conc(1:ii, 1:jj))
-        call fabm_model%link_horizontal_data(fabm_standard_variables%bottom_depth, codepth(1:ii, 1:jj, kk))
+        call fabm_model%link_horizontal_data(fabm_standard_variables%bottom_depth_below_geoid, codepth(1:ii, 1:jj, kk))
 
 
 

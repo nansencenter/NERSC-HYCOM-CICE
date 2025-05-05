@@ -263,11 +263,7 @@ module m_bio_conversions
 !intergarte over depth
       do i=1,idm
         do j=1,jdm
-!          do k=1,kdm
           gpp_depthint(i,j)=dot_product(gpp(i,j,:),dplayer(i,j,:))
-          gpp_depthint(i,j)=gpp_depthint(i,j) * 0.9 ! assumed 10% respiration
-!       gpp_depthint(i,j)=gpp_depthint(i,j)+gpp(i,j,k)*dplayer(i,j,k)
-!          end do
         end do
       end do
 
