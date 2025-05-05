@@ -30,7 +30,6 @@
 # M. Bakhoday-Paskyabi et al., 2017 (under preparation), Effects of nesting and open boundary conditions: a comparative study between TOPAZ4 and TOPAZ5 systems
 # M. Bakhoday-Paskyabi, 11 July 2019, adding bio fields
 #
-from   matplotlib import pyplot as plt
 import abfile.abfile as abf
 import numpy
 import numpy.ma as ma
@@ -744,7 +743,7 @@ def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_file=None) :
 
 
 if __name__ == "__main__" :
-    parser = argparse.ArgumentParser(description='.')
+    parser = argparse.ArgumentParser(description='This tool will convert regular NEMO netcdf files to hycom archive files. It will also create grid and topo files for hycom.')
     parser.add_argument('meshfile',   type=str, nargs="+",  help="    ")
     parser.add_argument('file',       type=str, nargs="+",  help="    ")
     parser.add_argument('--iexpt',    type=int,default=10,  help="    ")
@@ -753,4 +752,3 @@ if __name__ == "__main__" :
     parser.add_argument('--bio_file', type=str,             help="    ")
     args = parser.parse_args()
     main(args.meshfile,args.file,iexpt=args.iexpt,iversn=args.iversn,yrflag=args.yrflag,bio_file=args.bio_file)
-

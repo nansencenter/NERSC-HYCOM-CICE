@@ -199,7 +199,7 @@ for filename in $ncfile ; do
       fi
    else
       if [[ "${bio_file}" == "" ]] ; then
-      ${BINDIR}/nemo2archvz_regular.py $mercator_regular_mesh $filename --iexpt ${iexpt} --iversn ${iversn} --yrflag ${yrflag}      
+      ${BINDIR}/nemo2archvz_regular.py $mercator_mesh $filename --iexpt ${iexpt} --iversn ${iversn} --yrflag ${yrflag}
       ########################
       #
       # (2) Based on generated archive files in (1) the grid and topography files are generated.
@@ -209,7 +209,7 @@ for filename in $ncfile ; do
       ########################
       else
 
-      ${BINDIR}/nemo2archvz_regular.py $mercator_regular_mesh $filename --bio_file=${bio_file}  --iexpt ${iexpt} --iversn ${iversn} --yrflag ${yrflag}
+      ${BINDIR}/nemo2archvz_regular.py $mercator_mesh $filename --bio_file=${bio_file}  --iexpt ${iexpt} --iversn ${iversn} --yrflag ${yrflag}
       ########################
       #
       # (2) Based on generated archive files in (1) the grid and topography files are generated.
