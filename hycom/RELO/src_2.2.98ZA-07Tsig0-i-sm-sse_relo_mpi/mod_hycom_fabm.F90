@@ -344,7 +344,6 @@ contains
       integer :: ivar, k
       logical :: file_exists
       character preambl(5)*79
-      logical :: is_nested_instead
       integer :: nest_counter
 
       ! Allocate array to holds units for relaxation files of every pelagic state variable
@@ -352,9 +351,6 @@ contains
 
       ! Default: no relaxation
       hycom_fabm_relax = -1
-
-      ! Default: not nested
-      is_nested_instead = .false.
     
       if (mnproc.eq.1) write (lp,*) 'Looking for relaxation data for pelagic FABM state variables...'
       do ivar=1,size(fabm_model%interior_state_variables)
