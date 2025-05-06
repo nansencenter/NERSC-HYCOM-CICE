@@ -2,9 +2,6 @@
 import modeltools.nemo
 import argparse
 import datetime
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot
 import modeltools.forcing.bathy
 import abfile.abfile as abf
 import numpy
@@ -18,7 +15,6 @@ import cfunits
 import sys
 import shutil
 import glob
-from matplotlib import pyplot as plt
 from netCDF4 import Dataset, MFDataset, num2date,date2num
 import scipy.io as io
 from scipy import ndimage
@@ -82,7 +78,7 @@ def maplev(a,lpp=1):
     jp1=list(range(2,jm))
     im1=list(range(0,im-2))
     jm1=list(range(0,jm-2))
-    
+
     cc=numpy.zeros(a.shape)
     for k in range(lpp):
         cc[1:-2,1:-2]=b[1:-2,1:-2]+.5/4*( b[1:-2,2:-1]+b[0:-3,1:-2]+b[1:-2,0:-3]+b[2:-1,1:-2]-4.*b[1:-2,1:-2] )
@@ -484,7 +480,7 @@ def interpolate2d(x, y, Z, points, mode='linear', bounds_error=False):
     return r
 
 
-def main(filemesh,grid2dfiles,first_j=0,mean_file=False,iexpt=10,iversn=22,yrflag=3,makegrid=None,bio_file=None) :
+def main(filemesh,grid2dfiles,first_j=0,mean_file=False,iexpt=10,iversn=22,yrflag=3,makegrid=False,bio_file=None) :
 
    if mean_file :
       fnametemplate="archm.%Y_%j_%H"
@@ -493,7 +489,7 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=False,iexpt=10,iversn=22,yrfla
    itest=1
    jtest=200
    gdept,gdepw,e3t_ps,e3w_ps,mbathy,hdepw,depth,plon,plat=read_mesh(filemesh)
-   if makegrid is not None: 
+   if makegrid:
       logger.info("Making NEMO grid & bathy [ab] files ...")
       make_grid(filemesh)
    mbathy = mbathy -1                       # python indexing starts from 0
@@ -559,9 +555,11 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=False,iexpt=10,iversn=22,yrfla
          no3=ncidb.variables["no3"][0,:,:,:];
          no3[numpy.abs(no3)>1e+10]=numpy.nan
          po4=ncidb.variables["po4"][0,:,:,:]
-         si=ncidb.variables["si"][0,:,:,:]
          po4[numpy.abs(po4)>1e+10]=numpy.nan
+         si=ncidb.variables["si"][0,:,:,:]
          si[numpy.abs(si)>1e+10]=numpy.nan
+         o2=ncidb.variables["o2"][0,:,:,:]
+         o2[numpy.abs(o2)>1e+10]=numpy.nan
          # TODO: The following piece will be optimised and replaced soon. 
          nz,ny,nx=no3.shape
          dummy=numpy.zeros((nz,ny,nx+1))
@@ -573,6 +571,9 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=False,iexpt=10,iversn=22,yrfla
          dummy=numpy.zeros((nz,ny,nx+1))
          dummy[:,:,:nx]=si;dummy[:,:,-1]=si[:,:,-1]
          si=dummy
+         dummy=numpy.zeros((nz,ny,nx+1))
+         dummy[:,:,:nx]=o2;dummy[:,:,-1]=o2[:,:,-1]
+         o2=dummy
          dummy=numpy.zeros((nx+1))
          dummy[:nx]=blon
          blon=dummy
@@ -596,18 +597,23 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=False,iexpt=10,iversn=22,yrfla
          dummy_no3=no3
          dummy_po4=po4
          dummy_si=si
+         dummy_o2=o2
 
          for j in range(ny):
             for i in range(nx):
                dummy_no3[depth_lev[j,i]:nz-2,j,i]=no3[depth_lev[j,i]-1,j,i]
                dummy_po4[depth_lev[j,i]:nz-2,j,i]=po4[depth_lev[j,i]-1,j,i]
                dummy_si[depth_lev[j,i]:nz-2,j,i]=si[depth_lev[j,i]-1,j,i]
+               dummy_o2[depth_lev[j,i]:nz-2,j,i]=o2[depth_lev[j,i]-1,j,i]
          no3=dummy_no3
          po4=dummy_po4
          si=dummy_si
+         o2=dummy_o2
          po4 = po4 * 106.0 * 12.01
          si = si   * 6.625 * 12.01
-         no3 = no3 * 6.625 * 12.01
+         no3 = no3 * 6.625 * 12.01 # mmol N/m3 --> mgC/m3
+         # o2 unit conversion do not needed (mmol O2/m3)
+
       #   field_interpolator=FieldInterpolatorBilinear(blon,blat,plon.flatten(),plat.flatten())
       # Read and calculculate U in hycom U-points. 
       logger.info("gridU, gridV, gridT & gridS  file")
@@ -681,8 +687,12 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=False,iexpt=10,iversn=22,yrfla
       ssh = numpy.where(ssh>1e10,0.,ssh*9.81) # NB: HYCOM srfhgt is in geopotential ...
       montg1=numpy.zeros(ssh.shape)
 
+      header1="Converted NEMO files to HYCOM abfiles\n"
+      header2="Archive files for interpolation\n"
+      header3="NEMO nesting\n"
+
       # Write to abfile
-      outfile = abf.ABFileArchv("./data/"+oname,"w",iexpt=iexpt,iversn=iversn,yrflag=yrflag,)
+      outfile = abf.ABFileArchv("./data/"+oname,"w",iexpt=iexpt,iversn=iversn,yrflag=yrflag,cline1=header1,cline2=header2,cline3=header3)
 
       logger.info("Writing 2D variables")
       outfile.write_field(montg1,                ip,"montg1"  ,0,model_day,1,0)
@@ -703,6 +713,8 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=False,iexpt=10,iversn=22,yrfla
             po4k = maplev(po4k)
             si_k=interpolate2d(blat, blon, si[k,:,:], points).reshape((jdm,idm))
             si_k = maplev(si_k)
+            o2_k=interpolate2d(blat, blon, o2[k,:,:], points).reshape((jdm,idm))
+            o2_k = maplev(o2_k)
             if k%10==0 : logger.info("Writing 3D variables including BIO, level %d of %d"%(k+1,u.shape[0]))
          else:
             if k%10==0 : logger.info("Writing 3D variables, level %d of %d"%(k+1,u.shape[0]))
@@ -747,6 +759,7 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=False,iexpt=10,iversn=22,yrfla
             outfile.write_field(no3k      ,ip,"ECO_no3"  ,0,model_day,k+1,0)
             outfile.write_field(po4k      ,ip,"ECO_pho" ,0,model_day,k+1,0)
             outfile.write_field(si_k      ,ip,"ECO_sil" ,0,model_day,k+1,0)
+            outfile.write_field(o2_k      ,ip,"ECO_oxy" ,0,model_day,k+1,0)
 
          tl_above=numpy.copy(tl)
          sl_above=numpy.copy(sl)
@@ -767,20 +780,16 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=False,iexpt=10,iversn=22,yrfla
 
 
 if __name__ == "__main__" :
-
-   parser = argparse.ArgumentParser(
-         description='This tool will convert NEMO netcdf files to hycom archive files. It will also create grid and topo files for hycom.'
-         )
+   parser = argparse.ArgumentParser(description='This tool will convert native NEMO netcdf files to hycom archive files. It will also create grid and topo files for hycom.')
    parser.add_argument('--first-j',   type=int,default=0,help="first j-index to process. Defaults to 0")
    parser.add_argument('--mean',   action="store_true",default=False,help="if mean flag is set, a mean archive will be created")
    parser.add_argument('meshfile',   type=str,help="NEMO mesh file in netcdf format")
    parser.add_argument('grid2dfile', type=str, nargs="+",help="NEMO 2D data file in netcdf format")
    parser.add_argument('--iexpt',    type=int,default=10,  help="    ")
-   parser.add_argument('--makegrid',    type=int,  help="    ")
+   parser.add_argument('--makegrid', default=False, action=argparse.BooleanOptionalAction)
    parser.add_argument('--iversn',   type=int,default=22,  help="    ")
    parser.add_argument('--yrflag',   type=int,default=3,   help="    ")
    parser.add_argument('--bio_file',   type=str,   help="    ")
    parser.add_argument('--interp_method',   type=int,default=3,   help="    ")
-
    args = parser.parse_args()
    main(args.meshfile,args.grid2dfile,first_j=args.first_j,mean_file=args.mean,iexpt=args.iexpt,makegrid=args.makegrid,iversn=args.iversn,yrflag=args.yrflag,bio_file=args.bio_file)
