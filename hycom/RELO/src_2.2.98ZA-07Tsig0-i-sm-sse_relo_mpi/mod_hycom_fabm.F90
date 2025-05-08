@@ -344,18 +344,21 @@ contains
       integer :: ivar, k
       logical :: file_exists
       character preambl(5)*79
+      integer :: nest_counter
 
       ! Allocate array to holds units for relaxation files of every pelagic state variable
       allocate(hycom_fabm_relax(size(fabm_model%interior_state_variables)))
 
       ! Default: no relaxation
       hycom_fabm_relax = -1
-
+    
       if (mnproc.eq.1) write (lp,*) 'Looking for relaxation data for pelagic FABM state variables...'
       do ivar=1,size(fabm_model%interior_state_variables)
         ! Check for existence of a file named "relax.<FABMNAME>.a". If present, this will contain the relaxation field (one variable; all k levels)
         inquire(file=trim(flnmforw)//'relax.'//trim(fabm_model%interior_state_variables(ivar)%name)//'.a', exist=file_exists)
+
         if (file_exists) then
+
           if (mnproc.eq.1) write (lp,*) '  - '//trim(fabm_model%interior_state_variables(ivar)%name)//': ON, ' &
             //trim(flnmforw)//'relax.'//trim(fabm_model%interior_state_variables(ivar)%name)//'.a was found.'
 
@@ -378,12 +381,30 @@ contains
           do k=1,kk
             call hycom_fabm_rdmonthck(util1, hycom_fabm_relax(ivar), 0, is_2d=.false.)
           end do
+
+          if (nested_bio) then
+            do nest_counter = 1, nested_number
+             if (ivar == istate_dev(nest_counter) ) then
+                if (mnproc.eq.1) then 
+                  write (lp,*) ' '
+                  write (lp,*) ' - Both nesting and relaxation active for: '//trim(fabm_model%interior_state_variables(ivar)%name)// &
+                  '. Therefore, relaxation will be disabled.'
+                  write (lp,*) ' '
+                end if
+                  rmutr(:,:,ivar) = 0.0 
+             end if
+            end do
+          end if
+
         else
           ! Disable relaxation for this tracer
           if (mnproc.eq.1) write (lp,*) '  - '//trim(fabm_model%interior_state_variables(ivar)%name)//': OFF, ' &
             //trim(flnmforw)//'relax.'//trim(fabm_model%interior_state_variables(ivar)%name)//'.a not found.'
           rmutr(:,:,ivar) = 0.0
         end if
+
+
+
       end do
     end subroutine hycom_fabm_relax_init
 
