@@ -27,6 +27,16 @@ c
 #endif
      & tracer         ! inert tracers
 
+#ifdef _FABM_
+#if defined(RELO)
+      real, save, target, allocatable, dimension(:,:,:) ::
+#else
+      real, save, target,
+     &      dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,2) ::
+     & ia_tracer      ! ice algae tracers, for drifting with ice 
+#endif
+#endif
+
 #if defined(RELO)
       real, save, allocatable, dimension(:,:,:) ::
 #else
@@ -815,6 +825,15 @@ c
               tracer = r_init
       endif
 c
+#ifdef _FABM_
+        #if defined(RELO)
+        allocate(
+     &        ia_tracer(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,2) )
+        call mem_stat_add( 6*(idm+2*nbdy)*(jdm+2*nbdy)*2 )
+        #endif
+              ia_tracer = r_init
+#endif
+
 #if defined(RELO)
       allocate(
      &              p(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kdm+1),
