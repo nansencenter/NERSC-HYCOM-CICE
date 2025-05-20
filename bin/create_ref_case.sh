@@ -107,6 +107,7 @@ T
 T
 20
 20
+0
 EOF
 res=$?
 [ $res -eq 0 ] && echo "Success"
