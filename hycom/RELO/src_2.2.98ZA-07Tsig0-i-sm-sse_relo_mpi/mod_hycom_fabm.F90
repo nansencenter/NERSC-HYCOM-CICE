@@ -59,6 +59,7 @@ module mod_hycom_fabm
    real, allocatable, target :: fabm_surface_state(:, :, :, :)
    real, allocatable, target :: fabm_bottom_state(:, :, :, :)
    real, allocatable :: fabm_surface_state_old(:, :, :)
+   real, allocatable :: ia_tracer_old(:, :, :)
    real, allocatable :: fabm_bottom_state_old(:, :, :)
 
    logical :: do_interior_sources, do_bottom_sources, do_surface_sources, do_vertical_movement, do_check_state, do_icealgae
@@ -199,6 +200,7 @@ contains
         if (do_icealgae) then
            allocate(coice_thickness(ii, jj))
            allocate(codh_growth(ii, jj))
+           allocate(ia_tracer_old(1-nbdy:idm+nbdy, 1-nbdy:jdm+nbdy, size(fabm_model%surface_state_variables)))
         end if
         allocate(fabm_surface_state(1-nbdy:idm+nbdy, 1-nbdy:jdm+nbdy, 2, size(fabm_model%surface_state_variables)))
         allocate(fabm_bottom_state(1-nbdy:idm+nbdy, 1-nbdy:jdm+nbdy, 2, size(fabm_model%bottom_state_variables)))
@@ -259,8 +261,13 @@ contains
 
         last_horizontal_output => null()
         do ivar=1, size(fabm_model%surface_state_variables)
-          if (add_horizontal_output(fabm_model%surface_state_variables(ivar))) &
-            last_horizontal_output%data3d => fabm_surface_state(1:ii, 1:jj, :, ivar)
+          if (add_horizontal_output(fabm_model%surface_state_variables(ivar))) then
+            if (do_icealgae) then
+              last_horizontal_output%data3d => ia_tracer(1:ii, 1:jj, :, ivar)
+            else
+              last_horizontal_output%data3d => fabm_surface_state(1:ii, 1:jj, :, ivar)
+            end if
+          end if
         end do
         do ivar=1, size(fabm_model%bottom_state_variables)
           if (add_horizontal_output(fabm_model%bottom_state_variables(ivar))) &
@@ -346,9 +353,12 @@ contains
 
       ! Copy state from time step = 1 to time step = 2
       tracer(:, :, :, 2, :) = tracer(:, :, :, 1, :)
-      ia_tracer(:, :, 2, :) = ia_tracer(:, :, 1, :)
       fabm_bottom_state(:, :, 2, :) = fabm_bottom_state(:, :, 1, :)
-      fabm_surface_state(:, :, 2, :) = fabm_surface_state(:, :, 1, :)
+      if (do_icealgae) then
+        ia_tracer(:, :, 2, :) = ia_tracer(:, :, 1, :)
+      else
+        fabm_surface_state(:, :, 2, :) = fabm_surface_state(:, :, 1, :)
+      end if
     end subroutine hycom_fabm_initialize_state
 
     subroutine hycom_fabm_relax_init()
@@ -737,7 +747,11 @@ contains
       call get_mask(n, mask(:, :, :, n), kbottom(:, :, n))
 
       ! Store old surface/bottom state for later application of Robert-Asselin filter.
-      fabm_surface_state_old = fabm_surface_state(:, :, n, :)
+      if (do_icealgae) then
+        ia_tracer_old = ia_tracer(:, :, n, :)
+      else
+        fabm_surface_state_old = fabm_surface_state(:, :, n, :)
+      end if
       fabm_bottom_state_old = fabm_bottom_state(:, :, n, :)
       ! Make sure the biogeochemical state is valid (uses clipping if necessary)
 
@@ -821,7 +835,11 @@ contains
         call fabm_model%get_surface_sources(1, ii, j, flux, sms_sf)
         do i=1,ii
           if (kbottom(i, j, n) > 0) then
-            fabm_surface_state(i, j, n, :) = fabm_surface_state(i, j, n, :) + delt1 * sms_sf(i, :)
+            if (do_icealgae) then
+              ia_tracer(i, j, n, :) = ia_tracer(i, j, n, :) + delt1 * sms_sf(i, :)
+            else
+              fabm_surface_state(i, j, n, :) = fabm_surface_state(i, j, n, :) + delt1 * sms_sf(i, :)
+            end if
             tracer(i, j, 1, n, :) = tracer(i, j, 1, n, :) + delt1 * flux(i, :)/dp(i, j, 1, n)*onem
 #ifdef FABM_CHECK_NAN
             if (any(isnan(tracer(i, j, 1, n, :)))) then
@@ -834,9 +852,6 @@ contains
         end do
       end do
       if (do_check_state) call check_state('after surface sources', n, .false.)
-      do ivar=1,size(fabm_model%surface_state_variables)
-        ia_tracer(:,:,n,ivar) = fabm_surface_state(:,:,n,ivar);
-      end do 
       end if
 
       ! Compute source terms and update state
@@ -977,11 +992,12 @@ contains
       ! Apply the Robert-Asselin filter to the surface and bottom state.
       ! Note that RA will be applied to the pelagic tracers within mod_tsavc - no need to do it here!
 
-      fabm_surface_state(1:ii, 1:jj, m, :) = fabm_surface_state(1:ii, 1:jj, m, :) + 0.5*ra2fac*(fabm_surface_state_old(1:ii, 1:jj, :)+fabm_surface_state(1:ii, 1:jj, n, :)-2.0*fabm_surface_state(1:ii, 1:jj, m, :))
+      if (do_icealgae) then
+        ia_tracer(1:ii, 1:jj, m, :) = ia_tracer(1:ii, 1:jj, m, :) + 0.5*ra2fac*(ia_tracer_old(1:ii, 1:jj, :)+ia_tracer(1:ii, 1:jj, n, :)-2.0*ia_tracer(1:ii, 1:jj, m, :))
+      else
+        fabm_surface_state(1:ii, 1:jj, m, :) = fabm_surface_state(1:ii, 1:jj, m, :) + 0.5*ra2fac*(fabm_surface_state_old(1:ii, 1:jj, :)+fabm_surface_state(1:ii, 1:jj, n, :)-2.0*fabm_surface_state(1:ii, 1:jj, m, :))
+      end if
       fabm_bottom_state(1:ii, 1:jj, m, :) = fabm_bottom_state(1:ii, 1:jj, m, :) + 0.5*ra2fac*(fabm_bottom_state_old(1:ii, 1:jj, :)+fabm_bottom_state(1:ii, 1:jj, n, :)-2.0*fabm_bottom_state(1:ii, 1:jj, m, :))
-      do ivar=1,size(fabm_model%surface_state_variables)
-        ia_tracer(:,:,m,ivar) = fabm_surface_state(:,:,m,ivar);
-      end do
 
       call check_finite("AFTER ROBERT", m)
       call check_finite("AFTER ROBERT", n)
@@ -1423,7 +1439,11 @@ call fabm_model%finalize_outputs
         ! Send pointers to state variable data to FABM
         call fabm_model%link_all_interior_state_data(tracer(1:ii, 1:jj, 1:kk, index, :))
         call fabm_model%link_all_bottom_state_data(fabm_bottom_state(1:ii, 1:jj, index, :))
-        call fabm_model%link_all_surface_state_data(fabm_surface_state(1:ii, 1:jj, index, :))
+        if (do_icealgae) then
+          call fabm_model%link_all_surface_state_data(ia_tracer(1:ii, 1:jj, index, :))
+        else
+          call fabm_model%link_all_surface_state_data(fabm_surface_state(1:ii, 1:jj, index, :))
+        end if
 
         current_time_index = index
     end subroutine update_fabm_state
