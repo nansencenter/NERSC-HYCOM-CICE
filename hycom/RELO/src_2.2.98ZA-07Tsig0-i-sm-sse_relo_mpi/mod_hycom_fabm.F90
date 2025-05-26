@@ -1319,6 +1319,7 @@ call fabm_model%finalize_outputs
         integer :: i, j, k
         integer :: ivar
         real, parameter :: rho_0 = 1025.   ! [kg/m3]
+        logical, save :: lcoice_thickness_initialized = .false. 
         ! Update cell thicknesses (m)
         h(:, :, :) = max(dp(1:ii, 1:jj, 1:kk, index)/onem,1.0E-20)
 
@@ -1403,7 +1404,7 @@ call fabm_model%finalize_outputs
     !              end if
               end do
           end do
-          if (do_icealgae)
+          if (do_icealgae) then
                 lcoice_thickness_initialized = .true.
           end if
         end if
