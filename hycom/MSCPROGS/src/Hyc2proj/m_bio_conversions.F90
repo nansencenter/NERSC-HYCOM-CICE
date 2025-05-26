@@ -560,15 +560,15 @@ module m_bio_conversions
  
       end subroutine mesozoobiomass
 
-     subroutine poc(micro,meso,dia,fla,ccl,det,biomass,idm,jdm,kdm)
-      !compute POC biomass: mgC m-3
+     subroutine poc(micro,dia,fla,ccl,det,biomass,idm,jdm,kdm)
+      !compute total POC biomass: mol C m-3
        implicit none
  
        integer, intent(in) :: idm,jdm,kdm
-       real, dimension(idm,jdm,kdm)  , intent(in)  ::micro, meso, dia, fla, ccl, det !mgC m-3
+       real, dimension(idm,jdm,kdm)  , intent(in)  ::micro, dia, fla, ccl, det !mgC m-3
        real, dimension(idm,jdm,kdm)  , intent(out) ::biomass
  
-       biomass=(micro+meso+dia+fla+ccl+det)
+       biomass=(micro+dia+fla+ccl+det) / 1000.0 / ccar
  
       end subroutine poc
 
@@ -582,7 +582,19 @@ module m_bio_conversions
    
          biomass=(dom)/ccar
    
-        end subroutine docc
+      end subroutine docc
+
+      subroutine detc(det,biomass,idm,jdm,kdm)
+        !compute detritus biomass: mol C m-3
+        implicit none
+     
+        integer, intent(in) :: idm,jdm,kdm
+        real, dimension(idm,jdm,kdm)  , intent(in)  ::det !mgC m-3
+        real, dimension(idm,jdm,kdm)  , intent(out) ::biomass
+     
+        biomass=(det) / 1000.0 / ccar
+     
+      end subroutine detc
 
      subroutine oxygen_conv(oxy,mmol_oxy,idm,jdm,kdm)
 !compute dissolved oxygen: mmol m-3
