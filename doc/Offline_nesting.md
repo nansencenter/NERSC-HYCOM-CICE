@@ -1,57 +1,125 @@
 
 #  Description of HYCOM-CICE offline nesting usage
 
-Details about the required procedures to carry out offline nesting can be found in the HYCOM USER GUIDE (Wallcraft et. al., 2003, available at https://www.hycom.org/hycom/documentation). Here, we closely follow the standard HYCOM nesting approach based on the MERCATOR GLOBAL_ANALYSIS_FORECAST_PHY_001_024 product for physics and GLOBAL_ANALYSIS_FORECAST_BIO_001_029 product for biology (as outer model data).
+Details about the required procedures to carry out offline nesting can be found in the HYCOM USER GUIDE (Wallcraft et. al., 2003, available at https://www.hycom.org/hycom/documentation). An example can be found at https://github.com/HYCOM/HYCOM-examples/wiki/GOMb0.08.  Here, we closely follow the standard HYCOM nesting approach based on the MERCATOR GLOBAL_ANALYSIS_FORECAST_PHY_001_024 product for physics and GLOBAL_ANALYSIS_FORECAST_BIO_001_029 product for biology (as outer model data).
 
-Nesting in current version need to be started from source regional directory/experiment (i.e. NEMO folder here NMOa0.08/expt_01.1 for native grids and NMOb0.08/expt_01.0 for regular grids); you need to specify your target experiment directory (i.e. TOPAZ experiment directory, e.g. TP5a0.06/expt_03.0, we will use this target experiment as example in this document hereafter). REGION.src need to possess the paths of NEMO mesh/coordinate and data netcdf files. After running the following line, for example for native grid, 
+# Requirements at the start
+Nesting in current version need to be started from source regional directory/experiment (i.e. NEMO folder here NMOa0.08/expt_01.1 for native grids and NMOb0.08/expt_01.0 for regular grids); you need to specify your target experiment directory (i.e. TOPAZ experiment directory, e.g. TP5a0.06/expt_03.0, we will use this target experiment as example in this document hereafter). REGION.src need to point to the location of the NERSC-HYCOM-CICE directory to be used. Variable NHCROOT within REGION.src should be set to this value.
 
-../bin/nemo_to_hycom.sh ../../TP5a0.06/expt_03.0/ /nird/projects/NS9481K/MERCATOR_DATA/PHY/2012/ext-GLORYS12V1_1dAV_20120312_20120313_grid2D_R20120314.nc 
+In the following these variables are used:   
 
-You should expect to have your horizontally/vertically interpolated files in the TOPAZ nesting experiment folder, in this case TP5a0.06/nest/030/archv.XXX_XXX.[ab] because you specified target experiment expt_03.0. Please link the "bin" directory one back the experiment folder in all region directories, for example, if your current directory is TP5a0.06, it would be `ln -sf ~/NERSC-HYCOM-CICE/bin .`.
+pathtobin is the location of the bin directory. For instance $N{HCROOT}/bin/
+path2destination is the folder where TP5 data for instance resides.
 
+# Directory structure before nesting
+The following structure should be in place before work with nesting starts:
+Source:
 
-It is worth noting that you have to run the first year from climatology and then introduce the nesting from a restart file.
+    └── NMOa0.08             # Region directory for NEMO files
+        └── expt_01.1        # Experiment directory
+        └── topo             # topography and grid directory
+        └── REGION.src       # region configuration file
 
+Topo subdirectory in NMOa0.08 includes NEMO grid and bathymetry data files in [ab] format.
 
-#  Quick start
+Destination:
+ 
+    └── TP5a0.06             # Region directory for TOPAZ5 region      
+        └── expt_03.0        # Experiment directory      
+        └── topo             # topography and grid directory      
+        └── REGION.src       # region configuration file       
 
-Based on mesh and coordinate MERCATOR netcdf files, the archive data files for grid and bathymetry are reconstructed on the same horizontal grid cells of NEMO model output. Having these files, we need to do following basic steps to create nesting archive files:
+Based on mesh and coordinate MERCATOR netcdf files, the archive data files for grid and bathymetry are reconstructed on the same horizontal grid cells of NEMO model output. Having these files, we need to do following 4 basic steps to create nesting archive files:
 
-(1) Produce mapping index [ab] files (using /bin/isuba_gmapi.sh).
+# STEP 1 Create interpolation matrix
+Produce mapping index [ab] files with the script isuba_gmapi.sh.
 
-(2) Interpolate horizontally the outer model fields (NEMO model outputs) to the inner subdomain (TOPAZ) and do vertical interpolation according to the chosen vertical structure located in blkdat.input (using /bin/nemo_to_hycom.sh).
+Please change path to NMOb0.08/expt_01.1 (for more information look at REGION.src for path of an example, i.e., NEMO_EXAMPLE_REGULAR_FOLDER=/nird/projects/NS9481K/MERCATOR_DATA/NMOb0.08).
+Then execute `$pathtobin/isuba_gmapi.sh $path2destination/TP5a0.06/` 
 
-(3) Modify montgomery potential values (using /bin/calc_montg1.py).
+# Step 2 Create nest files - depends on step 1
+Interpolate horizontally the outer model fields (NEMO model outputs) to the inner subdomain (TOPAZ) and do vertical interpolation according to the chosen vertical structure located in blkdat.input (using bin/nemo_to_hycom.sh).
 
-(4) Build port files (using /bin/nest_setup_ports.sh).
+6 options exist within the nemo_to_hycom.sh script.
+Two of these are mandatory. These are:   
 
+-d: Mandatory, Destination experiment including path e.g. TP5a0.06/expt_xx.x/   
+-n: Mandatory: Path and Pattern of Mercator input netCDF files   
+
+The rest are optional   
+-b: bio file including path. This will also activate the creation of BGC boundaries   
+-g: grid_type. Either native or regular   
+-h: help on usage   
+-i: maxinc. Default 50. Distance where the algorithm search for water points   
+-m: mercator_mesh file. Default (native):  /nird/projects/NS9481K/MERCATOR_DATA/GRID_COORD/ext-GL12V1_mesh_zgr.nc. If -g is set regular default  will be /nird/projects/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO_MFC_001_24_MESH.nc
+
+You should expect to have your horizontally/vertically interpolated files in the TOPAZ nesting experiment folder, in this case TP5a0.06/nest/030/archv.XXX_XXX.[ab] because you specified target experiment expt_03.0. 
 
 #  How to run on native MERCATOR grid:
-Please change path to NMOa0.08/expt_01.1 (for more information look at REGION.src for path of an example, i.e., NEMO_EXAMPLE_NATIVE_FOLDER=/nird/projects/NS9481K/MERCATOR_DATA/NMOa0.08). 
+Please change path to NMOa0.08/expt_01.1 (for more information look at REGION.src for path of an example, i.e., NEMO_EXAMPLE_NATIVE_FOLDER=/nird/projects/NS9481K/MERCATOR_DATA/NMOa0.08).
 After applying `../bin/isuba_gmapi.sh ../../TP5a0.06/` once, run following line:
 
-(1)  Without biology:
+Without biology:
 
-../bin/nemo_to_hycom.sh ../../TP5a0.06/expt_03.0/ /nird/projects/NS9481K/MERCATOR_DATA/PHY/2013/ext-GLORYS12V1_1dAV_20131122_20131123_grid2D_R20131127.nc 
+$pathtobin/nemo_to_hycom.sh -d $path2destination/TP5a0.06/expt_03.0/ -n "/nird/projects/NS9481K/MERCATOR_DATA/PHY/2007/ext-GLORYS12V1_1dAV_20070302_20070303_grid2D_R20070307.nc" -g native
 
-(2)  With biology (note that biology files are all on regular grid):
+With biology (note that biology files are all on regular grid):
 
-../bin/nemo_to_hycom.sh ../../TP5a0.06/expt_03.0/ /nird/projects/NS9481K/MERCATOR_DATA/PHY/2013/ext-GLORYS12V1_1dAV_20131122_20131123_grid2D_R20131127.nc -b /nird/projects/NS9481K/MERCATOR_DATA/BIO/DAILY/2013/global_analysis_forecast_bio_20131122.nc
+$pathtobin/nemo_to_hycom.sh -d $path2destination/TP5a0.06/expt_03.0/ -n /nird/projects/NS9481K/MERCATOR_DATA/PHY/2013/ext-GLORYS12V1_1dAV_20131122_20131123_grid2D_R20131127.nc -b /nird/projects/NS9481K/MERCATOR_DATA/BIO/DAILY/2013/global_analysis_forecast_bio_20131122.nc
 
 #  How to run on regular MERCATOR grid:
-Please change path to NMOb0.08/expt_01.0 (for more information look at REGION.src for path of an example, i.e., NEMO_EXAMPLE_REGULAR_FOLDER=/nird/projects/NS9481K/MERCATOR_DATA/NMOb0.08). 
+Please change path to NMOb0.08/expt_01.0 (for more information look at REGION.src for path of an example, i.e., NEMO_EXAMPLE_REGULAR_FOLDER=/nird/projects/NS9481K/MERCATOR_DATA/NMOb0.08).
 After applying `../bin/isuba_gmapi.sh ../../TP5a0.06/` once, run following line:
 
-(1) Without biology:
+Without biology:
 
-../bin/nemo_to_hycom.sh ../../TP5a0.06/expt_03.0 /nird/projects/NS9481K/MERCATOR_DATA/PHY/2018/MERCATOR-PHY-24-2018-01-01-12.nc -m regular
+$pathtobin/nemo_to_hycom.sh -d $path2destination/TP5a0.06/expt_03.0/ /nird/projects/NS9481K/MERCATOR_DATA/PHY/2018/MERCATOR-PHY-24-2018-01-01-12.nc -m regular
 
-(2) With biology:
+With biology:
 
-../bin/nemo_to_hycom.sh ../../TP5a0.06/expt_03.0 /nird/projects/NS9481K/MERCATOR_DATA/PHY/2018/MERCATOR-PHY-24-2018-01-01-12.nc -m regular -b /nird/projects/NS9481K/MERCATOR_DATA/BIO/DAILY/2018/global_analysis_forecast_bio_20180101.nc
+$pathtobin/nemo_to_hycom.sh -d $path2destination/TP5a0.06/expt_03.0/ /nird/projects/NS9481K/MERCATOR_DATA/PHY/2018/MERCATOR-PHY-24-2018-01-01-12.nc -m regular -b /nird/projects/NS9481K/MERCATOR_DATA/BIO/DAILY/2018/global_analysis_forecast_bio_20180101.nc
+
+#COMMENT TILL: THIS IS NOT A TECHNICAL REQUIREMENT. This may give an initial mismatch
+It is worth noting that you have to run the first year from climatology and then introduce the nesting from a restart file.
+
+#  Step 3 Modify montgomery potential
+
+This step calculates the montgomery potential based on a restart file and updates the nest files created in step 2. The restart file is needed in order to use the bottom Montgomery potential
+Modify montgomery potential values $pathtobin/calc_montg1.py).
+
+To replace the zero values of Montgomery potential variable in the nesting archive files, which were already interpolated both horizontally and vertically, run the following code in your target experiment directory:
+   python $pathtobin/calc_montg1.py archv_file restart_file output_path
+
+Note that you need "any" of the restart file from your target experiment and you need to define the output_path.
+Switch to your target experiment directory first (e.g. TP5a0.06/expt_03.0), then run (an example)
+
+   python $pathtobin/calc_montg1.py $pathtodestination/nest/030/archv.2013_326_00.a $pathtodestination/data/restart.2011_005_00_0000.a  $pathtodestination/nest/030/Montg/
+
+
+#  Step 4 Create port files (for open boundaries)
+
+
+To create ports and relaxation zones as part of nesting procedure, following script is used (we are now in TP5a0.06/expt_03.0 directory):   
+$pathtobin/nest_setup_ports.sh ${width_of_relax_zone} ${efold_time_in_day}
+
+Where "width_of_relax_zone" and "efold_time_in_day" can be set, for example, to 20 and 20, respectively. If program runs successfully, a file called "ports.nest" and "rmu.[ab]" are created and stored in "../nest/030":
+
+    └── TP5a0.06
+        └── bin
+        └── expt_03.0
+        └── topo
+        └── REGION.src
+        └── nest
+             └── 030
+                 └── archv.YYYY_ddd_hh.[ab]
+                 └── ports.nest
+                 └── rmu.[ab]
+
+
+
 
 > [!NOTE]
-> The following text explains how "nemo_to_hycom.sh" works in detail. Everything between the horizontal lines below has been taken care of by "nemo_to_hycom.sh". You do **not** have to do the following steps by hand. To skip the details, you can jump directly to "Calculating montg values".
+> The following text explains how "nemo_to_hycom.sh" works in detail. Everything between the horizontal lines below has been taken care of by "nemo_to_hycom.sh". You do **not** have to do the following steps by hand. 
 
 ---
 
@@ -77,24 +145,7 @@ Following is the general structure of HYCOM-CICE directory:
 We aim to produce nesting archive [ab] files for TOPAZ region (here TP5a0.06 as an example inner model region) from the NEMO global data as outer model (i.e. NMOa0.08 directory). 
 Therefore your working directory should contain two folders: Target (inner model) directory, e.g. TP5a0.06; and Source (outer model) directory, e.g. NMOa0.08. All processing programs to produce the target archive data files are issued from the (source) region directory, i.e. NMOa/b0.08. 
 
-The following illustrates how these two directories are organised in the presence of nesting. 
-
-## (1) before starting nesting
-
-    └── NMOa0.08             # Region directory for NEMO files
-        └── bin              # Link to bin utility folder (this directory should be in the region directory)
-        └── expt_01.1        # Experiment directory
-        └── topo             # topography and grid directory
-        └── REGION.src       # region configuration file
-Topo subdirectory in NMOa0.08 includes NEMO grid and bathymetry data files in [ab] format.
-
-    └── TP5a0.06             # Region directory for TOPAZ5 region
-        └── bin              # Link to bin utility folder including all required python codes and scripts (this directory should be in region directory)
-        └── expt_03.0        # Experiment directory
-        └── topo             # topography and grid directory
-        └── REGION.src       # region configuration file
-
-## (2) after applying nesting
+## Folder structure after applying nesting
 
     └── NMOa0.08             # Region directory for NEMO files
         └── bin              # Link to bin utility folder (this directory should be in region directory)
@@ -129,7 +180,7 @@ The data from MERCATOR GLOBAL_ANALYSIS_FORECAST_PHY_001_024 are input for a pyth
       └── NMOa0.08            
          └── REGION.src       
          └── bin             
-         └── expt_01.1        
+         └── expt_01.1
              └── data             
                    └── archv.YYYY_ddd_hh.[ab]             
          └── topo             
@@ -158,13 +209,13 @@ where target_region denotes ../../TP5a0.06/ according to previously shown struct
          └── bin             
          └── expt_01.1        
          └── topo             
-         └── subregion             
+         └── subregion 
              └── 030             
              └── TP5a0.06.gmap.[ab]             
 
-In script "../bin/nemo_to_hycom.sh",program "../bin/archvz2hycom_biophys.sh" is executed by
+In script "nemo_to_hycom.sh",program "archvz2hycom_biophys.sh" is executed by
 
-    ../bin/archvz2hycom_biophys.sh $target_experiment $subregion_archz
+    archvz2hycom_biophys.sh $target_experiment $subregion_archz
 
 Where "target_experiment" is "TP5a0.06/expt_03.0" and "subregion_archz" is set to "data/archv.YYYY.ddd.[ab]" generated at the previous step using python script.
 
@@ -184,7 +235,7 @@ Now, the interpolated archive files are created and located in the "subregion/03
 
          └── subregion             
              └── 030             
-                 └── archv.YYYY_ddd_hh_L.[ab]             
+                 └── archv.YYYY_ddd_hh_L.[ab]
              └── TP5a0.06.gmap.[ab]             
 
 
@@ -199,46 +250,8 @@ Parameters required for the vertical structure are acquired from the "blkdat.inp
         └── expt_03.0        
         └── topo            
         └── REGION.src      
-        └── nest             
-             └── 030             
+        └── nest
+             └── 030
                  └── archv.YYYY_ddd_hh.[ab]             
-
----
-
-# Calculating montg values 
-
-To replace the zero values of Montgomery potential variable in the nesting archive files, which were already interpolated both horizontally and vertically, run the following code in your target experiment directory:
-   python ../bin/calc_montg1.py archv_file restart_file output_path
-
-Note that you need "any" of the restart file from your target experiment and you need to define the output_path. 
-Switch to your target experiment directory first (e.g. TP5a0.06/expt_03.0), then run
-   
-   python ../bin/calc_montg1.py ../nest/030/archv.2013_326_00.a ./data/restart.2011_005_00_0000.a  ../nest/030/Montg/
-
-
-# Generating port data
-
-To create ports and relaxation zones as part of nesting procedure, following script is used (we are now in TP5a0.06/expt_03.0 directory):
-
-   ../bin/nest_setup_ports.sh ${width_of_relax_zone} ${efold_time_in_day}
-
-Where "width_of_relax_zone" and "efold_time_in_day" can be set, for example, to 20 and 20, respectively. If program runs successfully, a file called "ports.nest" and "rmu.[ab]" are created and stored in "../nest/030":
-   
-    └── TP5a0.06            
-        └── bin    
-        └── expt_03.0        
-        └── topo            
-        └── REGION.src      
-        └── nest             
-             └── 030             
-                 └── archv.YYYY_ddd_hh.[ab]             
-                 └── ports.nest            
-                 └── rmu.[ab]   
-
-
-# Using BIO-NESTING
-
-Bio-nesting follows the same procedure as physics variables. We have for now three vaiables included, no3, pho and sil. Other variables, e.g. oxygen can be added later. 
-
 
 
