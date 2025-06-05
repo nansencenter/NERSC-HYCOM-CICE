@@ -6,7 +6,11 @@ use ice_blocks,      only : nx_block, ny_block
 use ice_domain_size, only : max_blocks
 IMPLICIT NONE
    !--Import Fields
+#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT) 
+   integer, parameter :: numImpFields=29
+#else 
    integer, parameter :: numImpFields=23 !KAL
+#endif
    character(ESMF_MAXSTR), save :: impFieldName(    numImpFields),    &
                                    impFieldLongName(numImpFields), &
                                    impFieldStdName( numImpFields), &
@@ -743,6 +747,32 @@ implicit none
    impFieldStdName( 23) = ""
    impFieldUnits(   23) = "kg m**-2 s*-1"
 !KAL - new
+#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT) 
+      impFieldName(    24) = "ialg"
+      impFieldLongName(24) = "Ice algae biomass"
+      impFieldStdName( 24) = "Ice algae biomass"
+      impFieldUnits(   24) = "mg C m**-2"
+      impFieldName(    25) = "idet"
+      impFieldLongName(25) = "Ice algae detritus"
+      impFieldStdName( 25) = "Ice algae detritus"
+      impFieldUnits(   25) = "mg C m**-2"
+      impFieldName(    26) = "ino3"
+      impFieldLongName(26) = "Nitrate in ice"
+      impFieldStdName( 26) = "Nitrate in ice"
+      impFieldUnits(   26) = "mmol N m**-2"
+      impFieldName(    27) = "inh4"
+      impFieldLongName(27) = "Ammonium in ice"
+      impFieldStdName( 27) = "Ammonium in ice"
+      impFieldUnits(   27) = "mmol N m**-2"
+      impFieldName(    28) = "ipho"
+      impFieldLongName(28) = "Phosphate in ice"
+      impFieldStdName( 28) = "Phosphate in ice"
+      impFieldUnits(   28) = "mmol P m**-2"
+      impFieldName(    29) = "isil"
+      impFieldLongName(29) = "Silicate in ice"
+      impFieldStdName( 29) = "Silicate in ice"
+      impFieldUnits(   29) = "mmol Si m**-2"
+#endif
 
 
    !---------------------------------------------------------------------
@@ -1219,7 +1249,11 @@ subroutine cice_get_import(import_state)
    use ice_flux,        only : frzmlt, uocn, vocn, sss, sst, hmix, &
                                uatm, vatm, Tair, zlvl, potT, &
                                ss_tltx, ss_tlty, Qa, rhoa, flw, &
-                               fsnow, frain, swvdr, swvdf, swidr, swidf
+                               fsnow, frain, swvdr, swvdf, swidr, swidf 
+#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT) 
+   use ice_flux,        only : ialg, idet, ino3, inh4, ipho, isil
+#endif
+
    use ice_grid,        only : t2ugrid_vector
    implicit none
    type(ESMF_State)       :: import_state
@@ -1442,6 +1476,56 @@ subroutine cice_get_import(import_state)
                !print *,"Setting flw",flw(i,j,iblk)
             end do
             end do
+#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT)
+         elseif (trim(impFieldName(ifld)) == "ialg") then
+            do j=jlo,jhi
+            do i=ilo,ihi
+               ig  = this_block%i_glob(i)
+               jg  = this_block%j_glob(j)
+               ialg(i,j,iblk) = impData(ifld,iblk)%p(ig,jg)
+            end do
+            end do
+         elseif (trim(impFieldName(ifld)) == "idet") then
+            do j=jlo,jhi
+            do i=ilo,ihi
+               ig  = this_block%i_glob(i)
+               jg  = this_block%j_glob(j)
+               idet(i,j,iblk) = impData(ifld,iblk)%p(ig,jg)
+            end do
+            end do
+         elseif (trim(impFieldName(ifld)) == "ino3") then
+            do j=jlo,jhi
+            do i=ilo,ihi
+               ig  = this_block%i_glob(i)
+               jg  = this_block%j_glob(j)
+               ino3(i,j,iblk) = impData(ifld,iblk)%p(ig,jg)
+            end do
+            end do
+         elseif (trim(impFieldName(ifld)) == "inh4") then
+            do j=jlo,jhi
+            do i=ilo,ihi
+               ig  = this_block%i_glob(i)
+               jg  = this_block%j_glob(j)
+               inh4(i,j,iblk) = impData(ifld,iblk)%p(ig,jg)
+            end do
+            end do
+         elseif (trim(impFieldName(ifld)) == "ipho") then
+            do j=jlo,jhi
+            do i=ilo,ihi
+               ig  = this_block%i_glob(i)
+               jg  = this_block%j_glob(j)
+               ipho(i,j,iblk) = impData(ifld,iblk)%p(ig,jg)
+            end do
+            end do
+         elseif (trim(impFieldName(ifld)) == "isil") then
+            do j=jlo,jhi
+            do i=ilo,ihi
+               ig  = this_block%i_glob(i)
+               jg  = this_block%j_glob(j)
+               isil(i,j,iblk) = impData(ifld,iblk)%p(ig,jg)
+            end do
+            end do
+#endif
          ! TODO: Add stop for unknown fields(?)
          else 
             if (my_task==master_task .and. iblk==1) then
