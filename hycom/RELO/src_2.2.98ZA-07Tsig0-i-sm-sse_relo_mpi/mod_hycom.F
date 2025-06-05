@@ -152,7 +152,11 @@ c --- Import Fields
       integer,                save :: impFieldHalo(    numImpFields)
 c
 c --- Export Fields
+#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT)
+      integer, parameter :: numExpFields=29
+#else
       integer, parameter :: numExpFields=23 !KAL
+#endif      
       character(ESMF_MAXSTR), save :: expFieldName(    numExpFields),
      &                                expFieldLongName(numExpFields),
      &                                expFieldStdName( numExpFields),
@@ -467,6 +471,32 @@ c
       expFieldLongName(23) = "Snowfall Rate"
       expFieldStdName( 23) = ""
       expFieldUnits(   23) = "kg m**-2 s*-1"
+#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT)
+      expFieldName(    24) = "ialg"
+      expFieldLongName(24) = "Ice algae biomass"
+      expFieldStdName( 24) = "Ice algae biomass"
+      expFieldUnits(   24) = "mg C m**-2"
+      expFieldName(    25) = "idet"
+      expFieldLongName(25) = "Ice algae detritus"
+      expFieldStdName( 25) = "Ice algae detritus"
+      expFieldUnits(   25) = "mg C m**-2"
+      expFieldName(    26) = "ino3"
+      expFieldLongName(26) = "Nitrate in ice"
+      expFieldStdName( 26) = "Nitrate in ice"
+      expFieldUnits(   26) = "mmol N m**-2"
+      expFieldName(    27) = "inh4"
+      expFieldLongName(27) = "Ammonium in ice"
+      expFieldStdName( 27) = "Ammonium in ice"
+      expFieldUnits(   27) = "mmol N m**-2"
+      expFieldName(    28) = "ipho"
+      expFieldLongName(28) = "Phosphate in ice"
+      expFieldStdName( 28) = "Phosphate in ice"
+      expFieldUnits(   28) = "mmol P m**-2"
+      expFieldName(    29) = "isil"
+      expFieldLongName(29) = "Silicate in ice"
+      expFieldStdName( 29) = "Silicate in ice"
+      expFieldUnits(   29) = "mmol Si m**-2"
+#endif
 !KAL  TODO: Export longw7ve, shortwave, rainfall rate, snow rate,
 !KAL  TODO: air density, specific humidity
 !KAL - new
@@ -773,7 +803,7 @@ c
 c --- Fill export state.
 c --- Calculate ssfi "in place"
 c
-      integer i,j,k,rc
+      integer i,j,k,rc,nia
       real    ssh2m
       real    tmxl,smxl,umxl,vmxl,hfrz,tfrz,t2f,ssfi
       real    dp1,usur1,vsur1,psur1,dp2,usur2,vsur2,psur2,thksur
@@ -1087,6 +1117,12 @@ c --------- We dont handle cases where input is E-P.
                call xchalt('Setup_ESMF: unhandled empflg=3')
                stop 'Setup_ESMF: unhandled empflg=3'
             end if
+#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT)
+            do nia = 1,niatrc
+                expData(23+nia)%p(i+i0,j+j0)=0.5*(ia_tracer(i,j,1,nia)
+     &                                        +ia_tracer(i,j,2,nia))
+            end do
+#endif
           else
             util2(i,j)              = 0.0
             util3(i,j)              = 0.0
