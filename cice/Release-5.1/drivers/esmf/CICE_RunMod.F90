@@ -277,6 +277,10 @@
           swvdr, swidr, swvdf, swidf, Tf, Tair, Qa, strairxT, strairyt, &
           fsens, flat, fswabs, flwout, evap, Tref, Qref, faero_ocn, &
           fsurfn_f, flatn_f, scale_fluxes, frzmlt_init, frzmlt
+#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT) 
+      use ice_flux, only : ialg_exp, idet_exp, ino3_exp, inh4_exp, ipho_exp, isil_exp
+      use ice_transport_driver, only : ia_tracer
+#endif
       use ice_grid, only: tmask
       use ice_ocean, only: oceanmixed_ice, ocean_mixed_layer
       use ice_shortwave, only: alvdfn, alidfn, alvdrn, alidrn, &
@@ -396,6 +400,14 @@
             enddo
             endif
 
+#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT) 
+            ialg_exp(i,j,iblk) = ia_tracer (i,j,1,iblk) 
+            idet_exp(i,j,iblk) = ia_tracer (i,j,2,iblk) 
+            ino3_exp(i,j,iblk) = ia_tracer (i,j,3,iblk) 
+            inh4_exp(i,j,iblk) = ia_tracer (i,j,4,iblk) 
+            ipho_exp(i,j,iblk) = ia_tracer (i,j,5,iblk) 
+            isil_exp(i,j,iblk) = ia_tracer (i,j,6,iblk) 
+#endif
       !-----------------------------------------------------------------
       ! Save net shortwave for scaling factor in scale_factor
       !-----------------------------------------------------------------

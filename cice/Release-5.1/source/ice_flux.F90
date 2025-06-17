@@ -62,6 +62,16 @@
          strocnxT, & ! ice-ocean stress, x-direction
          strocnyT    ! ice-ocean stress, y-direction
 
+#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT)
+       ! out to hycom_ecosmo ice-algae
+         ialg_exp    , & ! ice algae biomass  (mg C/m^2)
+         idet_exp    , & ! ice algae detritus (mg C/m^2)
+         ino3_exp    , & ! nitrate in ice     (mmol N/m^2)
+         inh4_exp    , & ! ammonium in ice    (mmol N/m^2)
+         ipho_exp    , & ! phosphate in ice   (mmol P/m^2)
+         isil_exp    , & ! silicate in ice    (mmol Si/m^2)
+#endif
+
        ! diagnostic
 
       real (kind=dbl_kind), dimension (nx_block,ny_block,max_blocks), public :: &
@@ -493,6 +503,15 @@
       fsalt_da(:,:,:) = c0
       flux_bio (:,:,:,:) = c0 ! bgc
 
+#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT)
+      ! out to hycom_ecosmo ice-algae
+      ialg_exp   (:,:,:) = c0             ! ice algae biomass  (mg C/m^2)
+      idet_exp   (:,:,:) = c0             ! ice algae detritus (mg C/m^2)
+      ino3_exp   (:,:,:) = c0             ! nitrate in ice     (mmol N/m^2)
+      inh4_exp   (:,:,:) = c0             ! ammonium in ice    (mmol N/m^2)
+      ipho_exp   (:,:,:) = c0             ! phosphate in ice   (mmol P/m^2)
+      isil_exp   (:,:,:) = c0             ! silicate in ice    (mmol Si/m^2)
+#endif
       !-----------------------------------------------------------------
       ! derived or computed fields
       !-----------------------------------------------------------------
