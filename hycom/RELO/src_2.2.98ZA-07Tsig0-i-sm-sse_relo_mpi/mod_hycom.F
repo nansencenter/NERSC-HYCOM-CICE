@@ -142,7 +142,11 @@ c --- Attribute names for fields
      &    attNameAddOff   = "add_offset"
 c
 c --- Import Fields
+#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT)
+      integer, parameter :: numImpFields=17
+#else
       integer, parameter :: numImpFields=11
+#endif
       character(ESMF_MAXSTR), save :: impFieldName(    numImpFields),
      &                                impFieldLongName(numImpFields),
      &                                impFieldStdName( numImpFields),
@@ -353,6 +357,32 @@ c
       impFieldStdName( 11) = "sea_ice_y_velocity"
       impFieldUnits(   11) = "m s-1"
       impFieldHalo(    11) = halo_pv !vector p-grid
+#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT) 
+      impFieldName(    12) = "ialg"
+      impFieldLongName(12) = "Ice algae biomass"
+      impFieldStdName( 12) = "Ice algae biomass"
+      impFieldUnits(   12) = "mg C m**-2"
+      impFieldName(    13) = "idet"
+      impFieldLongName(13) = "Ice algae detritus"
+      impFieldStdName( 13) = "Ice algae detritus"
+      impFieldUnits(   13) = "mg C m**-2"
+      impFieldName(    14) = "ino3"
+      impFieldLongName(14) = "Nitrate in ice"
+      impFieldStdName( 14) = "Nitrate in ice"
+      impFieldUnits(   14) = "mmol N m**-2"
+      impFieldName(    15) = "inh4"
+      impFieldLongName(15) = "Ammonium in ice"
+      impFieldStdName( 15) = "Ammonium in ice"
+      impFieldUnits(   15) = "mmol N m**-2"
+      impFieldName(    16) = "ipho"
+      impFieldLongName(16) = "Phosphate in ice"
+      impFieldStdName( 16) = "Phosphate in ice"
+      impFieldUnits(   16) = "mmol P m**-2"
+      impFieldName(    17) = "isil"
+      impFieldLongName(17) = "Silicate in ice"
+      impFieldStdName( 17) = "Silicate in ice"
+      impFieldUnits(   17) = "mmol Si m**-2"
+#endif
 *
 *     impFieldName(    12) = "patm"
 *     impFieldLongName(12) = "Surface Air Pressure"
@@ -1174,7 +1204,7 @@ C      call ESMF_LogFlush(rc=rc)
 c
 c --- Extract import state.
 c
-      integer i,j,rc
+      integer i,j,rc,nia
 c
 c --- Report
 #if (USE_ESMF_5)
@@ -1211,6 +1241,11 @@ c --- Arctic (tripole) domain, top row is replicated (ignore it)
              siu_import(i,j) = impData(10)%p(i+i0,j+j0) !Sea Ice X-Velocity
              siv_import(i,j) = impData(11)%p(i+i0,j+j0) !Sea Ice Y-Velocity
             if     (iceflg.ge.2 .and. icmflg.ne.3) then
+#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT)
+              do nia = 1, niatrc
+                 ia_tracer(i,j,:,nia) = impData(11+nia)%p(i+i0,j+j0)
+              enddo
+#endif
               covice(i,j) = impData(1)%p(i+i0,j+j0) !Sea Ice Concentration
                 si_c(i,j) = impData(1)%p(i+i0,j+j0) !Sea Ice Concentration
               if     (covice(i,j).gt.0.0) then
@@ -1290,6 +1325,9 @@ C --- NB: May need to set vland first...
         call xctilr(  si_h,1,1,nbdy,nbdy,halo_ps)  !Sea Ice Thickness
         call xctilr(  si_u,1,1,nbdy,nbdy,halo_pv)  !Sea Ice X-Velocity
         call xctilr(  si_v,1,1,nbdy,nbdy,halo_pv)  !Sea Ice Y-Velocity
+#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT)
+        call xctilr(  ia_tracer,1,1,nbdy,nbdy,halo_ps)  !Ice-algae
+#endif
       elseif (iceflg.ge.2 .and. icmflg.eq.3) then
         call xctilr(  si_c,1,1,nbdy,nbdy,halo_ps)  !Sea Ice Concentration
         call xctilr( si_tx,1,1,nbdy,nbdy,halo_pv)  !Sea Ice X-Stress into ocean
