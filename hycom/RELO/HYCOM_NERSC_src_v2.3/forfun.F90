@@ -3229,11 +3229,11 @@
       endif
 
 ! --- high frequency rivers uses the the halo.
-#if defined(NERSC_Hriver)
-      if     (iunit.eq.918) then
-        call xctilr(field(1-nbdy,1-nbdy,2),1,1, nbdy,nbdy, halo_ps)
-      endif
-#endif      
+!#if defined(NERSC_Hriver)
+!      if     (iunit.eq.918) then
+!        call xctilr(field(1-nbdy,1-nbdy,2),1,1, nbdy,nbdy, halo_ps)
+!      endif
+!#endif      
 !
 ! --- wind stress uses the the halo.
 !
