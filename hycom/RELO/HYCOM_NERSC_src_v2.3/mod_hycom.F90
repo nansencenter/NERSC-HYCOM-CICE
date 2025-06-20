@@ -1957,7 +1957,10 @@
       elseif (jerlv0.eq.-1) then
         call forfunc  !  annual/monthly chl
       endif
+
+#if ! defined(NERSC_Hriver)
       call forfunp  !    annual/monthly rivers
+#endif     
       call forfunr  ! bimonthly/monthly climatology
       watcum=0.
       empcum=0.
@@ -2434,6 +2437,7 @@
         call rdkpar(mk3,lk3)
       endif
 !
+#if ! defined(NERSC_Hriver)
       if (priver) then
 ! ---   read in rivers field for 4 consecutive months
         mr1=1.+mod(dtime0+dyear0,dyear)/dmonth
@@ -2459,6 +2463,7 @@
         call rdrivr(mr3,lr3)
 #endif /* USE_NUOPC_CESMBETA:else */
       endif
+#endif
 !
       if     (clmflg.eq.12) then
 ! ---   read in relaxation climatology fields for 4 consecutive months
@@ -3035,6 +3040,7 @@
       endif
 !
 ! --- set weights for quasi-hermite time interpolation for rivers.
+#if ! defined(NERSC_Hriver)
       if     (priver) then
          if (.not. (cpl_orivers .and. cpl_irivers)) then
 ! ---   monthly fields.
@@ -3059,6 +3065,7 @@
             wr3=-.5*x1*x *x
          endif
       endif
+#endif
 !
 ! --- set weights for quasi-hermite time interpolation for temperature,
 ! --- salinity and pressure relaxation fields.

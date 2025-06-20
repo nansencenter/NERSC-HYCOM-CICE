@@ -202,6 +202,9 @@
 ! --- units of spchum are kg/k
 ! --- units of mslprs are Pa     (anomaly, offset from total by prsbas)
 ! --- units of precip are m/s    (positive into ocean)
+!     test in June 2025:
+! --- units of rivers are m/s    (positive into ocean)
+
 ! --- units of radflx are w/m^2  (positive into ocean)
 ! --- units of swflx  are w/m^2  (positive into ocean)
 ! --- units of offlux are w/m^2  (positive into ocean)
@@ -442,6 +445,17 @@
       endif !1st tile
       call preambl_print(preambl)
       call rdmonth(util1, 908)
+#if defined(NERSC_Hriver)
+      call zaiopf(flnmfor(1:lgth)//'forcing.rivers.a', 'old', 918)
+      if     (mnproc.eq.1) then  ! .b file from 1st tile only
+      open (unit=uoff+918,file=flnmfor(1:lgth)//'forcing.rivers.b', &
+         status='old', action='read')
+      read (uoff+918,'(a79)') preambl
+      endif !1st tile
+      call preambl_print(preambl)
+      call rdmonth(util1, 918)
+
+#endif
 !diag call prtmsk(ip,util1,util2,idm,idm,jdm,  0.,1.0, &
 !diag      'sw radiation (w/m^2 )  ')
 !
@@ -654,6 +668,9 @@
 ! --- units of spchum are kg/k
 ! --- units of mslprs are Pa     (anomaly, offset from total by prsbas)
 ! --- units of precip are m/s    (positive into ocean)
+!     new test of NERSC_Hriver in June 2025
+! --- units of rivers are m/s    (positive into ocean)
+
 ! --- units of radflx are w/m^2  (positive into ocean)
 ! --- units of swflx  are w/m^2  (positive into ocean)
 ! --- units of offlux are w/m^2  (positive into ocean)
@@ -731,6 +748,10 @@
 ! store atmospheric shortwave
             swflxdwn(i,j,natm-1) = 0.0
             swflxdwn(i,j,natm)   = 0.0
+#endif
+#if defined(NERSC_Hriver)
+              rivers(i,j,natm-1) = 0.0
+              rivers(i,j,natm)   = 0.0
 #endif
               surtmp(i,j,natm-1) = 0.0
               surtmp(i,j,natm)   = 0.0
@@ -954,6 +975,16 @@
           endif !1st tile
           call preambl_print(preambl)
         endif !surtmp
+
+#if defined(NERSC_Hriver)
+        call zaiopf(flnmfor(1:lgth)//'forcing.rivers.a', 'old', 918)
+        if     (mnproc.eq.1) then  ! .b file from 1st tile only
+        open (unit=uoff+918,file=flnmfor(1:lgth)//'forcing.rivers.b', &
+           status='old', action='read')
+        read (uoff+918,'(a79)') preambl
+        endif !1st tile
+        call preambl_print(preambl)
+#endif
 !
 #ifdef _FABM_
 !     CAGLAR: BEGIN (MAY2019)
@@ -1514,6 +1545,9 @@
              swflx(i,j,l) = 0.0
 #if defined(NERSC_HYCOM_CICE)
           swflxdwn(i,j,l) = 0.0
+#endif
+#if defined(NERSC_Hriver)
+            rivers(i,j,l) = 0.0
 #endif
             surtmp(i,j,l) = 0.0
             seatmp(i,j,l) = 0.0
@@ -2912,7 +2946,11 @@
 !
       integer i,j,k
       real    albw,degtorad
+#if defined(NERSC_Hriver)
+      real*8  dtime(895:918)
+#else
       real*8  dtime(895:910)
+#endif
 !
       integer, save :: icall = -1
 !
@@ -2980,6 +3018,10 @@
 
       call rdpall1(radflx,dtime(907),907,mod(icall,3).eq.2)
       call rdpall1( swflx,dtime(908),908,mod(icall,3).eq.2)
+#if defined(NERSC_Hriver)
+      call rdpall1(rivers,dtime(918),918,mod(icall,3).eq.1)  ! same as precipitation
+#endif
+      
       if     (albflg.ne.0) then  !swflx is Qswdn
 ! ---   convert swflx to net shortwave into the ocean
 ! ---   shortwave through sea ice is handled separately
@@ -3060,6 +3102,21 @@
                  stop '(rdpall)'
         endif
       enddo
+#if defined(NERSC_Hriver)
+      do k= 918,918
+        if     (dtime(k).ne.dtime1) then
+          if     (mnproc.eq.1) then
+          write(lp,*)
+          write(lp,*) 'error in rdpall - inconsistent forcing times'
+          write(lp,*) 'dtime0,dtime1 = ',dtime0,dtime1
+          write(lp,*) 'dtime = ',dtime
+          write(lp,*)
+          endif !1st tile
+          call xcstop('(rdpall)')
+                 stop '(rdpall)'
+        endif
+      enddo
+#endif
       return
       end
 !
@@ -3170,6 +3227,13 @@
       if     (iunit.eq.899) then
         call xctilr(field(1-nbdy,1-nbdy,2),1,1, nbdy,nbdy, halo_ps)
       endif
+
+! --- high frequency rivers uses the the halo.
+#if defined(NERSC_Hriver)
+      if     (iunit.eq.918) then
+        call xctilr(field(1-nbdy,1-nbdy,2),1,1, nbdy,nbdy, halo_ps)
+      endif
+#endif      
 !
 ! --- wind stress uses the the halo.
 !
@@ -5095,3 +5159,4 @@
 !> Mar  2021 - skip tracers in nest archive files
 !> Apr  2021 - update the halo of rmu
 !> Nov  2022 - skip oneta in nest archive files
+!> Jun  2025 - Introduce the high frequency river inflow
