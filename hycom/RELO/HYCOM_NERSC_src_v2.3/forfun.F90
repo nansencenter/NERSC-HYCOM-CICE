@@ -742,10 +742,11 @@
             swflxdwn(i,j,natm-1) = 0.0
             swflxdwn(i,j,natm)   = 0.0
 
-            if (highfq_river) then
-              rivers(i,j,natm-1) = 0.0
-              rivers(i,j,natm)   = 0.0
-            endif
+! COMMENT TILL: Not needed? We only get here if natm = 4 => monthly forcing             
+! TILL         if (highfq_river) then
+! TILL         rivers(i,j,natm-1) = 0.0
+! TILL         rivers(i,j,natm)   = 0.0
+! TILL         endif
 #endif
               surtmp(i,j,natm-1) = 0.0
               surtmp(i,j,natm)   = 0.0

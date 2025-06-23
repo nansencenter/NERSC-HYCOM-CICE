@@ -1482,6 +1482,8 @@
       call mem_stat_add( 1*(idm+2*nbdy)*(jdm+2*nbdy)*natm )
 !     !CAGLAR: END
 #endif
+! COMMENT TILL: Should follow the atmospheric forcing fields and allocate natm. This will probably not do a difference. But no need
+! to allocate too much
       allocate( &
                 akpar(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,4), &
                rivers(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,4) )
