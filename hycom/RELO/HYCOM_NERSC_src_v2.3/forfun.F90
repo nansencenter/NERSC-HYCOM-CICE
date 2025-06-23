@@ -445,17 +445,7 @@
       endif !1st tile
       call preambl_print(preambl)
       call rdmonth(util1, 908)
-#if defined(NERSC_Hriver)
-      call zaiopf(flnmfor(1:lgth)//'forcing.rivers.a', 'old', 918)
-      if     (mnproc.eq.1) then  ! .b file from 1st tile only
-      open (unit=uoff+918,file=flnmfor(1:lgth)//'forcing.rivers.b', &
-         status='old', action='read')
-      read (uoff+918,'(a79)') preambl
-      endif !1st tile
-      call preambl_print(preambl)
-      call rdmonth(util1, 918)
 
-#endif
 !diag call prtmsk(ip,util1,util2,idm,idm,jdm,  0.,1.0, &
 !diag      'sw radiation (w/m^2 )  ')
 !
@@ -645,6 +635,9 @@
       use mod_xc         ! HYCOM communication interface
       use mod_cb_arrays  ! HYCOM saved arrays
       use mod_za         ! HYCOM I/O interface
+#if defined(NERSC_HYCOM_CICE)
+      use mod_NERSCnml, only : highfq_river
+#endif
       implicit none
 !
       real*8    dtime
@@ -748,10 +741,11 @@
 ! store atmospheric shortwave
             swflxdwn(i,j,natm-1) = 0.0
             swflxdwn(i,j,natm)   = 0.0
-#endif
-#if defined(NERSC_Hriver)
+
+            if (highfq_river) then
               rivers(i,j,natm-1) = 0.0
               rivers(i,j,natm)   = 0.0
+            endif
 #endif
               surtmp(i,j,natm-1) = 0.0
               surtmp(i,j,natm)   = 0.0
@@ -976,14 +970,16 @@
           call preambl_print(preambl)
         endif !surtmp
 
-#if defined(NERSC_Hriver)
-        call zaiopf(flnmfor(1:lgth)//'forcing.rivers.a', 'old', 918)
-        if     (mnproc.eq.1) then  ! .b file from 1st tile only
-        open (unit=uoff+918,file=flnmfor(1:lgth)//'forcing.rivers.b', &
-           status='old', action='read')
-        read (uoff+918,'(a79)') preambl
-        endif !1st tile
-        call preambl_print(preambl)
+#if defined(NERSC_HYCOM_CICE)
+        if (highfq_river) then
+           call zaiopf(flnmfor(1:lgth)//'forcing.rivers.a', 'old', 918)
+           if     (mnproc.eq.1) then  ! .b file from 1st tile only
+              open (unit=uoff+918,file=flnmfor(1:lgth)//'forcing.rivers.b', &
+              status='old', action='read')
+              read (uoff+918,'(a79)') preambl
+           endif !1st tile
+           call preambl_print(preambl)
+        endif
 #endif
 !
 #ifdef _FABM_
@@ -1516,6 +1512,9 @@
       use mod_xc         ! HYCOM communication interface
       use mod_cb_arrays  ! HYCOM saved arrays
       use mod_za         ! HYCOM I/O interface
+#if defined(NERSC_HYCOM_CICE)
+      use mod_NERSCnml, only : highfq_river
+#endif
       implicit none
 !
 ! --- high frequency atmospheric forcing field processing.
@@ -1545,9 +1544,9 @@
              swflx(i,j,l) = 0.0
 #if defined(NERSC_HYCOM_CICE)
           swflxdwn(i,j,l) = 0.0
-#endif
-#if defined(NERSC_Hriver)
+          if (highfq_river) then
             rivers(i,j,l) = 0.0
+          endif
 #endif
             surtmp(i,j,l) = 0.0
             seatmp(i,j,l) = 0.0
@@ -2908,6 +2907,9 @@
       use mod_xc         ! HYCOM communication interface
       use mod_cb_arrays  ! HYCOM saved arrays
       use mod_za         ! HYCOM I/O interface
+#if defined(NERSC_HYCOM_CICE)
+      use mod_NERSCnml, only : highfq_river
+#endif
       implicit none
 !
       integer   iunit
@@ -2936,8 +2938,11 @@
       subroutine rdpall(dtime0,dtime1)
       use mod_xc         ! HYCOM communication interface
       use mod_cb_arrays  ! HYCOM saved arrays
+#if defined(NERSC_HYCOM_CICE)
+      use mod_NERSCnml, only : highfq_river
+#endif
       implicit none
-!
+
       real*8  dtime0,dtime1
 !
 ! --- copy slot 2 into slot 1, and 
@@ -2946,11 +2951,7 @@
 !
       integer i,j,k
       real    albw,degtorad
-#if defined(NERSC_Hriver)
       real*8  dtime(895:918)
-#else
-      real*8  dtime(895:910)
-#endif
 !
       integer, save :: icall = -1
 !
@@ -3018,8 +3019,10 @@
 
       call rdpall1(radflx,dtime(907),907,mod(icall,3).eq.2)
       call rdpall1( swflx,dtime(908),908,mod(icall,3).eq.2)
-#if defined(NERSC_Hriver)
-      call rdpall1(rivers,dtime(918),918,mod(icall,3).eq.1)  ! same as precipitation
+#if defined(NERSC_HYCOM_CICE)
+      if (highfq_river) then
+         call rdpall1(rivers,dtime(918),918,mod(icall,3).eq.1)  ! same as precipitation
+      endif
 #endif
       
       if     (albflg.ne.0) then  !swflx is Qswdn
@@ -3102,20 +3105,22 @@
                  stop '(rdpall)'
         endif
       enddo
-#if defined(NERSC_Hriver)
-      do k= 918,918
-        if     (dtime(k).ne.dtime1) then
-          if     (mnproc.eq.1) then
-          write(lp,*)
-          write(lp,*) 'error in rdpall - inconsistent forcing times'
-          write(lp,*) 'dtime0,dtime1 = ',dtime0,dtime1
-          write(lp,*) 'dtime = ',dtime
-          write(lp,*)
-          endif !1st tile
-          call xcstop('(rdpall)')
-                 stop '(rdpall)'
-        endif
-      enddo
+#if defined(NERSC_HYCOM_CICE)
+      if (highfq_river) then
+        do k= 918,918
+          if     (dtime(k).ne.dtime1) then
+            if     (mnproc.eq.1) then
+               write(lp,*)
+               write(lp,*) 'error in rdpall - inconsistent forcing times'
+               write(lp,*) 'dtime0,dtime1 = ',dtime0,dtime1
+               write(lp,*) 'dtime = ',dtime
+               write(lp,*)
+            endif !1st tile
+            call xcstop('(rdpall)')
+            stop '(rdpall)'
+          endif
+        enddo
+      endif
 #endif
       return
       end
@@ -3228,13 +3233,6 @@
         call xctilr(field(1-nbdy,1-nbdy,2),1,1, nbdy,nbdy, halo_ps)
       endif
 
-! --- high frequency rivers uses the the halo.
-!#if defined(NERSC_Hriver)
-!      if     (iunit.eq.918) then
-!        call xctilr(field(1-nbdy,1-nbdy,2),1,1, nbdy,nbdy, halo_ps)
-!      endif
-!#endif      
-!
 ! --- wind stress uses the the halo.
 !
       if     (iunit.eq.901 .and. wndflg.eq.1) then  ! taux on u-grid
@@ -3254,6 +3252,9 @@
       use mod_xc         ! HYCOM communication interface
       use mod_cb_arrays  ! HYCOM saved arrays
       use mod_za         ! HYCOM I/O interface
+#if defined(NERSC_HYCOM_CICE)
+      use mod_NERSCnml, only : highfq_river 
+#endif
       implicit none
 !
       integer lslot,mnth
@@ -3487,6 +3488,9 @@
 #if defined(NERSC_HYCOM_CICE)
 !KAL
           swflxdwn(i,j,lslot) = 0.0
+          if (highfq_river) then
+            rivers(i,j,lslot) = 0.0
+          endif
 #endif
           enddo
         enddo

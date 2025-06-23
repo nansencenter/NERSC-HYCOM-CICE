@@ -38,7 +38,7 @@
       use mod_hycom_fabm
 #endif
 #if defined(NERSC_HYCOM_CICE)
-      use mod_NERSCnml, only : write_arche, nersc_init
+      use mod_NERSCnml, only : write_arche, nersc_init, highfq_river
 #endif
 !
 ! --- -----------------------------------------
@@ -1958,7 +1958,14 @@
         call forfunc  !  annual/monthly chl
       endif
 
-#if ! defined(NERSC_Hriver)
+#if defined(NERSC_HYCOM_CICE)
+      if (highfq_river) then
+         write(6,*) "Skipping the monthly river inflow"
+      else
+         call forfunp  !    annual/monthly rivers
+      endif
+
+#else
       call forfunp  !    annual/monthly rivers
 #endif     
       call forfunr  ! bimonthly/monthly climatology
@@ -2437,7 +2444,6 @@
         call rdkpar(mk3,lk3)
       endif
 !
-#if ! defined(NERSC_Hriver)
       if (priver) then
 ! ---   read in rivers field for 4 consecutive months
         mr1=1.+mod(dtime0+dyear0,dyear)/dmonth
@@ -2448,22 +2454,41 @@
         lr1=2
         lr2=3
         lr3=4
+#if defined(NERSC_HYCOM_CICE)
+        if (.not.(highfq_river))then
 #if defined (USE_NUOPC_CESMBETA)  &&  !defined (DMI_CICE_COUPLED)
-         if (.not. (cpl_orivers .and. cpl_irivers) &
-             .and.  linit ) then
+           if (.not. (cpl_orivers .and. cpl_irivers) &
+              .and.  linit ) then
+              call rdrivr(mr0,lr0)
+              call rdrivr(mr1,lr1)
+              call rdrivr(mr2,lr2)
+              call rdrivr(mr3,lr3)
+           endif
+#else
            call rdrivr(mr0,lr0)
            call rdrivr(mr1,lr1)
            call rdrivr(mr2,lr2)
            call rdrivr(mr3,lr3)
-         endif
+#endif /* USE_NUOPC_CESMBETA:else */
+        endif
+#else
+#if defined (USE_NUOPC_CESMBETA)  &&  !defined (DMI_CICE_COUPLED)
+        if (.not. (cpl_orivers .and. cpl_irivers) &
+            .and.  linit ) then
+            call rdrivr(mr0,lr0)
+            call rdrivr(mr1,lr1)
+            call rdrivr(mr2,lr2)
+            call rdrivr(mr3,lr3)
+        endif
 #else
         call rdrivr(mr0,lr0)
         call rdrivr(mr1,lr1)
         call rdrivr(mr2,lr2)
         call rdrivr(mr3,lr3)
 #endif /* USE_NUOPC_CESMBETA:else */
-      endif
+
 #endif
+      endif
 !
       if     (clmflg.eq.12) then
 ! ---   read in relaxation climatology fields for 4 consecutive months
@@ -3040,7 +3065,7 @@
       endif
 !
 ! --- set weights for quasi-hermite time interpolation for rivers.
-#if ! defined(NERSC_Hriver)
+#if ! defined(NERSC_HYCOM_CICE)
       if     (priver) then
          if (.not. (cpl_orivers .and. cpl_irivers)) then
 ! ---   monthly fields.
@@ -3063,6 +3088,33 @@
             wr2=x *(1.+x1*(1.-1.5*x1))
             wr0=-.5*x *x1*x1
             wr3=-.5*x1*x *x
+         endif
+      endif
+#else
+      if (.not.highfq_river) then
+         if     (priver) then
+         if (.not. (cpl_orivers .and. cpl_irivers)) then
+! ---   monthly fields.
+            x=1.+mod(dtime+dyear0,dyear)/dmonth
+            if (int(x).ne.mr1) then
+               mr1=x
+               mr0=mod(mr1+10,12)+1
+               mr2=mod(mr1,   12)+1
+               mr3=mod(mr2,   12)+1
+               lt =lr0
+               lr0=lr1
+               lr1=lr2
+               lr2=lr3
+               lr3=lt
+               call rdrivr(mr3,lr3)
+            endif
+            x=mod(x,1.)
+            x1=1.-x
+            wr1=x1*(1.+x *(1.-1.5*x ))
+            wr2=x *(1.+x1*(1.-1.5*x1))
+            wr0=-.5*x *x1*x1
+            wr3=-.5*x1*x *x
+         endif
          endif
       endif
 #endif
