@@ -350,6 +350,7 @@ T
 T
 T
 T
+T
 NONE
 EOF
 fi
@@ -367,9 +368,9 @@ else
     touch ${N}/${target_archv}${L}.b
     touch ${D}/${source_archv_i}.a
     touch ${D}/${source_archv_i}.b
-    rm -rf ${N}/${target_archv}${L}.*
-    rm -rf ${D}/${source_archv_i}.*
-    rm -rf ${NEST}/nest_${target_archv}.log
+    rm -f ${N}/${target_archv}${L}.*
+    rm -f ${D}/${source_archv_i}.*
+    rm -f ${NEST}/nest_${target_archv}.log
     echo "Succesfully created archive file: $2"
 
     # using montg_regress.pckl(for TP5)/TP2_montg_regress.pckl is not recommended;for now the solution is to use ${BINDIR}/calc_montg1.py afterwards with a restart file 
