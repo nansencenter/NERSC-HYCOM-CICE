@@ -14,8 +14,6 @@ You will need a  working python 3.7 installation, with the following packages.
 
 * [cfunits](https://pypi.python.org/pypi/cfunits)
 
-* [basemap](https://pypi.python.org/pypi/basemap)
-
 * [matplotlib](https://pypi.python.org/pypi/matplotlib)
 
 * [netCDF4](https://pypi.python.org/pypi/netCDF4)
