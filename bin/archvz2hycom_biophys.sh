@@ -33,7 +33,7 @@ grid_type=native
 bio_flag=0
 
 # This will process optional arguments
-options=$(getopt -o b:mn: -- "$@")
+options=$(getopt -o b:gn: -- "$@")
 [ $? -eq 0 ] || {
     echo "$usage"
     echo "Error: Incorrect options provided"
@@ -46,7 +46,7 @@ while true; do
         shift;
         bio_flag=1
         ;;
-    -m)
+    -g)
         grid_type=regular
         ;;
     -n)
