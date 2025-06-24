@@ -302,7 +302,6 @@ touch ${NEST}/${target_archv}.a
 touch ${NEST}/${target_archv}.b
 rm -rf ${NEST}/${target_archv}.*
 
-
 if [[ "${bio_flag}" -eq 0 ]] ; then
 
 ${prog_nemo}  >> $logfile  <<EOF
@@ -344,7 +343,6 @@ T
 T
 T
 T
-NONE
 EOF
 fi
 
