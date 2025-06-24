@@ -1482,8 +1482,11 @@
       call mem_stat_add( 1*(idm+2*nbdy)*(jdm+2*nbdy)*natm )
 !     !CAGLAR: END
 #endif
-! COMMENT TILL: Should follow the atmospheric forcing fields and allocate natm. This will probably not do a difference. But no need
-! to allocate too much
+! COMMENT TILL: Should follow the atmospheric forcing fields and allocate natm instead of 4 as the last dimension.
+! Should not be changed as a first thing
+!This will probably not do a difference. But no need
+! to allocate too much.
+! This should depend on the logical highfq_river otherwize default behaviour will not work. Remember to update call to mem_stat_add
       allocate( &
                 akpar(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,4), &
                rivers(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,4) )

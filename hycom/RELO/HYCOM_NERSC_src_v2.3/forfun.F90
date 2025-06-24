@@ -1115,6 +1115,9 @@
           read (uoff+901,'(a79)') preambl
         endif
 !
+! Comment Till This moves the forcing to the start position for most values (skmonth)
+! Except for NERSC (dewpoint and rivers) values and offflux. 
+! Should be investigated maybe a bug
         do iunit= 895,908
           if     (iunit.eq.896 .and. stfflg.eq.0) then
             cycle  !no stoc_t

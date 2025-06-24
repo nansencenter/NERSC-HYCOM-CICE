@@ -2487,7 +2487,7 @@
         call rdrivr(mr3,lr3)
 #endif /* USE_NUOPC_CESMBETA:else */
 
-#endif
+#endif /* NERSC_HYCOM_CICE
       endif
 !
       if     (clmflg.eq.12) then
