@@ -167,18 +167,15 @@ export vinterp_method=1
 #
 #
 #
-echo 'ARCHVBIO1'
 chmod a+rx ${prog_subreg}
 chmod a+rx ${prog_nemo}
 #
-echo 'ARCHVBIO2'
 echo
 source_archv_i=$2
 if [ ! -f ${source_archv_i}.a -o ! -f ${source_archv_i}.b ] ; then
     echo "Source file ${source_archv_i}.[ab] does not exist"
     continue
 fi
-echo 'ARCHVBIO3'
 
 target_archv=${source_archv_i}
 
