@@ -54,10 +54,10 @@ export COADSWIND=/work/shared/nersc/msc/ModelInput/force/wind_ieee/coads/
 export COADSFLUX=/work/shared/nersc/msc/ModelInput/force/flux_ieee/coads/
 export ERA15=/work/shared/nersc/msc/ModelInput/force/era15/monthly/
 export NCEP_CLIM_PATH=/work/shared/nersc/NCEP_Clim/
-export ERA40_CLIM_PATH=${Sysdir_nn2993k}/ERA40-Clim/
-export ERA40_PATH=${Sysdir_nn2993k}/ERA40/
 export ERAI_PATH=${Sysdir_nn2993k}/ERA-I/
 export ERA5_PATH=${Sysdir_nn9481k}/ERA5_6h/
+export NORESM_PATH=${Sysdir_nn9481k}/NORESM_atmo/
+export NORESM_CLIM_PAT='' #Path to directory with regridded climtology files from a climate model
 export WOA2005_PATH=${Sysdir_nn2993k}/ModelInput/WOA2005/
 export ECNC_PATH=/work/shared/nersc/ECMWFR_T799/
 export NCEP_PATH=/work/shared/nersc/NCEP/
@@ -77,6 +77,10 @@ export MERCATOR_BIO_PATH=/nird/projects/nird/NS2993K/MERCATOR_DATA/BIO
 export NEMO_EXAMPLE_NATIVE_FOLDER=/nird/projects/nird/NS9481K/MERCATOR_DATA/NMa0.08
 export MERCATOR_REGULAR_MESH=/nird/projects/nird/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO_MFC_001_24_MESH.nc
 export NEMO_EXAMPLE_REGULAR_FOLDER=/nird/projects/nird/NS9481K/MERCATOR_DATA/NMb0.08
+
+# Nesting to ESMs
+export ESM_Scenario=NorESM2-MM_historical_r1i1p1f1
+export Nesting_Files_PATH=/cluster/work/users/$USER/$R/Nesting_files/ # This assumes that in a nesting to ESM scenario, files are stored in the region folder.
 
 # These variables sets climatology to use when setting up the model. Sourced by run script
 # Note that NERSC forcing is (for now) also experiment-dependent 

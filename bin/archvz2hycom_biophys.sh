@@ -176,7 +176,6 @@ if [ ! -f ${source_archv_i}.a -o ! -f ${source_archv_i}.b ] ; then
     echo "Warning: Source file ${source_archv_i}.[ab] does not exist"
 fi
 
-
 target_archv=${source_archv_i}
 
 if [ ${hinterp_method} -eq 1 ]; then
@@ -222,7 +221,7 @@ if [ ! -f ${N}/${target_archv}${L}.b -o ! -f ${N}/${target_archv}${L}.a ]; then
 fi
 
 fi # hinterp_method
-
+echo 'ARCHVBIO4'
 #
 # --- change current directory to nesting folder of inner region
 #
