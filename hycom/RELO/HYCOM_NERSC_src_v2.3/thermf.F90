@@ -1974,6 +1974,15 @@
         if(cesmbeta .and. cpl_orivers.and.cpl_irivers) then
             rivflx(i,j) = (imp_orivers(i,j,1)+imp_irivers(i,j,1)) &
                         * rhoref
+! Till Comment: Added Till
+! Only two fields of rivers exist if high frequent
+! Check that l0 and l1 (=0/1), wr0, wr1 (wr0+wr1 time average) are correct
+! Check typo's
+! In prinicple lr0,lr1... and wr0,wr1... could be calculated.
+        elseif (highfq_river)
+            rivflx(i,j) = ( rivers(i,j,l0)*w0+rivers(i,j,l1)*w1    &
+                        * rhoref
+
         else
             rivflx(i,j) = ( rivers(i,j,lr0)*wr0+rivers(i,j,lr1)*wr1    &
                         +   rivers(i,j,lr2)*wr2+rivers(i,j,lr3)*wr3)   &

@@ -3016,6 +3016,8 @@
       endif
 #ifdef _FABM_
 !CAGLAR
+! Comment Till
+! What is time here? WHY 917?
       dtime(917) = dtime(905)
       call rdpall1(dewpt,dtime(926),926,mod(icall,3).eq.2)
 !     CAGLAR: END
