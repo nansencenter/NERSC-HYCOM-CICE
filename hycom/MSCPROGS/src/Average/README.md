@@ -35,7 +35,7 @@ specifies a name of mean ab files: ```file_mean.a```,```file_mean.b```, generate
 hycom_mean < mean_hycom.in
 ```
 
-### Notes
+### Notes [2025.07.02] This option is not available yet.
 
 Upon change of BGC variables list on hycom b file, you need to modify variable registraion in ```mod_mean.F90```.
 
