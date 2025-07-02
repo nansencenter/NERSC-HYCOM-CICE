@@ -56,7 +56,7 @@ module mod_mean
 
   ! --- ECOSMO
 
-  integer, parameter :: ntracr_bgc_2d = 10, ntracr_bgc_3d = 45
+  integer, parameter :: ntracr_bgc_2d = 10, ntracr_bgc_3d = 43
   
   character(len=8), save, allocatable, dimension(:) :: &
          nvar_bgc_2d
@@ -205,22 +205,20 @@ module mod_mean
     nvar_bgc_3d(27) = 'CO2_Om_a' 
     nvar_bgc_3d(28) = 'ECO_prim' 
     nvar_bgc_3d(29) = 'ECO_secp' 
-    nvar_bgc_3d(30) = 'ECO_netp' 
-    nvar_bgc_3d(31) = 'ECO_parm' 
-    nvar_bgc_3d(32) = 'ECO_Nlim' 
-    nvar_bgc_3d(33) = 'ECO_Plim' 
-    nvar_bgc_3d(34) = 'ECO_Slim' 
-    nvar_bgc_3d(35) = 'ECO_Llim' 
-    nvar_bgc_3d(36) = 'ECO_deni' 
-    nvar_bgc_3d(37) = 'ECO_snks' 
+    nvar_bgc_3d(30) = 'ECO_parm' 
+    nvar_bgc_3d(31) = 'ECO_Nlim' 
+    nvar_bgc_3d(32) = 'ECO_Plim' 
+    nvar_bgc_3d(33) = 'ECO_Slim' 
+    nvar_bgc_3d(34) = 'ECO_Llim' 
+    nvar_bgc_3d(35) = 'ECO_deni' 
+    nvar_bgc_3d(36) = 'ECO_snks' 
+    nvar_bgc_3d(37) = 'ECO_c2ch' 
     nvar_bgc_3d(38) = 'ECO_c2ch' 
     nvar_bgc_3d(39) = 'ECO_c2ch' 
-    nvar_bgc_3d(40) = 'ECO_c2ch' 
-    nvar_bgc_3d(41) = 'light_sw' 
-    nvar_bgc_3d(42) = 'light_pa' 
-    nvar_bgc_3d(43) = 'attenuat' 
-    nvar_bgc_3d(44) = 'total_ch' 
-    nvar_bgc_3d(45) = 'total_ca'
+    nvar_bgc_3d(40) = 'light_sw' 
+    nvar_bgc_3d(41) = 'light_pa' 
+    nvar_bgc_3d(42) = 'attenuat' 
+    nvar_bgc_3d(43) = 'total_ca'
         
     nvar_bgc_2d( 1) = 'ECO_sed4'
     nvar_bgc_2d( 2) = 'ECO_sed1'
