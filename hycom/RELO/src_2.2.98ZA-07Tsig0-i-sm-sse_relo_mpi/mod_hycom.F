@@ -45,7 +45,7 @@
 #ifdef _FABM_
       use mod_hycom_fabm
 #endif
-      use mod_NERSCnml, only : write_arche, highfq_river, nersc_init
+      use mod_NERSCnml, only : write_arche, nersc_init, highfq_river
 c
 c --- -----------------------------------------
 c --- MICOM-based HYbrid Coordinate Ocean Model
@@ -1957,7 +1957,15 @@ c
       elseif (jerlv0.eq.-1) then
         call forfunc  !  annual/monthly chl
       endif
-      call forfunp  !    annual/monthly rivers
+      if (highfq_river) then
+        if (mnproc.eq.1) then
+          write(lp,*)
+     &    '--- Skipping the monthly river inflow----'
+          call flush(lp)
+        endif !1st tile
+      else
+         call forfunp  !    annual/monthly rivers
+      endif
 #endif
       call forfunr  ! bimonthly/monthly climatology
       watcum=0.

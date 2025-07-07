@@ -657,6 +657,7 @@
 ! --- units of spchum are kg/k
 ! --- units of mslprs are Pa     (anomaly, offset from total by prsbas)
 ! --- units of precip are m/s    (positive into ocean)
+! --- units of riverh are m/s    (positive into ocean)
 ! --- units of radflx are w/m^2  (positive into ocean)
 ! --- units of swflx  are w/m^2  (positive into ocean)
 ! --- units of offlux are w/m^2  (positive into ocean)
@@ -959,7 +960,7 @@
         endif !surtmp
 !
 #if defined(NERSC_HYCOM_CICE)
-!Alfatih  --- read high frequency rivers----
+!ALF  --- read high frequency rivers----
         if (highfq_river) then
            !write (lp,*) 'Reading  highfq_river   = ',highfq_river
           call zaiopf(flnmfor(1:lgth)//'forcing.riverh.a', 'old', 918)
@@ -970,7 +971,7 @@
           endif !1st tile
           call preambl_print(preambl)
         endif
-!End A --- read high frequency rivers----
+!End  --- read high frequency rivers----
 #endif
 #ifdef _FABM_
 !     CAGLAR: BEGIN (MAY2019)
@@ -1144,6 +1145,13 @@
           enddo
         endif
 #endif
+!ALFA, This should also be done for "dewp", likely will fix a bug
+! in reading "dewp", for now I comment it for further invetigation 
+! #ifdef _FABM_
+!           do i= 1,nrec-2
+!             call skmonth(926)
+!           enddo
+!  #endif
         if     (sstflg.eq.3) then
           do i= 1,nrec-2
             call skmonth(910)
@@ -1509,6 +1517,9 @@
       use mod_xc         ! HYCOM communication interface
       use mod_cb_arrays  ! HYCOM saved arrays
       use mod_za         ! HYCOM I/O interface
+#if defined(NERSC_HYCOM_CICE)
+      use mod_NERSCnml, only : highfq_river
+#endif
       implicit none
 !
 ! --- high frequency atmospheric forcing field processing.
@@ -1538,6 +1549,9 @@
              swflx(i,j,l) = 0.0
 #if defined(NERSC_HYCOM_CICE)
           swflxdwn(i,j,l) = 0.0
+          if (highfq_river) then
+            rivers(i,j,l) = 0.0
+          endif          
 #endif
             surtmp(i,j,l) = 0.0
             seatmp(i,j,l) = 0.0
@@ -2999,11 +3013,11 @@
         dtime(906) = dtime(905)
       endif
 #if defined(NERSC_HYCOM_CICE)
-!Alfatih  --- read high frequency rivers----
+!ALFA  --- read high frequency rivers----
       if (highfq_river) then
         call rdpall1(rivers,dtime(918),918,mod(icall,3).eq.1)
       endif
-!End A --- read high frequency rivers----
+!End  --- read high frequency rivers----
 #endif
 #ifdef _FABM_
 !CAGLAR
@@ -3094,6 +3108,23 @@
                  stop '(rdpall)'
         endif
       enddo
+#if defined(NERSC_HYCOM_CICE)
+      if (highfq_river) then
+        do k= 918,918
+          if     (dtime(k).ne.dtime1) then
+            if     (mnproc.eq.1) then
+               write(lp,*)
+               write(lp,*) 'error in rdpall - inconsistent forcing times'
+               write(lp,*) 'dtime0,dtime1 = ',dtime0,dtime1
+               write(lp,*) 'dtime = ',dtime
+               write(lp,*)
+            endif !1st tile
+            call xcstop('(rdpall)')
+            stop '(rdpall)'
+          endif
+        enddo
+      endif
+#endif
       return
       end
 !

@@ -38,7 +38,7 @@
       use mod_hycom_fabm
 #endif
 #if defined(NERSC_HYCOM_CICE)
-      use mod_NERSCnml, only : write_arche, highfq_river, nersc_init
+      use mod_NERSCnml, only : write_arche, nersc_init, highfq_river
 #endif
 !
 ! --- -----------------------------------------
@@ -1966,7 +1966,19 @@
       elseif (jerlv0.eq.-1) then
         call forfunc  !  annual/monthly chl
       endif
+#if defined(NERSC_HYCOM_CICE)     
+      if (highfq_river) then
+        if (mnproc.eq.1) then
+          write(lp,*)
+     &    '--- Skipping the monthly river inflow----'
+          call flush(lp)
+        endif !1st tile
+      else
+         call forfunp  !    annual/monthly rivers
+      endif
+#else
       call forfunp  !    annual/monthly rivers
+#endif 
       call forfunr  ! bimonthly/monthly climatology
       watcum=0.
       empcum=0.
