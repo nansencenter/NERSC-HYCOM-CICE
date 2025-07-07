@@ -1442,10 +1442,8 @@ c --- allow for rivers as a precipitation bogas
      &                  (saln(i,j,1,n)*qthref)
 *       salflx(i,j) = salflx(i,j)+rivflx(i,j) !update rivflx in thermf_oi
       elseif (highfq_river) then
-        rivflx(i,j) = - ( rivers(i,j,l0)*w0+rivers(i,j,l1)*w1
-     &                   +rivers(i,j,l2)*w2+rivers(i,j,l3)*w3) *
+        rivflx(i,j) = - ( rivers(i,j,l0)*w0+rivers(i,j,l1)*w1 ) *
      &                  (saln(i,j,1,n)*qthref)
-*       salflx(i,j) = salflx(i,j)+rivflx(i,j) !update rivflx in thermf_oi
       else
         rivflx(i,j) = 0.0
       endif
