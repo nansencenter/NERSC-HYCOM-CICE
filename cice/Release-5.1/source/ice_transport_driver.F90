@@ -18,6 +18,8 @@
       use ice_fileunits, only: nu_diag
 #if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT)
       use ice_domain_size, only: max_blocks
+      use ice_blocks, only: nx_block, ny_block
+      use ice_constants, only: c1
 #endif
 
       implicit none

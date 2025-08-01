@@ -51,6 +51,13 @@
          inh4    , & ! ammonium in ice    (mmol N/m^2)
          ipho    , & ! phosphate in ice   (mmol P/m^2)
          isil    , & ! silicate in ice    (mmol Si/m^2)
+       ! out to hycom_ecosmo ice-algae
+         ialg_exp    , & ! ice algae biomass  (mg C/m^2)
+         idet_exp    , & ! ice algae detritus (mg C/m^2)
+         ino3_exp    , & ! nitrate in ice     (mmol N/m^2)
+         inh4_exp    , & ! ammonium in ice    (mmol N/m^2)
+         ipho_exp    , & ! phosphate in ice   (mmol P/m^2)
+         isil_exp    , & ! silicate in ice    (mmol Si/m^2)
 #endif
 
        ! out to atmosphere
@@ -61,16 +68,6 @@
        ! Note, CICE_IN_NEMO uses strocnx and strocny for coupling
          strocnxT, & ! ice-ocean stress, x-direction
          strocnyT    ! ice-ocean stress, y-direction
-
-#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT)
-       ! out to hycom_ecosmo ice-algae
-         ialg_exp    , & ! ice algae biomass  (mg C/m^2)
-         idet_exp    , & ! ice algae detritus (mg C/m^2)
-         ino3_exp    , & ! nitrate in ice     (mmol N/m^2)
-         inh4_exp    , & ! ammonium in ice    (mmol N/m^2)
-         ipho_exp    , & ! phosphate in ice   (mmol P/m^2)
-         isil_exp    , & ! silicate in ice    (mmol Si/m^2)
-#endif
 
        ! diagnostic
 
