@@ -142,7 +142,7 @@ c --- Attribute names for fields
      &    attNameAddOff   = "add_offset"
 c
 c --- Import Fields
-#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT)
+#if defined(_FABM_) && defined(IA_DRIFT)
       integer, parameter :: numImpFields=17
 #else
       integer, parameter :: numImpFields=11
@@ -156,7 +156,7 @@ c --- Import Fields
       integer,                save :: impFieldHalo(    numImpFields)
 c
 c --- Export Fields
-#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT)
+#if defined(_FABM_) && defined(IA_DRIFT)
       integer, parameter :: numExpFields=29
 #else
       integer, parameter :: numExpFields=23 !KAL
@@ -357,7 +357,7 @@ c
       impFieldStdName( 11) = "sea_ice_y_velocity"
       impFieldUnits(   11) = "m s-1"
       impFieldHalo(    11) = halo_pv !vector p-grid
-#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT) 
+#if defined(_FABM_) && defined(IA_DRIFT) 
       impFieldName(    12) = "ialg"
       impFieldLongName(12) = "Ice algae biomass"
       impFieldStdName( 12) = "Ice algae biomass"
@@ -501,7 +501,7 @@ c
       expFieldLongName(23) = "Snowfall Rate"
       expFieldStdName( 23) = ""
       expFieldUnits(   23) = "kg m**-2 s*-1"
-#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT)
+#if defined(_FABM_) && defined(IA_DRIFT)
       expFieldName(    24) = "ialg"
       expFieldLongName(24) = "Ice algae biomass"
       expFieldStdName( 24) = "Ice algae biomass"
@@ -992,6 +992,9 @@ c --------- average currents over top thkcdw meters
             util2(i,j)              = umxl
             util3(i,j)              = vmxl
             expData(1)%p(i+i0,j+j0) = tmxl                           !in C
+            !if (mnproc==1) print *,"shuang hycom exp sst", 
+             !print *,"shuang hycom exp sst",mnproc, 
+!     &        expData(1)%p(i+i0,j+j0)
             expData(2)%p(i+i0,j+j0) = smxl
             expData(5)%p(i+i0,j+j0) = ssh2m*srfhgt(i,j)              !ssh in m
 !            expData(6)%p(i+i0,j+j0) = max(-1000.0,min(1000.0,ssfi))  !as in CICE
@@ -1147,11 +1150,21 @@ c --------- We dont handle cases where input is E-P.
                call xchalt('Setup_ESMF: unhandled empflg=3')
                stop 'Setup_ESMF: unhandled empflg=3'
             end if
-#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT)
+#if defined(_FABM_) && defined(IA_DRIFT)
             do nia = 1,niatrc
-                expData(23+nia)%p(i+i0,j+j0)=0.5*(ia_tracer(i,j,1,nia)
-     &                                        +ia_tracer(i,j,2,nia))
+                expData(23+nia)%p(i+i0,j+j0)=0.5*(ia_tracer(i,j,n,nia)
+     &                                        +ia_tracer(i,j,m,nia))
             end do
+            !if (mnproc==2) then !print *,"shuang hycom exp ", 
+            if (i+i0==125 .and. j+j0==200) then !print *,"shuang hycom exp ", 
+             print *,"shuang hycom exp ia_tracer", 
+     &           expData(24)%p(i+i0,j+j0),
+     &           expData(25)%p(i+i0,j+j0),
+     &           expData(26)%p(i+i0,j+j0),
+     &           expData(27)%p(i+i0,j+j0),
+     &           expData(28)%p(i+i0,j+j0),
+     &           expData(29)%p(i+i0,j+j0), "end" 
+            end if
 #endif
           else
             util2(i,j)              = 0.0
@@ -1241,10 +1254,25 @@ c --- Arctic (tripole) domain, top row is replicated (ignore it)
              siu_import(i,j) = impData(10)%p(i+i0,j+j0) !Sea Ice X-Velocity
              siv_import(i,j) = impData(11)%p(i+i0,j+j0) !Sea Ice Y-Velocity
             if     (iceflg.ge.2 .and. icmflg.ne.3) then
-#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT)
+#if defined(_FABM_) && defined(IA_DRIFT)
               do nia = 1, niatrc
-                 ia_tracer(i,j,:,nia) = impData(11+nia)%p(i+i0,j+j0)
+                 ia_tracer(i,j,1:2,nia) = impData(11+nia)%p(i+i0,j+j0)
               enddo
+            if (i+i0==125 .and. j+j0==200) then !print *,"shuang hycom imp ", 
+             print *,"shuang hycom imp ia_tracer", 
+     &           impData(12)%p(i+i0,j+j0),
+     &           impData(13)%p(i+i0,j+j0),
+     &           impData(14)%p(i+i0,j+j0),
+     &           impData(15)%p(i+i0,j+j0),
+     &           impData(16)%p(i+i0,j+j0),
+     &           impData(17)%p(i+i0,j+j0), "end", 
+     &           ia_tracer(i,j,1,1),
+     &           ia_tracer(i,j,1,2),
+     &           ia_tracer(i,j,1,3),
+     &           ia_tracer(i,j,1,4),
+     &           ia_tracer(i,j,1,5),
+     &           ia_tracer(i,j,1,6), "end" 
+            end if
 #endif
               covice(i,j) = impData(1)%p(i+i0,j+j0) !Sea Ice Concentration
                 si_c(i,j) = impData(1)%p(i+i0,j+j0) !Sea Ice Concentration
@@ -1325,7 +1353,7 @@ C --- NB: May need to set vland first...
         call xctilr(  si_h,1,1,nbdy,nbdy,halo_ps)  !Sea Ice Thickness
         call xctilr(  si_u,1,1,nbdy,nbdy,halo_pv)  !Sea Ice X-Velocity
         call xctilr(  si_v,1,1,nbdy,nbdy,halo_pv)  !Sea Ice Y-Velocity
-#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT)
+#if defined(_FABM_) && defined(IA_DRIFT)
         call xctilr(  ia_tracer,1,1,nbdy,nbdy,halo_ps)  !Ice-algae
 #endif
       elseif (iceflg.ge.2 .and. icmflg.eq.3) then
@@ -2282,6 +2310,9 @@ CKAL    flnmra = restart_name(day1,yrflag,"in")
         si_v=0.
         covice=0.
         thkice=0.
+#if defined(IA_DRIFT)
+        ia_tracer=0.
+#endif
 #endif
         surflx(:,:) = 0.0
         salflx(:,:) = 0.0
