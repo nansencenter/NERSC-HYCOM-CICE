@@ -55,11 +55,11 @@ module mod_hycom_fabm
    real :: wndstr,strspd
    real, allocatable :: h(:, :,:),delZ(:),codepth(:,:,:),cotemp(:,:,:),cosal(:,:,:),codens(:,:,:)
    real, allocatable :: hriver(:, :)
-   real, allocatable :: coice_conc(:, :),coice_thickness(:,:),codh_growth(:,:)
+   real, allocatable :: coice_conc(:,:),coice_thickness(:,:),codh_growth(:,:)
    real, allocatable, target :: fabm_surface_state(:, :, :, :)
    real, allocatable, target :: fabm_bottom_state(:, :, :, :)
    real, allocatable :: fabm_surface_state_old(:, :, :)
-   real, allocatable :: ia_tracer_old(:, :, :)
+   !real, allocatable :: ia_tracer_old(:, :, :)
    real, allocatable :: fabm_bottom_state_old(:, :, :)
 
    logical :: do_interior_sources, do_bottom_sources, do_surface_sources, do_vertical_movement, do_check_state, do_icealgae
@@ -111,7 +111,7 @@ module mod_hycom_fabm
 
    integer :: pCO2unit, yCO2init, nyearCO2,modelyear,modelmonth
    character(len=80)  :: co2str
-   real    :: co2_seasonality(12),modelday,modeltime,pair,day
+   real    :: co2_seasonality(12),modelday,modeltime,pair
    real    :: dew,atmco2_0,atmco2_1,atmco2_2,atmco2_3
 contains
 
@@ -129,7 +129,7 @@ contains
       do_surface_sources = .true.
       do_vertical_movement = .true.
       do_check_state = .false.
-      do_icealgae = .true.
+      do_icealgae = .false.
       nested_variables = ''
       inquire(file='../hycom_fabm.nml', exist=file_exists)
       if (file_exists) then
@@ -177,7 +177,7 @@ contains
     ! read atmospheric CO2 time-series
     pCO2unit = 2640
     yCO2init = 1948
-    nyearCO2 = 77 ! last data year = 2024
+    nyearCO2 = 76 ! last data year = 2023
     co2_seasonality = [1.8552,2.7411,3.7847,4.6522,4.2706,1.1206,-4.3468,-8.6286,-7.9663,-3.7896,1.8954,3.0054]
       
     end subroutine hycom_fabm_configure
@@ -200,7 +200,9 @@ contains
         if (do_icealgae) then
            allocate(coice_thickness(ii, jj))
            allocate(codh_growth(ii, jj))
-           allocate(ia_tracer_old(1-nbdy:idm+nbdy, 1-nbdy:jdm+nbdy, size(fabm_model%surface_state_variables)))
+           !#ifdef IA_DRIFT
+           !     allocate(ia_tracer_old(1-nbdy:idm+nbdy, 1-nbdy:jdm+nbdy, size(fabm_model%surface_state_variables)))
+           !#endif
         end if
         allocate(fabm_surface_state(1-nbdy:idm+nbdy, 1-nbdy:jdm+nbdy, 2, size(fabm_model%surface_state_variables)))
         allocate(fabm_bottom_state(1-nbdy:idm+nbdy, 1-nbdy:jdm+nbdy, 2, size(fabm_model%bottom_state_variables)))
@@ -235,19 +237,23 @@ contains
         call fabm_model%link_horizontal_data(fabm_standard_variables%mole_fraction_of_carbon_dioxide_in_air,atmco2_fabm(1:ii,1:jj))
         call fabm_model%link_horizontal_data(fabm_standard_variables%bottom_stress, bottom_stress(1:ii, 1:jj))
         call fabm_model%link_scalar(type_global_standard_variable(name='time_step', units='s'), delt1)
-        call fabm_model%link_horizontal_data(fabm_standard_variables%latitude, plat(1:ii, 1:jj))
-        !call fabm_model%link_scalar(type_global_standard_variables%number_of_days_since_start_of_the_year,dtime)
-        !call model%link_scalar(standard_variables%number_of_days_since_start_of_the_year,dtime)
-        call fabm_model%link_scalar(fabm_standard_variables%number_of_days_since_start_of_the_year,modelday)
+
+        call fabm_model%link_interior_data(fabm_standard_variables%temperature,cotemp(1:ii,1:jj, 1:kk))
+        call fabm_model%link_interior_data(fabm_standard_variables%practical_salinity,cosal(1:ii,1:jj,1:kk))
+        call fabm_model%link_interior_data(fabm_standard_variables%density,codens(1:ii,1:jj, 1:kk))
+        call fabm_model%link_interior_data(fabm_standard_variables%pressure,codepth(1:ii,1:jj, 1:kk))
+        call fabm_model%link_horizontal_data(fabm_standard_variables%ice_area_fraction,coice_conc(1:ii,1:jj))
+        if (do_icealgae) then
+           call fabm_model%link_horizontal_data(fabm_standard_variables%ice_thickness,coice_thickness(1:ii,1:jj))
+           call fabm_model%link_horizontal_data(fabm_standard_variables%dh_growth,codh_growth(1:ii,1:jj))
+        end if 
 
         call update_fabm_data(1, initializing=.true.)  ! initialize the entire column of wet points, including thin layers
-!        call fabm_model%prepare_inputs( )
 
         ! Check whether FABM has all dependencies fulfilled
         ! (i.e., whether all required calls for fabm_link_*_data have been made)
         !call fabm_check_ready(fabm_model)
         call fabm_model%start
-        call fabm_model%prepare_inputs( )
 
         last_interior_output => null()
         do ivar=1, size(fabm_model%interior_state_variables)
@@ -262,11 +268,15 @@ contains
         last_horizontal_output => null()
         do ivar=1, size(fabm_model%surface_state_variables)
           if (add_horizontal_output(fabm_model%surface_state_variables(ivar))) then
-            if (do_icealgae) then
-              last_horizontal_output%data3d => ia_tracer(1:ii, 1:jj, :, ivar)
-            else
+            !if (do_icealgae) then
+            !  #ifdef IA_DRIFT
+            !    last_horizontal_output%data3d => ia_tracer(1:ii, 1:jj, :, ivar)
+            !  #else
+            !    last_horizontal_output%data3d => fabm_surface_state(1:ii, 1:jj, :, ivar)
+            !  #endif
+            !else
               last_horizontal_output%data3d => fabm_surface_state(1:ii, 1:jj, :, ivar)
-            end if
+            !end if
           end if
         end do
         do ivar=1, size(fabm_model%bottom_state_variables)
@@ -340,7 +350,9 @@ contains
       ! Initialize the tracers
       ! This sets the values of arrays sent to fabm_link_interior_state_data, in this case interior_state.
       tracer = 0
-      ia_tracer = 0
+#ifdef IA_DRIFT
+        ia_tracer = 0
+#endif
       do k=1,kk
         do j=1,jj
             call fabm_model%initialize_interior_state(1, ii, j, k)
@@ -354,11 +366,14 @@ contains
       ! Copy state from time step = 1 to time step = 2
       tracer(:, :, :, 2, :) = tracer(:, :, :, 1, :)
       fabm_bottom_state(:, :, 2, :) = fabm_bottom_state(:, :, 1, :)
-      if (do_icealgae) then
-        ia_tracer(:, :, 2, :) = ia_tracer(:, :, 1, :)
-      else
+      ! Shuang: this is only done by bio-initialization not restart
+#ifdef IA_DRIFT
         fabm_surface_state(:, :, 2, :) = fabm_surface_state(:, :, 1, :)
-      end if
+        ia_tracer(:, :, 1, :) = fabm_surface_state(:, :, 1, :)
+        ia_tracer(:, :, 2, :) = ia_tracer(:, :, 1, :)
+#else
+        fabm_surface_state(:, :, 2, :) = fabm_surface_state(:, :, 1, :)
+#endif
     end subroutine hycom_fabm_initialize_state
 
     subroutine hycom_fabm_relax_init()
@@ -367,21 +382,18 @@ contains
       integer :: ivar, k
       logical :: file_exists
       character preambl(5)*79
-      integer :: nest_counter
 
       ! Allocate array to holds units for relaxation files of every pelagic state variable
       allocate(hycom_fabm_relax(size(fabm_model%interior_state_variables)))
 
       ! Default: no relaxation
       hycom_fabm_relax = -1
-    
+
       if (mnproc.eq.1) write (lp,*) 'Looking for relaxation data for pelagic FABM state variables...'
       do ivar=1,size(fabm_model%interior_state_variables)
         ! Check for existence of a file named "relax.<FABMNAME>.a". If present, this will contain the relaxation field (one variable; all k levels)
         inquire(file=trim(flnmforw)//'relax.'//trim(fabm_model%interior_state_variables(ivar)%name)//'.a', exist=file_exists)
-
         if (file_exists) then
-
           if (mnproc.eq.1) write (lp,*) '  - '//trim(fabm_model%interior_state_variables(ivar)%name)//': ON, ' &
             //trim(flnmforw)//'relax.'//trim(fabm_model%interior_state_variables(ivar)%name)//'.a was found.'
 
@@ -404,30 +416,12 @@ contains
           do k=1,kk
             call hycom_fabm_rdmonthck(util1, hycom_fabm_relax(ivar), 0, is_2d=.false.)
           end do
-
-          if (nested_bio) then
-            do nest_counter = 1, nested_number
-             if (ivar == istate_dev(nest_counter) ) then
-                if (mnproc.eq.1) then 
-                  write (lp,*) ' '
-                  write (lp,*) ' - Both nesting and relaxation active for: '//trim(fabm_model%interior_state_variables(ivar)%name)// &
-                  '. Therefore, relaxation will be disabled.'
-                  write (lp,*) ' '
-                end if
-                  rmutr(:,:,ivar) = 0.0 
-             end if
-            end do
-          end if
-
         else
           ! Disable relaxation for this tracer
           if (mnproc.eq.1) write (lp,*) '  - '//trim(fabm_model%interior_state_variables(ivar)%name)//': OFF, ' &
             //trim(flnmforw)//'relax.'//trim(fabm_model%interior_state_variables(ivar)%name)//'.a not found.'
           rmutr(:,:,ivar) = 0.0
         end if
-
-
-
       end do
     end subroutine hycom_fabm_relax_init
 
@@ -708,7 +702,7 @@ contains
     end subroutine hycom_fabm_rdmonthck
 
     subroutine hycom_fabm_update(m, n, ibio)
-      use, intrinsic :: ieee_arithmetic
+      use, intrinsic :: ieee_arithmetic !shuang
       integer, intent(in) :: m, n, ibio
       integer :: i, k, j, ivar
    
@@ -717,20 +711,22 @@ contains
       real :: flux(ii, size(fabm_model%interior_state_variables))
       real :: sms_bt(ii, size(fabm_model%bottom_state_variables))
       real :: sms_sf(ii, size(fabm_model%surface_state_variables))
-
-      real    :: dw_migrator_random_weights(ii,jj,kk)
-      real    :: dw_migrator_integral_random_weights(ii,jj)
-      integer :: ivar_weights, ivar_integral_weights, last_thick_n
-      real    :: sum_zoo_n, sum_diff_m, sum_diff_n
-      real    :: ratio_weights,sum_zoo_n_after
-      real    :: tracer_new_n(kk)
-      integer :: n_counter,s_counter
-      integer :: migrating_indexes(2), idx, trac  
-    
       type (type_input), pointer :: input
 
             if (mnproc.eq.1) write (lp,*) 'hycom_fabm_update', nstep, time
             call xcsync(flush_lp)
+            !shuang
+        do i=1,ii
+         do j=1,jj
+           if (SEA_P) then
+            if (i==125-i0 .and. j==200-j0) then 
+               print *, 'shuang surface_state n, ia', fabm_surface_state(i,j,n,:), &
+                  ia_tracer(i,j,n,:)
+            end if
+           end if
+         enddo
+        enddo
+            !shuang
 
 !
 ! --- leapfrog time step.
@@ -739,6 +735,18 @@ contains
       ! As per leapfrog spec, fluxes at this time are used to update the state at t-delta_t to t+delta_t (both stored at time index n)
       ! This also sets FABM's mask, which will exclude layers that are vanishingly thin at either time m or n (or both).
       call update_fabm_data(m, initializing=.false.)  ! skipping thin layers
+   !shuang
+        !do i=1,ii
+        ! do j=1,jj
+         !  if (SEA_P) then
+         !   if (i==125-i0 .and. j==200-j0) then
+         !      print *, 'shuang surface_state n, after update_fabm_data', fabm_surface_state(i,j,n,:), &
+         !         ia_tracer(i,j,n,:)
+         !   end if
+         !  end if
+         !enddo
+        !enddo
+            !shuang
 
       ! Get index of bottom layers at the next time step.
       ! For that we use time index n, which assumes dp(:,:,:,n) has already been updated!
@@ -747,15 +755,14 @@ contains
       call get_mask(n, mask(:, :, :, n), kbottom(:, :, n))
 
       ! Store old surface/bottom state for later application of Robert-Asselin filter.
-      if (do_icealgae) then
-        ia_tracer_old = ia_tracer(:, :, n, :)
-      else
+      !#ifdef IA_DRIFT
+        !ia_tracer_old = ia_tracer(:, :, n, :)
+        !fabm_surface_state_old = fabm_surface_state(:, :, n, :)
+      !#else
         fabm_surface_state_old = fabm_surface_state(:, :, n, :)
-      end if
+      !#endif
       fabm_bottom_state_old = fabm_bottom_state(:, :, n, :)
       ! Make sure the biogeochemical state is valid (uses clipping if necessary)
-
-      call fabm_model%prepare_inputs( real(nstep) )
       call check_state('when entering fabm_hycom_update', current_time_index, .true.)
 
       ! Vertical movement (includes sinking and floating)
@@ -765,22 +772,23 @@ contains
         if (do_check_state) call check_state('after vertical_movement', n, .false.)
       end if
 
-      call check_finite("AFTER VERTICAL", m)
-      call check_finite("AFTER VERTICAL", n)
-
+call check_finite("AFTER VERTICAL", m)
+call check_finite("AFTER VERTICAL", n)
 #ifdef FABM_CHECK_NAN
     do j=1,jj
         do i=1,ii
             if (SEA_P) then
                 if (isnan(swflx_fabm(i,j))) then
                     write (*,*) 'NaN in swflx_fabm:', swflx_fabm(i,j), sswflx (i,j)
-                   call xchalt('(FABM varible is NaN)')
-                   stop '(FABM varible is NaN)'
+                    call xchalt('(FABM varible is NaN)')
+                    stop '(FABM varible is NaN)'
                 end if
             end if
         end do
     end do
 #endif
+
+call fabm_model%prepare_inputs
 
       ! Compute bottom source terms
       if (do_bottom_sources) then
@@ -824,8 +832,8 @@ contains
       if (do_check_state) call check_state('after bottom sources', n, .false.)
       end if
 
-      call check_finite("AFTER BOTTOM", m)
-      call check_finite("AFTER BOTTOM", n)
+call check_finite("AFTER BOTTOM", m)
+call check_finite("AFTER BOTTOM", n)
 
       ! Compute surface source terms
       if (do_surface_sources) then
@@ -835,18 +843,34 @@ contains
         call fabm_model%get_surface_sources(1, ii, j, flux, sms_sf)
         do i=1,ii
           if (kbottom(i, j, n) > 0) then
-            if (do_icealgae) then
-              ia_tracer(i, j, n, :) = ia_tracer(i, j, n, :) + delt1 * sms_sf(i, :)
-            else
+            !#ifdef IA_DRIFT
+              !ia_tracer(i, j, n, :) = ia_tracer(i, j, n, :) + delt1 * sms_sf(i, :)
+            !#else
               fabm_surface_state(i, j, n, :) = fabm_surface_state(i, j, n, :) + delt1 * sms_sf(i, :)
-            end if
+            !#endif
             tracer(i, j, 1, n, :) = tracer(i, j, 1, n, :) + delt1 * flux(i, :)/dp(i, j, 1, n)*onem
+#ifdef IA_DRIFT
+              ia_tracer(i, j, n, :) = fabm_surface_state(i, j, n, :)
+#endif
 #ifdef FABM_CHECK_NAN
             if (any(isnan(tracer(i, j, 1, n, :)))) then
               write (*,*) 'NaN after do_surface:', tracer(i, j, 1, n, :), flux(i, :), dp(i, j, 1, n)/onem
               call xchalt('(FABM varible is NaN)')
               stop '(FABM varible is NaN)'
             end if
+            !#ifdef IA_DRIFT
+            !if (any(isnan(ia_tracer(i, j, n, :)))) then
+            !  write (*,*) 'NaN after do_surface, ia_tracer, sms_sf,i,j:', ia_tracer(i, j, n, :), sms_sf(i, :),i+i0,j+j0
+            !  call xchalt('(FABM varible is NaN)')
+            !  stop '(FABM varible is NaN)'
+            !end if
+            !#else
+            if (any(isnan(fabm_surface_state(i, j, n, :)))) then
+              write (*,*) 'NaN after do_surface:', fabm_surface_state(i, j, n, :), sms_sf(i, :)
+              call xchalt('(FABM varible is NaN)')
+              stop '(FABM varible is NaN)'
+            end if
+            !#endif
 #endif
           end if
         end do
@@ -855,16 +879,55 @@ contains
       end if
 
       ! Compute source terms and update state
-      call check_finite("BEFORE INTERIOR", m)
-      call check_finite("BEFORE INTERIOR", n)
+call check_finite("BEFORE INTERIOR", m)
+call check_finite("BEFORE INTERIOR", n)
+
+        !shuang
+        !do i=1,ii
+        ! do j=1,jj
+        !   if (SEA_P) then
+        !    if (i==75-i0 .and. j==324-j0) then
+        !       print *, 'shuang before interior cclchl', tracer(i,j,:,n,11), &
+        !          i0,j0
+        !    end if
+        !   end if
+        ! enddo
+        !enddo
+            !shuang
 
       if (do_interior_sources) then
       do k=1,kk
         do j=1,jj
             sms = 0
             call fabm_model%get_interior_sources(1, ii, j, k, sms)
+            !shuang
+            if (any(isnan(sms))) then
+              do ivar=1,size(fabm_model%interior_state_variables)
+                if (any(isnan(sms(1:ii, ivar)))) then 
+                   !write (*,*) 'NaN in sms:',ivar,fabm_model%interior_state_variables(ivar)%name,k,j,j+j0,sms(1:ii, ivar)
+                   !write (*,*) 'state:',ivar,tracer(1:ii, j, k, m, ivar)
+                   where (ieee_is_nan(sms(1:ii, ivar)))
+                     sms(1:ii, ivar) = 1.0e-8
+                   end where
+                   write (*,*) 'sms repaired:',ivar,fabm_model%interior_state_variables(ivar)%name,k,j,j+j0,sms(1:ii, ivar)
+                end if
+              end do
+              !write (*,*) 'NaN in sms'
+              !do ivar=1,size(fabm_model%interior_state_variables)
+              !  write (*,*) 'state:',ivar,fabm_model%interior_state_variables(ivar)%name,tracer(1:ii, j, k, m, ivar)
+              !end do
+              !call xchalt('(FABM varible is NaN)')
+              !stop '(FABM varible is NaN)'
+            end if
+            !shuang
             do ivar=1,size(fabm_model%interior_state_variables)
                tracer(1:ii, j, k, n, ivar) = tracer(1:ii, j, k, n, ivar) + delt1 * sms(1:ii, ivar)
+               !shuang
+               if (any(isnan(sms(1:ii, ivar)))) then
+                  write (*,*) 'NaN still in sms:',ivar,fabm_model%interior_state_variables(ivar)%name,k,j,j+j0,sms(1:ii, ivar)
+                  write (*,*) 'state:',ivar,tracer(1:ii, j, k, m, ivar)
+               end if
+               !shuang
             end do
 #ifdef FABM_CHECK_NAN
             if (any(isnan(sms))) then
@@ -882,14 +945,25 @@ contains
         end do
       end do
 
-      call check_finite("AFTER INTERIOR", m)
-      call check_finite("AFTER INTERIOR", n)
+       !shuang
+        !do i=1,ii
+        ! do j=1,jj
+        !   if (SEA_P) then
+        !    if (i==75-i0 .and. j==324-j0) then
+        !       print *, 'shuang after interior cclchl', tracer(i,j,:,n,11)
+        !    end if
+        !   end if
+        ! enddo
+        !enddo
+            !shuang
+call check_finite("AFTER INTERIOR", m)
+call check_finite("AFTER INTERIOR", n)
 
       if (do_check_state) call check_state('after interior sources', n, .false.)
       end if
 
-      call check_finite("AFTER INTERIOR CHECK STATE", m)
-      call check_finite("AFTER INTERIOR CHECK STATE", n)
+call check_finite("AFTER INTERIOR CHECK STATE", m)
+call check_finite("AFTER INTERIOR CHECK STATE", n)
 
       input => first_input
       do while (associated(input))
@@ -911,96 +985,60 @@ contains
         input => input%next
       end do
 
-      call check_finite("AFTER RIVER", m)
-      call check_finite("AFTER RIVER", n)
+call check_finite("AFTER RIVER", m)
+call check_finite("AFTER RIVER", n)
 
-!! THIS PART OF THE CODE TEMPORARILY HANDLES DIEL VERTICAL MIGRATION !!
-!!
-      ivar_weights = 0
-      do ivar=1, size(fabm_model%interior_diagnostic_variables)
-        if ( fabm_model%interior_diagnostic_variables(ivar)%name== "dw_migrator_random_weights") ivar_weights = ivar        
-      end do
-
-      if (ivar_weights > 0) then ! checks if DVM is active on FABM side
-      !write(*,*)'DVM is actived by FABM coupler'
-      dw_migrator_random_weights = fabm_model%get_interior_diagnostic_data(ivar_weights) 
-
-      do ivar=1, size(fabm_model%horizontal_diagnostic_variables)
-        if ( fabm_model%horizontal_diagnostic_variables(ivar)%name== "dw_migrator_integral_random_weights") ivar_integral_weights = ivar        
-      end do
-      dw_migrator_integral_random_weights = fabm_model%get_horizontal_diagnostic_data(ivar_integral_weights)  
-
-      do ivar=1, size(fabm_model%interior_state_variables) 
-        if ( fabm_model%interior_state_variables(ivar)%name == "migrator_c" ) migrating_indexes(2) = ivar
-        if ( fabm_model%interior_state_variables(ivar)%name == "ECO_mesozoo" ) migrating_indexes(1) = ivar
-      end do
-
-      n_counter = 0
-      s_counter = 0
-
-       do j=1,jj
-        do i=1,ii
-          do idx = 1, size(migrating_indexes)
-            trac = migrating_indexes(idx)
-
-            tracer_new_n = 0.0
-            sum_zoo_n = 0.0
-            sum_zoo_n_after = 0.0
-            sum_diff_n = 0.0
-            if (SEA_P .and. tracer(i, j, 1, n, trac) > -1E2 .and. tracer(i, j, 1, n, trac) < 2500.0) then
-              if (idx ==1) s_counter = s_counter + 1
-              sum_zoo_n = sum( tracer(i, j, 1:kbottom(i,j,n), n, trac) * dp(i ,j , 1:kbottom(i,j,n), n)/onem )
-              last_thick_n = 1
-
-              do k = 1, kbottom(i,j,n) !kk
-                ratio_weights = dw_migrator_random_weights(i, j, k) / dw_migrator_integral_random_weights(i, j)
-                !write(*,*)'RATIO',dw_migrator_random_weights(i, j, k),dw_migrator_integral_random_weights(i, j)
-                if (ieee_is_finite(ratio_weights)) then
-                  if (dp(i ,j , k, n)/onem >= 1.0) then
-                    last_thick_n = k
-                    tracer_new_n(k) = tracer(i, j, k, n, trac) * 0.5
-                    tracer_new_n(k) = tracer_new_n(k) + ( sum_zoo_n * ratio_weights * 0.5 / max(1E-20,dp(i ,j , k, n)/onem ) )
-                  else
-                    tracer_new_n(k) = tracer_new_n(last_thick_n)
-                  end if
-                end if
-              end do
-              sum_zoo_n_after = sum( tracer_new_n(1:kbottom(i,j,n)) * dp(i ,j , 1:kbottom(i,j,n), n)/onem )
-              sum_diff_n = sum_zoo_n_after - sum_zoo_n
-              do k = 1, kbottom(i,j,n) !kk
-                if ( abs(sum_diff_n/sum_zoo_n) < 0.01 ) then
-                  tracer(i, j, k, n, trac) = tracer_new_n(k) * (1.0 - sum_diff_n / sum_zoo_n_after )
-                else
-                  if (idx ==1 .and. k==1) n_counter = n_counter + 1
-                end if
-              end do
-
-              do k = kbottom(i,j,n), kk
-                tracer(i, j, k, n, trac) = tracer(i, j, kbottom(i,j,n), n, trac)
-              end do
-            end if
-          end do
-        end do
-       end do 
-       !write(*,*)'NOT MIGRATED n', n_counter,' of ',s_counter
-      end if ! DVM switch
-!!              
-!! THIS PART OF THE CODE TEMPORARILY HANDLES DIEL VERTICAL MIGRATION !!
-
+! FABM tracer concentration at the bottom layer is copied to thin layers below by check_sate
+! To preserve mass, total mass difference is distributed among the bottom layer and below
+!      do i=1,ii
+!        do j=1,jj
+!          do ivar=1,size(fabm_model%interior_state_variables)
+!            mass_before_check_state(i, j, :, ivar) = tracer(i, j, :, n, ivar) * dp(i, j, :, n)/onem
+!          enddo
+!        enddo
+!      enddo
+      
       call check_state('after hycom_fabm_update', n, .true.)
       
+!      do i=1,ii
+!        do j=1,jj
+!          if (SEA_P) then
+!             do ivar=1,size(fabm_model%interior_state_variables)
+!               mass_after_check_state(:) = tracer(i, j, :, n, ivar) * dp(i, j, :, n)/onem
+!               mass_diff_check_state = sum(mass_after_check_state(:)) - sum(mass_before_check_state(i, j, :, ivar))
+!               do k=kbottom(i,j,n),kk
+!                  tracer(i, j, k, n, ivar) = tracer(i, j, k, n, ivar) - mass_diff_check_state / sum(dp(i, j, kbottom(i,j,n):kk, n)/onem)
+!               enddo
+!             enddo
+!           endif
+!        enddo
+!      enddo
+!! --------
+
       ! Apply the Robert-Asselin filter to the surface and bottom state.
       ! Note that RA will be applied to the pelagic tracers within mod_tsavc - no need to do it here!
 
-      if (do_icealgae) then
-        ia_tracer(1:ii, 1:jj, m, :) = ia_tracer(1:ii, 1:jj, m, :) + 0.5*ra2fac*(ia_tracer_old(1:ii, 1:jj, :)+ia_tracer(1:ii, 1:jj, n, :)-2.0*ia_tracer(1:ii, 1:jj, m, :))
-      else
         fabm_surface_state(1:ii, 1:jj, m, :) = fabm_surface_state(1:ii, 1:jj, m, :) + 0.5*ra2fac*(fabm_surface_state_old(1:ii, 1:jj, :)+fabm_surface_state(1:ii, 1:jj, n, :)-2.0*fabm_surface_state(1:ii, 1:jj, m, :))
-      end if
+#ifdef IA_DRIFT
+        ia_tracer(1:ii, 1:jj, m, :) = fabm_surface_state(1:ii, 1:jj, m, :)
+#endif
       fabm_bottom_state(1:ii, 1:jj, m, :) = fabm_bottom_state(1:ii, 1:jj, m, :) + 0.5*ra2fac*(fabm_bottom_state_old(1:ii, 1:jj, :)+fabm_bottom_state(1:ii, 1:jj, n, :)-2.0*fabm_bottom_state(1:ii, 1:jj, m, :))
 
-      call check_finite("AFTER ROBERT", m)
-      call check_finite("AFTER ROBERT", n)
+            !shuang
+        do i=1,ii
+         do j=1,jj
+           if (SEA_P) then
+            if (i==125-i0 .and. j==200-j0) then 
+               print *, 'shuang surface_state m, ia', fabm_surface_state(i,j,m,:), &
+                  ia_tracer(i,j,m,:)
+            end if
+           end if
+         enddo
+        enddo
+            !shuang
+
+call check_finite("AFTER ROBERT", m)
+call check_finite("AFTER ROBERT", n)
 
 call fabm_model%finalize_outputs
     end subroutine hycom_fabm_update
@@ -1011,14 +1049,20 @@ call fabm_model%finalize_outputs
       integer, intent(in) :: index
       logical, intent(in) :: repair
 
-      logical :: valid_int, valid_sf, valid_bt, repair_dsnk,repair_this
-      real :: spdk, left_to_remove, added_bottom_mass, epsilon, bottom_thickness
+      logical :: valid_int, valid_sf, valid_bt, repair_dsnk
+      real :: spdk
       integer :: i, j, k, ivar, old_index, indDET, indDSNK, kb, indTA, indc
-      integer :: average_here_and_below, average_here_and_below_positive, average_here_and_below_negative
-      real :: total_mass_before, total_mass_after
 
       old_index = current_time_index
       call update_fabm_state(index)
+
+      do i=1,ii
+        do j=1,jj
+          do ivar=1,size(fabm_model%interior_state_variables)
+            mass_before_check_state(i, j, :, ivar) = tracer(i, j, :, index, ivar) * dp(i, j, :, index)/onem
+          enddo
+        enddo
+      enddo
 
       do k=1,kk
         do j=1,jj
@@ -1040,16 +1084,81 @@ call fabm_model%finalize_outputs
         end if
       end do
 
-      if (.true.) then
+!      do ivar=1,size(fabm_model%interior_state_variables)
+!        if (.not.all(ieee_is_finite(tracer(1:ii, 1:jj, 1:kk, index, ivar)))) then
+!          write (*,*) location, 'Interior state variable not finite:', ivar, 'range', minval(tracer(1:ii, 1:jj, 1:kk, index, ivar)), maxval(tracer(1:ii, 1:jj, 1:kk, index, ivar)),fabm_model%interior_state_variables(ivar)%name
+!          stop
+!        end if
+!      end do
+
+      if (repair) then
         ! FABM will have placed "missing value" for all state variables in all masked cells.
         ! However, as these can be revived later in the simulation, make sure their value is valid by
         ! copying bottom value for pelagic tracers to all layers below bottom.
+
+        do ivar=1,size(fabm_model%interior_state_variables)
+          if ( fabm_model%interior_state_variables(ivar)%name == "ECO_det2" ) then
+             indDET = ivar
+          end if
+          if ( fabm_model%interior_state_variables(ivar)%name == "ECO_dsnk" ) then
+             indDSNK = ivar
+             repair_dsnk = .true.
+          end if
+          if ( fabm_model%interior_state_variables(ivar)%name == "CO2_TA" ) then
+             indTA = ivar
+          end if
+          if ( fabm_model%interior_state_variables(ivar)%name == "CO2_c" ) then
+             indc = ivar
+          end if
+        end do
 
         do j=1,jj
           do i=1,ii
             if (SEA_P) then
               do k=kbottom(i, j, index)+1, kk
                 tracer(i, j, k, index, :) = tracer(i, j, kbottom(i, j, index), index, :)
+              end do
+              do ivar=1,size(fabm_model%interior_state_variables)
+                mass_after_check_state(:) = tracer(i, j, :, index, ivar) * dp(i,j,:, index)/onem
+                mass_diff_check_state = sum(mass_after_check_state(:)) - sum(mass_before_check_state(i, j, :, ivar))
+                do k=kbottom(i,j,index)+1,kk
+                  tracer(i, j, k, index, ivar) = tracer(i, j, k, index, ivar) - mass_diff_check_state / sum(dp(i, j, kbottom(i,j,index):kk, index)/onem)
+                enddo
+
+                if ( ivar == indDSNK) then
+                   if (repair_dsnk) then
+                      spd = tracer(i, j, :, index, indDSNK) / tracer(i, j, :,index, indDET) * 24.*60.*60. 
+                      if (i == itest .and. j == jtest) then
+                         write(*,*)"SPD",spd
+                      end if
+                      if (minval(spd).lt.0.5 .or. maxval(spd).gt.15.0 ) then
+                         k=1
+                         spdk = tracer(i, j, k, index, indDSNK) / tracer(i,j,k,index, indDET) * 24.*60.*60.
+                         if (spdk .lt.0.5 .or. spdk .gt.12.0 ) then
+                            spdk = 5.0
+                            tracer(i, j, k, index, indDSNK) = tracer(i,j,k,index, indDET) * spdk / 24. / 60. / 60.
+                         end if
+                         do k=2, kk
+                            spdk = tracer(i, j, k, index, indDSNK) / tracer(i, j,k,index, indDET) * 24.*60.*60.
+                            if (spdk .lt.0.5 .or. spdk .gt.12.0 ) then
+                               spdk = tracer(i, j, k-1, index, indDSNK) / tracer(i, j,k-1,index, indDET) * 24.*60.*60.
+                               tracer(i, j, k, index, indDSNK) = tracer(i, j,k,index, indDET) * spdk / 24. / 60. / 60.
+                            end if
+                         end do
+                         do k=1, kk
+                            if (tracer(i, j, k, index, indDSNK) / tracer(i, j, k,index, indDET) * 24.*60.*60. .lt.0.5 .or. tracer(i, j, k, index, indDSNK) / tracer(i, j, k,index, indDET) * 24.*60.*60. .gt.15.0 ) then
+                               write(*,*)"OUTSIDE REPAIR",tracer(i, j, k, index,indDSNK) / tracer(i, j, k,index, indDET) * 24.*60.*60.,k,kbottom(i, j, index)
+                            end if
+                         end do
+                      end if
+                   end if
+                end if
+                if (ivar == indTA .or. ivar == indc) then
+                         do k=1, kk
+                            tracer(i, j, k, index, indTA) = max( min( tracer(i, j, k, index, indTA), 2600.0 ), 900.0)
+                            tracer(i, j, k, index, indc)  = max( min( tracer(i, j, k, index, indc), 2600.0 ), 900.0)
+                         end do
+                end if
               end do
             end if
           end do
@@ -1059,7 +1168,6 @@ call fabm_model%finalize_outputs
       do ivar=1,size(fabm_model%interior_state_variables)
         if (.not.all(ieee_is_finite(tracer(1:ii, 1:jj, 1:kk, index, ivar)))) then
           write (*,*) location, 'Interior state variable not finite:', ivar,'range', minval(tracer(1:ii, 1:jj, 1:kk, index, ivar)), maxval(tracer(1:ii,1:jj, 1:kk, index, ivar)),fabm_model%interior_state_variables(ivar)%name
-          
         end if
       end do
 
@@ -1071,12 +1179,28 @@ call fabm_model%finalize_outputs
       character(len=*), intent(in) :: location
       integer, intent(in) :: index
       integer:: ivar,i,j
+!      #ifdef IA_DRIFT
+!      do ivar=1,size(fabm_model%surface_state_variables)
+!        do i=1,ii
+!           do j=1,jj
+!              if (SEA_P) then
+!                 if (.not.(ieee_is_finite(ia_tracer(i, j, index, ivar)))) then
+!                    write (*,*) location, index,'IA variable not finite:',fabm_model%surface_state_variables(ivar)%name, ia_tracer(i, j, index, ivar)
+!                    call xchalt('(FABM IA varible is not finite)')
+!                    stop '(FABM IA varible is not finite)'
+!                 end if
+!              end if
+!           end do
+!        end do
+!      end do
+!      #endif
       do ivar=1,size(fabm_model%interior_state_variables)
         do i=1,ii
            do j=1,jj
               if (SEA_P) then
                  if (.not.all(ieee_is_finite(tracer(i, j, 1:kk, index, ivar)))) then
-                    write (*,*) location, index,'Interior state variable not finite:', ivar,'range', minval(tracer(i, j, 1:kk, index, ivar)), maxval(tracer(i,j, 1:kk, index, ivar)),fabm_model%interior_state_variables(ivar)%name
+                    !write (*,*) location, index,'Interior state variable not finite:', ivar,'range', minval(tracer(i, j, 1:kk, index, ivar)), maxval(tracer(i,j, 1:kk, index, ivar)),fabm_model%interior_state_variables(ivar)%name
+                    write (*,*) location, index,'Interior state variable not finite:', ivar,'range', minval(tracer(i, j, 1:kk,index, ivar)), maxval(tracer(i,j, 1:kk, index, ivar)),fabm_model%interior_state_variables(ivar)%name, i+i0,j+j0 
                     write (*,*) location, index,'Interior state variable not finite:',kbottom(i,j,index),tracer(i, j, 1:kk, index, ivar)
                     call xchalt('(FABM interior varible is not finite)')
                     stop '(FABM interior varible is not finite)'
@@ -1085,7 +1209,40 @@ call fabm_model%finalize_outputs
            end do
         end do
       end do
+!      if (mnproc .eq. 188 .and. i .eq. 11 .and. j .eq. 10) then
+!              do ivar=1,size(fabm_model%surface_state_variables)
+!                write (*,*) 'shuang: ',ivar,fabm_model%surface_state_variables(ivar)%name,ia_tracer(i,j,index,ivar)
+!              end do
+!              do ivar=1,size(fabm_model%interior_state_variables)
+!                write (*,*) 'shuang: ',ivar,fabm_model%interior_state_variables(ivar)%name,tracer(i,j,1:kk,index,ivar)
+!              end do
+!              call xchalt('(FABM interior varible is not finite)')
+!              stop '(FABM interior varible is not finite)'
+!      end if
     end subroutine check_finite
+
+    subroutine check_dsnk(location,index)
+      character(len=*), intent(in) :: location
+      integer, intent(in) :: index
+      integer :: i, j, k
+        do j=1,jj
+          do i=1,ii
+            if (SEA_P) then
+               spd = tracer(i, j, :, index, 20) / tracer(i, j, :,index, 17) * 24.*60.*60.
+               if (i == itest .and. j == jtest) then
+                  write(*,*)"SPD",index,location,spd
+               end if
+                      if (minval(spd).lt.0.5 .or. maxval(spd).gt.15.0 ) then
+                         do k=1, kk
+                            if (tracer(i, j, k, index, 20) / tracer(i, j, k,index, 17) * 24.*60.*60. .lt.0.5 .or. tracer(i, j, k, index, 20) / tracer(i, j, k,index, 17) * 24.*60.*60. .gt.15.0 ) then
+                               write(*,*)location,index,tracer(i, j, k, index,20) / tracer(i, j, k,index, 17) * 24.*60.*60.,k,kbottom(i, j,index)
+                            end if
+                         end do
+                      end if
+            end if
+          end do
+        end do
+    end subroutine check_dsnk
 
     subroutine vertical_movement(n, m, timestep)
       integer, intent(in) :: n, m
@@ -1162,128 +1319,6 @@ call fabm_model%finalize_outputs
 
     end subroutine vertical_movement
 
-    subroutine vertical_movement_new(n, m, timestep)
-      integer, intent(in) :: n, m
-      real, intent(in) :: timestep
-
-      real :: w(ii, kk, size(fabm_model%interior_state_variables))
-      real :: distance
-      real :: flux(ii, 0:kk), multilayer_flux(ii, 0:kk)
-      integer :: i, j, k, ivar, kabove, kb
-      real, parameter :: epsilon = 1e-8
-
-      do j=1,jj
-        ! Get vertical velocities per tracer (m/s, > 0 for floating, < 0  for sinking)
-        do k=1,kk
-          call fabm_model%get_vertical_movement(1, ii, j, k, w(1:ii, k, :))
-        end do
-
-        do ivar=1,size(fabm_model%interior_state_variables)
-          ! Compute tracer flux over layer interfaces
-          flux = 0
-          do k=1,kk
-            do i=1,ii
-!              if (w(i, k, ivar) > 0) then
-                ! Floating: move tracer upward over top interface of the layer (flux > 0)
-!                flux(i, k-1) = flux(i, k-1) + min((1-epsilon)*dp(i, j, k, n)/onem/timestep*tracer(i, j, k, n, ivar), w(i, k, ivar)*tracer(i, j, k, m, ivar))
-!              else
-                ! Sinking: move tracer downward over bottom interface of the layer (flux < 0)
-                flux(i, k) = flux(i, k) + max(-(1-epsilon)*dp(i, j, k, n)/onem/timestep*tracer(i, j, k, n, ivar), w(i, k, ivar)*tracer(i, j, k, m, ivar))
-!              end if
-            end do ! i
-          end do ! k
-
-          ! Update state
-          do i=1,ii
-            ! ============================= !
-            if ( w(i, 1, ivar) < 0 ) then ! SINKING
-
-              do k=1,kbottom(i, j, n)-1
-                if (flux(i, k) /= 0) then
-                  distance = max( w(i, k, ivar)*timestep, 1.0 ) ! sets the minimum sinking distance = 1 meter to avoid increasing concentrations
-
-                  ! check if the bottom layer is thicker than the calculated distance.
-
-                  if ( dp(i, j, k+1, n)/onem >= distance ) then ! If yes, add fluxes 
-                    tracer(i, j, k, n, ivar) = tracer(i, j, k, n, ivar) + flux(i, k)*timestep/(dp(i, j, k, n)/onem)
-                    tracer(i, j, k+1, n, ivar) = tracer(i, j, k+1, n, ivar) - flux(i, k)*timestep/(dp(i, j, k+1, n)/onem)
-                  else ! If no, sinking will penetrate multiple layers
-                    hbottom = 0
-                    nbottom = 1
-                    do kb = k+1,kbottom(i, j, n) ! add layer thicknesses to get the number of layers >= distance
-                      hbottom = hbottom + dp(i ,j , kb, n)/onem
-                      if ( hbottom >= distance ) exit
-                      nbottom = nbottom + 1
-                    end do
-                    ! apply flux to the layer-k
-                    if (hbottom >= distance) then ! If enough layers >= distance are found, apply flux to multiple layers
-                       tracer(i, j, k, n, ivar) = tracer(i, j, k, n, ivar) + flux(i, k)*timestep/(dp(i, j, k, n)/onem)
-                       do kb = k+1,k+nbottom
-                          tracer(i, j, kb, n, ivar) = tracer(i, j, kb, n, ivar) - flux(i, k)*timestep/hbottom
-                       end do
-                    else ! If not, distribute flux among layer-k and multiple layers below, and stop loop
-                       tracer(i, j, k, n, ivar) = tracer(i, j, k, n, ivar) + flux(i, k)*timestep/(dp(i, j, k, n)/onem)
-                       hbottom = hbottom + dp(i ,j , k, n)/onem
-                       do kb = k,k+nbottom
-                          tracer(i, j, kb, n, ivar) = tracer(i, j, kb, n, ivar) - flux(i, k)*timestep/hbottom
-                       end do
-                       exit ! exits the "do k" loop when multiple bottom layers do not add up to 1 meters 
-                    end if
-                  end if ! penetration layers
-                end if ! flux != 0
-              end do ! k
-
-           end if ! SINKING
-           ! ============================= !
-
-            ! ============================= !
-           if ( w(i, 1, ivar) > 0 ) then ! FLOATING
-
-            do k=kbottom(i, j, n),2,-1
-              if (flux(i, k) /= 0) then
-                distance = max( w(i, k, ivar)*timestep, 1.0 ) ! sets the single layer sinking distance >= 1 meter
-
-               ! check if the bottom layer is thicker than the calculated distance.
-
-                if ( dp(i, j, k-1, n)/onem >= distance ) then ! If yes, add fluxes                                                                
-                  tracer(i, j, k, n, ivar) = tracer(i, j, k, n, ivar) - flux(i, k)*timestep/(dp(i, j, k, n)/onem)
-                  tracer(i, j, k-1, n, ivar) = tracer(i, j, k-1, n, ivar) + flux(i, k)*timestep/(dp(i, j, k-1, n)/onem)
-
-                else ! If no, sinking will penetrate multiple layers
-                  hbottom = 0
-                  nbottom = 1
-                  do kb = k-1,2,-1 ! add layer thicknesses to get the number of layers >= distance
-                    hbottom = hbottom + dp(i ,j , kb, n)/onem
-                    if ( hbottom >= distance ) exit
-                    nbottom = nbottom + 1
-                  end do
-                  ! apply flux to the layer-k
-                  tracer(i, j, k, n, ivar) = tracer(i, j, k, n, ivar) - flux(i, k)*timestep/(dp(i, j, k, n)/onem)
-                  if (hbottom >= distance) then ! If enough layers >= distance are found, apply flux to multiple layers
-                     do kb = k-1,k-nbottom,-1
-                        tracer(i, j, kb, n, ivar) = tracer(i, j, kb, n, ivar) + flux(i, k)*timestep/hbottom
-                     end do
-                  else ! If not, distribute flux among layer-k and multiple layers below, and stop loop
-                     hbottom = hbottom + dp(i ,j , k, n)/onem
-                     do kb = k,k-nbottom,-1
-                        tracer(i, j, kb, n, ivar) = tracer(i, j, kb, n, ivar) + flux(i, k)*timestep/hbottom
-                     end do
-                     exit ! exits the "do k" loop when multiple bottom layers do not add up to 1 meters 
-                  end if
-                end if ! penetration layers
-              end if ! flux != 0
-            end do ! k
-
-         end if ! FLOATING
-         ! ============================= !
-
-       end do ! i
-     end do ! ivar
-   end do ! j
-
- end subroutine vertical_movement_new
-
-
     subroutine get_mask(index, lmask, lkbottom)
         integer, intent(in)  :: index
         logical, intent(out) :: lmask(:, :, :)
@@ -1293,13 +1328,24 @@ call fabm_model%finalize_outputs
         integer :: i, j, k
 
         lkbottom = 0
-        do j=1,jj
-            do i=1,ii
+       ! do j=1,jj
+       !     do i=1,ii
+       !       if (SEA_P) then
+       !         do k = kk, 1, -1
+       !           if (dp(i, j, k, index)/onem > h_min) exit
+       !         end do
+       !         kbottom(i, j) = max(k, 2)
+       !       end if
+       !     end do
+       ! end do
+        do j=1,jj       ! CAGLAR - I did it from top to bottom in order to avoid having < 0.1 m layer in the water column.
+            do i=1,ii   
               if (SEA_P) then
-                do k = kk, 1, -1
-                  if (dp(i, j, k, index)/onem > h_min) exit
+                do k = 1,kk
+                  if (dp(i, j, k, index)/onem <= h_min) exit
+                  lkbottom(i, j) = k
                 end do
-                lkbottom(i, j) = max(k, 2)
+                lkbottom(i, j) = max(lkbottom(i,j), 2)
               end if
             end do
         end do
@@ -1321,7 +1367,7 @@ call fabm_model%finalize_outputs
         real, parameter :: rho_0 = 1025.   ! [kg/m3]
         logical, save :: lcoice_thickness_initialized = .false. 
         ! Update cell thicknesses (m)
-        h(:, :, :) = max(dp(1:ii, 1:jj, 1:kk, index)/onem,1.0E-20)
+        h(:, :, :) = dp(1:ii, 1:jj, 1:kk, index)/onem
 
         if (initializing) then
           ! Make sure everything is unmasked, so that the state is initialized everywhere
@@ -1332,7 +1378,6 @@ call fabm_model%finalize_outputs
         if (.not.initializing) then
           !call fabm_update_time(fabm_model, real(nstep))
           call fabm_gettime() 
-
 
           ! Update surface forcing and internal variables for biology 
           do j=1,jj
@@ -1380,15 +1425,15 @@ call fabm_model%finalize_outputs
                        atmco2_2 = atmco2_1 / 9.81 * 10.**(-4.0)
                        atmco2_3 = pair / 9.81 * 10.**(-2.0)
                        atmco2_fabm(i,j) = atmco2_0 * (atmco2_3 - atmco2_2) * 0.997                     
-
-                       coice_conc(i,j) = covice(i,j)
+		       ! for ice-algae
+		       coice_conc(i,j) = covice(i,j)
                        if (do_icealgae) then
-                        if (lcoice_thickness_initialized) then
-                                 codh_growth(i,j) = (thkice(i,j)*coice_conc(i,j) - coice_thickness(i,j)) / delt1 
-                        else 
-                                 codh_growth(i,j) = 0.
-                        end if 
-                        coice_thickness(i,j) = thkice(i,j)*coice_conc(i,j)
+                         if (lcoice_thickness_initialized) then
+                           codh_growth(i,j) = (thkice(i,j)*coice_conc(i,j) - coice_thickness(i,j)) / delt1 
+                         else 
+                           codh_growth(i,j) = 0.
+                         end if 
+                         coice_thickness(i,j) = thkice(i,j)*coice_conc(i,j)
                        end if
                        do k=1,kk
                           delZ(k) = dp(i,j,k,index)/onem                    !
@@ -1411,20 +1456,12 @@ call fabm_model%finalize_outputs
         ! Transfer pointer to environmental data
         ! Do this for all variables on FABM's standard variable list that the model can provide.
         ! For this list, visit http://fabm.net/standard_variables
-        call fabm_model%link_interior_data(fabm_standard_variables%temperature,cotemp(1:ii,1:jj, 1:kk))
-        call fabm_model%link_interior_data(fabm_standard_variables%practical_salinity,cosal(1:ii,1:jj,1:kk))
-        call fabm_model%link_interior_data(fabm_standard_variables%density,codens(1:ii,1:jj, 1:kk))
-        call fabm_model%link_interior_data(fabm_standard_variables%pressure,codepth(1:ii,1:jj, 1:kk))
-        call fabm_model%link_interior_data(fabm_standard_variables%depth,codepth(1:ii,1:jj, 1:kk))
-        call fabm_model%link_horizontal_data(fabm_standard_variables%ice_conc, coice_conc(1:ii, 1:jj))
-        if (do_icealgae) then
-                call fabm_model%link_horizontal_data(fabm_standard_variables%ice_thickness,coice_thickness(1:ii,1:jj))
-                call fabm_model%link_horizontal_data(fabm_standard_variables%dh_growth,codh_growth(1:ii,1:jj))
-        end if
-        call fabm_model%link_horizontal_data(fabm_standard_variables%bottom_depth_below_geoid, codepth(1:ii, 1:jj, kk))
-
-
-
+        !call fabm_model%link_interior_data(fabm_standard_variables%temperature,cotemp(1:ii,1:jj, 1:kk))
+        !call fabm_model%link_interior_data(fabm_standard_variables%practical_salinity,cosal(1:ii,1:jj,1:kk))
+        !call fabm_model%link_interior_data(fabm_standard_variables%density,codens(1:ii,1:jj, 1:kk))
+        !call fabm_model%link_interior_data(fabm_standard_variables%pressure,codepth(1:ii,1:jj, 1:kk))
+        !call fabm_model%link_horizontal_data(fabm_standard_variables%ice_conc,coice_conc(1:ii,1:jj))
+        !call fabm_model%link_horizontal_data(fabm_standard_variables%ice_thickness,coice_thickness(1:ii,1:jj))
 
         call update_fabm_state(index)
     end subroutine update_fabm_data
@@ -1441,11 +1478,12 @@ call fabm_model%finalize_outputs
         ! Send pointers to state variable data to FABM
         call fabm_model%link_all_interior_state_data(tracer(1:ii, 1:jj, 1:kk, index, :))
         call fabm_model%link_all_bottom_state_data(fabm_bottom_state(1:ii, 1:jj, index, :))
-        if (do_icealgae) then
+#ifdef IA_DRIFT
+          ! update ice-alage variables after drifting
           call fabm_model%link_all_surface_state_data(ia_tracer(1:ii, 1:jj, index, :))
-        else
+#else
           call fabm_model%link_all_surface_state_data(fabm_surface_state(1:ii, 1:jj, index, :))
-        end if
+#endif
 
         current_time_index = index
     end subroutine update_fabm_state

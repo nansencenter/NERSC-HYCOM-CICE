@@ -236,7 +236,7 @@ contains
         call fabm_model%link_interior_data(fabm_standard_variables%practical_salinity,cosal(1:ii,1:jj,1:kk))
         call fabm_model%link_interior_data(fabm_standard_variables%density,codens(1:ii,1:jj, 1:kk))
         call fabm_model%link_interior_data(fabm_standard_variables%pressure,codepth(1:ii,1:jj, 1:kk))
-        call fabm_model%link_horizontal_data(fabm_standard_variables%ice_conc,coice_conc(1:ii,1:jj))
+        call fabm_model%link_horizontal_data(fabm_standard_variables%ice_area_fraction,coice_conc(1:ii,1:jj))
         call fabm_model%link_horizontal_data(fabm_standard_variables%ice_thickness,coice_thickness(1:ii,1:jj))
         call fabm_model%link_horizontal_data(fabm_standard_variables%dh_growth,codh_growth(1:ii,1:jj))
 
