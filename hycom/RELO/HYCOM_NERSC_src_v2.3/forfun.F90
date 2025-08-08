@@ -686,13 +686,11 @@
       integer   i,ios,iunit,j,lgth,nrec
 ! ESPC --- add
 #if ! defined(ESPC_ATM) && ! defined(ESPC_NAVGEM) && ! defined(ESPC_DATA_ATM)
-
 !
 ! --- w0 negative on first call only.
       if     (w0.lt.-1.0) then
 !
 ! ---   initialize forcing fields
-!
         if      (.not.windf) then
           if     (mnproc.eq.1) then
           write(lp,*)
@@ -1147,6 +1145,15 @@
             call skmonth(909)
           enddo
         endif !surtmp
+
+#if defined(NERSC_HYCOM_CICE)
+        if (highfq_river) then
+          do i= 1,nrec-2
+            call skmonth(918)
+          enddo
+        endif
+#endif
+
         if     (sstflg.eq.3) then
           do i= 1,nrec-2
             call skmonth(910)

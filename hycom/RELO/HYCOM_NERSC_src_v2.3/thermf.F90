@@ -14,7 +14,7 @@
       subroutine thermf_oi(m,n)
       use mod_xc         ! HYCOM communication interface
       use mod_cb_arrays  ! HYCOM saved arrays
-      use mod_NERSCnml, only : sss_underice
+      use mod_NERSCnml, only : sss_underice, highfq_river
       implicit none
 !
       integer m,n
@@ -1122,6 +1122,7 @@
       subroutine thermfj(m,n,dtime, j)
       use mod_xc         ! HYCOM communication interface
       use mod_cb_arrays  ! HYCOM saved arrays
+      use mod_NERSCnml, only : highfq_river
 #if defined(STOKES)
       use mod_stokes  !    HYCOM Stokes Drift
 #endif
@@ -1974,6 +1975,11 @@
         if(cesmbeta .and. cpl_orivers.and.cpl_irivers) then
             rivflx(i,j) = (imp_orivers(i,j,1)+imp_irivers(i,j,1)) &
                         * rhoref
+
+        elseif (highfq_river) then
+            rivflx(i,j) = (rivers(i,j,l0)*w0+rivers(i,j,l1)*w1 )   &
+                * rhoref
+
         else
             rivflx(i,j) = ( rivers(i,j,lr0)*wr0+rivers(i,j,lr1)*wr1    &
                         +   rivers(i,j,lr2)*wr2+rivers(i,j,lr3)*wr3)   &

@@ -33,24 +33,25 @@ module mod_NERSCnml
         write (lp,'(a)') &
           'NERSC HYCOM ERROR: WARNING: hycom_nml namelist not read from file: ../hycom_opt'
         call flush(lp)
+        call xcstop('(NERSC_nml)')
+        call xchalt ('NERSC_nml')
       endif
     endif
-    do while (nml_err == 0)
-      read(funi, nml=hycom_nml,iostat=nml_err)
-      if (nml_err > 0) then
-        if (mnproc.eq.1) then
+
+    read(funi, nml=hycom_nml,iostat=nml_err)
+    if (nml_err > 0) then
+       if (mnproc.eq.1) then
           write (lp,'(a)') &
           'NERSC HYCOM ERROR: Can not read namelist: ../hycom_opt'
           call flush(lp)
-          call xcstop('(NERSC_nml)')
           stop '(NERSC_nml)'
-        endif
-      endif
-    end do
+          call xchalt ('NERSC_nml')
+       endif
+    endif
     close(funi)
     if (mnproc.eq.1) then
       write (lp,*)'NERSC HYCOM: Reading hycom_nml from: ../hycom_opt'
-      write (lp,*)'NERSC HYCOM: Write arche    = ',write_arche
+      write (lp,*)'             Write arche    = ',write_arche
       write (lp,*)'             sss_underice   = ',sss_underice
       write (lp,*)'             highfq_river   = ',highfq_river
     endif !1st tile
