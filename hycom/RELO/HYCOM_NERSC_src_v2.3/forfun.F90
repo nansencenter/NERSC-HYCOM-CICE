@@ -1145,13 +1145,11 @@
           enddo
         endif
 #endif
-!ALFA, This should also be done for "dewp", likely will fix a bug
-! in reading "dewp", for now I comment it for further invetigation 
-! #ifdef _FABM_
-!           do i= 1,nrec-2
-!             call skmonth(926)
-!           enddo
-!  #endif
+#ifdef _FABM_
+          do i= 1,nrec-2
+            call skmonth(926)
+          enddo
+#endif
         if     (sstflg.eq.3) then
           do i= 1,nrec-2
             call skmonth(910)
