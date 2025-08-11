@@ -52,18 +52,6 @@ DIFOUT     # when difout parameter is 1 on blkdat.input.
 for more detail, see ```makefile```.
 
 
-2. boolean variable
+2. Change in ECOSMO output to archive
 
 Upon change of BGC variables list on hycom b file, you need to modify variable registraion in ```mod_mean.F90```.
-
-In order to use ```hycom_mean``` with HYCOM-CICE setup without ECOSMO, you need to turn off ECOSMO option set in ```hycom_mean.F90``` by changing:
-
-```
-bgcout = .true.
-```
-
-to
-
-```
-bgcout = .false.
-```
