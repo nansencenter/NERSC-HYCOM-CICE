@@ -13,6 +13,10 @@ LIBS:= $(LIBS) -L../../../lib/ -lhycnersc
 # This is the hycom utility includes (modules)
 # NB: Path is relative to TMP dir
 INCLUDE:= $(INCLUDE) -I../../../include/ 
+# Uncomment below for an archive file with ols ECOSMO
+CPPFLAGS:= $(CPPFLAGS) -DOLDECOSMO
+# Uncomment below for an archive file with KPP visc/diff output
+#CPPFLAGS:= $(CPPFLAGS) -DDIFOUT
 # Uncomment below to dump meanssh field
 #CPPFLAGS:= $(CPPFLAGS) -DDUMP_MSSH 
 

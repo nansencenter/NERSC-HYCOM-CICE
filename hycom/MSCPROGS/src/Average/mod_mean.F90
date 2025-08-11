@@ -29,8 +29,14 @@ module mod_mean
          tracer_m
 
   real, save, allocatable, dimension (:,:,:) :: &
-         u,  v,  ke,  temp,  saln,  th3d,  dp  ,visc,  tdff,  sdff,  dw,p,  &
-         u_m,v_m,ke_m,temp_m,saln_m,th3d_m,dp_m,visc_m,tdff_m,sdff_m,dpu_m,dpv_m,dw_m
+         u,  v,  ke,  temp,  saln,  th3d,  dp  ,  dw,p,  &
+         u_m,v_m,ke_m,temp_m,saln_m,th3d_m,dp_m,dpu_m,dpv_m,dw_m
+
+#ifdef DIFOUT
+  real, save, allocatable, dimension (:,:,:) :: &
+         visc,  tdff,  sdff,  &
+         visc_m,tdff_m,sdff_m
+#endif  
 
   real, save, allocatable, dimension (:,:) :: & 
          depths,depthu,depthv, &
@@ -56,7 +62,11 @@ module mod_mean
 
   ! --- ECOSMO
 
-  integer, parameter :: ntracr_bgc_2d = 10, ntracr_bgc_3d = 43
+#ifdef OLDECOSMO
+  integer, parameter :: ntracr_bgc_2d = 8, ntracr_bgc_3d = 41
+#else
+  integer, parameter :: ntracr_bgc_2d = 10, ntracr_bgc_3d = 45
+#endif
   
   character(len=8), save, allocatable, dimension(:) :: &
          nvar_bgc_2d
@@ -154,10 +164,12 @@ module mod_mean
   allocate( temp(ii,jj,kk), temp_m(ii,jj,kk) ); temp_m = 0.0
   allocate( saln(ii,jj,kk), saln_m(ii,jj,kk) ); saln_m = 0.0
   allocate( th3d(ii,jj,kk), th3d_m(ii,jj,kk) ); th3d_m = 0.0
+#ifdef DIFOUT
   allocate( visc(ii,jj,kk), visc_m(ii,jj,kk) ); visc_m = 0.0
   allocate( tdff(ii,jj,kk), tdff_m(ii,jj,kk) ); tdff_m = 0.0
   allocate( sdff(ii,jj,kk), sdff_m(ii,jj,kk) ); sdff_m = 0.0
-
+#endif
+  
   if (trcout) then
      allocate( tracer(  ii,jj,kk,ntracr) )
      allocate( tracer_m(ii,jj,kk,ntracr) ); tracer_m = 0.0
@@ -176,6 +188,58 @@ module mod_mean
 
     ! register variable names (TODO: register in namelist)
 
+#ifdef OLDECOSMO
+    nvar_bgc_3d( 1) = 'CO2_c   ' 
+    nvar_bgc_3d( 2) = 'CO2_TA  ' 
+    nvar_bgc_3d( 3) = 'ECO_no3 '  
+    nvar_bgc_3d( 4) = 'ECO_nh4 ' 
+    nvar_bgc_3d( 5) = 'ECO_pho ' 
+    nvar_bgc_3d( 6) = 'ECO_sil ' 
+    nvar_bgc_3d( 7) = 'ECO_oxy ' 
+    nvar_bgc_3d( 8) = 'ECO_fla ' 
+    nvar_bgc_3d( 9) = 'ECO_dia ' 
+    nvar_bgc_3d(10) = 'ECO_ccl ' 
+    nvar_bgc_3d(11) = 'ECO_cclc' 
+    nvar_bgc_3d(12) = 'ECO_caco' 
+    nvar_bgc_3d(13) = 'ECO_diac' 
+    nvar_bgc_3d(14) = 'ECO_flac' 
+    nvar_bgc_3d(15) = 'ECO_micr' 
+    nvar_bgc_3d(16) = 'ECO_meso' 
+    nvar_bgc_3d(17) = 'ECO_det ' 
+    nvar_bgc_3d(18) = 'ECO_opa ' 
+    nvar_bgc_3d(19) = 'ECO_dom ' 
+    nvar_bgc_3d(20) = 'ECO_dsnk' 
+    nvar_bgc_3d(21) = 'CO2_pH  ' 
+    nvar_bgc_3d(22) = 'CO2_pCO2' 
+    nvar_bgc_3d(23) = 'CO2_Carb' 
+    nvar_bgc_3d(24) = 'CO2_BiCa' 
+    nvar_bgc_3d(25) = 'CO2_Carb' 
+    nvar_bgc_3d(26) = 'CO2_Om_c' 
+    nvar_bgc_3d(27) = 'CO2_Om_a' 
+    nvar_bgc_3d(28) = 'light_sw' 
+    nvar_bgc_3d(29) = 'light_pa' 
+    nvar_bgc_3d(30) = 'ECO_prim' 
+    nvar_bgc_3d(31) = 'ECO_secp' 
+    nvar_bgc_3d(32) = 'ECO_parm' 
+    nvar_bgc_3d(33) = 'ECO_Nlim' 
+    nvar_bgc_3d(34) = 'ECO_Plim' 
+    nvar_bgc_3d(35) = 'ECO_Slim' 
+    nvar_bgc_3d(36) = 'ECO_Llim' 
+    nvar_bgc_3d(37) = 'ECO_deni' 
+    nvar_bgc_3d(38) = 'ECO_snks' 
+    nvar_bgc_3d(39) = 'ECO_c2ch' 
+    nvar_bgc_3d(40) = 'ECO_c2ch' 
+    nvar_bgc_3d(41) = 'ECO_c2ch' 
+        
+    nvar_bgc_2d( 1) = 'ECO_sed4'
+    nvar_bgc_2d( 2) = 'ECO_sed1'
+    nvar_bgc_2d( 3) = 'ECO_sed2'
+    nvar_bgc_2d( 4) = 'ECO_sed3'
+    nvar_bgc_2d( 5) = 'CO2_fair'
+    nvar_bgc_2d( 6) = 'CO2_wind'
+    nvar_bgc_2d( 7) = 'light_pa'
+    nvar_bgc_2d( 8) = 'ECO_bots'
+#else
     nvar_bgc_3d( 1) = 'CO2_c   ' 
     nvar_bgc_3d( 2) = 'CO2_TA  ' 
     nvar_bgc_3d( 3) = 'ECO_no3 '  
@@ -205,20 +269,22 @@ module mod_mean
     nvar_bgc_3d(27) = 'CO2_Om_a' 
     nvar_bgc_3d(28) = 'ECO_prim' 
     nvar_bgc_3d(29) = 'ECO_secp' 
-    nvar_bgc_3d(30) = 'ECO_parm' 
-    nvar_bgc_3d(31) = 'ECO_Nlim' 
-    nvar_bgc_3d(32) = 'ECO_Plim' 
-    nvar_bgc_3d(33) = 'ECO_Slim' 
-    nvar_bgc_3d(34) = 'ECO_Llim' 
-    nvar_bgc_3d(35) = 'ECO_deni' 
-    nvar_bgc_3d(36) = 'ECO_snks' 
-    nvar_bgc_3d(37) = 'ECO_c2ch' 
+    nvar_bgc_3d(30) = 'ECO_netp' 
+    nvar_bgc_3d(31) = 'ECO_parm' 
+    nvar_bgc_3d(32) = 'ECO_Nlim' 
+    nvar_bgc_3d(33) = 'ECO_Plim' 
+    nvar_bgc_3d(34) = 'ECO_Slim' 
+    nvar_bgc_3d(35) = 'ECO_Llim' 
+    nvar_bgc_3d(36) = 'ECO_deni' 
+    nvar_bgc_3d(37) = 'ECO_snks' 
     nvar_bgc_3d(38) = 'ECO_c2ch' 
     nvar_bgc_3d(39) = 'ECO_c2ch' 
-    nvar_bgc_3d(40) = 'light_sw' 
-    nvar_bgc_3d(41) = 'light_pa' 
-    nvar_bgc_3d(42) = 'attenuat' 
-    nvar_bgc_3d(43) = 'total_ca'
+    nvar_bgc_3d(40) = 'ECO_c2ch' 
+    nvar_bgc_3d(41) = 'light_sw' 
+    nvar_bgc_3d(42) = 'light_pa' 
+    nvar_bgc_3d(43) = 'attenuat' 
+    nvar_bgc_3d(44) = 'total_ch'
+    nvar_bgc_3d(45) = 'total_ca'
         
     nvar_bgc_2d( 1) = 'ECO_sed4'
     nvar_bgc_2d( 2) = 'ECO_sed1'
@@ -230,6 +296,7 @@ module mod_mean
     nvar_bgc_2d( 8) = 'light_pa'
     nvar_bgc_2d( 9) = 'surface_'
     nvar_bgc_2d(10) = 'surface_'
+#endif    
   endif
   
   end subroutine mean_alloc
@@ -357,10 +424,12 @@ module mod_mean
         saln_m(i,j,:) =   saln_m(i,j,:) +   saln(i,j,:) * sw(:)
         th3d_m(i,j,:) =   th3d_m(i,j,:) +   th3d(i,j,:) * sw(:)
           ke_m(i,j,:) =     ke_m(i,j,:) +     ke(i,j,:) * sw(:)
+#ifdef DIFOUT
         visc_m(i,j,:) =   visc_m(i,j,:) +   visc(i,j,:) * sw(:)
         tdff_m(i,j,:) =   tdff_m(i,j,:) +   tdff(i,j,:) * sw(:)
         sdff_m(i,j,:) =   sdff_m(i,j,:) +   sdff(i,j,:) * sw(:)
-
+#endif
+        
        if (trcout) then
           do ktr= 1,ntracr
              tracer_m(i,j,:,ktr) = tracer_m(i,j,:,ktr) + tracer(i,j,:,ktr) * sw(:)
@@ -501,9 +570,11 @@ module mod_mean
           temp_m(i,j,:) = temp_m(i,j,:) + temp(i,j,:)**2 * sw(:)
           saln_m(i,j,:) = saln_m(i,j,:) + saln(i,j,:)**2 * sw(:)
           th3d_m(i,j,:) = th3d_m(i,j,:) + th3d(i,j,:)**2 * sw(:)
+#ifdef DIFOUT
           visc_m(i,j,:) = visc_m(i,j,:) + visc(i,j,:)**2 * sw(:)
           tdff_m(i,j,:) = tdff_m(i,j,:) + tdff(i,j,:)**2 * sw(:)
           sdff_m(i,j,:) = sdff_m(i,j,:) + sdff(i,j,:)**2 * sw(:)
+#endif
         if (trcout) then
            do ktr= 1,ntracr
               tracer_m(i,j,:,ktr) = tracer_m(i,j,:,ktr) + tracer(i,j,:,ktr)**2 * sw(:)
@@ -642,10 +713,12 @@ module mod_mean
     th3d_m =   th3d
       dp_m =     dp
       dw_m =     dw
+#ifdef DIFOUT
     visc_m =   visc
     tdff_m =   tdff
     sdff_m =   sdff
-
+#endif
+    
   if (trcout) then
      tracer_m = tracer
   endif   
@@ -771,9 +844,11 @@ module mod_mean
            temp_m(i,j,k) = q*(temp_m(i,j,k) - temp(i,j,k))
            saln_m(i,j,k) = q*(saln_m(i,j,k) - saln(i,j,k))
            th3d_m(i,j,k) = q*(th3d_m(i,j,k) - th3d(i,j,k))
+#ifdef DIFOUT
            visc_m(i,j,k) = q*(visc_m(i,j,k) - visc(i,j,k))
            tdff_m(i,j,k) = q*(tdff_m(i,j,k) - tdff(i,j,k))
            sdff_m(i,j,k) = q*(sdff_m(i,j,k) - sdff(i,j,k))
+#endif
            if (trcout) then
               do ktr= 1,ntracr
                  tracer_m(i,j,k,ktr) = q*(tracer_m(i,j,k,ktr) - tracer(i,j,k,ktr))
@@ -841,10 +916,12 @@ module mod_mean
      call mean_box(  th3d_m,ii,jj,kk,nbox,larctic,lperiod)
      call mean_box(    dp_m,ii,jj,kk,nbox,larctic,lperiod)
      call mean_box(    ke_m,ii,jj,kk,nbox,larctic,lperiod)
+#ifdef DIFOUT
      call mean_box(  visc_m,ii,jj,kk,nbox,larctic,lperiod)
      call mean_box(  tdff_m,ii,jj,kk,nbox,larctic,lperiod)
      call mean_box(  sdff_m,ii,jj,kk,nbox,larctic,lperiod)
-
+#endif
+     
      if (trcout) then
         do ktr= 1,ntracr
            call mean_box(tracer_m(1,1,1,ktr),ii,jj,kk,nbox,larctic,lperiod)
@@ -1002,9 +1079,11 @@ module mod_mean
               temp_m(i,j,k) =   temp_m(i,j,k) * swk
               saln_m(i,j,k) =   saln_m(i,j,k) * swk
               th3d_m(i,j,k) =   th3d_m(i,j,k) * swk
+#ifdef DIFOUT
               visc_m(i,j,k) =   visc_m(i,j,k) * swk
               tdff_m(i,j,k) =   tdff_m(i,j,k) * swk
               sdff_m(i,j,k) =   sdff_m(i,j,k) * swk
+#endif
               if (trcout) then
                  do ktr= 1,ntracr
                     tracer_m(i,j,k,ktr) = tracer_m(i,j,k,ktr) * swk
@@ -1020,9 +1099,11 @@ module mod_mean
               temp_m(i,j,k) =   temp_m(i,j,k-1)
               saln_m(i,j,k) =   saln_m(i,j,k-1)
               th3d_m(i,j,k) =   th3d_m(i,j,k-1)
+#ifdef DIFOUT
               visc_m(i,j,k) =   visc_m(i,j,k-1)
               tdff_m(i,j,k) =   tdff_m(i,j,k-1)
               sdff_m(i,j,k) =   sdff_m(i,j,k-1)
+#endif             
               if (trcout) then
                  do ktr= 1,ntracr
                     tracer_m(i,j,k,ktr) = tracer_m(i,j,k-1,ktr)
@@ -1079,9 +1160,11 @@ module mod_mean
           temp_m(i,j,:) = spval
           saln_m(i,j,:) = spval
           th3d_m(i,j,:) = spval
+#ifdef DIFOUT
           visc_m(i,j,:) = spval
           tdff_m(i,j,:) = spval
           sdff_m(i,j,:) = spval
+#endif
         if (trcout) then
            do ktr= 1,ntracr
               tracer_m(i,j,:,ktr) = spval
@@ -1127,9 +1210,11 @@ module mod_mean
            temp_m(i,j,k) = std(temp(i,j,k) - temp_m(i,j,k)**2)
            saln_m(i,j,k) = std(saln(i,j,k) - saln_m(i,j,k)**2)
            th3d_m(i,j,k) = std(th3d(i,j,k) - th3d_m(i,j,k)**2)
+#ifdef DIFOUT
            visc_m(i,j,k) = std(visc(i,j,k) - visc_m(i,j,k)**2)
            tdff_m(i,j,k) = std(tdff(i,j,k) - tdff_m(i,j,k)**2)
            sdff_m(i,j,k) = std(sdff(i,j,k) - sdff_m(i,j,k)**2)
+#endif
            if (trcout) then
               do ktr= 1,ntracr
                  tracer_m(i,j,k,ktr) = std(tracer(i,j,k,ktr) - tracer_m(i,j,k,ktr)**2)

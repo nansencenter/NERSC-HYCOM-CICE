@@ -258,7 +258,8 @@ subroutine putdat(flnm,time_min,time_max,time,mntype,iexpt,jexpt,yrflag,thbase)
           call flush( lp)
        enddo !ktr
     endif
-     
+
+#ifdef DIFOUT    
     call zaiowr(visc_m(1,1,k),ip,.true.,xmin,xmax, nop, .false.)
     write (nop,117) 'viscty  ',nmean,time,k,coord,xmin,xmax
     call flush(nop)
@@ -276,6 +277,7 @@ subroutine putdat(flnm,time_min,time_max,time,mntype,iexpt,jexpt,yrflag,thbase)
     call flush(nop)
     write ( lp,117) 's-diff  ',nmean,time,k,coord,xmin,xmax
     call flush( lp)
+#endif
  enddo !k
 
  ! --- ECOSMO

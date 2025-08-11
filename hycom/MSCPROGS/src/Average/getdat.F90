@@ -513,6 +513,7 @@ subroutine getdat(flnm,time,iweight,mntype,iexpt,yrflag,thbase)
           write(lp,'("input  ",a," into ",a,2i3)') cline(1:8),'tracer  ',k,ktr
        enddo !ktr
     endif !trcout
+#ifdef DIFOUT
     !--------------------------------
     ! 'viscty  ' > visc(:,:,k)
     !--------------------------------
@@ -543,6 +544,7 @@ subroutine getdat(flnm,time,iweight,mntype,iexpt,yrflag,thbase)
     call getfld(work, ni, hminb,hmaxb, .false.)
     call extrct(work,idm,jdm,iorign,jorign,sdff(1,1,k),ii,jj)
     write(lp,'("input  ",a," into ",a,i3)') cline(1:8),'sdff    ',k
+#endif    
 
     write(lp,'(a,f9.5)') 'finished reading data for layer',thet
     call flush(lp)

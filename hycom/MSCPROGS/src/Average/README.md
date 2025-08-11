@@ -35,18 +35,35 @@ specifies a name of mean ab files: ```file_mean.a```,```file_mean.b```, generate
 hycom_mean < mean_hycom.in
 ```
 
-### Notes [2025.07.02] This option is not available yet.
+### Notes
+
+1. CPP Keys
+
+At this moment [2025.08.11], we have 2 CPP flags for adjusting ```hycom_mean``` to types of ab file strucure:
+
+```
+OLDECOSMO  # when ECOSMO is not the latest version after BGC-Argo based tuning.
+```
+
+```
+DIFOUT     # when difout parameter is 1 on blkdat.input.
+```
+
+for more detail, see ```makefile```.
+
+
+2. boolean variable
 
 Upon change of BGC variables list on hycom b file, you need to modify variable registraion in ```mod_mean.F90```.
 
 In order to use ```hycom_mean``` with HYCOM-CICE setup without ECOSMO, you need to turn off ECOSMO option set in ```hycom_mean.F90``` by changing:
 
 ```
-lecosmo = .true.
+bgcout = .true.
 ```
 
 to
 
 ```
-lecosmo = .false.
+bgcout = .false.
 ```
