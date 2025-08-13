@@ -424,7 +424,7 @@
                       xmin,xmax, nopa, .false.)
           if     (mnproc.eq.1) then
 #ifdef _FABM_
-          write (nop,117) fabm_model%state_variables(ktr)%name(1:8), &
+          write (nop,117) fabm_model%interior_state_variables(ktr)%name(1:8), &
             nstep,time,k,coord,xmin,xmax
 #else
           if     (ktr.le.99) then
@@ -1158,7 +1158,7 @@
         call ztiowr(tracer(1-nbdy,1-nbdy,k,n,ktr),ip,.true., &
                     xmin,xmax, nopa, .false.)
 #ifdef _FABM_
-       write (nop,117) fabm_model%state_variables(ktr)%name(1:8), &
+       write (nop,117) fabm_model%interior_state_variables(ktr)%name(1:8), &
             nstep,time,k,coord,xmin,xmax
 #else
         if     (ktr.le.99) then
