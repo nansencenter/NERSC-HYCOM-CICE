@@ -25,9 +25,9 @@
        montg             ! montgomery potential
 
 #if defined(RELO)
-      real, save, allocatable, dimension(:,:,:,:,:) ::  &
+      real, save, target, allocatable, dimension(:,:,:,:,:) ::  &
 #else
-      real, save, &
+      real, save, target, &
             dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,kdm,2,mxtrcr) ::  &
 #endif
        tracer         ! inert tracers
@@ -392,10 +392,10 @@
        stoc_t,         & ! stochastic temperature anomaly forcing
        stoc_s,         & ! stochastic salinty     anomaly forcing
        stoc_u,         & ! stochastic u-velocity  anomaly forcing
-       stoc_v            ! stochastic v-velocity  anomaly forcing
+       stoc_v,         & ! stochastic v-velocity  anomaly forcing
 #if defined(_FABM_) 
 !     !CAGLAR: BEGIN (MAY2019)
-       dewpt,          ! dew point temperature, used for CO2 formulations
+       dewpt           ! dew point temperature, used for CO2 formulations
 !     !CAGLAR: END
 #endif
 !
@@ -1586,13 +1586,13 @@
                 rmu(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy), &
               rmunp(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy), &
 #if defined(_FABM_)
-              rmunp_trc(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy),
+              rmunp_trc(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy), &
 #endif 
               rmunv(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy), &
              rmunvu(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy), &
              rmunvv(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy), &
              rmutra(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy), &
-               rmus(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy) )
+               rmus(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy) ) 
 #if defined(_FABM_)
       call mem_stat_add( 8*(idm+2*nbdy)*(jdm+2*nbdy) )
 #else
