@@ -924,7 +924,7 @@
               write(iunit,4100) 'tracer  ',k,l+1,xmin(k+l*kdm), &
                                               xmax(k+l*kdm)
 #else
-              write(iunit,4100) fabm_model%state_variables(ktr)%name &
+              write(iunit,4100) fabm_model%interior_state_variables(ktr)%name &
                  (1:8),k,l+1,xmin(k+l*kdm),xmax(k+l*kdm)
 #endif
             enddo
