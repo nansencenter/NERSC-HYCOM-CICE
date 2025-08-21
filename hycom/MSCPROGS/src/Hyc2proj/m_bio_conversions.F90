@@ -263,11 +263,7 @@ module m_bio_conversions
 !intergarte over depth
       do i=1,idm
         do j=1,jdm
-!          do k=1,kdm
           gpp_depthint(i,j)=dot_product(gpp(i,j,:),dplayer(i,j,:))
-          gpp_depthint(i,j)=gpp_depthint(i,j) * 0.9 ! assumed 10% respiration
-!       gpp_depthint(i,j)=gpp_depthint(i,j)+gpp(i,j,k)*dplayer(i,j,k)
-!          end do
         end do
       end do
 
@@ -551,6 +547,54 @@ module m_bio_conversions
       biomass=(micro+meso)/ccar
 
      end subroutine zbiomass
+
+     subroutine mesozoobiomass(meso,biomass,idm,jdm,kdm)
+      !compute mesozooplankton biomass: mmoleC m-3
+       implicit none
+ 
+       integer, intent(in) :: idm,jdm,kdm
+       real, dimension(idm,jdm,kdm)  , intent(in)  ::meso !mgC m-3
+       real, dimension(idm,jdm,kdm)  , intent(out) ::biomass
+ 
+       biomass=(meso)/ccar
+ 
+      end subroutine mesozoobiomass
+
+     subroutine poc(micro,dia,fla,ccl,det,biomass,idm,jdm,kdm)
+      !compute total POC biomass: mol C m-3
+       implicit none
+ 
+       integer, intent(in) :: idm,jdm,kdm
+       real, dimension(idm,jdm,kdm)  , intent(in)  ::micro, dia, fla, ccl, det !mgC m-3
+       real, dimension(idm,jdm,kdm)  , intent(out) ::biomass
+ 
+       biomass=(micro+dia+fla+ccl+det) / 1000.0 / ccar
+ 
+      end subroutine poc
+
+      subroutine docc(dom,biomass,idm,jdm,kdm)
+        !compute DOC biomass: mmoleC m-3
+         implicit none
+   
+         integer, intent(in) :: idm,jdm,kdm
+         real, dimension(idm,jdm,kdm)  , intent(in)  ::dom !mgC m-3
+         real, dimension(idm,jdm,kdm)  , intent(out) ::biomass
+   
+         biomass=(dom)/ccar
+   
+      end subroutine docc
+
+      subroutine detc(det,biomass,idm,jdm,kdm)
+        !compute detritus biomass: mol C m-3
+        implicit none
+     
+        integer, intent(in) :: idm,jdm,kdm
+        real, dimension(idm,jdm,kdm)  , intent(in)  ::det !mgC m-3
+        real, dimension(idm,jdm,kdm)  , intent(out) ::biomass
+     
+        biomass=(det) / 1000.0 / ccar
+     
+      end subroutine detc
 
      subroutine oxygen_conv(oxy,mmol_oxy,idm,jdm,kdm)
 !compute dissolved oxygen: mmol m-3

@@ -279,7 +279,11 @@ C
 CKAL  --- A simpler masking method; Applied on boundaries
 CKAL  --- where depth 2 points away from border is > 0
 CKAL  --- e.g. depth(2,j) > 0 and depth(itdm-1) > 0
-      rval=1.0/(efoldtime*86400.0)
+      if (rval>0) then
+         rval=1.0/(rval*86400.0)
+      else
+         rval=1.0/(efoldtime*86400.0)
+      endif
       rvmin=1e20
       do i=2,idm-1
 

@@ -1,0 +1,5 @@
+&hycom_nml
+  write_arche = .false.
+  sss_underice= .false.
+/
+

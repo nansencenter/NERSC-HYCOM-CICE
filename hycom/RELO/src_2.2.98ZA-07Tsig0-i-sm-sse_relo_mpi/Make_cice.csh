@@ -82,7 +82,7 @@ if ($CICE_FLAG == 0) then
       	echo "Replacing HYCOM with HYCOM_CICE ..."
       	mv hycom hycom_cice
 else
-	make ARCH=$ARCH TYPE=$TYPE CICE_DIR=./CICE/ hycom_cice
+	make ARCH=$ARCH TYPE=$TYPE CICE_DIR=../CICE/ hycom_cice
 endif
 # --- some machines require gmake
 #gmake ARCH=$ARCH TYPE=$TYPE hycom_cice

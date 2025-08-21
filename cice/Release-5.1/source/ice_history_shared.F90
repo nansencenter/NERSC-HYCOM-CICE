@@ -450,6 +450,7 @@
                               year_init, new_year, new_month, new_day, &
                               dt
       use ice_restart_shared, only: lenstr
+      use ice_constants,      only: c3600
 
       character (char_len_long), intent(inout) :: ncfile
       character (len=2), intent(in) :: suffix
@@ -502,9 +503,9 @@
             history_file(1:lenstr(history_file)), &
              '.',iyear,'-',imonth,'-',iday,'.',suffix
           elseif (histfreq(ns) == 'h'.or.histfreq(ns) == 'H') then ! hourly
-           write(ncfile,'(a,a,i2.2,a,i4.4,a,i2.2,a,i2.2,a,i5.5,a,a)')  &
+           write(ncfile,'(a,a,i2.2,a,i4.4,a,i2.2,a,i2.2,a,i2.2,a,a)')  &
             history_file(1:lenstr(history_file)),'_',histfreq_n(ns),'h.', &
-             iyear,'-',imonth,'-',iday,'-',sec,'.',suffix
+             iyear,'-',imonth,'-',iday,'-',floor(sec/c3600),'.',suffix
           elseif (histfreq(ns) == 'm'.or.histfreq(ns) == 'M') then ! monthly
            write(ncfile,'(a,a,i4.4,a,i2.2,a,a)')  &
             history_file(1:lenstr(history_file)),'.', &
