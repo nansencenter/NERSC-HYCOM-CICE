@@ -21,16 +21,19 @@
 INCLUDES      = -I${ESMF_MOD_DIR} -I${ESMF_DIR}include -I../CICE/rundir/compile
 
 FC            = mpiifort 
-FCFFLAGS      =	-g -convert big_endian -assume byterecl -cm -vec_report0 -w -O3 -tpp7 -xW -r8
-FCFFLAGS     :=	$(FCFFLAGS) $(INCLUDES)  # -I$(LIBBUILD)
-FCFFLAGS_OASIS     = $(FCFFLAGS) -I$(LIBBUILD) -I$(OASIS_DIR)/build/lib/psmile.MPI1
-CC            = mpicc	
-CCFLAGS       =	-O2 
-CCFLAGS_OASIS       = -O2 -I. -cpp  -Duse_comm_MPI1 -D__VERBOSE  -DTREAT_OVERLAY -DDECOMP_APPLE -DUSE_DOUBLE_PRECISION
+#FCFFLAGS      =	-traceback -g -O2 -fp-model source -warn nogeneral -convert big_endian -assume byterecl -real-size 64 -integer-size 32 
+FCFFLAGS      =	-g -convert big_endian -assume byterecl -cm -vec_report0 -w -O3 -tpp7 -xW -r8 
+#FCFFLAGS      =	-traceback -g -O2 -check all -fp-stack-check -fp-model source -warn nogeneral -convert big_endian -assume byterecl -real-size 64 -integer-size 32 
+#FCFFLAGS      =	-O2 -fconvert=big-endian -fdefault-real-8 -fdefault-double-8
 
+FCFFLAGS     :=	$(FCFFLAGS) $(INCLUDES)
+
+CC            = mpicc	
+CCFLAGS       =	-O 
 
 CPP           =	cpp -P
 LD            =	$(FC)
+#LDFLAGS       =	-V $(FCFFLAGS) -shared-intel -mcmodel=medium
 LDFLAGS       =	$(FCFFLAGS) -mcmodel=medium
 
 # ENDIAN_IO         not needed due to byteswap compiler flag
@@ -39,22 +42,20 @@ LDFLAGS       =	$(FCFFLAGS) -mcmodel=medium
 #
 # if no STOKES:
 # --- Mostafa: flags required for standalone HYCOM
+CPPFLAGS      = -DIA32 -DREAL8 -DMPI -DSERIAL_IO -DNAN2003 -DTIMER -DRELO -DNERSC_HYCOM_CICE
 
-CPPFLAGS      = -DIA32 -DREAL8 -DMPI -DSERIAL_IO -DNAN2003 -DTIMER -DRELO -DNERSC_HYCOM_CICE -DCPL_OASIS_HYCOM -DOFFICEField
+#CPPFLAGS      = -DIA32 -DREAL8 -DMPI -DSERIAL_IO -DNAN2003 -DTIMER -DRELO -DUSE_ESMF -DUSE_ESMF_5 -DNERSC_HYCOM_CICE
 # for STOKES flag use
 #CPPFLAGS      = -DIA32 -DREAL8 -DMPI -DSERIAL_IO -DNAN2003 -DTIMER -DRELO -DUSE_ESMF -DUSE_ESMF_5 -DNERSC_HYCOM_CICE -DSTOKES
+#EXTRALIBS     = -L${ESMF_LIB_DIR}/ -lesmf -pgcpplibs  
+#EXTRALIBS     = -L${ESMF_LIB_DIR}/ -lesmf -lfftw3 -lmkl -lnetcdff -lnetcdf -lmpi -lmpifort
 # --- Mostafa: flags required for standalone HYCOM
-EXTRALIBS     =  $(LIBPSMILE)  -lfftw3 -lnetcdf -lnetcdff
+EXTRALIBS     =  -lfftw3 -lmkl -lnetcdff -lnetcdf -lmpi -lmpifort
 
 
-# if you want to include ECOSMO, then you should
-# add to EXPT.src or execute in the shell the following:
-# export COMPILE_BIOMODEL="yes"
-
-ifeq ($(COMPILE_BIOMODEL), yes) 
-   CPPFLAGS      += -D_FABM_ -I${HOME}/local/fabm/hycom/include
-   EXTRALIBS     += -L${HOME}/local/fabm/hycom/lib64 -lfabm
-endif
+# from fabm 
+#CPPFLAGS      += -D_FABM_ -I${HOME}/local/fabm/hycom/include
+#EXTRALIBS     += -L${HOME}/local/fabm/hycom/lib -lfabm
 
 #
 # --- generic make definitions
@@ -66,22 +67,19 @@ RM            = \rm -f
 # rules.
 #
 
-#mod_cpl_oasis:
-
 .c.o:
 	$(CC) $(CPPFLAGS) $(CCFLAGS)  -c $*.c
 
 .f.o:
 	$(FC)             $(FCFFLAGS) -c $*.f
 
-.F.o: 
-	$(FC) $(CPPFLAGS) $(FCFFLAGS) -c $*.F 
-
+.F.o:
+	$(FC) $(CPPFLAGS) $(FCFFLAGS) -c $*.F
    
 #======= for Fabm use these
 
 .f90.o:
-	$(FC)  $(CCFLAGS_OASIS) $(FCFFLAGS_OASIS) -c $*.f90
+	$(FC)             $(FCFFLAGS) -c $*.f90
 
 .F90.o:
 	$(FC) $(CPPFLAGS) $(FCFFLAGS) -c $*.F90
