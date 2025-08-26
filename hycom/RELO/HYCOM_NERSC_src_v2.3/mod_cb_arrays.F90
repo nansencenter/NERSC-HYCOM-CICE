@@ -387,17 +387,17 @@
 !KAL
        swflxdwn,       & ! net shortwave radiation
 #endif
+#if defined(_FABM_)
+!     !CAGLAR: BEGIN (MAY2019)
+       dewpt,          & ! dew point temperature, used for CO2 formulations
+!     !CAGLAR: END
+#endif
        surtmp,         & ! surface temp. used to calculate input lw radiation
        seatmp,         & ! best available SST from observations
        stoc_t,         & ! stochastic temperature anomaly forcing
        stoc_s,         & ! stochastic salinty     anomaly forcing
        stoc_u,         & ! stochastic u-velocity  anomaly forcing
-       stoc_v,         & ! stochastic v-velocity  anomaly forcing
-#if defined(_FABM_) 
-!     !CAGLAR: BEGIN (MAY2019)
-       dewpt           ! dew point temperature, used for CO2 formulations
-!     !CAGLAR: END
-#endif
+       stoc_v            ! stochastic v-velocity  anomaly forcing
 !
 ! --- monthly atmospheric forcing fields
 #if defined(RELO)
