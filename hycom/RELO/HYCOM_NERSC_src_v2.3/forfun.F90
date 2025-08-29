@@ -1770,6 +1770,9 @@
 #ifdef _FABM_
       use mod_hycom_fabm
 #endif
+#ifdef NERSC_HYCOM_CICE
+     use mod_NERSCnml, only : sssrmx_scalar
+#endif
       implicit none
 !
 ! --- initialize input of thermal/tracer relaxation forcing fields
@@ -1939,10 +1942,10 @@
         call zaiocl(915)
       else
         if     (mnproc.eq.1) then
-        write (lp,*) 'No sss relaxation limiter.'
+        write (lp,*) 'sss relaxation limiter set to sssrmx_scalar.'
         endif !1st tile
         !sssrmx(:,:) = 99.9  !needed for thermf, set to no limit
-        sssrmx(:,:) = 1.0  !set one psu limit
+        sssrmx(:,:) = sssrmx_scalar  !set according to NERSC namelist
       endif
 !
       if     (relax) then  ! boundary thermal relaxation
