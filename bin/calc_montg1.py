@@ -33,16 +33,17 @@ python /cluster/home/achoth/pyScripts_AO_Betzy/ValidationFreq/Alf_calc_montg1.py
 
 """
 # Get component of montgomery potential at surface that depends on pbavg
-def montg1_pb(thstar,p) :
-   kdm=thstar.shape[0]
-   #AO thref=_constants.thref
-   thref=1e-3
-   # Part that depends on pbavg :
-   montgpb=-thstar[kdm-1,:,:]*thref**2
-   for k in reversed(range(kdm-1)) :
-      # PArt that depends on pbavg (through oneta) 
-      montgpb[:,:]=montgpb[:,:]+ p[k+1,:,:]*(thstar[k+1,:,:]-thstar[k,:])*thref**2/p[kdm,:,:]
-   return montgpb
+def montg1_pb(thstar,p,pbot) :
+    kdm=thstar.shape[0]
+    #AO thref=_constants.thref
+    thref=1e-3
+    # Part that depends on pbavg :
+    montgpb=-thstar[kdm-1,:,:]*thref**2
+    for k in reversed(range(kdm-1)) :
+        # PArt that depends on pbavg (through oneta) 
+        montgpb[:,:]=montgpb[:,:]+ p[k+1,:,:]*(thstar[k+1,:,:]-thstar[k,:,:])*thref**2/pbot[:,:]
+
+    return montgpb
 
 
 # Get component of montgomery potential at surface that does not depend on pbavg
@@ -52,40 +53,47 @@ def montg1_no_pb(psikk,thkk,thstar,p) :
    thref=1e-3
    montgc=psikk+(p[kdm,:,:]*(thkk-thstar[kdm-1,:,:]))*thref**2
    for k in reversed(range(kdm-1)) :
-      montgc [:,:]=montgc [:,:]+ p[k+1,:,:]*(thstar[k+1,:,:]-thstar[k,:])*thref**2
+       montgc [:,:]=montgc [:,:]+ p[k+1,:,:]*(thstar[k+1,:,:]-thstar[k,:,:])*thref**2
    return montgc
 
-
-def approx_montg1(thstar,p,srfhgt,idm,jdm,rstr_file):
-         # estimate montg1---------------------------------------------
-         # Read input variables from lowest layer of a restart file
-         thref=1e-3
-         #psikk_file="./TP6restart.2021_041_00_0000.a"
-         psikk_file=rstr_file#[0]#[-30:]
-         logger.info("----->rstr_file :%s"%psikk_file)
-         m=re.match( "^(.*)(\.[ab])", psikk_file)
-         if m : psikk_file=m.group(1)
-         logger.info("----->rstr_file :%s"%psikk_file)
-         rfile=abfile.ABFileRestart(psikk_file,"r",idm=idm,jdm=jdm)
-         psikk=rfile.read_field("psikk",0)
-         thkk=rfile.read_field("thkk",0)
-         rfile.close()
-         #print(( "psikk.min(),psikk.max()=",psikk.min(),psikk.max())
-         #print( "thkk.min(),thkkk.max()=",thkk.min(),thkk.max()
-         #
-         #montg1pb = modeltools.hycom._montg_tools.montg1_pb(thstar,p)
-         #montg1c  = modeltools.hycom._montg_tools.montg1_no_pb(psikk,thkk,thstar,p) 
-         montg1pb = montg1_pb(thstar,p)
-         montg1c  = montg1_no_pb(psikk,thkk,thstar,p)
-         print( "montg1c.min(),montg1c.max()=",montg1c.min(),montg1c.max())
-         print( "montg1pb.min(),montg1pb.max()=",montg1pb.min(),montg1pb.max() )
-         pbavg  = (srfhgt - montg1c) / (montg1pb+thref)
-         print( "pbavg.min(),pbavg.max()=",pbavg.min(),pbavg.max() )
-         montg1 = montg1pb*pbavg + montg1c
-         logger.info("Estimated montg1 ")
-         print( " min max montg1=",montg1.min(),montg1.max() )
-         # end estimate montg1---------------------------------------------
-         return montg1
+def approx_montg1(thstar,p,srfhgt,idm,jdm,rstr_file,iversn,kdm):
+    # estimate montg1---------------------------------------------
+    # Read input variables from lowest layer of a restart file
+    thref=1e-3
+    psikk_file=rstr_file#[0]#[-30:]
+    logger.info("----->rstr_file :%s"%psikk_file)
+    m=re.match( "^(.*)(\.[ab])", psikk_file)
+    if m : psikk_file=m.group(1)
+    logger.info("----->rstr_file :%s"%psikk_file)
+    rfile=abfile.ABFileRestart(psikk_file,"r",idm=idm,jdm=jdm)
+    psikk=rfile.read_field("psikk",0)
+    thkk=rfile.read_field("thkk",0)
+    if iversn==22:
+        pbot=p[kdm,:,:]
+    elif iversn==23:
+        pbot=rfile.read_field("pbot",0)
+    else:
+        logger.info("Unknovn HYCOM version "%iversn)
+        sys.exit()
+    rfile.close()
+    pbot[pbot==0.]=numpy.nan
+    #print(( "psikk.min(),psikk.max()=",psikk.min(),psikk.max())
+    #print( "thkk.min(),thkkk.max()=",thkk.min(),thkk.max()
+    #
+    #montg1pb = modeltools.hycom._montg_tools.montg1_pb(thstar,p)
+    #montg1c  = modeltools.hycom._montg_tools.montg1_no_pb(psikk,thkk,thstar,p) 
+    montg1pb = montg1_pb(thstar,p,pbot)
+    montg1c  = montg1_no_pb(psikk,thkk,thstar,p)
+    print( "montg1c.min(),montg1c.max()=",montg1c.min(),montg1c.max())
+    print( "montg1pb.min(),montg1pb.max()=",montg1pb.min(),montg1pb.max() )
+    pbavg  = (srfhgt - montg1c) / (montg1pb+thref)
+    print( "pbavg.min(),pbavg.max()=",pbavg.min(),pbavg.max() )
+    print( "montg1pb*pbavg.min(),montg1pb*pbavg.max()=",(montg1pb*pbavg).min(),(montg1pb*pbavg).max())
+    montg1 = montg1pb*pbavg + montg1c
+    logger.info("Estimated montg1 ")
+    print( " min max montg1=",montg1.min(),montg1.max() )
+    # end estimate montg1---------------------------------------------
+    return montg1
 
 
 
@@ -168,7 +176,7 @@ def main(archv_files,restart_file,out_path) :
       ###AA regr = open("montg_regress_tide.pckl",'rb')
       ###AA a,b,nemomeandt = pickle.load(regr)
       ###AA tide_montg1 = (nemo_srfhgt - nemomeandt) * a + b
-      estimated_montg1=approx_montg1(thstar,p,nemo_srfhgt,idm,jdm,restart_file)
+      estimated_montg1=approx_montg1(thstar,p,nemo_srfhgt,idm,jdm,restart_file,iversn,kdm)
       #---#
       #read all keys and write updated version
       for keys in sorted(arcfile_in.fields.keys()) :
