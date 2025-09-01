@@ -1942,10 +1942,14 @@
         call zaiocl(915)
       else
         if     (mnproc.eq.1) then
-        write (lp,*) 'sss relaxation limiter set to sssrmx_scalar.'
+           write (lp,*) 'sss relaxation limiter set to sssrmx_scalar.'
         endif !1st tile
         !sssrmx(:,:) = 99.9  !needed for thermf, set to no limit
         sssrmx(:,:) = sssrmx_scalar  !set according to NERSC namelist
+        if     (mnproc.eq.1) then
+           write (lp,'(a45,f10.4)') 'sss relaxation limiter set to sssrmx_scalar.:', sssrmx_scalar
+        endif !1st tile
+
       endif
 !
       if     (relax) then  ! boundary thermal relaxation
