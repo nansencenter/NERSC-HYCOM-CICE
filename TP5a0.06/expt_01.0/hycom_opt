@@ -1,4 +1,5 @@
 &hycom_nml
-    write_arche= .false.
-    sss_underice= .false.
+  write_arche = .false.
+  sss_underice= .false.
+  sssrmx_scalar=99.
 /
