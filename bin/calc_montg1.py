@@ -73,9 +73,10 @@ def approx_montg1(thstar,p,srfhgt,idm,jdm,rstr_file,iversn,kdm):
     elif iversn==23:
         pbot=rfile.read_field("pbot",0)
     else:
-        logger.info("Unknovn HYCOM version "%iversn)
+        logger.info("Unknovn HYCOM version %i"%iversn)
         sys.exit()
     rfile.close()
+    logger.info("HYCOM version %i"%iversn)
     pbot[pbot==0.]=numpy.nan
     #print(( "psikk.min(),psikk.max()=",psikk.min(),psikk.max())
     #print( "thkk.min(),thkkk.max()=",thkk.min(),thkk.max()
