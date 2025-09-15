@@ -33,7 +33,7 @@ grid_type=native
 bio_flag=0
 
 # This will process optional arguments
-options=$(getopt -o b:m -- "$@")
+options=$(getopt -o b:gn: -- "$@")
 [ $? -eq 0 ] || {
     echo "$usage"
     echo "Error: Incorrect options provided"
@@ -46,8 +46,12 @@ while true; do
         shift;
         bio_flag=1
         ;;
-    -m)
+    -g)
         grid_type=regular
+        ;;
+    -n)
+        shift;
+        nlayers=$1
         ;;
     --)
         shift
@@ -80,7 +84,7 @@ RT=$T
 export RX=`echo ${E} | awk '{printf("%04.1f", $1*0.1)}'`
 
 newexptpath=$(cd $1 && pwd)
-newregionpath=$(cd  $newexptpath/.. && pwd)
+newregionpath=$(cd $newexptpath/.. && pwd)
 
 echo "new experiment path $newexptpath"
 echo "new region path $newregionpath"
@@ -173,10 +177,8 @@ chmod a+rx ${prog_nemo}
 echo
 source_archv_i=$2
 if [ ! -f ${source_archv_i}.a -o ! -f ${source_archv_i}.b ] ; then
-    echo "Source file ${source_archv_i}.[ab] does not exist"
-    continue
+    echo "Warning: Source file ${source_archv_i}.[ab] does not exist"
 fi
-
 
 target_archv=${source_archv_i}
 
@@ -196,7 +198,7 @@ touch $logfile && rm $logfile
 # --- 'flnm_out'  = output archive    filename
 # --- 'cline_out' = output title line (replaces preambl(5))
 #
-echo ${N}/regional.depth.a
+
 echo "Processing ${N}/${target_archv}"
 
 ##${prog_subreg}   <<EOF
@@ -223,7 +225,7 @@ if [ ! -f ${N}/${target_archv}${L}.b -o ! -f ${N}/${target_archv}${L}.a ]; then
 fi
 
 fi # hinterp_method
-
+echo 'ARCHVBIO4'
 #
 # --- change current directory to nesting folder of inner region
 #
@@ -303,7 +305,6 @@ touch ${NEST}/${target_archv}.a
 touch ${NEST}/${target_archv}.b
 rm -rf ${NEST}/${target_archv}.*
 
-
 if [[ "${bio_flag}" -eq 0 ]] ; then
 
 ${prog_nemo}  >> $logfile  <<EOF
@@ -344,7 +345,7 @@ T
 T
 T
 T
-NONE
+T
 EOF
 fi
 
@@ -361,9 +362,9 @@ else
     touch ${N}/${target_archv}${L}.b
     touch ${D}/${source_archv_i}.a
     touch ${D}/${source_archv_i}.b
-    rm -rf ${N}/${target_archv}${L}.*
-    rm -rf ${D}/${source_archv_i}.*
-    rm -rf ${NEST}/nest_${target_archv}.log
+    rm -f ${N}/${target_archv}${L}.*
+    rm -f ${D}/${source_archv_i}.*
+    rm -f ${NEST}/nest_${target_archv}.log
     echo "Succesfully created archive file: $2"
 
     # using montg_regress.pckl(for TP5)/TP2_montg_regress.pckl is not recommended;for now the solution is to use ${BINDIR}/calc_montg1.py afterwards with a restart file 
