@@ -397,8 +397,7 @@ c
         if     (ios.ne.0) then
           exit
         endif
-c       
-        !print *,cline,ni
+c
         l = index(cline,'=')
         read (cline(l+1:),*)  itmp,rtmp,itmp,rtmp,hminb,hmaxb
         call zaiord(a_in,m_in,.false., hmina,hmaxa, ni)
@@ -705,7 +704,12 @@ c
               ip =   1
             endif
             j  = j_out(ii,jj)
-            jp = j+1
+c Added Till To avoid out of bound
+            if (j .ne. jdm_in) then
+                jp = j+1
+            else
+                jp = j
+            endif
 c
             a_out(ii,jj) = (1.0-sx)*(1.0-sy)*a_in(i, j ) +
      &                     (1.0-sx)*     sy *a_in(i, jp) +
@@ -788,6 +792,8 @@ cMostafa
      &    'landfill - m,n,if,il,jf,jl =',m,n,if,il,jf,jl
       endif
       do ipass= 1,n+m
+C TILL REINSERTED otherwize ip0 is not defined.
+        ip0   = mod(ipass+1,2)
         ip1   = mod(ipass,  2)
         nup   = 0
         nleft = 0

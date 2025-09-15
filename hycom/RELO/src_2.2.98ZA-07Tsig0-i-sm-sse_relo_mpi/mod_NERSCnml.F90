@@ -6,6 +6,9 @@ module mod_NERSCnml
   implicit none
   private
  
+  real, save, public   :: &
+    sssrmx_scalar       ! Limit for salinity relax Only used if
+
   logical,save, public :: &
     write_arche, &      ! print arche files or not
     sss_underice, &      ! relaxtion under ice (false if no) 
@@ -22,17 +25,19 @@ module mod_NERSCnml
     implicit none
     integer (4), parameter :: funi=503
     integer (4) :: nml_err
-    namelist /hycom_nml/ write_arche,sss_underice,highfq_river
+    namelist /hycom_nml/ write_arche,sss_underice,highfq_river,sssrmx_scalar
     !default values
     write_arche     = .false.
     sss_underice    = .false.
     highfq_river    = .false.
+    sssrmx_scalar   = 99.0
+
     ! read namelist
     open (funi, file='../hycom_opt', status='old',iostat=nml_err)
     if (nml_err .ne. 0) then
       if  (mnproc.eq.1) then
         write (lp,'(a)') &
-          'NERSC HYCOM ERROR: WARNING: hycom_nml namelist not read from file: ../hycom_opt'
+          'NERSC HYCOM ERROR: WARNING: hycom_nml namelist not read from file: ./hycom_opt'
         call flush(lp)
       endif
     endif
@@ -50,7 +55,7 @@ module mod_NERSCnml
     end do
     close(funi)
     if (mnproc.eq.1) then
-      write (lp,*)'NERSC HYCOM: Reading hycom_nml from: ../hycom_opt'
+      write (lp,*)'NERSC HYCOM: Reading hycom_nml from: ./hycom_opt'
       write (lp,*)'NERSC HYCOM: Write arche    = ',write_arche
       write (lp,*)'      HYCOM: sss_underice   = ',sss_underice
       write (lp,*)'      HYCOM: highfq_river   = ',highfq_river

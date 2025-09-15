@@ -96,7 +96,7 @@ def main(path):
     for varib in ['no3','pho','sil']:
        if varib == 'no3': longname = 'nitrate'
        if varib == 'pho': longname = 'phosphate'
-       if varib == 'no3': longname = 'silicate'
+       if varib == 'sil': longname = 'silicate'
        outfile=abfile.ABFileRiver(path + "ECO_"+varib+"_new.a","w",idm=idm,jdm=jdm,\
                    cline1='River '+longname+' fluxes (Ob River dispersed out the bay)',\
                    cline2='mgC m-2 s-1')
