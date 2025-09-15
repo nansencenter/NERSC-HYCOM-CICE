@@ -25,7 +25,7 @@ module mod_NERSCnml
     integer (4), parameter :: funi=503
     integer (4) :: nml_err
     
-    namelist /hycom_nml/ write_arche,sss_underice,highfq_river
+    namelist /hycom_nml/ write_arche,sss_underice,highfq_river,sssrmx_scalar
     !default values
     write_arche     = .false.
     sss_underice    = .false.
