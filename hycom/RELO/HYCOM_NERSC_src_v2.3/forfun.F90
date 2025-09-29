@@ -1771,7 +1771,7 @@
       use mod_hycom_fabm
 #endif
 #ifdef NERSC_HYCOM_CICE
-     use mod_NERSCnml, only : sssrmx_scalar
+      use mod_NERSCnml, only : sssrmx_scalar
 #endif
       implicit none
 !
