@@ -504,6 +504,10 @@ if [ ${testveldf4} -eq 1 ] ; then
    ${pget} ${D}/../../relax/${E}/veldf4.b veldf4.b  || tellerror "Could not get veldf4.b"
 fi
 
+# Check hycom optional file: hycom_opt
+echo "Checking the access to hycom_opt"
+[ -s ./hycom_opt ] && rm ./hycom_opt
+${pget} ../hycom_opt hycom_opt || { tellerror "Could not get ../hycom_opt"; exit 1; }
 
 # TODO Limited set of tests for now. 
 # Link in nest dir if nesting activated
