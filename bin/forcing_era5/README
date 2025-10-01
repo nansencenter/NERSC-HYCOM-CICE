@@ -1,8 +1,18 @@
+#######################################################################################
 # ERA5 download process the 6-hourly forcing (netcdf) used by the relevant routine for 
 # implementation of HYCOM_CICE 
 # Recommened to apply on Fram because the fexible cpu application
 # first released in Sep 2025
 # 
+#######################################################################################
+#
+# Precondition:before to download the ERA5 file, it needs to use cdsapi, 
+# which is the Cimate Data Store Appliation program Interface (details how to use, 
+# Please to follow https://cds.climate.copernicus.eu/how-to-api)
+# It will creat an account through register process,
+# and then copy the relevant personal access token to the file: $HOME/.cdsapirc 
+#
+#######################################################################################
 
 #N.B: # double-check the directories' existence 
 # Inidir : the relevant home directory for the script
