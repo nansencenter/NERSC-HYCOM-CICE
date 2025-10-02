@@ -750,7 +750,8 @@ module m_bio_conversions
 
    end subroutine vertical_velocity
 !   
-   subroutine w_velocity(u,v,pres,w,scpx,scpy,scux,scuy,scvx,scvy,plon,plat,depth,onem,idm,jdm,kdm)
+   subroutine w_velocity(u,v,pres,w,scpx,scpy,scux,scuy,scvx,scvy,plon,plat,depth, & 
+         onem,idm,jdm,kdm,ip,iu,iv)
 !-- from archv2ncdf3      
 !diagnose vertical velocity: m/s
       implicit none
@@ -761,6 +762,7 @@ module m_bio_conversions
       real, dimension(idm,jdm,kdm+1)  , intent(in)  :: pres
       real, dimension(idm,jdm,kdm+1)  :: lpres
       real, dimension(idm,jdm)  , intent(in)        :: scpx,scpy,scux,scuy,scvx,scvy,plon,plat,depth
+      integer, dimension(idm,jdm)  , intent(in)        :: ip,iu,iv 
       real, dimension(idm,jdm,kdm)    , intent(out) :: w
       real, dimension(idm,jdm)                      :: dpdx,dpdy, work
       real             dudxdn,dudxup,dvdydn,dvdyup        
@@ -779,8 +781,8 @@ module m_bio_conversions
 !      if     (iowvlin.ne.0) then
       do j= 1,jdm-1
         do i= 1,idm-1
-          if (depth(i,j)>0) then
-          !if     (ip(i,j).eq.1) then
+          !if (depth(i,j)>0) then
+          if     (ip(i,j).eq.1) then
             dudxdn= &
                  (u(i+1,j  ,1)*scuy(i+1,j  )-u(i,j,1)*scuy(i,j))&
                  /(scpx(i,j)*scpy(i,j))
@@ -794,21 +796,22 @@ module m_bio_conversions
           endif
         enddo
       enddo
+!   Interior layers from k to kdm
       do k= 2,kdm
         do j= 1,jdm-1
-          do i= 1,idm-1
-            !if     (iu(i,j).eq.1) then
-            if (depth(i,j)>0) then
+          do i= 2,idm-1
+            if  (iu(i,j).eq.1) then
+            !if (depth(i,j)>0) then
               dpdx(i,j)=&
                      (lpres(i,j,k)*scpy(i,j)-lpres(i-1,j  ,k)*scpy(i-1,j  ))&
                      /(scux(i,j)*scuy(i,j))
             endif
           enddo
         enddo
-        do j= 1,jdm-1
+        do j= 2,jdm-1
           do i= 1,idm-1
-            if (depth(i,j)>0) then
-            !if     (iv(i,j).eq.1) then
+            !if (depth(i,j)>0) then
+            if (iv(i,j).eq.1) then
               dpdy(i,j)=&
                      (lpres(i,j,k)*scpx(i,j)-lpres(i  ,j-1,k)*scpx(i  ,j-1))&
                      /(scvx(i,j)*scvy(i,j))
@@ -816,29 +819,29 @@ module m_bio_conversions
           enddo
         enddo
         do j=1,jdm
-          !if     (iu(2   ,j).eq.1) then
-          if (depth(2,j)>0) then
+          !if (depth(2,j)>0) then
+          if  (iu(2   ,j).eq.1) then
             dpdx(1 ,j)=dpdx(2   ,j)
           endif
-          if (depth(idm-1,j)>0) then
-          !if     (iu(ii-1,j).eq.1) then
+          !if (depth(idm-1,j)>0) then
+          if     (iu(idm-1,j).eq.1) then
             dpdx(idm,j)=dpdx(idm-1,j)
           endif
         enddo
         do i=1,idm
-          if (depth(i,2)>0) then
-          !if     (iv(i,2   ).eq.1) then
+          !if (depth(i,2)>0) then
+          if (iv(i,2   ).eq.1) then
             dpdy(i,1 )=dpdy(i,2   )
           endif
-          if (depth(i,jdm-1)>0) then
-          !if     (iv(i,jj-1).eq.1) then
+          !if (depth(i,jdm-1)>0) then
+          if (iv(i,jdm-1).eq.1) then
             dpdy(i,jdm)=dpdy(i,jdm-1)
           endif
         enddo
         do j= 1,jdm-1
           do i= 1,idm-1
-            if (depth(i,j)>0) then
-            !if     (ip(i,j).eq.1) then
+            !if (depth(i,j)>0) then
+            if     (ip(i,j).eq.1) then
               dudxup=&
                    (u(i+1,j  ,k-1)*scuy(i+1,j  )-&
                     u(i  ,j  ,k-1)*scuy(i  ,j  ))&
@@ -873,11 +876,24 @@ module m_bio_conversions
         enddo
         do i= 1,idm
           w(i ,jdm,k) = flag
+          w(i ,jdm-1,k) = flag
+          w(i ,1,k) = flag
+          w(i ,2,k) = flag
         enddo
         do j= 1,jdm
           w(idm,j ,k) = flag
         enddo
       enddo !k
+      !fill thin layer 
+      do k=2,kdm
+         where (pres(:,:,k+1)-pres(:,:,k)<.1*onem) w(:,:,k)=w(:,:,k-1)
+      end do
+      !overshoot=200/(24.0*3600.0)=0.0023
+      do k=2,kdm
+         where (abs(w(:,:,k))>0.001)
+            w(:,:,k)=w(:,:,k-1)
+         end where
+      end do
 !
 ! --- w is noisy - smooth at least twice.
       do k= 1,kdm
@@ -885,8 +901,8 @@ module m_bio_conversions
         !call psmoo(w(1,1,k),work)
         work(:,:)=w(:,:,k)
         w(:,:,k)=psmoo(work(:,:),idm,jdm)
-        work(:,:)=w(:,:,k)
-        w(:,:,k)=psmoo(work(:,:),idm,jdm)
+        !work(:,:)=w(:,:,k)
+        !w(:,:,k)=psmoo(work(:,:),idm,jdm)
       enddo
 !     !iowvlin 
    end subroutine w_velocity
