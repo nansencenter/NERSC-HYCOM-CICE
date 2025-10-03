@@ -1152,19 +1152,8 @@ c --------- We dont handle cases where input is E-P.
             end if
 #if defined(_FABM_) && defined(IA_DRIFT)
             do nia = 1,niatrc
-                expData(23+nia)%p(i+i0,j+j0)=0.5*(ia_tracer(i,j,n,nia)
-     &                                        +ia_tracer(i,j,m,nia))
+                expData(23+nia)%p(i+i0,j+j0)=ia_tracer(i,j,m,nia)
             end do
-            !if (mnproc==2) then !print *,"shuang hycom exp ", 
-            if (i+i0==125 .and. j+j0==200) then !print *,"shuang hycom exp ", 
-             print *,"shuang hycom exp ia_tracer", 
-     &           expData(24)%p(i+i0,j+j0),
-     &           expData(25)%p(i+i0,j+j0),
-     &           expData(26)%p(i+i0,j+j0),
-     &           expData(27)%p(i+i0,j+j0),
-     &           expData(28)%p(i+i0,j+j0),
-     &           expData(29)%p(i+i0,j+j0), "end" 
-            end if
 #endif
           else
             util2(i,j)              = 0.0
@@ -1218,7 +1207,10 @@ c
 c --- Extract import state.
 c
       integer i,j,rc,nia
-c
+#if defined(_FABM_) && defined(IA_DRIFT)
+c --- shuang: Static logical variable to track first-time call
+      logical, save :: first_call = .true.
+#endif
 c --- Report
 #if (USE_ESMF_5)
       call ESMF_LogWrite("HYCOM Import_ESMF called",
@@ -1255,24 +1247,14 @@ c --- Arctic (tripole) domain, top row is replicated (ignore it)
              siv_import(i,j) = impData(11)%p(i+i0,j+j0) !Sea Ice Y-Velocity
             if     (iceflg.ge.2 .and. icmflg.ne.3) then
 #if defined(_FABM_) && defined(IA_DRIFT)
+             if (first_call) then
+                 ! do nothing  
+             else
               do nia = 1, niatrc
                  ia_tracer(i,j,1:2,nia) = impData(11+nia)%p(i+i0,j+j0)
+                 fabm_surface_state(i,j,:,nia) = ia_tracer(i,j,:,nia)
               enddo
-            if (i+i0==125 .and. j+j0==200) then !print *,"shuang hycom imp ", 
-             print *,"shuang hycom imp ia_tracer", 
-     &           impData(12)%p(i+i0,j+j0),
-     &           impData(13)%p(i+i0,j+j0),
-     &           impData(14)%p(i+i0,j+j0),
-     &           impData(15)%p(i+i0,j+j0),
-     &           impData(16)%p(i+i0,j+j0),
-     &           impData(17)%p(i+i0,j+j0), "end", 
-     &           ia_tracer(i,j,1,1),
-     &           ia_tracer(i,j,1,2),
-     &           ia_tracer(i,j,1,3),
-     &           ia_tracer(i,j,1,4),
-     &           ia_tracer(i,j,1,5),
-     &           ia_tracer(i,j,1,6), "end" 
-            end if
+             end if
 #endif
               covice(i,j) = impData(1)%p(i+i0,j+j0) !Sea Ice Concentration
                 si_c(i,j) = impData(1)%p(i+i0,j+j0) !Sea Ice Concentration
@@ -1280,6 +1262,10 @@ c --- Arctic (tripole) domain, top row is replicated (ignore it)
                  si_tx(i,j) = -impData( 2)%p(i+i0,j+j0) !Sea Ice X-Stress into ocean
                  si_ty(i,j) = -impData( 3)%p(i+i0,j+j0) !Sea Ice Y-Stress into ocean
                 fswice(i,j) =  impData( 4)%p(i+i0,j+j0) !Solar Heat Flux thru Ice to Ocean
+                !shuang
+                !if (isnan(fswice(i,j))) then
+                !        print *,"fswice",i+i0,j+j0
+                !end if
                 flxice(i,j) =  fswice(i,j) +
      &                         impData( 5)%p(i+i0,j+j0) !Ice Freezing/Melting Heat Flux
 !KAL - check signs here
@@ -1326,6 +1312,9 @@ c --- Arctic (tripole) domain, top row is replicated (ignore it)
           endif !ishlf
         enddo !i
       enddo !j
+#if defined(_FABM_) && defined(IA_DRIFT)
+      first_call = .false.
+#endif
 C --- Added by KAL. Mainly needed for si_u and si_v, but lets do everything for now ...
 C --- NB: May need to set vland first...
       call xctilr( sic_import,1,1,nbdy,nbdy,halo_ps)  !Sea Ice Concentration
@@ -2310,9 +2299,6 @@ CKAL    flnmra = restart_name(day1,yrflag,"in")
         si_v=0.
         covice=0.
         thkice=0.
-#if defined(IA_DRIFT)
-        ia_tracer=0.
-#endif
 #endif
         surflx(:,:) = 0.0
         salflx(:,:) = 0.0
