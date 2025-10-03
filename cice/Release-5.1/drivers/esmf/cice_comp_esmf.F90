@@ -571,8 +571,7 @@ implicit none
    !--Report
    call ESMF_LogWrite("CICE ESMF Setup routine called",ESMF_LOGMSG_INFO, rc=rc)
    call ESMF_LogFlush(rc=rc)
-
-
+   
    !---------------------------------------------------------------------
    !--Set up attributes for import and export fields
    !---------------------------------------------------------------------
@@ -1271,7 +1270,7 @@ subroutine cice_put_export(export_state)
             do i=ilo,ihi
                ig  = this_block%i_glob(i)
                jg  = this_block%j_glob(j)
-               expData(ifld,iblk)%p(ig,jg) = ialg_exp(i,j,iblk)*aice(i,j,iblk)
+               expData(ifld,iblk)%p(ig,jg) = ialg_exp(i,j,iblk)
             end do
             end do
          ! Ice-algae ditritus
@@ -1280,7 +1279,7 @@ subroutine cice_put_export(export_state)
             do i=ilo,ihi
                ig  = this_block%i_glob(i)
                jg  = this_block%j_glob(j)
-               expData(ifld,iblk)%p(ig,jg) = idet_exp(i,j,iblk)*aice(i,j,iblk)
+               expData(ifld,iblk)%p(ig,jg) = idet_exp(i,j,iblk)
             end do
             end do
          ! Ice-algae nitrate
@@ -1289,7 +1288,7 @@ subroutine cice_put_export(export_state)
             do i=ilo,ihi
                ig  = this_block%i_glob(i)
                jg  = this_block%j_glob(j)
-               expData(ifld,iblk)%p(ig,jg) = ino3_exp(i,j,iblk)*aice(i,j,iblk)
+               expData(ifld,iblk)%p(ig,jg) = ino3_exp(i,j,iblk)
             end do
             end do
          ! Ice-algae ammonium
@@ -1298,7 +1297,7 @@ subroutine cice_put_export(export_state)
             do i=ilo,ihi
                ig  = this_block%i_glob(i)
                jg  = this_block%j_glob(j)
-               expData(ifld,iblk)%p(ig,jg) = inh4_exp(i,j,iblk)*aice(i,j,iblk)
+               expData(ifld,iblk)%p(ig,jg) = inh4_exp(i,j,iblk)
             end do
             end do
          ! Ice-algae phosphate
@@ -1307,7 +1306,7 @@ subroutine cice_put_export(export_state)
             do i=ilo,ihi
                ig  = this_block%i_glob(i)
                jg  = this_block%j_glob(j)
-               expData(ifld,iblk)%p(ig,jg) = ipho_exp(i,j,iblk)*aice(i,j,iblk)
+               expData(ifld,iblk)%p(ig,jg) = ipho_exp(i,j,iblk)
             end do
             end do
          ! Ice-algae silicate
@@ -1316,7 +1315,7 @@ subroutine cice_put_export(export_state)
             do i=ilo,ihi
                ig  = this_block%i_glob(i)
                jg  = this_block%j_glob(j)
-               expData(ifld,iblk)%p(ig,jg) = isil_exp(i,j,iblk)*aice(i,j,iblk)
+               expData(ifld,iblk)%p(ig,jg) = isil_exp(i,j,iblk)
             end do
             end do
 #endif
@@ -1358,10 +1357,6 @@ subroutine cice_get_import(import_state)
    do ifld=1,numImpFields
       !KAL !print *,ifld,trim(impFieldName(ifld))
       !KAL if (my_task==master_task .and. iblk==1) print '(a)',"CICE:importing "//trim(impFieldName(ifld))
-      !shuang
-      print *,ifld,trim(impFieldName(ifld))
-      if (my_task==master_task .and. iblk==1) print '(a)',"CICE:importing "//trim(impFieldName(ifld))
-      !shuang
       do iblk=1,nblocks
          this_block = get_block(blocks_ice(iblk),iblk)         
          ilo = this_block%ilo
