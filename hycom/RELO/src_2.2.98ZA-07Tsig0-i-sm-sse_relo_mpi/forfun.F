@@ -81,7 +81,7 @@ c --- units of seatmp are degC
 c --- units of vapmix are kg/k
 c --- units of mslprs are Pa     (anomaly, offset from total by prsbas)
 c --- units of precip are m/s    (positive into ocean)
-c --- units of river  are m/s    (positive into ocean)
+c --- units of rivers are m/s    (positive into ocean)
 c --- units of radflx are w/m^2  (positive into ocean)
 c --- units of swflx  are w/m^2  (positive into ocean)
 c --- units of offlux are w/m^2  (positive into ocean)
@@ -517,7 +517,7 @@ c --- units of seatmp are degC
 c --- units of vapmix are kg/kg
 c --- units of mslprs are Pa     (anomaly, offset from total by prsbas)
 c --- units of precip are m/s    (positive into ocean)
-c --- units of river  are m/s    (positive into ocean)
+c --- units of rivers are m/s    (positive into ocean)
 c --- units of radflx are w/m^2  (positive into ocean)
 c --- units of swflx  are w/m^2  (positive into ocean)
 c --- units of offlux are w/m^2  (positive into ocean)
