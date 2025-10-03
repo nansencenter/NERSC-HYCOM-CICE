@@ -104,15 +104,10 @@
          ! define tracer dependency arrays
          ! see comments in remapping routine
 
-#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT)         
-          depend(1:8)         = 0 ! hice, hsno, 6 ice-algae tracers
-          tracer_type(1:8)    = 1 ! no dependency
-          k = 8
-#else
           depend(1:2)         = 0 ! hice, hsno
           tracer_type(1:2)    = 1 ! no dependency
+
           k = 2
-#endif
 
           do nt = 1, ntrcr
              depend(k+nt) = trcr_depend(nt) ! 0 for ice area tracers
@@ -127,6 +122,10 @@
                 endif
              endif
           enddo
+#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT)         
+          depend(k+ntrcr+1:k+ntrcr+6)      = 0 ! 6 ice-algae tracers
+          tracer_type(k+ntrcr+1:k+ntrcr+6) = 1 ! no dependency
+#endif
 
           has_dependents = .false.
           do nt = 1, ntrace
@@ -151,30 +150,7 @@
              nt = 2
                 write(nu_diag,*) '   hs  ',nt,depend(nt),tracer_type(nt),&
                                               has_dependents(nt)
-#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT)
-             nt = 3
-                write(nu_diag,*) '   ialg  ',nt,depend(nt),tracer_type(nt),&
-                                              has_dependents(nt)
-             nt = 4
-                write(nu_diag,*) '   idet  ',nt,depend(nt),tracer_type(nt),&
-                                              has_dependents(nt)
-             nt = 5
-                write(nu_diag,*) '   ino3  ',nt,depend(nt),tracer_type(nt),&
-                                              has_dependents(nt)
-             nt = 6
-                write(nu_diag,*) '   inh4  ',nt,depend(nt),tracer_type(nt),&
-                                              has_dependents(nt)
-             nt = 7
-                write(nu_diag,*) '   ipho  ',nt,depend(nt),tracer_type(nt),&
-                                              has_dependents(nt)
-             nt = 8
-                write(nu_diag,*) '   isil  ',nt,depend(nt),tracer_type(nt),&
-                                              has_dependents(nt)
-
-          k=8
-#else
           k=2
-#endif
           do nt = k+1, k+ntrcr
              if (nt-k==nt_Tsfc) &
                 write(nu_diag,*) 'nt_Tsfc',nt,depend(nt),tracer_type(nt),&
@@ -216,6 +192,26 @@
                 write(nu_diag,*) 'nt_bgc_sk',nt,depend(nt),tracer_type(nt),&
                                               has_dependents(nt)
           enddo
+#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT)
+             nt = k+ntrcr+1
+                write(nu_diag,*) '   ialg  ',nt,depend(nt),tracer_type(nt),&
+                                              has_dependents(nt)
+             nt = k+ntrcr+2
+                write(nu_diag,*) '   idet  ',nt,depend(nt),tracer_type(nt),&
+                                              has_dependents(nt)
+             nt = k+ntrcr+3
+                write(nu_diag,*) '   ino3  ',nt,depend(nt),tracer_type(nt),&
+                                              has_dependents(nt)
+             nt = k+ntrcr+4
+                write(nu_diag,*) '   inh4  ',nt,depend(nt),tracer_type(nt),&
+                                              has_dependents(nt)
+             nt = k+ntrcr+5
+                write(nu_diag,*) '   ipho  ',nt,depend(nt),tracer_type(nt),&
+                                              has_dependents(nt)
+             nt = k+ntrcr+6
+                write(nu_diag,*) '   isil  ',nt,depend(nt),tracer_type(nt),&
+                                              has_dependents(nt)
+#endif
           endif ! master_task
 
           if (trim(advection)=='remap') call init_remap    ! grid quantities
@@ -568,7 +564,7 @@
 #endif
       enddo                     ! iblk
       !$OMP END PARALLEL DO
-
+ 
     !-------------------------------------------------------------------
     ! Ghost cell updates for state variables.
     !-------------------------------------------------------------------
@@ -972,22 +968,14 @@
     !  avoid extra operations here and in tracers_to_state.
     !-------------------------------------------------------------------
 
-         kt = 2
          do ij = 1, icells(n)
             i = indxi(ij,n)
             j = indxj(ij,n)
             w1 = c1 / aim(i,j,n)
             trm(i,j,1,n) = vicen(i,j,n) * w1 ! hice
             trm(i,j,2,n) = vsnon(i,j,n) * w1 ! hsno
-#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT)
-            do it = 1, 6
-               trm(i,j,kt+it,n) = ia_tracer(i,j,it) / aice(i,j) * aim(i,j,n) ! in this loop aice will not be zero
-            enddo
-#endif
          enddo
-#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT)         
-         kt = 8
-#endif
+         kt = 2
 
          do it = 1, ntrcr
             if (it >= nt_qsno .and. it < nt_qsno+nslyr) then
@@ -1004,6 +992,15 @@
                enddo
             endif
          enddo
+#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT)
+         do it = 1, 6
+            do ij = 1, icells(n)
+               i = indxi(ij,n)
+               j = indxj(ij,n)
+               trm(i,j,kt+ntrcr+it,n) = ia_tracer(i,j,it) / aice(i,j) * aim(i,j,n) ! in this loop aice will not be zero
+            enddo
+         enddo
+#endif
       enddo                     ! ncat
  
       end subroutine state_to_tracers
@@ -1106,22 +1103,14 @@
     ! Compute state variables.
     !-------------------------------------------------------------------
 
-         kt = 2
          do ij = 1, icells
             i = indxi(ij)
             j = indxj(ij)
             aicen(i,j,n) = aim(i,j,n)
             vicen(i,j,n) = aim(i,j,n)*trm(i,j,1,n) ! aice*hice
             vsnon(i,j,n) = aim(i,j,n)*trm(i,j,2,n) ! aice*hsno
-#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT)
-            do it = 1, 6
-               ia_tracer(i,j,it) = ia_tracer(i,j,it) + trm(i,j,kt+it,n)
-            enddo
-#endif
          enddo                  ! ij
-#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT)
-         kt = 8
-#endif
+         kt = 2
 
          do it = 1, ntrcr
             if (it >= nt_qsno .and. it < nt_qsno+nslyr) then
@@ -1138,14 +1127,16 @@
                enddo
             endif
          enddo
+#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT)
+         do it = 1, 6
+            do ij = 1, icells
+               i = indxi(ij)
+               j = indxj(ij)
+               ia_tracer(i,j,it) = ia_tracer(i,j,it) + trm(i,j,kt+ntrcr+it,n)
+            enddo
+         enddo
+#endif
       enddo                     ! ncat
-!#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT)
-!      do ij = 1, icells
-!         i = indxi(ij)
-!         j = indxj(ij)
-!         ia_tracer(i,j,:) = ia_tracer(i,j,:) * aice(i,j) ! ice-algae tracer is mean value over grid cell
-!      enddo
-!#endif
       end subroutine tracers_to_state
 
 !=======================================================================
