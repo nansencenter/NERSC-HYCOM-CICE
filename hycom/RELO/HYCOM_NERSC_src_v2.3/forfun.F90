@@ -202,6 +202,8 @@
 ! --- units of spchum are kg/k
 ! --- units of mslprs are Pa     (anomaly, offset from total by prsbas)
 ! --- units of precip are m/s    (positive into ocean)
+! --- units of rivers are m/s    (positive into ocean)
+
 ! --- units of radflx are w/m^2  (positive into ocean)
 ! --- units of swflx  are w/m^2  (positive into ocean)
 ! --- units of offlux are w/m^2  (positive into ocean)
@@ -657,7 +659,8 @@
 ! --- units of spchum are kg/k
 ! --- units of mslprs are Pa     (anomaly, offset from total by prsbas)
 ! --- units of precip are m/s    (positive into ocean)
-! --- units of riverh are m/s    (positive into ocean)
+! --- units of rivers are m/s    (positive into ocean)
+
 ! --- units of radflx are w/m^2  (positive into ocean)
 ! --- units of swflx  are w/m^2  (positive into ocean)
 ! --- units of offlux are w/m^2  (positive into ocean)
@@ -962,7 +965,6 @@
 #if defined(NERSC_HYCOM_CICE)
 !ALF  --- read high frequency rivers----
         if (highfq_river) then
-           !write (lp,*) 'Reading  highfq_river   = ',highfq_river
           call zaiopf(flnmfor(1:lgth)//'forcing.riverh.a', 'old', 918)
           if     (mnproc.eq.1) then  ! .b file from 1st tile only
           open (unit=uoff+918,file=flnmfor(1:lgth)//'forcing.riverh.b',
@@ -3021,6 +3023,8 @@
 !ALFA  --- read high frequency rivers----
       if (highfq_river) then
         call rdpall1(rivers,dtime(918),918,mod(icall,3).eq.1)
+      else
+        dtime(918) = dtime(905)
       endif
 !End  --- read high frequency rivers----
 #endif
@@ -3260,6 +3264,9 @@
       use mod_xc         ! HYCOM communication interface
       use mod_cb_arrays  ! HYCOM saved arrays
       use mod_za         ! HYCOM I/O interface
+#if defined(NERSC_HYCOM_CICE)
+      use mod_NERSCnml, only : highfq_river 
+#endif
       implicit none
 !
       integer lslot,mnth
@@ -3493,6 +3500,9 @@
 #if defined(NERSC_HYCOM_CICE)
 !KAL
           swflxdwn(i,j,lslot) = 0.0
+          if (highfq_river) then
+            rivers(i,j,lslot) = 0.0
+          endif
 #endif
           enddo
         enddo
@@ -5165,3 +5175,4 @@
 !> Mar  2021 - skip tracers in nest archive files
 !> Apr  2021 - update the halo of rmu
 !> Nov  2022 - skip oneta in nest archive files
+!> Jun  2025 - Introduce the high frequency river inflow

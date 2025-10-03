@@ -57,8 +57,9 @@ module mod_NERSCnml
     if (mnproc.eq.1) then
       write (lp,*)'NERSC HYCOM: Reading hycom_nml from: ./hycom_opt'
       write (lp,*)'NERSC HYCOM: Write arche    = ',write_arche
-      write (lp,*)'      HYCOM: sss_underice   = ',sss_underice
-      write (lp,*)'      HYCOM: highfq_river   = ',highfq_river
+      write (lp,*)'NERSC HYCOM: sss_underice   = ',sss_underice
+      write (lp,*)'NERSC HYCOM: highfq_river   = ',highfq_river
+      write (lp,*)'NERSC HYCOM: sssrmx_scalar = ',sssrmx_scalar
     endif !1st tile
     call xcsync(flush_lp)
 

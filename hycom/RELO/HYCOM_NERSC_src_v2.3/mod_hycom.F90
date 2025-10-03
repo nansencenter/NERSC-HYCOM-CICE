@@ -1768,15 +1768,7 @@
       call blkdat(linit)  !must call before zaiost
 #if defined(NERSC_HYCOM_CICE)
       call NERSC_init
-      if     (priver .and. highfq_river) then
-        if (mnproc.eq.1) then
-          write(lp,*)
-     &    'error - priver must be .false. for highfq_river=.true.'
-          call flush(lp)
-        endif !1st tile
-        call xcstop('(blkdat)')
-               stop '(blkdat)'
-      endif
+
 #endif
 !
 ! --- initialize array i/o.
@@ -1966,7 +1958,7 @@
       elseif (jerlv0.eq.-1) then
         call forfunc  !  annual/monthly chl
       endif
-#if defined(NERSC_HYCOM_CICE)     
+#if defined(NERSC_HYCOM_CICE)
       if (highfq_river) then
         if (mnproc.eq.1) then
           write(lp,*)
@@ -2474,10 +2466,10 @@
            call rdrivr(mr3,lr3)
          endif
 #else
-        call rdrivr(mr0,lr0)
-        call rdrivr(mr1,lr1)
-        call rdrivr(mr2,lr2)
-        call rdrivr(mr3,lr3)
+           call rdrivr(mr0,lr0)
+           call rdrivr(mr1,lr1)
+           call rdrivr(mr2,lr2)
+           call rdrivr(mr3,lr3)
 #endif /* USE_NUOPC_CESMBETA:else */
       endif
 !
