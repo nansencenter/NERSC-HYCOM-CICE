@@ -59,7 +59,6 @@ module mod_hycom_fabm
    real, allocatable, target :: fabm_surface_state(:, :, :, :)
    real, allocatable, target :: fabm_bottom_state(:, :, :, :)
    real, allocatable :: fabm_surface_state_old(:, :, :)
-   !real, allocatable :: ia_tracer_old(:, :, :)
    real, allocatable :: fabm_bottom_state_old(:, :, :)
 
    logical :: do_interior_sources, do_bottom_sources, do_surface_sources, do_vertical_movement, do_check_state, do_icealgae
@@ -200,9 +199,6 @@ contains
         if (do_icealgae) then
            allocate(coice_thickness(ii, jj))
            allocate(codh_growth(ii, jj))
-           !#ifdef IA_DRIFT
-           !     allocate(ia_tracer_old(1-nbdy:idm+nbdy, 1-nbdy:jdm+nbdy, size(fabm_model%surface_state_variables)))
-           !#endif
         end if
         allocate(fabm_surface_state(1-nbdy:idm+nbdy, 1-nbdy:jdm+nbdy, 2, size(fabm_model%surface_state_variables)))
         allocate(fabm_bottom_state(1-nbdy:idm+nbdy, 1-nbdy:jdm+nbdy, 2, size(fabm_model%bottom_state_variables)))
@@ -268,15 +264,7 @@ contains
         last_horizontal_output => null()
         do ivar=1, size(fabm_model%surface_state_variables)
           if (add_horizontal_output(fabm_model%surface_state_variables(ivar))) then
-            !if (do_icealgae) then
-            !  #ifdef IA_DRIFT
-            !    last_horizontal_output%data3d => ia_tracer(1:ii, 1:jj, :, ivar)
-            !  #else
-            !    last_horizontal_output%data3d => fabm_surface_state(1:ii, 1:jj, :, ivar)
-            !  #endif
-            !else
               last_horizontal_output%data3d => fabm_surface_state(1:ii, 1:jj, :, ivar)
-            !end if
           end if
         end do
         do ivar=1, size(fabm_model%bottom_state_variables)
@@ -702,7 +690,6 @@ contains
     end subroutine hycom_fabm_rdmonthck
 
     subroutine hycom_fabm_update(m, n, ibio)
-      use, intrinsic :: ieee_arithmetic !shuang
       integer, intent(in) :: m, n, ibio
       integer :: i, k, j, ivar
    
@@ -715,18 +702,6 @@ contains
 
             if (mnproc.eq.1) write (lp,*) 'hycom_fabm_update', nstep, time
             call xcsync(flush_lp)
-            !shuang
-        do i=1,ii
-         do j=1,jj
-           if (SEA_P) then
-            if (i==125-i0 .and. j==200-j0) then 
-               print *, 'shuang surface_state n, ia', fabm_surface_state(i,j,n,:), &
-                  ia_tracer(i,j,n,:)
-            end if
-           end if
-         enddo
-        enddo
-            !shuang
 
 !
 ! --- leapfrog time step.
@@ -735,18 +710,6 @@ contains
       ! As per leapfrog spec, fluxes at this time are used to update the state at t-delta_t to t+delta_t (both stored at time index n)
       ! This also sets FABM's mask, which will exclude layers that are vanishingly thin at either time m or n (or both).
       call update_fabm_data(m, initializing=.false.)  ! skipping thin layers
-   !shuang
-        !do i=1,ii
-        ! do j=1,jj
-         !  if (SEA_P) then
-         !   if (i==125-i0 .and. j==200-j0) then
-         !      print *, 'shuang surface_state n, after update_fabm_data', fabm_surface_state(i,j,n,:), &
-         !         ia_tracer(i,j,n,:)
-         !   end if
-         !  end if
-         !enddo
-        !enddo
-            !shuang
 
       ! Get index of bottom layers at the next time step.
       ! For that we use time index n, which assumes dp(:,:,:,n) has already been updated!
@@ -755,12 +718,7 @@ contains
       call get_mask(n, mask(:, :, :, n), kbottom(:, :, n))
 
       ! Store old surface/bottom state for later application of Robert-Asselin filter.
-      !#ifdef IA_DRIFT
-        !ia_tracer_old = ia_tracer(:, :, n, :)
-        !fabm_surface_state_old = fabm_surface_state(:, :, n, :)
-      !#else
-        fabm_surface_state_old = fabm_surface_state(:, :, n, :)
-      !#endif
+      fabm_surface_state_old = fabm_surface_state(:, :, n, :)
       fabm_bottom_state_old = fabm_bottom_state(:, :, n, :)
       ! Make sure the biogeochemical state is valid (uses clipping if necessary)
       call check_state('when entering fabm_hycom_update', current_time_index, .true.)
@@ -843,11 +801,7 @@ call check_finite("AFTER BOTTOM", n)
         call fabm_model%get_surface_sources(1, ii, j, flux, sms_sf)
         do i=1,ii
           if (kbottom(i, j, n) > 0) then
-            !#ifdef IA_DRIFT
-              !ia_tracer(i, j, n, :) = ia_tracer(i, j, n, :) + delt1 * sms_sf(i, :)
-            !#else
-              fabm_surface_state(i, j, n, :) = fabm_surface_state(i, j, n, :) + delt1 * sms_sf(i, :)
-            !#endif
+            fabm_surface_state(i, j, n, :) = fabm_surface_state(i, j, n, :) + delt1 * sms_sf(i, :)
             tracer(i, j, 1, n, :) = tracer(i, j, 1, n, :) + delt1 * flux(i, :)/dp(i, j, 1, n)*onem
 #ifdef IA_DRIFT
               ia_tracer(i, j, n, :) = fabm_surface_state(i, j, n, :)
@@ -858,19 +812,6 @@ call check_finite("AFTER BOTTOM", n)
               call xchalt('(FABM varible is NaN)')
               stop '(FABM varible is NaN)'
             end if
-            !#ifdef IA_DRIFT
-            !if (any(isnan(ia_tracer(i, j, n, :)))) then
-            !  write (*,*) 'NaN after do_surface, ia_tracer, sms_sf,i,j:', ia_tracer(i, j, n, :), sms_sf(i, :),i+i0,j+j0
-            !  call xchalt('(FABM varible is NaN)')
-            !  stop '(FABM varible is NaN)'
-            !end if
-            !#else
-            if (any(isnan(fabm_surface_state(i, j, n, :)))) then
-              write (*,*) 'NaN after do_surface:', fabm_surface_state(i, j, n, :), sms_sf(i, :)
-              call xchalt('(FABM varible is NaN)')
-              stop '(FABM varible is NaN)'
-            end if
-            !#endif
 #endif
           end if
         end do
@@ -882,52 +823,13 @@ call check_finite("AFTER BOTTOM", n)
 call check_finite("BEFORE INTERIOR", m)
 call check_finite("BEFORE INTERIOR", n)
 
-        !shuang
-        !do i=1,ii
-        ! do j=1,jj
-        !   if (SEA_P) then
-        !    if (i==75-i0 .and. j==324-j0) then
-        !       print *, 'shuang before interior cclchl', tracer(i,j,:,n,11), &
-        !          i0,j0
-        !    end if
-        !   end if
-        ! enddo
-        !enddo
-            !shuang
-
       if (do_interior_sources) then
       do k=1,kk
         do j=1,jj
             sms = 0
             call fabm_model%get_interior_sources(1, ii, j, k, sms)
-            !shuang
-            if (any(isnan(sms))) then
-              do ivar=1,size(fabm_model%interior_state_variables)
-                if (any(isnan(sms(1:ii, ivar)))) then 
-                   !write (*,*) 'NaN in sms:',ivar,fabm_model%interior_state_variables(ivar)%name,k,j,j+j0,sms(1:ii, ivar)
-                   !write (*,*) 'state:',ivar,tracer(1:ii, j, k, m, ivar)
-                   where (ieee_is_nan(sms(1:ii, ivar)))
-                     sms(1:ii, ivar) = 1.0e-8
-                   end where
-                   write (*,*) 'sms repaired:',ivar,fabm_model%interior_state_variables(ivar)%name,k,j,j+j0,sms(1:ii, ivar)
-                end if
-              end do
-              !write (*,*) 'NaN in sms'
-              !do ivar=1,size(fabm_model%interior_state_variables)
-              !  write (*,*) 'state:',ivar,fabm_model%interior_state_variables(ivar)%name,tracer(1:ii, j, k, m, ivar)
-              !end do
-              !call xchalt('(FABM varible is NaN)')
-              !stop '(FABM varible is NaN)'
-            end if
-            !shuang
             do ivar=1,size(fabm_model%interior_state_variables)
                tracer(1:ii, j, k, n, ivar) = tracer(1:ii, j, k, n, ivar) + delt1 * sms(1:ii, ivar)
-               !shuang
-               if (any(isnan(sms(1:ii, ivar)))) then
-                  write (*,*) 'NaN still in sms:',ivar,fabm_model%interior_state_variables(ivar)%name,k,j,j+j0,sms(1:ii, ivar)
-                  write (*,*) 'state:',ivar,tracer(1:ii, j, k, m, ivar)
-               end if
-               !shuang
             end do
 #ifdef FABM_CHECK_NAN
             if (any(isnan(sms))) then
@@ -945,17 +847,6 @@ call check_finite("BEFORE INTERIOR", n)
         end do
       end do
 
-       !shuang
-        !do i=1,ii
-        ! do j=1,jj
-        !   if (SEA_P) then
-        !    if (i==75-i0 .and. j==324-j0) then
-        !       print *, 'shuang after interior cclchl', tracer(i,j,:,n,11)
-        !    end if
-        !   end if
-        ! enddo
-        !enddo
-            !shuang
 call check_finite("AFTER INTERIOR", m)
 call check_finite("AFTER INTERIOR", n)
 
@@ -1018,24 +909,12 @@ call check_finite("AFTER RIVER", n)
       ! Apply the Robert-Asselin filter to the surface and bottom state.
       ! Note that RA will be applied to the pelagic tracers within mod_tsavc - no need to do it here!
 
-        fabm_surface_state(1:ii, 1:jj, m, :) = fabm_surface_state(1:ii, 1:jj, m, :) + 0.5*ra2fac*(fabm_surface_state_old(1:ii, 1:jj, :)+fabm_surface_state(1:ii, 1:jj, n, :)-2.0*fabm_surface_state(1:ii, 1:jj, m, :))
+      fabm_surface_state(1:ii, 1:jj, m, :) = fabm_surface_state(1:ii, 1:jj, m, :) + 0.5*ra2fac*(fabm_surface_state_old(1:ii, 1:jj, :)+fabm_surface_state(1:ii, 1:jj, n, :)-2.0*fabm_surface_state(1:ii, 1:jj, m, :))
 #ifdef IA_DRIFT
         ia_tracer(1:ii, 1:jj, m, :) = fabm_surface_state(1:ii, 1:jj, m, :)
 #endif
       fabm_bottom_state(1:ii, 1:jj, m, :) = fabm_bottom_state(1:ii, 1:jj, m, :) + 0.5*ra2fac*(fabm_bottom_state_old(1:ii, 1:jj, :)+fabm_bottom_state(1:ii, 1:jj, n, :)-2.0*fabm_bottom_state(1:ii, 1:jj, m, :))
 
-            !shuang
-        do i=1,ii
-         do j=1,jj
-           if (SEA_P) then
-            if (i==125-i0 .and. j==200-j0) then 
-               print *, 'shuang surface_state m, ia', fabm_surface_state(i,j,m,:), &
-                  ia_tracer(i,j,m,:)
-            end if
-           end if
-         enddo
-        enddo
-            !shuang
 
 call check_finite("AFTER ROBERT", m)
 call check_finite("AFTER ROBERT", n)
@@ -1179,28 +1058,13 @@ call fabm_model%finalize_outputs
       character(len=*), intent(in) :: location
       integer, intent(in) :: index
       integer:: ivar,i,j
-!      #ifdef IA_DRIFT
-!      do ivar=1,size(fabm_model%surface_state_variables)
-!        do i=1,ii
-!           do j=1,jj
-!              if (SEA_P) then
-!                 if (.not.(ieee_is_finite(ia_tracer(i, j, index, ivar)))) then
-!                    write (*,*) location, index,'IA variable not finite:',fabm_model%surface_state_variables(ivar)%name, ia_tracer(i, j, index, ivar)
-!                    call xchalt('(FABM IA varible is not finite)')
-!                    stop '(FABM IA varible is not finite)'
-!                 end if
-!              end if
-!           end do
-!        end do
-!      end do
-!      #endif
+
       do ivar=1,size(fabm_model%interior_state_variables)
         do i=1,ii
            do j=1,jj
               if (SEA_P) then
                  if (.not.all(ieee_is_finite(tracer(i, j, 1:kk, index, ivar)))) then
-                    !write (*,*) location, index,'Interior state variable not finite:', ivar,'range', minval(tracer(i, j, 1:kk, index, ivar)), maxval(tracer(i,j, 1:kk, index, ivar)),fabm_model%interior_state_variables(ivar)%name
-                    write (*,*) location, index,'Interior state variable not finite:', ivar,'range', minval(tracer(i, j, 1:kk,index, ivar)), maxval(tracer(i,j, 1:kk, index, ivar)),fabm_model%interior_state_variables(ivar)%name, i+i0,j+j0 
+                    write (*,*) location, index,'Interior state variable not finite:', ivar,'range', minval(tracer(i, j, 1:kk, index, ivar)), maxval(tracer(i,j, 1:kk, index, ivar)),fabm_model%interior_state_variables(ivar)%name
                     write (*,*) location, index,'Interior state variable not finite:',kbottom(i,j,index),tracer(i, j, 1:kk, index, ivar)
                     call xchalt('(FABM interior varible is not finite)')
                     stop '(FABM interior varible is not finite)'
@@ -1209,16 +1073,6 @@ call fabm_model%finalize_outputs
            end do
         end do
       end do
-!      if (mnproc .eq. 188 .and. i .eq. 11 .and. j .eq. 10) then
-!              do ivar=1,size(fabm_model%surface_state_variables)
-!                write (*,*) 'shuang: ',ivar,fabm_model%surface_state_variables(ivar)%name,ia_tracer(i,j,index,ivar)
-!              end do
-!              do ivar=1,size(fabm_model%interior_state_variables)
-!                write (*,*) 'shuang: ',ivar,fabm_model%interior_state_variables(ivar)%name,tracer(i,j,1:kk,index,ivar)
-!              end do
-!              call xchalt('(FABM interior varible is not finite)')
-!              stop '(FABM interior varible is not finite)'
-!      end if
     end subroutine check_finite
 
     subroutine check_dsnk(location,index)
@@ -1425,8 +1279,8 @@ call fabm_model%finalize_outputs
                        atmco2_2 = atmco2_1 / 9.81 * 10.**(-4.0)
                        atmco2_3 = pair / 9.81 * 10.**(-2.0)
                        atmco2_fabm(i,j) = atmco2_0 * (atmco2_3 - atmco2_2) * 0.997                     
-		       ! for ice-algae
-		       coice_conc(i,j) = covice(i,j)
+                       ! for ice-algae
+                       coice_conc(i,j) = covice(i,j)
                        if (do_icealgae) then
                          if (lcoice_thickness_initialized) then
                            codh_growth(i,j) = (thkice(i,j)*coice_conc(i,j) - coice_thickness(i,j)) / delt1 
@@ -1478,12 +1332,7 @@ call fabm_model%finalize_outputs
         ! Send pointers to state variable data to FABM
         call fabm_model%link_all_interior_state_data(tracer(1:ii, 1:jj, 1:kk, index, :))
         call fabm_model%link_all_bottom_state_data(fabm_bottom_state(1:ii, 1:jj, index, :))
-#ifdef IA_DRIFT
-          ! update ice-alage variables after drifting
-          call fabm_model%link_all_surface_state_data(ia_tracer(1:ii, 1:jj, index, :))
-#else
-          call fabm_model%link_all_surface_state_data(fabm_surface_state(1:ii, 1:jj, index, :))
-#endif
+        call fabm_model%link_all_surface_state_data(fabm_surface_state(1:ii, 1:jj, index, :))
 
         current_time_index = index
     end subroutine update_fabm_state
