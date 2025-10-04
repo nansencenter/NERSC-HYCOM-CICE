@@ -967,8 +967,8 @@
         if (highfq_river) then
           call zaiopf(flnmfor(1:lgth)//'forcing.riverh.a', 'old', 918)
           if     (mnproc.eq.1) then  ! .b file from 1st tile only
-          open (unit=uoff+918,file=flnmfor(1:lgth)//'forcing.riverh.b',
-     &       status='old', action='read')
+          open (unit=uoff+918,file=flnmfor(1:lgth)//'forcing.riverh.b', &
+             status='old', action='read')
           read (uoff+918,'(a79)') preambl
           endif !1st tile
           call preambl_print(preambl)

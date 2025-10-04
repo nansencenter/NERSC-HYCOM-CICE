@@ -63,8 +63,8 @@ module mod_NERSCnml
     call flush(lp)
     if (priver .and. highfq_river) then
         if (mnproc.eq.1) then
-           write(lp,*)
-   &       'error - priver must be .false. for highfq_river=.true.'
+           write(lp,*) &
+           'error - priver must be .false. for highfq_river=.true.'
            call flush(lp)
         endif !1st tile
         call xcstop('(NERSC_nml)')
