@@ -1961,8 +1961,8 @@
 #if defined(NERSC_HYCOM_CICE)
       if (highfq_river) then
         if (mnproc.eq.1) then
-          write(lp,*)
-     &    '--- Skipping the monthly river inflow----'
+          write(lp,*) &
+         '--- Skipping the monthly river inflow----'
           call flush(lp)
         endif !1st tile
       else

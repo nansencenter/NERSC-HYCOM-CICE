@@ -2,7 +2,7 @@ module mod_NERSCnml
 ! allow for namelist inputs in order to 
   use mod_xc
   use mod_za  ! HYCOM I/O interface
-
+  use mod_cb_arrays
   implicit none
   private
  
@@ -11,9 +11,8 @@ module mod_NERSCnml
 
   logical,save, public :: &
     write_arche, &      ! print arche files or not
-    sss_underice, &      ! relaxtion under ice (false if no) 
+    sss_underice, &     ! relaxtion under ice (false if no) 
     highfq_river        ! high frequency rivers (false if no) 
-
 
   public NERSC_init
 
@@ -33,7 +32,7 @@ module mod_NERSCnml
     sssrmx_scalar   = 99.0
 
     ! read namelist
-    open (funi, file='../hycom_opt', status='old',iostat=nml_err)
+    open (funi, file='./hycom_opt', status='old',iostat=nml_err)
     if (nml_err .ne. 0) then
       if  (mnproc.eq.1) then
         write (lp,'(a)') &
@@ -58,11 +57,20 @@ module mod_NERSCnml
       write (lp,*)'NERSC HYCOM: Reading hycom_nml from: ./hycom_opt'
       write (lp,*)'NERSC HYCOM: Write arche    = ',write_arche
       write (lp,*)'NERSC HYCOM: sss_underice   = ',sss_underice
+      write (lp,*)'NERSC HYCOM: sssrmx_scalar  = ',sssrmx_scalar
       write (lp,*)'NERSC HYCOM: highfq_river   = ',highfq_river
-      write (lp,*)'NERSC HYCOM: sssrmx_scalar = ',sssrmx_scalar
     endif !1st tile
+    call flush(lp)
+    if (priver .and. highfq_river) then
+        if (mnproc.eq.1) then
+           write(lp,*) &
+           'error - priver must be .false. for highfq_river=.true.'
+           call flush(lp)
+        endif !1st tile
+        call xcstop('(NERSC_nml)')
+        stop '(NERSC_nml)'
+    endif
     call xcsync(flush_lp)
-
   end subroutine NERSC_init
 
   !---------------------------------------------------------------------+
