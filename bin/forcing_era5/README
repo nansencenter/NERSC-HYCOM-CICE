@@ -1,0 +1,36 @@
+#######################################################################################
+# ERA5 download process the 6-hourly forcing (netcdf) used by the relevant routine for 
+# implementation of HYCOM_CICE 
+# Recommened to apply on Fram because the fexible cpu application
+# first released in Sep 2025
+# 
+#######################################################################################
+#
+# Precondition:before to download the ERA5 file, it needs to use cdsapi, 
+# which is the Cimate Data Store Appliation program Interface (details how to use, 
+# Please to follow https://cds.climate.copernicus.eu/how-to-api)
+# It will creat an account through register process,
+# and then copy the relevant personal access token to the file: $HOME/.cdsapirc 
+#
+#######################################################################################
+
+#N.B: # double-check the directories' existence 
+# Inidir : the relevant home directory for the script
+# Rundir : the working direcotory to download and further processes 
+
+
+Download hourly routine from ERA5 provider:
+1) basic routine to prepare the python script - creat_downpython.sh
+
+2) There are two ways to download the pointed years data: 
+sequent (process_downfile.sh) and sbatch job (srjob_downfile.sh)
+
+
+Convert hourly to 6-hourly:
+
+1) srjob_hourly_prep.sh: Before to process the hourly files, the time dimension takes different name. So in order to use the present script, all the files' time dimension should be reformated by the routine of 
+
+2) srjob_convert_era5_6h.sh (srjob_convert_era5_6h_bigmem.sh): 
+To deal with the hourly files, it can prepare the 6-hourly forcing files in which the variable names will be renamed to keep the same format as we used before.
+
+env.drt: Define the work diretory to deal with the downloaded hourly files into 6h, which should be on the work disk space.
