@@ -407,7 +407,6 @@ if [ $PRIVER -eq 1 ] ; then
    fi
 fi
 
-#
 if [ "$HRIVER" = ".true." ]; then
   echo "Note: PRIVER must be 0 for highfq_river=true " 
   echo "highfq_river=true: **Setting up high frequency river forcing  from hycom_opt highfq_river"
@@ -535,11 +534,11 @@ tmp2=$(echo $NESTFQ'!='0.0 | bc -l)
 if [ $tmp -eq 1 -o $tmp2 -eq 1 ] ; then
    nestdir=$BASEDIR/nest/$E
    echo "Nesting input from $nestdir"
-   ls nest
+   ls sest
    if [ -d $nestdir ]  ; then
       [ -e nest ] && rm nest
       ln -s $nestdir nest
-   else 
+   else
       tellerror "Nesting dir $nest does not exist"
    fi
 fi
@@ -608,11 +607,6 @@ fi
 #if [ "$tideflag" == "T" ] ; then
 #   ${pget} ${BASEDIR}/tides_nersc/$E/${tidechoice}obc_elev.dat . || tellerror "Could not get tidal data ${tidechoice}obc_elev.dat "
 #fi
-   
-
-
-
-echo
 
 #
 # --- move old restart files to KEEP, typically from batch system rerun.
