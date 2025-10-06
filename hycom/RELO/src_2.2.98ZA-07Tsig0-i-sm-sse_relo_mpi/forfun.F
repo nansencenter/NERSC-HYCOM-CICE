@@ -81,7 +81,7 @@ c --- units of seatmp are degC
 c --- units of vapmix are kg/k
 c --- units of mslprs are Pa     (anomaly, offset from total by prsbas)
 c --- units of precip are m/s    (positive into ocean)
-c --- units of riverh are m/s    (positive into ocean)
+c --- units of rivers are m/s    (positive into ocean)
 c --- units of radflx are w/m^2  (positive into ocean)
 c --- units of swflx  are w/m^2  (positive into ocean)
 c --- units of offlux are w/m^2  (positive into ocean)
@@ -517,7 +517,7 @@ c --- units of seatmp are degC
 c --- units of vapmix are kg/kg
 c --- units of mslprs are Pa     (anomaly, offset from total by prsbas)
 c --- units of precip are m/s    (positive into ocean)
-c --- units of riverh are m/s    (positive into ocean)
+c --- units of rivers are m/s    (positive into ocean)
 c --- units of radflx are w/m^2  (positive into ocean)
 c --- units of swflx  are w/m^2  (positive into ocean)
 c --- units of offlux are w/m^2  (positive into ocean)
@@ -1512,9 +1512,7 @@ c
 #ifdef _FABM_
       use mod_hycom_fabm
 #endif
-#ifdef NERSC_HYCOM_CICE
-     use mod_NERSCnml, only : sssrmx_scalar
-#endif
+      use mod_NERSCnml
       implicit none
 c
 c --- initialize input of thermal/tracer relaxation forcing fields
@@ -1612,7 +1610,6 @@ c
         if     (mnproc.eq.1) then
         write (lp,*) 'sss relaxation limiter set to sssrmx_scalar.'
         endif !1st tile
-        !sssrmx(:,:) = 99.9  !needed for thermf, set to no limit
         sssrmx(:,:) = sssrmx_scalar  !set according to NERSC namelist
       endif
 c
@@ -2623,19 +2620,17 @@ c --- check the input times.
       enddo
 c --- check the input times for forcing.riverh.
       if (highfq_river) then
-         do k= 918,918
-           if     (dtime(k).ne.dtime1) then
-             if     (mnproc.eq.1) then
+        if     (dtime(918).ne.dtime1) then
+           if     (mnproc.eq.1) then
              write(lp,*)
              write(lp,*) 'error in rdpall - inconsistent forcing times'
              write(lp,*) 'dtime0,dtime1 = ',dtime0,dtime1
              write(lp,*) 'dtime = ',dtime
              write(lp,*)
-             endif !1st tile
-             call xcstop('(rdpall)')
-                    stop '(rdpall)'
-           endif
-         enddo
+           endif !1st tile
+           call xcstop('(rdpall)')
+                  stop '(rdpall)'
+        endif
       endif! hihfq_river
       return
       end
