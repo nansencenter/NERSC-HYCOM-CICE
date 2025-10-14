@@ -36,7 +36,7 @@ module mod_NERSCnml
     if (nml_err .ne. 0) then
       if  (mnproc.eq.1) then
         write (lp,'(a)') &
-          'NERSC HYCOM ERROR: WARNING: hycom_nml namelist not read from file: ./hycom_opt'
+          'NERSC HYCOM ERROR: hycom_nml. Did not read: ./hycom_opt'
         call flush(lp)
       endif
       call xcstop('(NERSC_nml)')
