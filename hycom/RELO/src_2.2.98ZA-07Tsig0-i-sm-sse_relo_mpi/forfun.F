@@ -1512,9 +1512,7 @@ c
 #ifdef _FABM_
       use mod_hycom_fabm
 #endif
-#ifdef NERSC_HYCOM_CICE
-      use mod_NERSCnml, only : sssrmx_scalar
-#endif
+
       implicit none
 c
 c --- initialize input of thermal/tracer relaxation forcing fields

@@ -2,7 +2,7 @@ module mod_NERSCnml
 ! allow for namelist inputs in order to 
   use mod_xc
   use mod_za  ! HYCOM I/O interface
-  use mod_cb_arrays
+  use mod_cb_arrays, only: priver
   implicit none
   private
  
@@ -36,9 +36,10 @@ module mod_NERSCnml
     if (nml_err .ne. 0) then
       if  (mnproc.eq.1) then
         write (lp,'(a)') &
-          'NERSC HYCOM ERROR: WARNING: hycom_nml namelist not read from file: ./hycom_opt'
+          'NERSC HYCOM ERROR: hycom_nml. Did not read: ./hycom_opt'
         call flush(lp)
       endif
+      call xcstop('(NERSC_nml)')
     endif
     do while (nml_err == 0)
       read(funi, nml=hycom_nml,iostat=nml_err)
@@ -47,9 +48,8 @@ module mod_NERSCnml
           write (lp,'(a)') &
           'NERSC HYCOM ERROR: Can not read namelist: hycom_opt'
           call flush(lp)
-          call xcstop('(NERSC_nml)')
-          stop '(NERSC_nml)'
         endif
+        call xcstop('(NERSC_nml)')
       endif
     end do
     close(funi)
