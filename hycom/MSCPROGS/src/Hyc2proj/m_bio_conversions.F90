@@ -658,99 +658,6 @@ module m_bio_conversions
 
      end subroutine pco2_conv
 
-! _FABM__caglar_
-! _vertical_velocity
-! Old routine 
-!AA       subroutine vertical_velocity(u,v,pres,w,scpx,scpy,scux,scvy,plon,plat,depth,onem,idm,jdm,kdm)
-!AA    !diagnose vertical velocity: m/s
-!AA          implicit none
-!AA          
-!AA          integer, intent(in) :: idm,jdm,kdm
-!AA          real, intent(in) :: onem
-!AA          real, dimension(idm,jdm,kdm)  , intent(in)    :: u,v
-!AA          real, dimension(idm,jdm,kdm+1)  , intent(in)  :: pres
-!AA          real, dimension(idm,jdm,kdm+1)  :: lpres
-!AA          real, dimension(idm,jdm)  , intent(in)        :: scpx,scpy,scux,scvy,plon,plat,depth
-!AA          real, dimension(idm,jdm,kdm)      , intent(out) :: w
-!AA          real, dimension(idm,jdm,kdm)                :: dudx,dvdy,dpdx,dpdy,layer_thkn,int_div,thk_adv
-!AA          real :: idsum, tasum
-!AA    
-!AA          integer :: i,j,k
-!AA    
-!AA          lpres=pres/onem;
-!AA          ! caulculate derivative:
-!AA          do i=2,idm-1
-!AA            do j=2,jdm-1
-!AA              if (depth(i,j)>0) then
-!AA                do k=1,kdm
-!AA                  dudx(i,j,k)=(u(i+1,j,k)-u(i-1,j,k))/(scux(i-1,j)+scux(i,j));
-!AA                  dvdy(i,j,k)=(v(i,j+1,k)-v(i,j-1,k))/(scvy(i,j-1)+scvy(i,j));
-!AA    
-!AA                  dpdx(i,j,k)=(lpres(i+1,j,k+1)-lpres(i-1,j,k+1))/(scpx(i-1,j)+scpx(i,j));
-!AA                  dpdy(i,j,k)=(lpres(i,j+1,k+1)-lpres(i,j-1,k+1))/(scpy(i,j-1)+scpy(i,j));
-!AA                end do
-!AA              end if
-!AA            end do
-!AA          end do
-!AA    !      print*, dudx(50,50,:)
-!AA    !      print*, dvdy(50,50,:)
-!AA    !      print*, dpdx(50,50,:)
-!AA    !      print*, dpdy(50,50,:)
-!AA    !  calculate at the bottom of the first layer:
-!AA          do i=2,idm-1
-!AA            do j=2,jdm-1
-!AA              if (depth(i,j)>0) then
-!AA                do k=1,kdm
-!AA                  layer_thkn(i,j,k)=lpres(i,j,k+1)-lpres(i,j,k);
-!AA                end do
-!AA              end if
-!AA            end do
-!AA          end do
-!AA    
-!AA    !  calculate the thickness integrated divergence in each layer
-!AA          do i=2,idm-1
-!AA            do j=2,jdm-1
-!AA              if (depth(i,j)>0) then
-!AA                do k=1,kdm
-!AA                  int_div(i,j,k)=layer_thkn(i,j,k)*(dudx(i,j,k)+dvdy(i,j,k))
-!AA                end do
-!AA              end if
-!AA            end do
-!AA          end do
-!AA    
-!AA    !  calculate thickness advection in each layer:
-!AA          thk_adv(:,:,1)=0.0
-!AA          do i=2,idm-1
-!AA            do j=2,jdm-1
-!AA              if (depth(i,j)>0) then
-!AA                do k=2,kdm
-!AA                  thk_adv(i,j,k)=(u(i,j,k)-u(i,j,k-1))*dpdx(i,j,k) + &
-!AA                                 (v(i,j,k)-v(i,j,k-1))*dpdy(i,j,k);
-!AA    
-!AA                end do
-!AA              end if
-!AA            end do
-!AA          end do
-!AA    
-!AA    !  evaluate the vertical veolocity at the mid-point in each layer
-!AA          do i=2,idm-1
-!AA            do j=2,jdm-1
-!AA              if (depth(i,j)>0) then
-!AA                w(i,j,1)=0.5*int_div(i,j,1);  
-!AA                idsum=0.0
-!AA                tasum=0.0
-!AA                do k=2,kdm
-!AA                  idsum=idsum+int_div(i,j,k)
-!AA                  tasum=tasum+thk_adv(i,j,k-1)
-!AA                  w(i,j,k)=idsum-tasum+0.5*int_div(i,j,k)
-!AA                end do
-!AA              end if
-!AA            end do
-!AA          end do
-!AA    
-!AA       end subroutine vertical_velocity
-!  
-! New routine for the upward velocity consistent with the one uder Hycom_All 
    subroutine w_velocity(u,v,pres,w,scpx,scpy,scux,scuy,scvx,scvy,plon,plat,depth, & 
          onem,idm,jdm,kdm,ip,iu,iv)
 !-- from archv2ncdf3      
@@ -891,7 +798,7 @@ module m_bio_conversions
       end do
       !overshoot=200/(24.0*3600.0)=0.0023
       do k=2,kdm
-         where (abs(w(:,:,k))>0.001)
+         where (abs(w(:,:,k))>0.002)
             w(:,:,k)=w(:,:,k-1)
          end where
       end do
