@@ -202,6 +202,8 @@
 ! --- units of spchum are kg/k
 ! --- units of mslprs are Pa     (anomaly, offset from total by prsbas)
 ! --- units of precip are m/s    (positive into ocean)
+! --- units of rivers are m/s    (positive into ocean)
+
 ! --- units of radflx are w/m^2  (positive into ocean)
 ! --- units of swflx  are w/m^2  (positive into ocean)
 ! --- units of offlux are w/m^2  (positive into ocean)
@@ -631,6 +633,9 @@
       use mod_xc         ! HYCOM communication interface
       use mod_cb_arrays  ! HYCOM saved arrays
       use mod_za         ! HYCOM I/O interface
+#if defined(NERSC_HYCOM_CICE)
+      use mod_NERSCnml, only : highfq_river
+#endif
       implicit none
 !
       real*8    dtime
@@ -654,6 +659,8 @@
 ! --- units of spchum are kg/k
 ! --- units of mslprs are Pa     (anomaly, offset from total by prsbas)
 ! --- units of precip are m/s    (positive into ocean)
+! --- units of rivers are m/s    (positive into ocean)
+
 ! --- units of radflx are w/m^2  (positive into ocean)
 ! --- units of swflx  are w/m^2  (positive into ocean)
 ! --- units of offlux are w/m^2  (positive into ocean)
@@ -955,6 +962,19 @@
           call preambl_print(preambl)
         endif !surtmp
 !
+#if defined(NERSC_HYCOM_CICE)
+!ALF  --- read high frequency rivers----
+        if (highfq_river) then
+          call zaiopf(flnmfor(1:lgth)//'forcing.riverh.a', 'old', 918)
+          if     (mnproc.eq.1) then  ! .b file from 1st tile only
+          open (unit=uoff+918,file=flnmfor(1:lgth)//'forcing.riverh.b', &
+             status='old', action='read')
+          read (uoff+918,'(a79)') preambl
+          endif !1st tile
+          call preambl_print(preambl)
+        endif
+!End  --- read high frequency rivers----
+#endif
 #ifdef _FABM_
 !     CAGLAR: BEGIN (MAY2019)
           call zaiopf(flnmfor(1:lgth)//'forcing.dewpt.a', 'old', 926)
@@ -1120,6 +1140,18 @@
             call skmonth(909)
           enddo
         endif !surtmp
+#if defined(NERSC_HYCOM_CICE)
+        if (highfq_river) then
+          do i= 1,nrec-2
+            call skmonth(918)
+          enddo
+        endif
+#endif
+#ifdef _FABM_
+          do i= 1,nrec-2
+            call skmonth(926)
+          enddo
+#endif
         if     (sstflg.eq.3) then
           do i= 1,nrec-2
             call skmonth(910)
@@ -1485,6 +1517,9 @@
       use mod_xc         ! HYCOM communication interface
       use mod_cb_arrays  ! HYCOM saved arrays
       use mod_za         ! HYCOM I/O interface
+#if defined(NERSC_HYCOM_CICE)
+      use mod_NERSCnml, only : highfq_river
+#endif
       implicit none
 !
 ! --- high frequency atmospheric forcing field processing.
@@ -1514,6 +1549,9 @@
              swflx(i,j,l) = 0.0
 #if defined(NERSC_HYCOM_CICE)
           swflxdwn(i,j,l) = 0.0
+          if (highfq_river) then
+            rivers(i,j,l) = 0.0
+          endif          
 #endif
             surtmp(i,j,l) = 0.0
             seatmp(i,j,l) = 0.0
@@ -2909,6 +2947,9 @@
       subroutine rdpall(dtime0,dtime1)
       use mod_xc         ! HYCOM communication interface
       use mod_cb_arrays  ! HYCOM saved arrays
+#if defined(NERSC_HYCOM_CICE)
+      use mod_NERSCnml, only : highfq_river
+#endif
       implicit none
 !
       real*8  dtime0,dtime1
@@ -2919,7 +2960,7 @@
 !
       integer i,j,k
       real    albw,degtorad
-      real*8  dtime(895:910)
+      real*8  dtime(895:926)
 !
       integer, save :: icall = -1
 !
@@ -2978,6 +3019,15 @@
       else
         dtime(906) = dtime(905)
       endif
+#if defined(NERSC_HYCOM_CICE)
+!ALFA  --- read high frequency rivers----
+      if (highfq_river) then
+        call rdpall1(rivers,dtime(918),918,mod(icall,3).eq.1)
+      else
+        dtime(918) = dtime(905)
+      endif
+!End  --- read high frequency rivers----
+#endif
 #ifdef _FABM_
 !CAGLAR
       dtime(917) = dtime(905)
@@ -3067,6 +3117,23 @@
                  stop '(rdpall)'
         endif
       enddo
+#if defined(NERSC_HYCOM_CICE)
+      if (highfq_river) then
+        do k= 918,918
+          if     (dtime(k).ne.dtime1) then
+            if     (mnproc.eq.1) then
+               write(lp,*)
+               write(lp,*) 'error in rdpall - inconsistent forcing times'
+               write(lp,*) 'dtime0,dtime1 = ',dtime0,dtime1
+               write(lp,*) 'dtime = ',dtime
+               write(lp,*)
+            endif !1st tile
+            call xcstop('(rdpall)')
+            stop '(rdpall)'
+          endif
+        enddo
+      endif
+#endif
       return
       end
 !
@@ -3197,6 +3264,9 @@
       use mod_xc         ! HYCOM communication interface
       use mod_cb_arrays  ! HYCOM saved arrays
       use mod_za         ! HYCOM I/O interface
+#if defined(NERSC_HYCOM_CICE)
+      use mod_NERSCnml, only : highfq_river 
+#endif
       implicit none
 !
       integer lslot,mnth
@@ -3430,6 +3500,9 @@
 #if defined(NERSC_HYCOM_CICE)
 !KAL
           swflxdwn(i,j,lslot) = 0.0
+          if (highfq_river) then
+            rivers(i,j,lslot) = 0.0
+          endif
 #endif
           enddo
         enddo
@@ -5102,3 +5175,4 @@
 !> Mar  2021 - skip tracers in nest archive files
 !> Apr  2021 - update the halo of rmu
 !> Nov  2022 - skip oneta in nest archive files
+!> Jun  2025 - Introduce the high frequency river inflow

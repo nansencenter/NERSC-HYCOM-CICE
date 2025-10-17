@@ -113,6 +113,7 @@ export IDM=$(blkdat_get blkdat.input idm)
 export JDM=$(blkdat_get blkdat.input jdm)
 export LWFLAG=`grep "'lwflag' =" blkdat.input | awk '{printf("%1d", $1)}'`
 
+export HRIVER=$(grep "highfq_river" ../hycom_opt | awk -F= '{printf("%s", $2)}' | tr -d ' \t\r\n')
 restarti=$(blkdat_get_string blkdat.input nmrsti "restart_in")
 
 # Add period to restart file name if not present...
@@ -149,6 +150,7 @@ echo "Fetched from blkdat.input:"
 echo "--------------------------"
 echo "EB     is $EB    "
 echo "PRIVER is $PRIVER"
+echo "HRIVER is $HRIVER"
 echo "YRFLAG is $YRFLAG"
 echo "JERLV  is $JERLV "
 echo "SSS    is $SSSRLX"
@@ -405,7 +407,25 @@ if [ $PRIVER -eq 1 ] ; then
    fi
 fi
 
-
+if [ "$HRIVER" = ".true." ]; then
+  echo "Note: PRIVER must be 0 for highfq_river=true " 
+  echo "highfq_river=true: **Setting up high frequency river forcing  from hycom_opt highfq_river"
+  # Check range of file against start and stop times
+  RDIR=$BASEDIR/force/rivers/$E
+  if [ -f  $RDIR/riverh.a -a  -f $RDIR/riverh.b ] 
+  then
+     ln -sf $RDIR/riverh.a forcing.riverh.a || tellerror "Could not get riverh .a file"
+     ln -sf $RDIR/riverh.b forcing.riverh.b || tellerror "Could not get riverh .b file"
+     frcstart=$(head -n  6 forcing.riverh.b | tail -n1 | sed "s/.*=//" | sed "s/^[ ]*//" | cut -d " " -f 1)
+     frcstop=$(tail -n 1 forcing.riverh.b             | sed "s/.*=//" | sed "s/^[ ]*//" | cut -d " " -f 1)
+     test1=$(echo ${tstart#-}'>='$frcstart | bc -l)
+     test2=$(echo $tstop '<='$frcstop  | bc -l)
+     [ $test1 -eq 1 ] || tellerror "File $S/forcing.riverh.b: forcing starts after  model starts"
+     [ $test2 -eq 1 ] || tellerror "File $S/forcing.riverh.b: forcing stops  before model stops"
+  fi
+else
+    echo "highfq_river=false: No attemp to use high frequency river runnoff"
+fi
 #
 # --- kpar forcing
 #
@@ -518,11 +538,11 @@ tmp2=$(echo $NESTFQ'!='0.0 | bc -l)
 if [ $tmp -eq 1 -o $tmp2 -eq 1 ] ; then
    nestdir=$BASEDIR/nest/$E
    echo "Nesting input from $nestdir"
-   ls nest
+   ls sest
    if [ -d $nestdir ]  ; then
       [ -e nest ] && rm nest
       ln -s $nestdir nest
-   else 
+   else
       tellerror "Nesting dir $nest does not exist"
    fi
 fi
@@ -591,11 +611,6 @@ fi
 #if [ "$tideflag" == "T" ] ; then
 #   ${pget} ${BASEDIR}/tides_nersc/$E/${tidechoice}obc_elev.dat . || tellerror "Could not get tidal data ${tidechoice}obc_elev.dat "
 #fi
-   
-
-
-
-echo
 
 #
 # --- move old restart files to KEEP, typically from batch system rerun.
