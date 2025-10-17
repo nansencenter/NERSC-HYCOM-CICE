@@ -1,10 +1,10 @@
 #!/bin/csh
-# Create rmu_nest files with a varying e-folding time
-# For the coordinates (if,il,jf,jl) consult ports.nest
+# Create rmu files with a varying e-folding time
+# For the coordinates (if,il,jf,jl) consult ports.input
 # Every relaxation zone can be split into multiple boxes
 # IF,IL,JF,JL - ARRAY BOX WHERE EFOLD RELAXATION IS APPLIED
 # The cuurent script is configured for TP5:
-#ports.nest for TP5: 
+#ports.input for TP5: 
 #    2  'nports' = Number of ports 
 #    1  'kdport' = port orientation (1=N, 2=S, 3=E, 4=W)
 #   17  'ifport' = first i-index
