@@ -1128,6 +1128,9 @@
 #ifdef CPL_OASIS_HYCOM
       use mod_cpl_oasis_init
 #endif
+#if defined (NERSC_HYCOM_CICE)
+      use mod_NERSCnml, only : highfq_river
+#endif
 
       implicit none
 !
@@ -1980,6 +1983,11 @@
                         * rhoref
         endif
 !       wtrflx(i,j) = wtrflx(i,j)+rivflx(i,j) !update wtrflx in thermf_oi
+#if defined(NERSC_HYCOM_CICE)
+      elseif (highfq_river) then
+        rivflx(i,j) = ( rivers(i,j,l0)*w0+rivers(i,j,l1)*w1)   &
+                    * rhoref
+#endif
       else
         rivflx(i,j) = 0.0
       endif
