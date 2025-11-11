@@ -151,7 +151,7 @@ def main(region,grid):
   #pickle.dump(masks,f)
   #f.close()
 
-  with open('/nird/projects/NS9481K/BGC.Validation/OMmask'+outname+'.pckl', 'wb') as f:
+  with open('./OMmask'+outname+'.pckl', 'wb') as f:
     pickle.dump(masks, f, protocol=pickle.HIGHEST_PROTOCOL)
 
 
