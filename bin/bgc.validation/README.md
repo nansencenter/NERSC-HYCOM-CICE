@@ -15,4 +15,7 @@ python make_OM_regional_masks.py TP5a0.06 /cluster/work/users/cagyum/TP5a0.06/to
 
 ## In situ data preprocess
 
-The unified in situ data from various source (e.g. Copernicus, GLODAP) are stored as text files in "/nird/projects/NS9481K/BGCDATA/prepobs_bgc/". The command below reads the text files, and creates python dictionaries that has information such as years, depth, regions. These dictionaries are saved as a binary file in the same folder. The file is already created and copied to NIRD (i.e. /nird/projects/NS9481K/BGC.Validataion/INSITU.2025.OMmask.pckl). There is no need to repeat this process. The command below is here for documentation as an example: 
+The unified in situ data from various source (e.g. Copernicus, GLODAP) are stored as text files in "/nird/projects/NS9481K/BGCDATA/prepobs_bgc/". The command below reads the text files, and creates python dictionaries that has information such as years, depth, regions. These dictionaries are saved as a binary file in the same folder. The file is already created and copied to NIRD (i.e. /nird/projects/NS9481K/BGC.Validation/INSITU.OMmask.pckl). There is no need to repeat this process. The command below is here for documentation as an example:
+```
+python convert_txt_pckl_insitu_preobs_OMmask.py ~/NERSC-HYCOM-CICE/ 1997 2023
+``` 
