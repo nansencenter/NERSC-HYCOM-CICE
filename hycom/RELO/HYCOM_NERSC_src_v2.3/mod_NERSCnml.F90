@@ -29,7 +29,7 @@ module mod_NERSCnml
     write_arche     = .false.
     sss_underice    = .false.
     highfq_river    = .false.
-    sssrmx_scalar   = 99.0
+    sssrmx_scalar   = .5
 
     ! read namelist
     open (funi, file='./hycom_opt', status='old',iostat=nml_err)

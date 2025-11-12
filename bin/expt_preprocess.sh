@@ -407,13 +407,22 @@ if [ $PRIVER -eq 1 ] ; then
    fi
 fi
 
+# 0: can be used for offline to create the riverh.[ab], when the model integration is multiple years.
+River_online=0
 if [ "$HRIVER" = ".true." ]; then
-  echo "Note: PRIVER must be 0 for highfq_river=true " 
-  echo "highfq_river=true: **Setting up high frequency river forcing  from hycom_opt highfq_river"
-  # Check range of file against start and stop times
-  RDIR=$BASEDIR/force/rivers/$E
-  if [ -f  $RDIR/riverh.a -a  -f $RDIR/riverh.b ] 
-  then
+   echo "Note: PRIVER must be 0 for highfq_river=true " 
+   echo "highfq_river=true: **Setting up high frequency river forcing  from hycom_opt highfq_river"
+   # Check range of file against start and stop times
+   RDIR=$BASEDIR/force/rivers/$E
+   if [ ! -s  ${RDIR}/riverh.a -o  ! -s ${RDIR}/riverh.b -o ${River_online} -eq 1 ]; then 
+      echo "Create the synoptic river forcing by the python routine ..."
+      cd $P
+      cmd="${BINDIR}river_synoptic.sh $starttime $endtime"
+      eval $cmd ||  tellerror "$cmd failed"
+      cd $S
+   fi
+   if [ -f  $RDIR/riverh.a -a  -f $RDIR/riverh.b ] 
+   then
      ln -sf $RDIR/riverh.a forcing.riverh.a || tellerror "Could not get riverh .a file"
      ln -sf $RDIR/riverh.b forcing.riverh.b || tellerror "Could not get riverh .b file"
      frcstart=$(head -n  6 forcing.riverh.b | tail -n1 | sed "s/.*=//" | sed "s/^[ ]*//" | cut -d " " -f 1)
@@ -422,9 +431,10 @@ if [ "$HRIVER" = ".true." ]; then
      test2=$(echo $tstop '<='$frcstop  | bc -l)
      [ $test1 -eq 1 ] || tellerror "File $S/forcing.riverh.b: forcing starts after  model starts"
      [ $test2 -eq 1 ] || tellerror "File $S/forcing.riverh.b: forcing stops  before model stops"
-  fi
+   fi
+   cd $S
 else
-    echo "highfq_river=false: No attemp to use high frequency river runnoff"
+   echo "highfq_river=false: No attemp to use high frequency river runnoff"
 fi
 #
 # --- kpar forcing
@@ -434,7 +444,6 @@ if [ $JERLV -eq 0 ] ; then
    ln -sf $BASEDIR/force/seawifs/kpar.a forcing.kpar.a || tellerror "Could not get kpar.a file"
    ln -sf $BASEDIR/force/seawifs/kpar.b forcing.kpar.b || tellerror "Could not get kpar.b file"
 fi
-
 
 #
 # --- relaxation
@@ -551,7 +560,7 @@ fi
 #export  waveSDIR=/work/shared/nersc/msc/STOKES/Globww3
 echo "===================================================="
 echo "STDFLG =  $STDFLG"
-if [ $STDFLG -eq 1 ] ; then
+if [ ${STDFLG} -eq 1 ]; then
  echo "===================================================="
  echo " -------Setting up Wave Stokes forcing----"
  for foo in  forcing.stokex.a forcing.stokex.b forcing.stokey.a forcing.stokey.b\
@@ -637,35 +646,6 @@ else
       cp $D/${filename}.a .
       cp $D/${filename}.b .
 
-#
-# --- Start compute Montg. on the go, to be sure it is computed from the right nesting file.
-# --- For operatinal runs and other rund where it is certain that there has been no 
-# --- changes to the model setup, this part should be commented out. 
-#
-      imontg=0
-      if [ [ $tmp -eq 1 -o $tmp2 -eq 1 ] -a [ $imontg -eq 1] ]; then
-         echo "debug: $(pwd)" 
-         ### "Calculate and Write Montgometry potential into the nesting files"
-         echo "filename="${filename}
-         for yy in `seq ${start_year} ${end_year}`; do
-           y=$(( $yy % 4 ))
-           if [ $y -eq 0 ]; then
-              echo "$yy is Leap Year!"
-              end_day=366
-           else
-              end_day=365
-              echo "$yy is not a Leap Year!"
-           fi
-           for dn in `seq -w ${start_oday} ${end_day}`; do
-              python ../calc_montg1.py /cluster/work/users/achoth/TP5a0.06/nest/080_NewMontg/archv.${yy}_${dn}_00.b  /cluster/work/users/achoth/TP5a0.06/expt_08.1/data/${filename}.b  ${nestdir}/
-#             python $BINDIR/calc_montg1.py $BASEDIR/nest/$E/archv.${yy}_${dn}_00.b  $BASEDIR/expt_$X/data/${filename}.b  ${nestdir}/
-           done
-         done
-         echo " Nesting Files Modified Successfully "
-      fi
-#
-# --- End compute Montg. on the go, to be sure it is computed from the right nesting file.
-#     
    elif [ -f $D/${filename}_mem001.a -a -f $D/${filename}_mem001.b ]; then
       echo "using HYCOM restart files ${filename}_mem???.[ab] from data dir $D"
       for f in $D/${filename}_mem*.? ; do
@@ -785,26 +765,6 @@ if [ ! -s forcing.rivers.a ] ; then
    echo "problem with rivers"
    ls -l *rivers*
 fi
-
-
-#C
-#C --- Nesting input archive files for next segment.
-#C
-#if (-e ./nest) then
-#  cd ./nest
-#  touch archv_${NB}.tar
-#  if (-z archv_${NB}.tar) then
-#    ${pget} ${D}/nest/archv_${NB}.tar archv_${NB}.tar &
-#  endif
-#  cd ..
-#endif
-#C
-#chmod ug+x hycom
-#/bin/ls -laFq
-#C
-#if (-e ./nest) then
-#  ls -laFq nest
-#endif
 
 
 if [ $numerr -eq 0 ] ; then

@@ -118,6 +118,7 @@ the hycom setup files (grid and bathymetry) to be present.
 | river_trip.sh | River fluxes based on TRIP and ERAI or ERA40 climatology. Can now use pre-existing riverflow in TRIP_PATH |
 | river_trip_realtime.sh | River fluxes based on TRIP, can generate realtime river forcing based on ERA40 or ERAI as well as river climatology|
 | river_nersc.sh | Use simple nersc river routine for Greenland, use this command bin/river_nersc.sh 100 300 ./input/greenland_landice.dat and move everything to SCRATCH_Greenland directory in order to prepare the merging with other rivers later|
+river_forcing.py | located at bin/river-topaz/scripts/GloFAS/. It can be used to create the high-frequency rifer flux (abfile with 6h or daily), and its usage can be found in the relevant README under bin/river-topaz.
 
 
 
