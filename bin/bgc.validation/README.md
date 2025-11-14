@@ -49,7 +49,7 @@ python $HOME/NERSC-HYCOM-CICE/bin/bgc.validation/satellite_mapping_monthly_NPP.p
 python $HOME/NERSC-HYCOM-CICE/bin/bgc.validation/satellite_mapping_monthly_POC.py TP2 038 2006 2010
 ``` 
 
-## Custom Designing Regional masks
+## Designing Custom Regional masks
 
 You can use Jupyter notebook `def_validation_regions.ipynb` for designing your own regional masks. Following is the region definition created by the notebook which is compatible with regions defined by `make_OM_regional_masks.py`:
 
