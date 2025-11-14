@@ -18,8 +18,6 @@ The validation scripts aim to unify the process. As such, a common region defini
 python make_OM_regional_masks.py TP5a0.06 /cluster/work/users/cagyum/TP5a0.06/topo/regional.grid
 ```
 
-<img src="./images/ARCMFC_BGC_validation_regions.png" width="800">
-
 ## In situ data preprocess
 
 The unified in situ data from various source (e.g. Copernicus, GLODAP) are stored as text files in "/cluster/projects/nn9481k/BGCDATA/prepobs_bgc/". The command below reads the text files, and creates python dictionaries that has information such as years, depth, regions. These dictionaries are saved as a binary file in the same folder. The file is already created and copied to NIRD (i.e. /cluster/projects/nn9481k/BGC.Validation/INSITU.OMmask.pckl). There is no need to repeat this process. The command below is here for documentation as an example:
@@ -53,6 +51,10 @@ python $HOME/NERSC-HYCOM-CICE/bin/bgc.validation/satellite_mapping_monthly_POC.p
 
 ## Custom Desiging Regional masks
 
-You can use Jupyter notebook `def_validation_regions.ipynb` for designing your own regional masks. For further detail, see the notebook. The latest version of the notebook can be found in NERSC git repository:
+You can use Jupyter notebook `def_validation_regions.ipynb` for designing your own regional masks. Following is the region definition created by the notebook which is compatible with regions defined by `make_OM_regional_masks.py`:
+
+<img src="./images/ARCMFC_BGC_validation_regions.png" width="800">
+
+For further detail, see the notebook. The latest version of the notebook can be found in NERSC git repository:
 
 [ARCMFC_BGC_validation_regions](https://github.com/nansencenter/ARCMFC_BGC_validation_regions)
