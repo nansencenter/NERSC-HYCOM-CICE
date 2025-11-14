@@ -53,4 +53,6 @@ python $HOME/NERSC-HYCOM-CICE/bin/bgc.validation/satellite_mapping_monthly_POC.p
 
 ## Custom Desiging Regional masks
 
-You can use Jupyter notebook `def_validation_regions.ipynb` for designing your own regional masks. For further detail, see the notebook.
+You can use Jupyter notebook `def_validation_regions.ipynb` for designing your own regional masks. For further detail, see the notebook. The latest version of the notebook can be found in NERSC git repository:
+
+[ARCMFC_BGC_validation_regions](https://github.com/nansencenter/ARCMFC_BGC_validation_regions)
