@@ -18,7 +18,7 @@ The validation scripts aim to unify the process. As such, a common region defini
 python make_OM_regional_masks.py TP5a0.06 /cluster/work/users/cagyum/TP5a0.06/topo/regional.grid
 ```
 
-![alt-text](./images/ARCMFC_BGC_validation_regions.png)
+<img src="./images/ARCMFC_BGC_validation_regions.png" width="800">
 
 ## In situ data preprocess
 
