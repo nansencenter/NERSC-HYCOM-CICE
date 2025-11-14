@@ -11,7 +11,6 @@ import argparse
 from numpy import dtype
 import netCDF4
 from dateutil.relativedelta import relativedelta
-import time
 warnings.filterwarnings('ignore')
 user = getpass.getuser()
 
@@ -65,7 +64,7 @@ def main(region,experiment,date1,date2,workdir):
     modeloutput = np.zeros((nmonths,jdm,idm))
 
     namencout = workdir + user + "/" + \
-        region + "/" + experiment + "/data/POC_monthly_colocated_"+date1+"_"+date2+".nc"
+        region + "/" + experiment + "/data/NPP_monthly_colocated_"+date1+"_"+date2+".nc"
     ncout = NetCDFFile(namencout, "w", format="NETCDF4")
 
     ncout.createDimension("JJ",jdm)
@@ -83,8 +82,16 @@ def main(region,experiment,date1,date2,workdir):
 #    ncout.createVariable("sat_mapped","f8",("time","JJ","II"))
 #    ncout.createVariable("model_averaged","f8",("time","JJ","II"))
 
-    sat_mapped = ncout.createVariable('sat_mapped', dtype('double').char, ("time","JJ","II"))
-    model_averaged = ncout.createVariable('model_averaged', dtype('double').char, ("time","JJ","II"))
+    sat_mapped_eppley = ncout.createVariable('sat_mapped_eppley', dtype('double').char, ("time","JJ","II"))
+    sat_mapped_cafe = ncout.createVariable('sat_mapped_cafe', dtype('double').char, ("time","JJ","II"))
+    sat_mapped_vgpm = ncout.createVariable('sat_mapped_vgpm', dtype('double').char, ("time","JJ","II"))
+    sat_mapped_cbpm = ncout.createVariable('sat_mapped_cbpm', dtype('double').char, ("time","JJ","II"))
+
+    model_averaged_eppley = ncout.createVariable('model_averaged_eppley', dtype('double').char, ("time","JJ","II"))
+    model_averaged_cafe = ncout.createVariable('model_averaged_cafe', dtype('double').char, ("time","JJ","II"))
+    model_averaged_vgpm = ncout.createVariable('model_averaged_vgpm', dtype('double').char, ("time","JJ","II"))
+    model_averaged_cbpm = ncout.createVariable('model_averaged_cbpm', dtype('double').char, ("time","JJ","II"))
+    model_averaged_full = ncout.createVariable('model_averaged_full', dtype('double').char, ("time","JJ","II"))
     latitude = ncout.createVariable('latitude', dtype('double').char, ("JJ","II"))
     longitude= ncout.createVariable('longitude', dtype('double').char, ("JJ","II"))
 
@@ -92,8 +99,8 @@ def main(region,experiment,date1,date2,workdir):
     ncout.variables["latitude"][:]=plat
 
 #    # get mask from a random netcdf
-#    ncc = NetCDFFile("/nird/projects/NS9481K/BGC.Validation/POC_Satellite/POC_above_0N_202001.nc")
-#    satpoc = ncc.variables['POC'][:]
+#    ncc = NetCDFFile("/cluster/projects/nn9481k/NPP_Satellite/vgpm.2003.11.nc")
+#    satnpp = ncc.variables['npp'][:]
 
     timecal =  datetime.datetime(int(date1), 1, 15)
     for tim in range(nmonths):
@@ -101,12 +108,11 @@ def main(region,experiment,date1,date2,workdir):
         daym = int( timecal.strftime('%d') )
         year = int( timecal.strftime('%Y') )
         print(str(year)+"-"+str(month).zfill(2))
-        
         fname = workdir + user + "/" + \
               region + "/" + experiment + "/data/"+"AVE."+str(month).zfill(2)+"."+str(year)+"."+str(year)+".b"
         arc  = abplot.openfile(fname)
 #          kdm  = max(f.fieldlevels)
-        poc  = abplot.integr(arc,'poc',10)/10. 
+        npp  = abplot.integr(arc,'ECO_prim',200) * 60. * 60. * 24.
         dummy = abplot.getvarib(arc,'thknss',1)
 #          deep = np.zeros((kdm,jdm,idm))
 #          deepd= np.zeros((kdm,jdm,idm))
@@ -121,26 +127,45 @@ def main(region,experiment,date1,date2,workdir):
 #                 deep[k,:,:] = deepd[k-1,:,:]/2. + deep[k-1,:,:] + dummy / 2.
 #              deep[k,:,:] = np.ma.masked_array(deep[k,:,:],dummy.mask)
 
-        modelout = np.ma.masked_array(poc,depthm.mask)
-        #ncout.variables["model_averaged"][tim,:,:] = modelout # store the full model domain without satellite masks
+        modelout = np.ma.masked_array(npp,depthm.mask)
+        ncout.variables["model_averaged_full"][tim,:,:] = modelout # store the full model domain without satellite masks
 
-        satdir = '/cluster/projects/nn9481k/BGC.Validation/POC_Satellite/'
-        globpoc = satdir+'POC_above_0N_' + str(year) + \
-                     str(timecal.month).zfill(2)+'.nc'
-        tries = 2000
-        for i in range(tries):
-           try:
-                ncc = NetCDFFile(globpoc)
-                print(globpoc)
-                satpoc = ncc.variables['POC'][:,:]
+        for prefix in ["vgpm","eppley","cbpm","cafe"]:
+
+            satdir = '/cluster/projects/nn9481k/BGC.Validation/NPP_Satellite/'
+            globnpp = satdir+prefix+'.' + str(year) + \
+                     '.'+str(timecal.month).zfill(2)+'.nc'
+#        file = SD(globnpp, SDC.READ)
+#        satnpp = file.select('npp')[:]
+#        with h5py.File(globnpp, 'r') as ncc:
+#                print('... vgpm in ' + str(year) + " " + str(month).zfill(2) + " available")
+#                satnpp = ncc['npp'][:]
+#        ncc = netCDF4.Dataset(globnpp, 'r')
+            try:
+            # with h5py.File(globnpp, 'r') as ncc:
+            #     print('... vgpm in ' + str(year) + " " + str(month).zfill(2) + " available")
+            #     satnpp = ncc['npp'][:]
+
+            # #ncc = netCDF4.Dataset(globnpp, 'r')
+            # #'... vgpm in '+str(year)+" "+str(month).zfill(2)+" available"
+            #     satnpp = ncc.variables['npp'][:]
+            #     lat_dim, lon_dim = satnpp.shape
+
+            #     satlat = np.linspace(-90, 90, lat_dim)
+            #     satlon = np.linspace(-180, 180, lon_dim)
+            # #ncc.close()
+
+                ncc = NetCDFFile(globnpp)
+                print(globnpp)
+                satnpp = ncc.variables['npp'][:,:]
 #            satnpp = np.ma.masked_where(satnpp < 0.0, satnpp)
-                #lat_dim, lon_dim = satpoc.shape
+                lat_dim, lon_dim = satnpp.shape
 
-                satlat = ncc.variables['lat'][:] #-np.linspace(-90, 90, lat_dim)
-                satlon = ncc.variables['lon'][:] #np.linspace(-180, 180, lon_dim)
+                satlat = -np.linspace(-90, 90, lat_dim)
+                satlon = np.linspace(-180, 180, lon_dim)
 
                 depthmf = np.asfortranarray(depthm)
-                satpocf = np.asfortranarray(satpoc)
+                satnppf = np.asfortranarray(satnpp)
                 platf   = np.asfortranarray(plat)
                 plonf   = np.asfortranarray(plon)
                 satlatf = np.asfortranarray(satlat)
@@ -148,7 +173,7 @@ def main(region,experiment,date1,date2,workdir):
                 scpxf   = np.asfortranarray(scpx)
                 scpyf   = np.asfortranarray(scpy)
 
-                satout = _the_monthly_mapping_loop_.main(depthmf,scpxf,scpyf,platf,plonf,satlatf,satlonf,satpocf) # copied from sat.map.TS folder
+                satout = _the_monthly_mapping_loop_.main(depthmf,scpxf,scpyf,platf,plonf,satlatf,satlonf,satnppf) # copied from sat.map.TS folder
                 satout = np.ma.masked_where(satout>100000.,satout)
                 satout = np.ma.masked_where(satout<0.,satout)
                 satout = np.ma.masked_array(satout,dummy.mask)
@@ -157,26 +182,18 @@ def main(region,experiment,date1,date2,workdir):
 #            modelout = np.ma.masked_where(modelout<0.,modelout)
                 modelout = np.ma.masked_array(modelout,satout.mask)
 
-                ncout.variables["sat_mapped"][tim,:,:] = satout
-                break
-           except Exception as e:
-                if i < tries - 1:
-                   print("ERROR, try number : ",i+1)
-                   #time.sleep(5)
-                   continue
-                else:
-                   print('satellite mapping failed')
-                   print(f"An error occurred: {e}")
-                break
-
-
-        ncout.variables["model_averaged"][tim,:,:] = modelout
+                ncout.variables["sat_mapped_"+prefix][tim,:,:] = satout
+            except:
+                pass
+            #ncout.variables["sat_mapped"][tim,:,:] = fill_value
+            ncout.variables["model_averaged_"+prefix][tim,:,:] = modelout
         ncout.variables["time"][tim] = netCDF4.date2num(timecal, units = time.units, calendar = time.calendar)
         ncout.sync()
   
         timecal = timecal + relativedelta(months=1)
 
     ncout.close()
+
 
 if __name__ == "__main__" :
 

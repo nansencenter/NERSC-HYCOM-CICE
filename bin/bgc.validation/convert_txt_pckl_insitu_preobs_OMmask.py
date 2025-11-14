@@ -12,13 +12,13 @@ warnings.filterwarnings('ignore')
 
 def main(folder,year1,year2):
 
-   f=open('/cluster/projects/nn2993k/BGC.Validation/OMmaskTP2.pckl','rb')
+   f=open('/cluster/projects/nn9481k/BGC.Validation/OMmaskTP2.pckl','rb')
    REGmaskTP2 = pickle.load(f,encoding="latin1")
    f.close()
-   f=open('/cluster/projects/nn2993k/BGC.Validation/OMmaskTP5.pckl','rb')
+   f=open('/cluster/projects/nn9481k/BGC.Validation/OMmaskTP5.pckl','rb')
    REGmaskTP5 = pickle.load(f,encoding="latin1")
    f.close()
-   f=open('/cluster/projects/nn2993k/BGC.Validation/OMmaskTP0.pckl','rb')
+   f=open('/cluster/projects/nn9481k/BGC.Validation/OMmaskTP0.pckl','rb')
    REGmaskTP0 = pickle.load(f,encoding="latin1")
    f.close()
 
@@ -86,7 +86,7 @@ def main(folder,year1,year2):
    not_the_same = 0
    for fileyears in range(year1,year2+1):
     print(fileyears)
-    with open('/cluster/projects/nn2993k/BGCDATA/prepobs_bgc/bgc_in_situ_'+str(fileyears)+'0101.txt', 'r') as f:
+    with open('/cluster/projects/nn9481k/BGCDATA/prepobs_bgc/bgc_in_situ_'+str(fileyears)+'0101.txt', 'r') as f:
      # Skip the first two header lines
      next(f)
      next(f)

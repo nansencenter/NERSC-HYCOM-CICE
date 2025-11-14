@@ -15,7 +15,7 @@ def rmse(s,o):
         return np.sqrt(np.mean((s-o)**2))
 
 
-f=open("/cluster/projects/nn2993k/BGC.Validation/INSITU.OMmask.pckl","rb")
+f=open("/cluster/projects/nn9481k/BGC.Validation/INSITU.OMmask.pckl","rb")
 INSITU = pickle.load(f)
 
 def main(region,experiment,date1,date2,workdir):
