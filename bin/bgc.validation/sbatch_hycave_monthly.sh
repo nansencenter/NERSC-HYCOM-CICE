@@ -23,17 +23,19 @@ region=$1
 experiment=$2
 year1=$3
 year2=$4
+workdir=$5
 
 # Function to process a subset of files
 process_files() {
 
-    workdir=$WORK"/" # sigma2 computers assign this as /clustee/work/users/$USER
+    #workdir=$WORK"/" # sigma2 computers assign this as /clustee/work/users/$USER
 
     local region=${1}
     local experiment=${2}
     local year=${3}
     local month=${4}
     local basedir=${5}
+    local workdir=${6}
 
     if [ "$region" = "TP5" ] ; then
        reg="TP5a0.06"
@@ -59,8 +61,10 @@ process_files() {
 #       MSPROGSbinPATH="/cluster/home/cagyum/NERSC-HYCOM-CICE/hycom/MSCPROGS/bin/"
 #       cp $MSPROGSbinPATH"hycave" $trunk"/hycave" || tellerror "Could not get hycave"
 #       cp $MSPROGSbinPATH"hyc2proj" $trunk"/hyc2proj" || tellerror "Could not get hycave"
-       ln -s $MSPROGSbinPATH"/hycave" $trunk"/hycave" || tellerror "Could not get hycave"
-       ln -s $MSPROGSbinPATH"/hyc2proj" $trunk"/hyc2proj" || tellerror "Could not get hycave"
+#       ln -s $MSPROGSbinPATH"/hycave" $trunk"/hycave" || tellerror "Could not get hycave"
+#       ln -s $MSPROGSbinPATH"/hyc2proj" $trunk"/hyc2proj" || tellerror "Could not get hycave"
+       ln -s $folder"/hycave" $trunk"/hycave" || tellerror "Could not get hycave"
+       ln -s $folder"/hyc2proj" $trunk"/hyc2proj" || tellerror "Could not get hycave"
 #       ln -s "/cluster/work/users/cagyum/TP2a0.10/expt_03.8/data/hyc2proj" $trunk"/hyc2proj" || tellerror "Could not get hycave"
        execute=" ./hycave archv "
     fi
@@ -129,7 +133,7 @@ for year in $(seq $year1 $year2); do
 
 	#echo $year $month
 #        srun -n1 -c1 bash -c "process_files $region $experiment2 $year $month $basedir" &
-        srun -n1 -c1 bash -c "process_files $region $experiment $year $month $basedir" &
+        srun -n1 -c1 bash -c "process_files $region $experiment $year $month $basedir $workdir" &
 #        bash -c "process_files $region $experiment $year $month $basedir" &
         done
     done
