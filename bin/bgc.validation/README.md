@@ -44,6 +44,32 @@ The code will produce a series of output python pickle binary files in model dat
 
 ## I.III Monthly model averages
 
+The following will create monthly model averages both in abfile (uses hycave) and projections (uses hyc2proj in native projection).
+
+This is important! Your MSPROGS should have been compiled at this stage. Export your MSPROGS directory (e.g. the following):
+
+```
+export MSPROGSbinPATH="/cluster/home/"$USER"/NERSC-HYCOM-CICE/hycom/MSCPROGS/bin/"
+```
+
+Make sure you have the following files in your model data folder (e.g. expt_01.0/data/):
+```
+regional.grid.a
+regional.grid.b
+regional.depth.a
+regional.depth.b
+grid.info
+proj.in
+extract.archm
+depthlevels.in
+```
+
+If you have those prerequisites, execute the following script with YOUR EXPERIMENT DEFINITION to run it in nodes (it will use nn9481k project). It will take some time before you use any output in the data folder. If all goes well, you will have many AVE.XXXX.XX files. There will be some folders, but these were used to compute averages in parallel, they are not important after the script is finished.
+```
+sbatch sbatch_hycave_monthly.sh TP2 038 2005 2009  
+```
+ 
+
 ## I.IV Satellite Mapping
 
 The satellite mapping codes require a compiled fortran library. This library is compiled and included in this folder for betzy. If you are on a different machine, execute the following (and preferably give a different output name):
