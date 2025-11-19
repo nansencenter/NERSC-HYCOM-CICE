@@ -6,19 +6,28 @@ The codes evaluate the model output against:
 2) satellite data
 3) BGC-Argo profiles
 
+If this is NOT your first time validating your model, below is the quick list of scripts you can execute in the following order. If this is the first time, jump to Section I for detailed instructions and first time use.
+```
+code
+``` 
+
+
+# I. Setup
 Before the scripts below, it is important to add the bgc.validation folder to your python path, e.g.:
 ```
 export PYTHONPATH="$HOME/NERSC-HYCOM-CICE/bin/bgc.validation:$PYTHONPATH"
 ```
 
-## Regional masks
+The scripts below take time. I suggest using a virtual terminal (e.g. screen).
+
+## I.I Regional masks
 
 The validation scripts aim to unify the process. As such, a common region definitions is essential. The commands below creates these masks as binary pickle files and stores them in the same folder. The files are already created and copied to cluster/projects (i.e. /cluster/projects/nn9481k/BGC.Validataion/). There is no need to repeat this process. The command below is here for documentation as an example:
 ```
 python make_OM_regional_masks.py TP5a0.06 /cluster/work/users/cagyum/TP5a0.06/topo/regional.grid
 ```
 
-## In situ data preprocess
+## I.II In situ data preprocess
 
 The unified in situ data from various source (e.g. Copernicus, GLODAP) are stored as text files in "/cluster/projects/nn9481k/BGCDATA/prepobs_bgc/". The command below reads the text files, and creates python dictionaries that has information such as years, depth, regions. These dictionaries are saved as a binary file in the same folder. The file is already created and copied to NIRD (i.e. /cluster/projects/nn9481k/BGC.Validation/INSITU.OMmask.pckl). There is no need to repeat this process. The command below is here for documentation as an example:
 ```
@@ -33,7 +42,9 @@ The code will by default assume your work directory is '/cluster/work/users/' (l
 
 The code will produce a series of output python pickle binary files in model data folder depending on the in situ data availability with names colocated...pckl. They will be used later.
 
-## Satellite Mapping
+## I.III Monthly model averages
+
+## I.IV Satellite Mapping
 
 The satellite mapping codes require a compiled fortran library. This library is compiled and included in this folder for betzy. If you are on a different machine, execute the following (and preferably give a different output name):
 
