@@ -6,11 +6,29 @@ The codes evaluate the model output against:
 2) satellite data
 3) BGC-Argo profiles
 
-If this is NOT your first time validating your model, below is the quick list of scripts you can execute in the following order. If this is the first time, jump to Section I for detailed instructions and first time use.
-```
-code
-``` 
+If this is NOT your first time validating your model, below is the quick list of scripts you can execute in the following order. If this is the first time, jump to Section I for detailed instructions and first time use. Don't forget to adjust your region (e.g. TP2) and experiment (e.g. 010).
 
+Model vs insitu colocation:
+```
+python $HOME/NERSC-HYCOM-CICE/bin/bgc.validation/model_vs_INSITU.py TP2 038 2006 2010
+``` 
+Model monthly averaging (don't forget prerequisites in Section I.III):
+```
+sbatch sbatch_hycave_monthly.sh TP2 038 2005 2009  /cluster/work/users/$USER/
+```
+Satellite mapping to monthly averages (wait for model averages to finish).
+CHL:
+```
+python $HOME/NERSC-HYCOM-CICE/bin/bgc.validation/satellite_mapping_monthly.py TP2 038 2006 2010
+```
+PP:
+```
+python $HOME/NERSC-HYCOM-CICE/bin/bgc.validation/satellite_mapping_monthly_NPP.py TP2 038 2006 2010
+```
+POC:
+```
+python $HOME/NERSC-HYCOM-CICE/bin/bgc.validation/satellite_mapping_monthly_POC.py TP2 038 2006 2010
+```
 
 # I. Setup
 Before the scripts below, it is important to add the bgc.validation folder to your python path, e.g.:
