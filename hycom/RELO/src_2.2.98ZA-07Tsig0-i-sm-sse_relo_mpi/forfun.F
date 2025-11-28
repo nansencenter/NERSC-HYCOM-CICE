@@ -1512,6 +1512,7 @@ c
 #ifdef _FABM_
       use mod_hycom_fabm
 #endif
+      use mod_NERSCnml, only : sssrmx_scalar
 
       implicit none
 c
