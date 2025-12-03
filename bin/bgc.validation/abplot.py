@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter
 from netCDF4 import Dataset as NetCDFFile
-import mycolors as mycmaps
+#import mycolors as mycmaps
 import nclcmaps
 import cmocean
 import warnings
