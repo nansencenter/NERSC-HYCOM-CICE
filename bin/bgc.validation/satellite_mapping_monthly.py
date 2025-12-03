@@ -141,7 +141,7 @@ def main(region,experiment,date1,date2,workdir):
               continue
            else:
               print('File does not exist : chlor_a : ' + \
-                 y1 + str(timecal.month).zfill(2) + str(timecal.day).zfill(2))
+                 str(year) + str(timecal.month).zfill(2) + str(timecal.day).zfill(2))
               #is_it_there=False
               break
 

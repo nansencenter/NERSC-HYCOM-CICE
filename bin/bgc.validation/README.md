@@ -17,6 +17,7 @@ Model monthly averaging (don't forget prerequisites in Section I.III):
 sbatch sbatch_hycave_monthly.sh TP2 038 2005 2009  /cluster/work/users/$USER/
 ```
 Satellite mapping to monthly averages (wait for model averages to finish).
+
 CHL:
 ```
 python $HOME/NERSC-HYCOM-CICE/bin/bgc.validation/satellite_mapping_monthly.py TP2 038 2006 2010
