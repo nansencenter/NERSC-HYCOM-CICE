@@ -18,9 +18,14 @@ Model monthly averaging (don't forget prerequisites in Section I.III):
 sbatch sbatch_hycave_monthly.sh TP2 038 2005 2009  /cluster/work/users/$USER/
 ```
 
-Model upper layer depth range averages and surface to 200m integration:
+Model upper layer depth range averages and surface to 200m integration (wait for model averages to finish):
 ```
 python $HOME/NERSC-HYCOM-CICE/bin/bgc.validation/upper_layer_climatology.py TP2 038 2006 2010
+```
+
+Model and Argo POC co-colocation (don't forget prerequisites in Section I.VI).
+```
+python Argo.POC.vs.Model.py main TP2 038 2015 2020
 ```
 
 Satellite mapping to monthly averages (wait for model averages to finish).
@@ -116,7 +121,16 @@ Once the ab files averages and climatologies are complete, you can further take 
 ```
 python $HOME/NERSC-HYCOM-CICE/bin/bgc.validation/upper_layer_climatology.py TP2 038 2006 2010
 ``` 
+## I.VI. Co-locating BGC-Argo and model profiles
 
+You need to do the following once and keep the outputs somewhere common. The script reads BGC-Argo netcdfs from preobs folder (similar to in situ samples text files). You need to re-run it when BGC-Argo data is updated. It reads raw netcdf CHL, OXY and Backscatter, and converts them (if needed) to model compatible units (creates POC in the case of backscatter), binnes them to vertically equal intervals. Outputs are save in the same directory. They need to be moved elsewhere.
+```
+python compile.data.from.Argo.py
+```
+Once you have the pickle files, default location is: "/cluster/projects/nn9481k/BGC.Validation/", you run the following to co-locate the model and Argo POC profiles (CHL and OXY will come later).
+```
+python Argo.POC.vs.Model.py main TP2 070 1990 2020
+```
 
 ## Designing Custom Regional masks
 
