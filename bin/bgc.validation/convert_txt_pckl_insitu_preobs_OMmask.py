@@ -21,6 +21,9 @@ def main(folder,year1,year2):
    f=open('/cluster/projects/nn9481k/BGC.Validation/OMmaskTP0.pckl','rb')
    REGmaskTP0 = pickle.load(f,encoding="latin1")
    f.close()
+   f=open('/cluster/projects/nn9481k/BGC.Validation/OMmaskNAT.pckl','rb')
+   REGmaskNAT = pickle.load(f,encoding="latin1")
+   f.close()
 
    # get domain dimensions
    abgrid = abfile.ABFileGrid(folder+"TP2a0.10/topo/regional.grid","r")
@@ -34,6 +37,10 @@ def main(folder,year1,year2):
    abgrid = abfile.ABFileGrid(folder+"TP0a1.00/topo/regional.grid","r")
    plonTP0=abgrid.read_field("plon")
    platTP0=abgrid.read_field("plat")
+
+   abgrid = abfile.ABFileGrid(folder+"NATa1.00/topo/regional.grid","r")
+   plonNAT=abgrid.read_field("plon")
+   platNAT=abgrid.read_field("plat")
 
    # get domain depth
 
@@ -51,6 +58,11 @@ def main(folder,year1,year2):
    abdepth = abfile.ABFileBathy(folder+"/TP0a1.00/topo/regional.depth.b", \
            "r",idm=idm,jdm=jdm)
    depthTP0=abdepth.read_field("depth")
+
+   jdm,idm=plonNAT.shape
+   abdepth = abfile.ABFileBathy(folder+"/NATa1.00/topo/regional.depth.b", \
+           "r",idm=idm,jdm=jdm)
+   depthNAT=abdepth.read_field("depth")
 
    # get data
    INSITU = {\
@@ -73,10 +85,13 @@ def main(folder,year1,year2):
    "subregionTP2" : [],
    "subregionTP5" : [],
    "subregionTP0" : [],
+   "subregionNAT" : [],
    "IITP2" : [],
    "JJTP2" : [],
    "IITP0" : [],
    "JJTP0" : [],
+   "IINAT" : [],
+   "JJNAT" : [],
    "IITP5" : [],
    "JJTP5" : [] \
    }
@@ -86,7 +101,8 @@ def main(folder,year1,year2):
    not_the_same = 0
    for fileyears in range(year1,year2+1):
     print(fileyears)
-    with open('/cluster/projects/nn9481k/BGCDATA/prepobs_bgc/bgc_in_situ_'+str(fileyears)+'0101.txt', 'r') as f:
+    with open('/nird/datapeak/NS9481K/BGCDATA/prepobs_bgc/bgc_in_situ_'+str(fileyears)+'0101.txt', 'r') as f:
+    #with open('/cluster/projects/nn9481k/BGCDATA/prepobs_bgc/bgc_in_situ_'+str(fileyears)+'0101.txt', 'r') as f:
      # Skip the first two header lines
      next(f)
      next(f)
@@ -143,6 +159,30 @@ def main(folder,year1,year2):
 #           else:
 #              subregionTP0.append(found)
            INSITU["subregionTP0"].append(append_TP0)
+
+        # NAT domain
+        cooINDEX = abs( platNAT-float(row[7]) ) + abs( plonNAT-float(row[6]) )
+        JJ,II = np.unravel_index(cooINDEX.argmin(), cooINDEX.shape)
+        append_NAT = "OUTSIDE"
+        INSITU["IINAT"].append(int(II))
+        INSITU["JJNAT"].append(int(JJ))
+        if depthNAT[JJ,II] < 10.0:
+           INSITU["subregionNAT"].append(append_NAT)
+        else:
+           not_inside = True
+           found = None
+           for key in REGmaskNAT:
+             if found is None:
+              if REGmaskNAT[key][JJ,II] == 1:
+                 #subregionNAT.append(key)
+                 found = key
+                 append_NAT = key
+#                 not_inside = False
+#           if not_inside:
+#              subregionNAT.append("OUTSIDE")
+#           else:
+#              subregionNAT.append(found)
+           INSITU["subregionNAT"].append(append_NAT)
 
         # TP2 domain
         cooINDEX = abs( platTP2-float(row[7]) ) + abs( plonTP2-float(row[6]) )

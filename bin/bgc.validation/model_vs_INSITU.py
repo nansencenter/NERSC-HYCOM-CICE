@@ -165,10 +165,11 @@ def main(region,experiment,date1,date2,workdir):
                  CHL["region"].append(INSITU[subregion][ int(t) ]); CHL["obs"].append(INSITU["cphl"][ int(t) ]);
 
        datenow = datenow + datetime.timedelta(days=1) 
-    except:
+    except Exception as e :
 
        print(' ')
        print('script did not work this day:',datenow)
+       print(f"An error occurred: {e}")
        datenow = datenow + datetime.timedelta(days=1)
 
    fout = open(workdir + user + "/" + \
