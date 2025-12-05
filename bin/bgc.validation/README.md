@@ -12,10 +12,17 @@ Model vs insitu colocation:
 ```
 python $HOME/NERSC-HYCOM-CICE/bin/bgc.validation/model_vs_INSITU.py TP2 038 2006 2010
 ``` 
+
 Model monthly averaging (don't forget prerequisites in Section I.III):
 ```
 sbatch sbatch_hycave_monthly.sh TP2 038 2005 2009  /cluster/work/users/$USER/
 ```
+
+Model upper layer depth range averages and surface to 200m integration:
+```
+python $HOME/NERSC-HYCOM-CICE/bin/bgc.validation/upper_layer_climatology.py TP2 038 2006 2010
+```
+
 Satellite mapping to monthly averages (wait for model averages to finish).
 
 CHL:
@@ -102,6 +109,14 @@ python $HOME/NERSC-HYCOM-CICE/bin/bgc.validation/satellite_mapping_monthly.py TP
 python $HOME/NERSC-HYCOM-CICE/bin/bgc.validation/satellite_mapping_monthly_NPP.py TP2 038 2006 2010
 python $HOME/NERSC-HYCOM-CICE/bin/bgc.validation/satellite_mapping_monthly_POC.py TP2 038 2006 2010
 ``` 
+## I.V. Taking upper layer averages and integrations
+
+Once the ab files averages and climatologies are complete, you can further take a subsection of these averages (e.g. nutrient and oxygen averages for depth ranges, 0-10, 10-30 etc, or integrate biomasses like diatoms, mesozooplankton etc.). The script below will do that and store a pickle file in the model data folder. The depth ranges at the moment are prescribed and are not generic. This functionality may be added later. The code will by default assume your work directory is '/cluster/work/users/' (like in Betzy). If this is not the case, provide the optional argument --workdir=path-to-work. The code will retrieve your username automatically. If all goes well, it will look into the folder '/cluster/work/users/$USER/TP2a0.10/expt_03.8/data/' in this particular example. The code will be default integrate the upper 0 - 200 meters. If you want a different range, add --depth=xxx option to the script below.
+
+```
+python $HOME/NERSC-HYCOM-CICE/bin/bgc.validation/upper_layer_climatology.py TP2 038 2006 2010
+``` 
+
 
 ## Designing Custom Regional masks
 
