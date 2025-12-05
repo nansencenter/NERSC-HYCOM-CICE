@@ -6,6 +6,8 @@ The codes evaluate the model output against:
 2) satellite data
 3) BGC-Argo profiles
 
+**!!! IMPORTANT !!!** Use the provided "parameter_validation_generic.ipynb" file and copy it somewhere else in order not to overwrite the one in the github repository. It includes scripts to plot validation datasets. Move on to the following scripts for beginning validation.
+
 If this is NOT your first time validating your model, below is the quick list of scripts you can execute in the following order. If this is the first time, jump to Section I for detailed instructions and first time use. Don't forget to adjust your region (e.g. TP2) and experiment (e.g. 010).
 
 Model vs insitu colocation:
@@ -26,6 +28,10 @@ python $HOME/NERSC-HYCOM-CICE/bin/bgc.validation/upper_layer_climatology.py TP2 
 Model and Argo POC co-colocation (don't forget prerequisites in Section I.VI).
 ```
 python Argo.POC.vs.Model.py main TP2 038 2015 2020
+```
+Model and in situ DOC co-location (don't forget prerequisites in Section I.VII).
+```
+python DOC.vs.Model.py TP2 038 2006 2010
 ```
 
 Satellite mapping to monthly averages (wait for model averages to finish).
@@ -132,7 +138,15 @@ Once you have the pickle files, default location is: "/cluster/projects/nn9481k/
 python Argo.POC.vs.Model.py main TP2 070 1990 2020
 ```
 
-## Designing Custom Regional masks
+## I.VII. Co-locating in situ and model DOC data
+
+There is already the folder "doc" in this repository that includes DOC data in csv file (Hansell et al., 2021; doi.org/10.25921/s4f4-ye35), and post-processed data (its code as well). The script below uses this data to co-locate to model DOC data. The code will by default assume your work directory is '/cluster/work/users/' (like in Betzy). If this is not the case, provide the optional argument --workdir=path-to-work. The code will retrieve your username automatically. If all goes well, it will look into the folder '/cluster/work/users/$USER/TP2a0.10/expt_03.8/data/' in this particular example.
+```
+python DOC.vs.Model.py TP2 038 2006 2010
+```
+
+
+# Designing Custom Regional masks
 
 You can use Jupyter notebook `def_validation_regions.ipynb` for designing your own regional masks. Following is the region definition created by the notebook which is compatible with regions defined by `make_OM_regional_masks.py`:
 
