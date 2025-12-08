@@ -12,7 +12,8 @@ if GloFASdata_path not in sys.path:
 topaz_grid_file=GloFASdata_path+'/TOPAZ5/regional.grid.a'
 
 #Depth file .a
-topaz_depth_file=GloFASdata_path+'/TOPAZ5/depth_TP5a0.06_08.a'
+#topaz_depth_file=GloFASdata_path+'/TOPAZ5/depth_TP5a0.06_08.a'
+topaz_depth_file=GloFASdata_path+'/TOPAZ5/depth_TP5a0.06_05.a'
 
 #ldd file .nc
 ldd_file=GloFASdata_path+'/river/auxiliary_files__glofas_v4_0/ldd_glofas_v4_0.nc'

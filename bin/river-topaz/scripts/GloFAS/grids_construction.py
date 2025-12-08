@@ -126,3 +126,4 @@ class Grids:
             self.dis_grid.propagate_river_plume_lazily(depth_grid=self.topaz_depth_grid,input_grids=input_grids)
 
             self.dis_grid.check_total_fluxes()
+
