@@ -44,6 +44,7 @@ c
 c --- natm  = number of saved atmospheric fields
       integer    natm
       parameter (natm=4)      ! must be 2 (high freq.) or 4 (monthly)
+c                             ! set in blkdat.F based on yrflag
 c
 c ---   END OF REGION AND TILING SPECIFIC PARAMETERS
 c-----------------------------------------------------------------------------

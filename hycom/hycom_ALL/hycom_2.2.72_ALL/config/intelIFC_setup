@@ -17,7 +17,8 @@
 # EXTRALIBS:  Extra local libraries (if any).
 #
 FC            =	ifort
-FCFFLAGS      =	-g -tpp7 -O3 -convert big_endian
+FCFFLAGS      =	-tpp7 -O3 -convert big_endian
+#FCFFLAGS      = -convert big_endian -assume byterecl -O0 -g -check -fpe0 -ftrapuv -fp-model except -check noarg_temp_created -fp-model source -ftz -traceback -no-wrap-margin
 CC            =	gcc
 CCFLAGS       =	-O 
 CPP           =	cpp -P

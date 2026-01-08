@@ -20,6 +20,8 @@ You will need a  working python 3.7 installation, with the following packages.
 
 * [netcdftime](https://pypi.python.org/pypi/netcdftime)
 
+* [metpy](https://pypi.org/project/metpy/)
+
 These depend on other non-python packages being installed, such as udunits and netcdf4. Most of these packages are usually installed on a linux system. If they are missing, you can ask an IT guy to install them on the system  or install them yourself.
 
 In addition, these packages are required (developed by Knut and available on github), and as a part of the hycom-code under the directory NERSC-HYCOM-CICE/pythonlibs/:

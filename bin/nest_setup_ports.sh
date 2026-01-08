@@ -63,8 +63,8 @@ touch  ports.input.tmp && rm ports.input.tmp
 echo ${PORT_ROUTINE}  depth_${R}_${T} $width $efold
 ${PORT_ROUTINE}  depth_${R}_${T} $width $efold
 if [ $? -eq 0 ] ; then
-   cp  ports.input.tmp $TARGETDIR/ports.nest
-   echo "Created ports file $TARGETDIR/ports.nest"
+   cp  ports.input.tmp $TARGETDIR/ports.input
+   echo "Created ports file $TARGETDIR/ports.input"
    cp  rmu.a $TARGETDIR/rmu.a
    cp  rmu.b $TARGETDIR/rmu.b
 else 

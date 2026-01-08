@@ -30,7 +30,6 @@
 # M. Bakhoday-Paskyabi et al., 2017 (under preparation), Effects of nesting and open boundary conditions: a comparative study between TOPAZ4 and TOPAZ5 systems
 # M. Bakhoday-Paskyabi, 11 July 2019, adding bio fields
 #
-from   matplotlib import pyplot as plt
 import abfile.abfile as abf
 import numpy
 import numpy.ma as ma
@@ -442,7 +441,7 @@ def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_file=None) :
     logger.debug("dirname is {}".format(dirname))
     logger.debug("basename is {}".format(os.path.basename(file)))
     m=re.match("(MERCATOR-PHY-24-)(.*\.nc)",os.path.basename(file))
-    logger.debug("file prefix is {}".format(file_pre))
+    #logger.debug("file prefix is {}".format(file_pre))
 ###    m=re.match(file_pre,os.path.basename(file))
     if not m:
         msg="File %s is not a grid2D file, aborting"%file
@@ -534,9 +533,11 @@ def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_file=None) :
        no3=ncidb.variables["no3"][0,:,:,:];
        no3[numpy.abs(no3)>1e+10]=numpy.nan
        po4=ncidb.variables["po4"][0,:,:,:]
-       si=ncidb.variables["si"][0,:,:,:]
        po4[numpy.abs(po4)>1e+10]=numpy.nan
+       si=ncidb.variables["si"][0,:,:,:]
        si[numpy.abs(si)>1e+10]=numpy.nan
+       o2=ncidb.variables["o2"][0,:,:,:]
+       o2[numpy.abs(o2)>1e+10]=numpy.nan
        # TODO: Ineed to improve this part
        nz,ny,nx=no3.shape
        dummy=numpy.zeros((nz,ny,nx+1))
@@ -548,6 +549,9 @@ def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_file=None) :
        dummy=numpy.zeros((nz,ny,nx+1))
        dummy[:,:,:nx]=si;dummy[:,:,-1]=si[:,:,-1]
        si=dummy
+       dummy=numpy.zeros((nz,ny,nx+1))
+       dummy[:,:,:nx]=o2;dummy[:,:,-1]=o2[:,:,-1]
+       o2=dummy
        dummy=numpy.zeros((nx+1))
        dummy[:nx]=blon
        blon=dummy
@@ -571,19 +575,23 @@ def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_file=None) :
        dummy_no3=no3
        dummy_po4=po4
        dummy_si=si
+       dummy_o2=o2
        for j in range(ny):
           for i in range(nx):
              dummy_no3[depth_lev[j,i]:nz-2,j,i]=no3[depth_lev[j,i]-1,j,i]
              dummy_po4[depth_lev[j,i]:nz-2,j,i]=po4[depth_lev[j,i]-1,j,i]
              dummy_si[depth_lev[j,i]:nz-2,j,i]=si[depth_lev[j,i]-1,j,i]
+             dummy_o2[depth_lev[j,i]:nz-2,j,i]=o2[depth_lev[j,i]-1,j,i]
        no3=dummy_no3
        po4=dummy_po4
        si=dummy_si
+       o2=dummy_o2
 
 #
        po4 = po4 * 106.0 * 12.01
        si = si   * 6.625 * 12.01
-       no3 = no3 * 6.625 * 12.01
+       no3 = no3 * 6.625 * 12.01 # mmol N/m3 --> mgC/m3
+       # o2 unit conversion do not needed (mmol O2/m3) 
 
 
     logger.info("Read, trim, rotate NEMO velocities.")
@@ -619,7 +627,10 @@ def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_file=None) :
     #flnm.close()
     ssh = numpy.where(numpy.abs(ssh)>1000,0.,ssh*9.81) # NB: HYCOM srfhgt is in geopotential ...
     #
-    outfile = abf.ABFileArchv("./data/"+oname,"w",iexpt=iexpt,iversn=iversn,yrflag=yrflag,)
+    header1="Converted NEMO files to HYCOM abfiles\n"
+    header2="Archive files for interpolation\n"
+    header3="NEMO nesting\n"
+    outfile = abf.ABFileArchv("./data/"+oname,"w",iexpt=iexpt,iversn=iversn,yrflag=yrflag,cline1=header1,cline2=header2,cline3=header3)
     outfile.write_field(zeros,                   ip,"montg1"  ,0,model_day,1,0)
     outfile.write_field(ssh,                     ip,"srfhgt"  ,0,model_day,0,0)
     outfile.write_field(zeros,                   ip,"surflx"  ,0,model_day,0,0) # Not used
@@ -641,6 +652,8 @@ def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_file=None) :
            po4k = maplev(po4k)
            si_k=interpolate2d(blat, blon, si[k,:,:], points).reshape((jdm,idm))
            si_k = maplev(si_k)
+           o2k=interpolate2d(blat, blon, o2[k,:,:], points).reshape((jdm,idm))
+           o2k = maplev(o2k)
            if k%10==0 : logger.info("Writing 3D variables including BIO, level %d of %d"%(k+1,u.shape[0]))
         else:
            if k%10==0 : logger.info("Writing 3D variables, level %d of %d"%(k+1,u.shape[0]))
@@ -716,6 +729,7 @@ def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_file=None) :
            outfile.write_field(no3k      ,ip,"ECO_no3" ,0,model_day,k+1,0)
            outfile.write_field(po4k      ,ip,"ECO_pho" ,0,model_day,k+1,0)
            outfile.write_field(si_k      ,ip,"ECO_sil" ,0,model_day,k+1,0)
+           outfile.write_field(o2k       ,ip,"ECO_oxy" ,0,model_day,k+1,0)
                 
         tl_above=numpy.copy(tl)
         sl_above=numpy.copy(sl)
@@ -729,7 +743,7 @@ def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_file=None) :
 
 
 if __name__ == "__main__" :
-    parser = argparse.ArgumentParser(description='.')
+    parser = argparse.ArgumentParser(description='This tool will convert regular NEMO netcdf files to hycom archive files. It will also create grid and topo files for hycom.')
     parser.add_argument('meshfile',   type=str, nargs="+",  help="    ")
     parser.add_argument('file',       type=str, nargs="+",  help="    ")
     parser.add_argument('--iexpt',    type=int,default=10,  help="    ")
@@ -738,4 +752,3 @@ if __name__ == "__main__" :
     parser.add_argument('--bio_file', type=str,             help="    ")
     args = parser.parse_args()
     main(args.meshfile,args.file,iexpt=args.iexpt,iversn=args.iversn,yrflag=args.yrflag,bio_file=args.bio_file)
-

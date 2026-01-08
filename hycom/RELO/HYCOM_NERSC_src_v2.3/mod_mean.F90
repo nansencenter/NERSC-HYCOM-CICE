@@ -749,7 +749,7 @@
 !
       endif  !not 1-D
 !
-      if     (itest.gt.0 .and. jtest.gt.0) then
+      if (itest.gt.0 .and. jtest.gt.0) then
         open (unit=nop,file=flnmarcm(1:ldot)//'.txt',status='new') !uoff+13
         write (nop,'(3a / a,6i7,f9.3,f8.3,i7,i5.4,i4.3,i3.2)') &
             '##   expt    idm    jdm    kdm', &
@@ -905,11 +905,15 @@
              temp_m(itest,jtest,k),                                   & !degC
              saln_m(itest,jtest,k),                                   & !psu
              th3d_m(itest,jtest,k)+thbase,                            & !SigmaT
-               dp_m(itest,jtest,k)*qonem,                             & !m
-                 (p(itest,jtest,k+1)+p(itest,jtest,k))*0.5*qonem,     & !m
+             dp_m(itest,jtest,k)*qonem,                               & !m
+             (p(itest,jtest,k+1)+p(itest,jtest,k))*0.5*qonem,         & !m
              0.0,  & !vcty(itest,jtest,k+1)*1.e4,                       !cm**2/s
              0.0,  & !dift(itest,jtest,k+1)*1.e4,                       !cm**2/s
+#if !defined(STOKES) && defined(_FABM_)
+             0.0     !difs(itest,jtest,k+1)*1.e4,                       !cm**2/s
+#else
              0.0   & !difs(itest,jtest,k+1)*1.e4,                       !cm**2/s
+#endif
 #if defined(STOKES)
              ,max(-999.99,min(999.99,ustk*100.0)),                     & !cm/s
              max(-999.99,min(999.99,vstk*100.0))                     & !cm/s

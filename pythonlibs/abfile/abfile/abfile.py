@@ -818,6 +818,8 @@ class ABFileForcing(ABFile) :
       """ Read field corresponding to fieldname and level from archive file"""
       elems = [ (k,v["dtime1"]) for k,v in self._fields.items() if v["field"] == field]
       dist = numpy.array([elem[1]-dtime1 for elem in elems])
+      if numpy.min(numpy.abs(dist)) > 1.0:
+          raise RuntimeError(f"cannot find matching time {dtime1} in forcing file {self.basename}, closest time dist is {dist}.")
       i =numpy.argmin(numpy.abs(dist))
       rec,dt = elems[i]
       w = self._filea.read_record(i) 
@@ -1151,6 +1153,8 @@ class ABFileRelaxZ(ABFile) :
       """ Read field corresponding to fieldname and level from archive file"""
       elems = [ (k,v["dtime1"]) for k,v in self._fields.items() if v["field"] == field]
       dist = numpy.array([elem[1]-dtime1 for elem in elems])
+      if numpy.min(numpy.abs(dist)) > 1.0:
+          raise RuntimeError(f"cannot find matching time {dtime1} in file {self.basename}, closest time dist is {dist}.")
       i =numpy.argmin(numpy.abs(dist))
       rec,dt = elems[i]
       w = self._filea.read_record(i) 

@@ -885,6 +885,9 @@
 ! --- 'hybthn' = HYBGEN: ratio of layer thicknesses to select the thiner
 !                 (1.0 for original behaviour, i.e. key only on thickness;
 !                  5.0 to favor the larger density anomaly over thickness)
+! --- 'hybthk' = HYBGEN: thick-thin-thick ratio to expand the thin layer
+!                 (0.0 for original behaviour, i.e. don't expand,
+!                  0.9 for maximum allowed expansion)
 ! --- 'hybmap' = HYBGEN:  remapper  flag (0=PCM, 1=PLM,    2=PPM,  3=WENO-like)
 ! --- 'hybflg' = HYBGEN:  generator flag (0=T&S, 1=th&S,   2=th&T)
 ! --- 'advflg' = thermal  advection flag (0=T&S, 1=th&S,   2=th&T)
@@ -922,6 +925,7 @@
       call blkinr(hybrlx,'hybrlx','(a6," =",f10.4," time steps")')
       call blkinr(hybiso,'hybiso','(a6," =",f10.4," kg/m^3")')
       call blkinr(hybthn,'hybthn','(a6," =",f10.4," ")')
+      call blkinr(hybthk,'hybthk','(a6," =",f10.4," ")')
       call blkini(hybmap,'hybmap')
       call blkini(hybflg,'hybflg')
       call blkini(advflg,'advflg')
@@ -967,6 +971,16 @@
         call flush(lp)
         endif !1st tile
         call xcstop('(blkdat)')
+               stop '(blkdat)'
+      endif
+!     
+      if (hybthk.lt.0.0 .or. hybthk.gt.0.9) then
+        if (mnproc.eq.1) then
+        write(lp,'(/ a /)')  &
+         &'error - hybthk must be betweeen 0.0 and 0.9'
+        call flush(lp)
+        endif !1st tile
+        call xcstop('(blkdat)') 
                stop '(blkdat)'
       endif
 !
@@ -1277,7 +1291,7 @@
       trcrin = ntracr.gt.0  ! positive from restart, otherwise initialize
 #ifdef _FABM_
       call hycom_fabm_configure()
-      ntracr = size(fabm_model%state_variables)
+      ntracr = size(fabm_model%interior_state_variables)
 #else
       ntracr = abs(ntracr)
 #endif
@@ -1830,9 +1844,9 @@
 !
 ! --- 'clmflg' = climatology frequency flag (6=bimonthly,12=monthly)
 ! --- 'wndflg' = wind stress input flag (0=none,1=uv-grid,2,3=p-grid,4,5=wnd10m)
-! ---             (=3 wind speed from wind stress; =4,5 wind stress from wind)
+! ---             (=3 wind speed from wind stress; =4,5 relative wind stress from wind U10-Uocn)
 ! ---             (=4 for COARE 3.0; =5 for COREv2 bulk parameterization)
-! ---             (4,5 use relative wind U10-Uocn; -4,-5 use absolute wind U10)
+! --- 'ocnscl' = scale factor for Uocn in relative wind (0.0: absolute wind)
 ! --- 'ustflg' = ustar forcing   flag          (3=input,1,2=wndspd,4=stress)
 ! --- 'flxflg' = thermal forcing flag   (0=none,3=net_flux,1-2,4-6=sst-based)
 ! ---             (=1 MICOM bulk parameterization)
@@ -1861,12 +1875,26 @@
       endif !1st tile
       call blkini(clmflg,'clmflg')
       call blkini(wndflg,'wndflg')
-      if     (wndflg.lt.0) then
-        wndflg = -wndflg
-        amoflg = 0  !U10
-      else
-        amoflg = 1  !U10-Uocn
+      call blkinr(ocnscl,'ocnscl','(a6," =",f10.4," ")')
+      if (wndflg.lt.0 .or. wndflg.gt.5) then
+        if (mnproc.eq.1) then
+           write(lp,'(/ a /)')  &
+            &'error - wndflg must be between 0 and 5'
+            call flush(lp)
+        endif !1st tile
+        call xcstop('(blkdat)')
+               stop '(blkdat)'
       endif
+      if     (ocnscl.ne.0.0 .and. wndflg.lt.4) then
+        if (mnproc.eq.1) then
+        write(lp,'(/ a /)')  &
+         &'error - ocnscl must be 0.0 for absolute winds (wndflg<4)'
+        call flush(lp)
+        endif !1st tile
+        call xcstop('(blkdat)')
+               stop '(blkdat)'
+      endif
+      wndflg = wndflg
       call blkini(ustflg,'ustflg')
       call blkini(flxflg,'flxflg')
       call blkini(empflg,'empflg')
@@ -1929,15 +1957,6 @@
         if (mnproc.eq.1) then
         write(lp,'(/ a /)')  &
           'error - sshflg must be 2 if baro nesting archives have this'
-        call flush(lp)
-        endif !1st tile
-        call xcstop('(blkdat)')
-               stop '(blkdat)'
-      endif
-      if (wndflg.lt.0 .or. wndflg.gt.5) then
-        if (mnproc.eq.1) then
-        write(lp,'(/ a /)')  &
-         &'error - wndflg must be between 0 and 5'
         call flush(lp)
         endif !1st tile
         call xcstop('(blkdat)')
@@ -2180,7 +2199,6 @@
 ! --- pensol      use penetrating solar radiation (input above)
 ! --- pcipf       use E-P forcing (may be redefined in forfun)
 ! --- priver      rivers as a precipitation bogas
-! --- epmass      treat evap-precip as a mass exchange
 !
 ! --- srelax      activate surface salinity        climatological nudging
 ! --- trelax      activate surface temperature     climatological nudging
@@ -2202,7 +2220,10 @@
       call blkinl(relax, 'relax ')
       call blkinl(trcrlx,'trcrlx')
       call blkinl(priver,'priver')
-      call blkinl(epmass,'epmass')
+!
+! --- 'epmass' = E-P mass exchange flag (0=no,1=yes,2=river)
+      call blkini(epmass,'epmass')
+!
       if (mnproc.eq.1) then
       write(lp,*)
       endif !1st tile
@@ -2217,20 +2238,20 @@
                stop '(blkdat)'
       endif
 !
-      if     (epmass .and. .not.thermo) then
+      if     (epmass.ne.0 .and. .not.thermo) then
         if (mnproc.eq.1) then
         write(lp,'(/ a /)')  &
-         &'error - epmass must be .false. for flxflg=0'
+         &'error - epmass must be 0 for flxflg=0'
         call flush(lp)
         endif !1st tile
         call xcstop('(blkdat)')
                stop '(blkdat)'
       endif
 !!Alex add condition epmass.and.btrlfr
-      if     (epmass .and. .not.btrlfr) then
+      if     (epmass.gt.0 .and. .not.btrlfr) then
         if (mnproc.eq.1) then
         write(lp,'(/ a /)') &
-          'error - btrlfr must be .true. for epmass=1'
+          'error - btrlfr must be .true. for epmass>0'
         call flush(lp)
         endif !1st tile
         call xcstop('(blkdat)')
@@ -2240,7 +2261,8 @@
 ! --- Strongly discouraged in the coupled model.
 ! --- epmass removes mass from ocean, but ice on top of ocean is treated as
 ! --- massless, so...
-      if (iceflg.eq.2 .and. epmass) then
+!!! TILL IS THIS WHAT IT SHOULD BE or epmass .ne. 0????
+      if (iceflg.eq.2 .and. epmass .eq. 1) then
         if (mnproc.eq.1) then
         write(lp,'(/ a /)')  &
           'error - epmass should be false when iceflg.eq.2'
@@ -2920,3 +2942,7 @@
 !> Sep. 2022 - added hybthn
 !> Apr. 2023 - added optional dx0k
 !> July 2023 - added mtracr
+!> May  2024 - added epmass=2 for river only mass exchange
+!> Aug. 2024 - added ocnscl
+!> Sep. 2024 - added hybthk
+!> Dec. 2024 - Removed negative wndflg and amoflg due to inclusion of ocnscl
