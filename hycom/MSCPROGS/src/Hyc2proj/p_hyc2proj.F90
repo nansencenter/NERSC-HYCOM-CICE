@@ -40,7 +40,8 @@
 program p_hyc2proj
    use mod_parameters
    use mod_xc, only: idm,jdm, xcspmd
-   use mod_grid, only : get_grid, depths, plon, plat, qlat, qlon, scpx, scpy, scux, scuy, scvx, scvy
+   use mod_grid, only : get_grid, depths, plon, plat, qlat, qlon, scpx, scpy, &
+      scux, scuy, scvx, scvy, ip, iu, iv
    use mod_year_info
    use mod_levitus
    use mod_toproj
@@ -72,7 +73,7 @@ program p_hyc2proj
 !AS06092011 - adding biological variables for MyOcean
    real, allocatable, dimension(:,:,:) :: fla, dia, nit, pho, oxy, pp, biovar,s1000,ccl
    real, allocatable, dimension(:,:,:) :: u,v
-   real, allocatable, dimension(:,:,:) :: micro, meso, sil,dic,ph,det, pco2,dsnk,dom
+   real, allocatable, dimension(:,:,:) :: micro, meso, sil,dic,ph,det,detr, pco2,dsnk,dom
    real, allocatable, dimension(:,:)   :: biovar2d
    real, allocatable, dimension(:,:)   :: hy2d, hy2d2, regu2d, strmf, &
       mld1, mld2, dplayer, meanssh, sla, ub, vb, mqlon, mqlat
@@ -487,11 +488,12 @@ program p_hyc2proj
                   do k=1,kdm
                     call HFReaduvtot(hfile,u(:,:,k),v(:,:,k),idm,jdm,k,1)
                   end do
-                  call w_velocity(u,v,pres,biovar,scpx,scpy,scux,scuy,scvx,scvy,plon,plat,depths,onem,idm,jdm,kdm)
+                  call w_velocity(u,v,pres,biovar,scpx,scpy,scux,scuy,scvx,scvy,plon,plat,depths,&
+                     onem,idm,jdm,kdm,ip,iu,iv)
                   !call vertical_velocity(u,v,pres,biovar,scpx,scpy,scux,scvy,plon,plat,depths,onem,idm,jdm,kdm)
                   hy3d=biovar
                   !convert units from m s-1 to m day-1
-                  hy3d=hy3d*24.0*3600.0
+                  !hy3d=hy3d*24.0*3600.0
                   deallocate(u,v,biovar)
 
                else if (trim(fld(ifld)%fextract)=='oxy_nor') then 
@@ -590,23 +592,21 @@ program p_hyc2proj
                   hy3d=biovar
                   deallocate(meso,biovar)
                else if (trim(fld(ifld)%fextract)=='poc') then
-                  ! Compute POC biomass (mmole C m-3)
+                  ! Compute total POC biomass (mole C m-3)
                   allocate(micro(idm,jdm,kdm))
-                  allocate(meso(idm,jdm,kdm))
                   allocate(dia(idm,jdm,kdm))
                   allocate(fla(idm,jdm,kdm))
                   allocate(ccl(idm,jdm,kdm))
                   allocate(det(idm,jdm,kdm))
                   allocate(biovar(idm,jdm,kdm))
                   call HFReadField3D(hfile,micro,idm,jdm,kdm,'ECO_micr   ',1)
-                  call HFReadField3D(hfile,meso,idm,jdm,kdm,'ECO_meso    ',1)
                   call HFReadField3D(hfile,dia,idm,jdm,kdm,'ECO_dia    ',1)
                   call HFReadField3D(hfile,fla,idm,jdm,kdm,'ECO_fla    ',1)
                   call HFReadField3D(hfile,ccl,idm,jdm,kdm,'ECO_ccl    ',1)
                   call HFReadField3D(hfile,det,idm,jdm,kdm,'ECO_det    ',1)                                                      
-                  call poc(micro,meso,dia,fla,ccl,det,biovar,idm,jdm,kdm)
+                  call poc(micro,dia,fla,ccl,det,biovar,idm,jdm,kdm)
                   hy3d=biovar
-                  deallocate(micro,meso,dia,fla,ccl,det,biovar)
+                  deallocate(micro,dia,fla,ccl,det,biovar)
                else if (trim(fld(ifld)%fextract)=='doc') then
                   ! Compute DOC biomass (mmole C m-3)
                   allocate(dom(idm,jdm,kdm))
@@ -615,6 +615,14 @@ program p_hyc2proj
                   call docc(dom,biovar,idm,jdm,kdm)
                   hy3d=biovar
                   deallocate(dom,biovar)
+               else if (trim(fld(ifld)%fextract)=='det') then
+                  ! Compute detritus biomass (mol C m-3)
+                  allocate(detr(idm,jdm,kdm))
+                  allocate(biovar(idm,jdm,kdm))
+                  call HFReadField3D(hfile,detr,idm,jdm,kdm,'ECO_det     ',1)
+                  call detc(detr,biovar,idm,jdm,kdm)
+                  hy3d=biovar
+                  deallocate(detr,biovar)
                else if (trim(fld(ifld)%fextract)=='oxygen') then
                   ! Compute dissolved oxygen (mmole m-3)
                   allocate(oxy(idm,jdm,kdm))
