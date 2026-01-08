@@ -1031,6 +1031,8 @@ contains
       is3DVar=.true.
    else if(cfld=='doc') then
       is3DVar=.true.
+   else if(cfld=='det') then
+      is3DVar=.true.
    else if(cfld=='mesozoo') then
       is3DVar=.true.
    else if(cfld=='oxygen') then
@@ -1242,8 +1244,8 @@ contains
          limits=(/-3,3/)
       case ('wtotl') 
          stdname='upward_sea_water_velocity' 
-         units='m day-1' ; vname='wo'
-         limits=(/-40,40/)
+         units='m s-1' ; vname='wo'
+         limits=(/-0.1,0.1/)
       case ('u','u-vel.') 
          if (.not.gridrotate) then
             stdname='baroclinic_eastward_sea_water_velocity' 
@@ -1586,20 +1588,25 @@ contains
          limits=(/0.,500./)
          stdname='mole_concentration_of_zooplankton_expressed_as_carbon_in_sea_water'
          case ('mesozoo')
-         vname='mesozooc'
+         vname='zmeso'
          units='mmol m-3'
          limits=(/0.,500./)
          stdname='mole_concentration_of_mesozooplankton_expressed_as_carbon_in_sea_water'
          case ('poc')
-         vname='poc'
-         units='mmol m-3'
-         limits=(/0.,500./)
-         stdname='mole_concentration_of_particulate_organic_carbon_expressed_as_carbon_in_sea_water'
+         vname='tpoc'
+         units='mol C m-3'
+         limits=(/0.,5000./)
+         stdname='mole_concentration_of_particulate_organic_matter_expressed_as_carbon_in_sea_water'
+         case ('det')
+         vname='detoc'
+         units='mol C m-3'
+         limits=(/0.,5000./)
+         stdname='mole_concentration_of_organic_detritus_expressed_as_carbon_in_sea_water'
          case ('doc')
-         vname='doc'
+         vname='dissoc'
          units='mmol m-3'
          limits=(/0.,500./)
-         stdname='mole_concentration_of_dissolved_organic_carbon_expressed_as_carbon_in_sea_water' 
+         stdname='mole_concentration_of_dissolved_organic_carbon_in_sea_water' 
          case ('oxygen')
          vname='o2'
          units='mmol m-3'
