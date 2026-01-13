@@ -180,7 +180,7 @@ mod_xc.o: mod_xc.F  mod_dimensions.o mod_xc_sm.h mod_xc_mp.h
 mod_za.o: mod_za.F  mod_xc.o         mod_za_sm.h mod_za_mp.h mod_za_mp1.h mod_za_zt.h
 
 mod_OICPL.o: mod_OICPL.F
-mod_NERSCnml.o: mod_NERSCnml.F90
+mod_NERSCnml.o: mod_NERSCnml.F90 mod_cb_arrays.o
 
 
 mod_netcdf_util.o: \
