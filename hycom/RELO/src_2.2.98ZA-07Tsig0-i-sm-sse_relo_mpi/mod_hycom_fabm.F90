@@ -55,13 +55,13 @@ module mod_hycom_fabm
    real :: wndstr,strspd
    real, allocatable :: h(:, :,:),delZ(:),codepth(:,:,:),cotemp(:,:,:),cosal(:,:,:),codens(:,:,:)
    real, allocatable :: hriver(:, :)
-   real, allocatable :: coice_conc(:, :)
+   real, allocatable :: coice_conc(:,:),coice_thickness(:,:),codh_growth(:,:)
    real, allocatable, target :: fabm_surface_state(:, :, :, :)
    real, allocatable, target :: fabm_bottom_state(:, :, :, :)
    real, allocatable :: fabm_surface_state_old(:, :, :)
    real, allocatable :: fabm_bottom_state_old(:, :, :)
 
-   logical :: do_interior_sources, do_bottom_sources, do_surface_sources, do_vertical_movement, do_check_state
+   logical :: do_interior_sources, do_bottom_sources, do_surface_sources, do_vertical_movement, do_check_state, do_icealgae
    integer, save :: current_time_index = -1
 
    type type_horizontal_output
@@ -120,7 +120,7 @@ contains
       integer, parameter :: namlst = 9000
       integer :: ios, ivar, istate, nestn
       character(len=*), parameter :: path = '../hycom_fabm.nml'
-      namelist /hycom_fabm/ do_interior_sources, do_bottom_sources, do_surface_sources, do_vertical_movement, nested_variables
+      namelist /hycom_fabm/ do_interior_sources, do_bottom_sources, do_surface_sources, do_vertical_movement, do_icealgae, nested_variables
 
       ! Read coupler configuration
       do_interior_sources = .true.
@@ -128,6 +128,7 @@ contains
       do_surface_sources = .true.
       do_vertical_movement = .true.
       do_check_state = .false.
+      do_icealgae = .false.
       nested_variables = ''
       inquire(file='../hycom_fabm.nml', exist=file_exists)
       if (file_exists) then
@@ -195,6 +196,10 @@ contains
         allocate(codens(ii,jj,kk))
         allocate(coice_conc(ii,jj))
         allocate(hriver(ii, jj))
+        if (do_icealgae) then
+           allocate(coice_thickness(ii, jj))
+           allocate(codh_growth(ii, jj))
+        end if
         allocate(fabm_surface_state(1-nbdy:idm+nbdy, 1-nbdy:jdm+nbdy, 2, size(fabm_model%surface_state_variables)))
         allocate(fabm_bottom_state(1-nbdy:idm+nbdy, 1-nbdy:jdm+nbdy, 2, size(fabm_model%bottom_state_variables)))
         allocate(fabm_surface_state_old(1-nbdy:idm+nbdy, 1-nbdy:jdm+nbdy, size(fabm_model%surface_state_variables)))
@@ -232,6 +237,16 @@ contains
         !call fabm_model%link_scalar(type_global_standard_variables%number_of_days_since_start_of_the_year,dtime)
         !call model%link_scalar(standard_variables%number_of_days_since_start_of_the_year,dtime)
         call fabm_model%link_scalar(fabm_standard_variables%number_of_days_since_start_of_the_year,modelday)
+        call fabm_model%link_interior_data(fabm_standard_variables%temperature,cotemp(1:ii,1:jj, 1:kk))
+        call fabm_model%link_interior_data(fabm_standard_variables%practical_salinity,cosal(1:ii,1:jj,1:kk))
+        call fabm_model%link_interior_data(fabm_standard_variables%density,codens(1:ii,1:jj, 1:kk))
+        call fabm_model%link_interior_data(fabm_standard_variables%pressure,codepth(1:ii,1:jj, 1:kk))
+        call fabm_model%link_horizontal_data(fabm_standard_variables%ice_area_fraction,coice_conc(1:ii,1:jj))
+        call fabm_model%link_horizontal_data(fabm_standard_variables%bottom_depth_below_geoid, codepth(1:ii, 1:jj, kk))
+        if (do_icealgae) then
+           call fabm_model%link_horizontal_data(fabm_standard_variables%ice_thickness,coice_thickness(1:ii,1:jj))
+           call fabm_model%link_horizontal_data(fabm_standard_variables%dh_growth,codh_growth(1:ii,1:jj))
+        end if 
 
         call update_fabm_data(1, initializing=.true.)  ! initialize the entire column of wet points, including thin layers
 !        call fabm_model%prepare_inputs( )
@@ -328,6 +343,9 @@ contains
       ! Initialize the tracers
       ! This sets the values of arrays sent to fabm_link_interior_state_data, in this case interior_state.
       tracer = 0
+#ifdef IA_DRIFT
+        ia_tracer = 0
+#endif
       do k=1,kk
         do j=1,jj
             call fabm_model%initialize_interior_state(1, ii, j, k)
@@ -341,7 +359,14 @@ contains
       ! Copy state from time step = 1 to time step = 2
       tracer(:, :, :, 2, :) = tracer(:, :, :, 1, :)
       fabm_bottom_state(:, :, 2, :) = fabm_bottom_state(:, :, 1, :)
-      fabm_surface_state(:, :, 2, :) = fabm_surface_state(:, :, 1, :)
+      ! Shuang: this is only done by bio-initialization not restart
+#ifdef IA_DRIFT
+        fabm_surface_state(:, :, 2, :) = fabm_surface_state(:, :, 1, :)
+        ia_tracer(:, :, 1, :) = fabm_surface_state(:, :, 1, :)
+        ia_tracer(:, :, 2, :) = ia_tracer(:, :, 1, :)
+#else
+        fabm_surface_state(:, :, 2, :) = fabm_surface_state(:, :, 1, :)
+#endif
     end subroutine hycom_fabm_initialize_state
 
     subroutine hycom_fabm_relax_init()
@@ -357,7 +382,7 @@ contains
 
       ! Default: no relaxation
       hycom_fabm_relax = -1
-    
+
       if (mnproc.eq.1) write (lp,*) 'Looking for relaxation data for pelagic FABM state variables...'
       do ivar=1,size(fabm_model%interior_state_variables)
         ! Check for existence of a file named "relax.<FABMNAME>.a". If present, this will contain the relaxation field (one variable; all k levels)
@@ -753,8 +778,8 @@ contains
             if (SEA_P) then
                 if (isnan(swflx_fabm(i,j))) then
                     write (*,*) 'NaN in swflx_fabm:', swflx_fabm(i,j), sswflx (i,j)
-                   call xchalt('(FABM varible is NaN)')
-                   stop '(FABM varible is NaN)'
+                    call xchalt('(FABM varible is NaN)')
+                    stop '(FABM varible is NaN)'
                 end if
             end if
         end do
@@ -816,6 +841,9 @@ contains
           if (kbottom(i, j, n) > 0) then
             fabm_surface_state(i, j, n, :) = fabm_surface_state(i, j, n, :) + delt1 * sms_sf(i, :)
             tracer(i, j, 1, n, :) = tracer(i, j, 1, n, :) + delt1 * flux(i, :)/dp(i, j, 1, n)*onem
+#ifdef IA_DRIFT
+              ia_tracer(i, j, n, :) = fabm_surface_state(i, j, n, :)
+#endif
 #ifdef FABM_CHECK_NAN
             if (any(isnan(tracer(i, j, 1, n, :)))) then
               write (*,*) 'NaN after do_surface:', tracer(i, j, 1, n, :), flux(i, :), dp(i, j, 1, n)/onem
@@ -968,6 +996,9 @@ contains
       ! Note that RA will be applied to the pelagic tracers within mod_tsavc - no need to do it here!
 
       fabm_surface_state(1:ii, 1:jj, m, :) = fabm_surface_state(1:ii, 1:jj, m, :) + 0.5*ra2fac*(fabm_surface_state_old(1:ii, 1:jj, :)+fabm_surface_state(1:ii, 1:jj, n, :)-2.0*fabm_surface_state(1:ii, 1:jj, m, :))
+#ifdef IA_DRIFT
+        ia_tracer(1:ii, 1:jj, m, :) = fabm_surface_state(1:ii, 1:jj, m, :)
+#endif
       fabm_bottom_state(1:ii, 1:jj, m, :) = fabm_bottom_state(1:ii, 1:jj, m, :) + 0.5*ra2fac*(fabm_bottom_state_old(1:ii, 1:jj, :)+fabm_bottom_state(1:ii, 1:jj, n, :)-2.0*fabm_bottom_state(1:ii, 1:jj, m, :))
 
       call check_finite("AFTER ROBERT", m)
@@ -1290,6 +1321,7 @@ call fabm_model%finalize_outputs
         integer :: i, j, k
         integer :: ivar
         real, parameter :: rho_0 = 1025.   ! [kg/m3]
+        logical, save :: lcoice_thickness_initialized = .false. 
         ! Update cell thicknesses (m)
         h(:, :, :) = max(dp(1:ii, 1:jj, 1:kk, index)/onem,1.0E-20)
 
@@ -1350,8 +1382,16 @@ call fabm_model%finalize_outputs
                        atmco2_2 = atmco2_1 / 9.81 * 10.**(-4.0)
                        atmco2_3 = pair / 9.81 * 10.**(-2.0)
                        atmco2_fabm(i,j) = atmco2_0 * (atmco2_3 - atmco2_2) * 0.997                     
-
-                       coice_conc(i,j)=covice(i,j)
+                       ! for ice-algae
+                       coice_conc(i,j) = covice(i,j)
+                       if (do_icealgae) then
+                         if (lcoice_thickness_initialized) then
+                           codh_growth(i,j) = (thkice(i,j)*coice_conc(i,j) - coice_thickness(i,j)) / delt1 
+                         else 
+                           codh_growth(i,j) = 0.
+                         end if 
+                         coice_thickness(i,j) = thkice(i,j)*coice_conc(i,j)
+                       end if
                        do k=1,kk
                           delZ(k) = dp(i,j,k,index)/onem                    !
                           if(k.eq.1)then                                    !
@@ -1362,22 +1402,24 @@ call fabm_model%finalize_outputs
                           cotemp(i,j,k) = max(-3.999,temp(i, j, k, index))  ! water temparature
                           cosal(i,j,k)  = max(5.0,saln(i, j, k, index))     ! salinity
                           codens(i,j,k) = th3d(i, j, k, index)+thbase+1000. ! water density
-
                        end do
     !              end if
               end do
           end do
+          if (do_icealgae) then
+                lcoice_thickness_initialized = .true.
+          end if
         end if
         ! Transfer pointer to environmental data
         ! Do this for all variables on FABM's standard variable list that the model can provide.
         ! For this list, visit http://fabm.net/standard_variables
-        call fabm_model%link_interior_data(fabm_standard_variables%temperature,cotemp(1:ii,1:jj, 1:kk))
-        call fabm_model%link_interior_data(fabm_standard_variables%practical_salinity,cosal(1:ii,1:jj,1:kk))
-        call fabm_model%link_interior_data(fabm_standard_variables%density,codens(1:ii,1:jj, 1:kk))
-        call fabm_model%link_interior_data(fabm_standard_variables%pressure,codepth(1:ii,1:jj, 1:kk))
-        call fabm_model%link_interior_data(fabm_standard_variables%depth,codepth(1:ii,1:jj, 1:kk))
-        call fabm_model%link_horizontal_data(fabm_standard_variables%ice_area_fraction, coice_conc(1:ii, 1:jj))
-        call fabm_model%link_horizontal_data(fabm_standard_variables%bottom_depth_below_geoid, codepth(1:ii, 1:jj, kk))
+        !call fabm_model%link_interior_data(fabm_standard_variables%temperature,cotemp(1:ii,1:jj, 1:kk))
+        !call fabm_model%link_interior_data(fabm_standard_variables%practical_salinity,cosal(1:ii,1:jj,1:kk))
+        !call fabm_model%link_interior_data(fabm_standard_variables%density,codens(1:ii,1:jj, 1:kk))
+        !call fabm_model%link_interior_data(fabm_standard_variables%pressure,codepth(1:ii,1:jj, 1:kk))
+        !call fabm_model%link_interior_data(fabm_standard_variables%depth,codepth(1:ii,1:jj, 1:kk))
+        !call fabm_model%link_horizontal_data(fabm_standard_variables%ice_area_fraction, coice_conc(1:ii, 1:jj))
+        !call fabm_model%link_horizontal_data(fabm_standard_variables%bottom_depth_below_geoid, codepth(1:ii, 1:jj, kk))
 
 
 
