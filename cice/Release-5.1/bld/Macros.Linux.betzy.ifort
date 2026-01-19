@@ -37,7 +37,11 @@ LDFLAGS    := $(FFLAGS) -v
                 -DTRBRI=$(TRBRI) -DNTRAERO=$(NTRAERO) -DNBGCLYR=$(NBGCLYR) \
                 -DTRBGCS=$(TRBGCS) -DNUMIN=$(NUMIN) -DNUMAX=$(NUMAX) \
                 -DNERSC_HYCOM_CICE 
-# -DIA_DRIFT
+
+ifeq ($(IA_DRIFT),yes)
+    CPPDEFS :=  $(CPPDEFS) -DIA_DRIFT
+endif
+
 #   CPPDEFS :=  $(CPPDEFS) -DAOMIP
     CPPDEFS :=  $(CPPDEFS) -DESMF_INTERFACE -DUSE_ESMF_LIB
 #KAL

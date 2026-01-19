@@ -50,12 +50,17 @@ EXTRALIBS     = -L${ESMF_LIB_DIR}/ -lesmf_fullylinked -lmkl -lnetcdff -lnetcdf -
 # add to EXPT.src or execute in the shell the following:
 # export COMPILE_BIOMODEL="yes"
 
-ifeq ($(COMPILE_BIOMODEL), yes) 
-   CPPFLAGS      += -D_FABM_ -I${HOME}/local/fabm/hycom/include
-   #CPPFLAGS      += -D_FABM_ -DIA_DRIFT -I${HOME}/local/fabm/hycom/include
-   EXTRALIBS     += -L${HOME}/local/fabm/hycom/lib64 -lfabm
+ifeq ($(COMPILE_BIOMODEL),yes)
+  CPPFLAGS  += -D_FABM_ -I$(HOME)/local/fabm/hycom/include
+  EXTRALIBS += -L$(HOME)/local/fabm/hycom/lib64 -lfabm
+  ifeq ($(IA_DRIFT),yes)
+    CPPFLAGS += -DIA_DRIFT
+  endif
+else
+  ifeq ($(IA_DRIFT),yes)
+    $(error IA_DRIFT requires COMPILE_BIOMODEL=yes)
+  endif
 endif
-
 #
 # --- generic make definitions
 #
