@@ -86,7 +86,7 @@ process_daily_files() {
         m=$(date -d "$d" '+%m')
         y=$(date -d "$d" '+%Y')
 
-        if [ "$region" = "TP5" ] || [ "$region" = "TP2" ] || [ "$region" = "TP0" ]; then
+        if [ "$region" = "TP5" ] || [ "$region" = "TP2" ] || [ "$region" = "TP0" ] || [ "$region" = "NAT" ]; then
             if [ "$m" == "$month" ]; then
                 printf -v nn "%03d" "$((10#$n))"
                 append=$append"../archm."$y"_"$nn"_12.a "

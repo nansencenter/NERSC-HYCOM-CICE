@@ -36,7 +36,7 @@ def main(region,experiment,date1,date2,depth,workdir):
       print("month:",m,"file:",arcf)
       # these below first integrate the total depth range, then remove the depth range above, and divide by the remaining depth to take average
 
-      for var in ['no3', 'pho', 'sil', 'ECO_oxy', 'chl']:
+      for var in ['no3', 'pho', 'sil', 'ECO_oxy', 'total_ch']:
 
          intg10   = abplot.integr(arc,var,10)
          intg30   = abplot.integr(arc,var,30)
@@ -50,7 +50,7 @@ def main(region,experiment,date1,date2,depth,workdir):
          if var == 'no3'     :  NIT["0-10"][m] = intg10; NIT["10-30"][m] = intg30; NIT["30-50"][m] = intg50; NIT["50-100"][m] = intg100;
          if var == 'sil'     :  SIL["0-10"][m] = intg10; SIL["10-30"][m] = intg30; SIL["30-50"][m] = intg50; SIL["50-100"][m] = intg100;
          if var == 'pho'     :  PHO["0-10"][m] = intg10; PHO["10-30"][m] = intg30; PHO["30-50"][m] = intg50; PHO["50-100"][m] = intg100;
-         if var == 'chl'     :  CHL["0-10"][m] = intg10; CHL["10-30"][m] = intg30; CHL["30-50"][m] = intg50; CHL["50-100"][m] = intg100;
+         if var == 'total_ch'     :  CHL["0-10"][m] = intg10; CHL["10-30"][m] = intg30; CHL["30-50"][m] = intg50; CHL["50-100"][m] = intg100;
          if var == 'ECO_oxy' :  OXY["0-10"][m] = intg10; OXY["10-30"][m] = intg30; OXY["30-50"][m] = intg50; OXY["50-100"][m] = intg100;
 
     arcf = dataf + "CLIM." + str(date1) + "." + str(date2) + ".a"
@@ -69,7 +69,7 @@ def main(region,experiment,date1,date2,depth,workdir):
     if var == 'no3'     :  NIT["0-10"][0] = intg10; NIT["10-30"][0] = intg30; NIT["30-50"][0] = intg50; NIT["50-100"][0] = intg100;
     if var == 'sil'     :  SIL["0-10"][0] = intg10; SIL["10-30"][0] = intg30; SIL["30-50"][0] = intg50; SIL["50-100"][0] = intg100;
     if var == 'pho'     :  PHO["0-10"][0] = intg10; PHO["10-30"][0] = intg30; PHO["30-50"][0] = intg50; PHO["50-100"][0] = intg100;
-    if var == 'chl'     :  CHL["0-10"][0] = intg10; CHL["10-30"][0] = intg30; CHL["30-50"][0] = intg50; CHL["50-100"][0] = intg100;
+    if var == 'total_ch'     :  CHL["0-10"][0] = intg10; CHL["10-30"][0] = intg30; CHL["30-50"][0] = intg50; CHL["50-100"][0] = intg100;
     if var == 'ECO_oxy' :  OXY["0-10"][0] = intg10; OXY["10-30"][0] = intg30; OXY["30-50"][0] = intg50; OXY["50-100"][0] = intg100;
 
 
@@ -90,7 +90,7 @@ def main(region,experiment,date1,date2,depth,workdir):
 
         DIA[m] = abplot.integr(arc,'ECO_dia',depth)
         FLA[m] = abplot.integr(arc,'ECO_fla',depth)
-        CCL[m] = abplot.integr(arc,'ECO_ccl',depth)
+        CCL[m] = abplot.integr(arc,'ECO_ccl',depth)  
         MIC[m] = abplot.integr(arc,'ECO_micr',depth)
         MES[m] = abplot.integr(arc,'ECO_meso',depth)
         PP[m]  = abplot.integr(arc,'ECO_prim',depth)*86400.
