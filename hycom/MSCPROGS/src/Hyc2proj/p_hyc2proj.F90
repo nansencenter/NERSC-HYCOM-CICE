@@ -686,7 +686,7 @@ program p_hyc2proj
                   call HFReadField3D(hfile,dsnk,idm,jdm,kdm,'ECO_dsnk ',1)
                   call det_bottom_flux(det,dsnk,biovar,onem,idm,jdm,kdm)
                   hy3d=biovar
-                  deallocate(det,biovar)
+                  deallocate(det,dsnk,biovar)
                 else if (trim(fld(ifld)%fextract)=='spco2') then
                   ! Compute surface partial pressure of CO2 in water (Pa)
                   allocate(pco2(idm,jdm,kdm))
