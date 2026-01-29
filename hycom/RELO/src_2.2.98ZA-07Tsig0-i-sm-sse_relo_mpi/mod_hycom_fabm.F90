@@ -17,7 +17,7 @@ module mod_hycom_fabm
    use fabm
    use fabm_config
    use fabm_types, only: attribute_length, output_none
-   use fabm_standard_variables, only: type_global_standard_variable
+   use fabm_standard_variables, only: type_global_standard_variable, type_surface_standard_variable
 
    use mod_xc         ! HYCOM communication interface
    use mod_cb_arrays  ! HYCOM saved arrays
@@ -112,6 +112,9 @@ module mod_hycom_fabm
    character(len=80)  :: co2str
    real    :: co2_seasonality(12),modelday,modeltime,pair,day
    real    :: dew,atmco2_0,atmco2_1,atmco2_2,atmco2_3
+
+   type (type_surface_standard_variable), parameter :: ice_thickness = type_surface_standard_variable(name= "ice_thickness", units="m")
+   type (type_surface_standard_variable), parameter :: dh_growth = type_surface_standard_variable(name= "dh_growth", units="m s-1")
 contains
 
     subroutine hycom_fabm_configure()
@@ -241,11 +244,14 @@ contains
         call fabm_model%link_interior_data(fabm_standard_variables%practical_salinity,cosal(1:ii,1:jj,1:kk))
         call fabm_model%link_interior_data(fabm_standard_variables%density,codens(1:ii,1:jj, 1:kk))
         call fabm_model%link_interior_data(fabm_standard_variables%pressure,codepth(1:ii,1:jj, 1:kk))
+        call fabm_model%link_interior_data(fabm_standard_variables%depth,codepth(1:ii,1:jj, 1:kk))
         call fabm_model%link_horizontal_data(fabm_standard_variables%ice_area_fraction,coice_conc(1:ii,1:jj))
         call fabm_model%link_horizontal_data(fabm_standard_variables%bottom_depth_below_geoid, codepth(1:ii, 1:jj, kk))
         if (do_icealgae) then
-           call fabm_model%link_horizontal_data(fabm_standard_variables%ice_thickness,coice_thickness(1:ii,1:jj))
-           call fabm_model%link_horizontal_data(fabm_standard_variables%dh_growth,codh_growth(1:ii,1:jj))
+!           call fabm_model%link_horizontal_data(fabm_standard_variables%ice_thickness,coice_thickness(1:ii,1:jj))
+           call fabm_model%link_horizontal_data(ice_thickness,coice_thickness(1:ii,1:jj))
+!           call fabm_model%link_horizontal_data(fabm_standard_variables%dh_growth,codh_growth(1:ii,1:jj))
+           call fabm_model%link_horizontal_data(dh_growth,codh_growth(1:ii,1:jj))
         end if 
 
         call update_fabm_data(1, initializing=.true.)  ! initialize the entire column of wet points, including thin layers
