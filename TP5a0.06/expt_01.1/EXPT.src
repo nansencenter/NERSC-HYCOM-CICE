@@ -1,4 +1,4 @@
-#!/binn/bash
+#!/bin/bash
 #
 # Sets environment for this experiment, also makes the scratch (S) and
 # data (D) directories if not already present
@@ -20,7 +20,7 @@ mydir=$(cd $(dirname ${BASH_SOURCE}) && pwd)
 unset -v X E T V K P D S
 X="01.1"                # X based on dir name (expt_01.1)
 E="011"                 # E is X without "."
-T="08"                                                           # Topography version
+T="05"                                                           # Topography version
 export V=2.2.98                                                  # hycom version              
 #export K=`grep "'kdm   ' =" blk* | awk '{printf("%03d", $1)}'`   # get kdm from blkdat
 export K=`grep "'kdm   ' =" $mydir/blkdat.input | awk '{printf("%03d", $1)}'`   # get kdm from blkdat
@@ -33,6 +33,7 @@ export S=$P/SCRATCH                  # Scratch area
 export SIGVER=1   # Version of equation of state (this is 7-term sigma 2). Must not cause conflict with thflag in blkdat.input
 export NMPI=336
 export MXBLCKS=2  # The maximal number of ice blocks relates to the MPI cores distribution, and could be recommened by the error message in a model run.
+export COMPILE_BIOMODEL="no" # Turn ECOSMO on with "yes"
 
 # Consistency check. Ensures expt dir ends in expt_X
 #echo $tmp
