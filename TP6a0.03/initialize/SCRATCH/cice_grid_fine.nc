@@ -1,0 +1,1 @@
+../cice_grid_fine_TP6.nc
