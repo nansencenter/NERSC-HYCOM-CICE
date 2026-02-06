@@ -22,5 +22,6 @@ echo "Convert TP5 restart  file to TP6  restart file"
 | 2) topaz_TP5archv_2_TP6archv_CML.sh |  to interpolate TP5 archv file to TP6 archv file
 | 3) topaz_archv2restart_TP6_CML.sh   |  to create TP6 restart file from TP6 archv file 
 | 4) convert_cice_restart.sh          | to interpolate CICE TP5 restart file to TP6 grid
+|    - this a wraper which uses: cice_convert_restart.py
 | New restart files are created under |TP6a0.03/initialize/New_Restart directory
 | "-------------------------------------------------------"
