@@ -6,8 +6,8 @@
 #SBATCH --nodes=4 # number of nodes
 #SBATCH --ntasks=504 # number of cores
 
-#SBATCH -o log/HY_CICE.out
-#SBATCH -e log/HY_CICE.err
+#SBATCH -o log/HY_CICE.%J.out
+#SBATCH -e log/HY_CICE.%J.err
 
 #         
 export NMPI=504
