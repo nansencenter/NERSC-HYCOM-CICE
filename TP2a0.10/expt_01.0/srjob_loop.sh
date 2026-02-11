@@ -1,0 +1,68 @@
+#!/bin/bash -l 
+
+#SBATCH --account=nn9481k
+#SBATCH --job-name=TP2a010
+#SBATCH --time="01:00:00"
+#SBATCH --nodes=4 # number of nodes
+#SBATCH --ntasks=504 # number of cores
+
+#SBATCH -o log/HY_CICE_%J.out
+#SBATCH -e log/HY_CICE_%J.err
+
+#
+export NMPI=504
+export SLURM_SUBMIT_DIR=$(pwd)
+# Enter directory from where the job was submitted
+cd $SLURM_O_WORKDIR       ||  { echo "Could not go to dir $SLURM_O_WORKDIR  "; exit 1; }
+
+# ------------------- Fetch Environment ------------------------------
+# -------- these are needed in preprocess scripts---------------------
+echo "SLURM_JOBID    = $SLURM_JOBID     "
+echo "SLURM_JOBNAME  = $SLURM_JOBNAME   "
+echo "SLURM_SUBMIT_DIR= $SLURM_SUBMIT_KDIR "
+echo "SLURM_TASKNUM  = $SLURM_TASKNUM "
+echo "SLURM_NUM_PPN  = $SLURM_NUM_PPN "
+[ -z "$NOMP" ] && NOMP=0
+
+# Enter directory from where the job was submitted
+cd $SLURM_SUBMIT_DIR       ||  { echo "Could not go to dir $SLURM_O_WORKDIR  "; exit 1; }
+
+# Initialize environment (sets Scratch dir ($S), Data dir $D ++ )
+source ../REGION.src  || { echo "Could not source ../REGION.src "; exit 1; }
+source ./EXPT.src  || { echo "Could not source EXPT.src"; exit 1; }
+source $NHCROOT/environment/betzy_env.sh || { echo "Could not source betzy_env.sh "; exit 1; }
+echo "NMPI =$NMPI (Number of MPI tasks needed for running job) "
+
+# Define first year and last year
+START_YEAR=2024
+END_YEAR=2025
+
+for YEAR in $(seq $START_YEAR $((END_YEAR-1))); do
+    START="${YEAR}-11-01T00:00:00"
+    # END is always Nov 1 of next YEAR
+    NEXT_YEAR=$((YEAR+1))
+    END="${NEXT_YEAR}-11-01T00:00:00"
+    #END="1994-11-03T00:00:00"
+    #INITFLG="--init"
+    INITFLG=""
+    echo "Start time in pbsjob.sh: $START"
+    echo "End   time in pbsjob.sh: $END"
+    # Generate atmospheric forcing :
+    #atmo_synoptic.sh erai+all $START $END 
+    #../bin/atmo_synoptic.sh era5+lw $START $END
+
+    # Transfer data files to scratch - must be in "expt_XXX" dir for this script
+    ../bin/expt_preprocess.sh $START $END $INITFLG        ||  { echo "Preprocess had fatal errors "; exit 1; }
+
+    # Enter Scratch/run dir and Run model
+    cd $S  ||  { echo "Could not go to dir $S  "; exit 1; }
+    srun -n $NMPI --cpu_bind=cores ./hycom_cice 
+
+    # Cleanup and move data files to data directory - must be in "expt_XXX" dir for this script
+    cd $P     ||  { echo "Could not go to dir $P  "; exit 1; }
+    ../bin/expt_postprocess.sh 
+done
+
+exit $?
+
+
