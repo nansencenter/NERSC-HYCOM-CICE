@@ -3,6 +3,7 @@ import argparse
 import datetime
 import numpy
 import cfunits
+import cftime as cft
 import modeltools.hycom
 import modeltools.tools
 import modeltools.forcing.atmosphere
@@ -111,12 +112,22 @@ def atmfor(start,end,af,grid_file="regional.grid",blkdat_file="blkdat.input",plo
    field_interpolator={}
    vector_rotator={}
    ffiles={}
-   dt = start
-   while dt <= end :
+#   dt = start
+   if yrflag == 0 :
+       hycomcal="360_day"
+   elif yrflag == 1 or yrflag == 2 :
+       hycomcal="366_day"
+   elif yrflag == 3 :
+       hycomcal="standard"
+   elif yrflag == 4 :
+       hycomcal="365_day"
+   dt = cft.datetime(start.year,start.month,start.day,start.hour,start.minute,start.second,calendar=hycomcal)
+#   while dt <= end :
+   while dt <= cft.datetime(end.year,end.month,end.day,end.hour,end.minute,end.second,calendar=hycomcal) :
        
        logger.info("-------------------Reading at %s--------------------------"%str(dt))
        logger.info("-----------------------------------------------------------")
-       #print af.known_names
+       #print(af.known_names)
 
        # Read variables
        af.get_timestep(dt)
@@ -155,7 +166,7 @@ def atmfor(start,end,af,grid_file="regional.grid",blkdat_file="blkdat.input",plo
 
        # Open output files. Dict uses "known name" when mapping to file object
        # TODO: HYCOM-specific
-       if dt == start :
+       if dt == cft.datetime(start.year,start.month,start.day,start.hour,start.minute,start.second,calendar=hycomcal) :
           # Open files
           for k,v in forcingpropertyset.items() :
               if k in af.known_names :
