@@ -37,7 +37,7 @@ def datetime_to_ordinal(dt,yrflag) :
        raise ValueError("Yearflag="+str(yrflag)+" not supported for datetime_to_ordinal")
    
    #td = dt - datetime.datetime(dt.year,1,1,0,0,0)
-   td = dt - cft.datetime(dt.year,1,1,0,0,0,calendar=hycomcal) 
+   td = cft.datetime(dt.year,dt.month,dt.day,dt.hour,dt.minute,dt.second,calendar=hycomcal) - cft.datetime(dt.year,1,1,0,0,0,calendar=hycomcal) 
    tdd = td.days + 1
    #tdh = td.seconds/86400.
    tdh = td.seconds/3600.
