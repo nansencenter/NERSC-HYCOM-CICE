@@ -144,7 +144,7 @@ else
    echo "Input relaxation time scale maximum  in days (typically 20)"
    echo "This time scale will be reduced linearly towards zero away from the wall"
    read rscale
-   echo "Dots with relaxation"
+   echo "Single grid-point(s) with relaxation (input 0 to ignore, which needs by rmu.in)"
    read npdot 
 
    echo $least  >  rmu.in
