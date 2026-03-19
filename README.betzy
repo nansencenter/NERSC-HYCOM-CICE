@@ -54,7 +54,9 @@
    pip install --user cfunits
    pip install --user netCDF4
    pip install --user netcdftime
+   pip install --user cftime # should replace netcdftime - eventually
    pip install --user numpy
    pip install --user f90nml
    pip install --user scipy
    pip install --user pyproj
+   pip install --user metpy  # needed for forcing from ESMs.
