@@ -77,7 +77,7 @@ S-Z(15-11): dp00/f/x/i=3m/1.125/12m/1m; ds=1m/1.125/4m; src_2.2.12;
   28.13   'sigma ' = layer 50  density (sigma units)
    2	  'iniflg' = initial state flag (0=levl, 1=zonl, 2=clim)
    0	  'jerlv0' = initial jerlov water type (1 to 5; 0 to use KPAR)
-   3	  'yrflag' = days in year flag   (0=360,  1=366,  2=366J1, 3=actual,4=365)
+   3	  'yrflag' = days in year flag   (0=360,  1=366,  2=366J1, 3=actual)
    0	  'sshflg' = diagnostic SSH flag (0=SSH,1=SSH&stericSSH)
    1.00 'dsurfq' = number of days between model diagnostics at the surface
    0.25   'diagfq' = number of days between model diagnostics
