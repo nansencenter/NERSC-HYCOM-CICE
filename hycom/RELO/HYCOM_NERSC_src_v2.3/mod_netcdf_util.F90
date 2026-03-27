@@ -252,7 +252,7 @@
 !
       open_nc_one=nf90_def_var(ncid,"time",NF90_DOUBLE,dimid_time,varid)!  Coordinate variable
       if (open_nc_one/= nf90_noerr) return
-      if (yrflag.eq.3) then
+      if (yrflag.eq.3 .or. yrflag.eq.5) then
          open_nc_one=nf90_put_att(ncid,varid,"unit", &
             "seconds since 01-01-1900 00:00:00 UTC")
          if (open_nc_one/= nf90_noerr) return

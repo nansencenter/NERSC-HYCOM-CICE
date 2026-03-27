@@ -1656,23 +1656,43 @@ call fabm_model%finalize_outputs
         integer :: i,dayy,iyr, nleap,days_in_year,days_in_month(12)
         real*8  :: dtim1, day
 
-        iyr   = (modeltime-1.d0)/365.25d0
-        nleap = iyr/4
-        dtim1 = 365.d0*iyr + nleap + 1.d0
-        day   = modeltime - dtim1 + 1.d0
-        if     (dtim1.gt.modeltime) then
-          iyr = iyr - 1
-        elseif (day.ge.367.d0) then
-          iyr = iyr + 1
-        elseif (day.ge.366.d0 .and. mod(iyr,4).ne.3) then
-          iyr = iyr + 1
-        endif
-        nleap = iyr/4
-        dtim1 = 365.d0*iyr + nleap + 1.d0
+        if (yrflag==3) then
+           iyr   = (modeltime-1.d0)/365.25d0
+           nleap = iyr/4
+           dtim1 = 365.d0*iyr + nleap + 1.d0
+           day   = modeltime - dtim1 + 1.d0
+           if     (dtim1.gt.modeltime) then
+             iyr = iyr - 1
+           elseif (day.ge.367.d0) then
+             iyr = iyr + 1
+           elseif (day.ge.366.d0 .and. mod(iyr,4).ne.3) then
+             iyr = iyr + 1
+           endif
+           nleap = iyr/4
+           dtim1 = 365.d0*iyr + nleap + 1.d0
+           
+           modelyear =  1901 + iyr
+           modelday  =  modeltime - dtim1 + 1.001d0
+           !ihour = (dtime - dtim1 + 1.001d0 - iday)*24.d0
+        
+        elseif (yrflag==5) then
+           ! --- model day is calendar days since 01/01/1901 (365-day calendar)
+           iyr   = int((modeltime + 0.001d0)/365.d0)
+           modelyear = 1901 + iyr
+           
+           modelday = mod(modeltime + 0.001d0, 365.d0) + 1.d0
+           !ihour    = int((modelday - int(modelday))*24.d0)
+           modelday = int(modelday)     
+        else
+           if (mnproc.eq.1) then
+              write(lp,*)
+              write(lp,*) 'error in fabm_gettime, unsupported yrflag'
+              write(lp,*)
+           end if !1st tile
+           call xcstop('(fabm_gettime)')
+           stop '(fabm_gettime)'
+        end if
 
-        modelyear =  1901 + iyr
-        modelday  =  modeltime - dtim1 + 1.001d0
-        !ihour = (dtime - dtim1 + 1.001d0 - iday)*24.d0
         days_in_year =daysinyear  (modelyear,yrflag)
         days_in_month=monthsofyear(modelyear,yrflag)
         dayy = int(modelday-1)
@@ -1692,7 +1712,7 @@ call fabm_model%finalize_outputs
         integer,intent(in) :: year,yrflag
         if (yrflag==0) then
            daysinyear=360
-        elseif (yrflag==1) then
+        elseif (yrflag==1 .or. yrflag==4 .or. yrflag==5) then
            daysinyear=365
         elseif (yrflag==2) then
            daysinyear=366
@@ -1721,7 +1741,7 @@ function monthsofyear(year,yrflag)
         integer, intent(in) :: year,yrflag
         if (yrflag==0) then
            monthsofyear=months_360
-        elseif (yrflag==1) then
+        elseif (yrflag==1 .or. yrflag==4 .or. yrflag==5) then
            monthsofyear=months_365
         elseif (yrflag==2) then
            monthsofyear=months_366

@@ -7,7 +7,7 @@
 !
 !**********
 !*
-!  1) convert date into 'model day', for yrflag=2,3,4 only.
+!  1) convert date into 'model day', for yrflag=2,3,4,5 only.
 !
 !  2) for yrflag==4, all years are 365 days.
 !     for example:
@@ -32,6 +32,15 @@
 !         so wday would be 1.0.
 !      a) iyr=1,mon=1,idy=2 is the 2nd day of the run,
 !         so wday would be 2.0.
+
+!  5) for yrflag==5, all years are 365 days, the 'model day' is the 
+!     number of days since 001/1901 (which is model day 1.0).
+!     for example:
+!      a) iyr=1901,mon=1,idy=1, represents 0000z hrs on 01/01/1901
+!         so wday would be 1.0.
+!      a) iyr=1901,mon=1,idy=2, represents 0000z hrs on 02/01/1901
+!         so wday would be 2.0.
+!     No leap years.
 !*
 !**********
 !
@@ -41,7 +50,9 @@
       data    month / 0,  31,  59,  90, 120, 151, 181, &
                          212, 243, 273, 304, 334, 365 /
 !
-      if     (yrflag.eq.4) then
+      if     (yrflag.eq.5) then
+        wday = 365.d0*(iyr-1901) + month(mon) + idy-1 + ihr/24.0d0
+      elseif (yrflag.eq.4) then
         wday = 365.d0*(iyr-1) + month(mon) + idy-1 + ihr/24.0d0
       elseif (yrflag.eq.3) then
         nleap = (iyr-1901)/4
@@ -124,6 +135,12 @@
         iday  =  mod( dtime+ 0.001d0 ,365.d0) + 1
         ihour = (mod( dtime+ 0.001d0 ,365.d0) + 1.d0 - iday)*24.d0
 !
+      elseif (yrflag.eq.5) then
+! ---   365 days per model year, starting 01/01/1901 -No Leap year-
+        iyear =  int((dtime+ 0.001d0)/365.d0) + 1901
+        iday  =  mod( dtime+ 0.001d0 ,365.d0) + 1
+        ihour = (mod( dtime+ 0.001d0 ,365.d0) + 1.d0 - iday)*24.d0
+
       else
         if     (mnproc.eq.1) then
         write(lp,*)
@@ -163,7 +180,7 @@
         else
           k = 2  !standard year
         endif
-      elseif (yrflag.eq.4) then
+      elseif (yrflag.eq.4 .or yrflag.eq.5) then
         k = 2  !365-day year
       elseif (yrflag.eq.0) then
         k = 1  !360-day year
@@ -1155,7 +1172,7 @@
         if     (sstflg.eq.3) then
           do i= 1,nrec-2
             call skmonth(910)
-          enddo
+          enddo 
         endif
         dtime1 = huge(dtime1)
         call rdpall(dtime0,dtime1)
@@ -1241,7 +1258,7 @@
 !           write(lp,*) 'enter rdpall - ',dtime,dtime0,dtime1
 !           endif !1st tile
 !           call xcsync(flush_lp)
-        call rdpall(dtime0,dtime1)
+        call rdp all(dtime0,dtime1)
         if     (yrflag.eq.2) then
           dtime1 = (dtime1 - 1096.0d0) +  &
                    wndrep*int((dtime+0.00001d0)/wndrep)  !wndrep=366 or 732
@@ -1260,7 +1277,7 @@
 !           endif !1st tile
 !           call xcsync(flush_lp)
       endif
-!
+! 
 ! --- linear interpolation in time.
       w0 = (dtime1-dtime)/(dtime1-dtime0)
       w1 = 1.0 - w0
@@ -5176,3 +5193,4 @@
 !> Apr  2021 - update the halo of rmu
 !> Nov  2022 - skip oneta in nest archive files
 !> Jun  2025 - Introduce the high frequency river inflow
+!> Mar  2026 - add yrflag=5 for 365 days no-leap actual years, not climatology

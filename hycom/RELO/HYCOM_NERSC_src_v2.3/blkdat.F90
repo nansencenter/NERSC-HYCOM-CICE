@@ -601,7 +601,7 @@
                stop '(blkdat)'
       endif
 !
-! --- 'yrflag' = days in year flag   (0=360,1=366,2=366Jan1,3=actual)
+! --- 'yrflag' = days in year flag   (0=360,1=366,2=366Jan1,3=actual,4=365clim,5=365)
 ! ---             (-2=366Jan1 with 732-day forcing repeat)
 ! --- 'sshflg' = diagnostic SSH flag (0=SSH,1=SSH&stericSSH,2=SSH&stericMONTG)
 ! ---             note that sshflg==1 implies reading relax.ssh.a
@@ -701,10 +701,10 @@
       write(lp,'(a,i10)') 'icpfrq =',icpfrq
       endif !1st tile
 !
-      if (yrflag.lt.0 .or. yrflag.gt.4) then
+      if (yrflag.lt.0 .or. yrflag.gt.5) then
         if (mnproc.eq.1) then
         write(lp,'(/ a /)')  &
-         &'error - yrflag must be between 0 and 4'
+         &'error - yrflag must be between 0 and 5'
         call flush(lp)
         endif !1st tile
         call xcstop('(blkdat)')
@@ -2946,3 +2946,4 @@
 !> Aug. 2024 - added ocnscl
 !> Sep. 2024 - added hybthk
 !> Dec. 2024 - Removed negative wndflg and amoflg due to inclusion of ocnscl
+!> Mar. 2026 - added yrflag=5 for 365 days no-leap but actual model years, not climatology

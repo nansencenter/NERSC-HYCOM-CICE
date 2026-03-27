@@ -805,9 +805,11 @@ implicit none
    if (use_leap_years) then
       e_calendar = ESMF_CalendarCreate(ESMF_CALKIND_GREGORIAN,name="Gregorian", rc=rc)
    else 
-      write(msg,'("Must use leap years and days_per_year=365")')
-      call ESMF_LogWrite(msg, ESMF_LOGMSG_ERROR, rc=rc)
-      call ESMF_Finalize(rc=rc)
+      e_calendar = ESMF_CalendarCreate(name="365DAYS", daysPerMonth=daymo, rc=rc)
+   !else
+   !   write(msg,'("Must use leap years and days_per_year=365")')
+   !   call ESMF_LogWrite(msg, ESMF_LOGMSG_ERROR, rc=rc)
+   !   call ESMF_Finalize(rc=rc)
    end if
 
    call ESMF_TimeGet(startTime,yy=start_year,mm=start_month, dd=start_mday,s=start_sec,rc=rc)

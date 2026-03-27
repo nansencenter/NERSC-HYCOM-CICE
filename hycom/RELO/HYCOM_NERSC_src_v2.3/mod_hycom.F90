@@ -1912,6 +1912,13 @@
         dmonth = dyear/12.d0
         dbimon = dyear/ 6.d0
         dyear0 = -15.0d0+dyear
+      elseif (yrflag.eq.5) then
+! ---   365 days, model day since 01/01/1901 
+! ---   also implies high frequency atmospheric forcing
+        dyear  = 365.0d0
+        dmonth = dyear/12.d0
+        dbimon = dyear/ 6.d0
+        dyear0 = -15.0d0+dyear
       else
         if (mnproc.eq.1) then
         write(lp,*)
@@ -4796,9 +4803,14 @@
             name="Gregorian", rc=rc)
          call ESMF_TimeSet(refTime, &
             calendar=calendar,yy=1901,mm=1,dd=1,h=0,rc=rc)
+      elseif (yrflag.eq.5) then 
+         calendar = ESMF_CalendarCreate(ESMF_CALKIND_NOLEAP, &
+            name="NoLeap", rc=rc)
+         call ESMF_TimeSet(refTime, &
+            calendar=calendar,yy=1901,mm=1,dd=1,h=0,rc=rc)
       else
          write(msg,'("Setup_esmf_kal: Unknown year flag:",i4,a)')  &
-         yrflag," (hycom_cice requires yrflag=3)"
+         yrflag," (hycom_cice requires yrflag=3 or 5)"
          call ESMF_LogWrite(msg, ESMF_LOGMSG_ERROR, rc=rc)
          call ESMF_Finalize(rc=rc)
       end if
@@ -4938,3 +4950,4 @@
 !> Sep. 2019 - added oneta0
 !> Nov. 2020 - removed call to MPI_Comm_Dup, duplicative of call in xcspmd
 !> July 2024 - added mtracr
+!> Mar. 2026 - added yrflag=5 for 365 days no-leap but actual model years,not climatology

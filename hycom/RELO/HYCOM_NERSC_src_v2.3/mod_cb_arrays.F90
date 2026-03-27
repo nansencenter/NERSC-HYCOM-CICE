@@ -761,7 +761,7 @@
 ! --- 'lbflag' = lateral baro. bndy flag (0=none;nest:2=B-K,4=Flather,6=clamped)
 ! ---             (port: 1=Browning-Kreiss,3=Flather)
 ! --- 'mapflg' = map flag (0=mercator,2=uniform,3=beta-plane,4=input)
-! --- 'yrflag' = days in year flag   (0=360,1=366,2=366Jan1,3=actual)
+! --- 'yrflag' = days in year flag   (0=360,1=366,2=366Jan1,3=actual,4=365clim,5=365)
 ! --- 'sshflg' = diagnostic SSH flag (0=SSH,1=SSH&stericSSH,2=SSH&stericMONTG)
 ! --- 'iversn' = hycom version number x10
 ! --- 'iexpt'  = experiment number x10
