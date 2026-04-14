@@ -180,7 +180,7 @@
         else
           k = 2  !standard year
         endif
-      elseif (yrflag.eq.4 .or yrflag.eq.5) then
+      elseif (yrflag.eq.4 .or. yrflag.eq.5) then
         k = 2  !365-day year
       elseif (yrflag.eq.0) then
         k = 1  !360-day year
@@ -1258,7 +1258,7 @@
 !           write(lp,*) 'enter rdpall - ',dtime,dtime0,dtime1
 !           endif !1st tile
 !           call xcsync(flush_lp)
-        call rdp all(dtime0,dtime1)
+        call rdpall(dtime0,dtime1)
         if     (yrflag.eq.2) then
           dtime1 = (dtime1 - 1096.0d0) +  &
                    wndrep*int((dtime+0.00001d0)/wndrep)  !wndrep=366 or 732
