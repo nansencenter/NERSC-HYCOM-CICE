@@ -4826,7 +4826,12 @@
 !
 !KAL  Set starttime
       ! reftime is day 1, actually... 1901-01-01 Starts from 1
-      call ESMF_TimeIntervalSet(tmpDt,d_r8=day1-1) 
+      if (yrflag.eq.3) then
+         call ESMF_TimeIntervalSet(tmpDt,d_r8=day1-1)
+      elseif (yrflag.eq.5) then
+         !AS 15042026: Not sure why this works
+         call ESMF_TimeIntervalSet(tmpDt,d_r8=day1)
+      end if         
       startTime=refTime+tmpDt
       if (ESMF_LogFoundError(rc, &
          msg="setup_esmf_kal: unable to set startTime", rcToReturn=rc2)) &
@@ -4837,7 +4842,12 @@
       if (mnproc==1) print '(a)',msg
 !
 !KAL  Set stoptime reftime is day 1, actually... 1901-01-01 Starts from 1
-      call ESMF_TimeIntervalSet(tmpDt,d_r8=day2-1) 
+      if (yrflag.eq.3) then
+          call ESMF_TimeIntervalSet(tmpDt,d_r8=day2-1) 
+      elseif (yrflag.eq.5) then
+         !AS 15042026: Not sure why this works
+         call ESMF_TimeIntervalSet(tmpDt,d_r8=day2)
+      end if         
       endTime=refTime+tmpDt
       if (ESMF_LogFoundError(rc, &
          msg="setup_esmf_kal: unable to set endTime", rcToReturn=rc2)) &
