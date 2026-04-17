@@ -80,10 +80,17 @@
 !
 ! --- Set default calendar and log type; get world VM
       rc = ESMF_Success
-      call ESMF_Initialize(defaultCalendar=ESMF_CAL_GREGORIAN, &
+      if yrflag.eq.3) then
+         call ESMF_Initialize(defaultCalendar=ESMF_CAL_GREGORIAN, &
                             defaultLogType=ESMF_LOG_MULTI, &
                                         vm=worldVM, &
                                         rc=rc)
+      elseif (yrflag.eq.5) then
+         call ESMF_Initialize(defaultCalendar=ESMF_CAL_NOLEAP, &
+                            defaultLogType=ESMF_LOG_MULTI, &
+                                        vm=worldVM, &
+                                        rc=rc)
+      end if 
       if (rc .ne. ESMF_SUCCESS) stop 99
 !
 ! --- Get VM info

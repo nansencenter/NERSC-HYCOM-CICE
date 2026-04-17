@@ -83,10 +83,17 @@
       rc = ESMF_Success
 !!! THE ESMF_LOG IS SET TO OUTPUT ALL LOG MESSAGES. THIS MAY CAUSE SLOWDOWN IN PERFORMANCE ESMF_LOGKIND_Multi_On_Error  !!!
 
-      call ESMF_Initialize(defaultCalKind=ESMF_CALKIND_GREGORIAN, &
+!      if (yrflag.eq.3) then
+!           call ESMF_Initialize(defaultCalKind=ESMF_CALKIND_GREGORIAN, &
+!                            logkindflag=ESMF_LOGKIND_MULTI, &
+!                                        vm=worldVM, &
+!                                        rc=rc)
+!      elseif (yrflag.eq.5) then
+       call ESMF_Initialize(defaultCalKind=ESMF_CALKIND_GREGORIAN, &
                             logkindflag=ESMF_LOGKIND_MULTI, &
                                         vm=worldVM, &
                                         rc=rc)
+!      end if
       if (rc .ne. ESMF_SUCCESS) stop 99
 !
 ! --- Get VM info

@@ -1,4 +1,4 @@
-#if defined(USE_ESMF4)
+if defined(USE_ESMF4)
       program hycom
 !
 ! --- ESMF driver for stand-alone HYCOM ocean model
@@ -34,10 +34,16 @@
 !  Initialize the ESMF Framework
 !-------------------------------------------------------------------------------
 !
-! --- Set default calendar and log type; get world VM
-      call ESMF_Initialize(defaultCalendar=ESMF_CAL_GREGORIAN, &
+      ! --- Set default calendar and log type; get world VM
+      if (yrflag.eq.3) then
+          call ESMF_Initialize(defaultCalendar=ESMF_CAL_GREGORIAN, &
                            defaultLogType=ESMF_LOG_SINGLE, &
                            vm=worldVM, rc=rc)
+      elseif (yrflag.eq.5) then
+          call ESMF_Initialize(defaultCalendar=ESMF_CAL_NOLEAP, &
+                           defaultLogType=ESMF_LOG_SINGLE, &
+                           vm=worldVM, rc=rc)
+      end if
       if (rc .ne. ESMF_SUCCESS) stop 99
 !
 ! --- Get VM info
