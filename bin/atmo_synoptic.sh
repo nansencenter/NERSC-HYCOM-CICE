@@ -61,14 +61,19 @@ elif [ ${forcing:0:5} == "ec_op" ] ; then
 	fi	
 elif [ ${forcing:0:9} == "noresm_3h" ] ; then
 	xmlfile=${INPUTDIR}/noresm_3h.xml
-	if [[ -n $ECNC_PATH ]] ; then
+	if [[ -n $NORESM_PATH ]] ; then
 		ROOTPATH=$NORESM_PATH
 	fi	
 
 elif [ ${forcing:0:6} == "noresm" ] ; then
 	xmlfile=${INPUTDIR}/noresm.xml
-	if [[ -n $ECNC_PATH ]] ; then
+	if [[ -n $NORESM_PATH ]] ; then
 		ROOTPATH=$NORESM_PATH
+	fi	
+elif [ ${forcing:0:9} == "norcpm_3h" ] ; then
+	xmlfile=${INPUTDIR}/norcpm_3h.xml
+	if [[ -n $NORCPM_PATH ]] ; then
+		ROOTPATH=$NORCPM_PATH
 	fi	
 else 
    tellerror "Forcing option is erai, era5, ec_op or noresm ..."

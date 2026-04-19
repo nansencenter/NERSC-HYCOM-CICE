@@ -40,7 +40,8 @@
 program p_hyc2proj
    use mod_parameters
    use mod_xc, only: idm,jdm, xcspmd
-   use mod_grid, only : get_grid, depths, plon, plat, qlat, qlon, scpx, scpy, scux, scuy, scvx, scvy
+   use mod_grid, only : get_grid, depths, plon, plat, qlat, qlon, scpx, scpy, &
+      scux, scuy, scvx, scvy, ip, iu, iv
    use mod_year_info
    use mod_levitus
    use mod_toproj
@@ -487,11 +488,12 @@ program p_hyc2proj
                   do k=1,kdm
                     call HFReaduvtot(hfile,u(:,:,k),v(:,:,k),idm,jdm,k,1)
                   end do
-                  call w_velocity(u,v,pres,biovar,scpx,scpy,scux,scuy,scvx,scvy,plon,plat,depths,onem,idm,jdm,kdm)
+                  call w_velocity(u,v,pres,biovar,scpx,scpy,scux,scuy,scvx,scvy,plon,plat,depths,&
+                     onem,idm,jdm,kdm,ip,iu,iv)
                   !call vertical_velocity(u,v,pres,biovar,scpx,scpy,scux,scvy,plon,plat,depths,onem,idm,jdm,kdm)
                   hy3d=biovar
                   !convert units from m s-1 to m day-1
-                  hy3d=hy3d*24.0*3600.0
+                  !hy3d=hy3d*24.0*3600.0
                   deallocate(u,v,biovar)
 
                else if (trim(fld(ifld)%fextract)=='oxy_nor') then 
@@ -684,7 +686,7 @@ program p_hyc2proj
                   call HFReadField3D(hfile,dsnk,idm,jdm,kdm,'ECO_dsnk ',1)
                   call det_bottom_flux(det,dsnk,biovar,onem,idm,jdm,kdm)
                   hy3d=biovar
-                  deallocate(det,biovar)
+                  deallocate(det,dsnk,biovar)
                 else if (trim(fld(ifld)%fextract)=='spco2') then
                   ! Compute surface partial pressure of CO2 in water (Pa)
                   allocate(pco2(idm,jdm,kdm))

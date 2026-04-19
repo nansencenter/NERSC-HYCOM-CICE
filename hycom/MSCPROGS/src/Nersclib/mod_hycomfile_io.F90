@@ -1244,8 +1244,8 @@ contains
          limits=(/-3,3/)
       case ('wtotl') 
          stdname='upward_sea_water_velocity' 
-         units='m day-1' ; vname='wo'
-         limits=(/-40,40/)
+         units='m s-1' ; vname='wo'
+         limits=(/-0.1,0.1/)
       case ('u','u-vel.') 
          if (.not.gridrotate) then
             stdname='baroclinic_eastward_sea_water_velocity' 

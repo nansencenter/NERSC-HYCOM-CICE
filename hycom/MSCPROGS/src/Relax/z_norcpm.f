@@ -671,7 +671,8 @@ C     CALCULATE THE DIAGNOSTIC THERMODYNAMEIC FIELD.
 C
       INTEGER I,J
 C
-      INCLUDE 'include/stmt_fns_SIGMA0_7term.h'
+      INCLUDE '../../../hycom_ALL/hycom_2.2.72_ALL/include/
+     +stmt_fns_SIGMA0_7term.h'
 C
       IF     (ICTYPE.EQ.3) THEN
         DO J= 1,JW
@@ -703,7 +704,8 @@ C     CALCULATE THE DIAGNOSTIC THERMODYNAMEIC FIELD.
 C
       INTEGER I,J
 C
-      INCLUDE 'include/stmt_fns_SIGMA2_7term.h'
+      INCLUDE '../../../hycom_ALL/hycom_2.2.72_ALL/include/
+     +stmt_fns_SIGMA2_7term.h'
 C
       IF     (ICTYPE.EQ.3) THEN
         DO J= 1,JW
@@ -735,7 +737,8 @@ C     CALCULATE THE DIAGNOSTIC THERMODYNAMEIC FIELD.
 C
       INTEGER I,J
 C
-      INCLUDE 'include/stmt_fns_SIGMA0_9term.h'
+      INCLUDE '../../../hycom_ALL/hycom_2.2.72_ALL/include/
+     +stmt_fns_SIGMA0_9term.h'
 C
       IF     (ICTYPE.EQ.3) THEN
         DO J= 1,JW
@@ -767,7 +770,8 @@ C     CALCULATE THE DIAGNOSTIC THERMODYNAMEIC FIELD.
 C
       INTEGER I,J
 C
-      INCLUDE 'include/stmt_fns_SIGMA2_9term.h'
+      INCLUDE '../../../hycom_ALL/hycom_2.2.72_ALL/include/
+     +stmt_fns_SIGMA2_9term.h'
 C
       IF     (ICTYPE.EQ.3) THEN
         DO J= 1,JW
@@ -802,7 +806,8 @@ C
 C
       REAL*8, PARAMETER :: TOL=1.D-6
 C
-      INCLUDE 'include/stmt_fns_SIGMA0_17term.h'
+      INCLUDE '../../../hycom_ALL/hycom_2.2.72_ALL/include/
+     +stmt_fns_SIGMA0_17term.h'
 C
       IF     (ICTYPE.EQ.3) THEN
         DO J= 1,JW
@@ -852,7 +857,8 @@ C
 C
       REAL*8, PARAMETER :: TOL=1.D-6
 C
-      INCLUDE 'include/stmt_fns_SIGMA2_17term.h'
+      INCLUDE '../../../hycom_ALL/hycom_2.2.72_ALL/include/
+     +stmt_fns_SIGMA2_17term.h'
 C
       IF     (ICTYPE.EQ.3) THEN
         DO J= 1,JW
@@ -902,7 +908,8 @@ C
 C
       REAL*8, PARAMETER :: TOL=1.D-6
 C
-      INCLUDE 'include/stmt_fns_SIGMA4_17term.h'
+      INCLUDE '../../../hycom_ALL/hycom_2.2.72_ALL/include/
+     +stmt_fns_SIGMA4_17term.h'
 C
       IF     (ICTYPE.EQ.3) THEN
         DO J= 1,JW
@@ -949,7 +956,8 @@ C     CALCULATE THE DIAGNOSTIC THERMODYNAMEIC FIELD.
 C
       INTEGER I,J
 C
-      INCLUDE 'include/stmt_fns_SIGMA0_12term.h'
+      INCLUDE '../../../hycom_ALL/hycom_2.2.72_ALL/include/
+     +stmt_fns_SIGMA0_12term.h'
 C
       IF     (ICTYPE.EQ.3) THEN
         DO J= 1,JW
@@ -981,7 +989,8 @@ C     CALCULATE THE DIAGNOSTIC THERMODYNAMEIC FIELD.
 C
       INTEGER I,J
 C
-      INCLUDE 'include/stmt_fns_SIGMA2_12term.h'
+      INCLUDE '../../../hycom_ALL/hycom_2.2.72_ALL/include/
+     +stmt_fns_SIGMA2_12term.h'
 C
       IF     (ICTYPE.EQ.3) THEN
         DO J= 1,JW
@@ -1013,7 +1022,8 @@ C     CALCULATE THE DIAGNOSTIC THERMODYNAMEIC FIELD.
 C
       INTEGER I,J
 C
-      INCLUDE 'include/stmt_fns_SIGMA4_12term.h'
+      INCLUDE '../../../hycom_ALL/hycom_2.2.72_ALL/include/
+     +stmt_fns_SIGMA4_12term.h'
 C
       IF     (ICTYPE.EQ.3) THEN
         DO J= 1,JW
@@ -1045,7 +1055,8 @@ C     CALCULATE SALINITY FROM POT.TEMPERATURE AND POT.DENSITY.
 C
       INTEGER I,J
 C
-      INCLUDE 'include/stmt_fns_SIGMA0_12term.h'
+      INCLUDE '../../../hycom_ALL/hycom_2.2.72_ALL/include/
+     +stmt_fns_SIGMA0_12term.h'
 C
       DO J= 1,JW
         DO I= 1,IW
@@ -1064,7 +1075,8 @@ C     CALCULATE SALINITY FROM POT.TEMPERATURE AND POT.DENSITY.
 C
       INTEGER I,J
 C
-      INCLUDE 'include/stmt_fns_SIGMA2_12term.h'
+      INCLUDE '../../../hycom_ALL/hycom_2.2.72_ALL/include/
+     +stmt_fns_SIGMA2_12term.h'
 C
       DO J= 1,JW
         DO I= 1,IW
@@ -1083,7 +1095,8 @@ C     CALCULATE SALINITY FROM POT.TEMPERATURE AND POT.DENSITY.
 C
       INTEGER I,J
 C
-      INCLUDE 'include/stmt_fns_SIGMA4_12term.h'
+      INCLUDE '../../../hycom_ALL/hycom_2.2.72_ALL/include/
+     +stmt_fns_SIGMA4_12term.h'
 C
       DO J= 1,JW
         DO I= 1,IW

@@ -38,7 +38,7 @@
       use mod_hycom_fabm
 #endif
 #if defined(NERSC_HYCOM_CICE)
-      use mod_NERSCnml, only : write_arche, nersc_init
+      use mod_NERSCnml, only : write_arche, nersc_init, highfq_river
 #endif
 !
 ! --- -----------------------------------------
@@ -1768,6 +1768,7 @@
       call blkdat(linit)  !must call before zaiost
 #if defined(NERSC_HYCOM_CICE)
       call NERSC_init
+
 #endif
 !
 ! --- initialize array i/o.
@@ -1957,7 +1958,19 @@
       elseif (jerlv0.eq.-1) then
         call forfunc  !  annual/monthly chl
       endif
+#if defined(NERSC_HYCOM_CICE)
+      if (highfq_river) then
+        if (mnproc.eq.1) then
+          write(lp,*) &
+         '--- Skipping the monthly river inflow----'
+          call flush(lp)
+        endif !1st tile
+      else
+         call forfunp  !    annual/monthly rivers
+      endif
+#else
       call forfunp  !    annual/monthly rivers
+#endif 
       call forfunr  ! bimonthly/monthly climatology
       watcum=0.
       empcum=0.
@@ -2453,10 +2466,10 @@
            call rdrivr(mr3,lr3)
          endif
 #else
-        call rdrivr(mr0,lr0)
-        call rdrivr(mr1,lr1)
-        call rdrivr(mr2,lr2)
-        call rdrivr(mr3,lr3)
+           call rdrivr(mr0,lr0)
+           call rdrivr(mr1,lr1)
+           call rdrivr(mr2,lr2)
+           call rdrivr(mr3,lr3)
 #endif /* USE_NUOPC_CESMBETA:else */
       endif
 !

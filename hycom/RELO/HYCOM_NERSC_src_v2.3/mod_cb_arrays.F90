@@ -1592,7 +1592,7 @@
              rmunvu(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy), &
              rmunvv(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy), &
              rmutra(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy), &
-               rmus(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy) ) 
+               rmus(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy) )
 #if defined(_FABM_)
       call mem_stat_add( 8*(idm+2*nbdy)*(jdm+2*nbdy) )
 #else
