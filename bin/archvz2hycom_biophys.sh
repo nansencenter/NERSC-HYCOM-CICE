@@ -30,7 +30,11 @@ usage="
 "
 nlayers=50
 grid_type=native
-bio_flag=0
+# default no biology
+NO3flag=NONE
+PO4flag=NONE
+SIflag=NONE
+O2flag=NONE
 
 # This will process optional arguments
 options=$(getopt -o b:gn: -- "$@")
@@ -44,7 +48,10 @@ while true; do
     case "$1" in
     -b)
         shift;
-        bio_flag=1
+	NO3flag=T
+	PO4flag=T
+	SIflag=T
+	O2flag=T
         ;;
     -g)
         grid_type=regular
@@ -157,12 +164,10 @@ export L="_L${target_kdm}"
 #
 if [ "${grid_type}" == "native"  ] ; then
    prog_subreg=${HYCOM_ALL}/subregion/src/isubaregion_modified
-   prog_nemo=${HYCOM_ALL}/relax/src/nemo_archvz_biophys
 else
-#   prog_subreg=${HYCOM_ALL}/subregion/src/isubaregion_modified
    prog_subreg=${HYCOM_ALL}/subregion/src/isubaregion
-   prog_nemo=${HYCOM_ALL}/relax/src/nemo_archvz_biophys
 fi
+prog_nemo=${HYCOM_ALL}/relax/src/nemo_archvz_biophys
 #
 #
 #
@@ -301,28 +306,11 @@ logfile=${NEST}/nest_${target_archv}.log
 touch $logfile && rm $logfile
 
 echo $logfile
+# Remove target_archv
 touch ${NEST}/${target_archv}.a
 touch ${NEST}/${target_archv}.b
 rm -rf ${NEST}/${target_archv}.*
-
-if [[ "${bio_flag}" -eq 0 ]] ; then
-
-${prog_nemo}  >> $logfile  <<EOF
-${N}/${target_archv}${L}.a
-${NEST}/${target_archv}.a
-${nlayers}
-${N}/ZL${nlayers}.txt
-T
-T
-T
-T
-T
-NONE
-NONE
-NONE
-NONE
-EOF
-else
+# Remove target_bioarchv
 test1=${target_archv:0:5}
 test2=${target_archv:5:16}
 target_bioarchv=${test1}_fabm${test2}
@@ -342,12 +330,11 @@ T
 T
 T
 T
-T
-T
-T
-T
+${NO3flag}
+${PO4flag}
+${SIflag}
+${O2flag}
 EOF
-fi
 
 
 fi
@@ -364,7 +351,7 @@ else
     touch ${D}/${source_archv_i}.b
     rm -f ${N}/${target_archv}${L}.*
     rm -f ${D}/${source_archv_i}.*
-    rm -f ${NEST}/nest_${target_archv}.log
+#    rm -f ${NEST}/nest_${target_archv}.log
     echo "Succesfully created archive file: $2"
 
     # using montg_regress.pckl(for TP5)/TP2_montg_regress.pckl is not recommended;for now the solution is to use ${BINDIR}/calc_montg1.py afterwards with a restart file 

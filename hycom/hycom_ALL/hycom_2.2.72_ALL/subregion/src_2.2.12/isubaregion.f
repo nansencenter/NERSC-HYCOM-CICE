@@ -53,7 +53,6 @@ c
       real,    parameter   :: hspval=0.5*2.0**100  ! half spval
       real,    parameter   :: onem=9806.0          ! g/thref
       real,    parameter   :: tenm=10.0*onem
-      real,    allocatable :: atmp(:,:)
 c
       call xcspmd
       call zaiost
@@ -65,7 +64,6 @@ c
 c
       allocate(   iv_sm(jdm,2) )
 c
-      allocate(    atmp(idm,jdm))
       allocate(    m_sm(idm,jdm),     m_osm(idm_out,jdm_out) )
       allocate(    m_in(idm,jdm),     m_out(idm_out,jdm_out) )
       allocate(    a_in(idm,jdm),     a_out(idm_out,jdm_out) )
@@ -229,10 +227,6 @@ c --- we are assuming that "2" is never needed outside the
 c --- target subregion, which will be the case unless the
 c --- subregion rectangle is poorly chosen.
 c
-cKAL  call zaiopf("landfill.a",'replace', 99)
-cKAL  atmp = m_sm
-cKAL  call zaiowr(atmp,m_sm,.false., 
-cKAL &   hmina,hmaxa, 99, .false.)
       do jj= 1,jdm_out
         do ii= 1,idm_out
           if     (m_out(ii,jj).eq.1) then
@@ -259,11 +253,6 @@ cKAL &   hmina,hmaxa, 99, .false.)
           endif
         enddo
       enddo
-cKAL  !KAL
-cKAL  atmp = m_sm
-cKAL  call zaiowr(atmp,m_sm,.false., 
-cKAL &   hmina,hmaxa, 99, .false.)
-cKAL  call zaiocl(99)
 c
       do j= 1,jdm
         iv_sm(j,1) = idm
@@ -763,12 +752,6 @@ c
 c --- repeated passes of 9-point "smoother" to
 c ---  convert all mask==2 points to mask==1.
 c --- double-buffering mm allows in-place use of a.
-cKAL  !KAL
-cKAL  call zaiopf("landfill.a",'replace', 99)
-cKAL  atmp = mm(1:m,1:n,0)
-cKAL  call zaiowr(atmp,mm(1:m,1:n,0),.false., 
-cKAL &   hmina,hmaxa, 99, .false.)
-cMostafa
       if     (lfirst) then
         write(6,'(/a,6i5/)')
      &    'landfill - m,n,if,il,jf,jl =',m,n,if,il,jf,jl
@@ -823,10 +806,6 @@ c
             endif
           enddo
         enddo
-        !KAL
-cKAL    atmp=real(mm(1:m,1:n,ip1))
-cKAL    call zaiowr(atmp,mm(1:m,1:n,ip1),.false., 
-cKAL &    hmina,hmaxa, 99, .false.)
         if     (lfirst) then
           write(6,'(a,i4,a,i6,a,i6,a,a,i4,a)')
      &      'landfill: pass',ipass,
@@ -839,8 +818,6 @@ cKAL &    hmina,hmaxa, 99, .false.)
            exit
         elseif     (nup.eq.0 .and. scanrange < iscan) then
            scanrange=scanrange+1
-cKAL       write(6,'(a,i,a,i)') "Increasing scanrange to ",scanrange,
-cKAL &        " of ",iscan
         elseif     (nup.eq.0) then
           exit
         endif
@@ -865,15 +842,11 @@ cKAL &        " of ",iscan
         enddo
         write(6,*)
         call flush(6)
-cKAL    !KAL
-cKAL    call zaiocl(99)
         stop
       endif
 c
       deallocate( mm )
 c
-cKAL  !KAL
-cKAL  call zaiocl(99)
       return
       end subroutine landfill
 
