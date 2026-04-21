@@ -1,7 +1,7 @@
 
 #  Description of HYCOM-CICE offline nesting usage
 
-Details about the required procedures to carry out offline nesting can be found in the HYCOM USER GUIDE (Wallcraft et. al., 2003, available at https://www.hycom.org/hycom/documentation). An example can be found at https://github.com/HYCOM/HYCOM-examples/wiki/GOMb0.08.  Here, we closely follow the standard HYCOM nesting approach based on the MERCATOR GLOBAL_ANALYSIS_FORECAST_PHY_001_024 product for physics and GLOBAL_ANALYSIS_FORECAST_BIO_001_029 product for biology (as outer model data).
+Details about the required procedures to carry out offline nesting can be found in the HYCOM USER GUIDE (Wallcraft et. al., 2003, available at https://www.hycom.org/hycom/documentation). An example can be found at https://github.com/HYCOM/HYCOM-examples/wiki/GOMb0.08.  Here, we closely follow the standard HYCOM nesting approach based on the MERCATOR GLOBAL_MULTIYEAR_PHY_001_030 product for physics and GLOBAL_MULTIYEAR_BGC_001_029 product for biology (as outer model data).
 
 # Requirements at the start
 Nesting in current version need to be started from source regional directory/experiment (i.e. NEMO folder here NMOa0.08/expt_01.1 for native grids and NMOb0.08/expt_01.0 for regular grids); you need to specify your target experiment directory (i.e. TOPAZ experiment directory, e.g. TP5a0.06/expt_03.0, we will use this target experiment as example in this document hereafter). REGION.src need to point to the location of the NERSC-HYCOM-CICE directory to be used. Variable NHCROOT within REGION.src should be set to this value.
@@ -34,7 +34,7 @@ Based on mesh and coordinate MERCATOR netcdf files, the archive data files for g
 # STEP 1 Create interpolation matrix
 Produce mapping index [ab] files with the script isuba_gmapi.sh.
 
-Please change path to NMOb0.08/expt_01.1 (for more information look at REGION.src for path of an example, i.e., NEMO_EXAMPLE_REGULAR_FOLDER=/nird/projects/NS9481K/MERCATOR_DATA/NMOb0.08).
+Please change path to NMOb0.08/expt_01.1 (for more information look at REGION.src for path of an example, i.e., NEMO_EXAMPLE_REGULAR_FOLDER=/nird/datapeak/NS9481K/MERCATOR_DATA/NMOb0.08).
 Then execute `$pathtobin/isuba_gmapi.sh $path2destination/TP5a0.06/` 
 
 # Step 2 Create nest files - depends on step 1
@@ -51,36 +51,33 @@ The rest are optional
 -g: grid_type. Either native or regular   
 -h: help on usage   
 -i: maxinc. Default 50. Distance where the algorithm search for water points   
--m: mercator_mesh file. Default (native):  /nird/projects/NS9481K/MERCATOR_DATA/GRID_COORD/ext-GL12V1_mesh_zgr.nc. If -g is set regular default  will be /nird/projects/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO_MFC_001_24_MESH.nc
+-m: mercator_mesh file. Default (native):  /nird/datapeak/NS9481K/MERCATOR_DATA/GRID_COORD/ext-GL12V1_mesh_zgr.nc. If -g is set regular default  will be /nird/datapeak/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO_MFC_001_24_MESH.nc
 
 You should expect to have your horizontally/vertically interpolated files in the TOPAZ nesting experiment folder, in this case TP5a0.06/nest/030/archv.XXX_XXX.[ab] because you specified target experiment expt_03.0. 
 
 #  How to run on native MERCATOR grid:
-Please change path to NMOa0.08/expt_01.1 (for more information look at REGION.src for path of an example, i.e., NEMO_EXAMPLE_NATIVE_FOLDER=/nird/projects/NS9481K/MERCATOR_DATA/NMOa0.08).
+Please change path to NMOa0.08/expt_01.1 (for more information look at REGION.src for path of an example, i.e., NEMO_EXAMPLE_NATIVE_FOLDER=/nird/datapeak/NS9481K/MERCATOR_DATA/NMOa0.08).
 After applying `../bin/isuba_gmapi.sh ../../TP5a0.06/` once, run following line:
 
 Without biology:
 
-$pathtobin/nemo_to_hycom.sh -d $path2destination/TP5a0.06/expt_03.0/ -n "/nird/projects/NS9481K/MERCATOR_DATA/PHY/2007/ext-GLORYS12V1_1dAV_20070302_20070303_grid2D_R20070307.nc" -g native
+$pathtobin/nemo_to_hycom.sh -d $path2destination/TP5a0.06/expt_03.0/ -n "/nird/datapeak/NS9481K/MERCATOR_DATA/PHY/2007/ext-GLORYS12V1_1dAV_20070302_20070303_grid2D_R20070307.nc" -g native
 
 With biology (note that biology files are all on regular grid):
 
-$pathtobin/nemo_to_hycom.sh -d $path2destination/TP5a0.06/expt_03.0/ -n /nird/projects/NS9481K/MERCATOR_DATA/PHY/2013/ext-GLORYS12V1_1dAV_20131122_20131123_grid2D_R20131127.nc -b /nird/projects/NS9481K/MERCATOR_DATA/BIO/DAILY/2013/global_analysis_forecast_bio_20131122.nc
+$pathtobin/nemo_to_hycom.sh -d $path2destination/TP5a0.06/expt_03.0/ -n /nird/datapeak/NS9481K/MERCATOR_DATA/PHY/2013/ext-GLORYS12V1_1dAV_20131122_20131123_grid2D_R20131127.nc -b /nird/datapeak/NS9481K/MERCATOR_DATA/BIO/DAILY/2013/global_analysis_forecast_bio_20131122.nc
 
 #  How to run on regular MERCATOR grid:
-Please change path to NMOb0.08/expt_01.0 (for more information look at REGION.src for path of an example, i.e., NEMO_EXAMPLE_REGULAR_FOLDER=/nird/projects/NS9481K/MERCATOR_DATA/NMOb0.08).
+Please change path to NMOb0.08/expt_01.0 (for more information look at REGION.src for path of an example, i.e., NEMO_EXAMPLE_REGULAR_FOLDER=/nird/datapeak/NS9481K/MERCATOR_DATA/NMOb0.08).
 After applying `../bin/isuba_gmapi.sh ../../TP5a0.06/` once, run following line:
 
 Without biology:
 
-$pathtobin/nemo_to_hycom.sh -d $path2destination/TP5a0.06/expt_03.0/ /nird/projects/NS9481K/MERCATOR_DATA/PHY/2018/MERCATOR-PHY-24-2018-01-01-12.nc -m regular
+$pathtobin/nemo_to_hycom.sh -d $path2destination/TP5a0.06/expt_03.0/ -n /nird/datapeak/NS9481K/MERCATOR_DATA/PHY/2018/MERCATOR-PHY-24-2018-01-01-12.nc -g regular
 
 With biology:
 
-$pathtobin/nemo_to_hycom.sh -d $path2destination/TP5a0.06/expt_03.0/ /nird/projects/NS9481K/MERCATOR_DATA/PHY/2018/MERCATOR-PHY-24-2018-01-01-12.nc -m regular -b /nird/projects/NS9481K/MERCATOR_DATA/BIO/DAILY/2018/global_analysis_forecast_bio_20180101.nc
-
-#COMMENT TILL: THIS IS NOT A TECHNICAL REQUIREMENT. This may give an initial mismatch
-It is worth noting that you have to run the first year from climatology and then introduce the nesting from a restart file.
+$pathtobin/nemo_to_hycom.sh -d $path2destination/TP5a0.06/expt_03.0/ -n /nird/datapeak/NS9481K/MERCATOR_DATA/PHY/2018/MERCATOR-PHY-24-2018-01-01-12.nc -g regular -b /nird/datapeak/NS9481K/MERCATOR_DATA/BIO/DAILY/2018/global_analysis_forecast_bio_20180101.nc
 
 #  Step 3 Modify montgomery potential
 
