@@ -77,7 +77,7 @@ while getopts ${OPTSTRING} opt; do
      echo "-h: This message (help)"
      echo "-i: maxinc. Default 50. Distance where the algorithm search for water points"
      echo "-m: mercator_mesh file. Default (native):  /nird/datapeak/NS9481K/MERCATOR_DATA/GRID_COORD/ext-GL12V1_mesh_zgr.nc"
-     echo "    if -g is set to regular default will change to /nird/datapeak/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO_MFC_001_24_MESH.nc"
+     echo "    if -g is set to regular default will change to /nird/datapeak/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO-MFC_001_030_mask_bathy.nc"
      echo "-n: Mandatory: Path and Pattern of Mercator input netCDF files."
      exit 1
      ;;
@@ -121,9 +121,9 @@ if [ ${grid_type} == "native" ] ; then
 elif [ ${grid_type} == "regular" ] ; then
         timevar="time"
         if [ -z "$mercator_mesh" ]; then
-                export mercator_mesh="/nird/datapeak/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO_MFC_001_24_MESH.nc"
+                export mercator_mesh="/nird/datapeak/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO-MFC_001_030_mask_bathy.nc"
                 echo "mercator_mesh has not been set."
-		echo "set to default (regular) /nird/datapeak/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO_MFC_001_24_MESH.nc"
+		echo "set to default (regular) /nird/datapeak/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO-MFC_001_030_mask_bathy.nc"
         fi
 fi
 
