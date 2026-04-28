@@ -1985,7 +1985,7 @@
 !       wtrflx(i,j) = wtrflx(i,j)+rivflx(i,j) !update wtrflx in thermf_oi
 #if defined(NERSC_HYCOM_CICE)
       elseif (highfq_river) then
-        rivflx(i,j) = ( rivers(i,j,l0)*w0+rivers(i,j,l1)*w1)   &
+        rivflx(i,j) = ( rivers(i,j,1)*wr0+rivers(i,j,2)*wr1)   &
                     * rhoref
 #endif
       else
