@@ -3074,7 +3074,7 @@
             wr3=-.5*x1*x *x
          endif
       elseif (highfq_river) then
-         call readriver_hf(dtime.false.)
+         call readriver_hf(dtime,.false.)
       endif
 !
 ! --- set weights for quasi-hermite time interpolation for temperature,
