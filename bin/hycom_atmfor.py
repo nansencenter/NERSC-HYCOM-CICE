@@ -119,7 +119,7 @@ def atmfor(start,end,af,grid_file="regional.grid",blkdat_file="blkdat.input",plo
        hycomcal="366_day"
    elif yrflag == 3 :
        hycomcal="standard"
-   elif yrflag == 4 :
+   elif yrflag == 4 or yrflag == 5 :
        hycomcal="365_day"
    dt = cft.datetime(start.year,start.month,start.day,start.hour,start.minute,start.second,calendar=hycomcal)
 #   while dt <= end :

@@ -31,7 +31,7 @@ def datetime_to_ordinal(dt,yrflag) :
        hycomcal="366_day" 
    elif yrflag == 3 :
        hycomcal="standard"
-   elif yrflag == 4 :
+   elif yrflag == 4 or yrflag == 5 :
        hycomcal="365_day"
    else:      
        raise ValueError("Yearflag="+str(yrflag)+" not supported for datetime_to_ordinal")
@@ -96,13 +96,20 @@ def dayfor(iyear,iday,ihour,yrflag) :
 
         iday2=iday2-diy
 
-   # 365 days per model year, starting Jan 01
+   # 365 days per model year, starting Jan 01 (climatology)
    elif  yrflag == 4 :
      dtime =  (iyear-1) * 365.0 +  \
               iday              +  \
               ihour/24.0        -  \
               1.0
-   else :
+
+   # 365 days per model year, starting 01-01-1901 
+   elif  yrflag == 5 :
+     dtime =  (iyear-1901) * 365.0 +  \
+              iday              +  \
+              ihour/24.0        -  \
+              1.0
+   else : 
       raise ValueError('error in forday - unsupported yrflag value: %d'%yrflag)
 
    return dtime
@@ -117,7 +124,7 @@ def dayfor_datetime(iyear,iday,ihour,yrflag) :
        hycomcal="366_day"
    elif yrflag == 3 :
        hycomcal="standard"
-   elif yrflag == 4 :
+   elif yrflag == 4 or yrflag == 5 :
        hycomcal="365_day"
    else:
        raise ValueError("Yearflag="+str(yrflag)+" not supported for datetime_to_ordinal")
@@ -171,6 +178,10 @@ def forday(dtime,yrflag) :
       iday  =  int(numpy.mod( dtime+ 0.001 ,365.) + 1)
       ihour =  int((numpy.mod( dtime+ 0.001 ,365.) + 1. - iday)*24.)
    # ---   model day is calendar days since 01/01/1901  
+   elif yrflag == 5 :
+      iyear =  int((dtime+ 0.001)/365.) + 1901
+      iday  =  int(numpy.mod( dtime+ 0.001 ,365.) + 1)
+      ihour =  int((numpy.mod( dtime+ 0.001 ,365.) + 1. - iday)*24.0)
    else :
       raise ValueError('error in forday - unsupported yrflag value: %d'%yrflag)
 
