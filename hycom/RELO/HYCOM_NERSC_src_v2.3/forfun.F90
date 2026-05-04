@@ -1272,8 +1272,8 @@
       character preambl(5)*79,cline*80
       integer   i,ios,iunit,j,lgth,nrec
 !
-! --- wr0 negative on first call only.
       if     (init) then
+        rivers(:,:,:) = 0.0
 !
 ! ---   initialize forcing fields
 ! ---   open high frequent river forcing file.
@@ -1431,7 +1431,7 @@
       wr1 = 1.0 - wr0
       if (mnproc.eq.1) then
       write (lp,*) "river coefficients"
-      write (lp,'(a,2I8)') wr0, wr1
+      write (lp,'(2f8.4)') wr0, wr1
       write (lp,*) dtime,dtime0,dtime1
       call flush(lp)
       endif
@@ -1682,9 +1682,6 @@
       use mod_xc         ! HYCOM communication interface
       use mod_cb_arrays  ! HYCOM saved arrays
       use mod_za         ! HYCOM I/O interface
-#if defined(NERSC_HYCOM_CICE)
-      use mod_NERSCnml, only : highfq_river
-#endif
       implicit none
 !
 ! --- high frequency atmospheric forcing field processing.
@@ -3109,9 +3106,6 @@
       subroutine rdpall(dtime0,dtime1)
       use mod_xc         ! HYCOM communication interface
       use mod_cb_arrays  ! HYCOM saved arrays
-#if defined(NERSC_HYCOM_CICE_off)
-      use mod_NERSCnml, only : highfq_river
-#endif
       implicit none
 !
       real*8  dtime0,dtime1
@@ -3181,15 +3175,6 @@
       else
         dtime(906) = dtime(905)
       endif
-#if defined(NERSC_HYCOM_CICE_off)
-!ALFA  --- read high frequency rivers----
-      if (highfq_river) then
-        call rdpall1(rivers,dtime(918),918,mod(icall,3).eq.1)
-      else
-        dtime(918) = dtime(905)
-      endif
-!End  --- read high frequency rivers----
-#endif
 #ifdef _FABM_
 !CAGLAR
       dtime(917) = dtime(905)
@@ -3279,23 +3264,6 @@
                  stop '(rdpall)'
         endif
       enddo
-#if defined(NERSC_HYCOM_CICE_off)
-      if (highfq_river) then
-        do k= 918,918
-          if     (dtime(k).ne.dtime1) then
-            if     (mnproc.eq.1) then
-               write(lp,*)
-               write(lp,*) 'error in rdpall - inconsistent forcing times'
-               write(lp,*) 'dtime0,dtime1 = ',dtime0,dtime1
-               write(lp,*) 'dtime = ',dtime
-               write(lp,*)
-            endif !1st tile
-            call xcstop('(rdpall)')
-            stop '(rdpall)'
-          endif
-        enddo
-      endif
-#endif
       return
       end
 !
@@ -3426,9 +3394,6 @@
       use mod_xc         ! HYCOM communication interface
       use mod_cb_arrays  ! HYCOM saved arrays
       use mod_za         ! HYCOM I/O interface
-#if defined(NERSC_HYCOM_CICE)
-      use mod_NERSCnml, only : highfq_river 
-#endif
       implicit none
 !
       integer lslot,mnth
@@ -3662,9 +3627,6 @@
 #if defined(NERSC_HYCOM_CICE)
 !KAL
           swflxdwn(i,j,lslot) = 0.0
-          if (highfq_river) then
-            rivers(i,j,lslot) = 0.0
-          endif
 #endif
           enddo
         enddo
