@@ -215,7 +215,7 @@
             jhi = this_block%jhi
 
             ! initialize delta Eddington
-            call run_dEdd(ilo, ihi, jlo, jhi,                             &
+            call run_dEdd(ilo, ihi, jlo, jhi, iblk,                       &
                           aicen(:,:,:,iblk),     vicen(:,:,:,iblk),       &
                           vsnon(:,:,:,iblk),     trcrn(:,:,:,:,iblk),     &
                           tlat(:,:,iblk),        tlon(:,:,iblk),          & 
@@ -231,7 +231,7 @@
                           albicen(:,:,:,iblk),   albsnon(:,:,:,iblk),     &
                           albpndn(:,:,:,iblk),   apeffn(:,:,:,iblk),      &
                           dhsn(:,:,:,iblk),      ffracn(:,:,:,iblk),      &
-                          initonly = .true.       )
+                          initonly = .true.   )
 
          enddo
          !$OMP END PARALLEL DO
@@ -1072,7 +1072,7 @@
 ! 2011 ECH modified for melt pond tracers
 ! 2013 ECH merged with NCAR version
 
-      subroutine run_dEdd(ilo,ihi,jlo,jhi,     &
+      subroutine run_dEdd(ilo,ihi,jlo,jhi,iiblk, &
                           aicen,    vicen,     &
                           vsnon,    trcrn,     &
                           tlat,     tlon,      & 
@@ -1088,7 +1088,7 @@
                           albicen,  albsnon,   &
                           albpndn,  apeffn,    &
                           dhsn,     ffracn,    &
-                          initonly     )
+                          initonly )
 
       use ice_calendar, only: dt
       use ice_meltpond_cesm, only: hs0
@@ -1099,8 +1099,10 @@
                            tr_pond_cesm, tr_pond_lvl, tr_pond_topo
       use ice_domain_size, only: max_ntrcr
 
+      use ice_domain_para,only : cice_para
+
       integer (kind=int_kind), intent(in) :: &
-           ilo,ihi,jlo,jhi
+           ilo,ihi,jlo,jhi, iiblk
 
       logical(kind=log_kind), dimension(nx_block,ny_block), intent(in) :: &
            tmask    ! land/boundary mask, thickness (T-cell)
@@ -1240,12 +1242,12 @@
       ! BPB 19 Dec 2006
 
          ! set snow properties
-         call shortwave_dEdd_set_snow(nx_block, ny_block,                      &
-                                      icells,                                  &
-                                      indxi,               indxj,              &
-                                      aicen(:,:,n),        vsnon(:,:,n),       &
-                                      trcrn(:,:,nt_Tsfc,n), fsn, hsn,          &
-                                      rhosnwn,             rsnwn)
+         call shortwave_dEdd_set_snow(nx_block, ny_block,                  &
+                                  icells,  iiblk,                          &
+                                  indxi,               indxj,              &
+                                  aicen(:,:,n),        vsnon(:,:,n),       &
+                                  trcrn(:,:,nt_Tsfc,n), fsn, hsn,          &
+                                  rhosnwn,             rsnwn)
 
          ! set pond properties
          if (tr_pond_cesm) then
@@ -1387,7 +1389,7 @@
                              Iswabsn(:,:,:,n),                  &
                              albicen(:,:,n),                    &
                              albsnon(:,:,n),    albpndn(:,:,n), &
-                             fswpenln(:,:,:,n))
+                             fswpenln(:,:,:,n),iiblk)
 
       enddo  ! ncat
  
@@ -1438,7 +1440,7 @@
                                   fswthru,  Sswabs,      &
                                   Iswabs,   albice,      &
                                   albsno,   albpnd,      &
-                                  fswpenl)
+                                  fswpenl, iiblk )
 
       use ice_state, only: nt_aero, tr_aero
 
@@ -1446,7 +1448,8 @@
          intent(in) :: &
          nx_block, ny_block, & ! block dimensions
          ntrcr             , & ! number of tracers in use
-         icells                ! number of ice-covered grid cells
+         icells            , & ! number of ice-covered grid cells
+         iiblk                 ! order number of blocks 
 
       integer (kind=int_kind), dimension (nx_block*ny_block), &
          intent(in) :: &
@@ -1651,7 +1654,7 @@
                                   aidrl,    aidfl,         &
                                   fswsfc,   fswint,        &
                                   fswthru,  Sswabs,        &
-                                  Iswabs,   fswpenl)
+                                  Iswabs,   fswpenl, iiblk)
 
 !DIR$ CONCURRENT !Cray
 !cdir nodep      !NEC
@@ -1701,7 +1704,7 @@
                                   aidrl,    aidfl,         &
                                   fswsfc,   fswint,        &
                                   fswthru,  Sswabs,        &
-                                  Iswabs,   fswpenl)
+                                  Iswabs,   fswpenl, iiblk)
 
 !DIR$ CONCURRENT !Cray
 !cdir nodep      !NEC
@@ -1753,7 +1756,7 @@
                                   aidrl,    aidfl,         &
                                   fswsfc,   fswint,        &
                                   fswthru,  Sswabs,        &
-                                  Iswabs,   fswpenl)
+                                  Iswabs,   fswpenl, iiblk)
 
 !DIR$ CONCURRENT !Cray
 !cdir nodep      !NEC
@@ -1850,15 +1853,17 @@
                                   alidr,    alidf,         &
                                   fswsfc,   fswint,        &
                                   fswthru,  Sswabs,        &
-                                  Iswabs,   fswpenl)
+                                  Iswabs,   fswpenl, iiblk)
 
       use ice_therm_shared, only: heat_capacity
-      use ice_state, only: tr_aero
+      use ice_state,        only: tr_aero
+      use ice_domain_para,  only: cice_para,Pcice9
 
       integer (kind=int_kind), &
-         intent(in) :: &
-         nx_block, ny_block, & ! block dimensions
-         icells_DE             ! number of sea ice grid cells for surface type
+         intent(in) ::       &
+         nx_block, ny_block, &  ! block dimensions
+         icells_DE,          &  ! number of sea ice grid cells for surface type
+         iiblk                  ! order number of blocks
  
       integer (kind=int_kind), dimension(nx_block*ny_block), &
          intent(in) :: &
@@ -2440,10 +2445,15 @@
          dz = hi(i,j)*rnilyr
          ! empirical reduction in sea ice ssl thickness for ice thinner than 1.5m;
          ! factor of 30 gives best albedo comparison with limited observations
-         dz_ssl = hi_ssl
+         !dz_ssl = hi_ssl
+
 !ech: note hardwired parameters
 !         if( hi(i,j) < 1.5_dbl_kind ) dz_ssl = hi(i,j)/30._dbl_kind
-         dz_ssl = min(hi_ssl, hi(i,j)/30._dbl_kind)
+         if (cice_para) then
+            dz_ssl = min(Pcice9(i,j,iiblk), hi(i,j)/30._dbl_kind)
+         else
+            dz_ssl = min(hi_ssl, hi(i,j)/30._dbl_kind)
+         endif
          ! set sea ice ssl thickness to half top layer if sea ice thin enough
 !ech: note this is highly resolution dependent!
          dz_ssl = min(dz_ssl, dz/c2)
@@ -3591,13 +3601,15 @@
 !   2013:  E Hunke merged with NCAR version
 
       subroutine shortwave_dEdd_set_snow(nx_block, ny_block, &
-                                         icells,             &
+                                         icells,   iiblk,    &
                                          indxi,    indxj,    &
                                          aice,     vsno,     &
                                          Tsfc,     fs,  hs,  &
-                                         rhosnw,   rsnw)
+                                         rhosnw,   rsnw ) 
 
       use ice_meltpond_cesm, only: hs0
+      use ice_domain_para,only : cice_para, Pcice8,Pcice10
+
 
       integer (kind=int_kind), &
          intent(in) :: &
@@ -3624,6 +3636,9 @@
          intent(out) :: &
          rhosnw , & ! density in snow layer (kg/m3)
          rsnw       ! grain radius in snow layer (micro-meters)
+
+      integer (kind=int_kind), optional, &
+         intent(in) :: iiblk   ! index of block 
 
       ! local variables
 
@@ -3678,16 +3693,32 @@
            ! tune nonmelt snow grain radius if desired: note that
            ! the sign is negative so that if R_snw is 1, then the
            ! snow grain radius is reduced and thus albedo increased.
-           rsnw_nm = rsnw_nonmelt - R_snw*rsnw_sig
+           if (cice_para) then
+              rsnw_nm = rsnw_nonmelt - Pcice10(i,j,iiblk)*rsnw_sig
+           else
+              rsnw_nm = rsnw_nonmelt - R_snw*rsnw_sig
+           endif
            rsnw_nm = max(rsnw_nm, rsnw_fresh)
-           rsnw_nm = min(rsnw_nm, rsnw_mlt) 
+           if (cice_para) then
+              rsnw_nm = min(rsnw_nm, Pcice8(i,j,iiblk)) 
+           else
+              rsnw_nm = min(rsnw_nm, rsnw_mlt) 
+           endif
            do ks = 1, nslyr
              ! snow density ccsm3 constant value
              rhosnw(i,j,ks) = rhos
              ! snow grain radius between rsnw_nonmelt and rsnw_mlt
-             rsnw(i,j,ks) = rsnw_nm + (rsnw_mlt-rsnw_nm)*fT
+             if (cice_para) then
+                rsnw(i,j,ks) = rsnw_nm + (Pcice8(i,j,iiblk)-rsnw_nm)*fT
+             else
+                rsnw(i,j,ks) = rsnw_nm + (rsnw_mlt-rsnw_nm)*fT
+             endif
              rsnw(i,j,ks) = max(rsnw(i,j,ks), rsnw_fresh)
-             rsnw(i,j,ks) = min(rsnw(i,j,ks), rsnw_mlt)
+             if (cice_para) then
+                rsnw(i,j,ks) = min(rsnw(i,j,ks), Pcice8(i,j,iiblk))
+             else
+                rsnw(i,j,ks) = min(rsnw(i,j,ks), rsnw_mlt)
+             endif
            enddo        ! ks
       enddo          ! ij
 

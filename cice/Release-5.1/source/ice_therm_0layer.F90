@@ -41,6 +41,7 @@
       subroutine zerolayer_temperature(nx_block, ny_block, &
                                        my_task,  istep1,   &
                                        dt,       icells,   & 
+                                       iblk            ,   &
                                        indxi,    indxj,    &
                                        rhoa,     flw,      &
                                        potT,     Qa,       &
@@ -58,7 +59,8 @@
          nx_block, ny_block, & ! block dimensions
          my_task     , & ! task number (diagnostic only)
          istep1      , & ! time step index (diagnostic only)
-         icells          ! number of cells with aicen > puny
+         icells      , & ! number of cells with aicen > puny
+         iblk          ! order number in blocks.
 
       real (kind=dbl_kind), intent(in) :: &
          dt              ! time step
@@ -207,7 +209,7 @@
       !-----------------------------------------------------------------
 
          call surface_fluxes (nx_block,    ny_block,          &
-                              isolve,      icells,            &
+                              isolve,      icells,    iblk,   &
                               indxii,      indxjj,    indxij, &
                               Tsf,         fswsfc,            &
                               rhoa,        flw,               &

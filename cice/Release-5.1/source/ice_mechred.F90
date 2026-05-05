@@ -41,6 +41,7 @@
       use ice_itd, only: hin_max, column_sum, &
                          column_conservation_check, compute_tracers
 
+      use ice_domain_para, only: cice_para
       implicit none
       save
 
@@ -77,8 +78,8 @@
          Hstar  = c25        , & ! determines mean thickness of ridged ice (m) 
                                  ! (krdg_redist = 0) 
                                  ! Flato & Hibler (1995) have Hstar = 100 
-         !Pstar = 2.75e4_dbl_kind, & ! constant in Hibler strength formula 
-         Pstar = 2.2e4_dbl_kind, & ! constant in Hibler strength formula 
+         Pstar = 2.75e4_dbl_kind, & ! constant in Hibler strength formula 
+         !Pstar = 2.2e4_dbl_kind, & ! constant in Hibler strength formula 
                                  ! (kstrength = 0) 
          Cstar = c20             ! constant in Hibler strength formula 
                                  ! (kstrength = 0) 
@@ -103,6 +104,7 @@
                             dt,          ndtd,       &
                             ntrcr,       icells,     &
                             indxi,       indxj,      &
+                            iiblk,                   &
                             rdg_conv,    rdg_shear,  &
                             aicen,       trcrn,      &
                             vicen,       vsnon,      &
@@ -126,7 +128,8 @@
          nx_block, ny_block, & ! block dimensions
          icells            , & ! number of cells with ice present
          ndtd              , & ! number of dynamics subcycles
-         ntrcr                 ! number of tracers in use
+         ntrcr             , & ! number of tracers in use
+         iiblk                 ! order number of blocks
 
       integer (kind=int_kind), dimension (nx_block*ny_block), &
          intent(in) :: &
@@ -389,7 +392,8 @@
       !-----------------------------------------------------------------
 
          call ridge_itd (nx_block,  ny_block,        &
-                         icells,    indxi,    indxj, &
+                         icells,    iiblk,           &
+                         indxi,    indxj,            &
                          aicen,     vicen,           &
                          aice0,                      &
                          aksum,     apartic,         &
@@ -935,7 +939,8 @@
 !       Added new options for ridging participation and redistribution.  
 
       subroutine ridge_itd (nx_block,    ny_block,        &
-                            icells,      indxi,    indxj, &
+                            icells,      iiblk,           &
+                            indxi,    indxj,              &
                             aicen,       vicen,           &
                             aice0,                        &
                             aksum,       apartic,         &
@@ -943,9 +948,12 @@
                             hrexp,       krdg,            &
                             aparticn,    krdgn,    mraft)
 
+      use ice_domain_para,  only: cice_para,Pcice11,Pcice12
+      implicit none
       integer (kind=int_kind), intent(in) :: &
          nx_block, ny_block, & ! block dimensions
-         icells                ! number of cells with ice present
+         icells,             & ! number of cells with ice present
+         iiblk                 ! order number of blocks
 
       integer (kind=int_kind), dimension (nx_block*ny_block), &
          intent(in) :: &
@@ -1121,13 +1129,21 @@
          ! precompute exponential terms using Gsum as work array
 
          xtmp = c1 / (c1 - exp(-astari))
-
          do n = -1, ncat
 !DIR$ CONCURRENT !Cray
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
             do ij = 1, icells
-               Gsum(ij,n) = exp(-Gsum(ij,n)*astari) * xtmp
+               if (cice_para) then
+                  i = indxi(ij)
+                  j = indxj(ij)
+                  xtmp = c1 / (c1 - exp(-1.0/Pcice11(i,j, &
+                             iiblk)))
+                  Gsum(ij,n) = exp(-Gsum(ij,n)/Pcice11(i,j, &
+                             iiblk)) * xtmp
+               else   
+                  Gsum(ij,n) = exp(-Gsum(ij,n)*astari) * xtmp
+               endif
             enddo               ! ij
          enddo                  ! n
 
@@ -1219,7 +1235,12 @@
                   hi = vicen(i,j,n) / aicen(i,j,n)
                   hi = max(hi,puny)
                   hrmin(ij,n) = min(c2*hi, hi + maxraft)
-                  hrexp(ij,n) = mu_rdg * sqrt(hi)
+                  if (cice_para) then
+                     hrexp(ij,n) = Pcice12(i,j,iiblk) * sqrt(hi)
+                  else        
+                     hrexp(ij,n) = mu_rdg * sqrt(hi)
+                  endif
+
                   krdg(ij,n) = (hrmin(ij,n) + hrexp(ij,n)) / hi
 
    !echmod:  check computational efficiency
@@ -2111,18 +2132,20 @@
 
       subroutine ice_strength (nx_block, ny_block, &
                                ilo, ihi, jlo, jhi, &
-                               icells,             &
+                               icells, iiblk,      &
                                indxi,    indxj,    &
                                aice,     vice,     &
                                aice0,    aicen,    &
                                vicen,    strength)
+      use ice_domain_para, only: cice_para,Pcice7
 
       integer (kind=int_kind), intent(in) :: &
          nx_block, ny_block, & ! block dimensions
          ilo,ihi,jlo,jhi       ! beg and end of physical domain
 
       integer (kind=int_kind), intent(in) :: &
-         icells       ! no. of cells where icetmask = 1
+         icells,                             &       ! no. of cells where icetmask = 1
+         iiblk                                       ! no. order of blocks
 
       integer (kind=int_kind), dimension (nx_block*ny_block), &
          intent(in) :: &
@@ -2187,7 +2210,8 @@
                             asum)
 
          call ridge_itd (nx_block,    ny_block,      &
-                         icells,      indxi,  indxj, &
+                         icells,      iiblk,         &
+                         indxi,       indxj,         &
                          aicen,       vicen,         &
                          aice0,                      &
                          aksum,       apartic,       &
@@ -2259,11 +2283,20 @@
       ! Compute ice strength as in Hibler (1979)
       !-----------------------------------------------------------------
 
-         do j = jlo, jhi
-         do i = ilo, ihi
-            strength(i,j) = Pstar*vice(i,j)*exp(-Cstar*(c1-aice(i,j)))
-         enddo                  ! j
-         enddo                  ! i
+         if (cice_para==.True.) then
+            do ij=1, icells
+               i = indxi(ij)
+               j = indxj(ij)
+               strength(i,j) = Pcice7(i,j,iiblk)*vice(i,j)* &
+                            exp(-Cstar*(c1-aice(i,j)))
+            enddo
+         else
+            do j = jlo, jhi
+            do i = ilo, ihi
+               strength(i,j) = Pstar*vice(i,j)*exp(-Cstar*(c1-aice(i,j)))
+            enddo                  ! j
+            enddo                  ! i
+         endif
 
       endif                     ! kstrength
 

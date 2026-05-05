@@ -1511,6 +1511,7 @@
 
       subroutine cleanup_itd (nx_block,    ny_block,   &
                               ilo, ihi,    jlo, jhi,   &
+                              iiblk,                   &
                               dt,          ntrcr,      &
                               aicen,       trcrn,      &
                               vicen,       vsnon,      &
@@ -1530,7 +1531,9 @@
       integer (kind=int_kind), intent(in) :: & 
          nx_block, ny_block, & ! block dimensions 
          ilo,ihi,jlo,jhi   , & ! beginning and end of physical domain
-         ntrcr                 ! number of tracers in use
+         ntrcr             , & ! number of tracers in use
+         iiblk                 ! order number in blocks
+
  
       real (kind=dbl_kind), intent(in) :: & 
          dt        ! time step 
@@ -1707,6 +1710,7 @@
          call zap_small_areas (nx_block, ny_block,  &
                                ilo, ihi, jlo, jhi,  &
                                dt,       ntrcr,     &
+                               iiblk,               &
                                aice,     aice0,     &
                                aicen,    trcrn,     &
                                vicen,    vsnon,     &
@@ -1776,6 +1780,7 @@
       subroutine zap_small_areas (nx_block, ny_block,   &
                                   ilo, ihi, jlo, jhi,  &
                                   dt,       ntrcr,     &
+                                  iiblk,               &
                                   aice,     aice0,     &
                                   aicen,    trcrn,     &
                                   vicen,    vsnon,     &
@@ -1790,11 +1795,14 @@
       use ice_state, only: nt_Tsfc, nt_qice, nt_qsno, nt_aero, nt_apnd, nt_hpnd, &
                            nt_fbri, tr_brine
 
+      use ice_domain_para, only: cice_para, Pcice14
+
       integer (kind=int_kind), intent(in) :: &
          nx_block, ny_block, & ! block dimensions
          ilo,ihi,jlo,jhi   , & ! beginning and end of physical domain
          ntrcr           , &   ! number of tracers in use
-         nbtrcr                ! number of biology tracers
+         nbtrcr          , &   ! number of biology tracers
+         iiblk                 ! order number in blocks
 
       real (kind=dbl_kind), intent(in) :: &
          dt                    ! time step
@@ -1961,7 +1969,11 @@
             xtmp = (rhoi*vicen(i,j,n)) / dt
             dfresh(i,j) = dfresh(i,j) + xtmp
 
-            xtmp = rhoi*vicen(i,j,n)*ice_ref_salinity*p001 / dt
+            if (cice_para) then
+               xtmp = rhoi*vicen(i,j,n)*Pcice14(i,j,iiblk)*p001 / dt
+            else
+               xtmp = rhoi*vicen(i,j,n)*ice_ref_salinity*p001 / dt
+            endif
             dfsalt(i,j) = dfsalt(i,j) + xtmp
 
             aice0(i,j) = aice0(i,j) + aicen(i,j,n)
@@ -2131,8 +2143,13 @@
                  * (aice(i,j)-c1)/aice(i,j) / dt 
             dfresh(i,j) = dfresh(i,j) + xtmp 
  
-            xtmp = rhoi*vicen(i,j,n)*ice_ref_salinity*p001 &
-                 * (aice(i,j)-c1)/aice(i,j) / dt
+            if (cice_para) then
+               xtmp = rhoi*vicen(i,j,n)*Pcice14(i,j,iiblk)*p001 &
+                      * (aice(i,j)-c1)/aice(i,j) / dt
+            else
+               xtmp = rhoi*vicen(i,j,n)*ice_ref_salinity*p001 &
+                      * (aice(i,j)-c1)/aice(i,j) / dt
+            endif
             dfsalt(i,j) = dfsalt(i,j) + xtmp 
  
             aicen(i,j,n) = aicen(i,j,n) * (c1/aice(i,j)) 

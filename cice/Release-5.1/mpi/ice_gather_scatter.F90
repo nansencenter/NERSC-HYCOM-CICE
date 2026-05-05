@@ -35,6 +35,7 @@
    public :: gather_global,      &
              gather_global_ext,  &
              scatter_global,     &
+             scatter_global_dbl, &
              scatter_global_ext, &
              scatter_global_stress
 

@@ -1490,7 +1490,6 @@ implicit none
     call update_accumulated_fields()
     call average_accumulated_fields()
     call cice_put_export(export_state)
-    call reset_accumulated_fields()
     !call ESMF_LogWrite("CICE init routine ended",ESMF_LOGMSG_INFO, rc=rc)
 
 end subroutine

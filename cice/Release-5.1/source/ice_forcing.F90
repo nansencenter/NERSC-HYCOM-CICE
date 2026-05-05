@@ -29,6 +29,7 @@
       use ice_read_write, only: ice_open, ice_read, &
                                 ice_open_nc, ice_read_nc, ice_close_nc
       use ice_therm_shared, only: ktherm
+      use ice_domain_para
 
       implicit none
       private
@@ -209,6 +210,7 @@
       use netcdf
 #endif
 
+
       real (kind=dbl_kind), intent(in) :: &
          dt                   ! time step
 
@@ -362,6 +364,7 @@
          !$OMP END PARALLEL DO
 
       endif                        ! sst_data_type
+
 
       if (trim(sst_data_type) == 'ncar' .or.  &
           trim(sss_data_type) == 'ncar') then
@@ -3778,6 +3781,7 @@
      endif    !   sst_data_type = hadgem_sst_uvocn
 
      end subroutine ocn_data_hadgem
+
 
 !=======================================================================
 

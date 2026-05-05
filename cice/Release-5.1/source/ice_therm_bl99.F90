@@ -52,6 +52,7 @@
       subroutine temperature_changes (nx_block, ny_block, &
                                       my_task,  istep1,   &
                                       dt,       icells,   & 
+                                      iiblk           ,   & 
                                       indxi,    indxj,    &
                                       rhoa,     flw,      &
                                       potT,     Qa,       &
@@ -70,12 +71,14 @@
                                       istop,    jstop)
 
       use ice_therm_shared, only: surface_heat_flux, dsurface_heat_flux_dTsf
+      use ice_domain_para,  only: cice_para, Pcice3
 
       integer (kind=int_kind), intent(in) :: &
          nx_block, ny_block, & ! block dimensions
          my_task     , & ! task number (diagnostic only)
          istep1      , & ! time step index (diagnostic only)
-         icells          ! number of cells with aicen > puny
+         icells      , & ! number of cells with aicen > puny
+         iiblk
 
       real (kind=dbl_kind), intent(in) :: &
          dt              ! time step
@@ -447,8 +450,27 @@
             j = indxjj(ij)
             m = indxij(ij)
 
+            if (cice_para) then
          ! surface heat flux
-         call surface_heat_flux(Tsf    (m),   fswsfc(i,j), &
+               call surface_heat_flux(Tsf (m),fswsfc(i,j), &
+                                rhoa   (i,j), flw   (i,j), &
+                                potT   (i,j), Qa    (i,j), &
+                                shcoef (i,j), lhcoef(i,j), &
+                                flwoutn(i,j), fsensn(i,j), &
+                                flatn  (i,j), fsurfn(i,j), &
+                                Pcice3(i,j,iiblk))
+
+         ! derivative of heat flux with respect to surface temperature
+               call dsurface_heat_flux_dTsf(Tsf (m),   fswsfc   (i,j), &
+                                      rhoa     (i,j), flw       (i,j), &
+                                      potT     (i,j), Qa        (i,j), &
+                                      shcoef   (i,j), lhcoef    (i,j), &
+                                      dfsurf_dT(ij),  dflwout_dT(m),   &
+                                      dfsens_dT(m),   dflat_dT  (m),   &
+                                      Pcice3(i,j,iiblk))
+            else
+         ! surface heat flux
+               call surface_heat_flux(Tsf (m),fswsfc(i,j), &
                                 rhoa   (i,j), flw   (i,j), &
                                 potT   (i,j), Qa    (i,j), &
                                 shcoef (i,j), lhcoef(i,j), &
@@ -456,12 +478,13 @@
                                 flatn  (i,j), fsurfn(i,j))
 
          ! derivative of heat flux with respect to surface temperature
-         call dsurface_heat_flux_dTsf(Tsf      (m),   fswsfc    (i,j), &
+               call dsurface_heat_flux_dTsf(Tsf (m),   fswsfc   (i,j), &
                                       rhoa     (i,j), flw       (i,j), &
                                       potT     (i,j), Qa        (i,j), &
                                       shcoef   (i,j), lhcoef    (i,j), &
                                       dfsurf_dT(ij),  dflwout_dT(m),   &
                                       dfsens_dT(m),   dflat_dT  (m))
+            endif
 
       !-----------------------------------------------------------------
       ! Compute conductive flux at top surface, fcondtopn.
@@ -1062,7 +1085,7 @@
 !         C. M. Bitz, UW
 
       subroutine surface_fluxes (nx_block,   ny_block,          &
-                                 isolve,     icells,            &
+                                 isolve,     icells,  iiblk,    &
                                  indxii,     indxjj,    indxij, &
                                  Tsf,        fswsfc,            &
                                  rhoa,       flw,               &
@@ -1074,11 +1097,13 @@
                                  dflat_dT,   dfsurf_dT)
 
       use ice_therm_shared, only: surface_heat_flux, dsurface_heat_flux_dTsf
+      use ice_domain_para,  only: cice_para,Pcice3
 
       integer (kind=int_kind), intent(in) :: &
          nx_block, ny_block, & ! block dimensions
          isolve            , & ! number of cells with temps not converged
-         icells                ! number of cells with ice present
+         icells            , & ! number of cells with ice present
+         iiblk                 ! order number in blocks
 
       integer (kind=int_kind), dimension(icells), &
          intent(in) :: &
@@ -1130,8 +1155,27 @@
          j = indxjj(ij)
          m = indxij(ij)
 
+           if (cice_para) then
          ! surface heat flux
-         call surface_heat_flux(Tsf    (m),   fswsfc(i,j), &
+              call surface_heat_flux(Tsf (m), fswsfc(i,j), &
+                                rhoa   (i,j), flw   (i,j), &
+                                potT   (i,j), Qa    (i,j), &
+                                shcoef (i,j), lhcoef(i,j), &
+                                flwoutn(i,j), fsensn(i,j), &
+                                flatn  (i,j), fsurfn(i,j), &
+                                Pcice3(i,j,iiblk))
+
+         ! derivative of heat flux with respect to surface temperature
+              call dsurface_heat_flux_dTsf(Tsf (m),   fswsfc    (i,j), &
+                                      rhoa     (i,j), flw       (i,j), &
+                                      potT     (i,j), Qa        (i,j), &
+                                      shcoef   (i,j), lhcoef    (i,j), &
+                                      dfsurf_dT(ij),  dflwout_dT(m),   &
+                                      dfsens_dT(m),   dflat_dT  (m),   &
+                                      Pcice3(i,j,iiblk))
+           else
+         ! surface heat flux
+              call surface_heat_flux(Tsf (m), fswsfc(i,j), &
                                 rhoa   (i,j), flw   (i,j), &
                                 potT   (i,j), Qa    (i,j), &
                                 shcoef (i,j), lhcoef(i,j), &
@@ -1139,12 +1183,13 @@
                                 flatn  (i,j), fsurfn(i,j))
 
          ! derivative of heat flux with respect to surface temperature
-         call dsurface_heat_flux_dTsf(Tsf      (m),   fswsfc    (i,j), &
+              call dsurface_heat_flux_dTsf(Tsf (m),   fswsfc    (i,j), &
                                       rhoa     (i,j), flw       (i,j), &
                                       potT     (i,j), Qa        (i,j), &
                                       shcoef   (i,j), lhcoef    (i,j), &
                                       dfsurf_dT(ij),  dflwout_dT(m),   &
                                       dfsens_dT(m),   dflat_dT  (m))
+           endif
       enddo                     ! ij
 
       end subroutine surface_fluxes

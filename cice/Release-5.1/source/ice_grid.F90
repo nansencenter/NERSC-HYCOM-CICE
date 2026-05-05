@@ -138,7 +138,7 @@
       use ice_broadcast, only: broadcast_array
       use ice_constants, only: c1, rad_to_deg, puny
       use ice_domain_size, only: max_blocks
-
+      
       integer (kind=int_kind) :: &
          fid_grid, &     ! file id for netCDF grid file
          fid_kmt         ! file id for netCDF kmt file
@@ -470,6 +470,7 @@
                           field_loc_center, field_type_scalar)
 
       deallocate(work_g1)
+
 
       end subroutine init_grid2
 

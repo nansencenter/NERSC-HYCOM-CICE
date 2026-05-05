@@ -297,7 +297,7 @@
 
          call ice_strength (nx_block, ny_block,   & 
                             ilo, ihi, jlo, jhi,   &
-                            icellt(iblk),         & 
+                            icellt(iblk), iblk,   & 
                             indxti      (:,iblk), & 
                             indxtj      (:,iblk), & 
                             aice    (:,:,  iblk), & 

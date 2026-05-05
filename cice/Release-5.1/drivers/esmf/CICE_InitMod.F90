@@ -82,6 +82,7 @@
 #ifdef popcice
       use drv_forcing, only: sst_sss
 #endif
+      use ice_domain_para
 
       call init_communicate     ! initial setup for message passing
       call init_fileunits       ! unit numbers

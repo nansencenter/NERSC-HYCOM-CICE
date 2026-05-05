@@ -141,7 +141,7 @@
 
          else ! default
             call atmo_boundary_layer (nx_block,  ny_block,   &
-                                      'ocn',     icells,     &
+                                      'ocn',     icells,iblk,&
                                       indxi,     indxj,      &
                                       sst        (:,:,iblk), &    
                                       potT       (:,:,iblk), &

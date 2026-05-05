@@ -67,6 +67,7 @@
 
       subroutine thermo_vertical (nx_block,    ny_block,  &
                                   dt,          icells,    &
+                                  iiblk              ,    &
                                   indxi,       indxj,     &
                                   aicen,       trcrn,     &
                                   vicen,       vsnon,     &
@@ -95,10 +96,13 @@
 #ifdef CCSMCOUPLED
       use ice_prescribed_mod, only: prescribed_ice
 #endif
+      use ice_domain_para, only: cice_para, Pcice14
+
 
       integer (kind=int_kind), intent(in) :: &
          nx_block, ny_block, & ! block dimensions
-         icells                ! number of cells with ice present
+         icells            , & ! number of cells with ice present
+         iiblk                 ! order number of blocks
 
       integer (kind=int_kind), dimension (nx_block*ny_block), &
          intent(in) :: &
@@ -338,6 +342,7 @@
             call temperature_changes(nx_block,      ny_block, &
                                      my_task,       istep1,   &
                                      dt,            icells,   & 
+                                     iiblk                ,   &
                                      indxi,         indxj,    &
                                      rhoa,          flw,      &
                                      potT,          Qa,       &
@@ -364,6 +369,7 @@
             call zerolayer_temperature(nx_block,      ny_block, &
                                        my_task,       istep1,   &
                                        dt,            icells,   & 
+                                       iiblk,                   &
                                        indxi,         indxj,    &
                                        rhoa,          flw,      &
                                        potT,          Qa,       &
@@ -484,8 +490,13 @@
          freshn(i,j) = freshn(i,j) + &
                        evapn(i,j) - &
                        (rhoi*dhi + rhos*dhs) / dt
-         fsaltn(i,j) = fsaltn(i,j) - &
+         if (cice_para) then
+            fsaltn(i,j) = fsaltn(i,j) - &
+                       rhoi*dhi*Pcice14(i,j,iiblk)*p001/dt
+         else
+            fsaltn(i,j) = fsaltn(i,j) - &
                        rhoi*dhi*ice_ref_salinity*p001/dt
+         endif
 
          fhocnn(i,j) = fhocnn(i,j) + fadvocn(i,j) ! for ktherm=2 
 
@@ -605,7 +616,7 @@
 
       subroutine frzmlt_bottom_lateral (nx_block, ny_block, &
                                         ilo, ihi, jlo, jhi, &
-                                        ntrcr,    dt,       &
+                                        ntrcr,  iiblk,  dt, &
                                         aice,     frzmlt,   &
                                         vicen,    vsnon,    &
                                         trcrn,              &
@@ -614,10 +625,13 @@
                                         Tbot,     fbot,     &
                                         rside,    Cdn_ocn)
 
+      use ice_domain_para,only : cice_para, Pcice4,Pcice14
+
       integer (kind=int_kind), intent(in) :: &
          nx_block, ny_block, & ! block dimensions
          ilo,ihi,jlo,jhi   , & ! beginning and end of physical domain
-         ntrcr                 ! number of tracers
+         ntrcr             , & ! number of tracers
+         iiblk                 ! order number in bloks
 
       real (kind=dbl_kind), intent(in) :: &
          dt                  ! time step
@@ -749,7 +763,11 @@
       !-----------------------------------------------------------------
 
          wlat = m1 * deltaT**m2 ! Maykut & Perovich
-         rside(i,j) = wlat*dt*pi/(floeshape*floediam) ! Steele
+         if (cice_para) then
+            rside(i,j) = wlat*dt*pi/(floeshape*Pcice4(i,j,iiblk)) ! Steele
+         else
+            rside(i,j) = wlat*dt*pi/(floeshape*floediam) ! Steele
+         endif
          rside(i,j) = max(c0,min(rside(i,j),c1))
 
       enddo                     ! ij

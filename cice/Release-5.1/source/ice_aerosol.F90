@@ -163,7 +163,7 @@
 !  and vertical cycling
 
       subroutine update_aerosol (nx_block, ny_block,  &
-                                dt,       icells,     &
+                                dt,    icells, iiblk, &
                                 indxi,    indxj,      &
                                 meltt,    melts,      &
                                 meltb,    congel,     &
@@ -176,12 +176,15 @@
                                 faero_atm, faero_ocn)
 
       use ice_domain_size, only: max_ntrcr, nilyr, nslyr, n_aero, max_aero
-      use ice_state, only: nt_aero 
-      use ice_shortwave, only: hi_ssl, hs_ssl
+      use ice_state,       only: nt_aero 
+      use ice_shortwave,   only: hi_ssl, hs_ssl
+
+      use ice_domain_para, only: cice_para,Pcice9
 
       integer (kind=int_kind), intent(in) :: &
          nx_block, ny_block, & ! block dimensions
-         icells                ! number of cells with ice present
+         icells,             & ! number of cells with ice present
+         iiblk                 ! order number of blocks
 
       integer (kind=int_kind), dimension (nx_block*ny_block), &
          intent(in) :: &
@@ -272,7 +275,11 @@
          hilyr_old = hi_old/real(nilyr,kind=dbl_kind)
 
          dzssl  = min(hslyr_old/c2, hs_ssl)
-         dzssli = min(hilyr_old/c2, hi_ssl)
+         if (cice_para) then
+            dzssli = min(hilyr_old/c2,Pcice9(i,j,iiblk))
+         else
+            dzssli = min(hilyr_old/c2, hi_ssl)
+         endif
          dzint  = hs_old - dzssl
          dzinti = hi_old - dzssli
 
@@ -512,7 +519,11 @@
          hslyr      = hs/real(nslyr,kind=dbl_kind)
          hilyr      = hi/real(nilyr,kind=dbl_kind)
          dzssl_new  = min(hslyr/c2, hs_ssl)
-         dzssli_new = min(hilyr/c2, hi_ssl)
+         if (cice_para) then
+            dzssli_new = min(hilyr/c2,Pcice9(i,j,iiblk))
+         else
+            dzssli_new = min(hilyr/c2, hi_ssl)
+         endif
          dzint_new  = hs - dzssl_new
          dzinti_new = hi - dzssli_new
 

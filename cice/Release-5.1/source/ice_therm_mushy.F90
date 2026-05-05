@@ -3268,7 +3268,8 @@ contains
                        phi,    dt,       &
                        zSin,   Sbr,      &
                        sss,    qocn,     &
-                       snoice, fadvheat)
+                       snoice, fadvheat, &
+                       Nice_ref)
 
     ! given upwards flushing brine flow calculate amount of snow ice and
     ! convert snow to ice with appropriate properties
@@ -3279,6 +3280,8 @@ contains
          hin               , & ! ice thickness (m)
          sss               , & ! sea surface salinity (ppt)
          qocn                  ! ocean brine enthalpy (J m-2)
+    real(kind=dbl_kind),optional, intent(in) ::  &
+         Nice_ref              ! varied ice_ref_salinity (psu) 
 
     real(kind=dbl_kind), dimension(nslyr), intent(inout) :: &
          zqsn                  ! snow layer enthalpy (J m-2)
@@ -3388,7 +3391,11 @@ contains
           hadded = (dh * phi_snowice) / dt
           wadded = hadded * rhoi
           eadded = hadded * qocn
-          sadded = wadded * ice_ref_salinity * p001
+          if (present(Nice_ref)) then
+             sadded = wadded * Nice_ref * p001
+          else
+             sadded = wadded * ice_ref_salinity * p001
+          endif
 
           ! conservation
           fadvheat = fadvheat - eadded

@@ -52,7 +52,8 @@ endif
 
 ifeq ($(IO_TYPE), netcdf)
    CPPDEFS :=  $(CPPDEFS) -Dncdf
-   NETCDF_DIR=/cluster/software/netCDF-Fortran/4.5.2-iimpi-2019b/
+   #NETCDF_DIR=/cluster/software/netCDF-Fortran/4.5.2-iimpi-2019b/
+   NETCDF_DIR=/cluster/software/netCDF-Fortran/4.6.0-iompi-2022a
    SLIBS   := $(SLIBS) -L/$(NETCDF_DIR)/lib  -lnetcdff   #-lnetcdf -lnetcdff -lnetcdf_c++4
 endif
 

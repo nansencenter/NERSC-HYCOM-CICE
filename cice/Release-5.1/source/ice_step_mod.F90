@@ -194,6 +194,8 @@
       use ice_therm_vertical, only: frzmlt_bottom_lateral, thermo_vertical
       use ice_timers, only: ice_timer_start, ice_timer_stop, timer_ponds
 
+      use ice_domain_para, only: cice_para,Pcice6
+
       real (kind=dbl_kind), intent(in) :: &
          dt      ! time step
 
@@ -315,7 +317,7 @@
          call frzmlt_bottom_lateral                                      &
                                 (nx_block,           ny_block,           &
                                  ilo, ihi,           jlo, jhi,           &
-                                 ntrcr,              dt,                 &
+                                 ntrcr,   iblk,      dt,                 &
                                  aice  (:,:,  iblk), frzmlt(:,:,  iblk), &
                                  vicen (:,:,:,iblk), vsnon (:,:,:,iblk), &
                                  trcrn (:,:,1:ntrcr,:,iblk),             &
@@ -331,7 +333,6 @@
 
 
          if (formdrag) then
-
             call neutral_drag_coeffs &
                        (nx_block,       ny_block,                      &
                         ilo, ihi,       jlo, jhi,                      &
@@ -351,7 +352,7 @@
                         hdraft      (:,:,iblk), hridge      (:,:,iblk),&
                         distrdg     (:,:,iblk), hkeel       (:,:,iblk),&
                         dkeel       (:,:,iblk), lfloe       (:,:,iblk),&
-                        dfloe       (:,:,iblk), ncat)
+                        dfloe       (:,:,iblk), ncat,iblk)
          endif 
 
          do n = 1, ncat
@@ -408,7 +409,7 @@
                else ! default
                    call atmo_boundary_layer & 
                                   (nx_block,       ny_block,       &
-                                   'ice',          icells,         &
+                                   'ice',          icells, iblk,   &
                                    indxi,          indxj,          &
                                    trcrn(:,:,nt_Tsfc,n,iblk),      &
                                    potT(:,:,iblk),                 &
@@ -423,7 +424,7 @@
                                    Cdn_atm_ratio_n,                &
                                    uice=uvel(:,:,iblk),            &
                                    vice=vvel(:,:,iblk),            &
-                                   Uref=Urefn                      )
+                                   Uref=Urefn  )
                endif ! atmbndy
 
             else
@@ -499,6 +500,7 @@
 
             call thermo_vertical(nx_block,           ny_block,            &
                                 dt,                  icells,              &
+                                iblk                       ,              &
                                 indxi,               indxj,               &
                                 aicen(:,:,n,iblk),                        &
                                 trcrn(:,:,:,n,iblk),                      &
@@ -563,7 +565,7 @@
          if (tr_aero .and. icells > 0) then
 
                call update_aerosol (nx_block, ny_block,                  &
-                                    dt, icells,                          &
+                                    dt, icells, iblk,                    &
                                     indxi, indxj,                        &
                                     melttn(:,:,n,iblk),                  &
                                     meltsn(:,:,n,iblk),                  &
@@ -663,7 +665,7 @@
       !-----------------------------------------------------------------
 
          call merge_fluxes (nx_block,           ny_block,             &
-                            icells,                                   &
+                            icells,             iblk,                 &
                             indxi,              indxj,                &
                             aicen_init(:,:,n,iblk),                   &
                             flw(:,:,iblk),      coszen(:,:,iblk),     &
@@ -748,6 +750,8 @@
       use ice_therm_vertical, only: phi_init, dSin0_frazil
       use ice_timers, only: ice_timer_start, ice_timer_stop, timer_catconv
       use ice_zbgc_shared, only: first_ice
+
+      use ice_domain_para, only: cice_para
 
       real (kind=dbl_kind), intent(in) :: &
          dt      ! time step
@@ -877,6 +881,7 @@
             
          call add_new_ice (nx_block,              ny_block, &
                            ntrcr,                 icells,   &
+                           iblk,                            &
                            indxi,                 indxj,    &
                            dt,                              &
                            aicen     (:,:,:,iblk),          &
@@ -915,7 +920,24 @@
       ! Melt ice laterally.
       !-----------------------------------------------------------------
 
-         call lateral_melt (nx_block, ny_block,     &
+         if (cice_para) then
+            call lateral_melt (nx_block, ny_block,  &
+                            ilo, ihi, jlo, jhi,     &
+                            dt,                     &
+                            fpond     (:,:,  iblk), &
+                            fresh     (:,:,  iblk), &
+                            fsalt     (:,:,  iblk), &    
+                            fhocn     (:,:,  iblk), &
+                            faero_ocn (:,:,:,iblk), &
+                            rside     (:,:,  iblk), &
+                            meltl     (:,:,  iblk), &
+                            aicen     (:,:,:,iblk), &
+                            vicen     (:,:,:,iblk), &
+                            vsnon     (:,:,:,iblk), &
+                            trcrn   (:,:,:,:,iblk), &
+                            iblk)
+         else
+            call lateral_melt (nx_block, ny_block,  &
                             ilo, ihi, jlo, jhi,     &
                             dt,                     &
                             fpond     (:,:,  iblk), &
@@ -929,6 +951,7 @@
                             vicen     (:,:,:,iblk), &
                             vsnon     (:,:,:,iblk), &
                             trcrn     (:,:,:,:,iblk))
+         endif
 
       !-----------------------------------------------------------------
       ! For the special case of a single category, adjust the area and
@@ -952,7 +975,7 @@
       !-----------------------------------------------------------------
 
          call cleanup_itd (nx_block,             ny_block,             &
-                           ilo, ihi,             jlo, jhi,             &
+                           ilo, ihi,             jlo, jhi,  iblk,      &
                            dt,                   ntrcr,                &
                            aicen   (:,:,:,iblk),                       &
                            trcrn (:,:,1:ntrcr,:,iblk),                 &
@@ -1272,7 +1295,7 @@
          call ridge_ice (nx_block,             ny_block,                 &
                          dt,                   ndtd,                     &
                          ntrcr,                icells,                   &
-                         indxi,                indxj,                    &
+                         indxi,                indxj, iblk,              &
                          rdg_conv(:,:,  iblk), rdg_shear (:,:,  iblk),   &
                          aicen   (:,:,:,iblk),                           &
                          trcrn     (:,:,1:ntrcr,:,iblk),                 &
@@ -1311,7 +1334,7 @@
 
          dtt = dt * ndtd  ! for proper averaging over thermo timestep
          call cleanup_itd (nx_block,             ny_block,             &
-                           ilo, ihi,             jlo, jhi,             &
+                           ilo, ihi,             jlo, jhi,     iblk,   &
                            dtt,                  ntrcr,                &
                            aicen   (:,:,:,iblk),                       &
                            trcrn (:,:,1:ntrcr,:,iblk),                 &
@@ -1413,7 +1436,7 @@
       if (calc_Tsfc) then
         if (trim(shortwave) == 'dEdd') then ! delta Eddington
  
-          call run_dEdd(ilo, ihi, jlo, jhi,                            &
+          call run_dEdd(ilo, ihi, jlo, jhi,iblk,                       &
                        aicen(:,:,:,iblk),     vicen(:,:,:,iblk),       &
                        vsnon(:,:,:,iblk),     trcrn(:,:,:,:,iblk),     &
                        TLAT(:,:,iblk),        TLON(:,:,iblk),          &
@@ -1428,7 +1451,7 @@
                        Sswabsn(:,:,:,:,iblk), Iswabsn(:,:,:,:,iblk),   &
                        albicen(:,:,:,iblk),   albsnon(:,:,:,iblk),     &
                        albpndn(:,:,:,iblk),   apeffn(:,:,:,iblk),      &
-                       dhsn(:,:,:,iblk),      ffracn(:,:,:,iblk))
+                       dhsn(:,:,:,iblk),      ffracn(:,:,:,iblk) )
          
         else  ! .not. dEdd
 

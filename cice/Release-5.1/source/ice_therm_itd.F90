@@ -1047,14 +1047,18 @@
                                fhocn,      faero_ocn,  &
                                rside,      meltl,      &
                                aicen,      vicen,      &
-                               vsnon,      trcrn)
+                               vsnon,      trcrn,      &
+                               iblk)
 
-      use ice_state, only: nt_qice, nt_qsno, &
-                           nt_aero, tr_aero, tr_pond_topo, nt_apnd, nt_hpnd
+      use ice_state,       only: nt_qice, nt_qsno, &
+                    nt_aero, tr_aero, tr_pond_topo, nt_apnd, nt_hpnd
+      use ice_domain_para, only: cice_para, Pcice14
 
       integer (kind=int_kind), intent(in) :: &
          nx_block, ny_block, & ! block dimensions
          ilo,ihi,jlo,jhi       ! beginning and end of physical domain
+      integer (kind=int_kind), intent(in),optional :: &
+         iblk
 
       real (kind=dbl_kind), intent(in) :: &
          dt        ! time step (s)
@@ -1138,8 +1142,13 @@
 
             dfresh = (rhos*vsnon(i,j,n) + rhoi*vicen(i,j,n)) &
                    * rside(i,j) / dt
-            dfsalt = rhoi*vicen(i,j,n)*ice_ref_salinity*p001 &
+            if (present(iblk).and.cice_para) then
+               dfsalt = rhoi*vicen(i,j,n)*Pcice14(i,j,iblk)*p001 &
                    * rside(i,j) / dt
+            else
+               dfsalt = rhoi*vicen(i,j,n)*ice_ref_salinity*p001 &
+                   * rside(i,j) / dt
+            endif
             fresh(i,j)      = fresh(i,j)      + dfresh
             fsalt(i,j)      = fsalt(i,j)      + dfsalt
 
@@ -1238,6 +1247,7 @@
 !
       subroutine add_new_ice (nx_block,  ny_block,   &
                               ntrcr,     icells,     &
+                              iiblk            ,     &
                               indxi,     indxj,      &
                               dt,                    &
                               aicen,     trcrn,      &
@@ -1266,10 +1276,13 @@
       use ice_zbgc, only: add_new_ice_bgc
       use ice_zbgc_shared, only: skl_bgc
 
+      use ice_domain_para, only: cice_para,Pcice14
+
       integer (kind=int_kind), intent(in) :: &
          nx_block, ny_block, & ! block dimensions
          ntrcr             , & ! number of tracers in use
-         icells                ! number of ice/ocean grid cells
+         icells            , & ! number of ice/ocean grid cells
+         iiblk                 ! order number in blocks
 
       integer (kind=int_kind), dimension (nx_block*ny_block), &
          intent(in) :: &
@@ -1528,7 +1541,11 @@
 
          if (update_ocn_f) then
             dfresh = -rhoi*vi0new(ij)/dt 
-            dfsalt = ice_ref_salinity*p001*dfresh
+            if (cice_para) then
+               dfsalt = Pcice14(i,j,iiblk)*p001*dfresh
+            else
+               dfsalt = ice_ref_salinity*p001*dfresh
+            endif
 
             fresh(i,j)      = fresh(i,j)      + dfresh
             fsalt(i,j)      = fsalt(i,j)      + dfsalt

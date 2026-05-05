@@ -100,6 +100,8 @@
       use shr_file_mod, only: shr_file_setIO
 #endif
 
+      use ice_domain_para, only: cice_para,para_file,init_cice_para
+
       ! local variables
 
       integer (kind=int_kind) :: &
@@ -174,6 +176,9 @@
         tr_pond_lvl, restart_pond_lvl, &
         tr_pond_topo, restart_pond_topo, &
         tr_aero, restart_aero
+
+      namelist /para_nml/    &
+        cice_para, para_file
 
       !-----------------------------------------------------------------
       ! default values
@@ -252,7 +257,7 @@
       R_snw     = 1.50_dbl_kind   ! tuning parameter for snow over sea ice
       dT_mlt    = 1.5_dbl_kind    ! change in temp to give non-melt to melt change
                                   ! in snow grain radius
-      rsnw_mlt  = 1500._dbl_kind  ! maximum melting snow grain radius
+      rsnw_mlt  = 1000._dbl_kind  ! maximum melting snow grain radius
       kalg      = 0.60_dbl_kind   ! algae absorption coefficient for 0.5 m thick layer
                                   ! 0.5 m path of 75 mg Chl a / m2
       hp1       = 0.01_dbl_kind   ! critical pond lid thickness for topo ponds
@@ -370,12 +375,16 @@
             print*,'Reading forcing_nml'
                read(nu_nml, nml=forcing_nml,iostat=nml_error)
                if (nml_error /= 0) exit
+            print*,'Reading cice_para_nml'
+               read(nu_nml, nml=para_nml,iostat=nml_error)
+               if (nml_error /= 0) exit
          end do
          if (nml_error == 0) close(nu_nml)
       endif
       call broadcast_scalar(nml_error, master_task)
+      call broadcast_scalar(cice_para, master_task)
       if (nml_error /= 0) then
-         call abort_ice('ice: error reading namelist')
+         call abort_ice('ice_init: error reading namelist')
       endif
       call release_fileunit(nu_nml)
 
@@ -1148,9 +1157,18 @@
       use ice_itd, only: aggregate
       use ice_exit, only: abort_ice
       use ice_therm_shared, only: ktherm, heat_capacity
-      use ice_read_write, only: ice_read_nc, ice_open_nc, ice_close_nc
+      use ice_read_write, only: ice_read_nc, ice_open_nc, ice_close_nc, &
+                                ice_var_exists
       use ice_forcing, only: ocn_data_dir 
       use ice_constants, only: field_loc_center, field_type_scalar
+
+      use ice_broadcast,   only: broadcast_array
+      use ice_domain_para, only: cice_para,para_file, init_cice_para, &
+          Gcice1,Gcice2,Gcice3,Gcice4,Gcice5,Gcice6, Gcice7, &
+          Gcice8,Gcice9,Gcice10,Gcice11,Gcice12,Gcice13,Gcice14, &
+          Pcice1,Pcice2,Pcice3,Pcice4,Pcice5,Pcice6, Pcice7, &
+          Pcice8,Pcice9,Pcice10,Pcice11,Pcice12,Pcice13,Pcice14
+
       integer (kind=int_kind) :: &
          ilo, ihi    , & ! physical domain indices
          jlo, jhi    , & ! physical domain indices
@@ -1169,7 +1187,8 @@
       type (block) :: &
          this_block           ! block information for current block
 
-      real (kind=dbl_kind), dimension(:,:,:),allocatable :: abar2d, hbar2d
+      real (kind=dbl_kind), dimension(:,:,:),allocatable :: abar2d, &
+              hbar2d, work1
 
       character (char_len_long) :: ice_init_file 
 
@@ -1253,6 +1272,98 @@
       endif
 
       !-----------------------------------------------------------------     
+      ! Read parameters varied              
+      !----------------------------------------------------------------- 
+      if (cice_para == .True.) then
+         allocate(work1(nx_block,ny_block,max_blocks))
+         call init_cice_para
+         if (my_task == master_task) then
+             write (nu_diag,*) ' '
+             write (nu_diag,*) 'Initial parameters in ice_init.F90: ', trim(para_file)
+         endif
+         do it =1,14
+            select case(it)
+            case(1)
+               fieldname='rhos'
+          !     Pcice1=sum(Gcice1)/size(Gcice1)
+               call broadcast_array(Pcice1,master_task)
+               work1=Pcice1
+            case(2)
+               fieldname='rhoi'
+           !    Pcice2=sum(Gcice2)/size(Gcice2)
+               call broadcast_array(Pcice2,master_task)
+               work1=Pcice2
+            case(3)
+               fieldname='emissi'
+           !    Pcice3=sum(Gcice3)/size(Gcice3)
+               call broadcast_array(Pcice3,master_task)
+               work1=Pcice3
+            case(4)
+               fieldname='floediam'
+           !    Pcice4=sum(Gcice4)/size(Gcice4)
+               call broadcast_array(Pcice4,master_task)
+               work1=Pcice4
+            case(6)
+               fieldname='dragio'
+           !    Pcice6=sum(Gcice6)/size(Gcice6)
+               call broadcast_array(Pcice6,master_task)
+               work1=Pcice6
+            case(7)
+               fieldname='Pstar'
+           !    Pcice7=sum(Gcice7)/size(Gcice7)
+               call broadcast_array(Pcice7,master_task)
+               work1=Pcice7
+            case(5)
+               fieldname='astar'
+            !   Pcice11=sum(Gcice11)/size(Gcice11)
+               call broadcast_array(Pcice11,master_task)
+               work1=Pcice11
+            case(8)
+               fieldname='iceruf'
+            !   Pcice5=sum(Gcice5)/size(Gcice5)
+               call broadcast_array(Pcice5,master_task)
+               work1=Pcice5
+            case(9)
+               fieldname='hi_ssl'
+            !   Pcice9=sum(Gcice9)/size(Gcice9)
+               call broadcast_array(Pcice9,master_task)
+               work1=Pcice9
+            case(10)
+               fieldname='R_snw'
+            !   Pcice10=sum(Gcice10)/size(Gcice10)
+               call broadcast_array(Pcice10,master_task)
+               work1=Pcice10
+            case(11)
+               fieldname='rsnw_mlt'
+             !  Pcice8=sum(Gcice8)/size(Gcice8)
+               call broadcast_array(Pcice8,master_task)
+               work1=Pcice8
+            case(12)
+               fieldname='mu_rdg'
+             !  Pcice12=sum(Gcice12)/size(Gcice12)
+               call broadcast_array(Pcice12,master_task)
+               work1=Pcice12
+            case(13)
+               fieldname='hs1'
+             !  Pcice13=sum(Gcice13)/size(Gcice13)
+               call broadcast_array(Pcice13,master_task)
+               work1=Pcice13
+            case(14)
+               fieldname='ice_ref_salt'
+             !  Pcice14=sum(Gcice14)/size(Gcice14)
+               call broadcast_array(Pcice14,master_task)
+               work1=Pcice14
+            end select
+
+            if (my_task == master_task) then
+               write(nu_diag, *) " check it=", &
+                  it, maxval(work1),' ', maxval(Pcice6)
+            endif
+         enddo
+         deallocate(work1)
+      endif
+
+      !-----------------------------------------------------------------     
       ! Read state variables              
       !----------------------------------------------------------------- 
       if (ice_ic ==trim('read')) then ! if restart from 
@@ -1265,7 +1376,7 @@
              write (nu_diag,*) ' '
              write (nu_diag,*) 'Initial ice cover ', trim(ice_init_file)
          endif
-                   call ice_open_nc(ice_init_file,fid)
+         call ice_open_nc(ice_init_file,fid)
          fieldname = 'aice'
          call ice_read_nc &
              (fid, 1, fieldname, abar2d(:,:,:), .true., &
@@ -1275,7 +1386,7 @@
              (fid, 1, fieldname, hbar2d(:,:,:), .true., &
              field_loc_center, field_type_scalar)
      
-          call ice_close_nc(fid)
+         call ice_close_nc(fid)
       
       !$OMP PARALLEL DO PRIVATE(iblk,ilo,ihi,jlo,jhi,this_block, &
       !$OMP                     iglob,jglob)

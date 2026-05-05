@@ -75,6 +75,7 @@
 
       subroutine atmo_boundary_layer (nx_block, ny_block, &
                                       sfctype,  icells,   &
+                                      iiblk,              &
                                       indxi,    indxj,    & 
                                       Tsf,      potT,     &
                                       uatm,     vatm,     &  
@@ -87,16 +88,18 @@
                                       Cdn_atm,            &
                                       Cdn_atm_ratio_n,    &
                                       uice,     vice,     &
-                                      Uref                )     
+                                      Uref )     
 
 
-      use ice_fileunits, only: nu_diag
+      use ice_fileunits,   only: nu_diag
       use ice_communicate, only: my_task, master_task
-      use ice_exit, only: abort_ice
+      use ice_exit,        only: abort_ice
+      use ice_domain_para, only: cice_para,Pcice5
 
       integer (kind=int_kind), intent(in) :: &
          nx_block, ny_block, & ! block dimensions
-         icells                ! number of cells that require atmo fluxes
+         icells,             & ! number of cells that require atmo fluxes
+         iiblk
 
       integer (kind=int_kind), dimension(nx_block*ny_block), &
          intent(in) :: &
@@ -273,7 +276,11 @@
             if (formdrag .and. Cdn_atm(i,j) > puny) then 
                rdn(ij)  = sqrt(Cdn_atm(i,j))               
             else
-               rdn(ij)  = vonkar/log(zref/iceruf) ! neutral coefficient
+               if (cice_para) then
+                  rdn(ij)  = vonkar/log(zref/Pcice5(i,j,iiblk)) ! neutral coefficient
+               else
+                  rdn(ij)  = vonkar/log(zref/iceruf) ! neutral coefficient
+               endif
                Cdn_atm(i,j) = rdn(ij) * rdn(ij)
             endif
 
@@ -651,13 +658,15 @@
                                       hdraft,   hridge,          &
                                       distrdg,  hkeel,           &
                                       dkeel,    lfloe,           &
-                                      dfloe,    ncat)
+                                      dfloe,    ncat,  iiblk )
+      use ice_domain_para,only : cice_para, Pcice5, Pcice6 
 
       integer (kind=int_kind), intent(in) :: &
          nx_block, ny_block, & ! block dimensions
          ilo,ihi,jlo,jhi,    & ! beginning and end of physical domain
-         ncat
-         
+         ncat,               & ! category number
+         iiblk
+      
       integer (kind=int_kind), dimension(nx_block*ny_block) :: &
          indxi, indxj    ! compressed i and j indices
 
@@ -786,11 +795,19 @@
       dkeel  (:,:)=c0 
       lfloe  (:,:)=c0
       dfloe  (:,:)=c0 
-      Cdn_ocn(:,:)=dragio
+      if (cice_para) then
+         Cdn_ocn(:,:) = Pcice6(:,:,iiblk)
+         Cdn_atm(:,:) = (vonkar/log(zref/Pcice5(:,:,iiblk))) *  &
+                        (vonkar/log(zref/Pcice5(:,:,iiblk)))
+      else
+         Cdn_ocn(:,:) = dragio
+         Cdn_atm(:,:) = (vonkar/log(zref/iceruf)) *  &
+                        (vonkar/log(zref/iceruf))
+      endif
       Cdn_ocn_skin(:,:)=c0 
       Cdn_ocn_floe(:,:)=c0 
       Cdn_ocn_keel(:,:)=c0 
-      Cdn_atm(:,:) = (vonkar/log(zref/iceruf)) * (vonkar/log(zref/iceruf))
+      !Cdn_atm(:,:) = (vonkar/log(zref/iceruf)) * (vonkar/log(zref/iceruf))
       Cdn_atm_skin(:,:)=c0 
       Cdn_atm_floe(:,:)=c0 
       Cdn_atm_pond(:,:)=c0 
@@ -913,8 +930,13 @@
           if (tmp1 > puny) then
             sca = c1 - exp(-sHGB*distrdg(i,j)/tmp1) ! see Eq. 9
             ctecar = cra*p5
-            Cdn_atm_rdg(i,j) = ctecar*tmp1/distrdg(i,j)*sca* &
+            if (cice_para)then
+               Cdn_atm_rdg(i,j) = ctecar*tmp1/distrdg(i,j)*sca* &
+               (log(tmp1/Pcice5(i,j,iiblk))/log(zref/Pcice5(i,j,iiblk)))**c2
+            else
+               Cdn_atm_rdg(i,j) = ctecar*tmp1/distrdg(i,j)*sca* &
                        (log(tmp1*icerufi)/log(zref*icerufi))**c2
+            endif
             Cdn_atm_rdg(i,j) = min(Cdn_atm_rdg(i,j),camax)
           endif
 
@@ -940,9 +962,13 @@
           if (tmp1 > puny) then
             scw = c1 - exp(-sHGB*dkeel(i,j)/tmp1) 
             ctecwk = crw*p5
-
-            Cdn_ocn_keel(i,j) = ctecwk*tmp1/dkeel(i,j)*scw* &
-                        (log(tmp1*icerufi)/log(zref*icerufi))**c2  
+            if (cice_para) then
+               Cdn_ocn_keel(i,j) = ctecwk*tmp1/dkeel(i,j)*scw* &
+               (log(tmp1/Pcice5(i,j,iiblk))/log(zref/Pcice5(i,j,iiblk)))**c2
+            else
+               Cdn_ocn_keel(i,j) = ctecwk*tmp1/dkeel(i,j)*scw* &
+               (log(tmp1*icerufi)/log(zref*icerufi))**c2  
+            endif
             Cdn_ocn_keel(i,j) = max(min(Cdn_ocn_keel(i,j),cwmax),c0)
           endif
   

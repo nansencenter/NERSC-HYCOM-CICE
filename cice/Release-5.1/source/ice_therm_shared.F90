@@ -100,7 +100,8 @@
                                    potT,    Qa,     &
                                    shcoef,  lhcoef, &
                                    flwoutn, fsensn, &
-                                   flatn,   fsurfn)
+                                   flatn,   fsurfn, &
+                                   Newemissi )
 
       use ice_constants, only:  c1, Tffresh, TTTice, qqqice, &
           stefan_boltzmann, emissivity
@@ -108,6 +109,9 @@
       ! input surface temperature
       real(kind=dbl_kind), intent(in) :: &
          Tsf             ! ice/snow surface temperature (C)
+
+      real(kind=dbl_kind), optional, intent(in) :: &
+         Newemissi       ! varied emissivity
     
       ! input variables
       real(kind=dbl_kind), intent(in) :: &
@@ -144,8 +148,13 @@
       Qsfc    = qsat / rhoa
     
       ! longwave radiative flux
-      flwdabs =  emissivity * flw
-      flwoutn = -emissivity * stefan_boltzmann * TsfK**4
+      if (present(Newemissi)) then
+         flwdabs =  Newemissi * flw
+         flwoutn = -Newemissi * stefan_boltzmann * TsfK**4
+      else
+         flwdabs =  emissivity * flw
+         flwoutn = -emissivity * stefan_boltzmann * TsfK**4
+      endif
     
       ! downward latent and sensible heat fluxes
       fsensn = shcoef * (potT - TsfK)
@@ -163,7 +172,8 @@
                                          potT,    Qa,     &
                                          shcoef,  lhcoef, &
                                          dfsurfn_dTsf, dflwoutn_dTsf, &
-                                         dfsensn_dTsf, dflatn_dTsf)
+                                         dfsensn_dTsf, dflatn_dTsf,   &
+                                         Newemissi  )
     
       use ice_constants, only:  c1, c4, Tffresh, TTTice, qqqice, &
           stefan_boltzmann, emissivity
@@ -172,6 +182,9 @@
       real(kind=dbl_kind), intent(in) :: &
          Tsf               ! ice/snow surface temperature (C)
     
+      real(kind=dbl_kind), optional, intent(in) :: &
+         Newemissi       ! varied emissivity
+
       ! input variables
       real(kind=dbl_kind), intent(in) :: &
          fswsfc        , & ! SW absorbed at ice/snow surface (W m-2)
@@ -208,8 +221,11 @@
       dQsfc_dTsf    = TTTice * tmpvar * tmpvar * (qsat / rhoa)
     
       ! longwave radiative flux
-      dflwoutn_dTsf = -emissivity * stefan_boltzmann * c4*TsfK**3
-    
+      if (present(Newemissi)) then
+         dflwoutn_dTsf = -Newemissi * stefan_boltzmann * c4*TsfK**3
+      else
+         dflwoutn_dTsf = -emissivity * stefan_boltzmann * c4*TsfK**3
+      endif
       ! downward latent and sensible heat fluxes
       dfsensn_dTsf = -shcoef
       dflatn_dTsf  = -lhcoef * dQsfc_dTsf

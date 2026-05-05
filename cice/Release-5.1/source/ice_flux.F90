@@ -336,6 +336,7 @@
       use ice_therm_shared, only: ktherm
       use ice_zbgc_shared, only: flux_bio
       use ice_atmo, only: Cdn_atm
+      use ice_domain_para, only: cice_para, Pcice5
 
       integer (kind=int_kind) :: n
 
@@ -482,8 +483,13 @@
       scale_factor(:,:,:) = c1        ! shortwave scaling factor 
       wind    (:,:,:) = sqrt(uatm(:,:,:)**2 &
                            + vatm(:,:,:)**2)  ! wind speed, (m/s)
-      Cdn_atm(:,:,:) = (vonkar/log(zref/iceruf)) &
+      if (cice_para == .True.) then
+         Cdn_atm(:,:,:) = (vonkar/log(zref/Pcice5(:,:,:))) &
+                     * (vonkar/log(zref/Pcice5(:,:,:))) ! atmo drag for RASM
+      else
+         Cdn_atm(:,:,:) = (vonkar/log(zref/iceruf)) &
                      * (vonkar/log(zref/iceruf)) ! atmo drag for RASM
+      endif
 
       end subroutine init_coupler_flux
 
@@ -561,6 +567,7 @@
                           Cdn_ocn_floe, Cdn_ocn_skin, formdrag
       use ice_state, only: aice, vice, trcr, tr_iage, nt_iage
       use ice_constants, only: vonkar,zref,iceruf
+      use ice_domain_para, only: cice_para, Pcice6,Pcice5
 
       fsurf  (:,:,:) = c0
       fcondtop(:,:,:)= c0
@@ -594,9 +601,15 @@
 
       ! drag coefficients are computed prior to the atmo_boundary call, 
       ! during the thermodynamics section 
-      Cdn_ocn(:,:,:) = dragio
-      Cdn_atm(:,:,:) = (vonkar/log(zref/iceruf)) &
-                     * (vonkar/log(zref/iceruf)) ! atmo drag for RASM
+      if (cice_para) then
+         Cdn_ocn(:,:,:) = Pcice6(:,:,:)
+         Cdn_atm(:,:,:) = (vonkar/log(zref/Pcice5(:,:,:))) &
+                         * (vonkar/log(zref/Pcice5(:,:,:))) ! atmo drag for RASM
+      else
+         Cdn_ocn(:,:,:) = dragio
+         Cdn_atm(:,:,:) = (vonkar/log(zref/iceruf)) &
+                         * (vonkar/log(zref/iceruf)) ! atmo drag for RASM
+      endif
 
       if (formdrag) then
         Cdn_atm_rdg (:,:,:) = c0
@@ -669,7 +682,7 @@
 ! author: Elizabeth C. Hunke and William H. Lipscomb, LANL
 
       subroutine merge_fluxes (nx_block, ny_block,   &
-                               icells,               &
+                               icells,  iiblk,       &
                                indxi,    indxj,      &
                                aicen,                &    
                                flw,      coszn,      &
@@ -697,9 +710,12 @@
                                congel,  snoice,      &
                                Uref,     Urefn       )
                                
+      use ice_domain_para,only : cice_para, Pcice3
+
       integer (kind=int_kind), intent(in) :: &
           nx_block, ny_block, & ! block dimensions
-          icells                ! number of cells with aicen > puny
+          icells            , & ! number of cells with aicen > puny
+          iiblk                 ! order number of blocke
 
       integer (kind=int_kind), dimension(nx_block*ny_block), &
           intent(in) :: &
@@ -792,8 +808,13 @@
          fsens    (i,j)  = fsens   (i,j) + fsensn  (i,j)*aicen(i,j)
          flat     (i,j)  = flat    (i,j) + flatn   (i,j)*aicen(i,j)
          fswabs   (i,j)  = fswabs  (i,j) + fswabsn (i,j)*aicen(i,j)
-         flwout   (i,j)  = flwout  (i,j) &
+         if (cice_para) then
+            flwout   (i,j)  = flwout  (i,j) + (flwoutn(i,j) -  &
+                    (c1-Pcice3(i,j,iiblk))*flw(i,j))*aicen(i,j)
+         else
+            flwout   (i,j)  = flwout  (i,j) &
              + (flwoutn(i,j) - (c1-emissivity)*flw(i,j))*aicen(i,j)
+         endif
          evap     (i,j)  = evap    (i,j) + evapn   (i,j)*aicen(i,j)
          Tref     (i,j)  = Tref    (i,j) + Trefn   (i,j)*aicen(i,j)
          Qref     (i,j)  = Qref    (i,j) + Qrefn   (i,j)*aicen(i,j)

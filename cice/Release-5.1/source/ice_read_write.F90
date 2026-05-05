@@ -39,6 +39,7 @@
                 ice_write,          &
                 ice_write_nc,       &
                 ice_write_ext,      &
+                ice_var_exists,     &
                 ice_close_nc
 
       interface ice_write
@@ -1180,10 +1181,10 @@
       else
          if (present(field_loc)) then
             call scatter_global(work, work_g1, master_task, distrb_info, &
-                                field_loc, field_type)
+               field_loc, field_type)
          else
             call scatter_global(work, work_g1, master_task, distrb_info, &
-                                field_loc_noupdate, field_type_noupdate)
+               field_loc_noupdate, field_type_noupdate)
          endif
       endif
 
@@ -1191,6 +1192,7 @@
 #ifdef ORCA_GRID
       if (.not. present(restart_ext)) deallocate(work_g2)
 #endif
+
 
 #else
       work = c0 ! to satisfy intent(out) attribute
@@ -1913,6 +1915,22 @@
 #endif
       end subroutine ice_read_global_nc
 
+!=======================================================================
+      logical function ice_var_exists(fid,fldname)
+      integer,          intent(in) :: fid
+      character(len=*), intent(in) :: fldname     
+
+
+      integer :: varid
+      integer :: status
+      
+      ice_var_exists=.false.
+      if (my_task == master_task) then
+         status=nf90_inq_varid(fid, trim(fldname),varid) 
+         ice_var_exists=(status==nf90_noerr)
+      endif
+
+      end function ice_var_exists
 !=======================================================================
 
 ! Closes a netCDF file

@@ -88,6 +88,9 @@
 #ifdef CICE_IN_NEMO
       use ice_atmo, only: calc_strair
 #endif
+      use ice_domain_para, only: cice_para, &
+          Pcice1,Pcice2,Pcice3,Pcice4,Pcice5,Pcice6, &
+          Pcice7,Pcice8
 
       real (kind=dbl_kind), intent(in) :: &
          dt      ! time step
@@ -268,17 +271,16 @@
       !-----------------------------------------------------------------
 
          call ice_strength (nx_block, ny_block,   & 
-                            ilo, ihi, jlo, jhi,   &
-                            icellt(iblk),         & 
-                            indxti      (:,iblk), & 
-                            indxtj      (:,iblk), & 
-                            aice    (:,:,  iblk), & 
-                            vice    (:,:,  iblk), & 
-                            aice0   (:,:,  iblk), & 
-                            aicen   (:,:,:,iblk), &  
-                            vicen   (:,:,:,iblk), & 
-                            strength(:,:,  iblk) )
-
+                          ilo, ihi, jlo, jhi,   &
+                          icellt(iblk), iblk,   & 
+                          indxti      (:,iblk), & 
+                          indxtj      (:,iblk), & 
+                          aice    (:,:,  iblk), & 
+                          vice    (:,:,  iblk), & 
+                          aice0   (:,:,  iblk), & 
+                          aicen   (:,:,:,iblk), &  
+                          vicen   (:,:,:,iblk), & 
+                          strength(:,:,  iblk) )
          ! load velocity into array for boundary updates
          fld2(:,:,1,iblk) = uvel(:,:,iblk)
          fld2(:,:,2,iblk) = vvel(:,:,iblk)
