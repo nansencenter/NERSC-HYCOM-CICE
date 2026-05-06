@@ -34,6 +34,4 @@ coupled via the Earth System Modeling Framework (ESMF).
    :maxdepth: 2
    :caption: Development
 
-   code-update-rules
-   github-commands
    contributing
