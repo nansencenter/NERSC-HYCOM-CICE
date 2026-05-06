@@ -1,0 +1,22 @@
+name: hycom-cice-docs
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  # docs build
+  - sphinx>=7
+  - sphinx_rtd_theme>=2
+  - myst-parser>=2
+  # model python dependencies (from doc/python.md)
+  - numpy
+  - scipy
+  - pyproj
+  - f90nml
+  - matplotlib
+  - netcdf4
+  - cftime
+  - metpy
+  - pip
+  - pip:
+      - cfunits
