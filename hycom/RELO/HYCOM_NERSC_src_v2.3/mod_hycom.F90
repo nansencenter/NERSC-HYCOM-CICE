@@ -2471,6 +2471,8 @@
            call rdrivr(mr2,lr2)
            call rdrivr(mr3,lr3)
 #endif /* USE_NUOPC_CESMBETA:else */
+      elseif (highfq_river) then
+           call readriver_hf(dtime0,.true.)
       endif
 !
       if     (clmflg.eq.12) then
@@ -3071,6 +3073,8 @@
             wr0=-.5*x *x1*x1
             wr3=-.5*x1*x *x
          endif
+      elseif (highfq_river) then
+         call readriver_hf(dtime,.false.)
       endif
 !
 ! --- set weights for quasi-hermite time interpolation for temperature,
