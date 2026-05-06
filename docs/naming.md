@@ -1,4 +1,6 @@
-This is a bref explanation of some of the names used throughout the documentation.
+# Naming Conventions
+
+This is a brief explanation of some of the names used throughout the documentation.
 
 |name     | meaning|
 |-------- | -------------|

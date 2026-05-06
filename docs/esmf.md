@@ -9,7 +9,7 @@ You could try to install his yourself, instructions are available in the downloa
 However, it is probably recommended that you let your local IT support to do it
 to make sure that MPI etc is properly set up.
 
-Once installed, hycomc-cice can be compiled - [more on hycom compilation here](./HYCOM-CICE-compilation.md).
+Once installed, hycomc-cice can be compiled - [more on hycom compilation here](./hycom-cice-compilation.md).
 
 # Site-specific details
 
