@@ -1284,9 +1284,9 @@
 !
         lgth = len_trim(flnmfor)
 !
-        call zaiopf(flnmfor(1:lgth)//'forcing.riverh.a', 'old', 918)
+        call zaiopf(flnmfor(1:lgth)//'forcing.rivers.a', 'old', 918)
         if     (mnproc.eq.1) then  ! .b file from 1st tile only
-        open (unit=uoff+918,file=flnmfor(1:lgth)//'forcing.riverh.b', &
+        open (unit=uoff+918,file=flnmfor(1:lgth)//'forcing.rivers.b', &
            status='old', action='read')
         read (uoff+918,'(a79)') preambl
         endif !1st tile
@@ -1908,7 +1908,7 @@
 !
       if (thermo) then
 !
-      if     (.not.priver) then
+      if     (priver == 0) then
         if     (mnproc.eq.1) then
         write (lp,*)
         write (lp,*) '***** no river precipitation *****'
@@ -1917,7 +1917,7 @@
         call xcsync(flush_lp)
         rivers(:,:,:) = 0.0
         rivera = .true.  
-      else
+      elseif (priver == 1) then
         call zaiopf(flnmfor(1:lgth)//'forcing.rivers.a', 'old', 918)
         if     (mnproc.eq.1) then  ! .b file from 1st tile only
         open (unit=uoff+918,file=flnmfor(1:lgth)//'forcing.rivers.b', &
@@ -1937,7 +1937,7 @@
             rivers(:,:,l) = util1(:,:)
           enddo
           if     (mnproc.eq.1) then  ! .b file from 1st tile only
-          close (unit=uoff+918)
+            close (unit=uoff+918)
           endif
           call zaiocl(918)
 !diag     call prtmsk(ip,util1,util2,idm,idm,jdm,  0.,86400.*36000., &
@@ -1945,10 +1945,10 @@
         endif
       endif
 !
-      else  ! .not.thermo
-        rivers(:,:,:) = 0.0
-        priver = .false.
-        rivera = .true.  
+!      else  ! .not.thermo Till DMI: Can never enter here due to clause in blkdat.F90
+!        rivers(:,:,:) = 0.0
+!        priver = .false.
+!        rivera = .true.  
       endif                    !  thermo
 !
       if     (mnproc.eq.1) then

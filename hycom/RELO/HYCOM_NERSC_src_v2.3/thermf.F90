@@ -1131,9 +1131,6 @@
 #ifdef CPL_OASIS_HYCOM
       use mod_cpl_oasis_init
 #endif
-#if defined (NERSC_HYCOM_CICE)
-      use mod_NERSCnml, only : highfq_river
-#endif
 
       implicit none
 !
@@ -1976,7 +1973,7 @@
 ! --- wtrflx = water flux (m/s kg/m**3) into ocean
       wtrflx(i,j)=-emnp*rhoref
 ! --- allow for rivers as a precipitation bogas (m/s kg/m**3)
-      if     (priver) then
+      if     (priver == 1) then
         if(cesmbeta .and. cpl_orivers.and.cpl_irivers) then
             rivflx(i,j) = (imp_orivers(i,j,1)+imp_irivers(i,j,1)) &
                         * rhoref
@@ -1987,7 +1984,7 @@
         endif
 !       wtrflx(i,j) = wtrflx(i,j)+rivflx(i,j) !update wtrflx in thermf_oi
 #if defined(NERSC_HYCOM_CICE)
-      elseif (highfq_river) then
+      elseif (priver == 2) then
         rivflx(i,j) = ( rivers(i,j,1)*wr0+rivers(i,j,2)*wr1)   &
                     * rhoref
 #endif
