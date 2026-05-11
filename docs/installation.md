@@ -112,6 +112,3 @@ and are shown here for reference only. What you source is exactly what is displa
 :::
 
 ::::
-
-To add support for another machine, create `environment/<machine>_env.sh` following the
-same structure and add a dropdown entry here.
