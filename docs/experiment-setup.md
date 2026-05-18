@@ -1,5 +1,5 @@
 In the following, `<CONFIGNAME>`, `<EXPT_ID>`, and `<IEXPT>` are placeholders for user-defined
-values, see the [directory structure table](overview.md#directory-structure) for a
+values, see the table in the [directory structure section](overview.md#directory-structure) for a
 description and examples of each.
 
 ## Set up the work directory
@@ -22,11 +22,13 @@ cd $WORK/<CONFIGNAME>
 cp $HOME/NERSC-HYCOM-CICE/input/REGION.src .
 ```
 
-Open `REGION.src` and update two lines:
+Open `REGION.src` and update the following lines to match your setup:
 
-- `export R=` — set to your configuration name, e.g. `export R=<CONFIGNAME>`
-- `export NHCROOT=` — set to the full path of your NERSC-HYCOM-CICE clone,
-  e.g. `export NHCROOT=${HOME}/NERSC-HYCOM-CICE`
+```bash
+export R=<CONFIGNAME>
+...
+export NHCROOT=${HOME}/NERSC-HYCOM-CICE
+```
 
 ## Create the experiment directory
 
@@ -61,18 +63,10 @@ cp <path/to/reference/blkdat.input> .
 Each field occupies its own line; change the leading numeric value only. At minimum,
 update these fields for each new experiment:
 
-> **Note:** `blkdat.input` is a runtime file — it is read when the model starts, not during
-> compilation. It can be modified at any time after compiling.
-
 | Field | Description | Notes |
 |-------|-------------|-------|
 | `iexpt` | Experiment number ×10 | e.g. `026` for expt `02.6` |
 | `ntracr` | Number of BGC tracers | `0` = none, `1` = ECOSMO |
-| `rstrfq` | Days between restart output | e.g. `5.0` or `10.0` |
-| `veldf4` | Biharmonic momentum diffusion velocity (m/s) | Negative value = read from external file |
-| `thkdf4` | Biharmonic thickness diffusion velocity (m/s) | Negative value = read from external file |
-| `ticegr` | Temperature gradient inside ice (deg/m) | HYCOM 2.2: set to `2.0` |
-| `mslprf` | MSL pressure forcing flag | `0`=off, `1`=on |
 
 ::::{dropdown} Full blkdat.input parameter reference (with example values)
 
@@ -371,15 +365,29 @@ Open `$WORK/<CONFIGNAME>/expt_<EXPT_ID>/EXPT.src` and update:
 
 | Line to find | Value to set | Notes |
 |--------------|--------------|-------|
-| `X=` | `"<EXPT_ID>"` | Experiment identifier (dot notation) |
-| `E=` | `"<IEXPT>"` | Experiment identifier (no dot) |
+| `X=` | `"<EXPT_ID>"` e.g. `"02.6"` | Experiment identifier (dot notation) |
+| `E=` | `"<IEXPT>"` e.g. `"026"` | Experiment identifier (no dot) |
 | `T=` | `"04"` | Topography version |
-| `export NMPI=` | e.g. `504` for betzy | Number of MPI tiles |
+| `export NMPI=` | e.g. `504` for Betzy | Number of MPI tiles |
 | `export MXBLCKS=` | e.g. `9` | Maximum ice blocks per MPI process |
 | `export COMPILE_BIOMODEL=` | `"yes"` or `"no"` | BGC coupling on/off |
 
-Topography files are in `$WORK/<CONFIGNAME>/topo/` and are named
-`depth_<CONFIGNAME>_NN.[a,b]`, where `NN` is the topography version (e.g. `depth_TP2a0.10_04.[a,b]`).
+> **Note:** Topography files are in `$WORK/<CONFIGNAME>/topo/` and are named
+> `depth_<CONFIGNAME>_T.[a,b]` (e.g. `depth_TP2a0.10_04.[a,b]`).
 
 > **Note:** If the model reports that ice blocks exceed the maximum, increase `MXBLCKS` to
 > the value recommended in the error message.
+
+::::{dropdown} Other variables in EXPT.src
+
+| Variable | Description |
+|----------|-------------|
+| `export V=` | HYCOM version; determines which source directory is used when compiling |
+| `export SIGVER=` | Equation of state version; must be consistent with `thflag` in `blkdat.input` |
+| `export K=` | Number of layers — auto-derived from `blkdat.input`, no need to edit |
+| `export P=` | Experiment directory path — set automatically from the script location |
+| `export D=` | Permanent data directory (`P/data`) — set automatically |
+| `export S=` | Scratch directory (`P/SCRATCH`) — set automatically |
+
+::::
+
