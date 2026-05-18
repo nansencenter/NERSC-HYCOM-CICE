@@ -20,3 +20,5 @@ dependencies:
   - pip
   - pip:
       - cfunits
+      - sphinx-design>=0.5
+      - sphinx-copybutton>=0.5
