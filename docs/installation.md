@@ -84,10 +84,7 @@ systems the conda installation itself must be loaded first.
 
 ::::{dropdown} Betzy (NRIS/Sigma2)
 
-```bash
-module load Miniforge3/24.1.2-0
-source ${EBROOTMINIFORGE3}/bin/activate
-conda activate hycom-cice
+```{include} _snippets/betzy_python_activate.md
 ```
 
 ::::
@@ -98,8 +95,7 @@ Each machine has a dedicated HPC environment file under `NERSC-HYCOM-CICE/enviro
 Source it before compiling and include it in your job submission scripts before launching
 the model.
 
-```bash
-source ${HOME}/NERSC-HYCOM-CICE/environment/betzy_env.sh   # adjust filename for your machine
+```{include} _snippets/betzy_hpc_env.md
 ```
 
 The dropdowns below render the actual environment files from `NERSC-HYCOM-CICE/environment/`
