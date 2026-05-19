@@ -7,28 +7,39 @@ coupled via the Earth System Modeling Framework (ESMF).
 
 .. toctree::
    :maxdepth: 2
-   :caption: Getting Started
+   :caption: Overview
 
-   naming
+   overview
 
 .. toctree::
    :maxdepth: 2
-   :caption: Installation & Compilation
+   :caption: Installation
 
-   python
-   esmf
-   esmf-preparation
-   hycom-cice-compilation
-   hycom-only-compilation
-   mscprogs
+   installation
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Experiment setup
+
+   experiment-setup
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Compilation
+
+   compilation
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Forcing Files
+
+   forcing
 
 .. toctree::
    :maxdepth: 2
    :caption: Running the Model
 
-   offline-nesting
-   offlux
-   changes
+   running
 
 .. toctree::
    :maxdepth: 2
