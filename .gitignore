@@ -5,6 +5,8 @@ docs/_build/
 *.mod
 *.log
 *~
+
+NMOb0.08/topo/
 #--------
 #--------
 hycom/MSCPROGS/bin*/
