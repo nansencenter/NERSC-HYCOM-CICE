@@ -4,16 +4,17 @@
 # Stages DATE_START-1 through DATE_END+1 so HYCOM can interpolate across the
 # full run period including the first and last time steps.
 #
-# Usage: stage_nesting_files.sh DIR_NST WORK_NST DATE_START DATE_END [--no-fabm]
+# Usage: stage_nesting_files.sh DIR_NST WORK_NST DATE_START DATE_END [OPTIONS]
 #
-#   DIR_NST     Source directory containing nesting archive files or tar_files/
-#   WORK_NST    Destination directory (created if it does not exist)
-#   DATE_START  First day of run period (YYYY-MM-DD)
-#   DATE_END    Last day of run period (YYYY-MM-DD)
-#   --no-fabm   Skip BGC (FABM) archive files
+#   DIR_NST          Source directory containing nesting archive files or tar_files/
+#   WORK_NST         Destination directory (created if it does not exist)
+#   DATE_START       First day of run period (YYYY-MM-DD)
+#   DATE_END         Last day of run period (YYYY-MM-DD)
+#   --no-fabm        Skip BGC (FABM) archive files
+#   --skip-existing  Skip dates where both .a and .b files already exist in WORK_NST
 
 usage() {
-    echo "Usage: $0 DIR_NST WORK_NST DATE_START DATE_END [--no-fabm]"
+    echo "Usage: $0 DIR_NST WORK_NST DATE_START DATE_END [--no-fabm] [--skip-existing]"
     exit 1
 }
 
@@ -24,7 +25,14 @@ WORK_NST=$2
 DATE_START=$3
 DATE_END=$4
 WITH_FABM=true
-[ "${5}" = "--no-fabm" ] && WITH_FABM=false
+SKIP_EXISTING=false
+for arg in "${@:5}"; do
+    case "$arg" in
+        --no-fabm)       WITH_FABM=false ;;
+        --skip-existing) SKIP_EXISTING=true ;;
+        *) echo "Unknown option: $arg"; usage ;;
+    esac
+done
 
 mkdir -p "${WORK_NST}" || { echo "Cannot create ${WORK_NST}"; exit 1; }
 cd "${WORK_NST}"       || { echo "Cannot cd to ${WORK_NST}";   exit 1; }
@@ -38,6 +46,8 @@ for (( d=$(date -u -d "$DATE_START - 1 day" +%s); d<=$(date -u -d "$DATE_END + 1
     bfile=archv.${YYYY}_${DOY}_00.b
     afile_fabm=archv_fabm.${YYYY}_${DOY}_00.a
     bfile_fabm=archv_fabm.${YYYY}_${DOY}_00.b
+
+    if $SKIP_EXISTING && [ -f "$afile" ] && [ -f "$bfile" ]; then continue; fi
 
     # copy directly if files are available individually
     if [ -f "${DIR_NST}/${afile}" ]; then
