@@ -47,7 +47,9 @@ for (( d=$(date -u -d "$DATE_START - 1 day" +%s); d<=$(date -u -d "$DATE_END + 1
     afile_fabm=archv_fabm.${YYYY}_${DOY}_00.a
     bfile_fabm=archv_fabm.${YYYY}_${DOY}_00.b
 
-    if $SKIP_EXISTING && [ -f "$afile" ] && [ -f "$bfile" ]; then continue; fi
+    if $SKIP_EXISTING && [ -f "$afile" ] && [ -f "$bfile" ]; then
+        if ! $WITH_FABM || ( [ -f "$afile_fabm" ] && [ -f "$bfile_fabm" ] ); then continue; fi
+    fi
 
     # copy directly if files are available individually
     if [ -f "${DIR_NST}/${afile}" ]; then
