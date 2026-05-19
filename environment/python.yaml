@@ -14,5 +14,6 @@ dependencies:
   - metpy
   - pip
   - udunits2
+  - cmocean
   - pip:
       - cfunits
