@@ -95,13 +95,17 @@ Each machine has a dedicated HPC environment file under `NERSC-HYCOM-CICE/enviro
 Source it before compiling and include it in your job submission scripts before launching
 the model.
 
+::::{dropdown} Source HPC environment — Betzy (NRIS/Sigma2)
+
 ```{include} _snippets/betzy_hpc_env.md
 ```
 
-The dropdowns below render the actual environment files from `NERSC-HYCOM-CICE/environment/`
-and are shown here for reference only. What you source is exactly what is displayed!
+::::
 
-::::{dropdown} Betzy (NRIS/Sigma2)
+The dropdown below shows the full content of `betzy_env.sh` for reference — what you
+source is exactly what is displayed.
+
+::::{dropdown} View betzy_env.sh
 
 :::{literalinclude} ../environment/betzy_env.sh
 :language: bash
