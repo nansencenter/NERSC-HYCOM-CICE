@@ -1,7 +1,8 @@
+(compilation-top)=
 Before compiling, source the HPC environment file to load the correct modules and compilers.
 See the [HPC environment](installation.md#hpc-environment) section for details.
 
-::::{dropdown} Betzy (NRIS/Sigma2)
+::::{dropdown} Source HPC environment — Betzy (NRIS/Sigma2)
 
 ```{include} _snippets/betzy_hpc_env.md
 ```
@@ -10,8 +11,12 @@ See the [HPC environment](installation.md#hpc-environment) section for details.
 
 ## BGC dependencies (MSCPROGS and FABM)
 
+> **Before compiling:** source the HPC environment file to load the correct modules and compilers
+> ([see top of this page](compilation.md#compilation-top)).
+
+
 Only needed when running with biogeochemical modules (`ntracr` > 0 in `blkdat.input`).
-These libraries only need to be rebuilt when the HPC modules are updated or the source changes.
+These libraries only need to be rebuilt when the HPC modules are updated or the source code changes.
 
 ### Compile MSCPROGS (libhycnersc.a)
 
@@ -69,6 +74,32 @@ ${HOME}/local/fabm/hycom/lib64/libfabm.a
 ```
 
 ## Compile HYCOM-CICE
+
+> **Before compiling:** source the HPC environment file to load the correct modules and compilers
+> ([see top of this page](compilation.md#compilation-top)).
+
+Before running the compile script, check that the Makefile configuration symlink points
+to the correct HYCOM version. The symlink is at:
+
+```
+${HOME}/NERSC-HYCOM-CICE/hycom/RELO/config/Linux.betzy.ifort_cice
+```
+
+It must point to one of:
+
+| Target | Use when |
+|--------|----------|
+| `Linux.betzy.ifort_cice.V22` | HYCOM version 2.2 (default) |
+| `Linux.betzy.ifort_cice.V23` | HYCOM version 2.3 |
+
+Check and update the symlink if needed:
+
+```bash
+ls -la ${HOME}/NERSC-HYCOM-CICE/hycom/RELO/config/Linux.betzy.ifort_cice
+# To switch to V23:
+ln -sf Linux.betzy.ifort_cice.V23 \
+    ${HOME}/NERSC-HYCOM-CICE/hycom/RELO/config/Linux.betzy.ifort_cice
+```
 
 Run the compile script from the experiment directory:
 
@@ -141,9 +172,12 @@ ${WORK}/<CONFIGNAME>/expt_<EXPT_ID>/build/src_2.2.98ZA-07Tsig0-i-sm-sse_relo_mpi
 
 ## Compile hycom_ALL
 
+> **Before compiling:** source the HPC environment file to load the correct modules and compilers
+> ([see top of this page](compilation.md#compilation-top)).
+
 `hycom_ALL` provides domain-independent pre/post processing utilities used to prepare
 external input files. Like MSCPROGS and FABM, it only needs to be compiled once per
-machine/compiler setup, not per experiment.
+machine/compiler setup (not per experiment) or when the source code changes.
 
 ::::{dropdown} What hycom_ALL compiles and what it is used for
 
