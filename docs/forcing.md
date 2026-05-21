@@ -365,7 +365,7 @@ the HYCOM grid and hybrid vertical coordinate, and accepts the following options
 | `-g` | Source grid type; always set to `regular` for current GLORYS12 and BGC products |
 | `-b` | BGC input path pattern; also activates BGC boundary creation (optional) |
 | `-i` | Search radius for wet-point lookup (optional, default: 50 grid cells) |
-| `-m` | Path to the GLORYS12 mesh file (contains grid, bathymetry, mask); default points to the correct location on NIRD (optional) |
+| `-m` | Path to the GLORYS12 mesh file (contains grid, bathymetry, mask); (optional) |
 | `-c` | Path to the GLORYS12 coordinates file (contains vertical layer thicknesses `e3t`); required when `-m` is set (optional) |
 | `-h` | Print usage information and exit |
 
