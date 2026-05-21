@@ -506,9 +506,11 @@ def p2v_2d(var_p) :
     var_u[:,0] = 2.0*var_u[:,1] - var_u[:,2]
     return var_u
 
-def read_grid(filemesh) :
-    
-    ncid0=netCDF4.Dataset(filemesh[:-13]+"coordinates.nc","r")
+def read_grid(filemesh, coord_file=None) :
+
+    if coord_file is None:
+        coord_file = filemesh[:-13]+"coordinates.nc"
+    ncid0=netCDF4.Dataset(coord_file,"r")
     numpy.seterr(invalid='ignore')
     e3t=ncid0.variables["e3t"][:]
     ncid0.close()
@@ -538,8 +540,8 @@ def read_grid(filemesh) :
     return hdept,gdept,mbathy,mbathy_u,mbathy_v,mbathyfill,mask,e3t,plon,plat
 
 
-def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_file=None) :
-    
+def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_file=None,coord_file=None) :
+
     #
     # Trim input netcdf file name being appropriate for reading
     #
@@ -550,7 +552,7 @@ def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_file=None) :
     # Note that for now, we are using T-grid in vertical which may need
     # to be improved by utilizing W-point along the vertical axis.
     #
-    hdept,gdept,mbathy,mbathy_u,mbathy_v,mbathyfill,mask,e3t,plon,plat=read_grid(meshfile)
+    hdept,gdept,mbathy,mbathy_u,mbathy_v,mbathyfill,mask,e3t,plon,plat=read_grid(meshfile,coord_file=coord_file)
     logger.warning("Reading grid information from regional.grid.[ab] (not completed)")
     #
     # Convert from P-point (i.e. NEMO grid) to U and V HYCOM grids
@@ -936,6 +938,9 @@ if __name__ == "__main__" :
     parser.add_argument('--iexpt',    type=int,default=10,  help="    ")
     parser.add_argument('--iversn',   type=int,default=22,  help="    ")
     parser.add_argument('--yrflag',   type=int,default=3,   help="    ")
-    parser.add_argument('--bio_file', type=str,             help="    ")
+    parser.add_argument('--bio_file',   type=str,             help="    ")
+    parser.add_argument('--coord_file', type=str, default=None,
+                        help="Path to coordinates.nc file containing e3t (vertical layer thicknesses). "
+                             "If not set, derived from meshfile by replacing the last 13 characters with 'coordinates.nc'.")
     args = parser.parse_args()
-    main(args.meshfile,args.file,iexpt=args.iexpt,iversn=args.iversn,yrflag=args.yrflag,bio_file=args.bio_file)
+    main(args.meshfile,args.file,iexpt=args.iexpt,iversn=args.iversn,yrflag=args.yrflag,bio_file=args.bio_file,coord_file=args.coord_file)
