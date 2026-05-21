@@ -1,7 +1,31 @@
 ## Initial conditions
 
+Two initialization modes are available, selected via `INITFLG` in `srjob.sh`
+(see [Submit a job](running.md#submit-a-job)):
+
+1. **Restart run** (`INITFLG=""`): the model continues from HYCOM and CICE restart files
+   valid at the start date. This is the standard mode for hindcast and forecast runs.
+   See [Restart files](#restart-files) below for how to obtain them.
+
+2. **Climatological initialization** (`INITFLG="--init"`): temperature and salinity (T/S)
+   are read from `relax/<IEXPT>/relax_tem.[ab]` and `relax_sal.[ab]`; layer thicknesses
+   are computed internally from the T/S profiles; velocities and sea surface height (SSH)
+   start at zero. The start date must be in September (Arctic sea ice is at its annual
+   minimum in September, making it a natural starting point). Expect a multi-year
+   spin-up before the circulation is reliable. See
+   [Climatologies and river forcing](#climatologies-and-river-forcing) for how to
+   prepare the required files.
+
+   > **Note:** The `relax_*` file names reflect their use as targets for climatological
+   > relaxation during the run (see
+   > [Climatologies and river forcing](#climatologies-and-river-forcing)). During
+   > initialization, no relaxation is applied. The files are simply read once as the
+   > initial T/S state.
+
+### Restart files
+
 HYCOM and CICE each need a restart file valid at the start date of the run
-(consistent with `START` in the [srjob.sh variable table](running.md#submit-a-job)). 
+(consistent with `START` in the [srjob.sh variable table](running.md#submit-a-job)).
 The naming conventions are as follows:
 
 | Model | File | Notes |
@@ -30,8 +54,13 @@ cp /nird/datalake/NS9481K/shuang/TP2_output/expt_02.6/cice/iced.2016-08-27-00000
 
 ## Atmospheric forcing
 
-> **Note:** This step is handled automatically by `srjob.sh` (see [Running the Model](running.md)). Skip it if you use
-> `srjob.sh` to submit jobs (recommended).
+This step is handled by the script `atmo_synoptic.sh`.
+
+> **Note:** The job script `srjob.sh` calls `atmo_synoptic.sh` automatically (see [Submit a job](running.md#submit-a-job)). Skip this section if you
+> submit via `srjob.sh` (recommended). You may still want to run `atmo_synoptic.sh`
+> manually to verify the input files are in place before submitting; if so, comment out
+> the `atmo_synoptic.sh` call in `srjob.sh` to prevent the job from regenerating the
+> files (output filenames have no dates, so they would be silently overwritten).
 
 Atmospheric forcing must be prepared for each run period. `START` and `END` are the run
 start and end times, see the [srjob.sh variable table](running.md#submit-a-job) for the
@@ -99,12 +128,13 @@ touch stamp_${START}-${END}
 
 ## Open boundary forcing
 
-The open boundaries of a regional ocean model must be forced by time-varying fields (e.g., temperature, salinity, velocity, and optionally BGC tracers) from an external ocean product. The source can be a reanalysis such as GLORYS12, output from another ocean model run (e.g., NEMO), or any other product that covers the domain boundaries. This approach is called **offline nesting**, and is the approach supported by NERSC-HYCOM-CICE: information flows in one direction only, from the external product into the regional model. The regional model has no influence on the boundary conditions it receives. This is in contrast to *online* (two-way) nesting, where the regional model (the inner nest) and an outer nest model run simultaneously and exchange information at their shared boundary. Online nesting is not supported.
+The open boundaries of a regional ocean model must be forced by time-varying fields (e.g., temperature, salinity, velocity, and optionally BGC tracers) from an external ocean product. The source can be a reanalysis such as GLORYS12 or output from another ocean model simulation that covers the domain boundaries. This approach is called **offline nesting**, and is the approach supported by NERSC-HYCOM-CICE: information flows in one direction only, from the external product into the regional model. The regional model has no influence on the boundary conditions it receives. This is in contrast to *online* (two-way) nesting, where the regional model (the inner nest) and an outer nest model run simultaneously and exchange information at their shared boundary. Online nesting is not supported here.
+Further detail on offline nesting in HYCOM can be found in the [HYCOM User Guide](https://www.hycom.org/hycom/documentation) and the [HYCOM examples wiki](https://github.com/HYCOM/HYCOM-examples/wiki/GOMb0.08).
 
 Offline nesting is activated in HYCOM-CICE by setting `nestfq > 0` (interval in days between 3D nesting archive reads) or `bnstfq > 0` (interval in days between barotropic nesting archive reads) in `blkdat.input`. Three groups of files are required:
 
-- **Boundary configuration files** — define the open boundary geometry and relaxation coefficients (`ports.input`, `rmu`, `rmutr`).
-- **Offline nesting archive files** — the external time-varying boundary conditions, interpolated onto the model grid and stored as HYCOM archive files (`archv.YYYY_DDD_HH.[ab]`). Must span the run period; HYCOM interpolates in time between snapshots.
+- **Boundary configuration files** — define the open boundary geometry and relaxation coefficients for the boundary nudging zone (`ports.input`, `rmu`, `rmutr`).
+- **Offline nesting archive files** — pre-interpolated boundary conditions from the external product, stored in HYCOM's `archv` format. Must span the run period; HYCOM interpolates in time between snapshots.
 - **Sponge layers** *(optional)* — spatially varying biharmonic diffusion fields (`thkdf4`, `veldf4`) that damp noise near the open boundaries.
 
 
@@ -116,8 +146,8 @@ The following files must be present under `$WORK/<CONFIGNAME>/nest/<IEXPT>/`:
 | File | Contents |
 |------|----------|
 | `ports.input` | Open boundary section definitions |
-| `rmu.a` / `rmu.b` | 2D relaxation coefficient field for physics |
-| `rmutr.a` / `rmutr.b` | 2D relaxation coefficient field for BGC tracers |
+| `rmu.a` / `rmu.b` | 2D relaxation coefficient field for physics nudging at open boundaries | 
+| `rmutr.a` / `rmutr.b` | 2D relaxation coefficient field for BGC tracer nudging at open boundaries |
 
 For TP2, you can copy these files from the following reference experiment:
 
@@ -209,54 +239,52 @@ Note that the internal variable name is `rmu` in both files. The max value
 
 For TP2 the files can simply be copied from a reference experiment (see above). If you
 need to generate them from scratch (e.g. to adjust the relaxation zone width or
-e-folding time) use `topo_ports.py`. The script reads `regional.grid.a/b` (grid
-coordinates) and `regional.depth.a/b` (bathymetry and land mask), detects open boundary
-segments automatically from where ocean cells sit at the domain edge, and writes both
-`ports.input` and `rmu.a/b`.
+e-folding time), run `nest_setup_ports.sh` from the experiment directory with the zone
+width and e-folding time as arguments (TP2 values: width=20 cells, e-folding=20 days):
+
+```bash
+cd $WORK/<CONFIGNAME>/expt_<EXPT_ID>
+$HOME/NERSC-HYCOM-CICE/bin/nest_setup_ports.sh 20 20
+```
+
+The script reads `regional.grid.a/b` and `regional.depth.a/b` from `topo/`, detects
+open boundary segments automatically from where ocean cells sit at the domain edge, and
+writes `ports.input` and `rmu.a/b` to `nest/<IEXPT>/`.
+
+Copy `rmu` to `rmutr` if the same relaxation parameters apply to BGC tracers:
+
+```bash
+cd $WORK/<CONFIGNAME>/nest/<IEXPT>
+cp rmu.a rmutr.a
+cp rmu.b rmutr.b
+```
 
 > **Note:** `regional.grid.a/b` and `regional.depth.a/b` are pre-existing configuration
 > files in `$WORK/<CONFIGNAME>/topo/`. Generating them for a new grid is a separate
 > offline step not covered here.
 
-Create a scratch directory and link in the required files:
-
-```bash
-mkdir -p $WORK/<CONFIGNAME>/nest/<IEXPT>/SCRATCH
-cd $WORK/<CONFIGNAME>/nest/<IEXPT>/SCRATCH
-ln -sf $WORK/<CONFIGNAME>/topo/regional.grid.a .
-ln -sf $WORK/<CONFIGNAME>/topo/regional.grid.b .
-ln -sf $WORK/<CONFIGNAME>/topo/regional.depth.a .
-ln -sf $WORK/<CONFIGNAME>/topo/regional.depth.b .
-```
-
-Run the script with the bathymetry file, zone width, and e-folding time as arguments
-(TP2 values: width=20 cells, e-folding=20 days):
-
-```bash
-python $HOME/NERSC-HYCOM-CICE/pythonlibs/modeltools/modeltools/_old/scripts/topo_ports.py \
-    regional.depth 20 20
-```
-
-This writes `ports.input.tmp` (review and rename to `ports.input`) and `rmu.a/b`. Copy
-`rmu` to `rmutr` if the same parameters apply to BGC tracers:
-
-```bash
-mv ports.input.tmp ../ports.input
-cp rmu.a rmu.b ../
-cp rmu.a ../rmutr.a
-cp rmu.b ../rmutr.b
-```
-
 ::::
 
 ### Offline nesting archive files
 
-Archive files from the external product must be present in
-`$WORK/<CONFIGNAME>/nest/<IEXPT>/`, covering the full run period. They provide the
-time-varying boundary conditions (temperature, salinity, velocity, and optionally BGC
-tracers) that the model relaxes toward at the open boundaries. HYCOM reads a new archive
-at the interval set by `nestfq` (or `bnstfq`) and interpolates in time between
-consecutive snapshots. For TP2, daily files are used.
+HYCOM uses `archv` files as its standard model state snapshot format: each file stores
+the full model state (3D fields such as temperature, salinity, velocity, and layer
+thickness, plus 2D fields such as sea surface height and Montgomery potential) at a
+single point in time on the model grid and hybrid vertical coordinate system. In the nesting
+context, the same format is used for the pre-interpolated boundary conditions from the
+external product. The fields cover the entire inner model domain (not just the boundary
+cells) because nudging is applied volumetrically over the boundary nudging zone defined
+by `nest/rmu`.
+
+HYCOM reads a new archive at the interval set by `nestfq` (or `bnstfq`) and
+interpolates in time between consecutive snapshots. For TP2, daily files are used.
+These files must be present in `$WORK/<CONFIGNAME>/nest/<IEXPT>/`, covering the full run
+period. The expected file names are:
+
+| File | Contents |
+|------|----------|
+| `archv.YYYY_DDD_HH.a` / `.b` | Physics boundary conditions (`DDD` = zero-padded day of year, `HH` = hour, typically `00`) |
+| `archv_fabm.YYYY_DDD_HH.a` / `.b` | BGC boundary conditions (only needed when running with FABM) |
 
 Nesting files for TP2 are archived at `/nird/datalake/NS9481K/shuang/nest/TP2_expt023/`.
 Use `stage_nesting_files.sh` to copy or extract the files needed for a given date range:
@@ -269,72 +297,263 @@ $HOME/NERSC-HYCOM-CICE/bin/stage_nesting_files.sh \
     <END>
 ```
 Here, `START` and `END` are the run start and end times, see the [srjob.sh variable table](running.md#submit-a-job) for the
-expected format. The script automatically stages one extra day before and after the run period so HYCOM can interpolate boundary
-conditions across the full run.
+expected format. Two optional flags are supported (in any order):
 
-Add `--no-fabm` as a fifth argument to skip BGC archive files. 
+| Flag | Effect |
+|------|--------|
+| `--no-fabm` | Skip BGC (FABM) archive files |
+| `--skip-existing` | Skip dates where all expected files are already present in the destination directory |
 
 
-::::{dropdown} Generating nesting archive files from an external product
+:::::{dropdown} Generating nesting archive files from GLORYS12/CMEMS
 
 For TP2, pre-generated files are available at the path above. If you need to generate
-nesting archive files from scratch — for a different time period, source product, or
-configuration — use the four-step workflow below. It interpolates fields from an external
-ocean product (e.g., GLORYS12 or a NEMO run) onto the inner model grid. Further detail
-can be found in the [HYCOM User Guide](https://www.hycom.org/hycom/documentation) and the
-[HYCOM examples wiki](https://github.com/HYCOM/HYCOM-examples/wiki/GOMb0.08).
+nesting archive files from scratch (for a different time period, source product, or
+configuration) use the workflow below. Two products from the Copernicus Marine Environment Monitoring Service (CMEMS) are used as source data, both
+on a regular lat/lon grid:
 
-All scripts are run from the source region directory (e.g.,
-`$HOME/NERSC-HYCOM-CICE/NMOa0.08/expt_01.1/` for a native NEMO grid,
-`$HOME/NERSC-HYCOM-CICE/NMOb0.08/expt_01.0/` for a regular grid).
+- **Physics**: GLORYS12 reanalysis (CMEMS `GLOBAL_MULTIYEAR_PHY_001_030`)
+- **BGC**: CMEMS global ocean biogeochemistry reanalysis/forecast (`GLOBAL_REANALYSIS_BIO_001_029` for historical, `GLOBAL_ANALYSIS_FORECAST_BIO_001_029` for near-real-time)
+
+**Step 0 — Copy source region files** *(once)*
+
+The source region directory `NMOb0.08/` needs two things in place before any step can run:
+
+- **`NMOb0.08/REGION.src`, `NMOb0.08/expt_01.0/`** (including `blkdat.input`) — these
+  are part of the repository. If you cloned the repo before these were added, pull the
+  latest version from the `develop` branch:
+  ```bash
+  cd $HOME/NERSC-HYCOM-CICE && git pull origin develop
+  ```
+- **`NMOb0.08/topo/`** — grid and bathymetry files that are too large for the repository.
+  Both Step 1 and Step 2 read from this directory, so copy them once from NIRD:
+  ```bash
+  cp -r /nird/datapeak/NS9481K/MERCATOR_DATA/NMOb0.08/topo \
+      $HOME/NERSC-HYCOM-CICE/NMOb0.08/
+  ```
 
 **Step 1 — Create interpolation matrix** *(once per source/destination pair)*
 
-Computes the horizontal grid mapping from the source (NEMO/GLORYS) grid to the
-destination (HYCOM) grid:
+This step reads the grid coordinates of both the source (GLORYS12) and destination (HYCOM)
+regions and uses a conjugate gradient method to find, for each point on the destination
+grid, the corresponding fractional indices on the source grid. The result is a mapping
+array stored in `gmap.[ab]` that Step 2 uses to horizontally interpolate every field.
+This step only depends on the grid geometry, not the ocean fields, so it only needs to
+be run once per source/destination grid pair.
 
 ```bash
+cd $HOME/NERSC-HYCOM-CICE/NMOb0.08/expt_01.0
 $HOME/NERSC-HYCOM-CICE/bin/isuba_gmapi.sh $WORK/<CONFIGNAME>/
 ```
 
-Output: `subregion/<IEXPT>/<CONFIGNAME>.gmap.[ab]`
+`isuba_gmapi.sh` is a bash script that calls a compiled Fortran binary in
+`$HOME/NERSC-HYCOM-CICE/hycom/hycom_ALL/hycom_2.2.72_ALL`. No Python environment is
+needed. If you followed the [compilation guide](compilation.md#compile-hycom-all),
+the binary will already be in place.
 
-**Step 2 — Interpolate fields** *(repeat for every input file)*
+Output: `$HOME/NERSC-HYCOM-CICE/NMOb0.08/subregion/TP2a0.10.gmap.[ab]`
 
-Horizontally and vertically interpolates the external fields onto the HYCOM grid and
-isopycnal vertical coordinate:
+**Step 2 — Interpolate fields**
 
-```bash
-# Native GLORYS/NEMO grid, physics only:
-$HOME/NERSC-HYCOM-CICE/bin/nemo_to_hycom.sh \
-    -d $WORK/<CONFIGNAME>/expt_<EXPT_ID>/ \
-    -n /path/to/input/ext-GLORYS12V1_1dAV_20070302_...nc \
-    -g native
-
-# Regular grid, with BGC:
-$HOME/NERSC-HYCOM-CICE/bin/nemo_to_hycom.sh \
-    -d $WORK/<CONFIGNAME>/expt_<EXPT_ID>/ \
-    -n /path/to/input/MERCATOR-PHY-24-2018-01-01-12.nc \
-    -g regular \
-    -b /path/to/input/global_analysis_forecast_bio_20180101.nc
-```
+`nemo_to_hycom.sh` horizontally and vertically interpolates the external fields onto
+the HYCOM grid and hybrid vertical coordinate, and accepts the following options:
 
 | Option | Description |
 |--------|-------------|
 | `-d` | Destination experiment path (mandatory) |
-| `-n` | Path/pattern of input NetCDF files (mandatory) |
-| `-g` | Grid type: `native` or `regular` |
-| `-b` | BGC input file; also activates BGC boundary creation |
-| `-i` | Search radius for wet-point lookup (default: 50 grid cells) |
+| `-n` | Path pattern of physics input NetCDF files (mandatory) |
+| `-g` | Source grid type; always set to `regular` for current GLORYS12 and BGC products |
+| `-b` | BGC input path pattern; also activates BGC boundary creation (optional) |
+| `-i` | Search radius for wet-point lookup (optional, default: 50 grid cells) |
+| `-m` | Path to the GLORYS12 mesh file (contains grid, bathymetry, mask); default points to the correct location on NIRD (optional) |
+| `-c` | Path to the GLORYS12 coordinates file (contains vertical layer thicknesses `e3t`); required when `-m` is set (optional) |
+| `-h` | Print usage information and exit |
+
+The GLORYS12 and BGC files on NIRD follow these naming conventions:
+
+- **Physics** (`-n`): `MERCATOR-PHY-24-YYYY-MM-DD-12.nc` (one file per day, timestamped at 12:00 UTC)
+- **BGC** (`-b`): `global_analysis_forecast_bio_YYYYMMDD.nc` (one file per day)
+
+> **Note:** BGC tracers are interpolated onto the vertical layer structure derived from
+> the physics fields and must be processed together in a single pass. **`-n` and `-b`
+> must always cover the same date**; the script does not verify this, so make sure
+> they match.
+
+`nemo_to_hycom.sh` calls both a Python script and a compiled Fortran binary. Before
+running, load the HPC environment and activate the Python environment:
+
+:::{dropdown} Loading the HPC environment and Python environment on Betzy
+
+```bash
+source ${HOME}/NERSC-HYCOM-CICE/environment/betzy_env.sh
+```
+
+```{include} _snippets/betzy_python_activate.md
+```
+
+:::
+
+In the examples below, omit `-b` for physics-only runs.
+
+*Single day (2018-01-01), from the login node:*
+
+```bash
+cd $HOME/NERSC-HYCOM-CICE/NMOb0.08/expt_01.0
+$HOME/NERSC-HYCOM-CICE/bin/nemo_to_hycom.sh \
+    -d $WORK/<CONFIGNAME>/expt_<EXPT_ID>/ \
+    -n "/nird/datapeak/NS9481K/MERCATOR_DATA/PHY/2018/MERCATOR-PHY-24-2018-01-01-12.nc" \
+    -g regular \
+    -b "/nird/datapeak/NS9481K/MERCATOR_DATA/BIO/DAILY/2018/global_analysis_forecast_bio_20180101.nc"
+```
+
+Processing a single day takes approximately 20 minutes on the login node. For
+multi-day or multi-year runs, use a compute node instead:
+
+::::{dropdown} Interactive session on a compute node
+
+Compute nodes on Betzy cannot access NIRD, so copy the source files to `$WORK`
+from the login node first.
+
+The following example processes January 2018. Adjust the rsync patterns and date
+range for your period.
+
+**Copy source files** *(from the login node)*
+
+```bash
+mkdir -p $WORK/input/GLORYS12/PHY/2018
+rsync -av --include="MERCATOR-PHY-24-2018-01-*.nc" --exclude="*" \
+    /nird/datapeak/NS9481K/MERCATOR_DATA/PHY/2018/ \
+    $WORK/input/GLORYS12/PHY/2018/
+mkdir -p $WORK/input/GLORYS12/BIO/2018
+rsync -av --include="global_analysis_forecast_bio_201801*.nc" --exclude="*" \
+    /nird/datapeak/NS9481K/MERCATOR_DATA/BIO/DAILY/2018/ \
+    $WORK/input/GLORYS12/BIO/2018/
+mkdir -p $WORK/input/GLORYS12
+rsync -av \
+    /nird/datapeak/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO_MFC_001_24_MESH.nc \
+    /nird/datapeak/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO_MFC_001_24_COORD.nc \
+    $WORK/input/GLORYS12/
+```
+
+**Start an interactive session and run the script**
+
+```bash
+srun --nodes=1 --time=00:30:00 --qos=devel --account=nn2993k --pty bash
+```
+
+Once the session starts:
+
+```bash
+source ${HOME}/NERSC-HYCOM-CICE/environment/betzy_env.sh
+```
+
+```{include} _snippets/betzy_python_activate.md
+```
+
+```bash
+cd $HOME/NERSC-HYCOM-CICE/NMOb0.08/expt_01.0
+START=2018-01-01
+END=2018-01-31
+DATE=$START
+while [[ "$DATE" <= "$END" ]]; do
+    YYYY=$(date -d "$DATE" +%Y)
+    YYYYMMDD=$(date -d "$DATE" +%Y%m%d)
+    $HOME/NERSC-HYCOM-CICE/bin/nemo_to_hycom.sh \
+        -d $WORK/<CONFIGNAME>/expt_<EXPT_ID>/ \
+        -n "$WORK/input/GLORYS12/PHY/${YYYY}/MERCATOR-PHY-24-${DATE}-12.nc" \
+        -g regular \
+        -b "$WORK/input/GLORYS12/BIO/${YYYY}/global_analysis_forecast_bio_${YYYYMMDD}.nc" \
+        -m "$WORK/input/GLORYS12/GLO_MFC_001_24_MESH.nc" \
+        -c "$WORK/input/GLORYS12/GLO_MFC_001_24_COORD.nc"
+    DATE=$(date -d "$DATE + 1 day" +%Y-%m-%d)
+done
+```
+
+::::
+
+::::{dropdown} Submission script (multi-day or multi-year runs)
+
+Compute nodes on Betzy cannot access NIRD, so copy the source files to `$WORK`
+from the login node first.
+
+**Step 1 — Copy source files** *(from the login node)*
+
+Adjust the `for` loop to cover all years you need:
+
+```bash
+for YYYY in 2018 2019 2020; do
+    mkdir -p $WORK/input/GLORYS12/PHY/${YYYY}
+    rsync -av /nird/datapeak/NS9481K/MERCATOR_DATA/PHY/${YYYY}/ \
+        $WORK/input/GLORYS12/PHY/${YYYY}/
+    mkdir -p $WORK/input/GLORYS12/BIO/${YYYY}
+    rsync -av /nird/datapeak/NS9481K/MERCATOR_DATA/BIO/DAILY/${YYYY}/ \
+        $WORK/input/GLORYS12/BIO/${YYYY}/
+done
+mkdir -p $WORK/input/GLORYS12
+rsync -av \
+    /nird/datapeak/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO_MFC_001_24_MESH.nc \
+    /nird/datapeak/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO_MFC_001_24_COORD.nc \
+    $WORK/input/GLORYS12/
+```
+
+**Step 2 — Submit the job**
+
+Adjust `START`, `END`, and `#SBATCH` settings as needed:
+
+| Period | `START` | `END` |
+|--------|---------|-------|
+| One month (January 2018) | `2018-01-01` | `2018-01-31` |
+| Several months (Jan–Mar 2018) | `2018-01-01` | `2018-03-31` |
+| One year (2018) | `2018-01-01` | `2018-12-31` |
+| Several years (2015–2017) | `2015-01-01` | `2017-12-31` |
+
+```bash
+#!/bin/bash
+#SBATCH --job-name=nemo2hycom
+#SBATCH --account=nn2993k
+#SBATCH --time=24:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+
+source ${HOME}/NERSC-HYCOM-CICE/environment/betzy_env.sh
+```
+
+```{include} _snippets/betzy_python_activate.md
+```
+
+```bash
+cd $HOME/NERSC-HYCOM-CICE/NMOb0.08/expt_01.0
+START=2018-01-01
+END=2018-12-31
+DATE=$START
+while [[ "$DATE" <= "$END" ]]; do
+    YYYY=$(date -d "$DATE" +%Y)
+    YYYYMMDD=$(date -d "$DATE" +%Y%m%d)
+    $HOME/NERSC-HYCOM-CICE/bin/nemo_to_hycom.sh \
+        -d $WORK/<CONFIGNAME>/expt_<EXPT_ID>/ \
+        -n "$WORK/input/GLORYS12/PHY/${YYYY}/MERCATOR-PHY-24-${DATE}-12.nc" \
+        -g regular \
+        -b "$WORK/input/GLORYS12/BIO/${YYYY}/global_analysis_forecast_bio_${YYYYMMDD}.nc" \
+        -m "$WORK/input/GLORYS12/GLO_MFC_001_24_MESH.nc" \
+        -c "$WORK/input/GLORYS12/GLO_MFC_001_24_COORD.nc"
+    DATE=$(date -d "$DATE + 1 day" +%Y-%m-%d)
+done
+```
+
+::::
+
+:::::
 
 Output: `$WORK/<CONFIGNAME>/nest/<IEXPT>/archv.YYYY_DDD_HH.[ab]`
 
-**Step 3 — Fix Montgomery potential** *(repeat for every archive file)*
+**Step 3 — Fix Montgomery potential** *(always required)*
 
-The interpolated archive files have zero Montgomery potential, which must be corrected
-for each file. The script uses a restart file from the destination experiment only as a
-reference for the bottom boundary condition — any available restart file works. Run from
-the destination experiment directory:
+Step 2 writes `montg1 = 0` in the nesting archives — the interpolation code does not
+compute it. The correct value must be computed from the layer thicknesses and requires
+`psikk` (the Montgomery potential at the deepest isopycnal interface) and `thkk` (the
+virtual bottom layer thickness) from a restart file of the destination model.
+
+Run `calc_montg1.py` once per archive file, from the destination experiment directory:
 
 ```bash
 cd $WORK/<CONFIGNAME>/expt_<EXPT_ID>
@@ -344,25 +563,62 @@ python $HOME/NERSC-HYCOM-CICE/bin/calc_montg1.py \
     ../nest/<IEXPT>/Montg/
 ```
 
-**Step 4 — Create port and relaxation files**
+Any restart from the same model configuration works — it does not need to be the
+restart used to initialise your particular run. The script writes corrected archive
+files to the `Montg/` subdirectory. Repeat for every archive file in the nest directory.
 
-See [Boundary configuration files](#boundary-configuration-files) for how to generate
-`ports.input` and `rmu.[ab]`. Alternatively, `nest_setup_ports.sh` can generate both
-in one step with explicit zone width and e-folding time arguments:
+:::{dropdown} What calc_montg1.py does
 
-```bash
-$HOME/NERSC-HYCOM-CICE/bin/nest_setup_ports.sh 20 20
+The script recomputes only the `montg1` (Montgomery potential) field in each archive,
+leaving all other fields unchanged.
+
+**What it reads from the archive**
+
+For each layer it reads temperature (`temp`), salinity (`salin`), and layer thickness
+(`thknss`). It integrates `thknss` from the surface downward to build the cumulative
+pressure profile `p[k]`, and computes the potential density anomaly `thstar[k]` from T
+and S using the equation of state selected by `thflag` in `blkdat.input`. It also reads
+`srfhgt` (sea surface height).
+
+**What it reads from the restart**
+
+It reads `psikk` and `thkk` — the Montgomery potential and thickness of the virtual
+bottom layer, which sits below the deepest active isopycnal layer. For configurations
+with a terrain-following bottom layer, both are non-zero. For TP2 (z + isopycnal, no
+terrain-following), `thkk = 0` everywhere, but `psikk` is still non-zero — it
+represents the bottom Montgomery potential determined by the bathymetry and reference
+density structure. Because `psikk` does not depend on the instantaneous ocean state,
+any restart from the same configuration produces the correct result.
+
+**How montg1 is computed**
+
+`montg1` is split into two parts:
+
+- `montg1c`: the part independent of mean bottom pressure `pbavg`, assembled from
+  `psikk`, `thkk`, and the density/pressure profile.
+- `montg1pb`: the part proportional to `pbavg`, assembled from the same profile.
+
+`pbavg` is then solved by requiring the surface value to match `srfhgt`:
+
+```
+pbavg = (srfhgt − montg1c) / (montg1pb + thref)
+montg1 = montg1pb × pbavg + montg1c
 ```
 
-::::
+:::
 
 ### Sponge layers
 
 A common use of nesting is to add a sponge layer near the open boundaries: enhanced
-biharmonic diffusion that smooths the solution in the relaxation zone. This is done by
+biharmonic diffusion that smooths the solution near the boundary. This is done by
 setting `thkdf4` and `veldf4` to negative values in `blkdat.input`, which tells the model
 to read spatially varying 2D fields from file rather than using a uniform scalar. The
 following files must then be present under `$WORK/<CONFIGNAME>/relax/<IEXPT>/`:
+
+> **Note:** The sponge layer (enhanced diffusion), the boundary nudging zone (`nest/rmu`),
+> and the climatological relaxation zone (`relax_rmu`) are three independent mechanisms
+> with independently defined spatial extents. They are generated by separate scripts and
+> need not cover the same area.
 
 | File | Description |
 |------|-------------|
@@ -429,9 +685,24 @@ open boundaries, over the specified number of grid cells. The result is written 
 
 ## Climatologies and river forcing
 
-This step is handled by `create_ref_case.sh`: a grab-bag script that generates
+HYCOM has two separate boundary nudging systems that operate simultaneously:
 
-- relaxation climatologies
+- **Nesting nudging** (`nest/rmu` + nesting archives): nudges T, S, and interface
+  heights toward time-varying fields from the parent model (NEMO) near the open
+  boundary. See [Offline nesting archive files](#offline-nesting-archive-files).
+- **Climatological relaxation** (`relax_rmu` + climatologies): nudges T, S, and interface
+  heights toward monthly climatology in a broader zone behind the boundary. Controlled
+  by `relax` in `blkdat.input`.
+
+This step is handled by `create_ref_case.sh`, which generates the files needed for
+climatological relaxation and climatological initialization:
+
+- T/S and interface climatologies (`relax_sal`, `relax_tem`, `relax_int`) — nudging
+  targets for climatological relaxation, and initial T/S state for
+  [climatological initialization](forcing.md#initial-conditions)
+- Climatological relaxation mask (`relax_rmu`) — 2D field of 1/e-folding times (1/s),
+  non-zero where climatological relaxation is active; gates nudging of T, S, and
+  interface heights toward the climatologies above
 - river forcing
 - light attenuation (kpar) forcing
 - MPI tile definition files
@@ -464,6 +735,24 @@ variation), so it reads:
 tile_grid.sh -s 1 -${Icore} -${Jcore} ${T} > $EDIR/log/ref_tiling.out 2>&1
 ```
 
+Before running, source the HPC environment to make the compiled binaries available.
+For BGC runs (`ntracr > 0`), also activate the Python environment (needed for the river
+forcing scripts):
+
+::::{dropdown} Source HPC environment — Betzy (NRIS/Sigma2)
+
+```{include} _snippets/betzy_hpc_env.md
+```
+
+::::
+
+::::{dropdown} Activate Python environment — Betzy (NRIS/Sigma2)
+
+```{include} _snippets/betzy_python_activate.md
+```
+
+::::
+
 Then run the script:
 
 ```bash
@@ -479,10 +768,10 @@ TP2 on Betzy (`Icore=29`, `Jcore=26`, topography version `04`), this is `NMPI=50
 
 | Location | Contents | Condition |
 |----------|----------|-----------|
-| `relax/<IEXPT>/` | Physics relaxation climatology (z-level and hybrid-level) | always |
+| `relax/<IEXPT>/` | T/S and interface climatologies (`relax_sal`, `relax_tem`, `relax_int`; z-level and hybrid-level) — climatological relaxation targets and climatological initialization | always |
+| `relax/<IEXPT>/` | Climatological relaxation mask (`relax_rmu`) — 2D field of 1/e-folding times gating nudging toward the climatologies above | always |
 | `relax/<IEXPT>/` | BGC relaxation climatology (z-level and hybrid-level) | `ntracr ≠ 0` |
 | `relax/<IEXPT>/` | CO2 relaxation climatology | `ntracr ≠ 0` |
-| `relax/<IEXPT>/` | Relaxation mask | always |
 | `relax/<IEXPT>/` | Sea ice cover climatology | `iceclim=1` |
 | `force/rivers/<IEXPT>/` | River forcing | always |
 | `force/seawifs/` | kpar forcing (diffuse light attenuation from SeaWiFS; only read by the model when `jerlv0=0` in `blkdat.input`) | always |
