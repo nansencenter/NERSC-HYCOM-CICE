@@ -455,7 +455,7 @@ cd $HOME/NERSC-HYCOM-CICE/NMOb0.08/expt_01.0
 START=2018-01-01
 END=2018-01-31
 DATE=$START
-while [[ "$DATE" <= "$END" ]]; do
+while [[ "$DATE" < "$END" || "$DATE" == "$END" ]]; do
     YYYY=$(date -d "$DATE" +%Y)
     YYYYMMDD=$(date -d "$DATE" +%Y%m%d)
     $HOME/NERSC-HYCOM-CICE/bin/nemo_to_hycom.sh \
@@ -526,7 +526,7 @@ cd $HOME/NERSC-HYCOM-CICE/NMOb0.08/expt_01.0
 START=2018-01-01
 END=2018-12-31
 DATE=$START
-while [[ "$DATE" <= "$END" ]]; do
+while [[ "$DATE" < "$END" || "$DATE" == "$END" ]]; do
     YYYY=$(date -d "$DATE" +%Y)
     YYYYMMDD=$(date -d "$DATE" +%Y%m%d)
     $HOME/NERSC-HYCOM-CICE/bin/nemo_to_hycom.sh \
