@@ -511,11 +511,11 @@ def read_grid(filemesh, coord_file) :
     ncid0=netCDF4.Dataset(coord_file,"r")
     numpy.seterr(invalid='ignore')
     e3t=ncid0.variables["e3t"][:]
-    lon=ncid0.variables["longitude"][:]
-    lat=ncid0.variables["latitude"][:]
     ncid0.close()
 
     ncid0=netCDF4.Dataset(filemesh,"r")
+    lon=ncid0.variables["longitude"][:]
+    lat=ncid0.variables["latitude"][:]
     minlat=30
     index=numpy.where(lat>=minlat)[0]
     lat=lat[index]
