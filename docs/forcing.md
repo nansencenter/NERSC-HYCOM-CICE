@@ -134,7 +134,7 @@ Further detail on offline nesting in HYCOM can be found in the [HYCOM User Guide
 Offline nesting is activated in HYCOM-CICE by setting `nestfq > 0` (interval in days between 3D nesting archive reads) or `bnstfq > 0` (interval in days between barotropic nesting archive reads) in `blkdat.input`. Three groups of files are required:
 
 - **Boundary configuration files** — define the open boundary geometry and relaxation coefficients for the boundary nudging zone (`ports.input`, `rmu`, `rmutr`).
-- **Offline nesting archive files** — pre-interpolated boundary conditions from the external product, stored in HYCOM's `archv` format. Must span the run period; HYCOM interpolates in time between snapshots.
+- **Nesting files** — pre-interpolated boundary conditions from the external product, stored in HYCOM's `archv` format. Must span the run period; HYCOM interpolates in time between snapshots.
 - **Sponge layers** *(optional)* — spatially varying biharmonic diffusion fields (`thkdf4`, `veldf4`) that damp noise near the open boundaries.
 
 
@@ -265,7 +265,7 @@ cp rmu.b rmutr.b
 
 ::::
 
-### Offline nesting archive files
+### Nesting files
 
 HYCOM uses `archv` files as its standard model state snapshot format: each file stores
 the full model state (3D fields such as temperature, salinity, velocity, and layer
@@ -305,10 +305,10 @@ expected format. Two optional flags are supported (in any order):
 | `--skip-existing` | Skip dates where all expected files are already present in the destination directory |
 
 
-:::::{dropdown} Generating nesting archive files from GLORYS12/CMEMS
+:::::{dropdown} Generating nesting files from GLORYS12/CMEMS
 
 For TP2, pre-generated files are available at the path above. If you need to generate
-nesting archive files from scratch (for a different time period, source product, or
+nesting files from scratch (for a different time period, source product, or
 configuration) use the workflow below. Two products from the Copernicus Marine Environment Monitoring Service (CMEMS) are used as source data, both
 on a regular lat/lon grid:
 
@@ -365,8 +365,8 @@ the HYCOM grid and hybrid vertical coordinate, and accepts the following options
 | `-g` | Source grid type; always set to `regular` for current GLORYS12 and BGC products |
 | `-b` | BGC input path pattern; also activates BGC boundary creation (optional) |
 | `-i` | Search radius for wet-point lookup (optional, default: 50 grid cells) |
-| `-m` | Path to the GLORYS12 mesh file (contains grid, bathymetry, mask); (optional) |
-| `-c` | Path to the GLORYS12 coordinates file (contains vertical layer thicknesses `e3t`); required when `-m` is set (optional) |
+| `-m` | Path to the GLORYS12 mesh file (contains grid, bathymetry, mask) |
+| `-c` | Path to the GLORYS12 coordinates file (contains vertical layer thicknesses `e3t`) |
 | `-h` | Print usage information and exit |
 
 The GLORYS12 and BGC files on NIRD follow these naming conventions:
@@ -403,7 +403,9 @@ $HOME/NERSC-HYCOM-CICE/bin/nemo_to_hycom.sh \
     -d $WORK/<CONFIGNAME>/expt_<EXPT_ID>/ \
     -n "/nird/datapeak/NS9481K/MERCATOR_DATA/PHY/2018/MERCATOR-PHY-24-2018-01-01-12.nc" \
     -g regular \
-    -b "/nird/datapeak/NS9481K/MERCATOR_DATA/BIO/DAILY/2018/global_analysis_forecast_bio_20180101.nc"
+    -b "/nird/datapeak/NS9481K/MERCATOR_DATA/BIO/DAILY/2018/global_analysis_forecast_bio_20180101.nc" \
+    -m "/nird/datapeak/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO_MFC_001_24_MESH.nc" \
+    -c "/nird/datapeak/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO_MFC_001_24_COORD.nc"
 ```
 
 Processing a single day takes approximately 20 minutes on the login node. For
