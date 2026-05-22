@@ -700,7 +700,7 @@ def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_file=None,coord_file=None
 #        the data file saved for latitude larger than 30. In the case you change your data file coordinate
 #        configuration you need to modify the following lines
        # Derive bottom level index from the bio data mask (no coord file needed)
-       depth_lev = numpy.sum(numpy.isfinite(no3) & (numpy.abs(no3) < 1e10), axis=0)
+       depth_lev = numpy.sum(numpy.isfinite(no3[:,:,:nx]) & (numpy.abs(no3[:,:,:nx]) < 1e10), axis=0)
 #
 #
 #
@@ -731,7 +731,7 @@ def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_file=None,coord_file=None
        # o2 unit conversion do not needed (mmol O2/m3) 
 
        # Interpolate bio-variables vertically onto physics layers (75-->50) 
-       z_bio = biocrd.variables['depth'][:]
+       z_bio = ncidb.variables['depth'][:]
        nz_bio = len(z_bio)
        z_phy = gdept
        nz_phy = len(z_phy)
