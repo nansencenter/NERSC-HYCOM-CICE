@@ -404,8 +404,8 @@ $HOME/NERSC-HYCOM-CICE/bin/nemo_to_hycom.sh \
     -n "/nird/datapeak/NS9481K/MERCATOR_DATA/PHY/2018/MERCATOR-PHY-24-2018-01-01-12.nc" \
     -g regular \
     -b "/nird/datapeak/NS9481K/MERCATOR_DATA/BIO/DAILY/2018/global_analysis_forecast_bio_20180101.nc" \
-    -m "/nird/datapeak/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO_MFC_001_24_MESH.nc" \
-    -c "/nird/datapeak/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO_MFC_001_24_COORD.nc"
+    -m "/nird/datapeak/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO-MFC_001_030_mask_bathy.nc" \
+    -c "/nird/datapeak/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO-MFC_001_030_coordinates.nc"
 ```
 
 Processing a single day takes approximately 20 minutes on the login node. For
@@ -432,8 +432,8 @@ rsync -av --include="global_analysis_forecast_bio_201801*.nc" --exclude="*" \
     $WORK/input/GLORYS12/BIO/2018/
 mkdir -p $WORK/input/GLORYS12
 rsync -av \
-    /nird/datapeak/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO_MFC_001_24_MESH.nc \
-    /nird/datapeak/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO_MFC_001_24_COORD.nc \
+    /nird/datapeak/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO-MFC_001_030_mask_bathy.nc \
+    /nird/datapeak/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO-MFC_001_030_coordinates.nc \
     $WORK/input/GLORYS12/
 ```
 
@@ -465,8 +465,8 @@ while [[ "$DATE" < "$END" || "$DATE" == "$END" ]]; do
         -n "$WORK/input/GLORYS12/PHY/${YYYY}/MERCATOR-PHY-24-${DATE}-12.nc" \
         -g regular \
         -b "$WORK/input/GLORYS12/BIO/${YYYY}/global_analysis_forecast_bio_${YYYYMMDD}.nc" \
-        -m "$WORK/input/GLORYS12/GLO_MFC_001_24_MESH.nc" \
-        -c "$WORK/input/GLORYS12/GLO_MFC_001_24_COORD.nc"
+        -m "$WORK/input/GLORYS12/GLO-MFC_001_030_mask_bathy.nc" \
+        -c "$WORK/input/GLORYS12/GLO-MFC_001_030_coordinates.nc"
     DATE=$(date -d "$DATE + 1 day" +%Y-%m-%d)
 done
 ```
