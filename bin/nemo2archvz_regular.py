@@ -506,9 +506,9 @@ def p2v_2d(var_p) :
     var_u[:,0] = 2.0*var_u[:,1] - var_u[:,2]
     return var_u
 
-def read_grid(filemesh) :
-    
-    ncid0=netCDF4.Dataset(filemesh[:-13]+"coordinates.nc","r")
+def read_grid(filemesh, coord_file) :
+
+    ncid0=netCDF4.Dataset(coord_file,"r")
     numpy.seterr(invalid='ignore')
     e3t=ncid0.variables["e3t"][:]
     ncid0.close()
@@ -538,8 +538,8 @@ def read_grid(filemesh) :
     return hdept,gdept,mbathy,mbathy_u,mbathy_v,mbathyfill,mask,e3t,plon,plat
 
 
-def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_file=None) :
-    
+def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_file=None,coord_file=None) :
+
     #
     # Trim input netcdf file name being appropriate for reading
     #
@@ -550,7 +550,7 @@ def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_file=None) :
     # Note that for now, we are using T-grid in vertical which may need
     # to be improved by utilizing W-point along the vertical axis.
     #
-    hdept,gdept,mbathy,mbathy_u,mbathy_v,mbathyfill,mask,e3t,plon,plat=read_grid(meshfile)
+    hdept,gdept,mbathy,mbathy_u,mbathy_v,mbathyfill,mask,e3t,plon,plat=read_grid(meshfile,coord_file)
     logger.warning("Reading grid information from regional.grid.[ab] (not completed)")
     #
     # Convert from P-point (i.e. NEMO grid) to U and V HYCOM grids
@@ -699,11 +699,8 @@ def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_file=None) :
 # TODO:  Note that the coordinate files are for global configuration while
 #        the data file saved for latitude larger than 30. In the case you change your data file coordinate
 #        configuration you need to modify the following lines
-       bio_coordfile=bio_file[:-51]+"/GLOBAL_ANALYSIS_FORECAST_BIO_001_029_COORD/GLOBAL_REANALYSIS_BIO_001_029_mask.nc"
-       biocrd=netCDF4.Dataset(bio_coordfile,"r")
-       blat2 = biocrd.variables['latitude'][:]
-       index=numpy.where(blat2>=minblat)[0]
-       depth_lev = biocrd.variables['deptho_lev'][index[0]:,:]
+       # Derive bottom level index from the bio data mask (no coord file needed)
+       depth_lev = numpy.sum(numpy.isfinite(no3[:,:,:nx]) & (numpy.abs(no3[:,:,:nx]) < 1e10), axis=0)
 #
 #
 #
@@ -734,7 +731,7 @@ def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_file=None) :
        # o2 unit conversion do not needed (mmol O2/m3) 
 
        # Interpolate bio-variables vertically onto physics layers (75-->50) 
-       z_bio = biocrd.variables['depth'][:]
+       z_bio = ncidb.variables['depth'][:]
        nz_bio = len(z_bio)
        z_phy = gdept
        nz_phy = len(z_phy)
@@ -936,6 +933,7 @@ if __name__ == "__main__" :
     parser.add_argument('--iexpt',    type=int,default=10,  help="    ")
     parser.add_argument('--iversn',   type=int,default=22,  help="    ")
     parser.add_argument('--yrflag',   type=int,default=3,   help="    ")
-    parser.add_argument('--bio_file', type=str,             help="    ")
+    parser.add_argument('--bio_file',   type=str,             help="    ")
+    parser.add_argument('--coord_file', type=str, required=True, help="    ")
     args = parser.parse_args()
-    main(args.meshfile,args.file,iexpt=args.iexpt,iversn=args.iversn,yrflag=args.yrflag,bio_file=args.bio_file)
+    main(args.meshfile,args.file,iexpt=args.iexpt,iversn=args.iversn,yrflag=args.yrflag,bio_file=args.bio_file,coord_file=args.coord_file)
