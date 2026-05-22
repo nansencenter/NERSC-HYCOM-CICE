@@ -506,9 +506,9 @@ def p2v_2d(var_p) :
     var_u[:,0] = 2.0*var_u[:,1] - var_u[:,2]
     return var_u
 
-def read_grid(filemesh) :
-    
-    ncid0=netCDF4.Dataset(filemesh[:-13]+"coordinates.nc","r")
+def read_grid(filemesh, coord_file) :
+
+    ncid0=netCDF4.Dataset(coord_file,"r")
     numpy.seterr(invalid='ignore')
     e3t=ncid0.variables["e3t"][:]
     ncid0.close()
@@ -936,6 +936,7 @@ if __name__ == "__main__" :
     parser.add_argument('--iexpt',    type=int,default=10,  help="    ")
     parser.add_argument('--iversn',   type=int,default=22,  help="    ")
     parser.add_argument('--yrflag',   type=int,default=3,   help="    ")
-    parser.add_argument('--bio_file', type=str,             help="    ")
+    parser.add_argument('--bio_file',   type=str,             help="    ")
+    parser.add_argument('--coord_file', type=str, required=True, help="    ")
     args = parser.parse_args()
-    main(args.meshfile,args.file,iexpt=args.iexpt,iversn=args.iversn,yrflag=args.yrflag,bio_file=args.bio_file)
+    main(args.meshfile,args.file,iexpt=args.iexpt,iversn=args.iversn,yrflag=args.yrflag,bio_file=args.bio_file,coord_file=args.coord_file)
