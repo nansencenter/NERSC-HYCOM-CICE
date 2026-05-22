@@ -313,7 +313,7 @@ configuration) use the workflow below. Two products from the Copernicus Marine E
 on a regular lat/lon grid:
 
 - **Physics**: GLORYS12 reanalysis (CMEMS `GLOBAL_MULTIYEAR_PHY_001_030`)
-- **BGC**: CMEMS global ocean biogeochemistry reanalysis/forecast (`GLOBAL_REANALYSIS_BIO_001_029` for historical, `GLOBAL_ANALYSIS_FORECAST_BIO_001_029` for near-real-time)
+- **BGC**: CMEMS global ocean biogeochemistry reanalysis (`GLOBAL_MULTIYEAR_BIO_001_033`) or near-real-time forecast (`GLOBAL_ANALYSIS_FORECAST_BIO_001_029`)
 
 **Step 0 — Copy source region files** *(once)*
 
@@ -365,8 +365,8 @@ the HYCOM grid and hybrid vertical coordinate, and accepts the following options
 | `-g` | Source grid type; always set to `regular` for current GLORYS12 and BGC products |
 | `-b` | BGC input path pattern; also activates BGC boundary creation (optional) |
 | `-i` | Search radius for wet-point lookup (optional, default: 50 grid cells) |
-| `-m` | Path to the GLORYS12 mesh file (contains grid, bathymetry, mask) |
-| `-c` | Path to the GLORYS12 coordinates file (contains vertical layer thicknesses `e3t`) |
+| `-m` | Path to the GLORYS12 mesh file (contains grid, bathymetry, mask) (mandatory for `-g regular`) |
+| `-c` | Path to the GLORYS12 coordinates file (contains vertical layer thicknesses `e3t`) (mandatory for `-g regular`) |
 | `-h` | Print usage information and exit |
 
 The GLORYS12 and BGC files on NIRD follow these naming conventions:
@@ -408,8 +408,7 @@ $HOME/NERSC-HYCOM-CICE/bin/nemo_to_hycom.sh \
     -c "/nird/datapeak/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO-MFC_001_030_coordinates.nc"
 ```
 
-Processing a single day takes approximately 20 minutes on the login node. For
-multi-day or multi-year runs, use a compute node instead:
+Processing a single day takes approximately 20 minutes on the login node (compared to ~3 minutes on a compute node). For multi-day or multi-year runs, use a compute node:
 
 ::::{dropdown} Interactive session on a compute node
 
@@ -440,7 +439,7 @@ rsync -av \
 **Start an interactive session and run the script**
 
 ```bash
-srun --nodes=1 --time=00:30:00 --qos=devel --account=nn2993k --pty bash
+srun --nodes=1 --time=01:00:00 --qos=devel --account=nn2993k --pty bash
 ```
 
 Once the session starts:
@@ -455,7 +454,7 @@ source ${HOME}/NERSC-HYCOM-CICE/environment/betzy_env.sh
 ```bash
 cd $HOME/NERSC-HYCOM-CICE/NMOb0.08/expt_01.0
 START=2018-01-01
-END=2018-01-31
+END=2018-01-10
 DATE=$START
 while [[ "$DATE" < "$END" || "$DATE" == "$END" ]]; do
     YYYY=$(date -d "$DATE" +%Y)
@@ -471,6 +470,7 @@ while [[ "$DATE" < "$END" || "$DATE" == "$END" ]]; do
 done
 ```
 
+Processing a single day takes approximately 3 minutes on a compute node. The `devel` queue allows jobs up to 1 hour (~20 days of input); use the `normal` queue for longer periods.
 ::::
 
 ::::{dropdown} Submission script (multi-day or multi-year runs)
@@ -493,8 +493,8 @@ for YYYY in 2018 2019 2020; do
 done
 mkdir -p $WORK/input/GLORYS12
 rsync -av \
-    /nird/datapeak/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO_MFC_001_24_MESH.nc \
-    /nird/datapeak/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO_MFC_001_24_COORD.nc \
+    /nird/datapeak/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO-MFC_001_030_mask_bathy.nc \
+    /nird/datapeak/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO-MFC_001_030_coordinates.nc \
     $WORK/input/GLORYS12/
 ```
 
@@ -536,8 +536,8 @@ while [[ "$DATE" < "$END" || "$DATE" == "$END" ]]; do
         -n "$WORK/input/GLORYS12/PHY/${YYYY}/MERCATOR-PHY-24-${DATE}-12.nc" \
         -g regular \
         -b "$WORK/input/GLORYS12/BIO/${YYYY}/global_analysis_forecast_bio_${YYYYMMDD}.nc" \
-        -m "$WORK/input/GLORYS12/GLO_MFC_001_24_MESH.nc" \
-        -c "$WORK/input/GLORYS12/GLO_MFC_001_24_COORD.nc"
+        -m "$WORK/input/GLORYS12/GLO-MFC_001_030_mask_bathy.nc" \
+        -c "$WORK/input/GLORYS12/GLO-MFC_001_030_coordinates.nc"
     DATE=$(date -d "$DATE + 1 day" +%Y-%m-%d)
 done
 ```
