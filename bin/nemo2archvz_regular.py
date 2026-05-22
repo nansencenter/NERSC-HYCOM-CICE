@@ -699,8 +699,7 @@ def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_file=None,coord_file=None
 # TODO:  Note that the coordinate files are for global configuration while
 #        the data file saved for latitude larger than 30. In the case you change your data file coordinate
 #        configuration you need to modify the following lines
-       bio_coordfile=os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(bio_file))),"GLOBAL_ANALYSIS_FORECAST_BIO_001_029_COORD/GLOBAL_REANALYSIS_BIO_001_029_mask.nc")
-       biocrd=netCDF4.Dataset(bio_coordfile,"r")
+       biocrd=netCDF4.Dataset(meshfile,"r")
        blat2 = biocrd.variables['latitude'][:]
        index=numpy.where(blat2>=minblat)[0]
        depth_lev = biocrd.variables['deptho_lev'][index[0]:,:]
