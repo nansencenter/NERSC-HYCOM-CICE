@@ -731,7 +731,7 @@ def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_file=None,coord_file=None
        # o2 unit conversion do not needed (mmol O2/m3) 
 
        # Interpolate bio-variables vertically onto physics layers (75-->50) 
-       z_bio = biocrd.variables['depth'][:]
+       z_bio = ncidb.variables['depth'][:]
        nz_bio = len(z_bio)
        z_phy = gdept
        nz_phy = len(z_phy)
