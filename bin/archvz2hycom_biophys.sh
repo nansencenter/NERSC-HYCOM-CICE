@@ -278,7 +278,6 @@ create_blkdat_subset_function(){
       if [ ! -s  blkdat.subset ] ; then
          echo "Couldnt get blkdat.input " ; exit 1 ;
       fi
-      rm -f fort.99
       mv blkdat.subset fort.99
 }
 # Extract 'iexpt' value from blkdat.input and fort.99
