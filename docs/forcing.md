@@ -304,6 +304,8 @@ expected format. Two optional flags are supported (in any order):
 | `--no-fabm` | Skip BGC (FABM) archive files |
 | `--skip-existing` | Skip dates where all expected files are already present in the destination directory |
 
+> **Note:** The archived TP2 nesting files have `montg1` set to a non-zero value, but it may have been computed from a different model run than the restarts you are using. Always run the Montgomery potential correction step below to ensure consistency.
+
 
 :::::{dropdown} Generating nesting files from GLORYS12/CMEMS
 
@@ -313,18 +315,14 @@ configuration) use the workflow below. Two products from the Copernicus Marine E
 on a regular lat/lon grid:
 
 - **Physics**: GLORYS12 reanalysis (CMEMS `GLOBAL_MULTIYEAR_PHY_001_030`)
-- **BGC**: CMEMS global ocean biogeochemistry reanalysis/forecast (`GLOBAL_REANALYSIS_BIO_001_029` for historical, `GLOBAL_ANALYSIS_FORECAST_BIO_001_029` for near-real-time)
+- **BGC**: CMEMS global ocean biogeochemistry reanalysis (`GLOBAL_MULTIYEAR_BIO_001_033`) or near-real-time forecast (`GLOBAL_ANALYSIS_FORECAST_BIO_001_029`)
 
 **Step 0 — Copy source region files** *(once)*
 
 The source region directory `NMOb0.08/` needs two things in place before any step can run:
 
 - **`NMOb0.08/REGION.src`, `NMOb0.08/expt_01.0/`** (including `blkdat.input`) — these
-  are part of the repository. If you cloned the repo before these were added, pull the
-  latest version from the `develop` branch:
-  ```bash
-  cd $HOME/NERSC-HYCOM-CICE && git pull origin develop
-  ```
+  are part of the repository.
 - **`NMOb0.08/topo/`** — grid and bathymetry files that are too large for the repository.
   Both Step 1 and Step 2 read from this directory, so copy them once from NIRD:
   ```bash
@@ -365,8 +363,8 @@ the HYCOM grid and hybrid vertical coordinate, and accepts the following options
 | `-g` | Source grid type; always set to `regular` for current GLORYS12 and BGC products |
 | `-b` | BGC input path pattern; also activates BGC boundary creation (optional) |
 | `-i` | Search radius for wet-point lookup (optional, default: 50 grid cells) |
-| `-m` | Path to the GLORYS12 mesh file (contains grid, bathymetry, mask) |
-| `-c` | Path to the GLORYS12 coordinates file (contains vertical layer thicknesses `e3t`) |
+| `-m` | Path to the GLORYS12 mesh file (contains grid, bathymetry, mask) (mandatory for `-g regular`) |
+| `-c` | Path to the GLORYS12 coordinates file (contains vertical layer thicknesses `e3t`) (mandatory for `-g regular`) |
 | `-h` | Print usage information and exit |
 
 The GLORYS12 and BGC files on NIRD follow these naming conventions:
@@ -408,13 +406,16 @@ $HOME/NERSC-HYCOM-CICE/bin/nemo_to_hycom.sh \
     -c "/nird/datapeak/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO-MFC_001_030_coordinates.nc"
 ```
 
-Processing a single day takes approximately 20 minutes on the login node. For
-multi-day or multi-year runs, use a compute node instead:
+Processing a single day takes approximately 20 minutes on the login node, which is pretty slow. For multi-day, multi-month or multi-year runs, use a compute node:
 
-::::{dropdown} Interactive session on a compute node
+::::{dropdown} Interactive session on a compute node (multi-day runs)
 
-Compute nodes on Betzy cannot access NIRD, so copy the source files to `$WORK`
-from the login node first.
+Compute nodes on Betzy cannot access NIRD, so source files must be copied to `$WORK`
+from the login node first. The processing itself is fast — all days run in parallel and
+a full month takes ~3–4 minutes — but copying can take significant time for longer
+periods. This approach is therefore best suited for up to a month or two. For longer
+runs, use the submission script in the next dropdown, which reads directly from NIRD via
+the `preproc` queue and requires no copying.
 
 The following example processes January 2018. Adjust the rsync patterns and date
 range for your period.
@@ -439,24 +440,33 @@ rsync -av \
 
 **Start an interactive session and run the script**
 
+The `devel` queue allocates immediately, making it the right choice for interactive jobs.
+
+Set your dates on the login node first, then calculate the number of days and request
+that many tasks so all days run in parallel in a single batch:
+
 ```bash
-srun --nodes=1 --time=00:30:00 --qos=devel --account=nn2993k --pty bash
+START=2018-01-01
+END=2018-01-31
+num_days=$(( ($(date -d "$END" +%s) - $(date -d "$START" +%s)) / 86400 + 1 ))
+srun --nodes=1 --ntasks=$num_days --time=01:00:00 --qos=devel --account=nn2993k --pty bash
 ```
 
 Once the session starts:
 
 ```bash
 source ${HOME}/NERSC-HYCOM-CICE/environment/betzy_env.sh
-```
+module load Miniforge3/24.1.2-0
+source ${EBROOTMINIFORGE3}/bin/activate
+conda activate hycom-cice
 
-```{include} _snippets/betzy_python_activate.md
-```
-
-```bash
-cd $HOME/NERSC-HYCOM-CICE/NMOb0.08/expt_01.0
 START=2018-01-01
 END=2018-01-31
+num_days=$(( ($(date -d "$END" +%s) - $(date -d "$START" +%s)) / 86400 + 1 ))
+
+cd $HOME/NERSC-HYCOM-CICE/NMOb0.08/expt_01.0
 DATE=$START
+nproc=0
 while [[ "$DATE" < "$END" || "$DATE" == "$END" ]]; do
     YYYY=$(date -d "$DATE" +%Y)
     YYYYMMDD=$(date -d "$DATE" +%Y%m%d)
@@ -466,108 +476,192 @@ while [[ "$DATE" < "$END" || "$DATE" == "$END" ]]; do
         -g regular \
         -b "$WORK/input/GLORYS12/BIO/${YYYY}/global_analysis_forecast_bio_${YYYYMMDD}.nc" \
         -m "$WORK/input/GLORYS12/GLO-MFC_001_030_mask_bathy.nc" \
-        -c "$WORK/input/GLORYS12/GLO-MFC_001_030_coordinates.nc"
+        -c "$WORK/input/GLORYS12/GLO-MFC_001_030_coordinates.nc" &
+    nproc=$((nproc+1))
+    if [ $nproc -ge $num_days ]; then
+        wait
+        nproc=0
+    fi
     DATE=$(date -d "$DATE + 1 day" +%Y-%m-%d)
 done
+wait
+```
+
+With all days running in parallel, a full month takes approximately 3–4 minutes. For
+anything longer, use the submission script in the next dropdown.
+::::
+
+::::{dropdown} Submission script (multi-month or multi-year runs)
+
+The following script loops over all days in a year range, runs 12
+`nemo_to_hycom.sh` processes in parallel (one per month), and skips dates where output
+already exists. Unlike regular compute nodes, the `preproc` queue has access to NIRD, so
+no copying of source files beforehand is needed. Save it as `nesting_job.sh` in
+`$WORK/<CONFIGNAME>/expt_<EXPT_ID>/` and submit from there (the `log/` directory must
+exist, which it does if you followed the experiment setup):
+
+```bash
+cd $WORK/<CONFIGNAME>/expt_<EXPT_ID>
+sbatch nesting_job.sh <START_YEAR> <END_YEAR>
+```
+
+```bash
+#!/bin/bash
+#SBATCH --job-name=nesting
+#SBATCH --account=nn9481k
+#SBATCH --time=24:00:00
+#SBATCH --qos=preproc
+#SBATCH --ntasks=12
+#SBATCH --mem-per-cpu=16GB
+#SBATCH -o log/nemo2hycom.%J.out
+#SBATCH -e log/nemo2hycom.%J.err
+
+source ${HOME}/NERSC-HYCOM-CICE/environment/betzy_env.sh
+module load Miniforge3/24.1.2-0
+source ${EBROOTMINIFORGE3}/bin/activate
+conda activate hycom-cice
+
+start_year=$1
+end_year=$2
+
+is_leap_year() {
+    year=$1
+    if (( year % 400 == 0 )) || (( year % 4 == 0 && year % 100 != 0 )); then
+        return 0
+    else
+        return 1
+    fi
+}
+
+cd $HOME/NERSC-HYCOM-CICE/NMOb0.08/expt_01.0
+nproc=0
+for year in $(seq $start_year $end_year); do
+    if is_leap_year "$year"; then
+        days_in_month=(31 29 31 30 31 30 31 31 30 31 30 31)
+    else
+        days_in_month=(31 28 31 30 31 30 31 31 30 31 30 31)
+    fi
+    for month in $(seq -w 1 12); do
+        for day in $(seq -w 1 ${days_in_month[$((10#$month-1))]}); do
+            date=$(date -d "$year-$month-$day" "+%Y%m%d")
+            day_of_year=$(date -d "$date" "+%j")
+            archv="$WORK/<CONFIGNAME>/nest/<IEXPT>/archv.${year}_${day_of_year}_00.b"
+            if [ -e "$archv" ]; then
+                echo "Skipping $date (output exists)"
+                continue
+            fi
+            phy_file="/nird/datapeak/NS9481K/MERCATOR_DATA/PHY/${year}/MERCATOR-PHY-24-${year}-${month}-${day}-12.nc"
+            bio_file="/nird/datapeak/NS9481K/MERCATOR_DATA/BIO/DAILY/${year}/global_analysis_forecast_bio_${date}.nc"
+            $HOME/NERSC-HYCOM-CICE/bin/nemo_to_hycom.sh \
+                -d $WORK/<CONFIGNAME>/expt_<EXPT_ID>/ \
+                -n "$phy_file" \
+                -g regular \
+                -b "$bio_file" \
+                -m "/nird/datapeak/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO-MFC_001_030_mask_bathy.nc" \
+                -c "/nird/datapeak/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO-MFC_001_030_coordinates.nc" &
+            nproc=$((nproc+1))
+            if [ $nproc -ge 12 ]; then
+                wait
+                nproc=0
+            fi
+        done
+    done
+done
+wait
 ```
 
 ::::
 
-::::{dropdown} Submission script (multi-day or multi-year runs)
+> **Note:** `nemo_to_hycom.sh` writes `montg1 = 0` in the output archives. Correct this as described below before using these files for a model run.
 
-Compute nodes on Betzy cannot access NIRD, so copy the source files to `$WORK`
-from the login node first.
+:::::
 
-**Step 1 — Copy source files** *(from the login node)*
+Output: `$WORK/<CONFIGNAME>/nest/<IEXPT>/archv.YYYY_DDD_HH.[ab]`
 
-Adjust the `for` loop to cover all years you need:
+**Fix the Montgomery potential**
 
-```bash
-for YYYY in 2018 2019 2020; do
-    mkdir -p $WORK/input/GLORYS12/PHY/${YYYY}
-    rsync -av /nird/datapeak/NS9481K/MERCATOR_DATA/PHY/${YYYY}/ \
-        $WORK/input/GLORYS12/PHY/${YYYY}/
-    mkdir -p $WORK/input/GLORYS12/BIO/${YYYY}
-    rsync -av /nird/datapeak/NS9481K/MERCATOR_DATA/BIO/DAILY/${YYYY}/ \
-        $WORK/input/GLORYS12/BIO/${YYYY}/
-done
-mkdir -p $WORK/input/GLORYS12
-rsync -av \
-    /nird/datapeak/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO_MFC_001_24_MESH.nc \
-    /nird/datapeak/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO_MFC_001_24_COORD.nc \
-    $WORK/input/GLORYS12/
-```
+The nesting archives require a correct `montg1` (Montgomery potential) field, which
+depends on `psikk` (the Montgomery potential at the deepest isopycnal interface) and
+`thkk` (the virtual bottom layer thickness) from a restart file of the destination
+model. Files generated by `nemo_to_hycom.sh` in the dropdown above have `montg1 = 0`; files copied from
+elsewhere may have a non-zero value but one computed from a different model run, making
+it inconsistent with the restart files you are using.
 
-**Step 2 — Submit the job**
+Run `calc_montg1.py` once per archive file, from the destination experiment directory.
+Before running, load the HPC environment and activate the Python environment:
 
-Adjust `START`, `END`, and `#SBATCH` settings as needed:
-
-| Period | `START` | `END` |
-|--------|---------|-------|
-| One month (January 2018) | `2018-01-01` | `2018-01-31` |
-| Several months (Jan–Mar 2018) | `2018-01-01` | `2018-03-31` |
-| One year (2018) | `2018-01-01` | `2018-12-31` |
-| Several years (2015–2017) | `2015-01-01` | `2017-12-31` |
+:::{dropdown} Loading the HPC environment and Python environment on Betzy
 
 ```bash
-#!/bin/bash
-#SBATCH --job-name=nemo2hycom
-#SBATCH --account=nn2993k
-#SBATCH --time=24:00:00
-#SBATCH --nodes=1
-#SBATCH --ntasks=1
-
 source ${HOME}/NERSC-HYCOM-CICE/environment/betzy_env.sh
 ```
 
 ```{include} _snippets/betzy_python_activate.md
 ```
 
-```bash
-cd $HOME/NERSC-HYCOM-CICE/NMOb0.08/expt_01.0
-START=2018-01-01
-END=2018-12-31
-DATE=$START
-while [[ "$DATE" < "$END" || "$DATE" == "$END" ]]; do
-    YYYY=$(date -d "$DATE" +%Y)
-    YYYYMMDD=$(date -d "$DATE" +%Y%m%d)
-    $HOME/NERSC-HYCOM-CICE/bin/nemo_to_hycom.sh \
-        -d $WORK/<CONFIGNAME>/expt_<EXPT_ID>/ \
-        -n "$WORK/input/GLORYS12/PHY/${YYYY}/MERCATOR-PHY-24-${DATE}-12.nc" \
-        -g regular \
-        -b "$WORK/input/GLORYS12/BIO/${YYYY}/global_analysis_forecast_bio_${YYYYMMDD}.nc" \
-        -m "$WORK/input/GLORYS12/GLO_MFC_001_24_MESH.nc" \
-        -c "$WORK/input/GLORYS12/GLO_MFC_001_24_COORD.nc"
-    DATE=$(date -d "$DATE + 1 day" +%Y-%m-%d)
-done
-```
-
-::::
-
-:::::
-
-Output: `$WORK/<CONFIGNAME>/nest/<IEXPT>/archv.YYYY_DDD_HH.[ab]`
-
-**Step 3 — Fix Montgomery potential** *(always required)*
-
-Step 2 writes `montg1 = 0` in the nesting archives — the interpolation code does not
-compute it. The correct value must be computed from the layer thicknesses and requires
-`psikk` (the Montgomery potential at the deepest isopycnal interface) and `thkk` (the
-virtual bottom layer thickness) from a restart file of the destination model.
-
-Run `calc_montg1.py` once per archive file, from the destination experiment directory:
+:::
 
 ```bash
 cd $WORK/<CONFIGNAME>/expt_<EXPT_ID>
+mkdir -p ../nest/<IEXPT>/Montg
 python $HOME/NERSC-HYCOM-CICE/bin/calc_montg1.py \
     ../nest/<IEXPT>/archv.YYYY_DDD_00.a \
     ./data/restart.YYYY_DDD_00_0000.a \
     ../nest/<IEXPT>/Montg/
+mv ../nest/<IEXPT>/Montg/archv.YYYY_DDD_00.[ab] ../nest/<IEXPT>/
 ```
 
-Any restart from the same model configuration works — it does not need to be the
-restart used to initialise your particular run. The script writes corrected archive
-files to the `Montg/` subdirectory. Repeat for every archive file in the nest directory.
+The script cannot read and write the same file simultaneously, so the corrected file is
+written to a temporary `Montg/` subdirectory and then moved back to overwrite the
+original. Use any restart from the same model run you will use for your simulation. All
+restarts from the same run produce the same `montg1` because `psikk` and `thkk` do not
+vary within a run, so it does not matter which restart date you choose. Repeat for every
+archive file in the nest directory.
+
+:::{dropdown} Submission script (many files)
+
+Save as `montg1_job.sh` in `$WORK/<CONFIGNAME>/expt_<EXPT_ID>/` and submit from there:
+
+```bash
+cd $WORK/<CONFIGNAME>/expt_<EXPT_ID>
+sbatch montg1_job.sh
+```
+
+```bash
+#!/bin/bash
+#SBATCH --job-name=montg1
+#SBATCH --account=nn9481k
+#SBATCH -t 01:00:00
+#SBATCH --qos=preproc
+#SBATCH --ntasks=12
+#SBATCH --mem-per-cpu=3770M
+#SBATCH -o log/montg1.%J.out
+#SBATCH -e log/montg1.%J.err
+
+source ${HOME}/NERSC-HYCOM-CICE/environment/betzy_env.sh
+module load Miniforge3/24.1.2-0
+source ${EBROOTMINIFORGE3}/bin/activate
+conda activate hycom-cice
+
+restartfile="./data/restart.YYYY_DDD_00_0000.a"
+outdir="../nest/<IEXPT>/Montg"
+mkdir -p ${outdir}
+
+nproc=0
+for f in ../nest/<IEXPT>/archv.*.a; do
+    python $HOME/NERSC-HYCOM-CICE/bin/calc_montg1.py $f ${restartfile} ${outdir}/ &
+    nproc=$((nproc+1))
+    if [ $nproc -ge 12 ]; then
+        wait
+        mv ${outdir}/archv.*.[ab] ../nest/<IEXPT>/
+        nproc=0
+    fi
+done
+wait
+mv ${outdir}/archv.*.[ab] ../nest/<IEXPT>/
+```
+
+:::
 
 :::{dropdown} What calc_montg1.py does
 
@@ -585,12 +679,8 @@ and S using the equation of state selected by `thflag` in `blkdat.input`. It als
 **What it reads from the restart**
 
 It reads `psikk` and `thkk` — the Montgomery potential and thickness of the virtual
-bottom layer, which sits below the deepest active isopycnal layer. For configurations
-with a terrain-following bottom layer, both are non-zero. For TP2 (z + isopycnal, no
-terrain-following), `thkk = 0` everywhere, but `psikk` is still non-zero — it
-represents the bottom Montgomery potential determined by the bathymetry and reference
-density structure. Because `psikk` does not depend on the instantaneous ocean state,
-any restart from the same configuration produces the correct result.
+bottom layer, which sits below the deepest active isopycnal layer. `psikk` and `thkk` do not
+vary within a model run, so any restart from the same run produces the correct result.
 
 **How montg1 is computed**
 

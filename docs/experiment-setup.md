@@ -46,6 +46,29 @@ bin/expt_new.sh 01.0 <EXPT_ID>
 This creates `expt_<EXPT_ID>/` with default configuration files that you will
 adjust in the following steps.
 
+::::{dropdown} What does expt_new.sh do?
+
+1. **Validates the environment** — the script must be run from either an experiment directory
+   (containing `EXPT.src`) or the configuration root (containing `REGION.src`). It also
+   checks that `topo/regional.grid.b` exists, which means the grid must already be in place.
+
+2. **Copies the template experiment** — all files from `expt_<old>/` are copied to the new
+   directory with `rsync`, skipping the `data/`, `log/`, and `SCRATCH/` subdirectories
+   (those are created fresh and empty).
+
+3. **Updates `EXPT.src`** — the `X=` and `E=` lines are rewritten to reflect the new
+   experiment ID (e.g. `X="02.6"` and `E="026"`).
+
+4. **Updates `blkdat.input`** — the `iexpt`, `idm`, and `jdm` fields are updated
+   automatically: `iexpt` is set from the new experiment number, and `idm`/`jdm` are read
+   directly from `topo/regional.grid.b`, so they always match the actual grid.
+
+5. **Renames PBS job scripts** — any `pbsjob*.sh` files have their `-N` job-name line
+   updated to `<CONFIGNAME>_X<EXPT_ID>` for easier identification in the job queue.
+
+::::
+
+
 ## Configure blkdat.input
 
 `blkdat.input` controls core model parameters. The easiest starting point is to copy it
