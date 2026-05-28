@@ -406,12 +406,16 @@ $HOME/NERSC-HYCOM-CICE/bin/nemo_to_hycom.sh \
     -c "/nird/datapeak/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO-MFC_001_030_coordinates.nc"
 ```
 
-Processing a single day takes approximately 20 minutes on the login node (compared to ~3 minutes on a compute node). For multi-day, multi-month or multi-year runs, use a compute node:
+Processing a single day takes approximately 20 minutes on the login node, which is pretty slow. For multi-day, multi-month or multi-year runs, use a compute node:
 
 ::::{dropdown} Interactive session on a compute node (multi-day runs)
 
-Compute nodes on Betzy cannot access NIRD, so copy the source files to `$WORK`
-from the login node first.
+Compute nodes on Betzy cannot access NIRD, so source files must be copied to `$WORK`
+from the login node first. The processing itself is fast — all days run in parallel and
+a full month takes ~3–4 minutes — but copying can take significant time for longer
+periods. This approach is therefore best suited for up to a month or two. For longer
+runs, use the submission script in the next dropdown, which reads directly from NIRD via
+the `preproc` queue and requires no copying.
 
 The following example processes January 2018. Adjust the rsync patterns and date
 range for your period.
@@ -436,24 +440,33 @@ rsync -av \
 
 **Start an interactive session and run the script**
 
+The `devel` queue allocates immediately, making it the right choice for interactive jobs.
+
+Set your dates on the login node first, then calculate the number of days and request
+that many tasks so all days run in parallel in a single batch:
+
 ```bash
-srun --nodes=1 --time=01:00:00 --qos=devel --account=nn2993k --pty bash
+START=2018-01-01
+END=2018-01-31
+num_days=$(( ($(date -d "$END" +%s) - $(date -d "$START" +%s)) / 86400 + 1 ))
+srun --nodes=1 --ntasks=$num_days --time=01:00:00 --qos=devel --account=nn2993k --pty bash
 ```
 
 Once the session starts:
 
 ```bash
 source ${HOME}/NERSC-HYCOM-CICE/environment/betzy_env.sh
-```
+module load Miniforge3/24.1.2-0
+source ${EBROOTMINIFORGE3}/bin/activate
+conda activate hycom-cice
 
-```{include} _snippets/betzy_python_activate.md
-```
-
-```bash
-cd $HOME/NERSC-HYCOM-CICE/NMOb0.08/expt_01.0
 START=2018-01-01
-END=2018-01-10
+END=2018-01-31
+num_days=$(( ($(date -d "$END" +%s) - $(date -d "$START" +%s)) / 86400 + 1 ))
+
+cd $HOME/NERSC-HYCOM-CICE/NMOb0.08/expt_01.0
 DATE=$START
+nproc=0
 while [[ "$DATE" < "$END" || "$DATE" == "$END" ]]; do
     YYYY=$(date -d "$DATE" +%Y)
     YYYYMMDD=$(date -d "$DATE" +%Y%m%d)
@@ -463,12 +476,19 @@ while [[ "$DATE" < "$END" || "$DATE" == "$END" ]]; do
         -g regular \
         -b "$WORK/input/GLORYS12/BIO/${YYYY}/global_analysis_forecast_bio_${YYYYMMDD}.nc" \
         -m "$WORK/input/GLORYS12/GLO-MFC_001_030_mask_bathy.nc" \
-        -c "$WORK/input/GLORYS12/GLO-MFC_001_030_coordinates.nc"
+        -c "$WORK/input/GLORYS12/GLO-MFC_001_030_coordinates.nc" &
+    nproc=$((nproc+1))
+    if [ $nproc -ge $num_days ]; then
+        wait
+        nproc=0
+    fi
     DATE=$(date -d "$DATE + 1 day" +%Y-%m-%d)
 done
+wait
 ```
 
-Processing a single day takes approximately 3 minutes on a compute node. The `devel` queue allows up to 1 hour (~20 days of input), making it suitable for short tests. For anything longer, use the submission script in the next dropdown.
+With all days running in parallel, a full month takes approximately 3–4 minutes. For
+anything longer, use the submission script in the next dropdown.
 ::::
 
 ::::{dropdown} Submission script (multi-month or multi-year runs)
@@ -600,52 +620,45 @@ archive file in the nest directory.
 
 :::{dropdown} Submission script (many files)
 
-For a large number of archive files, the following script parallelizes the correction
-across up to 100 files at a time in a single SLURM job. Run it from the experiment
-directory. It generates a job script `montg1_batch.sh` — one `srun` line per archive
-file, batched in groups of 100 — and then submits it:
+Save as `montg1_job.sh` in `$WORK/<CONFIGNAME>/expt_<EXPT_ID>/` and submit from there:
 
 ```bash
-#!/bin/bash -l
+cd $WORK/<CONFIGNAME>/expt_<EXPT_ID>
+sbatch montg1_job.sh
+```
 
-cat << EOF > montg1_batch.sh
-#!/bin/bash -l
-
+```bash
+#!/bin/bash
+#SBATCH --job-name=montg1
 #SBATCH --account=nn9481k
 #SBATCH -t 01:00:00
 #SBATCH --qos=preproc
-#SBATCH -N 1
-#SBATCH --ntasks=100
-#SBATCH --mem-per-cpu 3770M
-#SBATCH -o log/HYCICE.%J.out
-#SBATCH -e log/HYCICE.%J.err
+#SBATCH --ntasks=12
+#SBATCH --mem-per-cpu=3770M
+#SBATCH -o log/montg1.%J.out
+#SBATCH -e log/montg1.%J.err
 
-EOF
+source ${HOME}/NERSC-HYCOM-CICE/environment/betzy_env.sh
+module load Miniforge3/24.1.2-0
+source ${EBROOTMINIFORGE3}/bin/activate
+conda activate hycom-cice
 
-restartfile="$WORK/<CONFIGNAME>/expt_<EXPT_ID>/data/restart.YYYY_DDD_00_0000.a"
-outdir="$WORK/<CONFIGNAME>/nest/<IEXPT>/Montg"
+restartfile="./data/restart.YYYY_DDD_00_0000.a"
+outdir="../nest/<IEXPT>/Montg"
 mkdir -p ${outdir}
-count=0
 
-for f in $WORK/<CONFIGNAME>/nest/<IEXPT>/archv.*.a; do
-    ((count++))
-cat << EOF >> montg1_batch.sh
-srun --exact -n1 -c 1 python $HOME/NERSC-HYCOM-CICE/bin/calc_montg1.py ${f} ${restartfile} ${outdir}/ &
-EOF
-    if [ "$count" -eq 100 ]; then
-cat << EOF >> montg1_batch.sh
-wait
-mv ${outdir}/archv.*.[ab] $WORK/<CONFIGNAME>/nest/<IEXPT>/
-EOF
-        count=0
+nproc=0
+for f in ../nest/<IEXPT>/archv.*.a; do
+    python $HOME/NERSC-HYCOM-CICE/bin/calc_montg1.py $f ${restartfile} ${outdir}/ &
+    nproc=$((nproc+1))
+    if [ $nproc -ge 12 ]; then
+        wait
+        mv ${outdir}/archv.*.[ab] ../nest/<IEXPT>/
+        nproc=0
     fi
 done
-cat << EOF >> montg1_batch.sh
 wait
-mv ${outdir}/archv.*.[ab] $WORK/<CONFIGNAME>/nest/<IEXPT>/
-EOF
-chmod 755 montg1_batch.sh
-sbatch montg1_batch.sh
+mv ${outdir}/archv.*.[ab] ../nest/<IEXPT>/
 ```
 
 :::
