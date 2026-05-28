@@ -491,10 +491,10 @@ anything longer, use the submission script in the next dropdown.
 
 ::::{dropdown} Submission script (multi-month or multi-year runs)
 
-The following script loops over all days in a year range, runs up to 12
+The following script loops over all days in a year range, runs up to 16
 `nemo_to_hycom.sh` processes in parallel, and skips dates where output
-already exists. The limit of 12 is memory-based: each job uses ~12 GB peak RAM,
-and 12 × 16 GB = 192 GB fits within the `preproc` node with headroom. Unlike regular compute nodes, the `preproc` queue has access to NIRD, so
+already exists. The limit of 16 is memory-based: each job uses ~12 GB peak RAM,
+and 16 × 16 GB = 256 GB requested via `--mem-per-cpu=16GB`. Unlike regular compute nodes, the `preproc` queue has access to NIRD, so
 no copying of source files beforehand is needed. Save it as `nesting_job.sh` in
 `$WORK/<CONFIGNAME>/expt_<EXPT_ID>/` and submit from there (the `log/` directory must
 exist, which it does if you followed the experiment setup):
@@ -510,7 +510,7 @@ sbatch nesting_job.sh <START_YEAR> <END_YEAR>
 #SBATCH --account=nn9481k
 #SBATCH --time=24:00:00
 #SBATCH --qos=preproc
-#SBATCH --ntasks=12
+#SBATCH --ntasks=16
 #SBATCH --mem-per-cpu=16GB
 #SBATCH -o log/nemo2hycom.%J.out
 #SBATCH -e log/nemo2hycom.%J.err
@@ -559,7 +559,7 @@ for year in $(seq $start_year $end_year); do
                 -m "/nird/datapeak/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO-MFC_001_030_mask_bathy.nc" \
                 -c "/nird/datapeak/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO-MFC_001_030_coordinates.nc" &
             nproc=$((nproc+1))
-            if [ $nproc -ge 12 ]; then
+            if [ $nproc -ge 16 ]; then
                 wait
                 nproc=0
             fi
