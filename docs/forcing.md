@@ -235,7 +235,7 @@ Note that the internal variable name is `rmu` in both files. The max value
 
 ::::
 
-::::{dropdown} Generating nesting files from scratch
+::::{dropdown} Generating boundary configuration files from scratch
 
 For TP2 the files can simply be copied from a reference experiment (see above). If you
 need to generate them from scratch (e.g. to adjust the relaxation zone width or
@@ -406,31 +406,32 @@ $HOME/NERSC-HYCOM-CICE/bin/nemo_to_hycom.sh \
     -c "/nird/datapeak/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO-MFC_001_030_coordinates.nc"
 ```
 
-Processing a single day takes approximately 20 minutes on the login node, which is pretty slow. For multi-day, multi-month or multi-year runs, use a compute node:
-
-::::{dropdown} Interactive session on a compute node (multi-day runs)
+Processing a single day takes approximately 20 minutes on the login node, which is pretty slow. For multi-day, multi-month or multi-year runs, use a compute node to perform Step 2.
 
 Compute nodes on Betzy cannot access NIRD, so source files must be copied to `$WORK`
-from the login node first. The processing itself is fast — all days run in parallel and
-a full month takes ~3–4 minutes — but copying can take significant time for longer
-periods. This approach is therefore best suited for up to a month or two. For longer
-runs, use the submission script in the next dropdown, which reads directly from NIRD via
-the `preproc` queue and requires no copying.
-
-The following example processes January 2018. Adjust the rsync patterns and date
-range for your period.
-
-**Copy source files** *(from the login node)*
+from the login node first. Set `START` and `END` to your period, then run the following.
+PHY and BIO are copied in parallel (`&` runs a command in the background; `wait` blocks
+until both finish before moving to the next year):
 
 ```bash
-mkdir -p $WORK/input/GLORYS12/PHY/2018
-rsync -av --include="MERCATOR-PHY-24-2018-01-*.nc" --exclude="*" \
-    /nird/datapeak/NS9481K/MERCATOR_DATA/PHY/2018/ \
-    $WORK/input/GLORYS12/PHY/2018/
-mkdir -p $WORK/input/GLORYS12/BIO/2018
-rsync -av --include="global_analysis_forecast_bio_201801*.nc" --exclude="*" \
-    /nird/datapeak/NS9481K/MERCATOR_DATA/BIO/DAILY/2018/ \
-    $WORK/input/GLORYS12/BIO/2018/
+START=2018-01-01
+END=2018-01-31
+
+DATE=$START
+while [[ $(date -d "$DATE" +%s) -le $(date -d "$END" +%s) ]]; do
+    YYYY=$(date -d "$DATE" +%Y)
+    YYYYMMDD=$(date -d "$DATE" +%Y%m%d)
+    mkdir -p $WORK/input/GLORYS12/PHY/${YYYY}
+    mkdir -p $WORK/input/GLORYS12/BIO/${YYYY}
+    rsync -av \
+        /nird/datapeak/NS9481K/MERCATOR_DATA/PHY/${YYYY}/MERCATOR-PHY-24-${DATE}-12.nc \
+        $WORK/input/GLORYS12/PHY/${YYYY}/ &
+    rsync -av \
+        /nird/datapeak/NS9481K/MERCATOR_DATA/BIO/DAILY/${YYYY}/global_analysis_forecast_bio_${YYYYMMDD}.nc \
+        $WORK/input/GLORYS12/BIO/${YYYY}/ &
+    wait
+    DATE=$(date -d "$DATE + 1 day" +%Y-%m-%d)
+done
 mkdir -p $WORK/input/GLORYS12
 rsync -av \
     /nird/datapeak/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO-MFC_001_030_mask_bathy.nc \
@@ -438,12 +439,10 @@ rsync -av \
     $WORK/input/GLORYS12/
 ```
 
-**Start an interactive session and run the script**
+::::{dropdown} Interactive session on a compute node (up to a month or two)
 
 The `devel` queue allocates immediately, making it the right choice for interactive jobs.
-
-Set your dates on the login node first, then request an exclusive interactive node
-(256 GB RAM, 128 cores):
+Request an exclusive node (256 GB RAM, 128 cores):
 
 ```bash
 srun --nodes=1 --exclusive --time=01:00:00 --qos=devel --account=nn2993k --pty bash
@@ -485,7 +484,7 @@ done
 wait
 ```
 
-With up to 12 days running in parallel, a full month takes approximately 3–4 minutes. For
+With up to 12 days running in parallel, a full month takes approximately 10 minutes. For
 anything longer, use the submission script in the next dropdown.
 ::::
 
@@ -494,14 +493,18 @@ anything longer, use the submission script in the next dropdown.
 The following script loops over all days in a year range, runs up to 12
 `nemo_to_hycom.sh` processes in parallel, and skips dates where output
 already exists. The limit of 12 is memory-based: each job uses ~16 GB peak RAM,
-and 12 × 16 GB = 192 GB requested via `--mem-per-cpu=16GB`. Unlike regular compute nodes, the `preproc` queue has access to NIRD, so
-no copying of source files beforehand is needed. Save it as `nesting_job.sh` in
-`$WORK/<CONFIGNAME>/expt_<EXPT_ID>/` and submit from there (the `log/` directory must
-exist, which it does if you followed the experiment setup):
+and 12 × 16 GB = 192 GB requested via `--mem-per-cpu=16GB`. Copy source files from the
+login node as described above before submitting.
+
+**Submit the job**
+
+Save the script below as `nesting_job.sh` in `$WORK/<CONFIGNAME>/expt_<EXPT_ID>/`. Set
+`CONFIGNAME`, `IEXPT`, and `EXPT_ID` at the top of the script to match your experiment,
+then submit with the start and end year as arguments:
 
 ```bash
 cd $WORK/<CONFIGNAME>/expt_<EXPT_ID>
-sbatch nesting_job.sh <START_YEAR> <END_YEAR>
+sbatch nesting_job.sh 2018 2019
 ```
 
 ```bash
@@ -520,8 +523,16 @@ module load Miniforge3/24.1.2-0
 source ${EBROOTMINIFORGE3}/bin/activate
 conda activate hycom-cice
 
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+IEXPT=<IEXPT>             # e.g. 010
+EXPT_ID=<EXPT_ID>         # e.g. 01.0
+
 start_year=$1
 end_year=$2
+if [[ -z "$start_year" || -z "$end_year" ]]; then
+    echo "Usage: sbatch nesting_job.sh <START_YEAR> <END_YEAR>"
+    exit 1
+fi
 
 is_leap_year() {
     year=$1
@@ -544,20 +555,20 @@ for year in $(seq $start_year $end_year); do
         for day in $(seq -w 1 ${days_in_month[$((10#$month-1))]}); do
             date=$(date -d "$year-$month-$day" "+%Y%m%d")
             day_of_year=$(date -d "$date" "+%j")
-            archv="$WORK/<CONFIGNAME>/nest/<IEXPT>/archv.${year}_${day_of_year}_00.b"
+            archv="$WORK/${CONFIGNAME}/nest/${IEXPT}/archv.${year}_${day_of_year}_00.b"
             if [ -e "$archv" ]; then
                 echo "Skipping $date (output exists)"
                 continue
             fi
-            phy_file="/nird/datapeak/NS9481K/MERCATOR_DATA/PHY/${year}/MERCATOR-PHY-24-${year}-${month}-${day}-12.nc"
-            bio_file="/nird/datapeak/NS9481K/MERCATOR_DATA/BIO/DAILY/${year}/global_analysis_forecast_bio_${date}.nc"
+            phy_file="$WORK/input/GLORYS12/PHY/${year}/MERCATOR-PHY-24-${year}-${month}-${day}-12.nc"
+            bio_file="$WORK/input/GLORYS12/BIO/${year}/global_analysis_forecast_bio_${date}.nc"
             $HOME/NERSC-HYCOM-CICE/bin/nemo_to_hycom.sh \
-                -d $WORK/<CONFIGNAME>/expt_<EXPT_ID>/ \
+                -d $WORK/${CONFIGNAME}/expt_${EXPT_ID}/ \
                 -n "$phy_file" \
                 -g regular \
                 -b "$bio_file" \
-                -m "/nird/datapeak/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO-MFC_001_030_mask_bathy.nc" \
-                -c "/nird/datapeak/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO-MFC_001_030_coordinates.nc" &
+                -m "$WORK/input/GLORYS12/GLO-MFC_001_030_mask_bathy.nc" \
+                -c "$WORK/input/GLORYS12/GLO-MFC_001_030_coordinates.nc" &
             nproc=$((nproc+1))
             if [ $nproc -ge 16 ]; then
                 wait
@@ -568,6 +579,7 @@ for year in $(seq $start_year $end_year); do
 done
 wait
 ```
+The `log/` directory must exist, which it does if you followed the experiment setup.
 
 ::::
 
@@ -610,58 +622,6 @@ python $HOME/NERSC-HYCOM-CICE/bin/calc_montg1.py \
 mv ../nest/<IEXPT>/Montg/archv.YYYY_DDD_00.[ab] ../nest/<IEXPT>/
 ```
 
-The script cannot read and write the same file simultaneously, so the corrected file is
-written to a temporary `Montg/` subdirectory and then moved back to overwrite the
-original. Use any restart from the same model run you will use for your simulation. All
-restarts from the same run produce the same `montg1` because `psikk` and `thkk` do not
-vary within a run, so it does not matter which restart date you choose. Repeat for every
-archive file in the nest directory.
-
-:::{dropdown} Submission script (many files)
-
-Save as `montg1_job.sh` in `$WORK/<CONFIGNAME>/expt_<EXPT_ID>/` and submit from there:
-
-```bash
-cd $WORK/<CONFIGNAME>/expt_<EXPT_ID>
-sbatch montg1_job.sh
-```
-
-```bash
-#!/bin/bash
-#SBATCH --job-name=montg1
-#SBATCH --account=nn9481k
-#SBATCH -t 01:00:00
-#SBATCH --qos=preproc
-#SBATCH --ntasks=12
-#SBATCH --mem-per-cpu=3770M
-#SBATCH -o log/montg1.%J.out
-#SBATCH -e log/montg1.%J.err
-
-source ${HOME}/NERSC-HYCOM-CICE/environment/betzy_env.sh
-module load Miniforge3/24.1.2-0
-source ${EBROOTMINIFORGE3}/bin/activate
-conda activate hycom-cice
-
-restartfile="./data/restart.YYYY_DDD_00_0000.a"
-outdir="../nest/<IEXPT>/Montg"
-mkdir -p ${outdir}
-
-nproc=0
-for f in ../nest/<IEXPT>/archv.*.a; do
-    python $HOME/NERSC-HYCOM-CICE/bin/calc_montg1.py $f ${restartfile} ${outdir}/ &
-    nproc=$((nproc+1))
-    if [ $nproc -ge 12 ]; then
-        wait
-        mv ${outdir}/archv.*.[ab] ../nest/<IEXPT>/
-        nproc=0
-    fi
-done
-wait
-mv ${outdir}/archv.*.[ab] ../nest/<IEXPT>/
-```
-
-:::
-
 :::{dropdown} What calc_montg1.py does
 
 The script recomputes only the `montg1` (Montgomery potential) field in each archive,
@@ -694,6 +654,95 @@ vary within a model run, so any restart from the same run produces the correct r
 ```
 pbavg = (srfhgt − montg1c) / (montg1pb + thref)
 montg1 = montg1pb × pbavg + montg1c
+```
+
+:::
+
+
+The script cannot read and write the same file simultaneously, so the corrected file is
+written to a temporary `Montg/` subdirectory and then moved back to overwrite the
+original. Use any restart from the same model run you will use for your simulation. All
+restarts from the same run produce the same `montg1` because `psikk` and `thkk` do not
+vary within a run, so it does not matter which restart date you choose. 
+Executing the above command takes roughly 12 seconds on a login node, so for many files consider running in
+parallel on a compute node using one of the options below.
+
+:::{dropdown} Interactive node (short periods, up to ~1 month)
+
+Request a `devel` node and run files in parallel with background processes. The number of
+tasks should match the number of files you want to process:
+
+```bash
+srun --nodes=1 --ntasks=32 --time=01:00:00 --qos=devel --account=nn9481k --pty bash
+```
+
+```bash
+cd $WORK/<CONFIGNAME>/expt_<EXPT_ID>
+restartfile="./data/restart.YYYY_DDD_00_0000.a"
+outdir="../nest/<IEXPT>/Montg"
+mkdir -p ${outdir}
+
+nproc=0
+for f in ../nest/<IEXPT>/archv.*.a; do
+    python $HOME/NERSC-HYCOM-CICE/bin/calc_montg1.py $f ${restartfile} ${outdir}/ &
+    nproc=$((nproc+1))
+    if [ $nproc -ge 32 ]; then
+        wait
+        mv ${outdir}/archv.*.[ab] ../nest/<IEXPT>/
+        nproc=0
+    fi
+done
+wait
+mv ${outdir}/archv.*.[ab] ../nest/<IEXPT>/
+```
+
+:::
+
+:::{dropdown} Submission script (many files)
+
+Save as `montg1_job.sh` in `$WORK/<CONFIGNAME>/expt_<EXPT_ID>/`. Set `IEXPT`, `EXPT_ID`,
+and the restart file path at the top of the script, then submit from there:
+
+```bash
+cd $WORK/<CONFIGNAME>/expt_<EXPT_ID>
+sbatch montg1_job.sh
+```
+
+```bash
+#!/bin/bash
+#SBATCH --job-name=montg1
+#SBATCH --account=nn9481k
+#SBATCH -t 01:00:00
+#SBATCH --qos=preproc
+#SBATCH --ntasks=32
+#SBATCH --mem-per-cpu=512M
+#SBATCH -o log/montg1.%J.out
+#SBATCH -e log/montg1.%J.err
+
+source ${HOME}/NERSC-HYCOM-CICE/environment/betzy_env.sh
+module load Miniforge3/24.1.2-0
+source ${EBROOTMINIFORGE3}/bin/activate
+conda activate hycom-cice
+
+IEXPT=<IEXPT>             # e.g. 010
+EXPT_ID=<EXPT_ID>         # e.g. 01.0
+
+restartfile="./data/restart.YYYY_DDD_00_0000.a"
+outdir="../nest/${IEXPT}/Montg"
+mkdir -p ${outdir}
+
+nproc=0
+for f in ../nest/${IEXPT}/archv.*.a; do
+    python $HOME/NERSC-HYCOM-CICE/bin/calc_montg1.py $f ${restartfile} ${outdir}/ &
+    nproc=$((nproc+1))
+    if [ $nproc -ge 32 ]; then
+        wait
+        mv ${outdir}/archv.*.[ab] ../nest/${IEXPT}/
+        nproc=0
+    fi
+done
+wait
+mv ${outdir}/archv.*.[ab] ../nest/${IEXPT}/
 ```
 
 :::
