@@ -442,14 +442,11 @@ rsync -av \
 
 The `devel` queue allocates immediately, making it the right choice for interactive jobs.
 
-Set your dates on the login node first, then calculate the number of days and request
-that many tasks so all days run in parallel in a single batch:
+Set your dates on the login node first, then request an exclusive interactive node
+(256 GB RAM, 128 cores):
 
 ```bash
-START=2018-01-01
-END=2018-01-31
-num_days=$(( ($(date -d "$END" +%s) - $(date -d "$START" +%s)) / 86400 + 1 ))
-srun --nodes=1 --ntasks=$num_days --time=01:00:00 --qos=devel --account=nn2993k --pty bash
+srun --nodes=1 --exclusive --time=01:00:00 --qos=devel --account=nn2993k --pty bash
 ```
 
 Once the session starts:
@@ -460,9 +457,10 @@ module load Miniforge3/24.1.2-0
 source ${EBROOTMINIFORGE3}/bin/activate
 conda activate hycom-cice
 
+MAX_PARALLEL=16  # each job uses ~12 GB peak; 16 × 12 GB = 192 GB with headroom
+
 START=2018-01-01
 END=2018-01-31
-num_days=$(( ($(date -d "$END" +%s) - $(date -d "$START" +%s)) / 86400 + 1 ))
 
 cd $HOME/NERSC-HYCOM-CICE/NMOb0.08/expt_01.0
 DATE=$START
@@ -478,7 +476,7 @@ while [[ "$DATE" < "$END" || "$DATE" == "$END" ]]; do
         -m "$WORK/input/GLORYS12/GLO-MFC_001_030_mask_bathy.nc" \
         -c "$WORK/input/GLORYS12/GLO-MFC_001_030_coordinates.nc" &
     nproc=$((nproc+1))
-    if [ $nproc -ge $num_days ]; then
+    if [ $nproc -ge $MAX_PARALLEL ]; then
         wait
         nproc=0
     fi
@@ -487,15 +485,16 @@ done
 wait
 ```
 
-With all days running in parallel, a full month takes approximately 3–4 minutes. For
+With up to 16 days running in parallel, a full month takes approximately 3–4 minutes. For
 anything longer, use the submission script in the next dropdown.
 ::::
 
 ::::{dropdown} Submission script (multi-month or multi-year runs)
 
-The following script loops over all days in a year range, runs 12
-`nemo_to_hycom.sh` processes in parallel (one per month), and skips dates where output
-already exists. Unlike regular compute nodes, the `preproc` queue has access to NIRD, so
+The following script loops over all days in a year range, runs up to 12
+`nemo_to_hycom.sh` processes in parallel, and skips dates where output
+already exists. The limit of 12 is memory-based: each job uses ~12 GB peak RAM,
+and 12 × 16 GB = 192 GB fits within the `preproc` node with headroom. Unlike regular compute nodes, the `preproc` queue has access to NIRD, so
 no copying of source files beforehand is needed. Save it as `nesting_job.sh` in
 `$WORK/<CONFIGNAME>/expt_<EXPT_ID>/` and submit from there (the `log/` directory must
 exist, which it does if you followed the experiment setup):
