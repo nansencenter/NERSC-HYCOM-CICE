@@ -91,6 +91,7 @@ hycom/hycom_ALL/hycom_2.2.72_ALL/topo/src_2.2.72/topo_tiles
 hycom/hycom_ALL/hycom_2.2.72_ALL/topo/src_2.2.72/topo_zthin
 hycom/MSCPROGS/src/Average/ensave
 hycom/MSCPROGS/src/Average/hycave
+hycom/MSCPROGS/src/Average/hycom_mean
 hycom/MSCPROGS/src/Barstrf/hyc2bastrf
 hycom/MSCPROGS/src/Conf_grid/Code/grid
 hycom/MSCPROGS/src/ConfmapRoutines/confmap_gmap
@@ -112,6 +113,7 @@ hycom/MSCPROGS/src/Hyc2proj/hyc2proj
 hycom/MSCPROGS/src/Hyc2proj/hyc2stations
 hycom/MSCPROGS/src/IceDrift/icedrift2
 hycom/MSCPROGS/src/IceDrift/icedrift_osisaf
+hycom/MSCPROGS/src/IceDriftNC/icedrift_osisafNC
 hycom/MSCPROGS/src/Idealized_Grid/igrid
 hycom/MSCPROGS/src/Idealized_Grid/irstrt
 hycom/MSCPROGS/src/MkEnsemble/create_single_mem
@@ -604,3 +606,7 @@ hycom/hycom_ALL/hycom_2.2.72_ALL/topo/src_2.2.72/topo_smooth_skip
 hycom/hycom_ALL/hycom_2.2.72_ALL/topo/src_2.2.72/topo_subset
 hycom/hycom_ALL/hycom_2.2.72_ALL/topo/src_2.2.72/topo_zcells
 hycom/hycom_ALL/hycom_2.2.72_ALL/topo/src_2.2.72/topo_zthin 
+
+hycom/MSCPROGS/src/Hyc2proj/TMP/*
+hycom/MSCPROGS/src/IceDriftNC/TMP/*
+
