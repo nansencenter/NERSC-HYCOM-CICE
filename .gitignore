@@ -12,7 +12,9 @@ pythonlibs/*/build/
 pythonlibs/*/*.egg-info/
 #--------
 #--------
-NMOb0.08/
+NMOb0.08/topo
+NMOb0.08/subregion
+NMOb0.08/expt_01.0/data/
 #--------
 #--------
 hycom/MSCPROGS/bin*/
