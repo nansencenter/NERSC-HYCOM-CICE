@@ -457,7 +457,7 @@ module load Miniforge3/24.1.2-0
 source ${EBROOTMINIFORGE3}/bin/activate
 conda activate hycom-cice
 
-MAX_PARALLEL=16  # each job uses ~12 GB peak; 16 × 12 GB = 192 GB with headroom
+MAX_PARALLEL=12  # each job uses ~16 GB peak; 12 × 16 GB = 192 GB with headroom
 
 START=2018-01-01
 END=2018-01-31
@@ -485,16 +485,16 @@ done
 wait
 ```
 
-With up to 16 days running in parallel, a full month takes approximately 3–4 minutes. For
+With up to 12 days running in parallel, a full month takes approximately 3–4 minutes. For
 anything longer, use the submission script in the next dropdown.
 ::::
 
 ::::{dropdown} Submission script (multi-month or multi-year runs)
 
-The following script loops over all days in a year range, runs up to 16
+The following script loops over all days in a year range, runs up to 12
 `nemo_to_hycom.sh` processes in parallel, and skips dates where output
-already exists. The limit of 16 is memory-based: each job uses ~12 GB peak RAM,
-and 16 × 16 GB = 256 GB requested via `--mem-per-cpu=16GB`. Unlike regular compute nodes, the `preproc` queue has access to NIRD, so
+already exists. The limit of 12 is memory-based: each job uses ~16 GB peak RAM,
+and 12 × 16 GB = 192 GB requested via `--mem-per-cpu=16GB`. Unlike regular compute nodes, the `preproc` queue has access to NIRD, so
 no copying of source files beforehand is needed. Save it as `nesting_job.sh` in
 `$WORK/<CONFIGNAME>/expt_<EXPT_ID>/` and submit from there (the `log/` directory must
 exist, which it does if you followed the experiment setup):
@@ -510,7 +510,7 @@ sbatch nesting_job.sh <START_YEAR> <END_YEAR>
 #SBATCH --account=nn9481k
 #SBATCH --time=24:00:00
 #SBATCH --qos=preproc
-#SBATCH --ntasks=16
+#SBATCH --ntasks=12
 #SBATCH --mem-per-cpu=16GB
 #SBATCH -o log/nemo2hycom.%J.out
 #SBATCH -e log/nemo2hycom.%J.err
