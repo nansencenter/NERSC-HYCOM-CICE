@@ -14,7 +14,7 @@ lat_gro=[70.68, 66.63,67.43]
 
 lon_gro=[127.39, 66.60,86.48]
 
-path_GRO_Dataframes='/cluster/work/users/adracc/ArcticGRO/Dataframes/' #Path to ArcticGRO daily dataframes (dataframes computed using file compute_ArcticGRO_Dataframes.py)
+path_GRO_Dataframes='/cluster/projects/nn9481k/GloFAS_data/RiverCorrection/GRO_Dataframes/' #Path to ArcticGRO daily dataframes (dataframes computed using file compute_ArcticGRO_Dataframes.py)
 path_GloFAS_NC_files='/cluster/work/users/adracc/GloFAS4.0/data/' #Path to daily GloFAS data as NetCDF files
 
 start_year=2001
