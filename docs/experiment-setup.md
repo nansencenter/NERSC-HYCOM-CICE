@@ -7,9 +7,11 @@ description and examples of each.
 Copy the model configuration template and create a symlink to the utility scripts:
 
 ```bash
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+
 cd $WORK
-cp -r $HOME/NERSC-HYCOM-CICE/<CONFIGNAME> .
-cd $WORK/<CONFIGNAME>
+cp -r $HOME/NERSC-HYCOM-CICE/${CONFIGNAME} .
+cd $WORK/${CONFIGNAME}
 ln -sf $HOME/NERSC-HYCOM-CICE/bin .
 ```
 
@@ -22,7 +24,9 @@ ln -sf $HOME/NERSC-HYCOM-CICE/bin .
 Copy the template into the configuration directory:
 
 ```bash
-cd $WORK/<CONFIGNAME>
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+
+cd $WORK/${CONFIGNAME}
 cp $HOME/NERSC-HYCOM-CICE/input/REGION.src .
 ```
 
@@ -39,8 +43,11 @@ export NHCROOT=${HOME}/NERSC-HYCOM-CICE
 Use `expt_new.sh` to create a new experiment from the template experiment `01.0`:
 
 ```bash
-cd $WORK/<CONFIGNAME>
-bin/expt_new.sh 01.0 <EXPT_ID>
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+EXPT_ID=<EXPT_ID>         # e.g. 01.0
+
+cd $WORK/${CONFIGNAME}
+bin/expt_new.sh 01.0 ${EXPT_ID}
 ```
 
 This creates `expt_<EXPT_ID>/` with default configuration files that you will
@@ -83,7 +90,10 @@ at:
 Copy it into place:
 
 ```bash
-cd $WORK/<CONFIGNAME>/expt_<EXPT_ID>
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+EXPT_ID=<EXPT_ID>         # e.g. 01.0
+
+cd $WORK/${CONFIGNAME}/expt_${EXPT_ID}
 cp <path/to/reference/blkdat.input> .
 ```
 

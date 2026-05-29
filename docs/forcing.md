@@ -42,8 +42,11 @@ For TP2 hindcast runs, restart files are archived at:
 For example, to start on 27 August 2016 (240th day of year):
 
 ```bash
-mkdir -p $WORK/<CONFIGNAME>/expt_<EXPT_ID>/data/cice
-cd $WORK/<CONFIGNAME>/expt_<EXPT_ID>/data
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+EXPT_ID=<EXPT_ID>         # e.g. 01.0
+
+mkdir -p $WORK/${CONFIGNAME}/expt_${EXPT_ID}/data/cice
+cd $WORK/${CONFIGNAME}/expt_${EXPT_ID}/data
 
 cp /nird/datalake/NS9481K/shuang/TP2_output/expt_02.6/restart/restart.2016_240_00_0000.a .
 cp /nird/datalake/NS9481K/shuang/TP2_output/expt_02.6/restart/restart.2016_240_00_0000.b .
@@ -75,7 +78,10 @@ expected format. To prepare it manually, first activate the
 ::::
 
 ```bash
-cd $WORK/<CONFIGNAME>/expt_<EXPT_ID>
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+EXPT_ID=<EXPT_ID>         # e.g. 01.0
+
+cd $WORK/${CONFIGNAME}/expt_${EXPT_ID}
 $HOME/NERSC-HYCOM-CICE/bin/atmo_synoptic.sh era5+lw $START $END
 ```
 
@@ -121,7 +127,10 @@ Since forcing files do not include dates in their filenames, leave a stamp in th
 directory to record what period they cover:
 
 ```bash
-cd $WORK/<CONFIGNAME>/force/synoptic/<IEXPT>
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+IEXPT=<IEXPT>             # e.g. 010
+
+cd $WORK/${CONFIGNAME}/force/synoptic/${IEXPT}
 rm -f stamp_*
 touch stamp_${START}-${END}
 ```
@@ -152,9 +161,12 @@ The following files must be present under `$WORK/<CONFIGNAME>/nest/<IEXPT>/`:
 For TP2, you can copy these files from the following reference experiment:
 
 ```bash
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+IEXPT=<IEXPT>             # e.g. 010
+
 DIR_NST=/nird/datalake/NS9481K/shuang/nest/TP2_expt023
-mkdir -p $WORK/<CONFIGNAME>/nest/<IEXPT>
-cd $WORK/<CONFIGNAME>/nest/<IEXPT>
+mkdir -p $WORK/${CONFIGNAME}/nest/${IEXPT}
+cd $WORK/${CONFIGNAME}/nest/${IEXPT}
 cp ${DIR_NST}/ports.input .
 cp ${DIR_NST}/rmu.a ${DIR_NST}/rmu.b .
 cp ${DIR_NST}/rmutr.a ${DIR_NST}/rmutr.b .
@@ -243,7 +255,10 @@ e-folding time), run `nest_setup_ports.sh` from the experiment directory with th
 width and e-folding time as arguments (TP2 values: width=20 cells, e-folding=20 days):
 
 ```bash
-cd $WORK/<CONFIGNAME>/expt_<EXPT_ID>
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+EXPT_ID=<EXPT_ID>         # e.g. 01.0
+
+cd $WORK/${CONFIGNAME}/expt_${EXPT_ID}
 $HOME/NERSC-HYCOM-CICE/bin/nest_setup_ports.sh 20 20
 ```
 
@@ -254,7 +269,10 @@ writes `ports.input` and `rmu.a/b` to `nest/<IEXPT>/`.
 Copy `rmu` to `rmutr` if the same relaxation parameters apply to BGC tracers:
 
 ```bash
-cd $WORK/<CONFIGNAME>/nest/<IEXPT>
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+IEXPT=<IEXPT>             # e.g. 010
+
+cd $WORK/${CONFIGNAME}/nest/${IEXPT}
 cp rmu.a rmutr.a
 cp rmu.b rmutr.b
 ```
@@ -290,9 +308,12 @@ Nesting files for TP2 are archived at `/nird/datalake/NS9481K/shuang/nest/TP2_ex
 Use `stage_nesting_files.sh` to copy or extract the files needed for a given date range:
 
 ```bash
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+IEXPT=<IEXPT>             # e.g. 010
+
 $HOME/NERSC-HYCOM-CICE/bin/stage_nesting_files.sh \
     /nird/datalake/NS9481K/shuang/nest/TP2_expt023 \
-    $WORK/<CONFIGNAME>/nest/<IEXPT> \
+    $WORK/${CONFIGNAME}/nest/${IEXPT} \
     <START> \
     <END>
 ```
@@ -340,8 +361,10 @@ This step only depends on the grid geometry, not the ocean fields, so it only ne
 be run once per source/destination grid pair.
 
 ```bash
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+
 cd $HOME/NERSC-HYCOM-CICE/NMOb0.08/expt_01.0
-$HOME/NERSC-HYCOM-CICE/bin/isuba_gmapi.sh $WORK/<CONFIGNAME>/
+$HOME/NERSC-HYCOM-CICE/bin/isuba_gmapi.sh $WORK/${CONFIGNAME}/
 ```
 
 `isuba_gmapi.sh` is a bash script that calls a compiled Fortran binary in
@@ -396,9 +419,12 @@ In the examples below, omit `-b` for physics-only runs.
 *Single day (2018-01-01), from the login node:*
 
 ```bash
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+EXPT_ID=<EXPT_ID>         # e.g. 01.0
+
 cd $HOME/NERSC-HYCOM-CICE/NMOb0.08/expt_01.0
 $HOME/NERSC-HYCOM-CICE/bin/nemo_to_hycom.sh \
-    -d $WORK/<CONFIGNAME>/expt_<EXPT_ID>/ \
+    -d $WORK/${CONFIGNAME}/expt_${EXPT_ID}/ \
     -n "/nird/datapeak/NS9481K/MERCATOR_DATA/PHY/2018/MERCATOR-PHY-24-2018-01-01-12.nc" \
     -g regular \
     -b "/nird/datapeak/NS9481K/MERCATOR_DATA/BIO/DAILY/2018/global_analysis_forecast_bio_20180101.nc" \
@@ -439,9 +465,11 @@ rsync -av \
     $WORK/input/GLORYS12/
 ```
 
-::::{dropdown} Interactive session on a compute node (up to a month or two)
+::::{dropdown} Interactive session on a compute node
 
-The `devel` queue allocates immediately, making it the right choice for interactive jobs.
+The `devel` queue allocates immediately but bills for the entire node (128 cores) regardless
+of how many tasks you use. It is best suited for testing or short periods where you need
+results right away. For longer runs, the submission script below is more economical.
 Request an exclusive node (256 GB RAM, 128 cores):
 
 ```bash
@@ -451,6 +479,9 @@ srun --nodes=1 --exclusive --time=01:00:00 --qos=devel --account=nn2993k --pty b
 Once the session starts:
 
 ```bash
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+EXPT_ID=<EXPT_ID>         # e.g. 01.0
+
 source ${HOME}/NERSC-HYCOM-CICE/environment/betzy_env.sh
 module load Miniforge3/24.1.2-0
 source ${EBROOTMINIFORGE3}/bin/activate
@@ -468,7 +499,7 @@ while [[ "$DATE" < "$END" || "$DATE" == "$END" ]]; do
     YYYY=$(date -d "$DATE" +%Y)
     YYYYMMDD=$(date -d "$DATE" +%Y%m%d)
     $HOME/NERSC-HYCOM-CICE/bin/nemo_to_hycom.sh \
-        -d $WORK/<CONFIGNAME>/expt_<EXPT_ID>/ \
+        -d $WORK/${CONFIGNAME}/expt_${EXPT_ID}/ \
         -n "$WORK/input/GLORYS12/PHY/${YYYY}/MERCATOR-PHY-24-${DATE}-12.nc" \
         -g regular \
         -b "$WORK/input/GLORYS12/BIO/${YYYY}/global_analysis_forecast_bio_${YYYYMMDD}.nc" \
@@ -485,15 +516,17 @@ wait
 ```
 
 With up to 12 days running in parallel, a full month takes approximately 10 minutes. For
-anything longer, use the submission script in the next dropdown.
+anything much longer, use the submission script in the next dropdown.
 ::::
 
-::::{dropdown} Submission script (multi-month or multi-year runs)
+::::{dropdown} Submission script
 
 The following script loops over all days in a year range, runs up to 12
 `nemo_to_hycom.sh` processes in parallel, and skips dates where output
 already exists. The limit of 12 is memory-based: each job uses ~16 GB peak RAM,
-and 12 × 16 GB = 192 GB requested via `--mem-per-cpu=16GB`. Copy source files from the
+and 12 × 16 GB = 192 GB requested via `--mem-per-cpu=16GB`. Unlike the interactive
+`devel` session, `preproc` bills only for the resources requested rather than a
+full node, making it more economical for longer runs. Copy source files from the
 login node as described above before submitting.
 
 **Submit the job**
@@ -503,7 +536,10 @@ Save the script below as `nesting_job.sh` in `$WORK/<CONFIGNAME>/expt_<EXPT_ID>/
 then submit with the start and end year as arguments:
 
 ```bash
-cd $WORK/<CONFIGNAME>/expt_<EXPT_ID>
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+EXPT_ID=<EXPT_ID>         # e.g. 01.0
+
+cd $WORK/${CONFIGNAME}/expt_${EXPT_ID}
 sbatch nesting_job.sh 2018 2019
 ```
 
@@ -613,14 +649,21 @@ source ${HOME}/NERSC-HYCOM-CICE/environment/betzy_env.sh
 :::
 
 ```bash
-cd $WORK/<CONFIGNAME>/expt_<EXPT_ID>
-mkdir -p ../nest/<IEXPT>/Montg
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+IEXPT=<IEXPT>             # e.g. 010
+EXPT_ID=<EXPT_ID>         # e.g. 01.0
+
+cd $WORK/${CONFIGNAME}/expt_${EXPT_ID}
+mkdir -p ../nest/${IEXPT}/Montg
 python $HOME/NERSC-HYCOM-CICE/bin/calc_montg1.py \
-    ../nest/<IEXPT>/archv.YYYY_DDD_00.a \
+    ../nest/${IEXPT}/archv.YYYY_DDD_00.a \
     ./data/restart.YYYY_DDD_00_0000.a \
-    ../nest/<IEXPT>/Montg/
-mv ../nest/<IEXPT>/Montg/archv.YYYY_DDD_00.[ab] ../nest/<IEXPT>/
+    ../nest/${IEXPT}/Montg/
+mv ../nest/${IEXPT}/Montg/archv.YYYY_DDD_00.[ab] ../nest/${IEXPT}/
 ```
+
+Replace `restart.YYYY_DDD_00_0000.a` with the actual restart file in `data/` (see
+[Restart files](#restart-files)), and `archv.YYYY_DDD_00.a` with the nesting file whose Montgomery potential you want to modify.
 
 :::{dropdown} What calc_montg1.py does
 
@@ -667,44 +710,75 @@ vary within a run, so it does not matter which restart date you choose.
 Executing the above command takes roughly 12 seconds on a login node, so for many files consider running in
 parallel on a compute node using one of the options below.
 
-:::{dropdown} Interactive node (short periods, up to ~1 month)
+::::{dropdown} Interactive node
 
-Request a `devel` node and run files in parallel with background processes. The number of
-tasks should match the number of files you want to process:
+The `devel` queue allocates immediately but bills for the entire node (128 cores)
+regardless of how many tasks you use. It is best for quick testing or patching a
+few missing files. For a full year, the submission script below is more economical.
+32 tasks is enough to cover a full month (at most 31 files) in one batch, and each task
+uses ~512 MB peak RAM — well within the node's 256 GB. A full month finishes in under a minute:
 
 ```bash
 srun --nodes=1 --ntasks=32 --time=01:00:00 --qos=devel --account=nn9481k --pty bash
 ```
 
-```bash
-cd $WORK/<CONFIGNAME>/expt_<EXPT_ID>
-restartfile="./data/restart.YYYY_DDD_00_0000.a"
-outdir="../nest/<IEXPT>/Montg"
-mkdir -p ${outdir}
+Once inside the session, activate the Python environment:
 
-nproc=0
-for f in ../nest/<IEXPT>/archv.*.a; do
-    python $HOME/NERSC-HYCOM-CICE/bin/calc_montg1.py $f ${restartfile} ${outdir}/ &
-    nproc=$((nproc+1))
-    if [ $nproc -ge 32 ]; then
-        wait
-        mv ${outdir}/archv.*.[ab] ../nest/<IEXPT>/
-        nproc=0
-    fi
-done
-wait
-mv ${outdir}/archv.*.[ab] ../nest/<IEXPT>/
+:::{dropdown} Activating the Python environment on Betzy
+
+```{include} _snippets/betzy_python_activate.md
 ```
 
 :::
 
-:::{dropdown} Submission script (many files)
+```bash
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+IEXPT=<IEXPT>             # e.g. 010
+EXPT_ID=<EXPT_ID>         # e.g. 01.0
+restartfile="./data/restart.YYYY_DDD_00_0000.a"  # adapt to your restart file
+
+cd $WORK/${CONFIGNAME}/expt_${EXPT_ID}
+outdir="../nest/${IEXPT}/Montg"
+mkdir -p ${outdir}
+rm -f ${outdir}/archv.*.[ab]   # ensure Montg is clean before starting
+
+nproc=0
+for f in ../nest/${IEXPT}/archv.*.a; do
+    python $HOME/NERSC-HYCOM-CICE/bin/calc_montg1.py $f ${restartfile} ${outdir}/ &
+    nproc=$((nproc+1))
+    if [ $nproc -ge 32 ]; then
+        wait
+        nproc=0
+    fi
+done
+wait
+
+missing=0
+for f in ../nest/${IEXPT}/archv.*.a; do
+    if [ ! -f ${outdir}/$(basename $f) ]; then
+        echo "NOT processed: $f"
+        missing=$((missing+1))
+    fi
+done
+if [ $missing -eq 0 ]; then
+    mv ${outdir}/archv.*.[ab] ../nest/${IEXPT}/
+else
+    echo "${missing} file(s) failed — not moving any files. Check the output above."
+fi
+```
+
+::::
+
+:::{dropdown} Submission script
 
 Save as `montg1_job.sh` in `$WORK/<CONFIGNAME>/expt_<EXPT_ID>/`. Set `IEXPT`, `EXPT_ID`,
 and the restart file path at the top of the script, then submit from there:
 
 ```bash
-cd $WORK/<CONFIGNAME>/expt_<EXPT_ID>
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+EXPT_ID=<EXPT_ID>         # e.g. 01.0
+
+cd $WORK/${CONFIGNAME}/expt_${EXPT_ID}
 sbatch montg1_job.sh
 ```
 
@@ -714,7 +788,7 @@ sbatch montg1_job.sh
 #SBATCH --account=nn9481k
 #SBATCH -t 01:00:00
 #SBATCH --qos=preproc
-#SBATCH --ntasks=32
+#SBATCH --ntasks=32          # covers a full month (≤31 files) in one batch; ~512 MB peak per task
 #SBATCH --mem-per-cpu=512M
 #SBATCH -o log/montg1.%J.out
 #SBATCH -e log/montg1.%J.err
@@ -724,12 +798,14 @@ module load Miniforge3/24.1.2-0
 source ${EBROOTMINIFORGE3}/bin/activate
 conda activate hycom-cice
 
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
 IEXPT=<IEXPT>             # e.g. 010
 EXPT_ID=<EXPT_ID>         # e.g. 01.0
+restartfile="./data/restart.YYYY_DDD_00_0000.a"  # adapt to your restart file
 
-restartfile="./data/restart.YYYY_DDD_00_0000.a"
 outdir="../nest/${IEXPT}/Montg"
 mkdir -p ${outdir}
+rm -f ${outdir}/archv.*.[ab]   # ensure Montg is clean before starting
 
 nproc=0
 for f in ../nest/${IEXPT}/archv.*.a; do
@@ -737,12 +813,23 @@ for f in ../nest/${IEXPT}/archv.*.a; do
     nproc=$((nproc+1))
     if [ $nproc -ge 32 ]; then
         wait
-        mv ${outdir}/archv.*.[ab] ../nest/${IEXPT}/
         nproc=0
     fi
 done
 wait
-mv ${outdir}/archv.*.[ab] ../nest/${IEXPT}/
+
+missing=0
+for f in ../nest/${IEXPT}/archv.*.a; do
+    if [ ! -f ${outdir}/$(basename $f) ]; then
+        echo "NOT processed: $f"
+        missing=$((missing+1))
+    fi
+done
+if [ $missing -eq 0 ]; then
+    mv ${outdir}/archv.*.[ab] ../nest/${IEXPT}/
+else
+    echo "${missing} file(s) failed — not moving any files. Check the log for details."
+fi
 ```
 
 :::
@@ -772,12 +859,15 @@ following files must then be present under `$WORK/<CONFIGNAME>/relax/<IEXPT>/`:
 These files are generated as follows. First, create a scratch directory and link in the grid and topography files:
 
 ```bash
-mkdir -p $WORK/<CONFIGNAME>/relax/<IEXPT>/SCRATCH
-cd $WORK/<CONFIGNAME>/relax/<IEXPT>/SCRATCH
-ln -sf $WORK/<CONFIGNAME>/topo/regional.grid.a .
-ln -sf $WORK/<CONFIGNAME>/topo/regional.grid.b .
-ln -sf $WORK/<CONFIGNAME>/topo/regional.depth.a .
-ln -sf $WORK/<CONFIGNAME>/topo/regional.depth.b .
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+IEXPT=<IEXPT>             # e.g. 010
+
+mkdir -p $WORK/${CONFIGNAME}/relax/${IEXPT}/SCRATCH
+cd $WORK/${CONFIGNAME}/relax/${IEXPT}/SCRATCH
+ln -sf $WORK/${CONFIGNAME}/topo/regional.grid.a .
+ln -sf $WORK/${CONFIGNAME}/topo/regional.grid.b .
+ln -sf $WORK/${CONFIGNAME}/topo/regional.depth.a .
+ln -sf $WORK/${CONFIGNAME}/topo/regional.depth.b .
 ```
 
 Copy the script locally:
@@ -850,7 +940,10 @@ climatological relaxation and climatological initialization:
 Copy the script to your experiment directory:
 
 ```bash
-cd $WORK/<CONFIGNAME>/expt_<EXPT_ID>
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+EXPT_ID=<EXPT_ID>         # e.g. 01.0
+
+cd $WORK/${CONFIGNAME}/expt_${EXPT_ID}
 cp $HOME/NERSC-HYCOM-CICE/bin/create_ref_case.sh .
 ```
 
@@ -953,7 +1046,10 @@ All scripts must be run from the experiment directory. They write to
 `create_ref_case.sh`.
 
 ```bash
-cd $WORK/<CONFIGNAME>/expt_<EXPT_ID>
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+EXPT_ID=<EXPT_ID>         # e.g. 01.0
+
+cd $WORK/${CONFIGNAME}/expt_${EXPT_ID}
 ```
 
 Steps:

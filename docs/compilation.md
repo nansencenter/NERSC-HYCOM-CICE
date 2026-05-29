@@ -104,7 +104,10 @@ ln -sf Linux.betzy.ifort_cice.V23 \
 Run the compile script from the experiment directory:
 
 ```bash
-cd ${WORK}/<CONFIGNAME>/expt_<EXPT_ID>
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+EXPT_ID=<EXPT_ID>         # e.g. 01.0
+
+cd ${WORK}/${CONFIGNAME}/expt_${EXPT_ID}
 bash ${HOME}/NERSC-HYCOM-CICE/bin/compile_model.sh ifort -u
 ```
 
@@ -164,7 +167,10 @@ ${WORK}/<CONFIGNAME>/expt_<EXPT_ID>/build/src_2.2.98ZA-07Tsig0-i-sm-sse_relo_mpi
 > directory before compiling:
 >
 > ```bash
-> cd ${WORK}/<CONFIGNAME>/expt_<EXPT_ID>
+> CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+> EXPT_ID=<EXPT_ID>         # e.g. 01.0
+> 
+> cd ${WORK}/${CONFIGNAME}/expt_${EXPT_ID}
 > cp /nird/datalake/NS9481K/shuang/TP2_setup/exp02.6_seaclim_ref/fabm.yaml .
 > cp /nird/datalake/NS9481K/shuang/TP2_setup/exp02.6_seaclim_ref/hycom_fabm.nml .
 > cp /nird/datalake/NS9481K/shuang/TP2_setup/exp02.6_seaclim_ref/ice_in .
