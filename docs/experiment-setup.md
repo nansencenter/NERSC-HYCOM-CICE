@@ -61,7 +61,8 @@ adjust in the following steps.
 
 2. **Copies the template experiment** — all files from `expt_<old>/` are copied to the new
    directory with `rsync`, skipping the `data/`, `log/`, and `SCRATCH/` subdirectories
-   (those are created fresh and empty).
+   (those are created fresh and empty). This includes configuration files such as
+   `blkdat.input`, `EXPT.src`, and the job submission script `srjob.sh`.
 
 3. **Updates `EXPT.src`** — the `X=` and `E=` lines are rewritten to reflect the new
    experiment ID (e.g. `X="02.6"` and `E="026"`).
