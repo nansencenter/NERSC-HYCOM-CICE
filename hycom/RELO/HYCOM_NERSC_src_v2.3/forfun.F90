@@ -1775,7 +1775,7 @@
           endif !1st tile
           call xcsync(flush_lp)
           do l= 1,4
-            rivers(:,:,l) = 20*util1(:,:)
+            rivers(:,:,l) = util1(:,:)
           enddo
           if     (mnproc.eq.1) then  ! .b file from 1st tile only
           close (unit=uoff+918)
