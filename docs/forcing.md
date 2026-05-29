@@ -432,6 +432,37 @@ $HOME/NERSC-HYCOM-CICE/bin/nemo_to_hycom.sh \
     -c "/nird/datapeak/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO-MFC_001_030_coordinates.nc"
 ```
 
+:::{dropdown} What does nemo_to_hycom.sh do?
+
+The script runs three steps in sequence for each input file:
+
+**Step 1 — NetCDF to HYCOM archive (Python)**
+
+`nemo2archvz_regular.py` (with `-g regular`) or `nemo2archvz_native.py` (with `-g native`)
+reads the MERCATOR netCDF file and writes a HYCOM archive (`archv.[ab]`) in z-level
+coordinates to a temporary `data/` directory (e.g. `NMOb0.08/expt_01.0/data/`). The
+output is always in z-level coordinates because GLORYS12/NEMO data is distributed on a
+z-grid regardless of horizontal grid type. `montg1` is set to 0 at this stage (and should be corrected
+later by `calc_montg1.py`, see below). The file is deleted at the end of the run once it is no
+longer needed.
+
+**Step 2 — Horizontal interpolation (Fortran: `isubaregion`)**
+
+`isubaregion` horizontally interpolates the Step 1 archive onto the destination model's
+horizontal grid. It uses the precomputed grid map
+(`NMOb0.08/subregion/TP2a0.10.gmap.[ab]`) that contains the interpolation weights. The result is
+written as an intermediate archive to `subregion/`.
+
+**Step 3 — Vertical interpolation (Fortran: `nemo_archvz_biophys`)**
+
+`nemo_archvz_biophys` vertically interpolates from z-levels to the hybrid vertical
+coordinate system of the destination model, and writes the final archive to `nest/`.
+
+Steps 2 and 3 use shared setup files in `subregion/` (grid, topography, `fort.99`) that
+are identical for all dates and only need to be created once.
+
+:::
+
 Processing a single day takes approximately 20 minutes on the login node, which is pretty slow. For multi-day, multi-month or multi-year runs, use a compute node to perform Step 2.
 
 Compute nodes on Betzy cannot access NIRD, so source files must be copied to `$WORK`
@@ -493,6 +524,8 @@ START=2018-01-01
 END=2018-01-31
 
 cd $HOME/NERSC-HYCOM-CICE/NMOb0.08/expt_01.0
+$HOME/NERSC-HYCOM-CICE/bin/archvz2hycom_biophys.sh --setup-only $WORK/${CONFIGNAME}/expt_${EXPT_ID}/
+
 DATE=$START
 nproc=0
 while [[ "$DATE" < "$END" || "$DATE" == "$END" ]]; do
@@ -570,48 +603,34 @@ if [[ -z "$start_year" || -z "$end_year" ]]; then
     exit 1
 fi
 
-is_leap_year() {
-    year=$1
-    if (( year % 400 == 0 )) || (( year % 4 == 0 && year % 100 != 0 )); then
-        return 0
-    else
-        return 1
-    fi
-}
-
 cd $HOME/NERSC-HYCOM-CICE/NMOb0.08/expt_01.0
+$HOME/NERSC-HYCOM-CICE/bin/archvz2hycom_biophys.sh --setup-only $WORK/${CONFIGNAME}/expt_${EXPT_ID}/
+
+DATE="${start_year}-01-01"
+END="${end_year}-12-31"
 nproc=0
-for year in $(seq $start_year $end_year); do
-    if is_leap_year "$year"; then
-        days_in_month=(31 29 31 30 31 30 31 31 30 31 30 31)
+while [[ "$DATE" < "$END" || "$DATE" == "$END" ]]; do
+    YYYY=$(date -d "$DATE" +%Y)
+    DDD=$(date -d "$DATE" +%j)
+    YYYYMMDD=$(date -d "$DATE" +%Y%m%d)
+    archv="$WORK/${CONFIGNAME}/nest/${IEXPT}/archv.${YYYY}_${DDD}_00.b"
+    if [ -e "$archv" ]; then
+        echo "Skipping $DATE (output exists)"
     else
-        days_in_month=(31 28 31 30 31 30 31 31 30 31 30 31)
+        $HOME/NERSC-HYCOM-CICE/bin/nemo_to_hycom.sh \
+            -d $WORK/${CONFIGNAME}/expt_${EXPT_ID}/ \
+            -n "$WORK/input/GLORYS12/PHY/${YYYY}/MERCATOR-PHY-24-${DATE}-12.nc" \
+            -g regular \
+            -b "$WORK/input/GLORYS12/BIO/${YYYY}/global_analysis_forecast_bio_${YYYYMMDD}.nc" \
+            -m "$WORK/input/GLORYS12/GLO-MFC_001_030_mask_bathy.nc" \
+            -c "$WORK/input/GLORYS12/GLO-MFC_001_030_coordinates.nc" &
+        nproc=$((nproc+1))
+        if [ $nproc -ge 12 ]; then
+            wait
+            nproc=0
+        fi
     fi
-    for month in $(seq -w 1 12); do
-        for day in $(seq -w 1 ${days_in_month[$((10#$month-1))]}); do
-            date=$(date -d "$year-$month-$day" "+%Y%m%d")
-            day_of_year=$(date -d "$date" "+%j")
-            archv="$WORK/${CONFIGNAME}/nest/${IEXPT}/archv.${year}_${day_of_year}_00.b"
-            if [ -e "$archv" ]; then
-                echo "Skipping $date (output exists)"
-                continue
-            fi
-            phy_file="$WORK/input/GLORYS12/PHY/${year}/MERCATOR-PHY-24-${year}-${month}-${day}-12.nc"
-            bio_file="$WORK/input/GLORYS12/BIO/${year}/global_analysis_forecast_bio_${date}.nc"
-            $HOME/NERSC-HYCOM-CICE/bin/nemo_to_hycom.sh \
-                -d $WORK/${CONFIGNAME}/expt_${EXPT_ID}/ \
-                -n "$phy_file" \
-                -g regular \
-                -b "$bio_file" \
-                -m "$WORK/input/GLORYS12/GLO-MFC_001_030_mask_bathy.nc" \
-                -c "$WORK/input/GLORYS12/GLO-MFC_001_030_coordinates.nc" &
-            nproc=$((nproc+1))
-            if [ $nproc -ge 16 ]; then
-                wait
-                nproc=0
-            fi
-        done
-    done
+    DATE=$(date -d "$DATE + 1 day" +%Y-%m-%d)
 done
 wait
 ```
@@ -1006,7 +1025,8 @@ TP2 on Betzy (`Icore=29`, `Jcore=26`, topography version `04`), this is `NMPI=50
 | `relax/<IEXPT>/` | BGC relaxation climatology (z-level and hybrid-level) | `ntracr ≠ 0` |
 | `relax/<IEXPT>/` | CO2 relaxation climatology | `ntracr ≠ 0` |
 | `relax/<IEXPT>/` | Sea ice cover climatology | `iceclim=1` |
-| `force/rivers/<IEXPT>/` | River forcing | always |
+| `force/rivers/<IEXPT>/` | River discharge (AHYPE/EHYPE climatology) | always |
+| `force/rivers/<IEXPT>/` | BGC tracer sources: Ob River nutrients spread to outer bay, atmospheric nitrogen deposition added | `ntracr ≠ 0` |
 | `force/seawifs/` | kpar forcing (diffuse light attenuation from SeaWiFS; only read by the model when `jerlv0=0` in `blkdat.input`) | always |
 | `topo/partit/` | MPI tile definition files (e.g. `depth_TP2a0.10_04.0504`) | always |
 
