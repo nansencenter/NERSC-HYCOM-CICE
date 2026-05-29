@@ -313,7 +313,7 @@ c --- is there ice?
       read (ni,'(a)',end=6) cline
       write(lp,'(a)')       cline(1:len_trim(cline))
       icegln = cline(1:8).eq.'covice  '
-      if  (icegln) then
+      if     (icegln) then
         i = index(cline,'=')
         read (cline(i+1:),*)  nstep,time(3),layer,thet,hminb,hmaxb
         call getfld(work, ni, hminb,hmaxb, .false.)
@@ -564,25 +564,21 @@ c
         call extrct(work,idm,jdm,iorign,jorign, 
      &              si_v,ii,jj)
 c
-c    !  correct one but to read surtx/surty in the daily output of hycom2.3 
-c    !  at 24th Oct 2025    
-        if (iversn /= 23) then
-           read (ni,'(a)',end=6) cline
-           write(lp,'(a)')       cline(1:len_trim(cline))
-           i = index(cline,'=')
-           read (cline(i+1:),*)  nstep,time(3),layer,thet,hminb,hmaxb
-           call getfld(work, ni, hminb,hmaxb, .false.)
-           call extrct(work,idm,jdm,iorign,jorign, 
+        read (ni,'(a)',end=6) cline
+        write(lp,'(a)')       cline(1:len_trim(cline))
+        i = index(cline,'=')
+        read (cline(i+1:),*)  nstep,time(3),layer,thet,hminb,hmaxb
+        call getfld(work, ni, hminb,hmaxb, .false.)
+        call extrct(work,idm,jdm,iorign,jorign, 
      &              surtx,ii,jj)
 c
-           read (ni,'(a)',end=6) cline
-           write(lp,'(a)')       cline(1:len_trim(cline))
-           i = index(cline,'=')
-           read (cline(i+1:),*)  nstep,time(3),layer,thet,hminb,hmaxb
-           call getfld(work, ni, hminb,hmaxb, .false.)
-           call extrct(work,idm,jdm,iorign,jorign, 
+        read (ni,'(a)',end=6) cline
+        write(lp,'(a)')       cline(1:len_trim(cline))
+        i = index(cline,'=')
+        read (cline(i+1:),*)  nstep,time(3),layer,thet,hminb,hmaxb
+        call getfld(work, ni, hminb,hmaxb, .false.)
+        call extrct(work,idm,jdm,iorign,jorign, 
      &              surty,ii,jj)
-        endif
 
       endif
 

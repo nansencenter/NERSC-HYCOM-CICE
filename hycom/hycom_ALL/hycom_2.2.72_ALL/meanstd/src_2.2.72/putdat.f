@@ -262,22 +262,16 @@ c
         call flush(nop)
         write ( lp,117) 'si_v    ',nmean,time,0,0.0,xmin,xmax
         call flush( lp)
-
-c    !  correct one but to read surtx/surty in the daily output of hycom2.3 
-c    !  at 24th Oct 2025    
-        if (iversn /= 23) then
-          call zaiowr(surtxm,ip,.true., xmin,xmax, nop, .false.)
-          write (nop,117) 'surtx    ',nmean,time,0,0.0,xmin,xmax
-          call flush(nop)
-          write ( lp,117) 'surtx    ',nmean,time,0,0.0,xmin,xmax
-          call flush( lp)
-          call zaiowr(surtym,ip,.true., xmin,xmax, nop, .false.)
-          write (nop,117) 'surty    ',nmean,time,0,0.0,xmin,xmax
-          call flush(nop)
-          write ( lp,117) 'surty    ',nmean,time,0,0.0,xmin,xmax
-          call flush( lp)
-        endif
-
+        call zaiowr(surtxm,ip,.true., xmin,xmax, nop, .false.)
+        write (nop,117) 'surtx    ',nmean,time,0,0.0,xmin,xmax
+        call flush(nop)
+        write ( lp,117) 'surtx    ',nmean,time,0,0.0,xmin,xmax
+        call flush( lp)
+        call zaiowr(surtym,ip,.true., xmin,xmax, nop, .false.)
+        write (nop,117) 'surty    ',nmean,time,0,0.0,xmin,xmax
+        call flush(nop)
+        write ( lp,117) 'surty    ',nmean,time,0,0.0,xmin,xmax
+        call flush( lp)
       endif
  117  format (a8,' =',i11,f11.2,i3,f7.3,1p2e16.7)
 c
