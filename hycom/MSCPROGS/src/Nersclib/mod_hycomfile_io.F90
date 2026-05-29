@@ -1148,9 +1148,9 @@ contains
       findweek =index(filename,'AVE')
       findhdr  =index(filename,'.hdr')
       findarchv_wav=index(filename,'archv_wav')
-      findarchv=index(filename,'archv')
-      findarchm=index(filename,'archm')
-      findarchs=index(filename,'archs')
+      findarchv=index(filename,'archv.')
+      findarchm=index(filename,'archm.')
+      findarchs=index(filename,'archs.')
       if (findrst==4) then
          getfiletype='restart'
       elseif (finddaily==4) then
