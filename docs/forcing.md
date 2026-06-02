@@ -7,20 +7,23 @@ Two initialization modes are available, selected via `INITFLG` in `srjob.sh`
    valid at the start date. This is the standard mode for hindcast and forecast runs.
    See [Restart files](#restart-files) below for how to obtain them.
 
-2. **Climatological initialization** (`INITFLG="--init"`): temperature and salinity (T/S)
+2. **Climatological initialization** (cold start, `INITFLG="--init"`): temperature and salinity (T/S)
    are read from `relax/<IEXPT>/relax_tem.[ab]` and `relax_sal.[ab]`; layer thicknesses
    are computed internally from the T/S profiles; velocities and sea surface height (SSH)
    start at zero. The start date must be in September (Arctic sea ice is at its annual
-   minimum in September, making it a natural starting point). Expect a multi-year
-   spin-up before the circulation is reliable. See
+   minimum in September, making it a natural starting point). The ice state is
+   initialised from a climatology derived from TP4 assimilation data
+   (`TP4b_1991-2020_AssimSurf.nc`); the same source is used for both TP2 and TP5.
+   Expect a multi-year spin-up before the circulation is reliable. See
    [Climatologies and river forcing](#climatologies-and-river-forcing) for how to
    prepare the required files.
 
-   > **Note:** The `relax_*` file names reflect their use as targets for climatological
-   > relaxation during the run (see
-   > [Climatologies and river forcing](#climatologies-and-river-forcing)). During
-   > initialization, no relaxation is applied. The files are simply read once as the
-   > initial T/S state.
+   :::{note}
+   The `relax_*` file names reflect their use as targets for climatological relaxation
+   during the run (see [Climatologies and river forcing](#climatologies-and-river-forcing)).
+   During initialization, no relaxation is applied. The files are simply read once as the
+   initial T/S state.
+   :::
 
 ### Restart files
 
@@ -42,8 +45,11 @@ For TP2 hindcast runs, restart files are archived at:
 For example, to start on 27 August 2016 (240th day of year):
 
 ```bash
-mkdir -p $WORK/<CONFIGNAME>/expt_<EXPT_ID>/data/cice
-cd $WORK/<CONFIGNAME>/expt_<EXPT_ID>/data
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+EXPT_ID=<EXPT_ID>         # e.g. 01.0
+
+mkdir -p $WORK/${CONFIGNAME}/expt_${EXPT_ID}/data/cice
+cd $WORK/${CONFIGNAME}/expt_${EXPT_ID}/data
 
 cp /nird/datalake/NS9481K/shuang/TP2_output/expt_02.6/restart/restart.2016_240_00_0000.a .
 cp /nird/datalake/NS9481K/shuang/TP2_output/expt_02.6/restart/restart.2016_240_00_0000.b .
@@ -56,11 +62,14 @@ cp /nird/datalake/NS9481K/shuang/TP2_output/expt_02.6/cice/iced.2016-08-27-00000
 
 This step is handled by the script `atmo_synoptic.sh`.
 
-> **Note:** The job script `srjob.sh` calls `atmo_synoptic.sh` automatically (see [Submit a job](running.md#submit-a-job)). Skip this section if you
-> submit via `srjob.sh` (recommended). You may still want to run `atmo_synoptic.sh`
-> manually to verify the input files are in place before submitting; if so, comment out
-> the `atmo_synoptic.sh` call in `srjob.sh` to prevent the job from regenerating the
-> files (output filenames have no dates, so they would be silently overwritten).
+:::{note}
+The job script `srjob.sh` calls `atmo_synoptic.sh` automatically
+(see [Submit a job](running.md#submit-a-job)). Skip this section if you submit via
+`srjob.sh` (recommended). You may still want to run `atmo_synoptic.sh` manually to
+verify the input files are in place before submitting; if so, comment out the
+`atmo_synoptic.sh` call in `srjob.sh` to prevent the job from regenerating the files
+(output filenames have no dates, so they would be silently overwritten).
+:::
 
 Atmospheric forcing must be prepared for each run period. `START` and `END` are the run
 start and end times, see the [srjob.sh variable table](running.md#submit-a-job) for the
@@ -75,7 +84,10 @@ expected format. To prepare it manually, first activate the
 ::::
 
 ```bash
-cd $WORK/<CONFIGNAME>/expt_<EXPT_ID>
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+EXPT_ID=<EXPT_ID>         # e.g. 01.0
+
+cd $WORK/${CONFIGNAME}/expt_${EXPT_ID}
 $HOME/NERSC-HYCOM-CICE/bin/atmo_synoptic.sh era5+lw $START $END
 ```
 
@@ -117,14 +129,10 @@ Since output goes to an experiment-specific directory (`force/synoptic/<IEXPT>/`
 `atmo_synoptic.sh` from different experiments within the same configuration will not
 cause conflicts.
 
-Since forcing files do not include dates in their filenames, leave a stamp in the
-directory to record what period they cover:
-
-```bash
-cd $WORK/<CONFIGNAME>/force/synoptic/<IEXPT>
-rm -f stamp_*
-touch stamp_${START}-${END}
-```
+Since forcing files do not include dates in their filenames, `atmo_synoptic.sh`
+automatically creates a stamp file in the output directory recording the period covered,
+e.g. `stamp_2013-01-01T00:00:00-2013-01-05T00:00:00`. The file is empty: the date
+range is encoded in the filename.
 
 ## Open boundary forcing
 
@@ -152,9 +160,12 @@ The following files must be present under `$WORK/<CONFIGNAME>/nest/<IEXPT>/`:
 For TP2, you can copy these files from the following reference experiment:
 
 ```bash
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+IEXPT=<IEXPT>             # e.g. 010
+
 DIR_NST=/nird/datalake/NS9481K/shuang/nest/TP2_expt023
-mkdir -p $WORK/<CONFIGNAME>/nest/<IEXPT>
-cd $WORK/<CONFIGNAME>/nest/<IEXPT>
+mkdir -p $WORK/${CONFIGNAME}/nest/${IEXPT}
+cd $WORK/${CONFIGNAME}/nest/${IEXPT}
 cp ${DIR_NST}/ports.input .
 cp ${DIR_NST}/rmu.a ${DIR_NST}/rmu.b .
 cp ${DIR_NST}/rmutr.a ${DIR_NST}/rmutr.b .
@@ -233,9 +244,15 @@ Note that the internal variable name is `rmu` in both files. The max value
 (5.787037×10⁻⁷ s⁻¹) equals 1/(20 days × 86400 s/day). The `.a` file contains the full
 400×380 array, one float per grid point.
 
+A shorter e-folding time gives stricter nudging toward the GLORYS boundary conditions.
+For nesting nudging this can be reasonable (e.g. ~1 day at the boundary), since the
+target is always a realistic time-varying state. The climatological relaxation mask
+(`relax_rmu`) typically uses a longer time scale since its target is a monthly mean
+(see [Climatologies and river forcing](#climatologies-and-river-forcing)).
+
 ::::
 
-::::{dropdown} Generating nesting files from scratch
+::::{dropdown} Generating boundary configuration files from scratch
 
 For TP2 the files can simply be copied from a reference experiment (see above). If you
 need to generate them from scratch (e.g. to adjust the relaxation zone width or
@@ -243,7 +260,10 @@ e-folding time), run `nest_setup_ports.sh` from the experiment directory with th
 width and e-folding time as arguments (TP2 values: width=20 cells, e-folding=20 days):
 
 ```bash
-cd $WORK/<CONFIGNAME>/expt_<EXPT_ID>
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+EXPT_ID=<EXPT_ID>         # e.g. 01.0
+
+cd $WORK/${CONFIGNAME}/expt_${EXPT_ID}
 $HOME/NERSC-HYCOM-CICE/bin/nest_setup_ports.sh 20 20
 ```
 
@@ -254,14 +274,19 @@ writes `ports.input` and `rmu.a/b` to `nest/<IEXPT>/`.
 Copy `rmu` to `rmutr` if the same relaxation parameters apply to BGC tracers:
 
 ```bash
-cd $WORK/<CONFIGNAME>/nest/<IEXPT>
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+IEXPT=<IEXPT>             # e.g. 010
+
+cd $WORK/${CONFIGNAME}/nest/${IEXPT}
 cp rmu.a rmutr.a
 cp rmu.b rmutr.b
 ```
 
-> **Note:** `regional.grid.a/b` and `regional.depth.a/b` are pre-existing configuration
-> files in `$WORK/<CONFIGNAME>/topo/`. Generating them for a new grid is a separate
-> offline step not covered here.
+:::{note}
+`regional.grid.a/b` and `regional.depth.a/b` are pre-existing configuration files in
+`$WORK/<CONFIGNAME>/topo/`. Generating them for a new grid is a separate offline step
+not covered here.
+:::
 
 ::::
 
@@ -290,9 +315,12 @@ Nesting files for TP2 are archived at `/nird/datalake/NS9481K/shuang/nest/TP2_ex
 Use `stage_nesting_files.sh` to copy or extract the files needed for a given date range:
 
 ```bash
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+IEXPT=<IEXPT>             # e.g. 010
+
 $HOME/NERSC-HYCOM-CICE/bin/stage_nesting_files.sh \
     /nird/datalake/NS9481K/shuang/nest/TP2_expt023 \
-    $WORK/<CONFIGNAME>/nest/<IEXPT> \
+    $WORK/${CONFIGNAME}/nest/${IEXPT} \
     <START> \
     <END>
 ```
@@ -304,7 +332,11 @@ expected format. Two optional flags are supported (in any order):
 | `--no-fabm` | Skip BGC (FABM) archive files |
 | `--skip-existing` | Skip dates where all expected files are already present in the destination directory |
 
-> **Note:** The archived TP2 nesting files have `montg1` set to a non-zero value, but it may have been computed from a different model run than the restarts you are using. Always run the Montgomery potential correction step below to ensure consistency.
+:::{note}
+The archived TP2 nesting files have `montg1` set to a non-zero value, but it may have
+been computed from a different model run than the restarts you are using. Always run the
+Montgomery potential correction step below to ensure consistency.
+:::
 
 
 :::::{dropdown} Generating nesting files from GLORYS12/CMEMS
@@ -340,8 +372,10 @@ This step only depends on the grid geometry, not the ocean fields, so it only ne
 be run once per source/destination grid pair.
 
 ```bash
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+
 cd $HOME/NERSC-HYCOM-CICE/NMOb0.08/expt_01.0
-$HOME/NERSC-HYCOM-CICE/bin/isuba_gmapi.sh $WORK/<CONFIGNAME>/
+$HOME/NERSC-HYCOM-CICE/bin/isuba_gmapi.sh $WORK/${CONFIGNAME}/
 ```
 
 `isuba_gmapi.sh` is a bash script that calls a compiled Fortran binary in
@@ -372,10 +406,11 @@ The GLORYS12 and BGC files on NIRD follow these naming conventions:
 - **Physics** (`-n`): `MERCATOR-PHY-24-YYYY-MM-DD-12.nc` (one file per day, timestamped at 12:00 UTC)
 - **BGC** (`-b`): `global_analysis_forecast_bio_YYYYMMDD.nc` (one file per day)
 
-> **Note:** BGC tracers are interpolated onto the vertical layer structure derived from
-> the physics fields and must be processed together in a single pass. **`-n` and `-b`
-> must always cover the same date**; the script does not verify this, so make sure
-> they match.
+:::{note}
+BGC tracers are interpolated onto the vertical layer structure derived from the physics
+fields and must be processed together in a single pass. **`-n` and `-b` must always
+cover the same date**; the script does not verify this, so make sure they match.
+:::
 
 `nemo_to_hycom.sh` calls both a Python script and a compiled Fortran binary. Before
 running, load the HPC environment and activate the Python environment:
@@ -396,9 +431,12 @@ In the examples below, omit `-b` for physics-only runs.
 *Single day (2018-01-01), from the login node:*
 
 ```bash
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+EXPT_ID=<EXPT_ID>         # e.g. 01.0
+
 cd $HOME/NERSC-HYCOM-CICE/NMOb0.08/expt_01.0
 $HOME/NERSC-HYCOM-CICE/bin/nemo_to_hycom.sh \
-    -d $WORK/<CONFIGNAME>/expt_<EXPT_ID>/ \
+    -d $WORK/${CONFIGNAME}/expt_${EXPT_ID}/ \
     -n "/nird/datapeak/NS9481K/MERCATOR_DATA/PHY/2018/MERCATOR-PHY-24-2018-01-01-12.nc" \
     -g regular \
     -b "/nird/datapeak/NS9481K/MERCATOR_DATA/BIO/DAILY/2018/global_analysis_forecast_bio_20180101.nc" \
@@ -406,31 +444,63 @@ $HOME/NERSC-HYCOM-CICE/bin/nemo_to_hycom.sh \
     -c "/nird/datapeak/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO-MFC_001_030_coordinates.nc"
 ```
 
-Processing a single day takes approximately 20 minutes on the login node, which is pretty slow. For multi-day, multi-month or multi-year runs, use a compute node:
+:::{dropdown} What does nemo_to_hycom.sh do?
 
-::::{dropdown} Interactive session on a compute node (multi-day runs)
+The script runs three steps in sequence for each input file:
+
+**Step 1 — NetCDF to HYCOM archive (Python)**
+
+`nemo2archvz_regular.py` (with `-g regular`) or `nemo2archvz_native.py` (with `-g native`)
+reads the MERCATOR netCDF file and writes a HYCOM archive (`archv.[ab]`) in z-level
+coordinates to a temporary `data/` directory (e.g. `NMOb0.08/expt_01.0/data/`). The
+output is always in z-level coordinates because GLORYS12/NEMO data is distributed on a
+z-grid regardless of horizontal grid type. `montg1` is set to 0 at this stage (and should be corrected
+later by `calc_montg1.py`, see below). The file is deleted at the end of the run once it is no
+longer needed.
+
+**Step 2 — Horizontal interpolation (Fortran: `isubaregion`)**
+
+`isubaregion` horizontally interpolates the Step 1 archive onto the destination model's
+horizontal grid. It uses the precomputed grid map
+(`NMOb0.08/subregion/TP2a0.10.gmap.[ab]`) that contains the interpolation weights. The result is
+written as an intermediate archive to `subregion/`.
+
+**Step 3 — Vertical interpolation (Fortran: `nemo_archvz_biophys`)**
+
+`nemo_archvz_biophys` vertically interpolates from z-levels to the hybrid vertical
+coordinate system of the destination model, and writes the final archive to `nest/`.
+
+Steps 2 and 3 use shared setup files in `subregion/` (grid, topography, `fort.99`) that
+are identical for all dates and only need to be created once.
+
+:::
+
+Processing a single day takes approximately 20 minutes on the login node, which is pretty slow. For multi-day, multi-month or multi-year runs, use a compute node to perform Step 2.
 
 Compute nodes on Betzy cannot access NIRD, so source files must be copied to `$WORK`
-from the login node first. The processing itself is fast — all days run in parallel and
-a full month takes ~3–4 minutes — but copying can take significant time for longer
-periods. This approach is therefore best suited for up to a month or two. For longer
-runs, use the submission script in the next dropdown, which reads directly from NIRD via
-the `preproc` queue and requires no copying.
-
-The following example processes January 2018. Adjust the rsync patterns and date
-range for your period.
-
-**Copy source files** *(from the login node)*
+from the login node first. Set `START` and `END` to your period, then run the following.
+PHY and BIO are copied in parallel (`&` runs a command in the background; `wait` blocks
+until both finish before moving to the next year):
 
 ```bash
-mkdir -p $WORK/input/GLORYS12/PHY/2018
-rsync -av --include="MERCATOR-PHY-24-2018-01-*.nc" --exclude="*" \
-    /nird/datapeak/NS9481K/MERCATOR_DATA/PHY/2018/ \
-    $WORK/input/GLORYS12/PHY/2018/
-mkdir -p $WORK/input/GLORYS12/BIO/2018
-rsync -av --include="global_analysis_forecast_bio_201801*.nc" --exclude="*" \
-    /nird/datapeak/NS9481K/MERCATOR_DATA/BIO/DAILY/2018/ \
-    $WORK/input/GLORYS12/BIO/2018/
+START=2018-01-01
+END=2018-01-31
+
+DATE=$START
+while [[ $(date -d "$DATE" +%s) -le $(date -d "$END" +%s) ]]; do
+    YYYY=$(date -d "$DATE" +%Y)
+    YYYYMMDD=$(date -d "$DATE" +%Y%m%d)
+    mkdir -p $WORK/input/GLORYS12/PHY/${YYYY}
+    mkdir -p $WORK/input/GLORYS12/BIO/${YYYY}
+    rsync -av \
+        /nird/datapeak/NS9481K/MERCATOR_DATA/PHY/${YYYY}/MERCATOR-PHY-24-${DATE}-12.nc \
+        $WORK/input/GLORYS12/PHY/${YYYY}/ &
+    rsync -av \
+        /nird/datapeak/NS9481K/MERCATOR_DATA/BIO/DAILY/${YYYY}/global_analysis_forecast_bio_${YYYYMMDD}.nc \
+        $WORK/input/GLORYS12/BIO/${YYYY}/ &
+    wait
+    DATE=$(date -d "$DATE + 1 day" +%Y-%m-%d)
+done
 mkdir -p $WORK/input/GLORYS12
 rsync -av \
     /nird/datapeak/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO-MFC_001_030_mask_bathy.nc \
@@ -438,12 +508,12 @@ rsync -av \
     $WORK/input/GLORYS12/
 ```
 
-**Start an interactive session and run the script**
+::::{dropdown} Interactive session on a compute node
 
-The `devel` queue allocates immediately, making it the right choice for interactive jobs.
-
-Set your dates on the login node first, then request an exclusive interactive node
-(256 GB RAM, 128 cores):
+The `devel` queue allocates immediately but bills for the entire node (128 cores) regardless
+of how many tasks you use. It is best suited for testing or short periods where you need
+results right away. For longer runs, the submission script below is more economical.
+Request an exclusive node (256 GB RAM, 128 cores):
 
 ```bash
 srun --nodes=1 --exclusive --time=01:00:00 --qos=devel --account=nn2993k --pty bash
@@ -452,6 +522,9 @@ srun --nodes=1 --exclusive --time=01:00:00 --qos=devel --account=nn2993k --pty b
 Once the session starts:
 
 ```bash
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+EXPT_ID=<EXPT_ID>         # e.g. 01.0
+
 source ${HOME}/NERSC-HYCOM-CICE/environment/betzy_env.sh
 module load Miniforge3/24.1.2-0
 source ${EBROOTMINIFORGE3}/bin/activate
@@ -463,13 +536,15 @@ START=2018-01-01
 END=2018-01-31
 
 cd $HOME/NERSC-HYCOM-CICE/NMOb0.08/expt_01.0
+$HOME/NERSC-HYCOM-CICE/bin/archvz2hycom_biophys.sh --setup-only $WORK/${CONFIGNAME}/expt_${EXPT_ID}/
+
 DATE=$START
 nproc=0
 while [[ "$DATE" < "$END" || "$DATE" == "$END" ]]; do
     YYYY=$(date -d "$DATE" +%Y)
     YYYYMMDD=$(date -d "$DATE" +%Y%m%d)
     $HOME/NERSC-HYCOM-CICE/bin/nemo_to_hycom.sh \
-        -d $WORK/<CONFIGNAME>/expt_<EXPT_ID>/ \
+        -d $WORK/${CONFIGNAME}/expt_${EXPT_ID}/ \
         -n "$WORK/input/GLORYS12/PHY/${YYYY}/MERCATOR-PHY-24-${DATE}-12.nc" \
         -g regular \
         -b "$WORK/input/GLORYS12/BIO/${YYYY}/global_analysis_forecast_bio_${YYYYMMDD}.nc" \
@@ -485,23 +560,32 @@ done
 wait
 ```
 
-With up to 12 days running in parallel, a full month takes approximately 3–4 minutes. For
-anything longer, use the submission script in the next dropdown.
+With up to 12 days running in parallel, a full month takes approximately 10 minutes. For
+anything much longer, use the submission script in the next dropdown.
 ::::
 
-::::{dropdown} Submission script (multi-month or multi-year runs)
+::::{dropdown} Submission script
 
 The following script loops over all days in a year range, runs up to 12
 `nemo_to_hycom.sh` processes in parallel, and skips dates where output
 already exists. The limit of 12 is memory-based: each job uses ~16 GB peak RAM,
-and 12 × 16 GB = 192 GB requested via `--mem-per-cpu=16GB`. Unlike regular compute nodes, the `preproc` queue has access to NIRD, so
-no copying of source files beforehand is needed. Save it as `nesting_job.sh` in
-`$WORK/<CONFIGNAME>/expt_<EXPT_ID>/` and submit from there (the `log/` directory must
-exist, which it does if you followed the experiment setup):
+and 12 × 16 GB = 192 GB requested via `--mem-per-cpu=16GB`. Unlike the interactive
+`devel` session, `preproc` bills only for the resources requested rather than a
+full node, making it more economical for longer runs. Copy source files from the
+login node as described above before submitting.
+
+**Submit the job**
+
+Save the script below as `nesting_job.sh` in `$WORK/<CONFIGNAME>/expt_<EXPT_ID>/`. Set
+`CONFIGNAME`, `IEXPT`, and `EXPT_ID` at the top of the script to match your experiment,
+then submit with the start and end year as arguments:
 
 ```bash
-cd $WORK/<CONFIGNAME>/expt_<EXPT_ID>
-sbatch nesting_job.sh <START_YEAR> <END_YEAR>
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+EXPT_ID=<EXPT_ID>         # e.g. 01.0
+
+cd $WORK/${CONFIGNAME}/expt_${EXPT_ID}
+sbatch nesting_job.sh 2018 2019
 ```
 
 ```bash
@@ -520,58 +604,56 @@ module load Miniforge3/24.1.2-0
 source ${EBROOTMINIFORGE3}/bin/activate
 conda activate hycom-cice
 
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+IEXPT=<IEXPT>             # e.g. 010
+EXPT_ID=<EXPT_ID>         # e.g. 01.0
+
 start_year=$1
 end_year=$2
-
-is_leap_year() {
-    year=$1
-    if (( year % 400 == 0 )) || (( year % 4 == 0 && year % 100 != 0 )); then
-        return 0
-    else
-        return 1
-    fi
-}
+if [[ -z "$start_year" || -z "$end_year" ]]; then
+    echo "Usage: sbatch nesting_job.sh <START_YEAR> <END_YEAR>"
+    exit 1
+fi
 
 cd $HOME/NERSC-HYCOM-CICE/NMOb0.08/expt_01.0
+$HOME/NERSC-HYCOM-CICE/bin/archvz2hycom_biophys.sh --setup-only $WORK/${CONFIGNAME}/expt_${EXPT_ID}/
+
+DATE="${start_year}-01-01"
+END="${end_year}-12-31"
 nproc=0
-for year in $(seq $start_year $end_year); do
-    if is_leap_year "$year"; then
-        days_in_month=(31 29 31 30 31 30 31 31 30 31 30 31)
+while [[ "$DATE" < "$END" || "$DATE" == "$END" ]]; do
+    YYYY=$(date -d "$DATE" +%Y)
+    DDD=$(date -d "$DATE" +%j)
+    YYYYMMDD=$(date -d "$DATE" +%Y%m%d)
+    archv="$WORK/${CONFIGNAME}/nest/${IEXPT}/archv.${YYYY}_${DDD}_00.b"
+    if [ -e "$archv" ]; then
+        echo "Skipping $DATE (output exists)"
     else
-        days_in_month=(31 28 31 30 31 30 31 31 30 31 30 31)
+        $HOME/NERSC-HYCOM-CICE/bin/nemo_to_hycom.sh \
+            -d $WORK/${CONFIGNAME}/expt_${EXPT_ID}/ \
+            -n "$WORK/input/GLORYS12/PHY/${YYYY}/MERCATOR-PHY-24-${DATE}-12.nc" \
+            -g regular \
+            -b "$WORK/input/GLORYS12/BIO/${YYYY}/global_analysis_forecast_bio_${YYYYMMDD}.nc" \
+            -m "$WORK/input/GLORYS12/GLO-MFC_001_030_mask_bathy.nc" \
+            -c "$WORK/input/GLORYS12/GLO-MFC_001_030_coordinates.nc" &
+        nproc=$((nproc+1))
+        if [ $nproc -ge 12 ]; then
+            wait
+            nproc=0
+        fi
     fi
-    for month in $(seq -w 1 12); do
-        for day in $(seq -w 1 ${days_in_month[$((10#$month-1))]}); do
-            date=$(date -d "$year-$month-$day" "+%Y%m%d")
-            day_of_year=$(date -d "$date" "+%j")
-            archv="$WORK/<CONFIGNAME>/nest/<IEXPT>/archv.${year}_${day_of_year}_00.b"
-            if [ -e "$archv" ]; then
-                echo "Skipping $date (output exists)"
-                continue
-            fi
-            phy_file="/nird/datapeak/NS9481K/MERCATOR_DATA/PHY/${year}/MERCATOR-PHY-24-${year}-${month}-${day}-12.nc"
-            bio_file="/nird/datapeak/NS9481K/MERCATOR_DATA/BIO/DAILY/${year}/global_analysis_forecast_bio_${date}.nc"
-            $HOME/NERSC-HYCOM-CICE/bin/nemo_to_hycom.sh \
-                -d $WORK/<CONFIGNAME>/expt_<EXPT_ID>/ \
-                -n "$phy_file" \
-                -g regular \
-                -b "$bio_file" \
-                -m "/nird/datapeak/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO-MFC_001_030_mask_bathy.nc" \
-                -c "/nird/datapeak/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO-MFC_001_030_coordinates.nc" &
-            nproc=$((nproc+1))
-            if [ $nproc -ge 12 ]; then
-                wait
-                nproc=0
-            fi
-        done
-    done
+    DATE=$(date -d "$DATE + 1 day" +%Y-%m-%d)
 done
 wait
 ```
+The `log/` directory must exist, which it does if you followed the experiment setup.
 
 ::::
 
-> **Note:** `nemo_to_hycom.sh` writes `montg1 = 0` in the output archives. Correct this as described below before using these files for a model run.
+:::{note}
+`nemo_to_hycom.sh` writes `montg1 = 0` in the output archives. Correct this as
+described below before using these files for a model run.
+:::
 
 :::::
 
@@ -601,66 +683,21 @@ source ${HOME}/NERSC-HYCOM-CICE/environment/betzy_env.sh
 :::
 
 ```bash
-cd $WORK/<CONFIGNAME>/expt_<EXPT_ID>
-mkdir -p ../nest/<IEXPT>/Montg
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+IEXPT=<IEXPT>             # e.g. 010
+EXPT_ID=<EXPT_ID>         # e.g. 01.0
+
+cd $WORK/${CONFIGNAME}/expt_${EXPT_ID}
+mkdir -p ../nest/${IEXPT}/Montg
 python $HOME/NERSC-HYCOM-CICE/bin/calc_montg1.py \
-    ../nest/<IEXPT>/archv.YYYY_DDD_00.a \
+    ../nest/${IEXPT}/archv.YYYY_DDD_00.a \
     ./data/restart.YYYY_DDD_00_0000.a \
-    ../nest/<IEXPT>/Montg/
-mv ../nest/<IEXPT>/Montg/archv.YYYY_DDD_00.[ab] ../nest/<IEXPT>/
+    ../nest/${IEXPT}/Montg/
+mv ../nest/${IEXPT}/Montg/archv.YYYY_DDD_00.[ab] ../nest/${IEXPT}/
 ```
 
-The script cannot read and write the same file simultaneously, so the corrected file is
-written to a temporary `Montg/` subdirectory and then moved back to overwrite the
-original. Use any restart from the same model run you will use for your simulation. All
-restarts from the same run produce the same `montg1` because `psikk` and `thkk` do not
-vary within a run, so it does not matter which restart date you choose. Repeat for every
-archive file in the nest directory.
-
-:::{dropdown} Submission script (many files)
-
-Save as `montg1_job.sh` in `$WORK/<CONFIGNAME>/expt_<EXPT_ID>/` and submit from there:
-
-```bash
-cd $WORK/<CONFIGNAME>/expt_<EXPT_ID>
-sbatch montg1_job.sh
-```
-
-```bash
-#!/bin/bash
-#SBATCH --job-name=montg1
-#SBATCH --account=nn9481k
-#SBATCH -t 01:00:00
-#SBATCH --qos=preproc
-#SBATCH --ntasks=12
-#SBATCH --mem-per-cpu=3770M
-#SBATCH -o log/montg1.%J.out
-#SBATCH -e log/montg1.%J.err
-
-source ${HOME}/NERSC-HYCOM-CICE/environment/betzy_env.sh
-module load Miniforge3/24.1.2-0
-source ${EBROOTMINIFORGE3}/bin/activate
-conda activate hycom-cice
-
-restartfile="./data/restart.YYYY_DDD_00_0000.a"
-outdir="../nest/<IEXPT>/Montg"
-mkdir -p ${outdir}
-
-nproc=0
-for f in ../nest/<IEXPT>/archv.*.a; do
-    python $HOME/NERSC-HYCOM-CICE/bin/calc_montg1.py $f ${restartfile} ${outdir}/ &
-    nproc=$((nproc+1))
-    if [ $nproc -ge 12 ]; then
-        wait
-        mv ${outdir}/archv.*.[ab] ../nest/<IEXPT>/
-        nproc=0
-    fi
-done
-wait
-mv ${outdir}/archv.*.[ab] ../nest/<IEXPT>/
-```
-
-:::
+Replace `restart.YYYY_DDD_00_0000.a` with the actual restart file in `data/` (see
+[Restart files](#restart-files)), and `archv.YYYY_DDD_00.a` with the nesting file whose Montgomery potential you want to modify.
 
 :::{dropdown} What calc_montg1.py does
 
@@ -698,6 +735,139 @@ montg1 = montg1pb × pbavg + montg1c
 
 :::
 
+
+The script cannot read and write the same file simultaneously, so the corrected file is
+written to a temporary `Montg/` subdirectory and then moved back to overwrite the
+original. Use any restart from the same model run you will use for your simulation. All
+restarts from the same run produce the same `montg1` because `psikk` and `thkk` do not
+vary within a run, so it does not matter which restart date you choose. 
+Executing the above command takes roughly 12 seconds on a login node, so for many files consider running in
+parallel on a compute node using one of the options below.
+
+::::{dropdown} Interactive node
+
+The `devel` queue allocates immediately but bills for the entire node (128 cores)
+regardless of how many tasks you use. It is best for quick testing or patching a
+few missing files. For a full year, the submission script below is more economical.
+32 tasks is enough to cover a full month (at most 31 files) in one batch, and each task
+uses ~512 MB peak RAM — well within the node's 256 GB. A full month finishes in under a minute:
+
+```bash
+srun --nodes=1 --ntasks=32 --time=01:00:00 --qos=devel --account=nn9481k --pty bash
+```
+
+Once inside the session, activate the Python environment:
+
+:::{dropdown} Activating the Python environment on Betzy
+
+```{include} _snippets/betzy_python_activate.md
+```
+
+:::
+
+```bash
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+IEXPT=<IEXPT>             # e.g. 010
+EXPT_ID=<EXPT_ID>         # e.g. 01.0
+restartfile="./data/restart.YYYY_DDD_00_0000.a"  # adapt to your restart file
+
+cd $WORK/${CONFIGNAME}/expt_${EXPT_ID}
+outdir="../nest/${IEXPT}/Montg"
+mkdir -p ${outdir}
+rm -f ${outdir}/archv.*.[ab]   # ensure Montg is clean before starting
+
+nproc=0
+for f in ../nest/${IEXPT}/archv.*.a; do
+    python $HOME/NERSC-HYCOM-CICE/bin/calc_montg1.py $f ${restartfile} ${outdir}/ &
+    nproc=$((nproc+1))
+    if [ $nproc -ge 32 ]; then
+        wait
+        nproc=0
+    fi
+done
+wait
+
+missing=0
+for f in ../nest/${IEXPT}/archv.*.a; do
+    if [ ! -f ${outdir}/$(basename $f) ]; then
+        echo "NOT processed: $f"
+        missing=$((missing+1))
+    fi
+done
+if [ $missing -eq 0 ]; then
+    mv ${outdir}/archv.*.[ab] ../nest/${IEXPT}/
+else
+    echo "${missing} file(s) failed — not moving any files. Check the output above."
+fi
+```
+
+::::
+
+:::{dropdown} Submission script
+
+Save as `montg1_job.sh` in `$WORK/<CONFIGNAME>/expt_<EXPT_ID>/`. Set `IEXPT`, `EXPT_ID`,
+and the restart file path at the top of the script, then submit from there:
+
+```bash
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+EXPT_ID=<EXPT_ID>         # e.g. 01.0
+
+cd $WORK/${CONFIGNAME}/expt_${EXPT_ID}
+sbatch montg1_job.sh
+```
+
+```bash
+#!/bin/bash
+#SBATCH --job-name=montg1
+#SBATCH --account=nn9481k
+#SBATCH -t 01:00:00
+#SBATCH --qos=preproc
+#SBATCH --ntasks=32          # covers a full month (≤31 files) in one batch; ~512 MB peak per task
+#SBATCH --mem-per-cpu=512M
+#SBATCH -o log/montg1.%J.out
+#SBATCH -e log/montg1.%J.err
+
+source ${HOME}/NERSC-HYCOM-CICE/environment/betzy_env.sh
+module load Miniforge3/24.1.2-0
+source ${EBROOTMINIFORGE3}/bin/activate
+conda activate hycom-cice
+
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+IEXPT=<IEXPT>             # e.g. 010
+EXPT_ID=<EXPT_ID>         # e.g. 01.0
+restartfile="./data/restart.YYYY_DDD_00_0000.a"  # adapt to your restart file
+
+outdir="../nest/${IEXPT}/Montg"
+mkdir -p ${outdir}
+rm -f ${outdir}/archv.*.[ab]   # ensure Montg is clean before starting
+
+nproc=0
+for f in ../nest/${IEXPT}/archv.*.a; do
+    python $HOME/NERSC-HYCOM-CICE/bin/calc_montg1.py $f ${restartfile} ${outdir}/ &
+    nproc=$((nproc+1))
+    if [ $nproc -ge 32 ]; then
+        wait
+        nproc=0
+    fi
+done
+wait
+
+missing=0
+for f in ../nest/${IEXPT}/archv.*.a; do
+    if [ ! -f ${outdir}/$(basename $f) ]; then
+        echo "NOT processed: $f"
+        missing=$((missing+1))
+    fi
+done
+if [ $missing -eq 0 ]; then
+    mv ${outdir}/archv.*.[ab] ../nest/${IEXPT}/
+else
+    echo "${missing} file(s) failed — not moving any files. Check the log for details."
+fi
+```
+
+:::
+
 ### Sponge layers
 
 A common use of nesting is to add a sponge layer near the open boundaries: enhanced
@@ -706,29 +876,36 @@ setting `thkdf4` and `veldf4` to negative values in `blkdat.input`, which tells 
 to read spatially varying 2D fields from file rather than using a uniform scalar. The
 following files must then be present under `$WORK/<CONFIGNAME>/relax/<IEXPT>/`:
 
-> **Note:** The sponge layer (enhanced diffusion), the boundary nudging zone (`nest/rmu`),
-> and the climatological relaxation zone (`relax_rmu`) are three independent mechanisms
-> with independently defined spatial extents. They are generated by separate scripts and
-> need not cover the same area.
+:::{note}
+The sponge layer (enhanced diffusion), the boundary nudging zone (`nest/rmu`), and the
+climatological relaxation zone (`relax_rmu`) are three independent mechanisms with
+independently defined spatial extents. They are generated by separate scripts and need
+not cover the same area.
+:::
 
 | File | Description |
 |------|-------------|
 | `thkdf4.[a,b]` | 2D biharmonic diffusion coefficient for layer thickness |
 | `veldf4.[a,b]` | 2D biharmonic diffusion coefficient for velocity |
 
-> **Note:** Spatially varying `thkdf4` and `veldf4` fields are not limited to sponge
-> layers. Any spatially varying biharmonic diffusion pattern can be prescribed this way.
-> The sponge layer is just the most common use case in a nesting context.
+:::{note}
+Spatially varying `thkdf4` and `veldf4` fields are not limited to sponge layers. Any
+spatially varying biharmonic diffusion pattern can be prescribed this way. The sponge
+layer is just the most common use case in a nesting context.
+:::
 
 These files are generated as follows. First, create a scratch directory and link in the grid and topography files:
 
 ```bash
-mkdir -p $WORK/<CONFIGNAME>/relax/<IEXPT>/SCRATCH
-cd $WORK/<CONFIGNAME>/relax/<IEXPT>/SCRATCH
-ln -sf $WORK/<CONFIGNAME>/topo/regional.grid.a .
-ln -sf $WORK/<CONFIGNAME>/topo/regional.grid.b .
-ln -sf $WORK/<CONFIGNAME>/topo/regional.depth.a .
-ln -sf $WORK/<CONFIGNAME>/topo/regional.depth.b .
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+IEXPT=<IEXPT>             # e.g. 010
+
+mkdir -p $WORK/${CONFIGNAME}/relax/${IEXPT}/SCRATCH
+cd $WORK/${CONFIGNAME}/relax/${IEXPT}/SCRATCH
+ln -sf $WORK/${CONFIGNAME}/topo/regional.grid.a .
+ln -sf $WORK/${CONFIGNAME}/topo/regional.grid.b .
+ln -sf $WORK/${CONFIGNAME}/topo/regional.depth.a .
+ln -sf $WORK/${CONFIGNAME}/topo/regional.depth.b .
 ```
 
 Copy the script locally:
@@ -776,17 +953,18 @@ open boundaries, over the specified number of grid cells. The result is written 
 
 ## Climatologies and river forcing
 
-HYCOM has two separate boundary nudging systems that operate simultaneously:
-
-- **Nesting nudging** (`nest/rmu` + nesting archives): nudges T, S, and interface
-  heights toward time-varying fields from the parent model (NEMO) near the open
-  boundary. See [Offline nesting archive files](#offline-nesting-archive-files).
-- **Climatological relaxation** (`relax_rmu` + climatologies): nudges T, S, and interface
-  heights toward monthly climatology in a broader zone behind the boundary. Controlled
-  by `relax` in `blkdat.input`.
-
 This step is handled by `create_ref_case.sh`, which generates the files needed for
-climatological relaxation and climatological initialization:
+**climatological relaxation** and [climatological initialization](#initial-conditions).
+Climatological relaxation nudges T, S, and interface heights toward monthly climatology
+in a zone along selected open boundary walls. This is distinct from
+[nesting nudging](#open-boundary-forcing), which nudges toward time-varying GLORYS
+fields. The two mechanisms are independent and can operate simultaneously. The default in `create_ref_case.sh` activates the Pacific open boundary (the Northern
+wall in grid coordinates) only: 20 grid cells wide, with a 20-day e-folding time at the
+wall decreasing linearly to zero. The width and time scale are set in
+`create_ref_case.sh`, not in `blkdat.input`. `relax` in `blkdat.input` is simply an
+on/off switch for climatological relaxation.
+
+`create_ref_case.sh` generates:
 
 - T/S and interface climatologies (`relax_sal`, `relax_tem`, `relax_int`) — nudging
   targets for climatological relaxation, and initial T/S state for
@@ -794,6 +972,12 @@ climatological relaxation and climatological initialization:
 - Climatological relaxation mask (`relax_rmu`) — 2D field of 1/e-folding times (1/s),
   non-zero where climatological relaxation is active; gates nudging of T, S, and
   interface heights toward the climatologies above
+
+:::{note}
+`relax_rmu` has no effect unless `relax > 0` in `blkdat.input`. That parameter is
+purely an on/off switch; the spatial extent and time scale of the relaxation are
+determined entirely by the `relax_rmu` field itself.
+:::
 - river forcing
 - light attenuation (kpar) forcing
 - MPI tile definition files
@@ -801,7 +985,10 @@ climatological relaxation and climatological initialization:
 Copy the script to your experiment directory:
 
 ```bash
-cd $WORK/<CONFIGNAME>/expt_<EXPT_ID>
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+EXPT_ID=<EXPT_ID>         # e.g. 01.0
+
+cd $WORK/${CONFIGNAME}/expt_${EXPT_ID}
 cp $HOME/NERSC-HYCOM-CICE/bin/create_ref_case.sh .
 ```
 
@@ -809,7 +996,9 @@ Open `create_ref_case.sh` and update:
 
 - `Icore` — number of MPI tiles in the i-direction (e.g. `29` for TP2 on Betzy)
 - `Jcore` — number of MPI tiles in the j-direction (e.g. `26` for TP2 on Betzy)
-- `iceclim` — set to `0` (no ice climatology) or `1` (initialize from ice climatology)
+- `iceclim` — set to `1` (initialize ice from climatology) for a cold start, or `0` if
+  starting from a CICE restart file (the ice state comes from the restart, not a climatology);
+  see [Initial conditions](#initial-conditions)
 
 `Icore` and `Jcore` control how the domain is decomposed for MPI parallelism. Choose
 them so that `Icore × Jcore × (ocean fraction)` is close to your available core count,
@@ -855,35 +1044,77 @@ four-digit number in the suffix is `NMPI` (the actual number of ocean MPI tasks,
 `Icore × Jcore` because land-only tiles are excluded). Set this value in `EXPT.src`. For
 TP2 on Betzy (`Icore=29`, `Jcore=26`, topography version `04`), this is `NMPI=504`.
 
-::::{dropdown} Files generated by create_ref_case.sh
+::::{dropdown} What create_ref_case.sh does
+
+1. **T/S climatologies (z-level)** — `z_generic.sh` horizontally interpolates WOA2018
+   temperature and salinity from the global grid onto the regional model grid, retaining
+   the z-level vertical coordinate. 
+
+2. **T/S climatologies (hybrid)** — `relaxi.sh` takes the z-level output from step 1
+   and vertically interpolates onto HYCOM's hybrid isopycnal levels, producing
+   `relax_sal`, `relax_tem`, and `relax_int`.
+
+3. **BGC relaxation climatologies** (`ntracr ≠ 0` only) — follows the same two-step
+   process as T/S: horizontal interpolation to z-levels first, then vertical
+   interpolation to hybrid levels. Silicate, phosphate, nitrate, and oxygen come from
+   WOA2013; CO₂, alkalinity, and DIC from GLODAP.
+
+4. **Climatological relaxation mask** — `relax_rmu.sh` runs `rmunew` (MSCPROGS) to
+   build the `relax_rmu` field. The default activates the Pacific open boundary (Northern
+   wall in grid coordinates) only: 20-cell width, e-folding time decreasing linearly from
+   20 days at the wall to zero at 20 cells away. To change which walls are active or
+   adjust the width and time scale, edit the parameters passed to `relax_rmu.sh` in
+   `create_ref_case.sh`.
+
+5. **Sea ice cover climatology** (`iceclim=1` only) — sea ice concentration and
+   thickness from the TP4 assimilation (`TP4b_1991-2020_AssimSurf.nc`) are bilinearly
+   interpolated onto the target model grid using CDO (Climate Data Operators). The same
+   source is used for both TP2 and TP5.
+
+6. **River forcing** — AHYPE/EHYPE discharge climatology. For BGC runs, two additional
+   steps are applied. First, the nutrient load of the Ob River — one of the largest
+   rivers draining into the Arctic Ocean — is spread across the Ob Bay using
+   inverse-distance weighting from the river mouth, rather than being applied at a single
+   grid point. Second, atmospheric nitrogen and phosphorus deposition from EMEP is
+   interpolated onto all ocean grid points and added to the river BGC tracer files.
+
+7. **kpar forcing** — SeaWiFS monthly light attenuation coefficients (`seawifs_mon_kpar.sh`).
+
+8. **MPI tile definition files** — `tile_grid.sh` partitions the domain into
+   `Icore × Jcore` tiles; land-only tiles are excluded to give the final `NMPI`.
+
+**Output files:**
 
 | Location | Contents | Condition |
 |----------|----------|-----------|
 | `relax/<IEXPT>/` | T/S and interface climatologies (`relax_sal`, `relax_tem`, `relax_int`; z-level and hybrid-level) — climatological relaxation targets and climatological initialization | always |
-| `relax/<IEXPT>/` | Climatological relaxation mask (`relax_rmu`) — 2D field of 1/e-folding times gating nudging toward the climatologies above | always |
+| `relax/<IEXPT>/` | Climatological relaxation mask (`relax_rmu`) — 2D field of 1/e-folding times (s⁻¹) along selected open boundary walls; non-zero only within the relaxation zone | always |
 | `relax/<IEXPT>/` | BGC relaxation climatology (z-level and hybrid-level) | `ntracr ≠ 0` |
-| `relax/<IEXPT>/` | CO2 relaxation climatology | `ntracr ≠ 0` |
+| `relax/<IEXPT>/` | CO₂, alkalinity, and DIC relaxation climatology (z-level and hybrid-level) | `ntracr ≠ 0` |
 | `relax/<IEXPT>/` | Sea ice cover climatology | `iceclim=1` |
-| `force/rivers/<IEXPT>/` | River forcing | always |
+| `force/rivers/<IEXPT>/` | River discharge (AHYPE/EHYPE climatology) | always |
+| `force/rivers/<IEXPT>/` | BGC tracer sources: Ob River nutrients spread across the Ob Bay; atmospheric N/P deposition added at all ocean grid points | `ntracr ≠ 0` |
 | `force/seawifs/` | kpar forcing (diffuse light attenuation from SeaWiFS; only read by the model when `jerlv0=0` in `blkdat.input`) | always |
 | `topo/partit/` | MPI tile definition files (e.g. `depth_TP2a0.10_04.0504`) | always |
 
 All paths are relative to `$WORK/<CONFIGNAME>/`.
 
-> **Note:** Most output goes to IEXPT-specific paths (`relax/<IEXPT>/`,
-> `force/rivers/<IEXPT>/`), so running `create_ref_case.sh` from different experiments
-> does not cause conflicts. Two files are shared across all experiments in a
-> configuration: the z-level relaxation climatology (`relax/<CLIM_CHOICE>/`) and kpar
-> forcing (`force/seawifs/`). These would be overwritten, but with identical content
-> since they do not depend on experiment settings. Tile files (`topo/partit/`) are also
-> shared; they are named by tile count, so different `Icore`/`Jcore` settings produce
-> separate files rather than overwriting, but `NMPI` in `EXPT.src` must match the tile
-> file used.
->
-> If all files already exist from a previous run of `create_ref_case.sh` (e.g. for a
-> different experiment in the same configuration), you can skip rerunning the script
-> entirely. In that case, symlink or copy the IEXPT-specific files into the appropriate
-> `relax/<IEXPT>/` and `force/rivers/<IEXPT>/` folders for the new experiment.
+:::{note}
+Most output goes to IEXPT-specific paths (`relax/<IEXPT>/`, `force/rivers/<IEXPT>/`),
+so running `create_ref_case.sh` from different experiments does not cause conflicts. Two
+files are shared across all experiments in a configuration: the z-level relaxation
+climatology (`relax/woa2018/`, or whichever climatology is set via `myclim` in
+`create_ref_case.sh`) and kpar forcing (`force/seawifs/`). These would
+be overwritten, but with identical content since they do not depend on experiment
+settings. Tile files (`topo/partit/`) are also shared; they are named by tile count, so
+different `Icore`/`Jcore` settings produce separate files rather than overwriting, but
+`NMPI` in `EXPT.src` must match the tile file used.
+
+If all files already exist from a previous run of `create_ref_case.sh` (e.g. for a
+different experiment in the same configuration), you can skip rerunning the script
+entirely. In that case, symlink or copy the IEXPT-specific files into the appropriate
+`relax/<IEXPT>/` and `force/rivers/<IEXPT>/` folders for the new experiment.
+:::
 
 ::::
 
@@ -904,7 +1135,10 @@ All scripts must be run from the experiment directory. They write to
 `create_ref_case.sh`.
 
 ```bash
-cd $WORK/<CONFIGNAME>/expt_<EXPT_ID>
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+EXPT_ID=<EXPT_ID>         # e.g. 01.0
+
+cd $WORK/${CONFIGNAME}/expt_${EXPT_ID}
 ```
 
 Steps:

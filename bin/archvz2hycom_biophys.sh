@@ -31,9 +31,10 @@ usage="
 nlayers=50
 grid_type=native
 bio_flag=0
+setup_only=0
 
 # This will process optional arguments
-options=$(getopt -o b:gn: -- "$@")
+options=$(getopt -o b:gn: -l setup-only -- "$@")
 [ $? -eq 0 ] || {
     echo "$usage"
     echo "Error: Incorrect options provided"
@@ -52,6 +53,9 @@ while true; do
     -n)
         shift;
         nlayers=$1
+        ;;
+    --setup-only)
+        setup_only=1
         ;;
     --)
         shift
@@ -102,6 +106,46 @@ export N=${BASEDIR}/subregion/${E}
 export NEST=${newregionpath}/nest/${E}
 export EXPTNEW=${newregionpath}/expt_${X}
 #
+create_blkdat_subset_function(){
+      echo "Retrieve blkdat.input and create subset"
+      touch blkdat.subset
+      rm    blkdat.subset
+      echo "NEMO Relaxation fields"                              > blkdat.subset
+      echo "  $SIGVERSN        'sigver ' = Version of eqn of state  "                        >> blkdat.subset
+      echo "  1        'levtop ' = top level of input clim. to use (optional, default 1)"  >> blkdat.subset
+      egrep "'iversn'"    blkdat.input >> blkdat.subset
+      egrep "'iexpt '"    blkdat.input >> blkdat.subset
+      egrep "'mapflg'"    blkdat.input >> blkdat.subset
+      egrep "'yrflag'"    blkdat.input >> blkdat.subset
+      egrep "'idm   '"    blkdat.input >> blkdat.subset
+      egrep "'jdm   '"    blkdat.input >> blkdat.subset
+      echo "  0        'jdw    ' = width of zonal average (optional, default 0)"  >> blkdat.subset
+      echo "  -1       'itest  ' = grid point where detailed diagnostics are desired"  >> blkdat.subset
+      echo "  -1       'jtest  ' = grid point where detailed diagnostics are desired"  >> blkdat.subset
+      egrep "'kdm   '"    blkdat.input >> blkdat.subset
+      egrep "'nhybrd'"    blkdat.input >> blkdat.subset
+      egrep "'nsigma'"    blkdat.input >> blkdat.subset
+      egrep "'isotop'"    blkdat.input >> blkdat.subset
+      egrep "'dp00  '"    blkdat.input >> blkdat.subset
+      egrep "'dp00x '"    blkdat.input >> blkdat.subset
+      egrep "'dp00f '"    blkdat.input >> blkdat.subset
+      egrep "'ds00  '"    blkdat.input >> blkdat.subset
+      egrep "'ds00x '"    blkdat.input >> blkdat.subset
+      egrep "'ds00f '"    blkdat.input >> blkdat.subset
+      egrep "'ds0k  '"    blkdat.input >> blkdat.subset
+      egrep "'dp0k  '"    blkdat.input >> blkdat.subset
+      egrep "'dp00i '"    blkdat.input >> blkdat.subset
+      egrep "'thflag'"    blkdat.input >> blkdat.subset
+      egrep "'thbase'"    blkdat.input >> blkdat.subset
+      egrep "'vsigma'"    blkdat.input >> blkdat.subset
+      egrep "'sigma '"    blkdat.input >> blkdat.subset
+      egrep "'thkmin'"    blkdat.input >> blkdat.subset
+      if [ ! -s  blkdat.subset ] ; then
+         echo "Couldnt get blkdat.input " ; exit 1 ;
+      fi
+      mv blkdat.subset fort.99
+}
+
 mkdir -p $N
 mkdir -p $NEST
 mkdir -p $D
@@ -141,6 +185,26 @@ if [ ! -f $N/ZL${nlayers}.txt -o ! -f $N/blkdat.input ] ; then
    cp  ${BASEDIR}/topo/ZL${nlayers}.txt                  $N/ZL${nlayers}.txt
    cp  ${EXPTNEW}/blkdat.input                   $N/blkdat.input
 fi
+
+if [ "${setup_only}" -eq 1 ]; then
+    cd $N
+    iexpt_blkdat_input=$(grep "'iexpt '" blkdat.input | awk '{print $1}')
+    if [ -f fort.99 ] ; then
+        iexpt_fort99=$(grep "'iexpt '" fort.99 | awk '{print $1}')
+        if [ "$iexpt_blkdat_input" -eq "$iexpt_fort99" ]; then
+            echo "fort.99 is up to date."
+        else
+            echo "fort.99 is from an old experiment. Recreating."
+            create_blkdat_subset_function
+        fi
+    else
+        echo "Creating fort.99."
+        create_blkdat_subset_function
+    fi
+    echo "Setup complete."
+    exit 0
+fi
+
 echo "Inner domain topo: depth_${U}_${T}.b" 
 #
 #   idm, jdm, & kdm from target xperiment blkdat.input

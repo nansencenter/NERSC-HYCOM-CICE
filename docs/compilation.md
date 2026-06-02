@@ -78,6 +78,8 @@ ${HOME}/local/fabm/hycom/lib64/libfabm.a
 > **Before compiling:** source the HPC environment file to load the correct modules and compilers
 > ([see top of this page](compilation.md#compilation-top)).
 
+Unlike the sections above, this step must be repeated for each new experiment.
+
 Before running the compile script, check that the Makefile configuration symlink points
 to the correct HYCOM version. The symlink is at:
 
@@ -101,10 +103,29 @@ ln -sf Linux.betzy.ifort_cice.V23 \
     ${HOME}/NERSC-HYCOM-CICE/hycom/RELO/config/Linux.betzy.ifort_cice
 ```
 
+:::{note}
+**If compiling with the BGC module:** ensure `ntracr` in `blkdat.input` is non-zero and
+copy the FABM configuration files and CICE namelist into the experiment directory before
+compiling:
+
+```bash
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+EXPT_ID=<EXPT_ID>         # e.g. 01.0
+
+cd ${WORK}/${CONFIGNAME}/expt_${EXPT_ID}
+cp /nird/datalake/NS9481K/shuang/TP2_setup/exp02.6_seaclim_ref/fabm.yaml .
+cp /nird/datalake/NS9481K/shuang/TP2_setup/exp02.6_seaclim_ref/hycom_fabm.nml .
+cp /nird/datalake/NS9481K/shuang/TP2_setup/exp02.6_seaclim_ref/ice_in .
+```
+:::
+
 Run the compile script from the experiment directory:
 
 ```bash
-cd ${WORK}/<CONFIGNAME>/expt_<EXPT_ID>
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+EXPT_ID=<EXPT_ID>         # e.g. 01.0
+
+cd ${WORK}/${CONFIGNAME}/expt_${EXPT_ID}
 bash ${HOME}/NERSC-HYCOM-CICE/bin/compile_model.sh ifort -u
 ```
 
@@ -153,22 +174,15 @@ The script must be run from the experiment directory. It sources `REGION.src` an
 
 ::::
 
-The executable `hycom_cice` is created at:
+The executable `hycom_cice` is created inside `build/` in a subdirectory whose name
+encodes the HYCOM version, equation-of-state terms, and thermodynamic flag, for example:
 
 ```
 ${WORK}/<CONFIGNAME>/expt_<EXPT_ID>/build/src_2.2.98ZA-07Tsig0-i-sm-sse_relo_mpi/hycom_cice
 ```
 
-> **Note:** If compiling with the BGC module, ensure `ntracr` in `blkdat.input` is
-> non-zero and copy the FABM configuration files and CICE namelist into the experiment
-> directory before compiling:
->
-> ```bash
-> cd ${WORK}/<CONFIGNAME>/expt_<EXPT_ID>
-> cp /nird/datalake/NS9481K/shuang/TP2_setup/exp02.6_seaclim_ref/fabm.yaml .
-> cp /nird/datalake/NS9481K/shuang/TP2_setup/exp02.6_seaclim_ref/hycom_fabm.nml .
-> cp /nird/datalake/NS9481K/shuang/TP2_setup/exp02.6_seaclim_ref/ice_in .
-> ```
+The version prefix changes with the Makefile symlink target (`2.2.98` for V22, `2.3` for
+V23), and the `07Tsig0` part reflects the equation-of-state choice in `EXPT.src`.
 
 ## Compile hycom_ALL
 

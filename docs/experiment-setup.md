@@ -7,22 +7,28 @@ description and examples of each.
 Copy the model configuration template and create a symlink to the utility scripts:
 
 ```bash
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+
 cd $WORK
-cp -r $HOME/NERSC-HYCOM-CICE/<CONFIGNAME> .
-cd $WORK/<CONFIGNAME>
+cp -r $HOME/NERSC-HYCOM-CICE/${CONFIGNAME} .
+cd $WORK/${CONFIGNAME}
 ln -sf $HOME/NERSC-HYCOM-CICE/bin .
 ```
 
-> **Note:** The `bin` symlink is required because scripts in `bin/` call each other using
-> relative `../bin/` paths, assuming they are run from an experiment subdirectory. Without
-> the symlink, those internal calls would fail.
+:::{note}
+The `bin` symlink is required because scripts in `bin/` call each other using relative
+`../bin/` paths, assuming they are run from an experiment subdirectory. Without the
+symlink, those internal calls would fail.
+:::
 
 ## Configure REGION.src
 
 Copy the template into the configuration directory:
 
 ```bash
-cd $WORK/<CONFIGNAME>
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+
+cd $WORK/${CONFIGNAME}
 cp $HOME/NERSC-HYCOM-CICE/input/REGION.src .
 ```
 
@@ -39,8 +45,11 @@ export NHCROOT=${HOME}/NERSC-HYCOM-CICE
 Use `expt_new.sh` to create a new experiment from the template experiment `01.0`:
 
 ```bash
-cd $WORK/<CONFIGNAME>
-bin/expt_new.sh 01.0 <EXPT_ID>
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+EXPT_ID=<EXPT_ID>         # e.g. 01.0
+
+cd $WORK/${CONFIGNAME}
+bin/expt_new.sh 01.0 ${EXPT_ID}
 ```
 
 This creates `expt_<EXPT_ID>/` with default configuration files that you will
@@ -54,7 +63,8 @@ adjust in the following steps.
 
 2. **Copies the template experiment** — all files from `expt_<old>/` are copied to the new
    directory with `rsync`, skipping the `data/`, `log/`, and `SCRATCH/` subdirectories
-   (those are created fresh and empty).
+   (those are created fresh and empty). This includes configuration files such as
+   `blkdat.input`, `EXPT.src`, and the job submission script `srjob.sh`.
 
 3. **Updates `EXPT.src`** — the `X=` and `E=` lines are rewritten to reflect the new
    experiment ID (e.g. `X="02.6"` and `E="026"`).
@@ -83,7 +93,10 @@ at:
 Copy it into place:
 
 ```bash
-cd $WORK/<CONFIGNAME>/expt_<EXPT_ID>
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+EXPT_ID=<EXPT_ID>         # e.g. 01.0
+
+cd $WORK/${CONFIGNAME}/expt_${EXPT_ID}
 cp <path/to/reference/blkdat.input> .
 ```
 
@@ -399,20 +412,26 @@ Open `$WORK/<CONFIGNAME>/expt_<EXPT_ID>/EXPT.src` and update:
 | `export MXBLCKS=` | e.g. `9` | Maximum ice blocks per MPI process |
 | `export COMPILE_BIOMODEL=` | `"yes"` or `"no"` | BGC coupling on/off |
 
-> **Note:** For TP2, the available topography versions are: `01` (initial interpolation),
-> `02` (adds Ob river channel), `03` (identical to `02`), `04` (blends `02`/`03` with
-> NEMO topography at the nesting boundary). Higher numbers are newer refinements, not
-> changes in resolution. Use `04` for current experiments.
+:::{note}
+For TP2, the available topography versions are: `01` (initial interpolation), `02` (adds
+Ob river channel), `03` (identical to `02`), `04` (blends `02`/`03` with NEMO topography
+at the nesting boundary). Higher numbers are newer refinements, not changes in resolution.
+Use `04` for current experiments.
+:::
 
-> **Note:** `NMPI` is determined by the tiling step in
-> [Preparing External Files](external-files.md) (which requires [hycom_ALL](compilation.md#compile-hycom-all) to be compiled
-> first). For TP2 on Betzy, with topography version `04` and `Icore=29, Jcore=26`, the
-> result is `504`, so you can set that now. For other configurations, leave it as a placeholder and
-> fill it in after running `create_ref_case.sh`. Compilation of HYCOM-CICE does not use
-> `NMPI`.
+:::{note}
+`NMPI` is determined by the tiling step in
+[Preparing External Files](external-files.md) (which requires
+[hycom_ALL](compilation.md#compile-hycom-all) to be compiled first). For TP2 on Betzy,
+with topography version `04` and `Icore=29, Jcore=26`, the result is `504`, so you can
+set that now. For other configurations, leave it as a placeholder and fill it in after
+running `create_ref_case.sh`. Compilation of HYCOM-CICE does not use `NMPI`.
+:::
 
-> **Note:** If the model reports that ice blocks exceed the maximum, increase `MXBLCKS` to
-> the value recommended in the error message.
+:::{note}
+If the model reports that ice blocks exceed the maximum, increase `MXBLCKS` to the value
+recommended in the error message.
+:::
 
 ::::{dropdown} Other variables in EXPT.src
 
