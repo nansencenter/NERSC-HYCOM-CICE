@@ -30,7 +30,6 @@
 # M. Bakhoday-Paskyabi et al., 2017 (under preparation), Effects of nesting and open boundary conditions: a comparative study between TOPAZ4 and TOPAZ5 systems
 # M. Bakhoday-Paskyabi, 11 July 2019, adding bio fields
 #
-from   matplotlib import pyplot as plt
 import abfile.abfile as abf
 import numpy
 import numpy.ma as ma

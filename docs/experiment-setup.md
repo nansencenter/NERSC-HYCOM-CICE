@@ -78,6 +78,29 @@ adjust in the following steps.
 
 ::::
 
+Copy `hycom_opt` into the experiment directory:
+
+```bash
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+EXPT_ID=<EXPT_ID>         # e.g. 01.0
+
+cd $WORK/${CONFIGNAME}/expt_${EXPT_ID}
+cp $HOME/NERSC-HYCOM-CICE/TP5a0.06/expt_01.0/hycom_opt .
+```
+
+`hycom_opt` is a Fortran namelist read by the model at runtime. Open it and update the
+values for your experiment. For TP2, the file should look like this:
+
+```
+&hycom_nml
+  write_arche = .false.
+  sss_underice= .false.
+  highfq_river= .false.
+  sssrmx_scalar=.5
+/
+```
+
+The template default `sssrmx_scalar=99.` is too strong for TP2 runs.
 
 ## Configure blkdat.input
 

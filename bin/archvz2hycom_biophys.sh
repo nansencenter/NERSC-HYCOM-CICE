@@ -303,6 +303,47 @@ touch   ${target_archv}.b && rm ${target_archv}.b
 logfile=${N}/nemo_archv.log
 touch $logfile && rm $logfile
 
+# modified for shell parallel runs
+create_blkdat_subset_function(){
+      echo "Retrieve blkdat.input and create subset"
+      touch blkdat.subset
+      rm    blkdat.subset
+      #echo "" > blkdat.subset
+      echo "NEMO Relaxation fields"                              > blkdat.subset
+      echo "  $SIGVERSN        'sigver ' = Version of eqn of state  "                        >> blkdat.subset
+      echo "  1        'levtop ' = top level of input clim. to use (optional, default 1)"  >> blkdat.subset
+      egrep "'iversn'"    blkdat.input >> blkdat.subset
+      egrep "'iexpt '"    blkdat.input >> blkdat.subset
+      egrep "'mapflg'"    blkdat.input >> blkdat.subset
+      egrep "'yrflag'"    blkdat.input >> blkdat.subset
+      egrep "'idm   '"    blkdat.input >> blkdat.subset
+      egrep "'jdm   '"    blkdat.input >> blkdat.subset
+      echo "  0        'jdw    ' = width of zonal average (optional, default 0)"  >> blkdat.subset
+      echo "  -1       'itest  ' = grid point where detailed diagnostics are desired"  >> blkdat.subset
+      echo "  -1       'jtest  ' = grid point where detailed diagnostics are desired"  >> blkdat.subset
+      egrep "'kdm   '"    blkdat.input >> blkdat.subset
+      egrep "'nhybrd'"    blkdat.input >> blkdat.subset
+      egrep "'nsigma'"    blkdat.input >> blkdat.subset
+      egrep "'isotop'"    blkdat.input >> blkdat.subset
+      egrep "'dp00  '"    blkdat.input >> blkdat.subset
+      egrep "'dp00x '"    blkdat.input >> blkdat.subset
+      egrep "'dp00f '"    blkdat.input >> blkdat.subset
+      egrep "'ds00  '"    blkdat.input >> blkdat.subset
+      egrep "'ds00x '"    blkdat.input >> blkdat.subset
+      egrep "'ds00f '"    blkdat.input >> blkdat.subset
+      egrep "'ds0k  '"    blkdat.input >> blkdat.subset
+      egrep "'dp0k  '"    blkdat.input >> blkdat.subset
+      egrep "'dp00i '"    blkdat.input >> blkdat.subset
+      egrep "'thflag'"    blkdat.input >> blkdat.subset
+      egrep "'thbase'"    blkdat.input >> blkdat.subset
+      egrep "'vsigma'"    blkdat.input >> blkdat.subset
+      egrep "'sigma '"    blkdat.input >> blkdat.subset
+      egrep "'thkmin'"    blkdat.input >> blkdat.subset
+      if [ ! -s  blkdat.subset ] ; then
+         echo "Couldnt get blkdat.input " ; exit 1 ;
+      fi
+      mv blkdat.subset fort.99
+}
 # Extract 'iexpt' value from blkdat.input and fort.99
 iexpt_blkdat_input=$(grep "'iexpt '" blkdat.input | awk '{print $1}')
 if [ -f fort.99 ] ; then
