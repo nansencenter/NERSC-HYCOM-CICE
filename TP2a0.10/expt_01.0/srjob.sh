@@ -57,7 +57,5 @@ srun -n $NMPI --cpu_bind=cores ./hycom_cice
 cd $P     ||  { echo "Could not go to dir $P  "; exit 1; }
 ../expt_postprocess.sh 
 
-done
-
 exit $?
 
