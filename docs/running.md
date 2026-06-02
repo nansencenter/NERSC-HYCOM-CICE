@@ -37,6 +37,11 @@ The job script `srjob.sh` handles three things automatically:
 
 - **Job submission** — submits the model to the SLURM queue
 
+- **Post-processing** — runs `expt_postprocess.sh` after the model finishes. It moves
+  restart files, daily mean archives (`archv.*`), and CICE output from the scratch
+  directory to `data/` and `data/cice/`, and writes `log/hycom.stop` with `GOODRUN` or
+  `BADRUN` depending on whether the model reached a normal stop.
+
 Open `srjob.sh` in a text editor and update:
 
 | Variable | Value | Description |
