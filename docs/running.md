@@ -58,7 +58,9 @@ Open `srjob.sh` in a text editor and update:
 > forcing. The start date must be in September (the month of Arctic sea ice minimum).
 > See [Initial conditions](forcing.md#initial-conditions) for details on both options.
 
-> **Note:** As a reference, a 7-day TP2 run on 4 Betzy nodes (504 cores) takes approximately 10 minutes.
+:::{note}
+As a reference, a 7-day TP2 run on 4 Betzy nodes (504 cores) takes approximately 10 minutes.
+:::
 
 Then submit:
 

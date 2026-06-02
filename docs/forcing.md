@@ -7,20 +7,23 @@ Two initialization modes are available, selected via `INITFLG` in `srjob.sh`
    valid at the start date. This is the standard mode for hindcast and forecast runs.
    See [Restart files](#restart-files) below for how to obtain them.
 
-2. **Climatological initialization** (`INITFLG="--init"`): temperature and salinity (T/S)
+2. **Climatological initialization** (cold start, `INITFLG="--init"`): temperature and salinity (T/S)
    are read from `relax/<IEXPT>/relax_tem.[ab]` and `relax_sal.[ab]`; layer thicknesses
    are computed internally from the T/S profiles; velocities and sea surface height (SSH)
    start at zero. The start date must be in September (Arctic sea ice is at its annual
-   minimum in September, making it a natural starting point). Expect a multi-year
-   spin-up before the circulation is reliable. See
+   minimum in September, making it a natural starting point). The ice state is
+   initialised from a climatology derived from TP4 assimilation data
+   (`TP4b_1991-2020_AssimSurf.nc`); the same source is used for both TP2 and TP5.
+   Expect a multi-year spin-up before the circulation is reliable. See
    [Climatologies and river forcing](#climatologies-and-river-forcing) for how to
    prepare the required files.
 
-   > **Note:** The `relax_*` file names reflect their use as targets for climatological
-   > relaxation during the run (see
-   > [Climatologies and river forcing](#climatologies-and-river-forcing)). During
-   > initialization, no relaxation is applied. The files are simply read once as the
-   > initial T/S state.
+   :::{note}
+   The `relax_*` file names reflect their use as targets for climatological relaxation
+   during the run (see [Climatologies and river forcing](#climatologies-and-river-forcing)).
+   During initialization, no relaxation is applied. The files are simply read once as the
+   initial T/S state.
+   :::
 
 ### Restart files
 
@@ -59,11 +62,14 @@ cp /nird/datalake/NS9481K/shuang/TP2_output/expt_02.6/cice/iced.2016-08-27-00000
 
 This step is handled by the script `atmo_synoptic.sh`.
 
-> **Note:** The job script `srjob.sh` calls `atmo_synoptic.sh` automatically (see [Submit a job](running.md#submit-a-job)). Skip this section if you
-> submit via `srjob.sh` (recommended). You may still want to run `atmo_synoptic.sh`
-> manually to verify the input files are in place before submitting; if so, comment out
-> the `atmo_synoptic.sh` call in `srjob.sh` to prevent the job from regenerating the
-> files (output filenames have no dates, so they would be silently overwritten).
+:::{note}
+The job script `srjob.sh` calls `atmo_synoptic.sh` automatically
+(see [Submit a job](running.md#submit-a-job)). Skip this section if you submit via
+`srjob.sh` (recommended). You may still want to run `atmo_synoptic.sh` manually to
+verify the input files are in place before submitting; if so, comment out the
+`atmo_synoptic.sh` call in `srjob.sh` to prevent the job from regenerating the files
+(output filenames have no dates, so they would be silently overwritten).
+:::
 
 Atmospheric forcing must be prepared for each run period. `START` and `END` are the run
 start and end times, see the [srjob.sh variable table](running.md#submit-a-job) for the
@@ -123,17 +129,10 @@ Since output goes to an experiment-specific directory (`force/synoptic/<IEXPT>/`
 `atmo_synoptic.sh` from different experiments within the same configuration will not
 cause conflicts.
 
-Since forcing files do not include dates in their filenames, leave a stamp in the
-directory to record what period they cover:
-
-```bash
-CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
-IEXPT=<IEXPT>             # e.g. 010
-
-cd $WORK/${CONFIGNAME}/force/synoptic/${IEXPT}
-rm -f stamp_*
-touch stamp_${START}-${END}
-```
+Since forcing files do not include dates in their filenames, `atmo_synoptic.sh`
+automatically creates a stamp file in the output directory recording the period covered,
+e.g. `stamp_2013-01-01T00:00:00-2013-01-05T00:00:00`. The file is empty: the date
+range is encoded in the filename.
 
 ## Open boundary forcing
 
@@ -245,6 +244,12 @@ Note that the internal variable name is `rmu` in both files. The max value
 (5.787037×10⁻⁷ s⁻¹) equals 1/(20 days × 86400 s/day). The `.a` file contains the full
 400×380 array, one float per grid point.
 
+A shorter e-folding time gives stricter nudging toward the GLORYS boundary conditions.
+For nesting nudging this can be reasonable (e.g. ~1 day at the boundary), since the
+target is always a realistic time-varying state. The climatological relaxation mask
+(`relax_rmu`) typically uses a longer time scale since its target is a monthly mean
+(see [Climatologies and river forcing](#climatologies-and-river-forcing)).
+
 ::::
 
 ::::{dropdown} Generating boundary configuration files from scratch
@@ -277,9 +282,11 @@ cp rmu.a rmutr.a
 cp rmu.b rmutr.b
 ```
 
-> **Note:** `regional.grid.a/b` and `regional.depth.a/b` are pre-existing configuration
-> files in `$WORK/<CONFIGNAME>/topo/`. Generating them for a new grid is a separate
-> offline step not covered here.
+:::{note}
+`regional.grid.a/b` and `regional.depth.a/b` are pre-existing configuration files in
+`$WORK/<CONFIGNAME>/topo/`. Generating them for a new grid is a separate offline step
+not covered here.
+:::
 
 ::::
 
@@ -325,7 +332,11 @@ expected format. Two optional flags are supported (in any order):
 | `--no-fabm` | Skip BGC (FABM) archive files |
 | `--skip-existing` | Skip dates where all expected files are already present in the destination directory |
 
-> **Note:** The archived TP2 nesting files have `montg1` set to a non-zero value, but it may have been computed from a different model run than the restarts you are using. Always run the Montgomery potential correction step below to ensure consistency.
+:::{note}
+The archived TP2 nesting files have `montg1` set to a non-zero value, but it may have
+been computed from a different model run than the restarts you are using. Always run the
+Montgomery potential correction step below to ensure consistency.
+:::
 
 
 :::::{dropdown} Generating nesting files from GLORYS12/CMEMS
@@ -395,10 +406,11 @@ The GLORYS12 and BGC files on NIRD follow these naming conventions:
 - **Physics** (`-n`): `MERCATOR-PHY-24-YYYY-MM-DD-12.nc` (one file per day, timestamped at 12:00 UTC)
 - **BGC** (`-b`): `global_analysis_forecast_bio_YYYYMMDD.nc` (one file per day)
 
-> **Note:** BGC tracers are interpolated onto the vertical layer structure derived from
-> the physics fields and must be processed together in a single pass. **`-n` and `-b`
-> must always cover the same date**; the script does not verify this, so make sure
-> they match.
+:::{note}
+BGC tracers are interpolated onto the vertical layer structure derived from the physics
+fields and must be processed together in a single pass. **`-n` and `-b` must always
+cover the same date**; the script does not verify this, so make sure they match.
+:::
 
 `nemo_to_hycom.sh` calls both a Python script and a compiled Fortran binary. Before
 running, load the HPC environment and activate the Python environment:
@@ -638,7 +650,10 @@ The `log/` directory must exist, which it does if you followed the experiment se
 
 ::::
 
-> **Note:** `nemo_to_hycom.sh` writes `montg1 = 0` in the output archives. Correct this as described below before using these files for a model run.
+:::{note}
+`nemo_to_hycom.sh` writes `montg1 = 0` in the output archives. Correct this as
+described below before using these files for a model run.
+:::
 
 :::::
 
@@ -861,19 +876,23 @@ setting `thkdf4` and `veldf4` to negative values in `blkdat.input`, which tells 
 to read spatially varying 2D fields from file rather than using a uniform scalar. The
 following files must then be present under `$WORK/<CONFIGNAME>/relax/<IEXPT>/`:
 
-> **Note:** The sponge layer (enhanced diffusion), the boundary nudging zone (`nest/rmu`),
-> and the climatological relaxation zone (`relax_rmu`) are three independent mechanisms
-> with independently defined spatial extents. They are generated by separate scripts and
-> need not cover the same area.
+:::{note}
+The sponge layer (enhanced diffusion), the boundary nudging zone (`nest/rmu`), and the
+climatological relaxation zone (`relax_rmu`) are three independent mechanisms with
+independently defined spatial extents. They are generated by separate scripts and need
+not cover the same area.
+:::
 
 | File | Description |
 |------|-------------|
 | `thkdf4.[a,b]` | 2D biharmonic diffusion coefficient for layer thickness |
 | `veldf4.[a,b]` | 2D biharmonic diffusion coefficient for velocity |
 
-> **Note:** Spatially varying `thkdf4` and `veldf4` fields are not limited to sponge
-> layers. Any spatially varying biharmonic diffusion pattern can be prescribed this way.
-> The sponge layer is just the most common use case in a nesting context.
+:::{note}
+Spatially varying `thkdf4` and `veldf4` fields are not limited to sponge layers. Any
+spatially varying biharmonic diffusion pattern can be prescribed this way. The sponge
+layer is just the most common use case in a nesting context.
+:::
 
 These files are generated as follows. First, create a scratch directory and link in the grid and topography files:
 
@@ -934,17 +953,18 @@ open boundaries, over the specified number of grid cells. The result is written 
 
 ## Climatologies and river forcing
 
-HYCOM has two separate boundary nudging systems that operate simultaneously:
-
-- **Nesting nudging** (`nest/rmu` + nesting archives): nudges T, S, and interface
-  heights toward time-varying fields from the parent model (NEMO) near the open
-  boundary. See [Offline nesting archive files](#offline-nesting-archive-files).
-- **Climatological relaxation** (`relax_rmu` + climatologies): nudges T, S, and interface
-  heights toward monthly climatology in a broader zone behind the boundary. Controlled
-  by `relax` in `blkdat.input`.
-
 This step is handled by `create_ref_case.sh`, which generates the files needed for
-climatological relaxation and climatological initialization:
+**climatological relaxation** and [climatological initialization](#initial-conditions).
+Climatological relaxation nudges T, S, and interface heights toward monthly climatology
+in a zone along selected open boundary walls. This is distinct from
+[nesting nudging](#open-boundary-forcing), which nudges toward time-varying GLORYS
+fields. The two mechanisms are independent and can operate simultaneously. The default in `create_ref_case.sh` activates the Pacific open boundary (the Northern
+wall in grid coordinates) only: 20 grid cells wide, with a 20-day e-folding time at the
+wall decreasing linearly to zero. The width and time scale are set in
+`create_ref_case.sh`, not in `blkdat.input`. `relax` in `blkdat.input` is simply an
+on/off switch for climatological relaxation.
+
+`create_ref_case.sh` generates:
 
 - T/S and interface climatologies (`relax_sal`, `relax_tem`, `relax_int`) — nudging
   targets for climatological relaxation, and initial T/S state for
@@ -952,6 +972,12 @@ climatological relaxation and climatological initialization:
 - Climatological relaxation mask (`relax_rmu`) — 2D field of 1/e-folding times (1/s),
   non-zero where climatological relaxation is active; gates nudging of T, S, and
   interface heights toward the climatologies above
+
+:::{note}
+`relax_rmu` has no effect unless `relax > 0` in `blkdat.input`. That parameter is
+purely an on/off switch; the spatial extent and time scale of the relaxation are
+determined entirely by the `relax_rmu` field itself.
+:::
 - river forcing
 - light attenuation (kpar) forcing
 - MPI tile definition files
@@ -970,7 +996,9 @@ Open `create_ref_case.sh` and update:
 
 - `Icore` — number of MPI tiles in the i-direction (e.g. `29` for TP2 on Betzy)
 - `Jcore` — number of MPI tiles in the j-direction (e.g. `26` for TP2 on Betzy)
-- `iceclim` — set to `0` (no ice climatology) or `1` (initialize from ice climatology)
+- `iceclim` — set to `1` (initialize ice from climatology) for a cold start, or `0` if
+  starting from a CICE restart file (the ice state comes from the restart, not a climatology);
+  see [Initial conditions](#initial-conditions)
 
 `Icore` and `Jcore` control how the domain is decomposed for MPI parallelism. Choose
 them so that `Icore × Jcore × (ocean fraction)` is close to your available core count,
@@ -1016,36 +1044,77 @@ four-digit number in the suffix is `NMPI` (the actual number of ocean MPI tasks,
 `Icore × Jcore` because land-only tiles are excluded). Set this value in `EXPT.src`. For
 TP2 on Betzy (`Icore=29`, `Jcore=26`, topography version `04`), this is `NMPI=504`.
 
-::::{dropdown} Files generated by create_ref_case.sh
+::::{dropdown} What create_ref_case.sh does
+
+1. **T/S climatologies (z-level)** — `z_generic.sh` horizontally interpolates WOA2018
+   temperature and salinity from the global grid onto the regional model grid, retaining
+   the z-level vertical coordinate. 
+
+2. **T/S climatologies (hybrid)** — `relaxi.sh` takes the z-level output from step 1
+   and vertically interpolates onto HYCOM's hybrid isopycnal levels, producing
+   `relax_sal`, `relax_tem`, and `relax_int`.
+
+3. **BGC relaxation climatologies** (`ntracr ≠ 0` only) — follows the same two-step
+   process as T/S: horizontal interpolation to z-levels first, then vertical
+   interpolation to hybrid levels. Silicate, phosphate, nitrate, and oxygen come from
+   WOA2013; CO₂, alkalinity, and DIC from GLODAP.
+
+4. **Climatological relaxation mask** — `relax_rmu.sh` runs `rmunew` (MSCPROGS) to
+   build the `relax_rmu` field. The default activates the Pacific open boundary (Northern
+   wall in grid coordinates) only: 20-cell width, e-folding time decreasing linearly from
+   20 days at the wall to zero at 20 cells away. To change which walls are active or
+   adjust the width and time scale, edit the parameters passed to `relax_rmu.sh` in
+   `create_ref_case.sh`.
+
+5. **Sea ice cover climatology** (`iceclim=1` only) — sea ice concentration and
+   thickness from the TP4 assimilation (`TP4b_1991-2020_AssimSurf.nc`) are bilinearly
+   interpolated onto the target model grid using CDO (Climate Data Operators). The same
+   source is used for both TP2 and TP5.
+
+6. **River forcing** — AHYPE/EHYPE discharge climatology. For BGC runs, two additional
+   steps are applied. First, the nutrient load of the Ob River — one of the largest
+   rivers draining into the Arctic Ocean — is spread across the Ob Bay using
+   inverse-distance weighting from the river mouth, rather than being applied at a single
+   grid point. Second, atmospheric nitrogen and phosphorus deposition from EMEP is
+   interpolated onto all ocean grid points and added to the river BGC tracer files.
+
+7. **kpar forcing** — SeaWiFS monthly light attenuation coefficients (`seawifs_mon_kpar.sh`).
+
+8. **MPI tile definition files** — `tile_grid.sh` partitions the domain into
+   `Icore × Jcore` tiles; land-only tiles are excluded to give the final `NMPI`.
+
+**Output files:**
 
 | Location | Contents | Condition |
 |----------|----------|-----------|
 | `relax/<IEXPT>/` | T/S and interface climatologies (`relax_sal`, `relax_tem`, `relax_int`; z-level and hybrid-level) — climatological relaxation targets and climatological initialization | always |
-| `relax/<IEXPT>/` | Climatological relaxation mask (`relax_rmu`) — 2D field of 1/e-folding times gating nudging toward the climatologies above | always |
+| `relax/<IEXPT>/` | Climatological relaxation mask (`relax_rmu`) — 2D field of 1/e-folding times (s⁻¹) along selected open boundary walls; non-zero only within the relaxation zone | always |
 | `relax/<IEXPT>/` | BGC relaxation climatology (z-level and hybrid-level) | `ntracr ≠ 0` |
-| `relax/<IEXPT>/` | CO2 relaxation climatology | `ntracr ≠ 0` |
+| `relax/<IEXPT>/` | CO₂, alkalinity, and DIC relaxation climatology (z-level and hybrid-level) | `ntracr ≠ 0` |
 | `relax/<IEXPT>/` | Sea ice cover climatology | `iceclim=1` |
 | `force/rivers/<IEXPT>/` | River discharge (AHYPE/EHYPE climatology) | always |
-| `force/rivers/<IEXPT>/` | BGC tracer sources: Ob River nutrients spread to outer bay, atmospheric nitrogen deposition added | `ntracr ≠ 0` |
+| `force/rivers/<IEXPT>/` | BGC tracer sources: Ob River nutrients spread across the Ob Bay; atmospheric N/P deposition added at all ocean grid points | `ntracr ≠ 0` |
 | `force/seawifs/` | kpar forcing (diffuse light attenuation from SeaWiFS; only read by the model when `jerlv0=0` in `blkdat.input`) | always |
 | `topo/partit/` | MPI tile definition files (e.g. `depth_TP2a0.10_04.0504`) | always |
 
 All paths are relative to `$WORK/<CONFIGNAME>/`.
 
-> **Note:** Most output goes to IEXPT-specific paths (`relax/<IEXPT>/`,
-> `force/rivers/<IEXPT>/`), so running `create_ref_case.sh` from different experiments
-> does not cause conflicts. Two files are shared across all experiments in a
-> configuration: the z-level relaxation climatology (`relax/<CLIM_CHOICE>/`) and kpar
-> forcing (`force/seawifs/`). These would be overwritten, but with identical content
-> since they do not depend on experiment settings. Tile files (`topo/partit/`) are also
-> shared; they are named by tile count, so different `Icore`/`Jcore` settings produce
-> separate files rather than overwriting, but `NMPI` in `EXPT.src` must match the tile
-> file used.
->
-> If all files already exist from a previous run of `create_ref_case.sh` (e.g. for a
-> different experiment in the same configuration), you can skip rerunning the script
-> entirely. In that case, symlink or copy the IEXPT-specific files into the appropriate
-> `relax/<IEXPT>/` and `force/rivers/<IEXPT>/` folders for the new experiment.
+:::{note}
+Most output goes to IEXPT-specific paths (`relax/<IEXPT>/`, `force/rivers/<IEXPT>/`),
+so running `create_ref_case.sh` from different experiments does not cause conflicts. Two
+files are shared across all experiments in a configuration: the z-level relaxation
+climatology (`relax/woa2018/`, or whichever climatology is set via `myclim` in
+`create_ref_case.sh`) and kpar forcing (`force/seawifs/`). These would
+be overwritten, but with identical content since they do not depend on experiment
+settings. Tile files (`topo/partit/`) are also shared; they are named by tile count, so
+different `Icore`/`Jcore` settings produce separate files rather than overwriting, but
+`NMPI` in `EXPT.src` must match the tile file used.
+
+If all files already exist from a previous run of `create_ref_case.sh` (e.g. for a
+different experiment in the same configuration), you can skip rerunning the script
+entirely. In that case, symlink or copy the IEXPT-specific files into the appropriate
+`relax/<IEXPT>/` and `force/rivers/<IEXPT>/` folders for the new experiment.
+:::
 
 ::::
 

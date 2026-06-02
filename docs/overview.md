@@ -59,7 +59,9 @@ ${WORK}/${USER}/
     ├── relax/<IEXPT>/
     └── force/synoptic/<IEXPT>/
 ```
-> **Note:** This shows the finished directory structure for reference. The following sections build it up step by step.
+:::{note}
+This shows the finished directory structure for reference. The following sections build it up step by step.
+:::
 
 `${HOME}` and `${USER}` are standard shell variables set automatically. `<CONFIGNAME>`,
 `<EXPT_ID>`, and `<IEXPT>` are placeholders for user-defined values, with Betzy examples

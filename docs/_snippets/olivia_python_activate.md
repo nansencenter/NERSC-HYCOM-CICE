@@ -1,9 +1,6 @@
-Prepend the `bin` directory of your containerised environment to `PATH`. Replace
-`<install_dir>` with the path you used during installation:
+Run the following at the start of each session or job script where you need the
+environment:
 
 ```bash
-export PATH="<install_dir>/bin:${PATH}"
+export PATH="/cluster/projects/nn2993k/${USER}/hycom-cice-env/bin:${PATH}"
 ```
-
-This line should be present in `~/.bashrc` and in any job submission script that uses
-the model's Python tools.

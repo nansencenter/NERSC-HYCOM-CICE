@@ -99,18 +99,18 @@ module load hpc-container-wrapper
 
 **2. Choose an installation path**
 
-Set a variable pointing to a location in your project storage (avoid `${HOME}`, which
-has limited quota). Replace `<PROJECT>` with your project code (e.g. `nn2993k`):
+Set a variable pointing to where the environment will live permanently. This directory
+must be kept after installation, as it contains the container and the executables:
 
 ```bash
-export INSTALL_DIR=/cluster/projects/<PROJECT>/${USER}/hycom-cice-env
+export INSTALL_DIR=/cluster/projects/nn2993k/${USER}/hycom-cice-env
 ```
 
 **3. Build the environment**
 
 ```bash
 conda-containerize new --mamba \
-    --prefix ${INSTALL_DIR} \
+    --prefix /cluster/projects/nn2993k/${USER}/hycom-cice-env \
     ${HOME}/NERSC-HYCOM-CICE/environment/python.yaml
 ```
 
@@ -126,17 +126,20 @@ pip install ${HOME}/NERSC-HYCOM-CICE/pythonlibs/modelgrid
 pip install ${HOME}/NERSC-HYCOM-CICE/pythonlibs/gridxsec
 pip install ${HOME}/NERSC-HYCOM-CICE/pythonlibs/abfile
 EOF
-conda-containerize update ${INSTALL_DIR} --post-install /tmp/nersc_libs.sh
+conda-containerize update /cluster/projects/nn2993k/${USER}/hycom-cice-env --post-install /tmp/nersc_libs.sh
 ```
 
-**5. Add the environment to your PATH**
+**5. Activate the environment**
 
-Add the following to `~/.bashrc`, replacing `<install_dir>` with the path you used
-above:
+Run the following to make the environment available in your current session:
 
 ```bash
-export PATH="<install_dir>/bin:${PATH}"
+export PATH="/cluster/projects/nn2993k/${USER}/hycom-cice-env/bin:${PATH}"
 ```
+
+Run this command at the start of each session or job script where you need the
+environment. If you only use one Python environment, you can also add it to `~/.bashrc`
+to activate it automatically.
 
 ::::
 
@@ -184,7 +187,8 @@ conda install <package>        # or: pip install <package>
 ::::{dropdown} Olivia (NRIS/Sigma2)
 
 The containerised environment cannot be modified directly. Use `conda-containerize update`
-with a post-installation script listing the changes. First reload the modules:
+with a post-installation script listing the changes. First set the path to your existing
+environment and reload the modules:
 
 ```bash
 export http_proxy=http://10.63.2.48:3128/
@@ -200,7 +204,7 @@ cat > /tmp/update.sh << 'EOF'
 conda install -y <package>
 pip install <package>
 EOF
-conda-containerize update ${INSTALL_DIR} --post-install /tmp/update.sh
+conda-containerize update /cluster/projects/nn2993k/${USER}/hycom-cice-env --post-install /tmp/update.sh
 ```
 
 If `python.yaml` has changed substantially (e.g. a new core dependency was added),
@@ -208,7 +212,7 @@ it is cleaner to rebuild from scratch by deleting the existing environment and r
 the [Create the environment](#create-the-environment) steps:
 
 ```bash
-rm -rf ${INSTALL_DIR}
+rm -rf /cluster/projects/nn2993k/${USER}/hycom-cice-env
 ```
 
 ::::

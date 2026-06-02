@@ -15,9 +15,11 @@ cd $WORK/${CONFIGNAME}
 ln -sf $HOME/NERSC-HYCOM-CICE/bin .
 ```
 
-> **Note:** The `bin` symlink is required because scripts in `bin/` call each other using
-> relative `../bin/` paths, assuming they are run from an experiment subdirectory. Without
-> the symlink, those internal calls would fail.
+:::{note}
+The `bin` symlink is required because scripts in `bin/` call each other using relative
+`../bin/` paths, assuming they are run from an experiment subdirectory. Without the
+symlink, those internal calls would fail.
+:::
 
 ## Configure REGION.src
 
@@ -410,20 +412,26 @@ Open `$WORK/<CONFIGNAME>/expt_<EXPT_ID>/EXPT.src` and update:
 | `export MXBLCKS=` | e.g. `9` | Maximum ice blocks per MPI process |
 | `export COMPILE_BIOMODEL=` | `"yes"` or `"no"` | BGC coupling on/off |
 
-> **Note:** For TP2, the available topography versions are: `01` (initial interpolation),
-> `02` (adds Ob river channel), `03` (identical to `02`), `04` (blends `02`/`03` with
-> NEMO topography at the nesting boundary). Higher numbers are newer refinements, not
-> changes in resolution. Use `04` for current experiments.
+:::{note}
+For TP2, the available topography versions are: `01` (initial interpolation), `02` (adds
+Ob river channel), `03` (identical to `02`), `04` (blends `02`/`03` with NEMO topography
+at the nesting boundary). Higher numbers are newer refinements, not changes in resolution.
+Use `04` for current experiments.
+:::
 
-> **Note:** `NMPI` is determined by the tiling step in
-> [Preparing External Files](external-files.md) (which requires [hycom_ALL](compilation.md#compile-hycom-all) to be compiled
-> first). For TP2 on Betzy, with topography version `04` and `Icore=29, Jcore=26`, the
-> result is `504`, so you can set that now. For other configurations, leave it as a placeholder and
-> fill it in after running `create_ref_case.sh`. Compilation of HYCOM-CICE does not use
-> `NMPI`.
+:::{note}
+`NMPI` is determined by the tiling step in
+[Preparing External Files](external-files.md) (which requires
+[hycom_ALL](compilation.md#compile-hycom-all) to be compiled first). For TP2 on Betzy,
+with topography version `04` and `Icore=29, Jcore=26`, the result is `504`, so you can
+set that now. For other configurations, leave it as a placeholder and fill it in after
+running `create_ref_case.sh`. Compilation of HYCOM-CICE does not use `NMPI`.
+:::
 
-> **Note:** If the model reports that ice blocks exceed the maximum, increase `MXBLCKS` to
-> the value recommended in the error message.
+:::{note}
+If the model reports that ice blocks exceed the maximum, increase `MXBLCKS` to the value
+recommended in the error message.
+:::
 
 ::::{dropdown} Other variables in EXPT.src
 
