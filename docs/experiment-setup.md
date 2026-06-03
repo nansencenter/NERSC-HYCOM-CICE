@@ -100,7 +100,12 @@ values for your experiment. For TP2, the file should look like this:
 /
 ```
 
-The template default `sssrmx_scalar=99.` is too strong for TP2 runs.
+| Option | Description |
+|--------|-------------|
+| `write_arche` | Write ESMF archive files at each coupling step. Useful for debugging the ESMF coupling interface; leave `.false.` for normal runs. |
+| `sss_underice` | Apply SSS relaxation under sea ice. When `.false.`, SSS relaxation is suppressed where ice cover ≥ 15%. |
+| `highfq_river` | Use time-varying (high-frequency) river forcing instead of the climatological river forcing. Requires `priver=0` in `blkdat.input`; the two options are mutually exclusive. |
+| `sssrmx_scalar` | Maximum SSS anomaly (psu) at which relaxation is still applied. Relaxation is suppressed where the model–climatology difference exceeds this value. `99.` (template default) means no cap; `.5` limits relaxation to within 0.5 psu of climatology. |
 
 ## Configure blkdat.input
 
