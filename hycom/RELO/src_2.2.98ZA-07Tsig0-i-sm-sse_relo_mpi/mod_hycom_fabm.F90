@@ -977,7 +977,7 @@ contains
               sum_zoo_n_after = sum( tracer_new_n(1:kbottom(i,j,n)) * dp(i ,j , 1:kbottom(i,j,n), n)/onem )
               sum_diff_n = sum_zoo_n_after - sum_zoo_n
               do k = 1, kbottom(i,j,n) !kk
-                if ( abs(sum_diff_n/sum_zoo_n) < 0.01 ) then
+                if ( abs(sum_diff_n/sum_zoo_n) < 0.002 ) then
                   tracer(i, j, k, n, trac) = tracer_new_n(k) * (1.0 - sum_diff_n / sum_zoo_n_after )
                 else
                   if (idx ==1 .and. k==1) n_counter = n_counter + 1
@@ -1360,6 +1360,10 @@ call fabm_model%finalize_outputs
                           wspd_fabm(i,j) =wndspd(i,j,l0)*w0+wndspd(i,j,l1)*w1+wndspd(i,j,l2)*w2+wndspd(i,j,l3)*w3    
                        end if
 #endif
+
+                       ! ERSEM code uses wind for CO2 exchange with the atmosphere
+                       ! The exchange uses wind**2 in the equations, therefore we send sqrt of non-icearea fraction 
+                       wspd_fabm(i,j) = wspd_fabm(i,j) * sqrt( 1.0 - covice(i, j) )
 
 #ifdef CPL_OASIS_HYCOM
                        pair = cplts_recv(i,j,i2o_mslp)
