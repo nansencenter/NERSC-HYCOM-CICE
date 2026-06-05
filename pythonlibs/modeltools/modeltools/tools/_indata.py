@@ -6,7 +6,7 @@ import re
 import xml.etree.ElementTree
 import datetime
 import cfunits
-import netcdftime
+import cftime as cft
 import scipy
 
 
@@ -132,9 +132,7 @@ class NetcdfFieldReader(FieldReader) :
                         calendar = self._coord_props[i]["calendar"]
                      else :
                         calendar = coordvar.calendar
-
-                  tmp=netcdftime.utime(unit_string,calendar=calendar)
-                  self._coordvar["time"]=tmp.num2date(coordvals)
+                  self._coordvar["time"]=cft.num2date(coordvals,unit_string,calendar=calendar)
 
                elif unit.islongitude :
                   self._coordvar["lon"] = coordvar[:]
@@ -142,6 +140,7 @@ class NetcdfFieldReader(FieldReader) :
                   self._coordvar["lat"] = coordvar[:]
                else :
                   raise FieldReaderError("Dont know how to handle coordinate variable %s"%i)
+
 
             if unit.isreftime :
                self._coordmap[varname]["time"] = self._coordvar["time"]

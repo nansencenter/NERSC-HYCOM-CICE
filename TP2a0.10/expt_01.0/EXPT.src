@@ -40,3 +40,10 @@ if [ "$tmp" != "expt_${X}" ] ;then
    echo "Error: Mismatch between path of experiment $P and assumed name expt_${X}"
    exit 1
 fi
+
+# Some keyword for running HYCOM downscales with NorCPM
+export esmmem=001
+export sdate="19931101"
+export ncpmn="noresm2-mm-seaclim_hindcast"
+export NORCPM_PATH_MEM=$NORCPM_PATH/${ncpmn}_${sdate}_mem${esmmem}/${ncpmn}_${sdate}_mem${esmmem}.cam.h2
+#echo $NORCPM_PATH_MEM

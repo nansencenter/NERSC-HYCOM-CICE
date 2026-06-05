@@ -87,7 +87,7 @@ if [ -s ${Fini} -a -s ${Ftmpmask} ]; then
    ml load CDO/2.0.6-gompi-2022a
    cdo remapbil,${Ftmpmask} ${Fini} ${Fout}
 
-   ml load NCO/5.1.3-iimpi-2022a
+   ml load NCO/5.1.9-iomkl-2022a
    echo "Defaulting the values for different masks ... "
    ncks -v ${Vars} ${Fout} ${Ftmp}  
    ncrename -h -O -v siconc,aice_raw -v sithick,hi_raw ${Ftmp}  

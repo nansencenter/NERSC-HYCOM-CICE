@@ -305,7 +305,7 @@ c --- relaxation coefficient (inverse baroclinic time steps)
       real,    parameter :: hybrlx = 1.0/8.0  !1.0/no. baroclinic time steps
 c
       logical mxlkta,thermo
-      integer i,j,kk,n, lp,nstep, i0,j0,itest,jtest
+      integer i,j,kk,n, nstep, i0,j0,itest,jtest
       integer klist(1,1)
       real    epsil,onem,tencm,onemm,qonem,thbase
       real    p(1,1,kdm+1),dpmixl(1,1,1)
