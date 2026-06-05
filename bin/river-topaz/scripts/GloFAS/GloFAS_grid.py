@@ -310,18 +310,15 @@ class GloFAS_grid:
             Yenisei=(70.90,83.30) #idx 268
             Ob=(66.5,69.8) #idx 234
 
-            distance_to_lena = np.sqrt((self.df_dis_Estuary['latitude'] - Lena[0]) ** 2 + (self.df_dis_Estuary['longitude'] - Lena[1]) ** 2)
+            # Cache estuary indices for the 3 rivers — positions don't change between days
+            if not hasattr(self, '_russian_river_indices'):
+                self._russian_river_indices = {
+                    'Lena':    int(np.sqrt((self.df_dis_Estuary['latitude'] - Lena[0]   )**2 + (self.df_dis_Estuary['longitude'] - Lena[1]   )**2).argmin()),
+                    'Yenisei': int(np.sqrt((self.df_dis_Estuary['latitude'] - Yenisei[0])**2 + (self.df_dis_Estuary['longitude'] - Yenisei[1])**2).argmin()),
+                    'Ob':      int(np.sqrt((self.df_dis_Estuary['latitude'] - Ob[0]     )**2 + (self.df_dis_Estuary['longitude'] - Ob[1]     )**2).argmin()),
+                }
 
-            distance_to_yenisei = np.sqrt((self.df_dis_Estuary['latitude'] - Yenisei[0]) ** 2 + (self.df_dis_Estuary['longitude'] - Yenisei[1]) ** 2)
-
-            distance_to_ob = np.sqrt((self.df_dis_Estuary['latitude'] - Ob[0]) ** 2 + (self.df_dis_Estuary['longitude'] - Ob[1]) ** 2)
-
-            #We'll find the indices for the 3 rivers, we know what they should be but it may change with GloFAS version
-            idx_Lena=distance_to_lena.argmin()
-            idx_Yenisei=distance_to_yenisei.argmin()
-            idx_Ob=distance_to_ob.argmin()
-
-            IDX={'Lena':idx_Lena,'Yenisei':idx_Yenisei,'Ob':idx_Ob}
+            IDX = self._russian_river_indices
 
             for river in correction.river.data:
                 idx=IDX[river]
@@ -360,8 +357,6 @@ class GloFAS_grid:
 
         if re_propagate==False:
 
-            # We create a dataset. Each dataArray in the dataset containns fluxes associated with a specific estuary on every point of the TOPAZ grid (this way we can easily modify fluxes for one estuary)
-            self.ds_topaz_river_flux=xr.Dataset(coords={"longitude":depth_grid.lon.data,"latitude":depth_grid.lat.data})
             Estuaries_index_list=self.df_dis_Estuary.index
 
             self.ds_topaz_ocean_weights=xr.Dataset(coords={"longitude":np.arange(0,jdm,1),"latitude":np.arange(0,idm,1), "Estuary_index":self.df_dis_Estuary.index})
@@ -410,14 +405,18 @@ class GloFAS_grid:
 
         outside_rradius=np.where(dist_to_land>rradius)
 
-        for i in Estuaries_index_list:
+        n_estuaries = len(Estuaries_index_list)
+        land_mask_2d = depth_grid.depth.mask.reshape((jdm, idm))
 
-            river_flux = depth_grid.depth.data * 0
+        # Collect cleaned (pre-smooth) weights for all estuaries, then batch-smooth
+        cleaned_weights = np.zeros((jdm * idm, n_estuaries))
+
+        for loop_idx, i in enumerate(Estuaries_index_list):
+
             mini,minj=np.unravel_index(self.df_dis_Estuary['idx_glofas_on_topaz'].loc[i],(jdm,idm))
 
             pos_estuary=transform_coordinates((self.df_dis_Estuary['longitude_glofas_on_topaz'].loc[i],
                                                self.df_dis_Estuary['latitude_glofas_on_topaz'].loc[i]))
-
 
             x_estuary,y_estuary,z_estuary=pos_estuary[:,0],pos_estuary[:,1],pos_estuary[:,2]
 
@@ -425,10 +424,8 @@ class GloFAS_grid:
 
             dist_to_estuary=np.ma.masked_array(dist_to_estuary,mask=depth_grid.depth.mask)
 
-
             #assign weight to ocean points based on distance to estuary
             ocean_weight=np.zeros_like(dist_to_estuary.data)
-
 
             outside_alongshore=np.where(dist_to_estuary>alongshoreradius)
             ocean_weight[~dist_to_estuary.mask]=np.exp(-dist_to_estuary[~dist_to_estuary.mask]/alongshoreradius)
@@ -437,65 +434,48 @@ class GloFAS_grid:
             #Assign extra weight based on distance to shore
             ocean_weight[~dist_to_estuary.mask]*=np.exp(-2*dist_to_land[~dist_to_estuary.mask]/rradius)
             ocean_weight[outside_rradius] *= 0
-            #
+
             # Correct shore distance weight
             land_area = closest_land[mini, minj] #Find label of land area closest to the estuary
             other_lands=np.where(closest_land.flatten()!=land_area) #Find points that have different closest land area
             ocean_weight[other_lands]*=0 #If points have different closest land area than estuary, then they have no weight
 
-
-
-            #Remove isolated points
-            #For every ocean point with weight, we try to see if there are land points between this point and the estuary
+            #Remove isolated points using Numba Just In Time method
             weight_mask=np.where(ocean_weight!=0)
-            #print("Start cleaning process for river ",i)
-
-            #We do cleaning process using Numba Just In Time method to accelerate it
             if Propagation_cleaning_step:
                 ocean_weight_copy=copy.deepcopy(ocean_weight)
                 ocean_weight=cleaning_discharge(ocean_weight_copy,weight_mask,mini,minj,idm,jdm,
-                                                depth_grid.depth.mask.reshape((jdm, idm)))
+                                                land_mask_2d)
             else:
                 print('skip river plume cleaning')
 
-            #Add smoothing step to avoid discontinuities:
-            ocean_weight_grid=np.reshape(ocean_weight,(jdm,idm))
-            smoothed_ocean_weight = gaussian_filter(ocean_weight_grid, sigma=3)
+            cleaned_weights[:, loop_idx] = ocean_weight
 
-            smoothed_ocean_weight[depth_grid.depth.mask.reshape((jdm, idm))]=0 #delete weights on land points
+        # Apply Gaussian smoothing to all estuaries in one call (sigma=0 on estuary axis = no cross-estuary mixing)
+        smoothed_3d = gaussian_filter(cleaned_weights.reshape((jdm, idm, n_estuaries)), sigma=(3, 3, 0))
+        smoothed_3d[land_mask_2d] = 0  # zero land for all estuaries at once
 
-            ocean_weight=smoothed_ocean_weight.flatten() #And back to flat array
-            
-            #Normalize the weights:
-            sum_weight=np.nansum(ocean_weight)
-            ocean_weight=ocean_weight/sum_weight
+        # Normalize each estuary's weights
+        sum_weights = smoothed_3d.sum(axis=(0, 1))  # (n_estuaries,)
+        sum_weights = np.where(sum_weights == 0, 1.0, sum_weights)
+        normalized_3d = smoothed_3d / sum_weights[np.newaxis, np.newaxis, :]
 
-            estuary_flux=self.df_dis_Estuary['dis24'].loc[i]*ocean_weight
-            river_flux+=estuary_flux #We add it to the total river flux
+        # Store normalized weights for lazy-mode reuse
+        self.ds_topaz_ocean_weights['ocean_weights'].data[:] = normalized_3d
 
-            # River flux grid for this estuary
-            self.ds_topaz_river_flux['River_flux_estuary_'+str(i)]=(["longitude"],river_flux)
+        # Compute total river flux via matrix multiply (same pattern as lazy mode)
+        dis_array = self.df_dis_Estuary['dis24'].to_numpy()
+        self.river_flux_TOPAZ = normalized_3d.reshape(-1, n_estuaries) @ dis_array
 
-            #We also save the ocean weight grid for this particular estuary:
-            self.ds_topaz_ocean_weights['ocean_weights'].loc[dict(Estuary_index=i)]=ocean_weight.reshape((jdm,idm))
-
-            # print("5:", time.time())
-
-            #We check that the sum of propagated flux is equal to estuary discahrge
-            if np.sqrt((np.nansum(estuary_flux)-self.df_dis_Estuary['dis24'].loc[i])**2)>1:
+        # Check per-estuary flux conservation
+        for loop_idx, i in enumerate(Estuaries_index_list):
+            estuary_flux = dis_array[loop_idx] * normalized_3d[:, :, loop_idx].flatten()
+            if np.sqrt((np.nansum(estuary_flux)-dis_array[loop_idx])**2)>1:
                 warnings.warn('Fluxes do not add up for river at position:'+
                       str(self.df_dis_Estuary['longitude_glofas_on_topaz'].loc[i])+','+str(self.df_dis_Estuary['latitude_glofas_on_topaz'].loc[i]))
-                print(np.nansum(estuary_flux),'!=',self.df_dis_Estuary['dis24'].loc[i])
-
+                print(np.nansum(estuary_flux),'!=',dis_array[loop_idx])
             else:
-#                print("river {river_number},  {Topaz_lon:.3f}, {Topaz_lat:.3f} : flux {river_flux:.3f} \n Sum of propagated flux={sum_prop_flux:.3f} with max local={max_prop_flux:.3f}".format(river_number=str(i), river_flux=self.df_dis_Estuary['dis24'].loc[i], sum_prop_flux=np.nansum(estuary_flux),max_prop_flux=np.nanmax(estuary_flux),Topaz_lon=self.df_dis_Estuary['longitude_glofas_on_topaz'].loc[i], Topaz_lat=self.df_dis_Estuary['latitude_glofas_on_topaz'].loc[i]))
-                print("river {river_number},  {Topaz_lon:.3f}, {Topaz_lat:.3f} : flux {river_flux:.3f} ".format(river_number=str(i), river_flux=self.df_dis_Estuary['dis24'].loc[i], Topaz_lon=self.df_dis_Estuary['longitude_glofas_on_topaz'].loc[i], Topaz_lat=self.df_dis_Estuary['latitude_glofas_on_topaz'].loc[i]))
-
-
-        #We know sum the fluxes of each estuary to obtain final grid with flux on every cell
-        self.river_flux_TOPAZ=depth_grid.depth.data*0
-        for data_vars in self.ds_topaz_river_flux.data_vars:
-            self.river_flux_TOPAZ+=self.ds_topaz_river_flux[data_vars].data
+                print("river {river_number},  {Topaz_lon:.3f}, {Topaz_lat:.3f} : flux {river_flux:.3f} ".format(river_number=str(i), river_flux=dis_array[loop_idx], Topaz_lon=self.df_dis_Estuary['longitude_glofas_on_topaz'].loc[i], Topaz_lat=self.df_dis_Estuary['latitude_glofas_on_topaz'].loc[i]))
 
         print('Total propagation time:', time.time()-start_time)
         #35s with no Numba for ocean_weight computation and Numba for cleaning process
@@ -512,7 +492,6 @@ class GloFAS_grid:
         :param depth_grid: Topaz depth grid [Agrid]
         :param input_grids: Grids object containing (among other things) the ocean weights for each estuary [Grids]
         """
-        # We create a dataset. Each dataArray in the dataset containns fluxes associated with a specific estuary on every point of the TOPAZ grid (this way we can easily modify fluxes for one estuary)
         self.ds_topaz_river_flux = xr.Dataset(
             coords={"longitude": depth_grid.lon.data, "latitude": depth_grid.lat.data})
 

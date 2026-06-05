@@ -100,7 +100,7 @@ def create_river_forcing(input_dataset,start_date,end_date,topaz_grid_file,topaz
 
  
         N=int(1//dt) #new dim size
-        river_flux_topaz_extended=np.stack([river_flux_topaz] * N, axis=2)
+        river_flux_topaz_extended=np.repeat(river_flux_topaz[:, :, np.newaxis], N, axis=2)
 
 
         # Convert dtime1 slice to indices
