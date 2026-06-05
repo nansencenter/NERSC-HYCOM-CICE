@@ -84,9 +84,11 @@ def create_river_forcing(input_dataset,start_date,end_date,dt=.25):
                foutfile=output_path+"riverh_{start}_{end}_{dtt}h".format(start=start_date[:10],end=end_date[:10],dtt=dt*24)
             else:
                foutfile=output_path+"riverh_{start}_{end}_{dtt}d".format(start=start_date[:10],end=end_date[:10],dtt=dt)
-            ffile = abfile.ABFileRiverForcing(foutfile, "w",idm=idm, jdm=jdm,
+            ffile = abfile.ABFileRiverForcing(foutfile, "w", mask=True, idm=idm, jdm=jdm,
                 cline1="GloFAS v4.0",
                 cline2="river forcing (m/s)")
+
+            land_mask = grids.topaz_depth_grid.depth.mask.reshape((jdm, idm))
 
             input_grids=grids #The day one grids will be used for the other days
 
@@ -138,14 +140,14 @@ def create_river_forcing(input_dataset,start_date,end_date,dt=.25):
 
             for dtime in np.arange(date_as_Julian_day(value)-1,date_as_Julian_day(value),dt):
                 ffile.write_field(river_forcing['river_flux'].loc[dict(dtime1=dtime)].data*conv,
-                                river_forcing['river_flux'].loc[dict(dtime1=dtime)].data*conv,
+                                land_mask,
                                 'rivers', dtime, dt)
 
         #finally we write last day in the file
         if date_as_Julian_day(value)==end_date_as_day.days:
             period_in_hours = 24 * dt  # For conversion
             ffile.write_field(river_forcing['river_flux'].loc[dict(dtime1=end_date_as_day.days)].data * conv,
-                                             river_forcing['river_flux'].loc[dict(dtime1=end_date_as_day.days)].data * conv,
+                                             land_mask,
                                             'rivers', end_date_as_day.days, dt)
 
     ffile.close()
