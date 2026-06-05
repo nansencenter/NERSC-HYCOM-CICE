@@ -56,13 +56,18 @@ def create_river_forcing(input_dataset,start_date,end_date,topaz_grid_file,topaz
     input_grids=None
     day_cntr=0
 
+    import time as _time
+    t_total_start = _time.time()
 
     for value in data.time.values:
+
+        t_day_start = _time.time()
+        date_str = str(value)[:10]
 
         daily_river_discharge=data.sel(time=value)
 
         correct_GloFAS=(value.astype('datetime64[Y]').astype(int)+1970>=2001) & Apply_GloFAS_correction #correction starts in 2001
-        
+
 
         grids = compute_discharge_noUI(river_data=daily_river_discharge,topaz_grid_file=topaz_grid_file,topaz_depth_file=topaz_depth_file,
                                        lazy_mode=lazy_mode,input_grids=input_grids,correct_GloFAS=correct_GloFAS,Edit_estuaries=Edit_estuaries,Propagation_cleaning_step=Propagation_cleaning_step,
@@ -152,7 +157,14 @@ def create_river_forcing(input_dataset,start_date,end_date,topaz_grid_file,topaz
                                              land_mask,
                                             'rivers', end_date_as_day.days, dt)
 
+        print("Day %s done in %.1f s  (total elapsed: %.1f s)" % (
+              date_str, _time.time()-t_day_start, _time.time()-t_total_start))
+
     ffile.close()
+
+    n_days = day_cntr
+    t_total = _time.time() - t_total_start
+    print("\nFinished: %d days processed in %.1f s  (%.1f s/day)" % (n_days, t_total, t_total/max(n_days,1)))
 
     return river_forcing
 
