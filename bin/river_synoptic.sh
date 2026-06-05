@@ -47,8 +47,8 @@ cd       $S || { echo " Could not descend scratch dir $S" ; exit 1;}
 
 ml load matplotlib/3.5.2-foss-2022a
 cd ${BINDIR}/river-topaz/scripts/GloFAS
-depthfile=$(ls ${BASEDIR}/../topo/depth_*.a 2>/dev/null | head -1)
-[ -z "$depthfile" ] && { echo "Could not find depth file in ${BASEDIR}/../topo/" ; exit 1 ; }
+depthfile=$(ls ${BASEDIR}/topo/depth_*.a 2>/dev/null | head -1)
+[ -z "$depthfile" ] && { echo "Could not find depth file in ${BASEDIR}/topo/" ; exit 1 ; }
 cmd="python ${BINDIR}/river-topaz/scripts/GloFAS/hycom_river_hifre.py $start $stop $S/ $depthfile"
 eval $cmd   ||  { echo "Error running $cmd " ; exit 1 ; }
 
