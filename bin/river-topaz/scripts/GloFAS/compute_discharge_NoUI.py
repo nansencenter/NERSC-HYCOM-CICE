@@ -6,15 +6,6 @@ GloFASdata_path='/cluster/projects/nn9481k/GloFAS_data/TOPAZrunoff_data'
 if GloFASdata_path not in sys.path:
    sys.path.append(GloFASdata_path)
 
-#------------------------FILES (remember to check the paths)------------------------------------------
-
-#Grid file .a
-topaz_grid_file=GloFASdata_path+'/TOPAZ5/regional.grid.a'
-
-#Depth file .a
-#topaz_depth_file=GloFASdata_path+'/TOPAZ5/depth_TP5a0.06_08.a'
-topaz_depth_file=GloFASdata_path+'/TOPAZ5/depth_TP5a0.06_05.a'
-
 #ldd file .nc
 ldd_file=GloFASdata_path+'/river/auxiliary_files__glofas_v4_0/ldd_glofas_v4_0.nc'
 
@@ -57,7 +48,7 @@ Region={'Arctic':[-180,50,180,90], 'Russia':[40,50,180,90], 'Greenland':[-70,55,
 
 #--------------------------------Building grids-------------------------------------------
 
-def compute_discharge_noUI(river_data,input_grids=None,lazy_mode=False,climatology=False,month=1,correct_GloFAS=True,Edit_estuaries=False,Propagation_cleaning_step=True,rradius = 80000,alongshoreradius = 200000):
+def compute_discharge_noUI(river_data,topaz_grid_file,topaz_depth_file,input_grids=None,lazy_mode=False,climatology=False,month=1,correct_GloFAS=True,Edit_estuaries=False,Propagation_cleaning_step=True,rradius = 80000,alongshoreradius = 200000):
     
     print("-----Parameters-----"+"\n"+"Correct GloFAS:"+ str(correct_GloFAS)+"\n"+ "Edit estuary:"+ str(Edit_estuaries)+"\n"+"Cleaning step in propagation:"+str(Propagation_cleaning_step)+"\n"+'rradius='+str(rradius)+"\n"+'alongshoreradius='+str(alongshoreradius)+"\n"+"---------------------------")
 
