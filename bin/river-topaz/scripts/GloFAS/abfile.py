@@ -118,8 +118,6 @@ class AFile(object) :
          hmin=h_stored[I].min()
          J=numpy.where(mask.flatten())
          w[J] = self._spval
-         print("DEBUG writerecord: mask=True, n_ocean=%d, n_land=%d, hmin=%g, hmax=%g" % (
-               len(I[0]), len(J[0]), hmin, hmax))
         # print "writerecord w mask:",numpy.count_nonzero(mask),mask.size
         # print "writerecord w mask:",hmin,hmax,w[0:self._idm*self._jdm].min(),w[0:self._idm*self._jdm].max()
       else :
