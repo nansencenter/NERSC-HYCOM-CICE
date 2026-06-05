@@ -89,6 +89,9 @@ def create_river_forcing(input_dataset,start_date,end_date,dt=.25):
                 cline2="river forcing (m/s)")
 
             land_mask = grids.topaz_depth_grid.depth.mask.reshape((jdm, idm))
+            print("DEBUG land_mask: shape=%s dtype=%s n_land=%d n_ocean=%d" % (
+                  land_mask.shape, land_mask.dtype,
+                  int(land_mask.sum()), int(land_mask.size - land_mask.sum())))
 
             input_grids=grids #The day one grids will be used for the other days
 
