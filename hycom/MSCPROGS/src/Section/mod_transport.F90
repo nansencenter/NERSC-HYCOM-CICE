@@ -725,7 +725,7 @@ end subroutine
       end if
 
 
-      call ncwrite_transportdata('vol_transport',voltrans(1:ntrans)*1e-6,ntrans,rtime2,2,units='m3 s-1', &
+      call ncwrite_transportdata('vol_transport',voltrans(1:ntrans)*1e-6,ntrans,rtime2,2,units='Sv', &
          comment='Volume Transport',appendfile=vapp,timeunits=trim(timeunits))
       call ncwrite_transportdata('heat_transport',heattrans(1:ntrans),ntrans,rtime2,2,units='W', &
          comment='Heat Transport',appendfile=vapp,timeunits=trim(timeunits))
