@@ -13,7 +13,7 @@ if [ "$tmp" != "${R}" ] ;then
 fi
 
 # Set the Path Here
-export NHCROOT=/cluster/home/achoth/AchHycom/NERSC-HYCOM-CICE       # Set this if necessary (eg out of work)
+export NHCROOT=${HOME}/NERSC-HYCOM-CICE/
 
 export HYCOM_ALL=$NHCROOT/hycom/hycom_ALL/hycom_2.2.72_ALL/    # follows NHCROOT, but can be set differently
 export INPUTDIR=$NHCROOT/input/                                # follows NHCROOT, but can be set differently
