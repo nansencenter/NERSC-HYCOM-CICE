@@ -36,6 +36,12 @@ The naming conventions are as follows:
 | HYCOM | `restart.YYYY_DDD_00_0000.[a,b]` | `DDD` is the three-digit day of year (zero-padded) |
 | CICE | `iced.YYYY-MM-DD-00000.nc` | Standard calendar date |
 
+:::{warning}
+HYCOM 2.3 restart files are **not** compatible with HYCOM 2.2. If you have
+restart files produced by a 2.3 run, you cannot use them to restart a 2.2 model.
+The reverse is fine: 2.2 restart files can be used to start a 2.3 run.
+:::
+
 For TP2 hindcast runs, restart files are archived at:
 
 ```
