@@ -52,9 +52,7 @@ srun -n $NMPI --cpu_bind=cores ./hycom_cice
 
 # Cleanup and move data files to data directory - must be in "expt_XXX" dir for this script
 cd $P     ||  { echo "Could not go to dir $P  "; exit 1; }
-../expt_postprocess.sh 
-
-done
+../bin/expt_postprocess.sh 
 
 exit $?
 

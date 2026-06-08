@@ -80,6 +80,7 @@ rm blkdat.input.tmp
 
 # Modify pbs job scripts with descriptive id
 for i in pbsjob*.sh ; do
+   [ -f "$i" ] || continue
    mv $i $i.tmp
    cat $i.tmp | sed "s/PBS[ ]*-N.*$/PBS -N ${R}_X${X}/"  > $i
 done
