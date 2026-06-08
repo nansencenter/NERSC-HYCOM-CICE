@@ -35,11 +35,18 @@ The natural place to run MSCPROGS tools is the experiment data directory:
 cd $WORK/<CONFIGNAME>/expt_<EXPT_ID>/data/
 ```
 
-`expt_postprocess.sh` copies `regional.grid.*` and `regional.depth.*` here
+[expt_postprocess.sh](running.md#submit-a-job) copies `regional.grid.*` and `regional.depth.*` here
 automatically after each model run, so the grid files are already in place.
 
 You still need to copy the relevant [input files](#input-files) into the working
 directory. Example input files are provided in `$MSCPROGS/Input/`.
+
+:::{tip}
+You can also run MSCPROGS tools directly from the scratch directory
+(`expt_<EXPT_ID>/SCRATCH/`) to analyse output before the run is finalised.
+`expt_preprocess.sh` already copies `regional.grid.*` and `regional.depth.*`
+there, so only the input files need to be copied in — the same step as above.
+:::
 
 ### Typical workflow
 
@@ -67,9 +74,9 @@ Four output projections are supported:
 | Polar stereographic | `polar_stereographic` | Defined by projection coordinates + number of points; optionally rotate vectors onto the PS grid |
 | Model native | `native` | No horizontal interpolation; extract sub-domain by index range |
 
-`hyc2proj` requires three input files in the working directory:
+`hyc2proj` requires three input files in the working directory, further described in  [Input files](#input-files) below:
 
-- `proj.in` — target projection and grid (see [Input files](#input-files) below)
+- `proj.in` — target projection and grid
 - `depthlevels.in` — vertical depth levels to interpolate to
 - an `extract.*` file — fields to extract (e.g. `extract.daily`, `extract.archv`)
 

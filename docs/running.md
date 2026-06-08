@@ -1,3 +1,4 @@
+(submit-a-job)=
 ## Submit a job
 
 The job script `srjob.sh` handles three things automatically:
