@@ -61,7 +61,7 @@ Open `srjob.sh` in a text editor and update:
 > See [Initial conditions](forcing.md#initial-conditions) for details on both options.
 
 :::{note}
-As a reference, a 7-day TP2 run on 4 Betzy nodes (504 cores) takes approximately 10 minutes.
+For reference when setting `#SBATCH --time`: a 1-year TP2 run with BGC on 4 Betzy nodes (504 cores) takes approximately 5–6 hours of wall time.
 :::
 
 Then submit:
@@ -92,6 +92,33 @@ cat $WORK/<CONFIGNAME>/expt_<EXPT_ID>/log/hycom.stop
 
 The file should contain `GOODRUN`. If not, inspect the log files under `log/` for
 error messages.
+
+## Restarting after a crash
+
+What happens to output files depends on how the run ended:
+
+- **Model exits with an error but the SLURM job completes normally** (e.g. a model
+  error or failed assertion): `expt_postprocess.sh` still runs, so restart and
+  archive files are moved to `data/` and `log/hycom.stop` contains `BADRUN`.
+  The restart files written before the crash are already in `data/` and can be
+  used directly.
+
+- **Job is killed by SLURM** (wall-time limit, out-of-memory, node failure, or
+  `scancel`): `expt_postprocess.sh` never runs. Output files remain in `SCRATCH/`.
+  Run postprocessing manually before resubmitting:
+
+  ```bash
+  cd $WORK/<CONFIGNAME>/expt_<EXPT_ID>
+  ../expt_postprocess.sh
+  ```
+
+  This moves the restart and archive files written before the crash to `data/`,
+  where `srjob.sh` will pick them up on the next run. If you skip this step and
+  resubmit directly, `expt_preprocess.sh` will move the files to `SCRATCH/KEEP/`
+  instead — they are not lost, but you will need to copy them to `data/` manually.
+
+In both cases, update `START` in `srjob.sh` to the date of the last restart file
+written, and set `INITFLG=""` (restart run).
 
 ## Visualization
 
