@@ -25,14 +25,7 @@ See the [HPC environment](installation.md#hpc-environment) section for details.
 source $WORK/<CONFIGNAME>/REGION.src    # sets $MSCPROGS and other paths
 ```
 
-To make the MSCPROGS executables available, add them to `PATH` in your `REGION.src`
-(right after the existing `export PATH=...` line):
-
-```bash
-export PATH=$MSCPROGS/bin:$MSCPROGS/bin_setup:$PATH
-```
-
-This way the path is set automatically every time you source `REGION.src`, with no extra steps needed.
+`REGION.src` also adds `$MSCPROGS/bin` and `$MSCPROGS/bin_setup` to your `PATH`, so all MSCPROGS executables are immediately available.
 
 ### Working directory
 
