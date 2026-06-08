@@ -278,13 +278,73 @@ def interpolate2d(x, y, Z, points, mode='linear', bounds_error=False):
 
     return r
 
+def interpolate2d_fast(Z, interp_map):
+    inside, outside, idx, idy, alpha, beta = interp_map
+
+    z00 = Z[idx - 1, idy - 1]
+    z01 = Z[idx - 1, idy]
+    z10 = Z[idx, idy - 1]
+    z11 = Z[idx, idy]
+
+    dx = z10 - z00
+    dy = z01 - z00
+    z = z00 + alpha * dx + beta * dy + alpha * beta * (z11 - dx - dy - z00)
+
+    r = numpy.full(len(inside), numpy.nan)
+    r[inside] = z
+    return r
+
+def precompute_interp_map(x, y, points):
+    xi, eta = points[:, 0], points[:, 1]
+    outside = (xi < x[0]) | (eta < y[0]) | (xi > x[-1]) | (eta > y[-1])
+    inside = ~outside
+
+    xi_in, eta_in = xi[inside], eta[inside]
+    idx = numpy.searchsorted(x, xi_in, side='left')
+    idy = numpy.searchsorted(y, eta_in, side='left')
+
+    x0, x1 = x[idx - 1], x[idx]
+    y0, y1 = y[idy - 1], y[idy]
+
+    alpha = (xi_in - x0) / (x1 - x0)
+    beta = (eta_in - y0) / (y1 - y0)
+
+    return inside, outside, idx, idy, alpha, beta
+
+
+from scipy.ndimage import convolve
+
+def maplev_fast(a, n_iter=5):
+    """Fast local diffusion gap-filling using convolution."""
+    a = a.copy()
+    mask = numpy.isnan(a)
+    if not numpy.all(mask):
+        a[mask] = numpy.nanmean(a)
+
+    # Define kernel for 4-neighbour averaging
+    #kernel = numpy.array([[0, 1, 0],
+    #                   [1, 0, 1],
+    #                   [0, 1, 0]], dtype=float) / 4.0
+
+    # Define kernel for 8-neighbour averaging
+    kernel = numpy.array([[1, 1, 1],
+                       [1, 0, 1],
+                       [1, 1, 1]], dtype=float) / 8.0
+
+    for _ in range(n_iter):
+        a_new = convolve(a, kernel, mode='nearest')
+        a[mask] = a_new[mask]
+
+    a[numpy.isnan(a)] = 0.0
+    return a
 
 def maplev(a):
     # gapfilling method
     jm,im=a.shape
     J,I=numpy.where(~numpy.isnan(a))
     with numpy.errstate(invalid='ignore'):
-        av=numpy.nansum(a[J,I])/(len(I)*len(J))
+        av=numpy.nansum(a[J,I])/len(I)
+        #av=numpy.nansum(a[J,I])/(len(I)*len(J))
     J,I=numpy.where(numpy.isnan(a))
     a[J,I]=av
     b=a
@@ -310,8 +370,82 @@ def maplev(a):
     return a
 
 
+def calc_uvbaro(uo, vo, e3t, deptho_lev, deptho, mask3d, iu, iv, spval, debug=False):
+    """
+    Compute barotropic (depth-averaged) velocity.
 
-def calc_uvbaro(uo,vo,e3t,iu,iv) :
+    Parameters
+    ----------
+    uo, vo : 3D arrays
+        3D velocity fields (P-grid positions)
+    e3t : 1D array
+        Nominal layer thicknesses (nlev)
+    deptho_lev : 2D array
+        Index (0-based) of the bottom wet level
+    deptho : 2D array
+        Total ocean depth (m)
+    mask3d : 3D array
+        Mask (1 for ocean, 0 for land)
+    iu, iv : 2D arrays
+        Land mask indices on U and V grids
+    spval : float
+        Special (missing) value to assign over land
+    debug : bool
+        If True, print information about layer corrections
+    """
+    nlev, ny, nx = uo.shape
+    utemp=numpy.zeros(uo.shape)
+    vtemp=numpy.zeros(uo.shape)
+    ubaro=numpy.zeros(uo.shape[-2:])
+    vbaro=numpy.zeros(uo.shape[-2:])
+
+    # Build 3D thickness array from 1D nominal profile
+    e3t_3d = numpy.broadcast_to(e3t[:, None, None], (len(e3t), ny, nx))
+
+    # Mask e3t_3d
+    e3t_3dmask = numpy.where(mask3d == 1,e3t_3d,0.)
+    
+    for j in range(ny):
+        for i in range(nx):
+            kbot = int(deptho_lev[j, i])
+            total_colthk=numpy.sum(e3t_3dmask[:,j,i])
+            if total_colthk > deptho[j,i]:
+                colthk_tmp = numpy.sum(e3t_3dmask[0:kbot,j,i]) #colum thickness (except last wet cell)
+                botthk = deptho[j,i] - colthk_tmp
+                e3t_3dmask[kbot,j,i] = botthk
+
+    # Apply mask (keep NaNs where land or below bottom)
+    #e3t_3d = numpy.where(mask3d == 1, e3t_3dmask, numpy.nan)
+
+    # Optional debug info
+    if debug:
+        print("e3t_3dmask:",e3t_3dmask[:,0,0])
+        total_depth3d=numpy.sum(e3t_3dmask, axis=0)
+        print("[DEBUG] total_depth3d:",total_depth3d[0,0])
+        print("[DEBUG] deptho:",deptho[0,0])
+
+    # Compute depth-integrated fluxes (keep zeros below bottom)
+    valid_u = numpy.abs(uo) <= 10
+    valid_v = numpy.abs(vo) <= 10
+    utemp = numpy.where(valid_u, uo * e3t_3dmask, 0.)
+    vtemp = numpy.where(valid_v, vo * e3t_3dmask, 0.)
+
+    # Integrate and divide by total depth
+    dsum = numpy.nansum(e3t_3dmask, axis=0)
+    dsum = numpy.where(numpy.abs(dsum) < 1e-2, 0.05, dsum)
+    ubaro = numpy.nansum(utemp, axis=0) / dsum
+    vbaro = numpy.nansum(vtemp, axis=0) / dsum
+
+    # Convert to U/V grids and apply mask
+    ubaro = p2u_2d(numpy.where(numpy.abs(ubaro) > 10, 0., ubaro))
+    vbaro = p2v_2d(numpy.where(numpy.abs(vbaro) > 10, 0., vbaro))
+    ubaro[iu] = spval
+    vbaro[iv] = spval
+
+    return ubaro, vbaro
+
+
+def calc_uvbaro_original(uo,vo,e3t,iu,iv) :
     #
     # Calculate barotropic velocity. uo and vo
     # are 3D velocities in P-grid positions.
@@ -371,35 +505,40 @@ def p2v_2d(var_p) :
     var_u[:,0] = 2.0*var_u[:,1] - var_u[:,2]
     return var_u
 
+def read_grid(filemesh, coord_file) :
 
-def read_grid(filemesh) :
-    
-    ncid0=netCDF4.Dataset(filemesh[:-7]+"COORD.nc","r")
+    ncid0=netCDF4.Dataset(coord_file,"r")
     numpy.seterr(invalid='ignore')
-    e3t=ncid0.variables["e3t"][:,:,:]
+    e3t=ncid0.variables["e3t"][:]
     ncid0.close()
     
     ncid0=netCDF4.Dataset(filemesh,"r")
-    plon=ncid0.variables["lon"][:,:]
-    plat=ncid0.variables["lat"][:,:]
+    lon=ncid0.variables["longitude"][:]
+    lat=ncid0.variables["latitude"][:]
+    minlat=30
+    index=numpy.where(lat>=minlat)[0]
+    lat=lat[index]
+    plon, plat = numpy.meshgrid(lon, lat)
     with numpy.errstate(invalid='ignore'):
-        hdept=ncid0.variables["Bathymetry"][:,:]
+        deptho=ncid0.variables["deptho"][:,:] #Bathymetry
+        hdept=deptho[index,:]
         gdept=ncid0.variables["depth"][:]
-        mask=ncid0.variables["mask"][:,:]
-        mbathy=numpy.int8(ncid0.variables["mbathy"][:,:])
-        mbathy_u=numpy.int8(ncid0.variables["mbathy_u"][:,:])
-        mbathy_v=numpy.int8(ncid0.variables["mbathy_v"][:,:])
+        mask=ncid0.variables["mask"][:,index,:]
+        mbathy=numpy.int8(ncid0.variables["deptho_lev"][index,:])
+        mbathyfill=ncid0.variables["deptho_lev"]._FillValue
 
-    mbathy   = mbathy  -1
-    mbathy_u = mbathy_u-1
-    mbathy_v = mbathy_v-1
+    mbathy_mask0=numpy.where(mbathy == mbathyfill,0.,mbathy)
+
+    mbathy   = mbathy_mask0  -1
+    mbathy_u = mbathy
+    mbathy_v = mbathy
     ncid0.close()
     
-    return hdept,gdept,mbathy,mbathy_u,mbathy_v,mask,e3t,plon,plat
+    return hdept,gdept,mbathy,mbathy_u,mbathy_v,mbathyfill,mask,e3t,plon,plat
 
 
-def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_file=None) :
-    
+def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_file=None,coord_file=None) :
+
     #
     # Trim input netcdf file name being appropriate for reading
     #
@@ -410,13 +549,13 @@ def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_file=None) :
     # Note that for now, we are using T-grid in vertical which may need
     # to be improved by utilizing W-point along the vertical axis.
     #
-    hdept,gdept,mbathy,mbathy_u,mbathy_v,mask,e3t,plon,plat=read_grid(meshfile)
+    hdept,gdept,mbathy,mbathy_u,mbathy_v,mbathyfill,mask,e3t,plon,plat=read_grid(meshfile,coord_file)
     logger.warning("Reading grid information from regional.grid.[ab] (not completed)")
     #
     # Convert from P-point (i.e. NEMO grid) to U and V HYCOM grids
     #
-    mask_u=p2u_2d(mask)
-    mask_v=p2v_2d(mask)
+    #mask_u=p2u_2d(mask)
+    #mask_v=p2v_2d(mask)
     #
     # Read regional.grid.[ab]
     # Grid angle is not used for this product because all quantities are
@@ -559,25 +698,22 @@ def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_file=None) :
 # TODO:  Note that the coordinate files are for global configuration while
 #        the data file saved for latitude larger than 30. In the case you change your data file coordinate
 #        configuration you need to modify the following lines
-       bio_coordfile=bio_file[:-51]+"/GLOBAL_ANALYSIS_FORECAST_BIO_001_029_COORD/GLOBAL_REANALYSIS_BIO_001_029_mask.nc"
-       biocrd=netCDF4.Dataset(bio_coordfile,"r")
-       blat2 = biocrd.variables['latitude'][:]
-       index=numpy.where(blat2>=minblat)[0]
-       depth_lev = biocrd.variables['deptho_lev'][index[0]:,:]
+       # Derive bottom level index from the bio data mask (no coord file needed)
+       depth_lev = numpy.sum(numpy.isfinite(no3[:,:,:nx]) & (numpy.abs(no3[:,:,:nx]) < 1e10), axis=0)
 #
 #
 #
        dummy=numpy.zeros((ny,nx+1))
        dummy[:,:nx]=depth_lev;dummy[:,-1]=depth_lev[:,-1]
        depth_lev=dummy
-       depth_lev[depth_lev>50]=0
+       depth_lev[depth_lev>nz]=0
        depth_lev=depth_lev.astype('i')
        dummy_no3=no3
        dummy_po4=po4
        dummy_si=si
        dummy_o2=o2
        for j in range(ny):
-          for i in range(nx):
+          for i in range(nx+1):
              dummy_no3[depth_lev[j,i]:nz-2,j,i]=no3[depth_lev[j,i]-1,j,i]
              dummy_po4[depth_lev[j,i]:nz-2,j,i]=po4[depth_lev[j,i]-1,j,i]
              dummy_si[depth_lev[j,i]:nz-2,j,i]=si[depth_lev[j,i]-1,j,i]
@@ -593,6 +729,43 @@ def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_file=None) :
        no3 = no3 * 6.625 * 12.01 # mmol N/m3 --> mgC/m3
        # o2 unit conversion do not needed (mmol O2/m3) 
 
+       # Interpolate bio-variables vertically onto physics layers (75-->50) 
+       z_bio = ncidb.variables['depth'][:]
+       nz_bio = len(z_bio)
+       z_phy = gdept
+       nz_phy = len(z_phy)
+
+       print(f"z_bio has {nz_bio} levels, z_phy has {nz_phy} levels")
+       
+       # Read one variable to check its vertical dimension
+       if nz != nz_bio:
+           print(f"Adjusting: variable has {nz} levels but bio_coordinate has {nz_bio}.")
+           # If bio_coordinate has one more level (biofiles before 2016), trim it
+           if nz_bio == nz + 1:
+              z_bio = z_bio[:-1]
+              print("Trimmed last depth level from z_bio.")
+           elif nz_bio < nz:
+               # Should not happen, but keep safe
+               no3 = no3[:nz_bio, :, :]
+               po4 = po4[:nz_bio, :, :]
+               si = si[:nz_bio, :, :]
+               o2 = o2[:nz_bio, :, :]
+               print("Trimmed last level from variables. This shouldn't happen!")
+
+       no3_interp = numpy.zeros((len(z_phy), ny, nx+1))
+       po4_interp = numpy.zeros((len(z_phy), ny, nx+1))
+       si_interp = numpy.zeros((len(z_phy), ny, nx+1))
+       o2_interp = numpy.zeros((len(z_phy), ny, nx+1))
+       for j in range(ny):
+           for i in range(nx+1):
+               no3_interp[:,j,i]= numpy.interp(z_phy,z_bio,no3[:,j,i],left=no3[0, j, i], right=no3[-1, j, i])
+               po4_interp[:,j,i]= numpy.interp(z_phy,z_bio,po4[:,j,i],left=po4[0, j, i], right=po4[-1, j, i])
+               si_interp[:,j,i]= numpy.interp(z_phy,z_bio,si[:,j,i],left=si[0, j, i], right=si[-1, j, i])
+               o2_interp[:,j,i]= numpy.interp(z_phy,z_bio,o2[:,j,i],left=o2[0, j, i], right=o2[-1, j, i])
+       no3 = no3_interp
+       po4 = po4_interp
+       si = si_interp
+       o2 = o2_interp
 
     logger.info("Read, trim, rotate NEMO velocities.")
     u=numpy.zeros((nlev,mbathy.shape[0],mbathy.shape[1]))
@@ -607,6 +780,8 @@ def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_file=None) :
         iu = mbathy_u == -1
         iv = mbathy_v == -1
     else:
+        mask_u=p2u_2d(mask)
+        mask_v=p2v_2d(mask)
         ip = mask   == 0
         iu = mask_u == 0
         iv = mask_v == 0
@@ -617,7 +792,7 @@ def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_file=None) :
     # I used dt = gdept[1:] - gdept[:-1] on NEMO t-grid. Furthermore, you may re-calculate this part on vertical grid cells for future. 
     #
     logger.info("Calculate barotropic velocities.")
-    ubaro,vbaro=calc_uvbaro(uo,vo,e3t,iu,iv)
+    ubaro,vbaro=calc_uvbaro(uo, vo, e3t, mbathy, hdept, mask, iu, iv, spval, debug=False)
     #
     # Save 2D fields (here only ubaro & vbaro)
     #
@@ -642,18 +817,20 @@ def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_file=None) :
     #
     if bio_file:
        logger.info("Calculate baroclinic velocities, temperature, and salinity data as well as BIO field.")
+       interp_map = precompute_interp_map(blat, blon, points)
     else:
        logger.info("Calculate baroclinic velocities, temperature, and salinity data.")
+
     for k in numpy.arange(u.shape[0]) :
         if bio_file:
-           no3k=interpolate2d(blat, blon, no3[k,:,:], points).reshape((jdm,idm))
-           no3k = maplev(no3k)
-           po4k=interpolate2d(blat, blon, po4[k,:,:], points).reshape((jdm,idm))
-           po4k = maplev(po4k)
-           si_k=interpolate2d(blat, blon, si[k,:,:], points).reshape((jdm,idm))
-           si_k = maplev(si_k)
-           o2k=interpolate2d(blat, blon, o2[k,:,:], points).reshape((jdm,idm))
-           o2k = maplev(o2k)
+           no3k = interpolate2d_fast(no3[k,:,:], interp_map).reshape((jdm,idm))
+           no3k = maplev_fast(no3k)
+           po4k = interpolate2d_fast(po4[k,:,:], interp_map).reshape((jdm,idm))
+           po4k = maplev_fast(po4k)
+           si_k = interpolate2d_fast(si[k,:,:], interp_map).reshape((jdm,idm))
+           si_k = maplev_fast(si_k)
+           o2_k = interpolate2d_fast(o2[k,:,:], interp_map).reshape((jdm,idm))
+           o2_k = maplev_fast(o2_k)
            if k%10==0 : logger.info("Writing 3D variables including BIO, level %d of %d"%(k+1,u.shape[0]))
         else:
            if k%10==0 : logger.info("Writing 3D variables, level %d of %d"%(k+1,u.shape[0]))
@@ -687,7 +864,7 @@ def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_file=None) :
 	# Use partial cells for the whole water column.
         else :
             J,I = numpy.where(mbathy>=k)
-            dtl[J,I]=e3t[k,J,I]
+            dtl[J,I]=e3t[k]
 
         # Salinity
         sl = salt[k,:,:]
@@ -697,10 +874,10 @@ def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_file=None) :
         # Need to be carefully treated in order to minimize artifacts to the resulting [ab] files.
         if fillgap_method==1:
             J,I= numpy.where(mbathy<k)
-            sl = maplev(numpy.where(numpy.abs(sl)<1e2,sl,numpy.nan))
+            sl = maplev_fast(numpy.where(numpy.abs(sl)<1e2,sl,numpy.nan))
             sl[J,I]=spval
             J,I= numpy.where(mbathy<k)
-            tl = maplev(numpy.where(numpy.abs(tl)<1e2,tl,numpy.nan))
+            tl = maplev_fast(numpy.where(numpy.abs(tl)<1e2,tl,numpy.nan))
             tl[J,I]=spval
         else:
             sl = numpy.where(numpy.abs(sl)<1e2,sl,numpy.nan)
@@ -709,7 +886,7 @@ def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_file=None) :
             tl = numpy.minimum(numpy.maximum(maplev(tl),-5.),50.)
 
         # Thickness
-        dtl = maplev(dtl)
+        dtl = maplev_fast(dtl)
         if k > 0 :
             with numpy.errstate(invalid='ignore'):
                 K= numpy.where(dtl < 1e-4)
@@ -720,16 +897,22 @@ def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_file=None) :
         tl[ip]=spval
 
         # Save 3D fields
+        if numpy.all(ul == 0):
+            raise RuntimeError("ERROR: unexpected all-zero velocity (possible OOM)")
+
         outfile.write_field(ul      ,iu,"u-vel.",0,model_day,k+1,0)
         outfile.write_field(vl      ,iv,"v-vel.",0,model_day,k+1,0)
         outfile.write_field(dtl*onem,ip,"thknss",0,model_day,k+1,0)
         outfile.write_field(tl      ,ip,"temp" , 0,model_day,k+1,0)
         outfile.write_field(sl      ,ip,"salin" ,0,model_day,k+1,0)
         if bio_file :
+           if numpy.all(no3k == 0):
+              raise RuntimeError("ERROR: unexpected all-zero velocity (possible OOM)")
+
            outfile.write_field(no3k      ,ip,"ECO_no3" ,0,model_day,k+1,0)
            outfile.write_field(po4k      ,ip,"ECO_pho" ,0,model_day,k+1,0)
            outfile.write_field(si_k      ,ip,"ECO_sil" ,0,model_day,k+1,0)
-           outfile.write_field(o2k       ,ip,"ECO_oxy" ,0,model_day,k+1,0)
+           outfile.write_field(o2_k       ,ip,"ECO_oxy" ,0,model_day,k+1,0)
                 
         tl_above=numpy.copy(tl)
         sl_above=numpy.copy(sl)
@@ -743,12 +926,13 @@ def main(meshfile,file,iexpt=10,iversn=22,yrflag=3,bio_file=None) :
 
 
 if __name__ == "__main__" :
-    parser = argparse.ArgumentParser(description='This tool will convert regular NEMO netcdf files to hycom archive files. It will also create grid and topo files for hycom.')
+    parser = argparse.ArgumentParser(description='.')
     parser.add_argument('meshfile',   type=str, nargs="+",  help="    ")
     parser.add_argument('file',       type=str, nargs="+",  help="    ")
     parser.add_argument('--iexpt',    type=int,default=10,  help="    ")
     parser.add_argument('--iversn',   type=int,default=22,  help="    ")
     parser.add_argument('--yrflag',   type=int,default=3,   help="    ")
-    parser.add_argument('--bio_file', type=str,             help="    ")
+    parser.add_argument('--bio_file',   type=str,             help="    ")
+    parser.add_argument('--coord_file', type=str, required=True, help="    ")
     args = parser.parse_args()
-    main(args.meshfile,args.file,iexpt=args.iexpt,iversn=args.iversn,yrflag=args.yrflag,bio_file=args.bio_file)
+    main(args.meshfile,args.file,iexpt=args.iexpt,iversn=args.iversn,yrflag=args.yrflag,bio_file=args.bio_file,coord_file=args.coord_file)
