@@ -1007,6 +1007,13 @@ each direction). On Betzy, nodes have 128 cores and jobs should use a multiple o
 cores. For TP2 (~67% ocean), `Icore=29, Jcore=26` gives `NMPI=504`, which is close to
 512 (4 nodes).
 
+The negative signs on `Icore` and `Jcore` select **uniform** tiling: all tiles are
+approximately the same size in grid cells, which minimises memory use and is generally
+more efficient at high core counts. Omitting the negative signs would instead produce
+**load-balanced** tiling, where each tile has roughly the same number of ocean points —
+useful at low core counts where MPI wait time dominates, but at the cost of higher
+memory usage.
+
 Also find the `tile_grid.sh` line in `create_ref_case.sh` and add the `-s 1` flag (tile
 size variation factor; `1` encourages near-uniform tiles, default `9.5` allows more
 variation), so it reads:

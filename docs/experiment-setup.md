@@ -55,6 +55,22 @@ bin/expt_new.sh 01.0 ${EXPT_ID}
 This creates `expt_<EXPT_ID>/` with default configuration files that you will
 adjust in the following steps.
 
+:::{note}
+**When you must create a new experiment** — small parameter tweaks (e.g. viscosity)
+can be made in an existing experiment. But the following changes require a new
+experiment directory to avoid inconsistencies between the restart files, topography,
+and relaxation fields:
+
+- **Topography version change** — the bottom pressure field (`pbot`) stored in restart
+  files is tied to the topography; mismatched versions will cause inconsistencies.
+- **Vertical grid change** — any of the vertical discretisation parameters in
+  `blkdat.input` (`kdm`, `nhybrd`, `nsigma`, `dp00*`, `ds00*`, sigma layer densities)
+  must be consistent with the relaxation and climatology files.
+- **HYCOM version change** — new model versions often introduce changes to
+  `blkdat.input`; a fresh experiment directory lets you update the configuration
+  without overwriting a working one.
+:::
+
 ::::{dropdown} What does expt_new.sh do?
 
 1. **Validates the environment** — the script must be run from either an experiment directory

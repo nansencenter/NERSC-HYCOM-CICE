@@ -9,16 +9,12 @@ See the [HPC environment](installation.md#hpc-environment) section for details.
 
 ::::
 
-## BGC dependencies (MSCPROGS and FABM)
+## Compile MSCPROGS (libhycnersc.a)
 
 > **Before compiling:** source the HPC environment file to load the correct modules and compilers
 > ([see top of this page](compilation.md#compilation-top)).
 
-
-Only needed when running with biogeochemical modules (`ntracr` > 0 in `blkdat.input`).
-These libraries only need to be rebuilt when the HPC modules are updated or the source code changes.
-
-### Compile MSCPROGS (libhycnersc.a)
+MSCPROGS provides `libhycnersc.a`, a shared library used by the [MSCPROGS post-processing tools](mscprogs.md) and also required when compiling HYCOM with the BGC module. It only needs to be rebuilt when the HPC modules are updated or the source code changes.
 
 Create a symlink for your machine and compiler, then build and install:
 
@@ -50,6 +46,18 @@ mkdir -p ${HOME}/NERSC-HYCOM-CICE/hycom/MSCPROGS/src/Perturb_Parameter/TMP
 ```
 
 ::::
+
+## BGC dependencies (FABM)
+
+> **Before compiling:** source the HPC environment file to load the correct modules and compilers
+> ([see top of this page](compilation.md#compilation-top)).
+
+Only needed when running with biogeochemical modules (`ntracr` > 0 in `blkdat.input`).
+FABM only needs to be rebuilt when the HPC modules are updated or the source code changes.
+
+:::{note}
+BGC compilation also requires `libhycnersc.a` from MSCPROGS; see [Compile MSCPROGS](compilation.md#compile-mscprogs-libhycnersca) above.
+:::
 
 ### Compile FABM (libfabm.a)
 

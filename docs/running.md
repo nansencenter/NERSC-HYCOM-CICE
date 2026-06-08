@@ -40,7 +40,8 @@ The job script `srjob.sh` handles three things automatically:
 - **Post-processing** — runs `expt_postprocess.sh` after the model finishes. It moves
   restart files, daily mean archives (`archv.*`), and CICE output from the scratch
   directory to `data/` and `data/cice/`, and writes `log/hycom.stop` with `GOODRUN` or
-  `BADRUN` depending on whether the model reached a normal stop.
+  `BADRUN` depending on whether the model reached a normal stop. The `data/` directory
+  is then ready for analysis with the [MSCPROGS post-processing tools](mscprogs.md).
 
 Open `srjob.sh` in a text editor and update:
 
