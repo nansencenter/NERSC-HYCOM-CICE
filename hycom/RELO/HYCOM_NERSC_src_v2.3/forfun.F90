@@ -633,9 +633,6 @@
       use mod_xc         ! HYCOM communication interface
       use mod_cb_arrays  ! HYCOM saved arrays
       use mod_za         ! HYCOM I/O interface
-#if defined(NERSC_HYCOM_CICE)
-      use mod_NERSCnml, only : highfq_river
-#endif
       implicit none
 !
       real*8    dtime
@@ -659,7 +656,6 @@
 ! --- units of spchum are kg/k
 ! --- units of mslprs are Pa     (anomaly, offset from total by prsbas)
 ! --- units of precip are m/s    (positive into ocean)
-! --- units of rivers are m/s    (positive into ocean)
 
 ! --- units of radflx are w/m^2  (positive into ocean)
 ! --- units of swflx  are w/m^2  (positive into ocean)
@@ -962,19 +958,6 @@
           call preambl_print(preambl)
         endif !surtmp
 !
-#if defined(NERSC_HYCOM_CICE)
-!ALF  --- read high frequency rivers----
-        if (highfq_river) then
-          call zaiopf(flnmfor(1:lgth)//'forcing.riverh.a', 'old', 918)
-          if     (mnproc.eq.1) then  ! .b file from 1st tile only
-          open (unit=uoff+918,file=flnmfor(1:lgth)//'forcing.riverh.b', &
-             status='old', action='read')
-          read (uoff+918,'(a79)') preambl
-          endif !1st tile
-          call preambl_print(preambl)
-        endif
-!End  --- read high frequency rivers----
-#endif
 #ifdef _FABM_
 !     CAGLAR: BEGIN (MAY2019)
           call zaiopf(flnmfor(1:lgth)//'forcing.dewpt.a', 'old', 926)
@@ -1140,13 +1123,6 @@
             call skmonth(909)
           enddo
         endif !surtmp
-#if defined(NERSC_HYCOM_CICE)
-        if (highfq_river) then
-          do i= 1,nrec-2
-            call skmonth(918)
-          enddo
-        endif
-#endif
 #ifdef _FABM_
           do i= 1,nrec-2
             call skmonth(926)
@@ -1271,6 +1247,195 @@
       return
 ! ESPC --- add
 # endif
+      end
+!
+!
+      subroutine readriver_hf(dtime,init)
+      use mod_xc         ! HYCOM communication interface
+      use mod_cb_arrays  ! HYCOM saved arrays
+      use mod_za         ! HYCOM I/O interface
+      implicit none
+!
+      real*8    dtime
+      logical init ! true if first call
+!
+! --- high frequency rivers field processing.
+! --- Only read either climatological rivers or readriver_hf
+!
+! --- units of rivers are m/s 
+!
+! --- I/O and array I/O unit 918 is reserved for the entire run.
+!
+      real*8    dtime0,dtime1
+      save      dtime0,dtime1
+!
+      character preambl(5)*79,cline*80
+      integer   i,ios,iunit,j,lgth,nrec
+!
+      if     (init) then
+        rivers(:,:,:) = 0.0
+!
+! ---   initialize forcing fields
+! ---   open high frequent river forcing file.
+        if     (mnproc.eq.1) then
+        write (lp,*) ' now initializing High frequent river fields ...'
+        endif !1st tile
+        call xcsync(flush_lp)
+!
+        lgth = len_trim(flnmfor)
+!
+        call zaiopf(flnmfor(1:lgth)//'forcing.rivers.a', 'old', 918)
+        if     (mnproc.eq.1) then  ! .b file from 1st tile only
+        open (unit=uoff+918,file=flnmfor(1:lgth)//'forcing.rivers.b', &
+           status='old', action='read')
+        read (uoff+918,'(a79)') preambl
+        endif !1st tile
+        call preambl_print(preambl)
+!
+! ---   skip ahead to the start time.
+        nrec   = 0
+        dtime1 = huge(dtime1)
+        do  ! infinate loop, with exit at end
+          dtime0 = dtime1
+          nrec   = nrec + 1
+          call zagetc(cline,ios, uoff+918)
+          if     (ios.ne.0) then
+            if     (mnproc.eq.1) then
+              write(lp,*)
+              write(lp,*) 'error in readriver_hf - hit end of input'
+              write(lp,*) 'dtime0,dtime1 = ',dtime0,dtime1
+              write(lp,*) 'dtime = ',dtime
+              write(lp,*)
+            endif !1st tile
+            call xcstop('(readriver_hf)')
+                   stop '(readriver_hf)'
+          endif
+          i = index(cline,'=')
+          read (cline(i+1:),*) dtime1
+          if     (yrflag.eq.2) then
+            if     (nrec.eq.1 .and. abs(dtime1-1096.0d0).gt.0.01) then
+!
+! ---         climatology must start on wind day 1096.0, 01/01/1904.
+              if     (mnproc.eq.1) then
+              write(lp,'(a)')  cline
+              write(lp,'(/ a,a / a,g15.6 /)') &
+                'error in readriver_hf - forcing climatology', &
+                ' must start on wind day 1096', &
+                'dtime1 = ',dtime1
+              endif !1st tile
+              call xcstop('(readriver_hf)')
+                     stop '(readriver_hf)'
+            endif
+            dtime1 = (dtime1 - 1096.0d0) +  &
+                     wndrep*int((dtime+0.00001d0)/wndrep)  !wndrep=366 or 732
+            if     (nrec.ne.1 .and. dtime1.lt.dtime0) then
+              dtime1 = dtime1 + wndrep
+            endif
+          elseif (yrflag.eq.4) then
+            if     (nrec.eq.1 .and. abs(dtime1-731.0d0).gt.0.01) then
+!
+! ---         climatology must start on wind day 731.0, 01/01/1903.
+              if     (mnproc.eq.1) then
+              write(lp,'(a)')  cline
+              write(lp,'(/ a,a / a,g15.6 /)') &
+                'error in readriver_hf - forcing climatology', &
+                ' must start on wind day 731', &
+                'dtime1 = ',dtime1
+              endif !1st tile
+              call xcstop('(readriver_hf)')
+                     stop '(readriver_hf)'
+            endif
+            dtime1 = (dtime1 - 731.0d0) +  &
+                     wndrep*int((dtime+0.00001d0)/wndrep)  !wndrep=365 or 731
+            if     (nrec.ne.1 .and. dtime1.lt.dtime0) then
+              dtime1 = dtime1 + wndrep
+            endif
+          elseif (nrec.eq.1 .and. dtime1.lt.1462.0d0) then
+!
+! ---       otherwise, must start after wind day 1462.0, 01/01/1905.
+            if     (mnproc.eq.1) then
+            write(lp,'(a)')  cline
+            write(lp,'(/ a,a / a,g15.6 /)') &
+              'error in readriver_hf - actual forcing', &
+              ' must start after wind day 1462', &
+              'dtime1 = ',dtime1
+            endif !1st tile
+            call xcstop('(readriver_hf)')
+                   stop '(readriver_hf)'
+          endif
+          if     (dtime0.le.dtime .and. dtime1.gt.dtime) then
+            exit
+          endif
+        enddo   ! infinate loop, with exit above
+        if     (mnproc.eq.1) then  ! .b file from 1st tile only
+          rewind(unit=uoff+918)
+          read (uoff+918,'(a79)') preambl
+        endif
+!
+        do i= 1,nrec-2
+          call skmonth(918)
+        enddo
+        dtime0 = huge(dtime1)
+        call rdpall1(rivers,dtime1,918,.true.)
+        if     (yrflag.eq.2) then
+          dtime1 = (dtime1 - 1096.0d0) +  &
+                   wndrep*int((dtime+0.00001d0)/wndrep)
+        elseif (yrflag.eq.4) then
+          dtime1 = (dtime1 - 731.0d0) +  &
+                   wndrep*int((dtime+0.00001d0)/wndrep)
+        endif
+        dtime0 = dtime1
+        call rdpall1(rivers,dtime1,918,.true.)
+        if     (yrflag.eq.2) then
+          dtime1 = (dtime1 - 1096.0d0) +  &
+                   wndrep*int((dtime+0.00001d0)/wndrep)  !wndrep=366 or 732
+          if     (dtime1.lt.dtime0) then
+            dtime1 = dtime1 + wndrep
+          endif
+        elseif (yrflag.eq.4) then
+          dtime1 = (dtime1 - 731.0d0) +  &
+                   wndrep*int((dtime+0.00001d0)/wndrep)  !wndrep=365 or 731
+          if     (dtime1.lt.dtime0) then
+            dtime1 = dtime1 + wndrep
+          endif
+        endif
+        if     (mnproc.eq.1) then
+        write (lp,*)
+        write (lp,*) ' dtime,dtime0,dtime1 = ',dtime,dtime0,dtime1
+        write (lp,*)
+        write (lp,*) ' ...finished initializing forcing fields'
+        endif !1st tile
+        call xcsync(flush_lp)
+      endif  ! initialization
+!
+      if     (dtime.gt.dtime1) then
+        dtime0 = dtime1
+        call rdpall1(rivers,dtime1,918,.true.)
+        if     (yrflag.eq.2) then
+          dtime1 = (dtime1 - 1096.0d0) +  &
+                   wndrep*int((dtime+0.00001d0)/wndrep)  !wndrep=366 or 732
+          if     (dtime1.lt.dtime0) then
+            dtime1 = dtime1 + wndrep
+          endif
+        elseif (yrflag.eq.4) then
+          dtime1 = (dtime1 - 731.0d0) +  &
+                   wndrep*int((dtime+0.00001d0)/wndrep)  !wndrep=365 or 731
+          if     (dtime1.lt.dtime0) then
+            dtime1 = dtime1 + wndrep
+          endif
+        endif
+      endif
+!
+! --- linear interpolation in time.
+      wr0 = (dtime1-dtime)/(dtime1-dtime0)
+      wr1 = 1.0 - wr0
+      if (mnproc.eq.1) then
+      write (lp,*) "river coefficients"
+      write (lp,'(2f8.4)') wr0, wr1
+      write (lp,*) dtime,dtime0,dtime1
+      call flush(lp)
+      endif
+      return
       end
 !
 !
@@ -1517,9 +1682,6 @@
       use mod_xc         ! HYCOM communication interface
       use mod_cb_arrays  ! HYCOM saved arrays
       use mod_za         ! HYCOM I/O interface
-#if defined(NERSC_HYCOM_CICE)
-      use mod_NERSCnml, only : highfq_river
-#endif
       implicit none
 !
 ! --- high frequency atmospheric forcing field processing.
@@ -1549,9 +1711,6 @@
              swflx(i,j,l) = 0.0
 #if defined(NERSC_HYCOM_CICE)
           swflxdwn(i,j,l) = 0.0
-          if (highfq_river) then
-            rivers(i,j,l) = 0.0
-          endif          
 #endif
             surtmp(i,j,l) = 0.0
             seatmp(i,j,l) = 0.0
@@ -1749,7 +1908,7 @@
 !
       if (thermo) then
 !
-      if     (.not.priver) then
+      if     (priver == 0) then
         if     (mnproc.eq.1) then
         write (lp,*)
         write (lp,*) '***** no river precipitation *****'
@@ -1758,7 +1917,7 @@
         call xcsync(flush_lp)
         rivers(:,:,:) = 0.0
         rivera = .true.  
-      else
+      elseif (priver == 1) then
         call zaiopf(flnmfor(1:lgth)//'forcing.rivers.a', 'old', 918)
         if     (mnproc.eq.1) then  ! .b file from 1st tile only
         open (unit=uoff+918,file=flnmfor(1:lgth)//'forcing.rivers.b', &
@@ -1778,7 +1937,7 @@
             rivers(:,:,l) = util1(:,:)
           enddo
           if     (mnproc.eq.1) then  ! .b file from 1st tile only
-          close (unit=uoff+918)
+            close (unit=uoff+918)
           endif
           call zaiocl(918)
 !diag     call prtmsk(ip,util1,util2,idm,idm,jdm,  0.,86400.*36000., &
@@ -1786,10 +1945,10 @@
         endif
       endif
 !
-      else  ! .not.thermo
-        rivers(:,:,:) = 0.0
-        priver = .false.
-        rivera = .true.  
+!      else  ! .not.thermo Till DMI: Can never enter here due to clause in blkdat.F90
+!        rivers(:,:,:) = 0.0
+!        priver = .false.
+!        rivera = .true.  
       endif                    !  thermo
 !
       if     (mnproc.eq.1) then
@@ -2947,9 +3106,6 @@
       subroutine rdpall(dtime0,dtime1)
       use mod_xc         ! HYCOM communication interface
       use mod_cb_arrays  ! HYCOM saved arrays
-#if defined(NERSC_HYCOM_CICE)
-      use mod_NERSCnml, only : highfq_river
-#endif
       implicit none
 !
       real*8  dtime0,dtime1
@@ -3019,15 +3175,6 @@
       else
         dtime(906) = dtime(905)
       endif
-#if defined(NERSC_HYCOM_CICE)
-!ALFA  --- read high frequency rivers----
-      if (highfq_river) then
-        call rdpall1(rivers,dtime(918),918,mod(icall,3).eq.1)
-      else
-        dtime(918) = dtime(905)
-      endif
-!End  --- read high frequency rivers----
-#endif
 #ifdef _FABM_
 !CAGLAR
       dtime(917) = dtime(905)
@@ -3117,23 +3264,6 @@
                  stop '(rdpall)'
         endif
       enddo
-#if defined(NERSC_HYCOM_CICE)
-      if (highfq_river) then
-        do k= 918,918
-          if     (dtime(k).ne.dtime1) then
-            if     (mnproc.eq.1) then
-               write(lp,*)
-               write(lp,*) 'error in rdpall - inconsistent forcing times'
-               write(lp,*) 'dtime0,dtime1 = ',dtime0,dtime1
-               write(lp,*) 'dtime = ',dtime
-               write(lp,*)
-            endif !1st tile
-            call xcstop('(rdpall)')
-            stop '(rdpall)'
-          endif
-        enddo
-      endif
-#endif
       return
       end
 !
@@ -3264,9 +3394,6 @@
       use mod_xc         ! HYCOM communication interface
       use mod_cb_arrays  ! HYCOM saved arrays
       use mod_za         ! HYCOM I/O interface
-#if defined(NERSC_HYCOM_CICE)
-      use mod_NERSCnml, only : highfq_river 
-#endif
       implicit none
 !
       integer lslot,mnth
@@ -3500,9 +3627,6 @@
 #if defined(NERSC_HYCOM_CICE)
 !KAL
           swflxdwn(i,j,lslot) = 0.0
-          if (highfq_river) then
-            rivers(i,j,lslot) = 0.0
-          endif
 #endif
           enddo
         enddo
