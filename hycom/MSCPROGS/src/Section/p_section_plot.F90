@@ -104,8 +104,8 @@ program section_plot
                   vname='north_'//trim(fld(j+1)%fextract)
                   call rotate(field,field2,plat,plon,idm,jdm,'m2l')
                else if (velrot==2) then
-                  print *,'Normal rotation not implemented yet'
-                  stop
+                  uname='normal_'//trim(fld(j)%vecpost)
+                  call rotate(field,field2,plat,plon,idm,jdm,'m2l')
                else if (velrot==0) then
                   uname=trim(fld(j)%fextract)
                   vname=trim(fld(j+1)%fextract)
@@ -125,7 +125,11 @@ program section_plot
                     var3d=.true.,vartime=fyear(hfile), appendfile=appendfile, &
                     fillvalue=undef)
 
-            else ! vector case
+            else if (velrot==2) then ! section-normal velocity (single combined field)
+               call ncwrite_secdata(trim(uname),field,k,kdm, &
+                    var3d=.true.,vartime=fyear(hfile), appendfile=appendfile, &
+                    fillvalue=undef,field2=field2)
+            else ! vector case (two components)
                call ncwrite_secdata(trim(uname),field ,k,kdm, &
                     var3d=.true.,vartime=fyear(hfile), appendfile=appendfile, &
                     fillvalue=undef)
@@ -156,8 +160,8 @@ program section_plot
                vname='north_'//trim(fld(j+1)%fextract)
                call rotate(field,field2,plat,plon,idm,jdm,'m2l')
             else if (velrot==2) then
-               print *,'Normal rotation not implemented yet'
-               stop
+               uname='normal_'//trim(fld(j)%vecpost)
+               call rotate(field,field2,plat,plon,idm,jdm,'m2l')
             else if (velrot==0) then
                uname=trim(fld(j)%fextract)
                vname=trim(fld(j+1)%fextract)
@@ -171,13 +175,17 @@ program section_plot
          where( depths < .1) field=undef
          where( depths < .1) field2=undef
 
-         ! put into netcdf file(s) 
+         ! put into netcdf file(s)
          if (.not.fld(j)%vecflag) then ! scalar case
             call ncwrite_secdata(fld(j)%fextract,field,0,kdm, &
                vartime=fyear(hfile),appendfile=appendfile, &
                fillvalue=undef)
 
-            else ! vector case
+         else if (velrot==2) then ! section-normal velocity (single combined field)
+            call ncwrite_secdata(trim(uname),field,0,kdm, &
+               vartime=fyear(hfile),appendfile=appendfile, &
+               fillvalue=undef,field2=field2)
+         else ! vector case (two components)
             call ncwrite_secdata(uname,field,0,kdm, &
                vartime=fyear(hfile),appendfile=appendfile, &
                fillvalue=undef)
@@ -224,7 +232,7 @@ program section_plot
                   print *,'Normal rotation not implemented yet'
                   stop
                else
-                  print *,'Allowed rotate arguments are -rotnormal or -rotll'
+                  print *,'Allowed rotate arguments are -rotll or -rotnormal'
                   print *, '(section_plot)'
                   call exit(1)
                end if

@@ -69,6 +69,8 @@ real   , dimension(:,:), allocatable,save :: ndelon   ! node longitue
 real   , dimension(:,:), allocatable,save :: ndelat   ! node latitude
 integer, dimension(:,:), allocatable,save :: ndeflagu ! node flag for u-velocity
 integer, dimension(:,:), allocatable,save :: ndeflagv ! node flag for v-velocity
+real   , dimension(:,:), allocatable,save :: nde_normu! east  proj. of sec normal at node
+real   , dimension(:,:), allocatable,save :: nde_normv! north proj. of sec normal at node
 
 
 contains
@@ -262,6 +264,8 @@ contains
    allocate(ndeflagu(max_sdm,nsec))
    allocate(ndeflagv(max_sdm,nsec))
    allocate(ndedist (max_sdm,nsec))
+   allocate(nde_normu(max_sdm,nsec))
+   allocate(nde_normv(max_sdm,nsec))
    allocate(sdm     (max_sec))
    allocate(indx    (max_sdm))
 
@@ -402,6 +406,14 @@ contains
       ndeflagu(1:n,isec)=ndeflagu(indx(1:n),isec)
       ndeflagv(1:n,isec)=ndeflagv(indx(1:n),isec)
 
+      ! Section-normal direction (east/north projections) at each node.
+      ! nvec = cross(rvec1,rvec2) points to the right when walking from
+      ! section start to end, consistent with the transport sign convention.
+      do ipnt=1,n
+         call section_normal_lonlat(ndelon(ipnt,isec),ndelat(ipnt,isec), &
+            nvec,nde_normu(ipnt,isec),nde_normv(ipnt,isec))
+      end do
+
 
       write(css,'(i3.3)') isec
       call handle_err(NF90_create('tst'//css//'.nc',NF90_CLOBBER,ncid))
@@ -428,7 +440,7 @@ contains
    character(len=20), dimension(max_sec) :: jsecname
    integer, dimension(max_sec) :: jsecindex,jsdm
    integer, dimension(max_sdm) :: j_ipiv, j_jpiv, j_flagu, j_flagv
-   real   , dimension(max_sdm) :: jdist, jlon, jlat
+   real   , dimension(max_sdm) :: jdist, jlon, jlat, j_normu, j_normv
 
    integer :: njsec, isec, counter,lw,up, ijsec, n
 
@@ -484,6 +496,8 @@ contains
          j_jpiv(lw:up) = ndejpiv(1:sdm(isec),isec)
          j_flagu(lw:up) = ndeflagu(1:sdm(isec),isec)
          j_flagv(lw:up) = ndeflagv(1:sdm(isec),isec)
+         j_normu(lw:up) = nde_normu(1:sdm(isec),isec)
+         j_normv(lw:up) = nde_normv(1:sdm(isec),isec)
          secname(ijsec)= secname(isec)
 
          counter=up+1
@@ -502,6 +516,8 @@ contains
       ndejpiv (1:n,ijsec) = j_jpiv(1:n)
       ndeflagu(1:n,ijsec) = j_flagu(1:n)
       ndeflagv(1:n,ijsec) = j_flagv(1:n)
+      nde_normu(1:n,ijsec) = j_normu(1:n)
+      nde_normv(1:n,ijsec) = j_normv(1:n)
    end do
 
    ! Finally update number of sections
@@ -542,13 +558,15 @@ contains
 
    ! Allocate arrays -- sections
    ! TODO : check size fits
-   allocate(ndeipiv (max_sdm,nsec))
-   allocate(ndejpiv (max_sdm,nsec))
-   allocate(ndeflagu(max_sdm,nsec))
-   allocate(ndeflagv(max_sdm,nsec))
-   allocate(ndelat  (max_sdm,nsec))
-   allocate(ndelon  (max_sdm,nsec))
-   allocate(ndedist (max_sdm,nsec))
+   allocate(ndeipiv  (max_sdm,nsec))
+   allocate(ndejpiv  (max_sdm,nsec))
+   allocate(ndeflagu (max_sdm,nsec))
+   allocate(ndeflagv (max_sdm,nsec))
+   allocate(ndelat   (max_sdm,nsec))
+   allocate(ndelon   (max_sdm,nsec))
+   allocate(ndedist  (max_sdm,nsec))
+   allocate(nde_normu(max_sdm,nsec))
+   allocate(nde_normv(max_sdm,nsec))
    allocate(secname(nsec))
    allocate(sdm(nsec))
 
@@ -580,10 +598,12 @@ contains
       open(10,file=trim(fil_trans),status='old',action='read')
       do ipnt=1,sdm(isec)
          ! i,j are pivot points already read
-         read(10,'(2i6,2i5)',iostat=ios) i, j, ndeflagu(ipnt,isec), ndeflagv(ipnt,isec)
-         !write(6,'(2i6,2i5)',iostat=ios) i, j, ndeflagu(ipnt,isec), ndeflagv(ipnt,isec)
+         read(10,'(2i6,2i5,2e16.8)',iostat=ios) i, j, ndeflagu(ipnt,isec), ndeflagv(ipnt,isec), &
+            nde_normu(ipnt,isec), nde_normv(ipnt,isec)
          if (ios/=0) then
             print *,'Error reading section ',isec
+            print *,'Note: transport*.dat files must be regenerated with the current'
+            print *,'section_intersect to include section-normal direction data.'
             stop '(mod_sections:read_section_nodes)'
          end if
       end do
@@ -629,7 +649,9 @@ contains
       fil_int = 'transport'//css//".dat"
       open(10,file=trim(fil_int),status='replace')
       do ipnt=1,sdm(isec)
-         write(10,'(2i6,2i5)') ndeipiv(ipnt,isec),ndejpiv(ipnt,isec),ndeflagu(ipnt,isec),ndeflagv(ipnt,isec)
+         write(10,'(2i6,2i5,2e16.8)') ndeipiv(ipnt,isec),ndejpiv(ipnt,isec), &
+            ndeflagu(ipnt,isec),ndeflagv(ipnt,isec), &
+            nde_normu(ipnt,isec),nde_normv(ipnt,isec)
       end do
       close(10)
       write(6,'(a)' ) trim(fil_int)
@@ -642,7 +664,7 @@ contains
 
 
    subroutine ncwrite_secdata(cfld,field,k,kdm,var3d,vartime, &
-      appendfile,fillvalue,comment)
+      appendfile,fillvalue,comment,field2)
    use m_handle_err
    use netcdf
    implicit none
@@ -654,6 +676,9 @@ contains
    logical, intent(in), optional :: appendfile
    real   , intent(in), optional :: fillvalue
    character(len=*),  intent(in), optional :: comment
+   ! When field2 is present field is treated as eastward velocity and field2 as
+   ! northward velocity; the output is the component normal to the section.
+   real,    intent(in), optional :: field2(idm,jdm)
 
    character(len=80) :: ncfil
    character(len= 3) :: css
@@ -757,7 +782,11 @@ contains
 
 
       ! retrieve variables along section nodes
-      call get_node_data(field,tmpsec,isec)
+      if (present(field2)) then
+         call get_node_data_normal(field,field2,tmpsec,isec)
+      else
+         call get_node_data(field,tmpsec,isec)
+      end if
 
       ! Now put variable
       n=sdm(isec)
@@ -794,6 +823,25 @@ contains
       line(j) = field(ipiv,jpiv)
    end do
    end subroutine
+
+
+   ! Return the velocity component normal to the section at each node.
+   ! ufield/vfield must be eastward/northward velocity components (i.e. already
+   ! rotated from the model grid to geographical coordinates).
+   subroutine get_node_data_normal(ufield,vfield,line,isec)
+   implicit none
+   integer, intent(in) :: isec
+   real, intent(in)  :: ufield(idm,jdm), vfield(idm,jdm)
+   real, intent(out) :: line(max_sdm)
+   integer :: j,ipiv,jpiv
+
+   do j=1,sdm(isec)
+      ipiv=ndeipiv(j,isec)
+      jpiv=ndejpiv(j,isec)
+      line(j) = nde_normu(j,isec)*ufield(ipiv,jpiv) + &
+                nde_normv(j,isec)*vfield(ipiv,jpiv)
+   end do
+   end subroutine get_node_data_normal
 
 
 end module mod_sections

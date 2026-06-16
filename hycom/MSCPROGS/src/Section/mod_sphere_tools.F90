@@ -357,4 +357,46 @@ elemental real function spherdist(lon1,lat1,lon2,lat2)
 
 end function spherdist
 
+   ! Compute the east and north projections of the section normal at (lon, lat).
+   ! nvec is the cross product of the two endpoint position vectors (need not be
+   ! normalised). cos_e/cos_n are the dot products of the horizontal section
+   ! normal with the local east/north unit vectors; they give the rotation
+   ! coefficients needed to project east/north velocity onto the section normal.
+   subroutine section_normal_lonlat(lon, lat, nvec, cos_e, cos_n)
+      implicit none
+      real,               intent(in)  :: lon, lat
+      real, dimension(3), intent(in)  :: nvec
+      real,               intent(out) :: cos_e, cos_n
+
+      real, parameter :: rad = 1.7453292519943295E-02
+      real :: lon_r, lat_r, dot_r, nrm
+      real, dimension(3) :: rvec, east_hat, north_hat, nvec_h
+
+      lon_r = lon * rad
+      lat_r = lat * rad
+
+      rvec(1) = cos(lat_r) * cos(lon_r)
+      rvec(2) = cos(lat_r) * sin(lon_r)
+      rvec(3) = sin(lat_r)
+
+      east_hat(1) = -sin(lon_r)
+      east_hat(2) =  cos(lon_r)
+      east_hat(3) =  0.
+
+      north_hat(1) = -sin(lat_r) * cos(lon_r)
+      north_hat(2) = -sin(lat_r) * sin(lon_r)
+      north_hat(3) =  cos(lat_r)
+
+      ! Remove radial component of nvec to get horizontal direction
+      dot_r    = nvec(1)*rvec(1) + nvec(2)*rvec(2) + nvec(3)*rvec(3)
+      nvec_h   = nvec - dot_r * rvec
+
+      nrm = sqrt(sum(nvec_h**2))
+      if (nrm > 1.e-10) nvec_h = nvec_h / nrm
+
+      cos_e = dot_product(nvec_h, east_hat)
+      cos_n = dot_product(nvec_h, north_hat)
+
+   end subroutine section_normal_lonlat
+
 end module mod_sphere_tools
