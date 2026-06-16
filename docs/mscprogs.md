@@ -102,6 +102,14 @@ input filename with the extension changed to `.nc` and the date embedded — for
 example `archm_20100101_00.nc` for an archm file. The original `.a`/`.b` files
 are not modified.
 
+:::{note}
+`hyc2proj` can be slow on a login node for non-native projections. As a
+reference, a single TP2 archm file with 4 three-dimensional fields and 40
+target depth levels takes roughly 2 minutes on a regular 0.125° grid covering
+the Arctic (−38°–20°E, 65°–88°N). For many files, consider running in an
+interactive job or a short batch script.
+:::
+
 `hyc2stations` is a companion routine that interpolates HYCOM fields onto
 specified spatial positions (station locations or cross-section points) rather
 than a grid. It reads `stations.in` instead of `proj.in`, together with
