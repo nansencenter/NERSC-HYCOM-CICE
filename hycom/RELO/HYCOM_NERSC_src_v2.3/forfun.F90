@@ -1429,12 +1429,12 @@
 ! --- linear interpolation in time.
       wr0 = (dtime1-dtime)/(dtime1-dtime0)
       wr1 = 1.0 - wr0
-      if (mnproc.eq.1) then
-      write (lp,*) "river coefficients"
-      write (lp,'(2f8.4)') wr0, wr1
-      write (lp,*) dtime,dtime0,dtime1
-      call flush(lp)
-      endif
+      !if (mnproc.eq.1) then
+      !write (lp,*) "river coefficients"
+      !write (lp,'(2f8.4)') wr0, wr1
+      !write (lp,*) dtime,dtime0,dtime1
+      !call flush(lp)
+      !endif
       return
       end
 !
