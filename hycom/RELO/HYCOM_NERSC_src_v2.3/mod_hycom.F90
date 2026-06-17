@@ -38,7 +38,7 @@
       use mod_hycom_fabm
 #endif
 #if defined(NERSC_HYCOM_CICE)
-      use mod_NERSCnml, only : write_arche, nersc_init, highfq_river
+      use mod_NERSCnml, only : write_arche, nersc_init
 #endif
 !
 ! --- -----------------------------------------
@@ -1958,19 +1958,15 @@
       elseif (jerlv0.eq.-1) then
         call forfunc  !  annual/monthly chl
       endif
-#if defined(NERSC_HYCOM_CICE)
-      if (highfq_river) then
+      if (priver == 2) then
         if (mnproc.eq.1) then
           write(lp,*) &
-         '--- Skipping the monthly river inflow----'
+         '--- High frequent river inflow----'
           call flush(lp)
         endif !1st tile
       else
          call forfunp  !    annual/monthly rivers
       endif
-#else
-      call forfunp  !    annual/monthly rivers
-#endif 
       call forfunr  ! bimonthly/monthly climatology
       watcum=0.
       empcum=0.
@@ -2447,7 +2443,7 @@
         call rdkpar(mk3,lk3)
       endif
 !
-      if (priver) then
+      if (priver == 1) then
 ! ---   read in rivers field for 4 consecutive months
         mr1=1.+mod(dtime0+dyear0,dyear)/dmonth
         mr0=mod(mr1+10,12)+1
@@ -2471,6 +2467,8 @@
            call rdrivr(mr2,lr2)
            call rdrivr(mr3,lr3)
 #endif /* USE_NUOPC_CESMBETA:else */
+      elseif (priver == 2) then
+           call readriver_hf(dtime0,.true.)
       endif
 !
       if     (clmflg.eq.12) then
@@ -3048,7 +3046,7 @@
       endif
 !
 ! --- set weights for quasi-hermite time interpolation for rivers.
-      if     (priver) then
+      if     (priver == 1) then
          if (.not. (cpl_orivers .and. cpl_irivers)) then
 ! ---   monthly fields.
             x=1.+mod(dtime+dyear0,dyear)/dmonth
@@ -3070,6 +3068,10 @@
             wr2=x *(1.+x1*(1.-1.5*x1))
             wr0=-.5*x *x1*x1
             wr3=-.5*x1*x *x
+         endif
+      elseif (priver == 2) then
+         if (.not. (cpl_orivers .and. cpl_irivers)) then
+            call readriver_hf(dtime,.false.)
          endif
       endif
 !

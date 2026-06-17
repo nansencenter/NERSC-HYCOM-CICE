@@ -54,7 +54,6 @@ c
       real,    parameter   :: hspval=0.5*2.0**100  ! half spval
       real,    parameter   :: onem=9806.0          ! g/thref
       real,    parameter   :: tenm=10.0*onem
-      real,    allocatable :: atmp(:,:)
 c
       call xcspmd
       call zaiost
@@ -66,7 +65,6 @@ c
 c
       allocate(   iv_sm(jdm,2) )
 c
-      allocate(    atmp(idm,jdm))
       allocate(    m_sm(idm,jdm),     m_osm(idm_out,jdm_out) )
       allocate(    m_in(idm,jdm),     m_out(idm_out,jdm_out) )
       allocate(    a_in(idm,jdm),     a_out(idm_out,jdm_out) )
@@ -135,7 +133,6 @@ c
 c
       l  = len_trim(flnm_tin)
       call zaiopf(flnm_tin(1:l-2)//'.a','old', 13)
-
       call zaiord(t_in,m_in,.false., hmina,hmaxa, 13)
       call zaiocl(13)
       if     (abs(hmina-hminb).gt.abs(hminb)*1.e-4 .or.
@@ -231,15 +228,6 @@ c --- we are assuming that "2" is never needed outside the
 c --- target subregion, which will be the case unless the
 c --- subregion rectangle is poorly chosen.
 c
-cMostafa
-!      call zaiopf("landfill.a",'replace', 99)
-!      CALL ZHOPNC(99, "landfill.b", 'FORMATTED', 'NEW', 0)
-!      atmp = m_sm
-!      call zaiowr(atmp,m_sm,.false.,  
-!     &   hmina,hmaxa, 99, .false.)
-!      WRITE(99,4117) 0,0,0,0,0.0,hmina,hmaxa
-! 4117 format (a8,' =',i11,f11.3,i3,f7.3,1p2e16.7)
-cMostafa
       do jj= 1,jdm_out
         do ii= 1,idm_out
           if     (m_out(ii,jj).eq.1) then
@@ -304,11 +292,9 @@ c     interpolate the input bathymetry to the output grid.
 c
       call landfill(  t_in,m_sm,   idm,    jdm,
      &                iv_sm,if_sm,il_sm,jf_sm,jl_sm, iscan)
-
       call bilinear_p(t_in,        idm,    jdm,
      &                t_out(1,1,2),idm_out,jdm_out,
      &                m_out,i_out,j_out,x_out,y_out)
-
 c
 c     allow for a bottom boundary layer
 c
@@ -744,7 +730,6 @@ c ---   mask == 1 for ocean.
 c ---   mask == 2 for land to be extrapolated to ocean.
 c
       integer, allocatable :: mm(:,:,:)
-      real, allocatable :: atmp(:,:)
 c
       integer i,ii,ip0,ip1,ipass,j,jj,ki,kj,nleft,nup
       real    sa,ss
@@ -767,8 +752,6 @@ c
 c     adding a halo to mm simplifies ocean selection logic.
 c
       allocate( mm(0:m+1,0:n+1,0:1) )
-      allocate( atmp(m,n) )
-
 c
       mm( : , : ,0) = 0
       mm(1:m,1:n,0) = mask
@@ -777,16 +760,6 @@ c
 c --- repeated passes of 9-point "smoother" to
 c ---  convert all mask==2 points to mask==1.
 c --- double-buffering mm allows in-place use of a.
-cMostafa
-!      call zaiopf("landfill.a",'replace', 99)
-!      CALL ZHOPNC(99, "landfill.b", 'FORMATTED', 'NEW', 0)
-!      atmp=mm(1:m,1:n,0)
-!      call zaiowr(atmp,mm(1:m,1:n,0),.false.,
-!     &   hmina,hmaxa, 99, .false.)
-!      WRITE(99,4117) 0,0,0,0,0.0,hmina,hmaxa
-! 4117 format (a8,' =',i11,f11.3,i3,f7.3,1p2e16.7)
-
-cMostafa
       if     (lfirst) then
         write(6,'(/a,6i5/)')
      &    'landfill - m,n,if,il,jf,jl =',m,n,if,il,jf,jl
@@ -853,12 +826,6 @@ cMostafa
             endif
           enddo
         enddo
-        !KAL
-cMostafa
-!       atmp=real(mm(1:m,1:n,ip1))
-!       call zaiowr(atmp,mm(1:m,1:n,ip1),.false., 
-!     &    hmina,hmaxa, 99, .false.)
-cMostafa
         if     (lfirst) then
           write(6,'(a,i4,a,i6,a,i6,a,a,i4,a)')
      &      'landfill: pass',ipass,
@@ -901,19 +868,11 @@ cMostafa
 !        enddo
 !        write(6,*)
 !        call flush(6)
-cKAL    !KAL
-cMostafa
-!        call zaiocl(99)
-cMostafa
 !        stop
       endif
 c
       deallocate( mm )
 c
-cKAL  !KAL
-cMostafa
-!      call zaiocl(99)
-cMostafa
       return
       end subroutine landfill
 
