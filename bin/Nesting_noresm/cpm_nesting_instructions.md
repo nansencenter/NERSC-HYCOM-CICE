@@ -15,7 +15,7 @@ git checkout develop
 
 # clone NERSC-HYCOM-CICE
 git clone https://github.com/nansencenter/NERSC-HYCOM-CICE.git
-git checkout 
+git checkout test-tillnest2
 ```
 
 ```bash
@@ -25,7 +25,7 @@ cd Script-tools/SEACLIM/
 # ignore warnings
 # potetially you can do this once with shell script
 # e.g. loop over years and members
-./Preproc_norcpm_ocn_new_merge.sh 2005 4
+./Preproc_norcpm_ocn.sh 2005 4
 # when that completes, you should have raw CPM files under "Script-tools/SEACLIM/noresm2-mm-seaclim_hindcast/noresm2-mm-seaclim_hindcast_20051101_mem004/"
 ```
 
@@ -37,7 +37,7 @@ cp ../../Script-tools/SEACLIM/noresm2-mm-seaclim_hindcast/noresm2-mm-seaclim_hin
 # The following script selects all merged files in Nesting_files. Unless you give them specific years and members, it will try to create nesting files for all norcpm merged files. You already have a copy of those merged files elsewhere, so it is safe to remove the files from previous nesting creation
 
 # This one creates the nesting files
-../bin/Nesting_noresm/cpm_to_hycom.sh ../../TP2a0.10/expt_08.0/ ../Nesting_files/*merged_*.nc
+../bin/Nesting_noresm/cpm_to_hycom.sh ../../TP2a0.10/expt_08.0/ ../Nesting_files/*2005*mem004*merged_*.nc
 ```
 
 ```bash
