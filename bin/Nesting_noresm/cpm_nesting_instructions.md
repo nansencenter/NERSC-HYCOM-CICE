@@ -50,4 +50,6 @@ python ../bin/calc_montg1.py ../nest/080/archv.20[01]*.a  ./restart.2005_305_00_
 ./Renames.sh  2005 2010 # this code renames the archive files, and moves the original ones to Orig folder.
 
 # The output archive files are your final product. You can copy them to Nird folder for sharing.
+# As of writing this, the directory for sharing files are:
+/nird/datalake/NS9481K/www/NorCPM_nesting/ 
 ```
