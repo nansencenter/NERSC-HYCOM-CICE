@@ -23,12 +23,12 @@
                 Gcice6,Gcice7,Gcice8,Gcice9,Gcice10, &
                 Gcice11,Gcice12,Gcice13,Gcice14
 
+      !! try to keep the consistence with setting in cice_in
       real (kind=dbl_kind),parameter,public ::    &
          P_ice1=330., P_ice2=917., P_ice3=0.95, P_ice4=300., &
          P_ice5=0.0005, P_ice6=0.00536, P_ice7=27500.,       &
          P_ice8=750., P_ice9=0.05, P_ice10=1.2,             &
          P_ice11=0.05, P_ice12=3.0, P_ice13=0.03, P_ice14=4.
-
   
       save
       
@@ -69,32 +69,28 @@
          Gcice13 , & ! value of hs1 
          Gcice14     ! ice_ref_salt 
 
-      
       contains
 
-      
       subroutine init_cice_para
-      use ice_communicate, only: my_task, master_task
-      use ice_constants,   only: c0, c1, puny,field_loc_center,   &
-                                 field_type_scalar
-      use ice_read_write,  only: ice_read_nc, ice_read_global_nc, &
-                                 ice_open_nc, ice_close_nc,       &
-                                 ice_var_exists
-      use ice_broadcast,   only: broadcast_array
-      use ice_blocks,      only: nx_block, ny_block
-      use ice_domain_size, only: max_blocks
+      use ice_communicate,    only: my_task, master_task
+      use ice_constants,      only: c0, c1, puny,field_loc_center,   &
+                                    field_type_scalar
+      use ice_read_write,     only: ice_read_nc, ice_read_global_nc, &
+                                    ice_open_nc, ice_close_nc,       &
+                                    ice_var_exists
+      use ice_broadcast,      only: broadcast_array
+      use ice_blocks,         only: nx_block, ny_block
+      use ice_domain_size,    only: max_blocks
+      use ice_domain,         only: nblocks, distrb_info 
+      use ice_gather_scatter, only: scatter_global
 
       implicit none
         
-   !   use ice_constants, only: c0, c1, puny
-   !   Pcice1=330.; Pcice2=917.; Pcice3=0.95; Pcice4=300.; Pcice5=0.0005
-   !   Pcice6=0.00536; Pcice7=27500.; Pcice8=1000.; Pcice9=0.05; Pcice10=1.2;
-   !   Pcice11=0.05; Pcice12=3.0; Pcice13=0.03; Pcice14=4.;
-
       integer (kind=int_kind) :: fid, it
       character (char_len)    :: fldname     ! field name in netCDF file
 
       real (kind=dbl_kind),   dimension(:,:),allocatable :: work1
+
       Gcice1=P_ice1;   Gcice2=P_ice2;   Gcice3=P_ice3; 
       Gcice4=P_ice4;   Gcice5=P_ice5;   Gcice6=P_ice6; 
       Gcice7=P_ice7;   Gcice8=P_ice8;   Gcice9=P_ice9; 
@@ -107,7 +103,6 @@
       Pcice10=P_ice10; Pcice11=P_ice11; Pcice12=P_ice12; 
       Pcice13=P_ice13; Pcice14=P_ice14;
 
-      
       if (my_task == master_task) then
          call ice_open_nc(para_file, fid)
          do it =1,14
@@ -118,125 +113,92 @@
                if (ice_var_exists(fid,fldname)) then
                   call ice_read_global_nc(fid,1,fldname,work1,.true.)
                   Gcice1(:,:)=work1
-                  Pcice1(:,:,:)=sum(work1)/size(work1)
                endif        
             case(2)
                fldname='rhoi'
                if (ice_var_exists(fid,fldname)) then
                   call ice_read_global_nc(fid,1,fldname,work1,.true.)
                   Gcice2(:,:)=work1
-                  Pcice2(:,:,:)=sum(work1)/size(work1)
                endif
             case(3)
                fldname='emissi'
                if (ice_var_exists(fid,fldname)) then
                   call ice_read_global_nc(fid,1,fldname,work1,.true.)
                   Gcice3(:,:)=work1
-                  Pcice3(:,:,:)=sum(work1)/size(work1)
                endif
             case(4)
                fldname='floediam'
                if (ice_var_exists(fid,fldname)) then
                   call ice_read_global_nc(fid,1,fldname,work1,.true.)
                   Gcice4(:,:)=work1
-                  Pcice4(:,:,:)=sum(work1)/size(work1)
                endif
             case(5)
                fldname='iceruf'
                if (ice_var_exists(fid,fldname)) then
                   call ice_read_global_nc(fid,1,fldname,work1,.true.)
                   Gcice5(:,:)=work1
-                  Pcice5(:,:,:)=sum(work1)/size(work1)
                endif
             case(6)
                fldname='dragio'
                if (ice_var_exists(fid,fldname)) then
                   call ice_read_global_nc(fid,1,fldname,work1,.true.)
                   Gcice6(:,:)=work1
-                  Pcice6(:,:,:)=sum(work1)/size(work1)
                endif
             case(7)
                fldname='Pstar'
                if (ice_var_exists(fid,fldname)) then
                   call ice_read_global_nc(fid,1,fldname,work1,.true.)
                   Gcice7(:,:)=work1
-                  Pcice7(:,:,:)=sum(work1)/size(work1)
                endif
             case(8)
                fldname='rsnw_mlt'
                if (ice_var_exists(fid,fldname)) then
                   call ice_read_global_nc(fid,1,fldname,work1,.true.)
                   Gcice8(:,:)=work1
-                  Pcice8(:,:,:)=sum(work1)/size(work1)
                endif
             case(9)
                fldname='hi_ssl'
                if (ice_var_exists(fid,fldname)) then
                   call ice_read_global_nc(fid,1,fldname,work1,.true.)
                   Gcice9(:,:)=work1
-                  Pcice9(:,:,:)=sum(work1)/size(work1)
                endif
             case(10)
                fldname='R_snw'
                if (ice_var_exists(fid,fldname)) then
                   call ice_read_global_nc(fid,1,fldname,work1,.true.)
                   Gcice10(:,:)=work1
-                  Pcice10(:,:,:)=sum(work1)/size(work1)
                endif
             case(11)
                fldname='astar'
                if (ice_var_exists(fid,fldname)) then
                   call ice_read_global_nc(fid,1,fldname,work1,.true.)
                   Gcice11(:,:)=work1
-                  Pcice11(:,:,:)=sum(work1)/size(work1)
                endif
             case(12)
                fldname='mu_rdg'
                if (ice_var_exists(fid,fldname)) then
                   call ice_read_global_nc(fid,1,fldname,work1,.true.)
                   Gcice12(:,:)=work1
-                  Pcice12(:,:,:)=sum(work1)/size(work1)
                endif
             case(13)
                fldname='hs1'
                if (ice_var_exists(fid,fldname)) then
                   call ice_read_global_nc(fid,1,fldname,work1,.true.)
                   Gcice13(:,:)=work1
-                  Pcice13(:,:,:)=sum(work1)/size(work1)
                endif
             case(14)
                fldname='ice_ref_salt'
                if (ice_var_exists(fid,fldname)) then
                   call ice_read_global_nc(fid,1,fldname,work1,.true.)
                   Gcice14(:,:)=work1
-                  Pcice14(:,:,:)=sum(work1)/size(work1)
                endif
             end select
             deallocate(work1)
          enddo
          call ice_close_nc(fid)
       endif
-      !call broadcast_array(Pcice14,master_task)
-      !call broadcast_array(Pcice13,master_task)
-      !call broadcast_array(Pcice12,master_task)
-      !call broadcast_array(Pcice11,master_task)
-      !call broadcast_array(Pcice10,master_task)
-      !call broadcast_array(Pcice9,master_task)
-      !call broadcast_array(Pcice8,master_task)
-      !call broadcast_array(Pcice7,master_task)
-      !call broadcast_array(Pcice5,master_task)
-      !call broadcast_array(Pcice4,master_task)
-      !call broadcast_array(Pcice3,master_task)
-      !call broadcast_array(Pcice2,master_task)
-      !call broadcast_array(Pcice1,master_task)
-
 
       end subroutine
 
-
-
-
-
-      
 
       end module ice_domain_para

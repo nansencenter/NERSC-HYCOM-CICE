@@ -1141,35 +1141,37 @@
 
       subroutine init_state
 
-      use ice_blocks, only: block, get_block, nx_block, ny_block
-      use ice_constants, only: c0
-      use ice_domain, only: nblocks, blocks_ice
-      use ice_domain_size, only: nilyr, nslyr, max_ntrcr, n_aero, &
-                                 max_blocks
-      use ice_fileunits, only: nu_diag
-      use ice_flux, only: sst, Tf, Tair, salinz, Tmltz
-      use ice_grid, only: tmask, ULON, ULAT
-      use ice_state, only: trcr_depend, tr_iage, tr_FY, tr_lvl, &
+      use ice_blocks,       only: block, get_block, nx_block, ny_block
+      use ice_constants,    only: c0
+      use ice_domain,       only: nblocks, blocks_ice,distrb_info
+      use ice_domain_size,  only: nilyr, nslyr, max_ntrcr, n_aero, &
+                                  max_blocks
+      use ice_fileunits,    only: nu_diag
+      use ice_flux,         only: sst, Tf, Tair, salinz, Tmltz
+      use ice_grid,         only: tmask, ULON, ULAT
+      use ice_state,        only: trcr_depend, tr_iage, tr_FY, tr_lvl, &
           tr_pond_cesm, nt_apnd, tr_pond_lvl, nt_alvl, tr_pond_topo, &
           nt_Tsfc, nt_sice, nt_qice, nt_qsno, nt_iage, nt_FY, nt_vlvl, &
           nt_hpnd, nt_ipnd, tr_aero, nt_aero, aicen, trcrn, vicen, vsnon, &
           aice0, aice, vice, vsno, trcr, ntrcr, aice_init, bound_state
-      use ice_itd, only: aggregate
-      use ice_exit, only: abort_ice
+      use ice_itd,          only: aggregate
+      use ice_exit,         only: abort_ice
       use ice_therm_shared, only: ktherm, heat_capacity
-      use ice_read_write, only: ice_read_nc, ice_open_nc, ice_close_nc, &
-                                ice_var_exists
-      use ice_forcing, only: ocn_data_dir 
-      use ice_constants, only: field_loc_center, field_type_scalar
+      use ice_read_write,   only: ice_read_nc, ice_open_nc, ice_close_nc, &
+                                  ice_var_exists
+      use ice_forcing,      only: ocn_data_dir 
+      use ice_constants,    only: field_loc_center, field_type_scalar
 
-      use ice_broadcast,   only: broadcast_array
-      use ice_domain_para, only: cice_para,para_file, init_cice_para, &
-          Gcice1,Gcice2,Gcice3,Gcice4,Gcice5,Gcice6, Gcice7, &
-          Gcice8,Gcice9,Gcice10,Gcice11,Gcice12,Gcice13,Gcice14, &
-          Pcice1,Pcice2,Pcice3,Pcice4,Pcice5,Pcice6, Pcice7, &
-          Pcice8,Pcice9,Pcice10,Pcice11,Pcice12,Pcice13,Pcice14
+      use ice_broadcast,    only: broadcast_array
 
-      integer (kind=int_kind) :: &
+      use ice_gather_scatter, only: scatter_global
+      use ice_domain_para,    only: cice_para,para_file, init_cice_para, &
+                      Gcice1,Gcice2,Gcice3,Gcice4,Gcice5,Gcice6, Gcice7, &
+                  Gcice8,Gcice9,Gcice10,Gcice11,Gcice12,Gcice13,Gcice14, &
+                      Pcice1,Pcice2,Pcice3,Pcice4,Pcice5,Pcice6, Pcice7, &
+                   Pcice8,Pcice9,Pcice10,Pcice11,Pcice12,Pcice13,Pcice14
+
+      integer (kind=int_kind)     :: &
          ilo, ihi    , & ! physical domain indices
          jlo, jhi    , & ! physical domain indices
          iglob(nx_block), & ! global indices
@@ -1178,19 +1180,19 @@
          it          , & ! tracer index
          iblk            ! block index
 
-      integer (kind=int_kind) :: &
+      integer (kind=int_kind)     :: &
          fid               ! file id for netCDF file 
 
-      character (char_len) :: &
+      character (char_len)        :: &
          fieldname            ! field name in netcdf file
 
-      type (block) :: &
+      type (block)                :: &
          this_block           ! block information for current block
 
       real (kind=dbl_kind), dimension(:,:,:),allocatable :: abar2d, &
               hbar2d, work1
 
-      character (char_len_long) :: ice_init_file 
+      character (char_len_long)   :: ice_init_file 
 
       !-----------------------------------------------------------------
       ! Check number of layers in ice and snow.
@@ -1285,79 +1287,81 @@
             select case(it)
             case(1)
                fieldname='rhos'
-          !     Pcice1=sum(Gcice1)/size(Gcice1)
-               call broadcast_array(Pcice1,master_task)
+               call scatter_global(Pcice1,Gcice1,master_task,distrb_info, &
+                          field_loc_center, field_type_scalar)
                work1=Pcice1
             case(2)
                fieldname='rhoi'
-           !    Pcice2=sum(Gcice2)/size(Gcice2)
-               call broadcast_array(Pcice2,master_task)
+               call scatter_global(Pcice2,Gcice2,master_task,distrb_info, &
+                          field_loc_center, field_type_scalar)
                work1=Pcice2
             case(3)
                fieldname='emissi'
-           !    Pcice3=sum(Gcice3)/size(Gcice3)
-               call broadcast_array(Pcice3,master_task)
+               call scatter_global(Pcice3,Gcice3,master_task,distrb_info, &
+                          field_loc_center, field_type_scalar)
                work1=Pcice3
             case(4)
                fieldname='floediam'
-           !    Pcice4=sum(Gcice4)/size(Gcice4)
-               call broadcast_array(Pcice4,master_task)
+               call scatter_global(Pcice4,Gcice4,master_task,distrb_info, &
+                          field_loc_center, field_type_scalar)
                work1=Pcice4
+            case(5)
+               fieldname='iceruf'
+               call scatter_global(Pcice5,Gcice5,master_task,distrb_info, &
+                          field_loc_center, field_type_scalar)
+               work1=Pcice5
             case(6)
                fieldname='dragio'
-           !    Pcice6=sum(Gcice6)/size(Gcice6)
-               call broadcast_array(Pcice6,master_task)
+               call scatter_global(Pcice6,Gcice6,master_task,distrb_info, &
+                          field_loc_center, field_type_scalar)
                work1=Pcice6
             case(7)
                fieldname='Pstar'
-           !    Pcice7=sum(Gcice7)/size(Gcice7)
-               call broadcast_array(Pcice7,master_task)
+               call scatter_global(Pcice7,Gcice7,master_task,distrb_info, &
+                          field_loc_center, field_type_scalar)
                work1=Pcice7
-            case(5)
+            case(11)
                fieldname='astar'
-            !   Pcice11=sum(Gcice11)/size(Gcice11)
-               call broadcast_array(Pcice11,master_task)
+               call scatter_global(Pcice11,Gcice11,master_task,distrb_info, &
+                          field_loc_center, field_type_scalar)
                work1=Pcice11
             case(8)
-               fieldname='iceruf'
-            !   Pcice5=sum(Gcice5)/size(Gcice5)
-               call broadcast_array(Pcice5,master_task)
-               work1=Pcice5
+               fieldname='rsnw_mlt'
+               call scatter_global(Pcice8,Gcice8,master_task,distrb_info, &
+                          field_loc_center, field_type_scalar)
+               work1=Pcice8
             case(9)
                fieldname='hi_ssl'
-            !   Pcice9=sum(Gcice9)/size(Gcice9)
-               call broadcast_array(Pcice9,master_task)
+               !   Pcice9=sum(Gcice9)/size(Gcice9)
+               !   call broadcast_array(Pcice9,master_task)
+               call scatter_global(Pcice9,Gcice9,master_task,distrb_info, &
+                          field_loc_center, field_type_scalar)
                work1=Pcice9
             case(10)
                fieldname='R_snw'
-            !   Pcice10=sum(Gcice10)/size(Gcice10)
-               call broadcast_array(Pcice10,master_task)
+               call scatter_global(Pcice10,Gcice10,master_task,distrb_info, &
+                          field_loc_center, field_type_scalar)
                work1=Pcice10
-            case(11)
-               fieldname='rsnw_mlt'
-             !  Pcice8=sum(Gcice8)/size(Gcice8)
-               call broadcast_array(Pcice8,master_task)
-               work1=Pcice8
             case(12)
                fieldname='mu_rdg'
-             !  Pcice12=sum(Gcice12)/size(Gcice12)
-               call broadcast_array(Pcice12,master_task)
+               call scatter_global(Pcice12,Gcice12,master_task,distrb_info, &
+                          field_loc_center, field_type_scalar)
                work1=Pcice12
             case(13)
                fieldname='hs1'
-             !  Pcice13=sum(Gcice13)/size(Gcice13)
-               call broadcast_array(Pcice13,master_task)
+               call scatter_global(Pcice13,Gcice13,master_task,distrb_info, &
+                          field_loc_center, field_type_scalar)
                work1=Pcice13
             case(14)
                fieldname='ice_ref_salt'
-             !  Pcice14=sum(Gcice14)/size(Gcice14)
-               call broadcast_array(Pcice14,master_task)
+               call scatter_global(Pcice14,Gcice14,master_task,distrb_info, &
+                          field_loc_center, field_type_scalar)
                work1=Pcice14
             end select
 
-            if (my_task == master_task) then
-               write(nu_diag, *) " check it=", &
-                  it, maxval(work1),' ', maxval(Pcice6)
+            if (it==3 .and. my_task == master_task) then
+               write(nu_diag, *) " check Pcice3 =", &
+                  it, minval(work1),' ', maxval(work1)
             endif
          enddo
          deallocate(work1)
