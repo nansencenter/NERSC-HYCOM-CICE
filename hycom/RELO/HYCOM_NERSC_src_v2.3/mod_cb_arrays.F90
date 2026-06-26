@@ -352,7 +352,7 @@
 !
       logical, save :: &
                     btrlfr,btrmas,diagno,thermo,windf,mslprf, &
-                    pcipf,priver,rivera,kparan,lbmont, &
+                    pcipf,rivera,kparan,lbmont, &
                     relax,srelax,trelax,trcrlx,relaxf,relaxs,relaxt, &
                     locsig,vsigma,hybrid,isopyc,icegln,hybraf,isopcm, &
                     mxl_no,mxlkta,mxlktb,mxlkrt,pensol, &
@@ -361,6 +361,8 @@
                     mxlmy,mxlpwp,mxlgiss, &
                     stroff,flxoff,flxsmo,trcrin,trcout, &
                     dsur1p,arcend
+
+      integer,save  :: priver
 !
 ! ---  t e x t
 ! ---  ctitle     four lines describing the simulation
@@ -1929,3 +1931,4 @@
 !> Aug. 2024 - added ocnscl
 !> Sep. 2024 - added hybthk
 !> Dec. 2024 - removed amoflg
+!> May. 2026 - changed priver from logical to integer

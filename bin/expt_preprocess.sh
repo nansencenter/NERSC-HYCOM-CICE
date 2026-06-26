@@ -113,7 +113,6 @@ export IDM=$(blkdat_get blkdat.input idm)
 export JDM=$(blkdat_get blkdat.input jdm)
 export LWFLAG=`grep "'lwflag' =" blkdat.input | awk '{printf("%1d", $1)}'`
 
-export HRIVER=$(grep "highfq_river" ../hycom_opt | awk -F= '{printf("%s", $2)}' | tr -d ' \t\r\n')
 restarti=$(blkdat_get_string blkdat.input nmrsti "restart_in")
 
 # Add period to restart file name if not present...
@@ -290,9 +289,10 @@ ${pget} $BASEDIR/topo/regional.grid.a regional.grid.a || tellerror "no grid file
 ${pget} $BASEDIR/topo/regional.grid.b regional.grid.b || tellerror "no grid file regional.grid.a" 
 ${pget} $BASEDIR/topo/depth_${R}_${T}.a regional.depth.a || tellerror "no topo file depth_${R}_${T}.a" 
 ${pget} $BASEDIR/topo/depth_${R}_${T}.b regional.depth.b || tellerror "no topo file depth_${R}_${T}.b" 
-${pget} $BASEDIR/topo/kmt_${R}_${T}.nc cice_kmt.nc     || tellerror "no kmt file $BASEDIR/topo/kmt_${R}_${T}.nc "
-${pget} $BASEDIR/topo/cice_grid.nc cice_grid.nc        || tellerror "no cice grid file $BASEDIR/topo/cice_grid.nc "
-
+if [ $ICEFLG != 0 ] ; then
+   ${pget} $BASEDIR/topo/kmt_${R}_${T}.nc cice_kmt.nc     || tellerror "no kmt file $BASEDIR/topo/kmt_${R}_${T}.nc "
+   ${pget} $BASEDIR/topo/cice_grid.nc cice_grid.nc        || tellerror "no cice grid file $BASEDIR/topo/cice_grid.nc "
+fi
 
 if [ "$SSTRLX" -eq 3 ] ; then
    [ -f  $CLMDIR/seatmp.a ] || tellerror "File $CLMDIR/seatmp.a does not exist"
@@ -382,7 +382,6 @@ if [ $FLXOFF -eq 1 ] ; then
     echo "fLxoff=F: No attempt to use flux offset correction" 
 fi
 
-
 # MOSTAFA: END
 
 #
@@ -390,13 +389,12 @@ fi
 # --- KAL: rivers are experiment-dependent
 #
 if [ $PRIVER -eq 0 ] ; then
-echo "**No river forcing. Set the priver to 1 to add river forcing"
-fi
-if [ $PRIVER -eq 1 ] ; then
-  echo "**Setting up river forcing  from priver"
+  echo "**No river forcing. Set the priver to 1 or 2 to add river forcing"
+elif [ $PRIVER -eq 1 ] ; then
+  echo "**Setting up climatological river forcing  from priver"
   cp $BASEDIR/force/rivers/$E/rivers.a forcing.rivers.a || tellerror "Could not get river .a file"
   cp $BASEDIR/force/rivers/$E/rivers.b forcing.rivers.b || tellerror "Could not get river .b file"
-   if [ $NTRACR -ne 0 ] ; then
+  if [ $NTRACR -ne 0 ] ; then
       echo "**Setting up bio river forcing"
       cp $BASEDIR/force/rivers/$E/ECO_no3.a rivers.ECO_no3.a || tellwarn "Could not get NO3 river .a file"
       cp $BASEDIR/force/rivers/$E/ECO_no3.b rivers.ECO_no3.b || tellwarn "Could not get NO3 river .b file"
@@ -405,27 +403,21 @@ if [ $PRIVER -eq 1 ] ; then
       cp $BASEDIR/force/rivers/$E/ECO_pho.a rivers.ECO_pho.a || tellwarn "Could not get PHO river .a file"
       cp $BASEDIR/force/rivers/$E/ECO_pho.b rivers.ECO_pho.b || tellwarn "Could not get PHO river .b file"
    fi
+elif [ $PRIVER -eq 2 ] ; then
+  echo "**Setting up high frequent river forcing  from priver" 
+  cp $BASEDIR/force/rivers/$E/rivers_highfrequent.a forcing.rivers.a || tellerror "Could not get river .a file"
+  cp $BASEDIR/force/rivers/$E/rivers_highfrequent.b forcing.rivers.b || tellerror "Could not get river .b file"
+  if [ $NTRACR -ne 0 ] ; then
+      echo "**Setting up bio river forcing"
+      cp $BASEDIR/force/rivers/$E/ECO_no3.a rivers.ECO_no3.a || tellwarn "Could not get NO3 river .a file"
+      cp $BASEDIR/force/rivers/$E/ECO_no3.b rivers.ECO_no3.b || tellwarn "Could not get NO3 river .b file"
+      cp $BASEDIR/force/rivers/$E/ECO_sil.a rivers.ECO_sil.a || tellwarn "Could not get SIL river .a file"
+      cp $BASEDIR/force/rivers/$E/ECO_sil.b rivers.ECO_sil.b || tellwarn "Could not get SIL river .b file"
+      cp $BASEDIR/force/rivers/$E/ECO_pho.a rivers.ECO_pho.a || tellwarn "Could not get PHO river .a file"
+      cp $BASEDIR/force/rivers/$E/ECO_pho.b rivers.ECO_pho.b || tellwarn "Could not get PHO river .b file"
+  fi
 fi
 
-if [ "$HRIVER" = ".true." ]; then
-  echo "Note: PRIVER must be 0 for highfq_river=true " 
-  echo "highfq_river=true: **Setting up high frequency river forcing  from hycom_opt highfq_river"
-  # Check range of file against start and stop times
-  RDIR=$BASEDIR/force/rivers/$E
-  if [ -f  $RDIR/riverh.a -a  -f $RDIR/riverh.b ] 
-  then
-     ln -sf $RDIR/riverh.a forcing.riverh.a || tellerror "Could not get riverh .a file"
-     ln -sf $RDIR/riverh.b forcing.riverh.b || tellerror "Could not get riverh .b file"
-     frcstart=$(head -n  6 forcing.riverh.b | tail -n1 | sed "s/.*=//" | sed "s/^[ ]*//" | cut -d " " -f 1)
-     frcstop=$(tail -n 1 forcing.riverh.b             | sed "s/.*=//" | sed "s/^[ ]*//" | cut -d " " -f 1)
-     test1=$(echo ${tstart#-}'>='$frcstart | bc -l)
-     test2=$(echo $tstop '<='$frcstop  | bc -l)
-     [ $test1 -eq 1 ] || tellerror "File $S/forcing.riverh.b: forcing starts after  model starts"
-     [ $test2 -eq 1 ] || tellerror "File $S/forcing.riverh.b: forcing stops  before model stops"
-  fi
-else
-    echo "highfq_river=false: No attemp to use high frequency river runnoff"
-fi
 #
 # --- kpar forcing
 #
@@ -538,7 +530,7 @@ tmp2=$(echo $NESTFQ'!='0.0 | bc -l)
 if [ $tmp -eq 1 -o $tmp2 -eq 1 ] ; then
    nestdir=$BASEDIR/nest/$E
    echo "Nesting input from $nestdir"
-   ls sest
+   ls nest
    if [ -d $nestdir ]  ; then
       [ -e nest ] && rm nest
       ln -s $nestdir nest
@@ -643,7 +635,7 @@ else
 # --- changes to the model setup, this part should be commented out. 
 #
       imontg=0
-      if [ [ $tmp -eq 1 -o $tmp2 -eq 1 ] -a [ $imontg -eq 1] ]; then
+       if [ [ $tmp -eq 1 -o $tmp2 -eq 1 ] -a [ $imontg -eq 1] ]; then
          echo "debug: $(pwd)" 
          ### "Calculate and Write Montgometry potential into the nesting files"
          echo "filename="${filename}
@@ -662,7 +654,7 @@ else
            done
          done
          echo " Nesting Files Modified Successfully "
-      fi
+       fi
 #
 # --- End compute Montg. on the go, to be sure it is computed from the right nesting file.
 #     

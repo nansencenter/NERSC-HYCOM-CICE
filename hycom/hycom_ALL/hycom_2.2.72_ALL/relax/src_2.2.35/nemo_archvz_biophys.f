@@ -221,7 +221,7 @@ C
          write (6,'(2a)') 'BIO: SI: ',flag_si
 
          read (*,'(a)') flag_o2
-         write (6,'(2a)') 'BIO: O2": ',flag_o2
+         write (6,'(2a)') 'BIO: O2: ',flag_o2
 
 
          call flush(6)
@@ -1791,14 +1791,14 @@ C
      +         DP0K(kdm+1),DP00I,DS0K(kdm+1),
      +         UV(kz+1),VV(kz+1),TZ(kz+1),SZ(kz+1)
 
-        real*4, intent(in),allocatable :: 
+        real*4, intent(in) :: 
      +     NO3(:,:,:),PO4(:,:,:),SI(:,:,:),O2(:,:,:)
 
         real*4, intent(inout) ::  PM,RM
         real*4,  intent(inout) :: PZBOT,PCM0,PkM2,PCM1,PCM2,
      +         UM,VM,SM,TM
 
-        real*4, intent(inout),allocatable ::
+        real*4, intent(inout) ::
      +     NO3M(:,:),PO4M(:,:),SIM(:,:),O2M(:,:)
 
        logical    ::  ISOPYC,ldebug
@@ -2121,7 +2121,7 @@ C
      +         TH(KZ+1,IDM,JDM),SZ(KZ+1,IDM,JDM),
      +         TH1(IDM,JDM),TZ(KZ+1,IDM,JDM)
 
-        REAL*4, intent(inout),allocatable :: NO3(:,:,:),
+        REAL*4, intent(inout) :: NO3(:,:,:),
      +                   PO4(:,:,:),SI(:,:,:),O2(:,:,:)
 
         REAL*4          :: PU(IDM,JDM),PV(IDM,JDM)
@@ -2168,7 +2168,18 @@ C
 C
 C        3D FIELDS
 C
-
+      if     (flag_no3.ne."NONE") then
+          ALLOCATE(   NO1(IDM,JDM) )
+      endif
+      if     (flag_po4.ne."NONE") then
+          ALLOCATE(    PO1(IDM,JDM) )
+      endif
+      if     (flag_si.ne."NONE") then
+          ALLOCATE(     SI1(IDM,JDM) )
+      endif
+      if     (flag_o2.ne."NONE") then
+          ALLOCATE(     O21(IDM,JDM) )
+      endif
 
       DO K=1,KZ ! LOOP THROUGH LEVELS
 C
@@ -2196,7 +2207,6 @@ C
         endif
     
         if     (flag_no3.ne."NONE") then
-         allocate(NO1(IDM,JDM))
          call FieldArchive(NO1,IDM,JDM,cfld,'ECO_no3    ',
      &     K,coord,1,tlevel1,nrec,trim(archvfile)//".a")
         endif

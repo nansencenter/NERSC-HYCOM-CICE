@@ -13,7 +13,7 @@ if [ "$tmp" != "${R}" ] ;then
 fi
 
 # Set the Path Here
-export NHCROOT=/cluster/home/achoth/AchHycom/NERSC-HYCOM-CICE       # Set this if necessary (eg out of work)
+export NHCROOT=${HOME}/NERSC-HYCOM-CICE/
 
 export HYCOM_ALL=$NHCROOT/hycom/hycom_ALL/hycom_2.2.72_ALL/    # follows NHCROOT, but can be set differently
 export INPUTDIR=$NHCROOT/input/                                # follows NHCROOT, but can be set differently
@@ -36,7 +36,7 @@ done
 
 
 # Update path
-export PATH=$BINDIR/:$PATH
+export PATH=$BINDIR/:$MSCPROGS/bin:$MSCPROGS/bin_setup:$PATH
 export Sysdir_nn2993k=/cluster/projects/nn2993k
 export Sysdir_nn9481k=/cluster/projects/nn9481k
 

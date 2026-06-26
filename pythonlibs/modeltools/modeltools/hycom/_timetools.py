@@ -1,5 +1,6 @@
 """ Module for parsing hycom blkdat """
 import datetime
+import cftime as cft
 import numpy 
 import sys
 import logging
@@ -24,14 +25,23 @@ def leapyear(iyr) :
 
 
 def datetime_to_ordinal(dt,yrflag) :
-   if yrflag != 3 :
-      raise ValueError("Only yearflag=3 supported for datetime_to_ordinal")
-   else :
-      td = dt - datetime.datetime(dt.year,1,1,0,0,0) 
-      tdd = td.days + 1
-      #tdh = td.seconds/86400.
-      tdh = td.seconds/3600.
-      tds = td.seconds - (tdh*3600)
+   if yrflag == 0 :
+       hycomcal="360_day"
+   elif yrflag == 1 or yrflag == 2 :
+       hycomcal="366_day" 
+   elif yrflag == 3 :
+       hycomcal="standard"
+   elif yrflag == 4 or yrflag == 5 :
+       hycomcal="365_day"
+   else:      
+       raise ValueError("Yearflag="+str(yrflag)+" not supported for datetime_to_ordinal")
+   
+   #td = dt - datetime.datetime(dt.year,1,1,0,0,0)
+   td = cft.datetime(dt.year,dt.month,dt.day,dt.hour,dt.minute,dt.second,calendar=hycomcal) - cft.datetime(dt.year,1,1,0,0,0,calendar=hycomcal) 
+   tdd = td.days + 1
+   #tdh = td.seconds/86400.
+   tdh = td.seconds/3600.
+   tds = td.seconds - (tdh*3600)
    return tdd,tdh,tds
 
 
@@ -62,7 +72,6 @@ def dayfor(iyear,iday,ihour,yrflag) :
      if iyear < 1901 :
         raise ValueError('error in forday - yrflag value %d must have year >=1901. year is %d'%(yrflag,iyear))
 
-
      iyr=iyear-1901
      dtime=0.
      for k in range(1,iyr+1) :
@@ -87,19 +96,41 @@ def dayfor(iyear,iday,ihour,yrflag) :
 
         iday2=iday2-diy
 
-   else :
+   # 365 days per model year, starting Jan 01 (climatology)
+   elif  yrflag == 4 :
+     dtime =  (iyear-1) * 365.0 +  \
+              iday              +  \
+              ihour/24.0        -  \
+              1.0
+
+   # 365 days per model year, starting 01-01-1901 
+   elif  yrflag == 5 :
+     dtime =  (iyear-1901) * 365.0 +  \
+              iday              +  \
+              ihour/24.0        -  \
+              1.0
+   else : 
       raise ValueError('error in forday - unsupported yrflag value: %d'%yrflag)
 
    return dtime
 
 
+# AS FEB2026: this routine does not seem to be used 
 def dayfor_datetime(iyear,iday,ihour,yrflag) :
-   dtime=dayfor(iyear,iday,ihour,yrflag) 
-   if yrflag == 3 :
-      tmp =datetime.datetime(1901,1,1,0,0,0)
-      return tmp + datetime.timedelta(days=dtime)
-   else :
-      raise NotImplementedError("yrflag = %d"%yrflag)
+   dtime=dayfor(iyear,iday,ihour,yrflag)
+   if yrflag == 0 :
+       hycomcal="360_day"
+   elif yrflag == 1 or yrflag == 2 :
+       hycomcal="366_day"
+   elif yrflag == 3 :
+       hycomcal="standard"
+   elif yrflag == 4 or yrflag == 5 :
+       hycomcal="365_day"
+   else:
+       raise ValueError("Yearflag="+str(yrflag)+" not supported for datetime_to_ordinal")
+   
+   tmp =cft.datetime(1901,1,1,0,0,0,calendar=hycomcal)
+   return tmp + datetime.timedelta(days=dtime)
 
 
 
@@ -142,14 +173,22 @@ def forday(dtime,yrflag) :
       iyear =  1901 + iyr
       iday  =  int(dtime - dtim1 + 1.001)
       ihour = int((dtime - dtim1 + 1.001 - iday)*24.0)
-
+   elif yrflag == 4 :
+      iyear =  int((dtime+ 0.001)/365.) + 1
+      iday  =  int(numpy.mod( dtime+ 0.001 ,365.) + 1)
+      ihour =  int((numpy.mod( dtime+ 0.001 ,365.) + 1. - iday)*24.)
+   # ---   model day is calendar days since 01/01/1901  
+   elif yrflag == 5 :
+      iyear =  int((dtime+ 0.001)/365.) + 1901
+      iday  =  int(numpy.mod( dtime+ 0.001 ,365.) + 1)
+      ihour =  int((numpy.mod( dtime+ 0.001 ,365.) + 1. - iday)*24.0)
    else :
       raise ValueError('error in forday - unsupported yrflag value: %d'%yrflag)
 
    return iyear, iday, ihour
 
 
-
+# AS FEB2026: this routine does not seem to be used
 def forday_datetime(dtime,yrflag) :
    print(dtime)
    iy,id,ih=forday(dtime,yrflag) 
