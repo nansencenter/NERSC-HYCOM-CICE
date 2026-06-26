@@ -141,6 +141,13 @@ Run this command at the start of each session or job script where you need the
 environment. If you only use one Python environment, you can also add it to `~/.bashrc`
 to activate it automatically.
 
+:::{tip}
+The steps above are also scripted under `environment/py-nhc/`: set `$PYLIBSPATH` in
+`py-nhc-env-post.sh`, then run `create_python_env.sh` (with the `hpc-container-wrapper`
+module loaded). It builds the container into `environment/py-nhc/py-nhc-env/`; add that
+`bin/` directory to `$PATH` to activate.
+:::
+
 ::::
 
 ### Use the environment
@@ -230,12 +237,27 @@ the model.
 
 ::::
 
-The dropdown below shows the full content of `betzy_env.sh` for reference — what you
+::::{dropdown} Source HPC environment — Olivia (NRIS/Sigma2)
+
+```{include} _snippets/olivia_hpc_env.md
+```
+
+::::
+
+The dropdowns below show the full content of each `*_env.sh` for reference — what you
 source is exactly what is displayed.
 
 ::::{dropdown} View betzy_env.sh
 
 :::{literalinclude} ../environment/betzy_env.sh
+:language: bash
+:::
+
+::::
+
+::::{dropdown} View olivia_env.sh
+
+:::{literalinclude} ../environment/olivia_env.sh
 :language: bash
 :::
 

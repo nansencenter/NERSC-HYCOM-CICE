@@ -118,6 +118,88 @@ group, named `<inputbase>_group<groupname>.nc`. A list of all generated files is
 written to `hyc2stations.filelist`. A helper script `setupstations.py` generates
 `stations.in` entries from start/end coordinates along a rhumb line.
 
+## Batch post-processing with `hyc2proj`
+
+For a single run or a few files, running `hyc2proj` interactively (above) is fine. For many
+files — e.g. a multi-year reanalysis — submit it as a SLURM job. A convenient pattern is to
+parallelise by year: stage each year's archives into its own `Y<year>/` directory together
+with a copy of the required input files, then run one `hyc2proj` task per year.
+
+The required files (see
+[`hyc2proj`](#hyc2proj-and-hyc2stations-projection-and-interpolation)) must be present in
+each per-year directory: `regional.grid.*`, `regional.depth.*`, `grid.info`, `proj.in`,
+`depthlevels.in`, the matching `extract.*` file, and the compiled `hyc2proj` executable.
+
+:::{note}
+The parallel-by-year wrapper does not work with `detvflux` — leave it off in
+`extract.archm`/`extract.archv`.
+:::
+
+::::{dropdown} Example: parallel-by-year SLURM script (Olivia)
+
+The header (`#SBATCH` options) and module block are machine-specific. On Olivia, use a CPU
+partition and load the modules established when
+[compiling MSCPROGS](compilation.md#compile-mscprogs-libhycnersca).
+
+```bash
+#!/bin/bash
+#SBATCH --account=<PROJECT>
+#SBATCH --job-name=hyc2proj
+#SBATCH --nodes=1
+#SBATCH --ntasks=32            # one task per year
+#SBATCH --mem-per-cpu=10G
+#SBATCH --time=05:00:00        # ~3 h per model year, as a guide
+
+# --- Olivia HPC modules ---
+source $HOME/NERSC-HYCOM-CICE/environment/olivia_env.sh
+ulimit -s 2000000
+
+yr_s=1993
+yr_e=2024
+rid=archm.
+
+# Stage each year's archives + input files into Y<year>/
+for year in $(seq $yr_s $yr_e); do
+    dir="Y$year"; mkdir -p "$dir"
+    cp ./regional.* ./grid.info ./extract.archm ./depthlevels.in ./proj.in ./hyc2proj "$dir"/
+    mv ${rid}${year}_*.a ${rid}${year}_*.b "$dir"/ 2>/dev/null
+done
+
+# Run one hyc2proj per year in parallel
+for year in $(seq $yr_s $yr_e); do
+    ( cd "Y$year" && srun --exclusive -n1 -c1 ./hyc2proj --vertint linear ${rid}${year}_*.a ) &
+done
+wait
+```
+
+::::
+
+### Post-processing runs from NIRD
+
+Collaborator runs shared on NIRD can be post-processed on Olivia, but mind the storage
+constraints (see [Olivia storage layout](overview.md#olivia-storage-layout)): NIRD is
+**read-only** on compute nodes and **not mounted** on login nodes, and the work filesystem
+is purged after 21 days. The recommended workflow is to **copy** (not symlink) the archives
+onto the Lustre work area, process them there, and archive the NetCDF output to
+`/cluster/projects/<PROJECT>`:
+
+1. **Stage from NIRD.** On a service (SVC) node — where NIRD is read-write — copy the
+   archive files you need (`archm.*` / `archv.*`, both `.a` and `.b`) together with the run's
+   `regional.*` and `grid.info` into
+   `/cluster/work/projects/<PROJECT>/$USER/postproc/<run>/`. Avoid symlinking: the
+   parallel-by-year script *moves* archive files into per-year directories, which fails on a
+   read-only source, and streaming large 3-D archives live over NIRD is slow.
+2. **Process on Lustre.** Run the batch script above from the staging directory.
+3. **Archive the output.** Move the resulting `.nc` files to
+   `/cluster/projects/<PROJECT>/$USER/...` (or back to NIRD) before the 21-day purge, then
+   delete the staged archives.
+
+:::{tip}
+For a large multi-year run, stage and process one year at a time — copy one year, run
+`hyc2proj`, move the `.nc` output to the project area, delete the staged archives, then move
+on — to keep the work-area footprint bounded.
+:::
+
 ## `m2nc` / `m2t` — 2D field extraction to NetCDF
 
 Reads HYCOM `.ab` files and writes selected 2D fields to `tmp1.nc`. Fields to

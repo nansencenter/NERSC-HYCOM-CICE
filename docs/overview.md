@@ -32,6 +32,11 @@ and model output. This separation also matters for data safety: on many HPC syst
 work filesystem is subject to automatic purging, so source code, compiled binaries, and
 configuration files should always live on home.
 
+The roles (`HOME`, `WORK`) are the same on every machine, but the actual filesystem each
+maps to is machine-specific. The examples below use Betzy; see the
+[Olivia storage layout](#olivia-storage-layout) dropdown for how the same roles map onto
+Olivia, where the storage areas differ in important ways.
+
 ```
 ${HOME}/${USER}/
 ├── NERSC-HYCOM-CICE/
@@ -67,12 +72,51 @@ This shows the finished directory structure for reference. The following section
 `<EXPT_ID>`, and `<IEXPT>` are placeholders for user-defined values, with Betzy examples
 in the table below.
 
-| Variable | Description | Example (Betzy) |
-|---|---|---|
-| `HOME` | Root of the source/home filesystem | `/cluster/home` |
-| `WORK` | Root of the run/work filesystem | `/cluster/work/users` |
-| `USER` | Your username on the system | `nlo043` |
-| `<CONFIGNAME>` | Grid/configuration name | `TP2a0.10` |
-| `<EXPT_ID>` | Experiment identifier (dot notation) | `04.2` |
-| `<IEXPT>` | Integer experiment identifier (used in directory names) | `042` |
+| Variable | Description | Example (Betzy) | Example (Olivia) |
+|---|---|---|---|
+| `HOME` | Root of the source/home filesystem | `/cluster/home` | `/cluster/home` |
+| `WORK` | Root of the run/work filesystem | `/cluster/work/users` | `/cluster/work/projects/<PROJECT>` |
+| `USER` | Your username on the system | `nlo043` | `nlo043` |
+| `<PROJECT>` | Compute/storage allocation code | `nn9481k` | `nn9481k` |
+| `<CONFIGNAME>` | Grid/configuration name | `TP2a0.10` | `TP2a0.10` |
+| `<EXPT_ID>` | Experiment identifier (dot notation) | `04.2` | `04.2` |
+| `<IEXPT>` | Integer experiment identifier (used in directory names) | `042` | `042` |
+
+(<a name="olivia-storage-layout"></a>)
+::::{dropdown} Olivia storage layout (NRIS/Sigma2)
+
+Olivia's storage areas differ from Betzy's, so the `HOME`/`WORK` roles map onto different
+filesystems and a few extra rules apply. See the
+[Sigma2 storage documentation](https://documentation.sigma2.no/files_storage/clusters.html)
+for the authoritative description.
+
+| Area | Path | Role | Backup | Notes |
+|---|---|---|---|---|
+| Home | `/cluster/home/$USER` | small personal files, repos | yes | Only ~20 GiB — too small for the Python/container environment or build artifacts |
+| Project | `/cluster/projects/<PROJECT>` | persistent: env, compiled binaries, archived output | no | Large quota, **not** purged — the long-term home for anything you want to keep |
+| Work | `/cluster/work/projects/<PROJECT>` | `WORK` — active runs (`SCRATCH/`, `data/`) | no | Fast Lustre, shared per project, **auto-deleted after 21 days** |
+| NIRD | `/nird/datalake/<NS-PROJECT>`, `/nird/datapeak/<NS-PROJECT>` | shared archive / collaborator data | — | Mounted on service (SVC) nodes (read-write) and compute nodes (**read-only**); **not** mounted on login nodes |
+
+Two consequences for the layout above:
+
+1. **There is no per-user work area.** Unlike Betzy's `/cluster/work/users/$USER`, Olivia
+   provides only the per-project `/cluster/work/projects/<PROJECT>`, shared by everyone on
+   the allocation. The run tree therefore lives at
+   `/cluster/work/projects/<PROJECT>/$USER/<CONFIGNAME>/`.
+
+2. **Work is purged after 21 days.** `SCRATCH/` can stay there, but move each experiment's
+   `data/` output to `/cluster/projects/<PROJECT>` (or to NIRD) before it is deleted. The
+   Python/container environment and compiled binaries must also live on
+   `/cluster/projects/<PROJECT>`, not in the 20 GiB home (see
+   [Python environment](installation.md#python-environment)).
+
+:::{tip}
+NIRD is not visible from the login nodes. To stage collaborator data from NIRD, copy it
+on a service (SVC) node — where NIRD is read-write — or read it directly inside a batch
+job, where compute nodes see it read-only. See
+[Post-processing collaborator runs](mscprogs.md#post-processing-runs-from-nird) for the
+recommended staging workflow.
+:::
+
+::::
 
