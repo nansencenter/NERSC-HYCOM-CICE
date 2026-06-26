@@ -261,7 +261,7 @@ contains
         ! (i.e., whether all required calls for fabm_link_*_data have been made)
         !call fabm_check_ready(fabm_model)
         call fabm_model%start
-        call fabm_model%prepare_inputs( )
+        !call fabm_model%prepare_inputs( )
 
         last_interior_output => null()
         do ivar=1, size(fabm_model%interior_state_variables)
