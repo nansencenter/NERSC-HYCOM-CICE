@@ -490,3 +490,30 @@ recommended in the error message.
 
 ::::
 
+::::{dropdown} Olivia (NRIS/Sigma2) — redirect `SCRATCH` and `data` off the purged filesystem
+
+On Olivia, keep the experiment tree (configuration and `build/`) on the non-purged
+`/cluster/projects/<PROJECT>`, and put the two large directories — scratch and output — on the
+fast, 21-day-purged `/cluster/work/projects/<PROJECT>` filesystem (see
+[Olivia storage layout](overview.md#olivia-storage-layout) for the rationale). Override the
+auto-set `S=` and `D=` lines in `EXPT.src`:
+
+```bash
+export S=/cluster/work/projects/<PROJECT>/$USER/<CONFIGNAME>/expt_<EXPT_ID>/SCRATCH
+export D=/cluster/work/projects/<PROJECT>/$USER/<CONFIGNAME>/expt_<EXPT_ID>/data
+```
+
+This is safe: `expt_preprocess.sh` only creates (`mkdir -p`) and enters (`cd`) `$S` and `$D` —
+it never deletes them — and the overrides propagate automatically when `expt_new.sh` copies
+`EXPT.src` to a new experiment. `P=` and `build/` stay on `/cluster/projects`, so the
+configuration and compiled executable survive the purge.
+
+:::{important}
+`data/` is now on the purged filesystem, so **archive completed output to NIRD on a rolling
+basis** (e.g. per model year as it finishes) from a service node — `work` is purged by file
+age, so early output can age out while a long run is still going. For a small run whose output
+fits the project quota, you can instead leave `D=` at its default on `/cluster/projects`.
+:::
+
+::::
+
