@@ -1,0 +1,69 @@
+!+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+1) Recommended environment for Olivia
+
+   module reset
+   module load NRIS/CPU
+   module load GSL/2.8-intel-compilers-2024.2.0
+   module load ESMF/8.8.0-intel-2024a-ParallelIO-2.6.5
+   module load UDUNITS/2.2.28-GCCcore-13.3.0
+   module load FFTW/3.3.10-GCC-13.3.0
+   module load CMake/3.29.3-GCCcore-13.3.0
+
+   execute the following line to get the environment (adjust the path if needed): 
+   source ~/NERSC-HYCOM-CICE/environment/olivia_env.sh
+
+2) Compiling hycom_all under NERSC-HYCOM-CICE/hycom/hycom_ALL/hycom_2.2.72_ALL
+
+   # Define "setenv ARCH intelIFX" in Make_all.src
+   csh Make_all.com
+
+   !! NOT COMPLETE
+
+        Netcdf routines are partly compiled right, 
+        csh Make_ncdf.com
+
+        but for someones are interested,
+        
+3) Compiling MSCPROGS under NERSC-HYCOM-CICE/hycom/MSCPROGS/src
+
+       Go to NERSC-HYCOM-CICE/hycom/MSCPROGS/src/Make.Inc/
+       execute:
+          ln -s make.olivia.ifx make.inc
+          cd ../
+          gmake clean
+          gmake all
+          gmake install
+
+4) Compiling hycom_cice under TP0a1.00/expt_01.0 (Untested)
+
+   Use cluster selection for Olivia as the `hostname -d` method doesn't work
+
+      compile_model.sh -c olivia -u ifx
+
+   The added -c option sets SITE/cluster explicitly and bypasses hostname/domain 
+   autodetection.
+
+   This should select these build files which were prepared for Olivia:
+      hycom/RELO/config/Linux.olivia.ifx_cice.V22
+      hycom/RELO/config/Linux.olivia.ifx_cice.V23
+      cice/Release-5.1/bld/Macros.Linux.olivia.ifx
+
+   These are some of the issues when running `create_ref_case.sh` that I've found that is not fixed:
+      - There is a module load at line 132 in `create_ref_case.sh`.
+      - In bin/ice_climatology/extract_clim_iceh.sh there is a module load at line 87
+        and 90. The equivalent modules on Olivia are not compatible with the compilation 
+        environment modules.
+
+5) prepare the python tools on Olivia
+
+  NB: Adapt the $PYLIBSPATH variable in py-nhc-env-post.sh
+
+  Make sure the `hpc-containerize` module is loaded:
+      module load NRIS/CPU
+      module load hpc-container-wrapper
+
+  run `create_python_env.sh`.
+
+  To load the python environment, add /path/to/NERSC-HYCOM-CICE/environment/py-nhc/py-nhc-env/bin 
+  to $PATH.
+
