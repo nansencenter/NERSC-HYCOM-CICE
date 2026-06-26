@@ -177,7 +177,7 @@ wait
 ### Post-processing runs from NIRD
 
 Collaborator runs shared on NIRD can be post-processed on Olivia, but mind the storage
-constraints (see [Olivia storage layout](overview.md#olivia-storage-layout)): NIRD is
+constraints (see [Olivia storage areas](overview.md#olivia-storage-layout)): NIRD is
 **read-only** on compute nodes and **not mounted** on login nodes, and the work filesystem
 is purged after 21 days. The recommended workflow is to **copy** (not symlink) the archives
 onto the Lustre work area, process them there, and archive the NetCDF output to

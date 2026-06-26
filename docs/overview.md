@@ -32,10 +32,19 @@ and model output. This separation also matters for data safety: on many HPC syst
 work filesystem is subject to automatic purging, so source code, compiled binaries, and
 configuration files should always live on home.
 
-The roles (`HOME`, `WORK`) are the same on every machine, but the actual filesystem each
-maps to is machine-specific. The examples below use Betzy; see the
-[Olivia storage layout](#olivia-storage-layout) dropdown for how the same roles map onto
-Olivia, where the storage areas differ in important ways.
+The same `$HOME` and `$WORK` variables are used throughout this documentation. `$HOME` is
+always set for you. `$WORK` is set for you **on Betzy**, but **not on Olivia** — there you set
+it yourself. Add this to your `~/.bashrc` on Olivia so that every `$WORK` reference in this
+documentation resolves the same way on both machines:
+
+```bash
+# Olivia only — Betzy already sets $WORK for you
+export WORK=/cluster/projects/<PROJECT>
+```
+
+With `$WORK` defined, a single directory tree applies on both machines. The filesystem each
+role maps to is summarised in the table below, with per-machine specifics in the storage
+dropdowns.
 
 ```
 ${HOME}/${USER}/
@@ -68,14 +77,14 @@ ${WORK}/${USER}/
 This shows the finished directory structure for reference. The following sections build it up step by step.
 :::
 
-`${HOME}` and `${USER}` are standard shell variables set automatically. `<CONFIGNAME>`,
-`<EXPT_ID>`, and `<IEXPT>` are placeholders for user-defined values, with Betzy examples
-in the table below.
+`$HOME` and `$USER` are set automatically on every machine; `$WORK` is set automatically on
+Betzy and via your `~/.bashrc` on Olivia (above). `<CONFIGNAME>`, `<EXPT_ID>`, and `<IEXPT>`
+are placeholders for user-defined values, with examples in the table below.
 
 | Variable | Description | Example (Betzy) | Example (Olivia) |
 |---|---|---|---|
 | `HOME` | Root of the source/home filesystem | `/cluster/home` | `/cluster/home` |
-| `WORK` | Root of the run/work filesystem | `/cluster/work/users` | `/cluster/projects/<PROJECT>` |
+| `WORK` | Root of the run/config tree | `/cluster/work/users` (system-set) | `/cluster/projects/<PROJECT>` (set in `~/.bashrc`) |
 | `USER` | Your username on the system | `nlo043` | `nlo043` |
 | `<PROJECT>` | Compute/storage allocation code | `nn9481k` | `nn9481k` |
 | `<CONFIGNAME>` | Grid/configuration name | `TP2a0.10` | `TP2a0.10` |
@@ -83,22 +92,41 @@ in the table below.
 | `<IEXPT>` | Integer experiment identifier (used in directory names) | `042` | `042` |
 
 :::{note}
-The Olivia `WORK` example is `/cluster/projects/<PROJECT>` (not the work filesystem) because
-the recommended layout keeps the run tree on the non-purged project area and redirects only the
-large `SCRATCH/` and `data/` directories to the purged scratch filesystem — and archives kept
-output to NIRD. See [Olivia storage layout](#olivia-storage-layout) below.
+On Olivia, only the large `SCRATCH/` and `data/` directories are redirected off `$WORK` onto
+the purged work filesystem (and archived to NIRD); everything else in the tree is identical.
+See [Olivia storage areas](#olivia-storage-layout) below.
 :::
 
-(<a name="olivia-storage-layout"></a>)
-::::{dropdown} Olivia storage layout (NRIS/Sigma2)
+::::{dropdown} Betzy storage areas (NRIS/Sigma2)
 
-Olivia's storage areas differ from Betzy's, so the `HOME`/`WORK` roles map onto different
-filesystems and a few extra rules apply. See the
+Betzy's storage areas (see the
+[Sigma2 storage documentation](https://documentation.sigma2.no/files_storage/clusters.html)
+for the authoritative description):
+
+| Area | Path | Capacity | Backup | Purged | Role |
+|---|---|---|---|---|---|
+| Home | `/cluster/home/$USER` (`$HOME`) | 20 GiB / 100k files | yes (snapshots) | no | Dotfiles and small personal configs only |
+| Projects | `/cluster/projects/<PROJECT>` | 1 TiB default (up to 20 TiB) | no | no | Persistent shared project data |
+| User work | `/cluster/work/users/$USER` (`$WORK`) | no fixed quota | no | **yes** — a weekly scan removes files older than 21 days (up to 42 if space allows) | The run tree: configuration, `build/`, `SCRATCH/`, and `data/` output |
+| Job scratch | `/cluster/work/jobs/$SLURM_JOB_ID` (`$SCRATCH`) | — | no | deleted when the job finishes | Per-job temporary space |
+
+The cloned source and compiled libraries live under `$HOME`; the run tree lives under `$WORK`
+(`/cluster/work/users/$USER`). Because `$WORK` is purged after 21 days, archive output you want
+to keep to your project area or NIRD.
+
+::::
+
+<a name="olivia-storage-layout"></a>
+::::{dropdown} Olivia storage areas (NRIS/Sigma2)
+
+Olivia has **no per-user work area**, so `$WORK` is set to the project area
+(`/cluster/projects/<PROJECT>`, configured in your `~/.bashrc` above) and the large run
+directories are redirected onto the work filesystem. See the
 [Sigma2 storage documentation](https://documentation.sigma2.no/files_storage/clusters.html)
 for the authoritative description.
 
 `projects` and `work` are **different Lustre filesystems** with different sizes, striping,
-and purge policies — the distinction drives the layout below:
+and purge policies — the distinction drives the layout:
 
 | Area | Path | Capacity (shared by the allocation) | Striping | Backup | Purged | What it is for |
 |---|---|---|---|---|---|---|
@@ -107,79 +135,30 @@ and purge policies — the distinction drives the layout below:
 | Work | `/cluster/work/projects/<PROJECT>` | ~1.1 PB (hundreds of TiB free) | `stripe_count=4` | no | **yes, 21 days** | **Large + transient**: `SCRATCH/` and freshly-written `data/` output |
 | NIRD | `/nird/datalake/<NS-PROJECT>`, `/nird/datapeak/<NS-PROJECT>` | large archive tier | — | — | no | **Large + keep long-term**: archived model output. Read-write on service (SVC) nodes, **read-only** on compute nodes, **absent** on login nodes |
 
-**No per-user work area.** Unlike Betzy's `/cluster/work/users/$USER`, Olivia provides only
-the per-project `/cluster/work/projects/<PROJECT>`, shared by everyone on the allocation. The
-run tree therefore lives at `/cluster/work/projects/<PROJECT>/$USER/<CONFIGNAME>/`.
+**No per-user work area.** Unlike Betzy's `/cluster/work/users/$USER`, Olivia provides only the
+per-project `/cluster/work/projects/<PROJECT>`, shared by everyone on the allocation. That is
+why `$WORK` points at the non-purged project area and only the large directories are redirected
+onto the work filesystem.
 
-**Why the bulk run I/O (`SCRATCH/` and `data/`) goes on `work`, not `projects`.** It is
-tempting to put the whole run on the non-purged `/cluster/projects` to dodge the 21-day clock,
-but pointing the model's scratch and output I/O there causes real problems:
+**Why the bulk run I/O (`SCRATCH/` and `data/`) goes on `work`, not `projects`.** The **10 TiB
+cap is shared across the whole allocation**, so a churning `SCRATCH/` plus large multi-year
+output can fill it and block *every collaborator* from writing — whereas `work` is a petascale
+scratch with hundreds of TiB free. And `projects` defaults to `stripe_count=1` (writes
+serialise), while `work` stripes 4-wide — what HYCOM's large `.a` archive and restart writes
+want. This is why NRIS labels `work` "job data" and `projects` "user software".
 
-1. **Quota.** `projects` is a hard **10 TiB cap shared across the whole allocation**. A live
-   run is the worst thing to point at it: `SCRATCH/` churns constantly and multi-year
-   archive/restart output is large. Filling it doesn't just stop your job — it blocks
-   **every collaborator on the allocation** from writing. `work` is a petascale scratch with
-   hundreds of TiB free; the purge is the price for that capacity.
-2. **Performance.** `projects` defaults to `stripe_count=1` (each file on a single object
-   target), so large parallel writes serialise. `work` stripes 4-wide — which is what
-   HYCOM's large `.a` archive and restart writes want. This is exactly why NRIS labels `work`
-   "job data" and `projects` "user software".
-3. **Shared-filesystem load.** Heavy job I/O on `projects` degrades it for everyone using it
-   for storage.
-
-:::{tip}
-**When running in `projects` is fine:** a small or short one-off run whose footprint fits
-comfortably in the free project quota — then you skip the purge bookkeeping. For production
-or multi-year runs, use `work`.
-:::
-
-**So should everything sit in `/cluster/projects`? No — and neither should the large output.**
-The 10 TiB project quota is shared by the whole allocation, and `data/` from a multi-year (and
-especially BGC) run is far too big for it — which is exactly why shared model output lives on
-NIRD. Split across **three tiers** by size and lifetime:
-
-| Tier | What | Goes on |
-|---|---|---|
-| Small + permanent | source, container environment, experiment configuration, `build/` | `/cluster/projects/<PROJECT>` |
-| Large + disposable | `SCRATCH/` | `/cluster/work/projects/<PROJECT>` |
-| Large + keep | `data/` model output | written on `/cluster/work/projects`, then archived to **NIRD** |
-
-**Recommended layout (hybrid).** Set `WORK=/cluster/projects/<PROJECT>` so the `<CONFIGNAME>/`
-tree — configuration and `build/` — lives on the non-purged filesystem, then redirect the two
-large directories to the work filesystem by overriding `S=` (scratch) and `D=` (data) in
+**Redirecting the large directories.** With `$WORK=/cluster/projects/<PROJECT>`, the
+`<CONFIGNAME>/` tree — configuration and `build/` — already lives on the non-purged filesystem.
+Redirect the two large directories onto `work` by overriding `S=` (scratch) and `D=` (data) in
 `EXPT.src` (see [Configure EXPT.src](experiment-setup.md#configure-exptsrc)). Because `work` is
-purged after 21 days — by file age, so output from early in a long run is at risk *while the run
-is still going* — archive completed `data/` to NIRD on a **rolling** basis (e.g. per model year
-as it finishes) from a service node, not just at the end. For a small run whose output
-comfortably fits the project quota, leaving `data/` on `projects` is fine and skips the
-archiving step.
+purged by file age — so output from early in a long run is at risk *while the run is still
+going* — archive completed `data/` to NIRD on a **rolling** basis (e.g. per model year as it
+finishes) from a service node, not just at the end.
 
-```
-/cluster/projects/<PROJECT>/$USER/          # small, persistent, NOT purged
-├── NERSC-HYCOM-CICE/  fabm/  ersem/  nersc/    # source + compiled binaries (HOME role)
-├── hycom-cice-env/                              # Python/container environment
-└── <CONFIGNAME>/                                # experiment config (keep in git)
-    ├── REGION.src
-    └── expt_<EXPT_ID>/
-        ├── EXPT.src, blkdat.input, srjob.sh     # configuration — must persist
-        ├── build/.../hycom_cice                 # compiled executable
-        ├── SCRATCH -> /cluster/work/projects/<PROJECT>/$USER/<CONFIGNAME>/expt_<EXPT_ID>/SCRATCH
-        └── data    -> /cluster/work/projects/<PROJECT>/$USER/<CONFIGNAME>/expt_<EXPT_ID>/data
-
-/cluster/work/projects/<PROJECT>/$USER/     # large, fast (4-wide stripe), PURGED after 21 days
-└── <CONFIGNAME>/expt_<EXPT_ID>/
-    ├── SCRATCH/                              # live run I/O — disposable
-    └── data/                                 # model output — archive to NIRD before it ages out
-
-/nird/datalake/<NS-PROJECT>/                 # large, long-term archive (push from a service node)
-└── <run>/                                    # finished model output, kept
-```
-
-This redirect is safe because `expt_preprocess.sh` only creates (`mkdir -p`) and enters
-(`cd`) the `$S` and `$D` directories — it never deletes them — so the overridden `S=`/`D=`
-paths (or `SCRATCH`/`data` symlinks) are honoured transparently. The purge then only ever
-touches `work`; the configuration and `build/` on `projects` are untouched, and the output is
-yours to move to NIRD before it ages out.
+This redirect is safe because `expt_preprocess.sh` only creates (`mkdir -p`) and enters (`cd`)
+the `$S` and `$D` directories — it never deletes them — so the overridden `S=`/`D=` paths are
+honoured transparently. The purge then only ever touches `work`; the configuration and `build/`
+on `projects` are untouched, and the output is yours to move to NIRD before it ages out.
 
 :::{tip}
 NIRD is not visible from the login nodes. To stage collaborator data from NIRD, copy it
