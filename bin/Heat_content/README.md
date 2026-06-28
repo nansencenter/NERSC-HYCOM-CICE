@@ -57,7 +57,7 @@ as NetCDF, and produces time-series plots.
 
 | Option | Values | Default | Description |
 |--------|--------|---------|-------------|
-| `--region` | 1–8 | 0 | Regional mask to apply. `0` = whole domain. Region indices correspond to those in `NAtlantic_Arctic_regions_generic12_TP2.nc`. |
+| `--region` | 3–8 | 0 | Regional mask to apply. `0` = whole domain. Region indices correspond to those in `NAtlantic_Arctic_regions_generic12_TP2.nc`. Regions 1 and 2 are outside the TOPAZ domain and should not be used. |
 | `--depth` | 1–6 | 0 | Depth range to process. `0` = all ranges (see table below). |
 | `--anomaly` | flag | off | Also produce anomaly plots (deviation from each dataset's temporal mean). |
 

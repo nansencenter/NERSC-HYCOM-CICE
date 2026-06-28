@@ -90,8 +90,8 @@ def load_nemoTP2(yr,filetype):
 
 parser=argparse.ArgumentParser(description='Calculate Ocean Heat Content')
 parser.add_argument('--region', type=int, default=0,
-                    help='Region index to compute OHC for (1-8 from NAtlantic_Arctic_regions file). '
-                         'Default 0 = whole domain.')
+                    help='Region index to compute OHC for (3-8 from NAtlantic_Arctic_regions file). '
+                         'Regions 1 and 2 are outside the TOPAZ domain. Default 0 = whole domain.')
 parser.add_argument('--depth', type=int, default=0,
                     help='Depth range to compute OHC for: '
                          '1=total, 2=0-300m, 3=0-700m, 4=0-2000m, 5=700-2000m, 6=2000m_plus. '
@@ -102,7 +102,10 @@ args=parser.parse_args()
 
 region_file=os.path.join(os.path.dirname(os.path.abspath(__file__)),
                          'NAtlantic_Arctic_regions_generic12_TP2.nc')
-if args.region > 0:
+if args.region in (1, 2):
+   print("Error: regions 1 and 2 are outside the TOPAZ domain. Use regions 3-8.")
+   quit()
+elif args.region > 0:
    ds_reg=netCDF4.Dataset(region_file,'r')
    regionMask=(ds_reg.variables['regions'][:]==args.region)
    ds_reg.close()
