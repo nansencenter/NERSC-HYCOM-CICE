@@ -75,11 +75,12 @@ if not os.path.exists(cfg_file):
    quit()
 cfg.read(cfg_file)
 
-TopoDir  =cfg['paths']['topo_dir']
-wrkdrt   =cfg['paths']['work_dir']
-GlorysDir=cfg['paths']['glorys_dir']
-NewrunDir=cfg['paths']['new_run_dir']
-OldrunDir=cfg['paths']['old_run_dir']
+TopoDir    =cfg['paths']['topo_dir']
+wrkdrt     =cfg['paths']['work_dir']
+GlorysDir  =cfg['paths']['glorys_dir']
+NewrunDir  =cfg['paths']['new_run_dir']
+OldrunDir  =cfg['paths']['old_run_dir']
+region_file=cfg['paths']['region_file']
 
 def load_nemoTP2(yr,filetype,sourdir):
    if filetype=='yearly':
@@ -109,8 +110,6 @@ parser.add_argument('--anomaly', action='store_true',
                     help='Also plot anomaly time series (deviation from each dataset\'s temporal mean).')
 args=parser.parse_args()
 
-region_file=os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                         'NAtlantic_Arctic_regions_generic12_TP2.nc')
 if args.region in (1, 2):
    print("Error: regions 1 and 2 are outside the TOPAZ domain. Use regions 3-8.")
    quit()
