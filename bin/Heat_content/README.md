@@ -110,6 +110,21 @@ OHC_anom_yearly_{depth}[-reg{N}].jpg       # Anomaly time series (if --anomaly)
 
 ---
 
+## Configuration
+
+All data paths are set in `config.ini` in this directory. Edit this file before running the scripts:
+
+```ini
+[paths]
+topo_dir    = /path/to/topo/          # directory containing regional.grid.a and regional.depth.a
+work_dir    = /path/to/output/        # where cached NetCDF files and plots are written
+glorys_dir  = /path/to/GLORYS/
+new_run_dir = /path/to/New_ref_run/
+old_run_dir = /path/to/Old_ref_run/
+```
+
+---
+
 ## Data sources
 
 | Dataset | Path |

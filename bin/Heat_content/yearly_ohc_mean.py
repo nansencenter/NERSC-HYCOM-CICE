@@ -1,4 +1,5 @@
 import argparse
+import configparser
 import numpy as np
 import numpy.ma as ma
 import datetime
@@ -67,15 +68,23 @@ def load_run(yr,filetype,sourdir):
    Rdep=dsT['depth'][:]
    return Rtemp,Rsaln,Rdep
 
-NewrunDir='/nird/datapeak/NS9481K/SEACLIM/New_ref_run_annual/'
-OldrunDir='/nird/datapeak/NS9481K/SEACLIM/Old_ref_run_annual/'
+cfg=configparser.ConfigParser()
+cfg_file=os.path.join(os.path.dirname(os.path.abspath(__file__)),'config.ini')
+if not os.path.exists(cfg_file):
+   print("Error: config.ini not found at %s"%cfg_file)
+   quit()
+cfg.read(cfg_file)
 
-def load_nemoTP2(yr,filetype):
-   # N.B: the path restores the GLORYS data 
-   Sourdir='/nird/datapeak/NS9481K/SEACLIM/GLORYS_annual/'
+TopoDir  =cfg['paths']['topo_dir']
+wrkdrt   =cfg['paths']['work_dir']
+GlorysDir=cfg['paths']['glorys_dir']
+NewrunDir=cfg['paths']['new_run_dir']
+OldrunDir=cfg['paths']['old_run_dir']
+
+def load_nemoTP2(yr,filetype,sourdir):
    if filetype=='yearly':
-      tempfile=Sourdir+"cmems_mod_glo_phy_my_0.083deg_P1M-m_thetao_180.00W-179.92E_30.00N-90.00N_0.49-5727.92m_%i_mean_TP2.nc"%yr
-      salnfile=Sourdir+"cmems_mod_glo_phy_my_0.083deg_P1M-m_so_180.00W-179.92E_30.00N-90.00N_0.49-5727.92m_%i_mean_TP2.nc"%yr
+      tempfile=sourdir+"cmems_mod_glo_phy_my_0.083deg_P1M-m_thetao_180.00W-179.92E_30.00N-90.00N_0.49-5727.92m_%i_mean_TP2.nc"%yr
+      salnfile=sourdir+"cmems_mod_glo_phy_my_0.083deg_P1M-m_so_180.00W-179.92E_30.00N-90.00N_0.49-5727.92m_%i_mean_TP2.nc"%yr
    else:
       print("Under developing...")
       quit()
@@ -116,7 +125,7 @@ else:
    region_tag=''
    print("Computing for whole domain")
 
-Px,Py,Pdepth=load_TP2grid('/cluster/work/users/annettes/TZ2a0.10/topo/')
+Px,Py,Pdepth=load_TP2grid(TopoDir)
 Parea0=Px*Py       # unit: m2
 
 depth_ranges = ['total', '0-300m', '0-700m', '0-2000m','700-2000m','2000m_plus']
@@ -131,7 +140,6 @@ axes_texts ={'full': 'Full depth', '0-300': '0 - 300 m', '0-700': '0 - 700 m',
 
 
 
-wrkdrt='/cluster/work/users/annettes/OHC_test/'
 
 # NB: the depth levels are different for these two model products
 depth_keys=([args.depth] if args.depth in depth_dict else list(depth_dict.keys()))
@@ -185,7 +193,7 @@ for isub in depth_keys:
          tmpG=fld_extraNC(FileG,"ohc_G%s"%Osurf,-1)
          Gohc=tmpG[maskMod]
       else:
-         GT,GS,Glev=load_nemoTP2(iyr,'yearly')
+         GT,GS,Glev=load_nemoTP2(iyr,'yearly',GlorysDir)
          Ngk=GT.shape[0]
          print("load data from GLORYS ")
          tmpGT=GT.values[:,maskMod[0],maskMod[1]]
