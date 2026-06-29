@@ -31,10 +31,11 @@ cloned repositories and compiled libraries, while `WORK` holds configuration fil
 compiled binaries, and model output. `$WORK` is always set to the **non-purged** projects
 filesystem so that configuration files and compiled binaries survive automatic purge cycles.
 The large, I/O-heavy directories (`SCRATCH/`, `data/`, `nest/`, `relax/`, `force/`) are
-redirected from there onto the fast, purged scratch filesystem (see the storage dropdowns
-below).
+redirected onto the fast scratch filesystem instead: `projects` is a shared allocation with
+a limited quota, and filling it with run data blocks all collaborators from writing (see the
+storage dropdowns below for machine-specific paths and capacities).
 
-Add this to your `~/.bashrc` on **both machines**:
+Add this to your `~/.bashrc` on **all machines**:
 
 ```bash
 export WORK=/cluster/projects/<PROJECT>
@@ -80,26 +81,27 @@ This shows the finished directory structure for reference. The following section
 :::
 
 `$HOME` and `$USER` are set automatically on every machine; `$WORK` is set via your
-`~/.bashrc` on both machines (above). `<CONFIGNAME>`, `<EXPT_ID>`, and `<IEXPT>` are
+`~/.bashrc` on all machines (above). `<CONFIGNAME>`, `<EXPT_ID>`, and `<IEXPT>` are
 placeholders for user-defined values, with examples in the table below.
 
-| Variable | Description | Betzy | Olivia |
-|---|---|---|---|
-| `HOME` | Home filesystem (source code) | `/cluster/home` | `/cluster/home` |
-| `WORK` | Non-purged config tree (set in `~/.bashrc`) | `/cluster/projects/<PROJECT>` | `/cluster/projects/<PROJECT>` |
-| `USER` | Your username | `nlo043` | `nlo043` |
-| `<PROJECT>` | Compute/storage allocation code | `nn9481k` | `nn9481k` |
-| `<CONFIGNAME>` | Grid/configuration name | `TP2a0.10` | `TP2a0.10` |
-| `<EXPT_ID>` | Experiment identifier (dot notation) | `04.2` | `04.2` |
-| `<IEXPT>` | Integer experiment identifier (used in directory names) | `042` | `042` |
+| Variable | Description | Value |
+|---|---|---|
+| `HOME` | Home filesystem (source code) | `/cluster/home` |
+| `WORK` | Non-purged config tree (set in `~/.bashrc`) | `/cluster/projects/<PROJECT>` |
+| `USER` | Your username | `nlo043` |
+| `<PROJECT>` | Compute/storage allocation code | `nn9481k` |
+| `<CONFIGNAME>` | Grid/configuration name | `TP2a0.10` |
+| `<EXPT_ID>` | Experiment identifier (dot notation) | `04.2` |
+| `<IEXPT>` | Integer experiment identifier (used in directory names) | `042` |
 
 :::{note}
-On both machines, the large run directories — `SCRATCH/`, `data/`, `nest/`, `relax/`, and
+On all machines, the large run directories — `SCRATCH/`, `data/`, `nest/`, `relax/`, and
 `force/` — are redirected off `$WORK` onto the fast, purged scratch filesystem. `SCRATCH/`
 and `data/` are redirected by overriding `S=` and `D=` in `EXPT.src`; `nest/`, `relax/`,
 and `force/` by placing symlinks in the `<CONFIGNAME>/` directory. Everything else —
-configuration files and `build/` — stays on `$WORK`. See the storage dropdowns below for
-machine-specific paths.
+configuration files and `build/` — stays on `$WORK`. Archive completed `data/` to NIRD on
+a rolling basis; `nest/`, `relax/`, and `force/` must be staged back from NIRD if lost to a
+purge. See the storage dropdowns below for machine-specific paths.
 :::
 
 ::::{dropdown} Betzy storage areas (NRIS/Sigma2)
@@ -114,15 +116,10 @@ for the authoritative description):
 | Projects | `/cluster/projects/<PROJECT>` | 1 TiB default (up to 20 TiB) | no | no | **Small + permanent**: experiment configuration and `build/` (`$WORK`) |
 | User work | `/cluster/work/users/$USER` (`$USERWORK`) | no fixed quota | no | **yes** — files older than 21 days (up to 42 if space allows) | **Large + transient**: `SCRATCH/`, `data/`, `nest/`, `relax/`, `force/` |
 | Job scratch | `/cluster/work/jobs/$SLURM_JOB_ID` (`$SCRATCH`) | — | no | deleted when the job finishes | Per-job temporary space |
-
-The source and compiled libraries live under `$HOME`. Configuration and `build/` live under
-`$WORK` (`/cluster/projects/<PROJECT>/$USER`), which is non-purged. The five large run
-directories are redirected onto `$USERWORK` (`/cluster/work/users/$USER`) via `S=`/`D=`
-overrides in `EXPT.src` and symlinks — see the setup steps in
-[experiment-setup.md](experiment-setup.md). Archive completed `data/` to NIRD; `nest/`,
-`relax/`, and `force/` hold input data that must be staged back from NIRD if lost to a purge.
+| NIRD | `/nird/datalake/<NS-PROJECT>`, `/nird/datapeak/<NS-PROJECT>` | large archive tier | — | no | **Large + keep long-term**: archived model output. Mounted on login nodes (read-write); not available on compute nodes |
 
 ::::
+
 
 <a name="olivia-storage-layout"></a>
 ::::{dropdown} Olivia storage areas (NRIS/Sigma2)
@@ -142,71 +139,8 @@ and purge policies — the distinction drives the layout:
 | Work | `/cluster/work/projects/<PROJECT>` | ~1.1 PB (hundreds of TiB free) | `stripe_count=4` | no | **yes, 21 days** | **Large + transient**: `SCRATCH/`, `data/`, `nest/`, `relax/`, `force/` |
 | NIRD | `/nird/datalake/<NS-PROJECT>`, `/nird/datapeak/<NS-PROJECT>` | large archive tier | — | — | no | **Large + keep long-term**: archived model output. Read-write on service (SVC) nodes, **read-only** on compute nodes, **absent** on login nodes |
 
-**Why the bulk run I/O goes on `work`, not `projects`.** The **10 TiB cap is shared across the
-whole allocation**, so a churning `SCRATCH/` plus large multi-year output can fill it and block
-*every collaborator* from writing — whereas `work` is a petascale scratch with hundreds of TiB
-free. And `projects` defaults to `stripe_count=1` (writes serialise), while `work` stripes
-4-wide — what HYCOM's large `.a` archive and restart writes want. This is why NRIS labels
-`work` "job data" and `projects` "user software".
-
-**Redirecting the large directories.** The same redirect approach used on Betzy applies here,
-with Olivia-specific paths. Five large directories must land on `work`, not `projects`:
-
-| Directory | What it holds | How to redirect |
-|---|---|---|
-| `expt_<EXPT_ID>/SCRATCH/` | Job-level scratch | Override `S=` in `EXPT.src` |
-| `expt_<EXPT_ID>/data/` | Model output archives | Override `D=` in `EXPT.src` |
-| `nest/<IEXPT>/` | Nesting boundary archives | Symlink in `<CONFIGNAME>/` |
-| `relax/<IEXPT>/` | Relaxation and climatology fields | Symlink in `<CONFIGNAME>/` |
-| `force/` | Atmospheric and river forcing | Symlink in `<CONFIGNAME>/` |
-
-**`SCRATCH` and `data`** — override `S=` and `D=` in `EXPT.src` (see
-[Configure EXPT.src](experiment-setup.md#configure-exptsrc)):
-
-```bash
-export S=/cluster/work/projects/<PROJECT>/$USER/<CONFIGNAME>/expt_<EXPT_ID>/SCRATCH
-export D=/cluster/work/projects/<PROJECT>/$USER/<CONFIGNAME>/expt_<EXPT_ID>/data
-```
-
-**`nest`, `relax`, `force`** — place symlinks in `<CONFIGNAME>/` (see
-[Set up the work directory](experiment-setup.md#set-up-the-work-directory)):
-
-```bash
-WDIR=/cluster/work/projects/<PROJECT>/$USER/<CONFIGNAME>
-mkdir -p $WDIR/nest $WDIR/relax $WDIR/force/synoptic
-
-cd $WORK/<CONFIGNAME>
-ln -sf $WDIR/nest  nest
-ln -sf $WDIR/relax relax
-ln -sf $WDIR/force force
-```
-
-The resulting on-disk layout across both filesystems:
-
-```
-/cluster/projects/<PROJECT>/$USER/<CONFIGNAME>/   ← $WORK/<CONFIGNAME>/
-├── bin -> .../NERSC-HYCOM-CICE/bin
-├── REGION.src
-├── expt_<EXPT_ID>/
-│   ├── EXPT.src           (S= and D= point into work)
-│   └── build/.../hycom_cice
-├── nest  -> /cluster/work/projects/<PROJECT>/$USER/<CONFIGNAME>/nest
-├── relax -> /cluster/work/projects/<PROJECT>/$USER/<CONFIGNAME>/relax
-└── force -> /cluster/work/projects/<PROJECT>/$USER/<CONFIGNAME>/force
-
-/cluster/work/projects/<PROJECT>/$USER/<CONFIGNAME>/
-├── expt_<EXPT_ID>/
-│   ├── SCRATCH/
-│   └── data/
-├── nest/<IEXPT>/
-├── relax/<IEXPT>/
-└── force/synoptic/<IEXPT>/
-```
-
-Because `work` is purged by file age, archive completed `data/` to NIRD on a **rolling** basis
-(e.g. per model year as it finishes) from a service node. `nest/`, `relax/`, and `force/` hold
-input data that is expensive to regenerate: stage them back from NIRD (or re-create them)
-before restarting a run if they have aged out.
+On Olivia, `projects` defaults to `stripe_count=1` (serialised writes on a single OST),
+while `work` stripes 4-wide — better suited to HYCOM's large `.a` archive and restart writes.
 
 :::{tip}
 NIRD is not visible from the login nodes. To stage collaborator data from NIRD, copy it
