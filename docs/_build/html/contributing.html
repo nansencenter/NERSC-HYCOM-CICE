@@ -1,0 +1,207 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contributor Guide &mdash; NERSC-HYCOM-CICE develop documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=16816911"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="_static/copybutton.js?v=f281be69"></script>
+      <script src="_static/design-tabs.js?v=f930bc37"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="MSCPROGS post-processing tools" href="mscprogs.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            NERSC-HYCOM-CICE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Overview</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Model components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="overview.html#directory-structure">Directory structure</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Installation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Clone the repositories</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html#python-environment">Python environment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html#hpc-environment">HPC environment</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Experiment setup</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="experiment-setup.html">Set up the work directory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="experiment-setup.html#configure-region-src">Configure REGION.src</a></li>
+<li class="toctree-l1"><a class="reference internal" href="experiment-setup.html#create-the-experiment-directory">Create the experiment directory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="experiment-setup.html#configure-blkdat-input">Configure blkdat.input</a></li>
+<li class="toctree-l1"><a class="reference internal" href="experiment-setup.html#configure-expt-src">Configure EXPT.src</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Compilation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="compilation.html">Compile MSCPROGS (libhycnersc.a)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="compilation.html#bgc-dependencies-fabm">BGC dependencies (FABM)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="compilation.html#compile-hycom-cice">Compile HYCOM-CICE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="compilation.html#compile-hycom-all">Compile hycom_ALL</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Forcing Files</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="forcing.html">Initial conditions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="forcing.html#atmospheric-forcing">Atmospheric forcing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="forcing.html#open-boundary-forcing">Open boundary forcing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="forcing.html#climatologies-and-river-forcing">Climatologies and river forcing</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Running the Model</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="running.html">Submit a job</a></li>
+<li class="toctree-l1"><a class="reference internal" href="running.html#check-results">Check results</a></li>
+<li class="toctree-l1"><a class="reference internal" href="running.html#restarting-after-a-crash">Restarting after a crash</a></li>
+<li class="toctree-l1"><a class="reference internal" href="running.html#visualization">Visualization</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Post-processing</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="mscprogs.html">MSCPROGS post-processing tools</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Contributor Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#building-the-documentation-locally">Building the documentation locally</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#set-up-the-environment">Set up the environment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#build">Build</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#adding-or-editing-pages">Adding or editing pages</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">NERSC-HYCOM-CICE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Contributor Guide</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/contributing.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="contributor-guide">
+<h1>Contributor Guide<a class="headerlink" href="#contributor-guide" title="Link to this heading"></a></h1>
+<section id="building-the-documentation-locally">
+<h2>Building the documentation locally<a class="headerlink" href="#building-the-documentation-locally" title="Link to this heading"></a></h2>
+<p>The documentation is built with <a class="reference external" href="https://www.sphinx-doc.org">Sphinx</a> using the
+<a class="reference external" href="https://myst-parser.readthedocs.io">MyST parser</a> so that Markdown files are
+rendered directly.</p>
+<section id="set-up-the-environment">
+<h3>Set up the environment<a class="headerlink" href="#set-up-the-environment" title="Link to this heading"></a></h3>
+<p>A conda environment with all required packages is provided in <code class="docutils literal notranslate"><span class="pre">docs/environment.yaml</span></code>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>conda<span class="w"> </span>env<span class="w"> </span>create<span class="w"> </span>-f<span class="w"> </span>docs/environment.yaml
+conda<span class="w"> </span>activate<span class="w"> </span>hycom-cice-docs
+</pre></div>
+</div>
+<p>If you already have a conda environment for the model, you can install the docs
+dependencies into it instead:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>conda<span class="w"> </span>activate<span class="w"> </span>&lt;your-env&gt;
+pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>docs/requirements.txt
+</pre></div>
+</div>
+</section>
+<section id="build">
+<h3>Build<a class="headerlink" href="#build" title="Link to this heading"></a></h3>
+<p>Run from the <code class="docutils literal notranslate"><span class="pre">docs/</span></code> directory:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>docs
+make<span class="w"> </span>html
+</pre></div>
+</div>
+<p>Then open <code class="docutils literal notranslate"><span class="pre">docs/_build/html/index.html</span></code> in a browser. Other useful targets:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>make<span class="w"> </span>clean<span class="w">   </span><span class="c1"># remove the build directory</span>
+make<span class="w"> </span>latex<span class="w">   </span><span class="c1"># build a PDF via LaTeX</span>
+make<span class="w"> </span><span class="nb">help</span><span class="w">    </span><span class="c1"># list all available targets</span>
+</pre></div>
+</div>
+</section>
+<section id="adding-or-editing-pages">
+<h3>Adding or editing pages<a class="headerlink" href="#adding-or-editing-pages" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>All documentation lives in <code class="docutils literal notranslate"><span class="pre">docs/</span></code> as Markdown files.</p></li>
+<li><p>The table of contents is defined in <code class="docutils literal notranslate"><span class="pre">docs/index.rst</span></code>.</p></li>
+<li><p>To add a new page, create a <code class="docutils literal notranslate"><span class="pre">.md</span></code> file in <code class="docutils literal notranslate"><span class="pre">docs/</span></code> and add its name (without
+extension) to the appropriate <code class="docutils literal notranslate"><span class="pre">toctree</span></code> block in <code class="docutils literal notranslate"><span class="pre">docs/index.rst</span></code>.</p></li>
+</ul>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="mscprogs.html" class="btn btn-neutral float-left" title="MSCPROGS post-processing tools" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Nansen Environmental and Remote Sensing Center.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

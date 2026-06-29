@@ -1,0 +1,355 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Running the Model &mdash; NERSC-HYCOM-CICE develop documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=16816911"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="_static/copybutton.js?v=f281be69"></script>
+      <script src="_static/design-tabs.js?v=f930bc37"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Description of HYCOM-CICE offline nesting usage" href="offline-nesting.html" />
+    <link rel="prev" title="Run create_ref_case.sh" href="external-files.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            NERSC-HYCOM-CICE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Overview</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Model components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="overview.html#directory-structure">Directory structure</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Installation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Clone the repositories</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html#python-environment">Python environment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html#hpc-environment">HPC environment</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Experiment setup</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="experiment-setup.html">Set up the work directory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="experiment-setup.html#configure-region-src">Configure REGION.src</a></li>
+<li class="toctree-l1"><a class="reference internal" href="experiment-setup.html#create-the-experiment-directory">Create the experiment directory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="experiment-setup.html#configure-blkdat-input">Configure blkdat.input</a></li>
+<li class="toctree-l1"><a class="reference internal" href="experiment-setup.html#configure-expt-src">Configure EXPT.src</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Compilation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="compilation.html">BGC dependencies (MSCPROGS and FABM)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="compilation.html#compile-hycom-cice">Compile HYCOM-CICE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="compilation.html#compile-hycom-all">Compile hycom_ALL</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Prepare Forcing and Boundary Files</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="external-files.html">Run create_ref_case.sh</a></li>
+<li class="toctree-l1"><a class="reference internal" href="external-files.html#open-boundary-nesting-files">Open boundary (nesting) files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="external-files.html#atmospheric-forcing-files">Atmospheric forcing files</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Running the Model</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Running the Model</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#prepare-job-specific-files">Prepare job-specific files</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#restart-files">Restart files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#offline-nesting-files">Offline nesting files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#atmospheric-forcing-files">Atmospheric forcing files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#prepare-the-scratch-folder">Prepare the SCRATCH folder</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#submit-a-job">Submit a job</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#check-results">Check results</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#visualization">Visualization</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="offline-nesting.html">Description of HYCOM-CICE offline nesting usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="offline-nesting.html#quick-start">Quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="offline-nesting.html#how-to-run-on-native-mercator-grid">How to run on native MERCATOR grid:</a></li>
+<li class="toctree-l1"><a class="reference internal" href="offline-nesting.html#how-to-run-on-regular-mercator-grid">How to run on regular MERCATOR grid:</a></li>
+<li class="toctree-l1"><a class="reference internal" href="offline-nesting.html#directory-structure">Directory structure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="offline-nesting.html#the-nemo-grid">The NEMO grid</a></li>
+<li class="toctree-l1"><a class="reference internal" href="offline-nesting.html#building-nemo-archive-files">Building NEMO archive files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="offline-nesting.html#horizontal-interpolation-to-the-inner-domain">Horizontal interpolation to the inner domain</a></li>
+<li class="toctree-l1"><a class="reference internal" href="offline-nesting.html#vertical-interpolation-using-the-chosen-vertical-isopycnal-structure">Vertical interpolation using the chosen vertical (isopycnal) structure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="offline-nesting.html#calculating-montg-values">Calculating montg values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="offline-nesting.html#generating-port-data">Generating port data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="offline-nesting.html#using-bio-nesting">Using BIO-NESTING</a></li>
+<li class="toctree-l1"><a class="reference internal" href="offlux.html">Prerequisites</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changes.html">infile.in</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changes.html#daily-averages">Daily averages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changes.html#weekly-averages">Weekly averages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changes.html#nesting">Nesting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changes.html#tides">Tides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changes.html#mod-year-info">mod_year_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changes.html#naming-of-outout-files">Naming of outout files</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">TP2 Configuration (Betzy)</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="tp2-requirements.html">TP2 Requirements</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Running the Model</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#prepare-job-specific-files">Prepare job-specific files</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#restart-files">Restart files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#offline-nesting-files">Offline nesting files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#atmospheric-forcing-files">Atmospheric forcing files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#prepare-the-scratch-folder">Prepare the SCRATCH folder</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#submit-a-job">Submit a job</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#check-results">Check results</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#visualization">Visualization</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributor Guide</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">NERSC-HYCOM-CICE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Running the Model</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/tp2-running.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="running-the-model">
+<h1>Running the Model<a class="headerlink" href="#running-the-model" title="Link to this heading"></a></h1>
+<section id="prepare-job-specific-files">
+<h2>Prepare job-specific files<a class="headerlink" href="#prepare-job-specific-files" title="Link to this heading"></a></h2>
+<p>Before each model run, files specific to the target time period must be in place.
+This example uses a one-week run:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">DATE_START</span><span class="o">=</span><span class="s2">&quot;2016-08-27&quot;</span>
+<span class="n">DATE_END</span><span class="o">=</span><span class="s2">&quot;2016-09-03&quot;</span>
+</pre></div>
+</div>
+<section id="restart-files">
+<h3>Restart files<a class="headerlink" href="#restart-files" title="Link to this heading"></a></h3>
+<p>HYCOM and CICE each need a restart file valid at <code class="docutils literal notranslate"><span class="pre">DATE_START</span></code>.</p>
+<p>For TP2 hindcast runs, restart files are archived at:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">/</span><span class="n">nird</span><span class="o">/</span><span class="n">datalake</span><span class="o">/</span><span class="n">NS9481K</span><span class="o">/</span><span class="n">shuang</span><span class="o">/</span><span class="n">TP2_output</span><span class="o">/</span><span class="n">expt_02</span><span class="mf">.6</span><span class="o">/</span>
+</pre></div>
+</div>
+<p>The HYCOM restart file naming convention is <code class="docutils literal notranslate"><span class="pre">restart.YYYY_DDD_00_0000.[a,b]</span></code>, where <code class="docutils literal notranslate"><span class="pre">DDD</span></code>
+is the day of year. The CICE restart is <code class="docutils literal notranslate"><span class="pre">iced.YYYY-MM-DD-00000.nc</span></code>.</p>
+<p>For example, to start on 27 August 2016 (day 240):</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mkdir<span class="w"> </span>-p<span class="w"> </span><span class="nv">$WORK</span>/&lt;CONFIGNAME&gt;/expt_&lt;EXPT_ID&gt;/data/cice
+<span class="nb">cd</span><span class="w"> </span><span class="nv">$WORK</span>/&lt;CONFIGNAME&gt;/expt_&lt;EXPT_ID&gt;/data
+
+cp<span class="w"> </span>/nird/datalake/NS9481K/shuang/TP2_output/expt_02.6/restart/restart.2016_240_00_0000.a<span class="w"> </span>.
+cp<span class="w"> </span>/nird/datalake/NS9481K/shuang/TP2_output/expt_02.6/restart/restart.2016_240_00_0000.b<span class="w"> </span>.
+
+<span class="nb">cd</span><span class="w"> </span>cice
+cp<span class="w"> </span>/nird/datalake/NS9481K/shuang/TP2_output/expt_02.6/cice/iced.2016-08-27-00000.nc<span class="w"> </span>.
+</pre></div>
+</div>
+</section>
+<section id="offline-nesting-files">
+<h3>Offline nesting files<a class="headerlink" href="#offline-nesting-files" title="Link to this heading"></a></h3>
+<p>When offline nesting is enabled in <code class="docutils literal notranslate"><span class="pre">blkdat.input</span></code>, daily archive files must be present in
+<code class="docutils literal notranslate"><span class="pre">$WORK/&lt;CONFIGNAME&gt;/nest/&lt;IEXPT&gt;/</span></code> for each day of the run period.</p>
+<p>Nesting files for TP2 are at <code class="docutils literal notranslate"><span class="pre">/nird/datalake/NS9481K/shuang/nest/TP2_expt023/</span></code>. If they
+are stored as <code class="docutils literal notranslate"><span class="pre">.tar.gz</span></code> archives, the following script extracts the needed files:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">DIR_NST</span><span class="o">=</span>/nird/datalake/NS9481K/shuang/nest/TP2_expt023
+<span class="nv">WORK_NST</span><span class="o">=</span><span class="nv">$WORK</span>/&lt;CONFIGNAME&gt;/nest/&lt;IEXPT&gt;
+mkdir<span class="w"> </span>-p<span class="w"> </span><span class="nv">$WORK_NST</span>
+<span class="nb">cd</span><span class="w"> </span><span class="nv">$WORK_NST</span>
+
+<span class="k">for</span><span class="w"> </span><span class="o">((</span><span class="w"> </span><span class="nv">d</span><span class="o">=</span><span class="k">$(</span>date<span class="w"> </span>-u<span class="w"> </span>-d<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$DATE_START</span><span class="s2">&quot;</span><span class="w"> </span>+%s<span class="k">)</span><span class="p">;</span><span class="w"> </span>d&lt;<span class="o">=</span><span class="k">$(</span>date<span class="w"> </span>-u<span class="w"> </span>-d<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$DATE_END</span><span class="s2">&quot;</span><span class="w"> </span>+%s<span class="k">)</span><span class="p">;</span><span class="w"> </span><span class="nv">d</span><span class="o">+=</span><span class="m">86400</span><span class="w"> </span><span class="o">))</span><span class="p">;</span><span class="w"> </span><span class="k">do</span>
+<span class="w">    </span><span class="nv">DATE_NOW</span><span class="o">=</span><span class="k">$(</span>date<span class="w"> </span>-u<span class="w"> </span>-d<span class="w"> </span><span class="s2">&quot;@</span><span class="nv">$d</span><span class="s2">&quot;</span><span class="w"> </span>+%Y-%m-%d<span class="k">)</span>
+<span class="w">    </span><span class="nv">YYYY</span><span class="o">=</span><span class="k">$(</span>date<span class="w"> </span>-d<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$DATE_NOW</span><span class="s2">&quot;</span><span class="w"> </span>+%Y<span class="k">)</span>
+<span class="w">    </span><span class="nv">DOY</span><span class="o">=</span><span class="k">$(</span>date<span class="w"> </span>-d<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$DATE_NOW</span><span class="s2">&quot;</span><span class="w"> </span>+%j<span class="k">)</span>
+
+<span class="w">    </span><span class="nv">afile</span><span class="o">=</span>archv.<span class="si">${</span><span class="nv">YYYY</span><span class="si">}</span>_<span class="si">${</span><span class="nv">DOY</span><span class="si">}</span>_00.a
+<span class="w">    </span><span class="nv">bfile</span><span class="o">=</span>archv.<span class="si">${</span><span class="nv">YYYY</span><span class="si">}</span>_<span class="si">${</span><span class="nv">DOY</span><span class="si">}</span>_00.b
+<span class="w">    </span><span class="nv">afile_fabm</span><span class="o">=</span>archv_fabm.<span class="si">${</span><span class="nv">YYYY</span><span class="si">}</span>_<span class="si">${</span><span class="nv">DOY</span><span class="si">}</span>_00.a
+<span class="w">    </span><span class="nv">bfile_fabm</span><span class="o">=</span>archv_fabm.<span class="si">${</span><span class="nv">YYYY</span><span class="si">}</span>_<span class="si">${</span><span class="nv">DOY</span><span class="si">}</span>_00.b
+
+<span class="w">    </span><span class="c1"># copy directly if files are available individually</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span>-f<span class="w"> </span><span class="si">${</span><span class="nv">DIR_NST</span><span class="si">}</span>/<span class="nv">$afile</span><span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
+<span class="w">        </span>cp<span class="w"> </span><span class="si">${</span><span class="nv">DIR_NST</span><span class="si">}</span>/<span class="nv">$afile</span><span class="w"> </span><span class="si">${</span><span class="nv">DIR_NST</span><span class="si">}</span>/<span class="nv">$bfile</span><span class="w"> </span>.
+<span class="w">        </span>cp<span class="w"> </span><span class="si">${</span><span class="nv">DIR_NST</span><span class="si">}</span>/<span class="nv">$afile_fabm</span><span class="w"> </span><span class="si">${</span><span class="nv">DIR_NST</span><span class="si">}</span>/<span class="nv">$bfile_fabm</span><span class="w"> </span>.
+<span class="w">        </span><span class="k">continue</span>
+<span class="w">    </span><span class="k">fi</span>
+
+<span class="w">    </span><span class="c1"># otherwise extract from tar archives</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span>-d<span class="w"> </span><span class="si">${</span><span class="nv">DIR_NST</span><span class="si">}</span>/tar_files<span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
+<span class="w">        </span><span class="k">for</span><span class="w"> </span>f<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="si">${</span><span class="nv">DIR_NST</span><span class="si">}</span>/tar_files/archv.<span class="si">${</span><span class="nv">YYYY</span><span class="si">}</span>_*.tar.gz<span class="p">;</span><span class="w"> </span><span class="k">do</span>
+<span class="w">            </span><span class="nv">range</span><span class="o">=</span><span class="k">$(</span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">f</span><span class="p">#</span><span class="si">${</span><span class="nv">DIR_NST</span><span class="si">}</span><span class="p">/tar_files/archv.</span><span class="si">${</span><span class="nv">YYYY</span><span class="si">}</span><span class="nv">_</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>sed<span class="w"> </span><span class="s1">&#39;s/\.tar\.gz//&#39;</span><span class="k">)</span>
+<span class="w">            </span><span class="nv">start</span><span class="o">=</span><span class="k">$((</span><span class="m">10#</span><span class="si">${</span><span class="nv">range</span><span class="p">%_*</span><span class="si">}</span><span class="k">))</span>
+<span class="w">            </span><span class="nv">end</span><span class="o">=</span><span class="k">$((</span><span class="m">10#</span><span class="si">${</span><span class="nv">range</span><span class="p">#*_</span><span class="si">}</span><span class="k">))</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="o">((</span><span class="w"> </span>DOY<span class="w"> </span>&gt;<span class="o">=</span><span class="w"> </span>start<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>DOY<span class="w"> </span>&lt;<span class="o">=</span><span class="w"> </span>end<span class="w"> </span><span class="o">))</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
+<span class="w">                </span>tar<span class="w"> </span>-xzf<span class="w"> </span><span class="si">${</span><span class="nv">DIR_NST</span><span class="si">}</span>/tar_files/archv.<span class="si">${</span><span class="nv">YYYY</span><span class="si">}</span>_<span class="nv">$range</span>.tar.gz<span class="w"> </span><span class="nv">$afile</span><span class="w"> </span><span class="nv">$bfile</span>
+<span class="w">            </span><span class="k">fi</span>
+<span class="w">        </span><span class="k">done</span>
+<span class="w">        </span><span class="k">for</span><span class="w"> </span>f<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="si">${</span><span class="nv">DIR_NST</span><span class="si">}</span>/tar_files/archv_fabm.<span class="si">${</span><span class="nv">YYYY</span><span class="si">}</span>_*.tar.gz<span class="p">;</span><span class="w"> </span><span class="k">do</span>
+<span class="w">            </span><span class="nv">range</span><span class="o">=</span><span class="k">$(</span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">f</span><span class="p">#</span><span class="si">${</span><span class="nv">DIR_NST</span><span class="si">}</span><span class="p">/tar_files/archv_fabm.</span><span class="si">${</span><span class="nv">YYYY</span><span class="si">}</span><span class="nv">_</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>sed<span class="w"> </span><span class="s1">&#39;s/\.tar\.gz//&#39;</span><span class="k">)</span>
+<span class="w">            </span><span class="nv">start</span><span class="o">=</span><span class="k">$((</span><span class="m">10#</span><span class="si">${</span><span class="nv">range</span><span class="p">%_*</span><span class="si">}</span><span class="k">))</span>
+<span class="w">            </span><span class="nv">end</span><span class="o">=</span><span class="k">$((</span><span class="m">10#</span><span class="si">${</span><span class="nv">range</span><span class="p">#*_</span><span class="si">}</span><span class="k">))</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="o">((</span><span class="w"> </span>DOY<span class="w"> </span>&gt;<span class="o">=</span><span class="w"> </span>start<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>DOY<span class="w"> </span>&lt;<span class="o">=</span><span class="w"> </span>end<span class="w"> </span><span class="o">))</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
+<span class="w">                </span>tar<span class="w"> </span>-xzf<span class="w"> </span><span class="si">${</span><span class="nv">DIR_NST</span><span class="si">}</span>/tar_files/archv_fabm.<span class="si">${</span><span class="nv">YYYY</span><span class="si">}</span>_<span class="nv">$range</span>.tar.gz<span class="w"> </span><span class="nv">$afile_fabm</span><span class="w"> </span><span class="nv">$bfile_fabm</span>
+<span class="w">            </span><span class="k">fi</span>
+<span class="w">        </span><span class="k">done</span>
+<span class="w">    </span><span class="k">fi</span>
+<span class="k">done</span>
+</pre></div>
+</div>
+</section>
+<section id="atmospheric-forcing-files">
+<h3>Atmospheric forcing files<a class="headerlink" href="#atmospheric-forcing-files" title="Link to this heading"></a></h3>
+<p>See <a class="reference internal" href="external-files.html#atmospheric-forcing-files"><span class="std std-ref">Atmospheric forcing files</span></a>.</p>
+</section>
+<section id="prepare-the-scratch-folder">
+<h3>Prepare the SCRATCH folder<a class="headerlink" href="#prepare-the-scratch-folder" title="Link to this heading"></a></h3>
+<p><strong>Note:</strong> This step is also handled automatically by <code class="docutils literal notranslate"><span class="pre">srjob.sh</span></code>. Skip it if you are
+using <code class="docutils literal notranslate"><span class="pre">srjob.sh</span></code>.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span><span class="nv">$WORK</span>/&lt;CONFIGNAME&gt;/expt_&lt;EXPT_ID&gt;
+../bin/expt_preprocess.sh<span class="w"> </span><span class="si">${</span><span class="nv">DATE_START</span><span class="si">}</span>T00:00:00<span class="w"> </span><span class="si">${</span><span class="nv">DATE_END</span><span class="si">}</span>T00:00:00<span class="w"> </span><span class="nv">$INITFLG</span>
+</pre></div>
+</div>
+<p>A successful run prints a message ending with <code class="docutils literal notranslate"><span class="pre">No</span> <span class="pre">fatal</span> <span class="pre">errors.</span> <span class="pre">Ok</span> <span class="pre">to</span> <span class="pre">start</span> <span class="pre">model</span> <span class="pre">set</span> <span class="pre">up</span> <span class="pre">in</span> <span class="pre">..</span></code>.</p>
+</section>
+</section>
+<section id="submit-a-job">
+<h2>Submit a job<a class="headerlink" href="#submit-a-job" title="Link to this heading"></a></h2>
+<p>The job script <code class="docutils literal notranslate"><span class="pre">srjob.sh</span></code> handles atmospheric forcing, SCRATCH setup, and job submission
+in one step. Open <code class="docutils literal notranslate"><span class="pre">srjob.sh</span></code> in a text editor and update:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Variable</p></th>
+<th class="head"><p>Example</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">START</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;2016-08-27T00:00:00&quot;</span></code></p></td>
+<td><p>Run start time</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">END</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;2016-09-03T00:00:00&quot;</span></code></p></td>
+<td><p>Run end time</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">INITFLG</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;&quot;</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;&quot;</span></code> for a restart run; <code class="docutils literal notranslate"><span class="pre">&quot;--init&quot;</span></code> to initialize from climatology</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">#SBATCH</span> <span class="pre">--time</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;00:30:00&quot;</span></code></p></td>
+<td><p>Wall-clock time limit (a 7-day TP2 run takes ~10 min on Betzy)</p></td>
+</tr>
+</tbody>
+</table>
+<p>Then submit:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span><span class="nv">$WORK</span>/&lt;CONFIGNAME&gt;/expt_&lt;EXPT_ID&gt;
+sbatch<span class="w"> </span>srjob.sh
+</pre></div>
+</div>
+<p>Check job status with:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>squeue<span class="w"> </span>-u<span class="w"> </span><span class="nv">$USER</span>
+</pre></div>
+</div>
+<p>A useful tool for generating SLURM job scripts is available at:
+<a class="reference external" href="https://open.pages.sigma2.no/job-script-generator/">https://open.pages.sigma2.no/job-script-generator/</a></p>
+</section>
+<section id="check-results">
+<h2>Check results<a class="headerlink" href="#check-results" title="Link to this heading"></a></h2>
+<p>When the job finishes, restart files and daily mean files are moved to the <code class="docutils literal notranslate"><span class="pre">data/</span></code> directory.
+Confirm successful completion by checking the stop file:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>cat<span class="w"> </span><span class="nv">$WORK</span>/&lt;CONFIGNAME&gt;/expt_&lt;EXPT_ID&gt;/log/hycom.stop
+</pre></div>
+</div>
+<p>The file should contain <code class="docutils literal notranslate"><span class="pre">GOODRUN</span></code>. If not, inspect the log files under <code class="docutils literal notranslate"><span class="pre">log/</span></code> for
+error messages.</p>
+</section>
+<section id="visualization">
+<h2>Visualization<a class="headerlink" href="#visualization" title="Link to this heading"></a></h2>
+<p>Sample Jupyter notebooks for plotting HYCOM output are available in the
+<a class="reference external" href="https://github.com/nansencenter/TP2_setup">TP2_setup repository</a>:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/nansencenter/TP2_setup/blob/main/plot_2D_TP2_temp.ipynb">plot_2D_TP2_temp.ipynb</a> — 2D surface maps</p></li>
+<li><p><a class="reference external" href="https://github.com/nansencenter/TP2_setup/blob/main/plot_section_TP2.ipynb">plot_section_TP2.ipynb</a> — vertical cross-sections</p></li>
+</ul>
+<p>These notebooks read files from <code class="docutils literal notranslate"><span class="pre">$WORK/&lt;CONFIGNAME&gt;/expt_&lt;EXPT_ID&gt;/data/</span></code>.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="external-files.html" class="btn btn-neutral float-left" title="Run create_ref_case.sh" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="offline-nesting.html" class="btn btn-neutral float-right" title="Description of HYCOM-CICE offline nesting usage" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Nansen Environmental and Remote Sensing Center.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

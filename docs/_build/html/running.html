@@ -1,0 +1,294 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Submit a job &mdash; NERSC-HYCOM-CICE develop documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=16816911"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="_static/copybutton.js?v=f281be69"></script>
+      <script src="_static/design-tabs.js?v=f930bc37"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="MSCPROGS post-processing tools" href="mscprogs.html" />
+    <link rel="prev" title="Initial conditions" href="forcing.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            NERSC-HYCOM-CICE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Overview</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Model components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="overview.html#directory-structure">Directory structure</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Installation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Clone the repositories</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html#python-environment">Python environment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html#hpc-environment">HPC environment</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Experiment setup</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="experiment-setup.html">Set up the work directory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="experiment-setup.html#configure-region-src">Configure REGION.src</a></li>
+<li class="toctree-l1"><a class="reference internal" href="experiment-setup.html#create-the-experiment-directory">Create the experiment directory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="experiment-setup.html#configure-blkdat-input">Configure blkdat.input</a></li>
+<li class="toctree-l1"><a class="reference internal" href="experiment-setup.html#configure-expt-src">Configure EXPT.src</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Compilation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="compilation.html">Compile MSCPROGS (libhycnersc.a)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="compilation.html#bgc-dependencies-fabm">BGC dependencies (FABM)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="compilation.html#compile-hycom-cice">Compile HYCOM-CICE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="compilation.html#compile-hycom-all">Compile hycom_ALL</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Forcing Files</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="forcing.html">Initial conditions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="forcing.html#atmospheric-forcing">Atmospheric forcing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="forcing.html#open-boundary-forcing">Open boundary forcing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="forcing.html#climatologies-and-river-forcing">Climatologies and river forcing</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Running the Model</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Submit a job</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#check-results">Check results</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#restarting-after-a-crash">Restarting after a crash</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#visualization">Visualization</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Post-processing</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="mscprogs.html">MSCPROGS post-processing tools</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributor Guide</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">NERSC-HYCOM-CICE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Submit a job</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/running.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="submit-a-job">
+<span id="id1"></span><h1>Submit a job<a class="headerlink" href="#submit-a-job" title="Link to this heading"></a></h1>
+<p>The job script <code class="docutils literal notranslate"><span class="pre">srjob.sh</span></code> handles three things automatically:</p>
+<ul>
+<li><p><strong><a class="reference internal" href="forcing.html#atmospheric-forcing"><span class="std std-ref">Atmospheric forcing generation</span></a></strong> — downloads and
+prepares ERA5 forcing for the run period</p></li>
+<li><p><strong>Stage run files</strong> — runs <code class="docutils literal notranslate"><span class="pre">expt_preprocess.sh</span></code> to stage all files the model needs into
+the scratch directory (<code class="docutils literal notranslate"><span class="pre">expt_&lt;EXPT_ID&gt;/SCRATCH/</span></code>). Specifically, it:</p>
+<ul class="simple">
+<li><p>Reads and validates settings from <code class="docutils literal notranslate"><span class="pre">blkdat.input</span></code> (time steps, flags, experiment number)</p></li>
+<li><p>Copies the MPI partition file (<code class="docutils literal notranslate"><span class="pre">topo/partit/depth_R_T.NNNN</span></code>, where <code class="docutils literal notranslate"><span class="pre">NNNN</span></code> is the
+MPI task count) to <code class="docutils literal notranslate"><span class="pre">patch.input</span></code> in the scratch directory</p></li>
+<li><p>Symlinks or copies all forcing files (atmospheric, river, kpar, relaxation
+climatologies, diffusion fields, nesting files)</p></li>
+<li><p>Verifies that atmospheric forcing covers the full run period</p></li>
+<li><p>Copies restart files (HYCOM and CICE) from the data directory</p></li>
+<li><p>Copies the <code class="docutils literal notranslate"><span class="pre">hycom_cice</span></code> executable from <code class="docutils literal notranslate"><span class="pre">build/</span></code></p></li>
+<li><p>Writes the <code class="docutils literal notranslate"><span class="pre">limits</span></code> file with start and stop times via <code class="docutils literal notranslate"><span class="pre">hycom_limits.py</span></code></p></li>
+<li><p>Moves old output files to <code class="docutils literal notranslate"><span class="pre">KEEP/</span></code></p></li>
+</ul>
+<p>It exits with a non-zero code if any required file is missing, aborting the job before
+the model starts.</p>
+<details class="sd-sphinx-override sd-dropdown sd-card sd-mb-3">
+<summary class="sd-summary-title sd-card-header">
+<span class="sd-summary-text">Run manually</span><span class="sd-summary-state-marker sd-summary-chevron-right"><svg version="1.1" width="1.5em" height="1.5em" class="sd-octicon sd-octicon-chevron-right" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.72 18.78a.75.75 0 0 1 0-1.06L14.44 12 8.72 6.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0Z"></path></svg></span></summary><div class="sd-summary-content sd-card-body docutils">
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span><span class="nv">$WORK</span>/&lt;CONFIGNAME&gt;/expt_&lt;EXPT_ID&gt;
+../bin/expt_preprocess.sh<span class="w"> </span><span class="si">${</span><span class="nv">START</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">END</span><span class="si">}</span><span class="w"> </span><span class="nv">$INITFLG</span>
+</pre></div>
+</div>
+<p class="sd-card-text">Use the same <code class="docutils literal notranslate"><span class="pre">START</span></code>, <code class="docutils literal notranslate"><span class="pre">END</span></code>, and <code class="docutils literal notranslate"><span class="pre">INITFLG</span></code> values as in <code class="docutils literal notranslate"><span class="pre">srjob.sh</span></code> (see the table
+below for formats). A successful run prints <code class="docutils literal notranslate"><span class="pre">No</span> <span class="pre">fatal</span> <span class="pre">errors.</span> <span class="pre">Ok</span> <span class="pre">to</span> <span class="pre">start</span> <span class="pre">model</span> <span class="pre">set</span> <span class="pre">up</span> <span class="pre">in</span> <span class="pre">..</span></code>.</p>
+<p class="sd-card-text">Running <code class="docutils literal notranslate"><span class="pre">expt_preprocess.sh</span></code> manually beforehand is useful to verify that all required
+files are in place before submitting the job. If you do, comment out the
+<code class="docutils literal notranslate"><span class="pre">expt_preprocess.sh</span></code> call in <code class="docutils literal notranslate"><span class="pre">srjob.sh</span></code> to avoid staging the files twice.</p>
+</div>
+</details></li>
+<li><p><strong>Job submission</strong> — submits the model to the SLURM queue</p></li>
+<li><p><strong>Post-processing</strong> — runs <code class="docutils literal notranslate"><span class="pre">expt_postprocess.sh</span></code> after the model finishes. It moves
+restart files, daily mean archives (<code class="docutils literal notranslate"><span class="pre">archv.*</span></code>), and CICE output from the scratch
+directory to <code class="docutils literal notranslate"><span class="pre">data/</span></code> and <code class="docutils literal notranslate"><span class="pre">data/cice/</span></code>, and writes <code class="docutils literal notranslate"><span class="pre">log/hycom.stop</span></code> with <code class="docutils literal notranslate"><span class="pre">GOODRUN</span></code> or
+<code class="docutils literal notranslate"><span class="pre">BADRUN</span></code> depending on whether the model reached a normal stop. The <code class="docutils literal notranslate"><span class="pre">data/</span></code> directory
+is then ready for analysis with the <a class="reference internal" href="mscprogs.html"><span class="std std-doc">MSCPROGS post-processing tools</span></a>.</p></li>
+</ul>
+<p>Open <code class="docutils literal notranslate"><span class="pre">srjob.sh</span></code> in a text editor and update:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Variable</p></th>
+<th class="head"><p>Value</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">START</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;YYYY-MM-DDT00:00:00&quot;</span></code></p></td>
+<td><p>Run start time</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">END</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;YYYY-MM-DDT00:00:00&quot;</span></code></p></td>
+<td><p>Run end time</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">INITFLG</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;--init&quot;</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;&quot;</span></code> for a restart run; <code class="docutils literal notranslate"><span class="pre">&quot;--init&quot;</span></code> to initialize from climatology</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">#SBATCH</span> <span class="pre">--time</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;HH:MM:SS&quot;</span></code></p></td>
+<td><p>Wall-clock time limit</p></td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<div><p><strong><code class="docutils literal notranslate"><span class="pre">INITFLG=&quot;--init&quot;</span></code> (climatological initialization):</strong> No restart files are needed.
+Temperature and salinity (T/S) are set directly from the climatological fields in
+<code class="docutils literal notranslate"><span class="pre">relax/</span></code> (see <a class="reference internal" href="forcing.html#climatologies-and-river-forcing"><span class="std std-ref">Climatologies and river forcing</span></a>);
+velocities and sea surface height (SSH) start at zero. The model then spins up under realistic atmospheric
+forcing. The start date must be in September (the month of Arctic sea ice minimum).
+See <a class="reference internal" href="forcing.html#initial-conditions"><span class="std std-ref">Initial conditions</span></a> for details on both options.</p>
+</div></blockquote>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For reference when setting <code class="docutils literal notranslate"><span class="pre">#SBATCH</span> <span class="pre">--time</span></code>: a 1-year TP2 run with BGC on 4 Betzy nodes (504 cores) takes approximately 5–6 hours of wall time.</p>
+</div>
+<p>Then submit:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span><span class="nv">$WORK</span>/&lt;CONFIGNAME&gt;/expt_&lt;EXPT_ID&gt;
+sbatch<span class="w"> </span>srjob.sh
+</pre></div>
+</div>
+<p>Check job status with:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>squeue<span class="w"> </span>-u<span class="w"> </span><span class="nv">$USER</span>
+</pre></div>
+</div>
+<p>A useful tool for generating SLURM job scripts is available at:
+<a class="reference external" href="https://open.pages.sigma2.no/job-script-generator/">https://open.pages.sigma2.no/job-script-generator/</a></p>
+</section>
+<section id="check-results">
+<h1>Check results<a class="headerlink" href="#check-results" title="Link to this heading"></a></h1>
+<p>When the job finishes, restart files and daily mean files are moved to the <code class="docutils literal notranslate"><span class="pre">data/</span></code> directory.
+Confirm successful completion by checking the stop file:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>cat<span class="w"> </span><span class="nv">$WORK</span>/&lt;CONFIGNAME&gt;/expt_&lt;EXPT_ID&gt;/log/hycom.stop
+</pre></div>
+</div>
+<p>The file should contain <code class="docutils literal notranslate"><span class="pre">GOODRUN</span></code>. If not, inspect the log files under <code class="docutils literal notranslate"><span class="pre">log/</span></code> for
+error messages.</p>
+</section>
+<section id="restarting-after-a-crash">
+<h1>Restarting after a crash<a class="headerlink" href="#restarting-after-a-crash" title="Link to this heading"></a></h1>
+<p>What happens to output files depends on how the run ended:</p>
+<ul>
+<li><p><strong>Model exits with an error but the SLURM job completes normally</strong> (e.g. a model
+error or failed assertion): <code class="docutils literal notranslate"><span class="pre">expt_postprocess.sh</span></code> still runs, so restart and
+archive files are moved to <code class="docutils literal notranslate"><span class="pre">data/</span></code> and <code class="docutils literal notranslate"><span class="pre">log/hycom.stop</span></code> contains <code class="docutils literal notranslate"><span class="pre">BADRUN</span></code>.
+The restart files written before the crash are already in <code class="docutils literal notranslate"><span class="pre">data/</span></code> and can be
+used directly.</p></li>
+<li><p><strong>Job is killed by SLURM</strong> (wall-time limit, out-of-memory, node failure, or
+<code class="docutils literal notranslate"><span class="pre">scancel</span></code>): <code class="docutils literal notranslate"><span class="pre">expt_postprocess.sh</span></code> never runs. Output files remain in <code class="docutils literal notranslate"><span class="pre">SCRATCH/</span></code>.
+Run postprocessing manually before resubmitting:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span><span class="nv">$WORK</span>/&lt;CONFIGNAME&gt;/expt_&lt;EXPT_ID&gt;
+../expt_postprocess.sh
+</pre></div>
+</div>
+<p>This moves the restart and archive files written before the crash to <code class="docutils literal notranslate"><span class="pre">data/</span></code>,
+where <code class="docutils literal notranslate"><span class="pre">srjob.sh</span></code> will pick them up on the next run. If you skip this step and
+resubmit directly, <code class="docutils literal notranslate"><span class="pre">expt_preprocess.sh</span></code> will move the files to <code class="docutils literal notranslate"><span class="pre">SCRATCH/KEEP/</span></code>
+instead — they are not lost, but you will need to copy them to <code class="docutils literal notranslate"><span class="pre">data/</span></code> manually.</p>
+</li>
+</ul>
+<p>In both cases, update <code class="docutils literal notranslate"><span class="pre">START</span></code> in <code class="docutils literal notranslate"><span class="pre">srjob.sh</span></code> to the date of the last restart file
+written, and set <code class="docutils literal notranslate"><span class="pre">INITFLG=&quot;&quot;</span></code> (restart run).</p>
+</section>
+<section id="visualization">
+<h1>Visualization<a class="headerlink" href="#visualization" title="Link to this heading"></a></h1>
+<p>Sample Jupyter notebooks for plotting HYCOM output are available in the
+<a class="reference external" href="https://github.com/nansencenter/TP2_setup">TP2_setup repository</a>:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/nansencenter/TP2_setup/blob/main/plot_2D_TP2_temp.ipynb">plot_2D_TP2_temp.ipynb</a> — 2D surface maps</p></li>
+<li><p><a class="reference external" href="https://github.com/nansencenter/TP2_setup/blob/main/plot_section_TP2.ipynb">plot_section_TP2.ipynb</a> — vertical cross-sections</p></li>
+</ul>
+<p>These notebooks read files from <code class="docutils literal notranslate"><span class="pre">$WORK/&lt;CONFIGNAME&gt;/expt_&lt;EXPT_ID&gt;/data/</span></code>.</p>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="forcing.html" class="btn btn-neutral float-left" title="Initial conditions" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="mscprogs.html" class="btn btn-neutral float-right" title="MSCPROGS post-processing tools" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Nansen Environmental and Remote Sensing Center.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

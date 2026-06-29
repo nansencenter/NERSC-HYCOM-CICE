@@ -1,0 +1,478 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Compile MSCPROGS (libhycnersc.a) &mdash; NERSC-HYCOM-CICE develop documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=16816911"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="_static/copybutton.js?v=f281be69"></script>
+      <script src="_static/design-tabs.js?v=f930bc37"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Initial conditions" href="forcing.html" />
+    <link rel="prev" title="Set up the work directory" href="experiment-setup.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            NERSC-HYCOM-CICE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Overview</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Model components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="overview.html#directory-structure">Directory structure</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Installation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Clone the repositories</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html#python-environment">Python environment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html#hpc-environment">HPC environment</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Experiment setup</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="experiment-setup.html">Set up the work directory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="experiment-setup.html#configure-region-src">Configure REGION.src</a></li>
+<li class="toctree-l1"><a class="reference internal" href="experiment-setup.html#create-the-experiment-directory">Create the experiment directory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="experiment-setup.html#configure-blkdat-input">Configure blkdat.input</a></li>
+<li class="toctree-l1"><a class="reference internal" href="experiment-setup.html#configure-expt-src">Configure EXPT.src</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Compilation</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Compile MSCPROGS (libhycnersc.a)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#bgc-dependencies-fabm">BGC dependencies (FABM)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#compile-fabm-libfabm-a">Compile FABM (libfabm.a)</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="#compile-hycom-cice">Compile HYCOM-CICE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#compile-hycom-all">Compile hycom_ALL</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Forcing Files</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="forcing.html">Initial conditions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="forcing.html#atmospheric-forcing">Atmospheric forcing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="forcing.html#open-boundary-forcing">Open boundary forcing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="forcing.html#climatologies-and-river-forcing">Climatologies and river forcing</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Running the Model</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="running.html">Submit a job</a></li>
+<li class="toctree-l1"><a class="reference internal" href="running.html#check-results">Check results</a></li>
+<li class="toctree-l1"><a class="reference internal" href="running.html#restarting-after-a-crash">Restarting after a crash</a></li>
+<li class="toctree-l1"><a class="reference internal" href="running.html#visualization">Visualization</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Post-processing</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="mscprogs.html">MSCPROGS post-processing tools</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributor Guide</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">NERSC-HYCOM-CICE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Compile MSCPROGS (libhycnersc.a)</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/compilation.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <p id="compilation-top">Before compiling, source the HPC environment file to load the correct modules and compilers.
+See the <a class="reference internal" href="installation.html#hpc-environment"><span class="std std-ref">HPC environment</span></a> section for details.</p>
+<details class="sd-sphinx-override sd-dropdown sd-card sd-mb-3">
+<summary class="sd-summary-title sd-card-header">
+<span class="sd-summary-text">Source HPC environment — Betzy (NRIS/Sigma2)</span><span class="sd-summary-state-marker sd-summary-chevron-right"><svg version="1.1" width="1.5em" height="1.5em" class="sd-octicon sd-octicon-chevron-right" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.72 18.78a.75.75 0 0 1 0-1.06L14.44 12 8.72 6.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0Z"></path></svg></span></summary><div class="sd-summary-content sd-card-body docutils">
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">source</span><span class="w"> </span><span class="si">${</span><span class="nv">HOME</span><span class="si">}</span>/NERSC-HYCOM-CICE/environment/betzy_env.sh
+</pre></div>
+</div>
+</div>
+</details><details class="sd-sphinx-override sd-dropdown sd-card sd-mb-3">
+<summary class="sd-summary-title sd-card-header">
+<span class="sd-summary-text">Source HPC environment — Olivia (NRIS/Sigma2)</span><span class="sd-summary-state-marker sd-summary-chevron-right"><svg version="1.1" width="1.5em" height="1.5em" class="sd-octicon sd-octicon-chevron-right" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.72 18.78a.75.75 0 0 1 0-1.06L14.44 12 8.72 6.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0Z"></path></svg></span></summary><div class="sd-summary-content sd-card-body docutils">
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">source</span><span class="w"> </span><span class="si">${</span><span class="nv">HOME</span><span class="si">}</span>/NERSC-HYCOM-CICE/environment/olivia_env.sh
+</pre></div>
+</div>
+</div>
+</details><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Olivia support is a work in progress. The status of each step is called out below: the
+MSCPROGS build is the most complete, while HYCOM-CICE is untested and <code class="docutils literal notranslate"><span class="pre">hycom_ALL</span></code> is
+incomplete. These notes track <code class="docutils literal notranslate"><span class="pre">README.olivia</span></code>.</p>
+</div>
+<section id="compile-mscprogs-libhycnersc-a">
+<h1>Compile MSCPROGS (libhycnersc.a)<a class="headerlink" href="#compile-mscprogs-libhycnersc-a" title="Link to this heading"></a></h1>
+<blockquote>
+<div><p><strong>Before compiling:</strong> source the HPC environment file to load the correct modules and compilers
+(<a class="reference internal" href="#compilation-top"><span class="std std-ref">see top of this page</span></a>).</p>
+</div></blockquote>
+<p>MSCPROGS provides <code class="docutils literal notranslate"><span class="pre">libhycnersc.a</span></code>, a shared library used by the <a class="reference internal" href="mscprogs.html"><span class="std std-doc">MSCPROGS post-processing tools</span></a> and also required when compiling HYCOM with the BGC module. It only needs to be rebuilt when the HPC modules are updated or the source code changes.</p>
+<p>Create a symlink for your machine and compiler, then build and install:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span><span class="si">${</span><span class="nv">HOME</span><span class="si">}</span>/NERSC-HYCOM-CICE/hycom/MSCPROGS/src/Make.Inc
+ln<span class="w"> </span>-sf<span class="w"> </span>make.betzy.ifort<span class="w"> </span>make.inc
+<span class="nb">cd</span><span class="w"> </span><span class="si">${</span><span class="nv">HOME</span><span class="si">}</span>/NERSC-HYCOM-CICE/hycom/MSCPROGS/src
+gmake<span class="w"> </span>clean<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>gmake<span class="w"> </span>all<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>gmake<span class="w"> </span>install
+</pre></div>
+</div>
+<details class="sd-sphinx-override sd-dropdown sd-card sd-mb-3">
+<summary class="sd-summary-title sd-card-header">
+<span class="sd-summary-text">Olivia (NRIS/Sigma2)</span><span class="sd-summary-state-marker sd-summary-chevron-right"><svg version="1.1" width="1.5em" height="1.5em" class="sd-octicon sd-octicon-chevron-right" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.72 18.78a.75.75 0 0 1 0-1.06L14.44 12 8.72 6.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0Z"></path></svg></span></summary><div class="sd-summary-content sd-card-body docutils">
+<p class="sd-card-text">Use the Olivia make include (<code class="docutils literal notranslate"><span class="pre">make.olivia.ifx</span></code>, which selects the <code class="docutils literal notranslate"><span class="pre">ifx</span></code>/<code class="docutils literal notranslate"><span class="pre">icx</span></code> compilers and
+links FFTW + MKL):</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span><span class="si">${</span><span class="nv">HOME</span><span class="si">}</span>/NERSC-HYCOM-CICE/hycom/MSCPROGS/src/Make.Inc
+ln<span class="w"> </span>-sf<span class="w"> </span>make.olivia.ifx<span class="w"> </span>make.inc
+<span class="nb">cd</span><span class="w"> </span><span class="si">${</span><span class="nv">HOME</span><span class="si">}</span>/NERSC-HYCOM-CICE/hycom/MSCPROGS/src
+gmake<span class="w"> </span>clean<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>gmake<span class="w"> </span>all<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>gmake<span class="w"> </span>install
+</pre></div>
+</div>
+</div>
+</details><p>After installation, <code class="docutils literal notranslate"><span class="pre">libhycnersc.a</span></code> is at:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>${HOME}/NERSC-HYCOM-CICE/hycom/MSCPROGS/lib/libhycnersc.a
+</pre></div>
+</div>
+<p>For more detail, see the <a class="reference external" href="https://github.com/nansencenter/NERSC-HYCOM-CICE/tree/develop/hycom/MSCPROGS">MSCPROGS README</a>.</p>
+<details class="sd-sphinx-override sd-dropdown sd-card sd-mb-3">
+<summary class="sd-summary-title sd-card-header">
+<span class="sd-summary-text">Missing build directories (NERSC-HYCOM-CICE_BIORANv2 only)</span><span class="sd-summary-state-marker sd-summary-chevron-right"><svg version="1.1" width="1.5em" height="1.5em" class="sd-octicon sd-octicon-chevron-right" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.72 18.78a.75.75 0 0 1 0-1.06L14.44 12 8.72 6.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0Z"></path></svg></span></summary><div class="sd-summary-content sd-card-body docutils">
+<p class="sd-card-text">If using the <code class="docutils literal notranslate"><span class="pre">NERSC-HYCOM-CICE_BIORANv2</span></code> repository, create these missing directories
+before running <code class="docutils literal notranslate"><span class="pre">gmake</span></code>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mkdir<span class="w"> </span>-p<span class="w"> </span><span class="si">${</span><span class="nv">HOME</span><span class="si">}</span>/NERSC-HYCOM-CICE/hycom/MSCPROGS/src/Average/TMP
+mkdir<span class="w"> </span>-p<span class="w"> </span><span class="si">${</span><span class="nv">HOME</span><span class="si">}</span>/NERSC-HYCOM-CICE/hycom/MSCPROGS/src/Hycom_mean/TMP
+mkdir<span class="w"> </span>-p<span class="w"> </span><span class="si">${</span><span class="nv">HOME</span><span class="si">}</span>/NERSC-HYCOM-CICE/hycom/MSCPROGS/src/Perturb_Forcing-2.2.98_TP5/TMP
+mkdir<span class="w"> </span>-p<span class="w"> </span><span class="si">${</span><span class="nv">HOME</span><span class="si">}</span>/NERSC-HYCOM-CICE/hycom/MSCPROGS/src/Perturb_Parameter/TMP
+</pre></div>
+</div>
+</div>
+</details></section>
+<section id="bgc-dependencies-fabm">
+<h1>BGC dependencies (FABM)<a class="headerlink" href="#bgc-dependencies-fabm" title="Link to this heading"></a></h1>
+<blockquote>
+<div><p><strong>Before compiling:</strong> source the HPC environment file to load the correct modules and compilers
+(<a class="reference internal" href="#compilation-top"><span class="std std-ref">see top of this page</span></a>).</p>
+</div></blockquote>
+<p>Only needed when running with biogeochemical modules (<code class="docutils literal notranslate"><span class="pre">ntracr</span></code> &gt; 0 in <code class="docutils literal notranslate"><span class="pre">blkdat.input</span></code>).
+FABM only needs to be rebuilt when the HPC modules are updated or the source code changes.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>BGC compilation also requires <code class="docutils literal notranslate"><span class="pre">libhycnersc.a</span></code> from MSCPROGS; see <a class="reference internal" href="#compile-mscprogs-libhycnersca"><span class="std std-ref">Compile MSCPROGS</span></a> above.</p>
+</div>
+<section id="compile-fabm-libfabm-a">
+<h2>Compile FABM (libfabm.a)<a class="headerlink" href="#compile-fabm-libfabm-a" title="Link to this heading"></a></h2>
+<p>Configure and build inside a <code class="docutils literal notranslate"><span class="pre">build/</span></code> directory within the FABM clone:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rm<span class="w"> </span>-rf<span class="w"> </span><span class="si">${</span><span class="nv">HOME</span><span class="si">}</span>/fabm/build
+mkdir<span class="w"> </span><span class="si">${</span><span class="nv">HOME</span><span class="si">}</span>/fabm/build<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">cd</span><span class="w"> </span><span class="si">${</span><span class="nv">HOME</span><span class="si">}</span>/fabm/build
+cmake<span class="w"> </span><span class="si">${</span><span class="nv">HOME</span><span class="si">}</span>/fabm<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-DFABM_HOST<span class="o">=</span>hycom<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-DCMAKE_Fortran_COMPILER<span class="o">=</span>ifort<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-DFABM_INSTITUTES<span class="o">=</span><span class="s2">&quot;ersem;nersc;gotm&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-DFABM_NERSC_BASE<span class="o">=</span><span class="si">${</span><span class="nv">HOME</span><span class="si">}</span>/nersc<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-DFABM_ERSEM_BASE<span class="o">=</span><span class="si">${</span><span class="nv">HOME</span><span class="si">}</span>/ersem
+make<span class="w"> </span>install
+</pre></div>
+</div>
+<p>After installation, <code class="docutils literal notranslate"><span class="pre">libfabm.a</span></code> is at:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>${HOME}/local/fabm/hycom/lib64/libfabm.a
+</pre></div>
+</div>
+<div class="admonition caution">
+<p class="admonition-title">Caution</p>
+<p>On Olivia, BGC/FABM compilation is <strong>untested</strong> and is not covered by <code class="docutils literal notranslate"><span class="pre">README.olivia</span></code>. In
+principle it would use <code class="docutils literal notranslate"><span class="pre">-DCMAKE_Fortran_COMPILER=ifx</span></code> in place of <code class="docutils literal notranslate"><span class="pre">ifort</span></code> above.</p>
+</div>
+</section>
+</section>
+<section id="compile-hycom-cice">
+<h1>Compile HYCOM-CICE<a class="headerlink" href="#compile-hycom-cice" title="Link to this heading"></a></h1>
+<blockquote>
+<div><p><strong>Before compiling:</strong> source the HPC environment file to load the correct modules and compilers
+(<a class="reference internal" href="#compilation-top"><span class="std std-ref">see top of this page</span></a>).</p>
+</div></blockquote>
+<p>Unlike the sections above, this step must be repeated for each new experiment.</p>
+<p>Before running the compile script, check that the Makefile configuration symlink points
+to the correct HYCOM version. The symlink is at:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>${HOME}/NERSC-HYCOM-CICE/hycom/RELO/config/Linux.betzy.ifort_cice
+</pre></div>
+</div>
+<p>It must point to one of:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Target</p></th>
+<th class="head"><p>Use when</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Linux.betzy.ifort_cice.V22</span></code></p></td>
+<td><p>HYCOM version 2.2 (default)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Linux.betzy.ifort_cice.V23</span></code></p></td>
+<td><p>HYCOM version 2.3</p></td>
+</tr>
+</tbody>
+</table>
+<p>Check and update the symlink if needed:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ls<span class="w"> </span>-la<span class="w"> </span><span class="si">${</span><span class="nv">HOME</span><span class="si">}</span>/NERSC-HYCOM-CICE/hycom/RELO/config/Linux.betzy.ifort_cice
+<span class="c1"># To switch to V23:</span>
+ln<span class="w"> </span>-sf<span class="w"> </span>Linux.betzy.ifort_cice.V23<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="si">${</span><span class="nv">HOME</span><span class="si">}</span>/NERSC-HYCOM-CICE/hycom/RELO/config/Linux.betzy.ifort_cice
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><strong>If compiling with the BGC module:</strong> ensure <code class="docutils literal notranslate"><span class="pre">ntracr</span></code> in <code class="docutils literal notranslate"><span class="pre">blkdat.input</span></code> is non-zero and
+copy the FABM configuration files and CICE namelist into the experiment directory before
+compiling:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">CONFIGNAME</span><span class="o">=</span>&lt;CONFIGNAME&gt;<span class="w">   </span><span class="c1"># e.g. TP2a0.10</span>
+<span class="nv">EXPT_ID</span><span class="o">=</span>&lt;EXPT_ID&gt;<span class="w">         </span><span class="c1"># e.g. 01.0</span>
+
+<span class="nb">cd</span><span class="w"> </span><span class="si">${</span><span class="nv">WORK</span><span class="si">}</span>/<span class="si">${</span><span class="nv">CONFIGNAME</span><span class="si">}</span>/expt_<span class="si">${</span><span class="nv">EXPT_ID</span><span class="si">}</span>
+cp<span class="w"> </span>/nird/datalake/NS9481K/shuang/TP2_setup/exp02.6_seaclim_ref/fabm.yaml<span class="w"> </span>.
+cp<span class="w"> </span>/nird/datalake/NS9481K/shuang/TP2_setup/exp02.6_seaclim_ref/hycom_fabm.nml<span class="w"> </span>.
+cp<span class="w"> </span>/nird/datalake/NS9481K/shuang/TP2_setup/exp02.6_seaclim_ref/ice_in<span class="w"> </span>.
+</pre></div>
+</div>
+</div>
+<p>Run the compile script from the experiment directory:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">CONFIGNAME</span><span class="o">=</span>&lt;CONFIGNAME&gt;<span class="w">   </span><span class="c1"># e.g. TP2a0.10</span>
+<span class="nv">EXPT_ID</span><span class="o">=</span>&lt;EXPT_ID&gt;<span class="w">         </span><span class="c1"># e.g. 01.0</span>
+
+<span class="nb">cd</span><span class="w"> </span><span class="si">${</span><span class="nv">WORK</span><span class="si">}</span>/<span class="si">${</span><span class="nv">CONFIGNAME</span><span class="si">}</span>/expt_<span class="si">${</span><span class="nv">EXPT_ID</span><span class="si">}</span>
+bash<span class="w"> </span><span class="si">${</span><span class="nv">HOME</span><span class="si">}</span>/NERSC-HYCOM-CICE/bin/compile_model.sh<span class="w"> </span>ifort<span class="w"> </span>-u
+</pre></div>
+</div>
+<details class="sd-sphinx-override sd-dropdown sd-card sd-mb-3">
+<summary class="sd-summary-title sd-card-header">
+<span class="sd-summary-text">Olivia (NRIS/Sigma2)</span><span class="sd-summary-state-marker sd-summary-chevron-right"><svg version="1.1" width="1.5em" height="1.5em" class="sd-octicon sd-octicon-chevron-right" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.72 18.78a.75.75 0 0 1 0-1.06L14.44 12 8.72 6.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0Z"></path></svg></span></summary><div class="sd-summary-content sd-card-body docutils">
+<div class="admonition caution">
+<p class="admonition-title">Caution</p>
+<p class="sd-card-text">The Olivia HYCOM-CICE build is <strong>untested</strong>. The build files
+(<code class="docutils literal notranslate"><span class="pre">Linux.olivia.ifx_cice.V22</span></code>/<code class="docutils literal notranslate"><span class="pre">.V23</span></code> and <code class="docutils literal notranslate"><span class="pre">Macros.Linux.olivia.ifx</span></code>) are in place, but the
+full compile and the downstream <code class="docutils literal notranslate"><span class="pre">create_ref_case.sh</span></code> setup step have not been verified end
+to end (see the known issues below).</p>
+</div>
+<p class="sd-card-text">Point the config symlink at the Olivia build files (choose <code class="docutils literal notranslate"><span class="pre">V22</span></code> or <code class="docutils literal notranslate"><span class="pre">V23</span></code>):</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ln<span class="w"> </span>-sf<span class="w"> </span>Linux.olivia.ifx_cice.V23<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="si">${</span><span class="nv">HOME</span><span class="si">}</span>/NERSC-HYCOM-CICE/hycom/RELO/config/Linux.olivia.ifx_cice
+</pre></div>
+</div>
+<p class="sd-card-text">Compile, selecting the site explicitly with <code class="docutils literal notranslate"><span class="pre">-c</span> <span class="pre">olivia</span></code> (hostname/domain autodetection does
+not work on Olivia) and the <code class="docutils literal notranslate"><span class="pre">ifx</span></code> compiler:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">CONFIGNAME</span><span class="o">=</span>&lt;CONFIGNAME&gt;<span class="w">   </span><span class="c1"># e.g. TP2a0.10</span>
+<span class="nv">EXPT_ID</span><span class="o">=</span>&lt;EXPT_ID&gt;<span class="w">         </span><span class="c1"># e.g. 01.0</span>
+
+<span class="nb">cd</span><span class="w"> </span><span class="si">${</span><span class="nv">WORK</span><span class="si">}</span>/<span class="si">${</span><span class="nv">CONFIGNAME</span><span class="si">}</span>/expt_<span class="si">${</span><span class="nv">EXPT_ID</span><span class="si">}</span>
+bash<span class="w"> </span><span class="si">${</span><span class="nv">HOME</span><span class="si">}</span>/NERSC-HYCOM-CICE/bin/compile_model.sh<span class="w"> </span>-c<span class="w"> </span>olivia<span class="w"> </span>-u<span class="w"> </span>ifx
+</pre></div>
+</div>
+<p class="sd-card-text"><code class="docutils literal notranslate"><span class="pre">-c</span> <span class="pre">olivia</span></code> makes the script use the <code class="docutils literal notranslate"><span class="pre">Linux.olivia.ifx*</span></code> macros and resolve ESMF from
+<code class="docutils literal notranslate"><span class="pre">$EBROOTESMF</span></code>; for CICE it passes <code class="docutils literal notranslate"><span class="pre">CC=icx</span></code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p class="sd-card-text"><strong>Known unresolved issues</strong> (from <code class="docutils literal notranslate"><span class="pre">README.olivia</span></code>): <code class="docutils literal notranslate"><span class="pre">create_ref_case.sh</span></code> has a <code class="docutils literal notranslate"><span class="pre">module</span> <span class="pre">load</span></code>
+at line 132, and <code class="docutils literal notranslate"><span class="pre">bin/ice_climatology/extract_clim_iceh.sh</span></code> has <code class="docutils literal notranslate"><span class="pre">module</span> <span class="pre">load</span></code> lines (87 and
+90) whose Olivia-equivalent modules are not compatible with the compilation environment.
+These need adjusting before the setup/run steps will work.</p>
+</div>
+</div>
+</details><p>The script manages the <code class="docutils literal notranslate"><span class="pre">build/</span></code> directory containing a per-experiment copy of the source:</p>
+<ul class="simple">
+<li><p><strong>First compile</strong> (<code class="docutils literal notranslate"><span class="pre">build/</span></code> does not exist): source is automatically synced from the repository.</p></li>
+<li><p><strong>Recompile after repo changes</strong> (use <code class="docutils literal notranslate"><span class="pre">-u</span></code>): source is resynced from the repository, overwriting any local modifications in <code class="docutils literal notranslate"><span class="pre">build/</span></code>.</p></li>
+<li><p><strong>Recompile without <code class="docutils literal notranslate"><span class="pre">-u</span></code></strong>: uses whatever is currently in <code class="docutils literal notranslate"><span class="pre">build/</span></code>, preserving any local edits.</p></li>
+</ul>
+<p>To start completely fresh, delete <code class="docutils literal notranslate"><span class="pre">build/</span></code> before running the script:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rm<span class="w"> </span>-rf<span class="w"> </span>build
+</pre></div>
+</div>
+<details class="sd-sphinx-override sd-dropdown sd-card sd-mb-3">
+<summary class="sd-summary-title sd-card-header">
+<span class="sd-summary-text">What compile_model.sh does behind the scenes</span><span class="sd-summary-state-marker sd-summary-chevron-right"><svg version="1.1" width="1.5em" height="1.5em" class="sd-octicon sd-octicon-chevron-right" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.72 18.78a.75.75 0 0 1 0-1.06L14.44 12 8.72 6.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0Z"></path></svg></span></summary><div class="sd-summary-content sd-card-body docutils">
+<p class="sd-card-text">The script must be run from the experiment directory. It sources <code class="docutils literal notranslate"><span class="pre">REGION.src</span></code> and
+<code class="docutils literal notranslate"><span class="pre">EXPT.src</span></code> to read configuration, then proceeds in the following order:</p>
+<ol class="arabic simple">
+<li><p class="sd-card-text"><strong>Detect site and compiler</strong>: derives <code class="docutils literal notranslate"><span class="pre">SITE</span></code> from the hostname and constructs a
+<code class="docutils literal notranslate"><span class="pre">MACROID</span></code> (e.g. <code class="docutils literal notranslate"><span class="pre">Linux.betzy.ifort</span></code>) used to select the correct Makefile macros.</p></li>
+<li><p class="sd-card-text"><strong>Resolve ESMF paths</strong>: sets <code class="docutils literal notranslate"><span class="pre">ESMF_DIR</span></code>, <code class="docutils literal notranslate"><span class="pre">ESMF_MOD_DIR</span></code>, and <code class="docutils literal notranslate"><span class="pre">ESMF_LIB_DIR</span></code>.
+If these are already set in the environment they are used as-is; otherwise the script
+uses hardcoded paths for known sites (Betzy, Fram) or exits with an error on
+unknown systems.</p></li>
+<li><p class="sd-card-text"><strong>Select equation of state</strong>: reads <code class="docutils literal notranslate"><span class="pre">SIGVER</span></code> from <code class="docutils literal notranslate"><span class="pre">EXPT.src</span></code> and links the
+matching <code class="docutils literal notranslate"><span class="pre">stmt_fns.h</span></code> include file in the build directory. This must be consistent
+with <code class="docutils literal notranslate"><span class="pre">thflag</span></code> in <code class="docutils literal notranslate"><span class="pre">blkdat.input</span></code> (the script checks this and exits if they differ).</p></li>
+<li><p class="sd-card-text"><strong>Sync source code</strong>: rsyncs HYCOM and CICE source from <code class="docutils literal notranslate"><span class="pre">$NHCROOT/hycom/RELO/</span></code>
+into <code class="docutils literal notranslate"><span class="pre">build/</span></code> on first run, or when <code class="docutils literal notranslate"><span class="pre">-u</span></code> is passed. Existing <code class="docutils literal notranslate"><span class="pre">build/</span></code> directories
+are left untouched otherwise, preserving any local edits.</p></li>
+<li><p class="sd-card-text"><strong>Apply feature flags</strong>: if a file named <code class="docutils literal notranslate"><span class="pre">hycom_feature_flags</span></code> exists in the
+experiment directory it is copied into the build directory and passed to the C
+preprocessor, allowing you to activate or deactivate specific HYCOM features.</p></li>
+<li><p class="sd-card-text"><strong>Compile CICE</strong>: runs <code class="docutils literal notranslate"><span class="pre">comp_ice.esmf</span></code> with the grid dimensions read from
+<code class="docutils literal notranslate"><span class="pre">blkdat.input</span></code>. Only runs when <code class="docutils literal notranslate"><span class="pre">iceflg=2</span></code> in <code class="docutils literal notranslate"><span class="pre">blkdat.input</span></code>.</p></li>
+<li><p class="sd-card-text"><strong>Compile HYCOM-CICE</strong>: builds the final <code class="docutils literal notranslate"><span class="pre">hycom_cice</span></code> executable and links it
+against the CICE objects.</p></li>
+</ol>
+</div>
+</details><p>The executable <code class="docutils literal notranslate"><span class="pre">hycom_cice</span></code> is created inside <code class="docutils literal notranslate"><span class="pre">build/</span></code> in a subdirectory whose name
+encodes the HYCOM version, equation-of-state terms, and thermodynamic flag, for example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>${WORK}/&lt;CONFIGNAME&gt;/expt_&lt;EXPT_ID&gt;/build/src_2.2.98ZA-07Tsig0-i-sm-sse_relo_mpi/hycom_cice
+</pre></div>
+</div>
+<p>The version prefix changes with the Makefile symlink target (<code class="docutils literal notranslate"><span class="pre">2.2.98</span></code> for V22, <code class="docutils literal notranslate"><span class="pre">2.3</span></code> for
+V23), and the <code class="docutils literal notranslate"><span class="pre">07Tsig0</span></code> part reflects the equation-of-state choice in <code class="docutils literal notranslate"><span class="pre">EXPT.src</span></code>.</p>
+</section>
+<section id="compile-hycom-all">
+<h1>Compile hycom_ALL<a class="headerlink" href="#compile-hycom-all" title="Link to this heading"></a></h1>
+<blockquote>
+<div><p><strong>Before compiling:</strong> source the HPC environment file to load the correct modules and compilers
+(<a class="reference internal" href="#compilation-top"><span class="std std-ref">see top of this page</span></a>).</p>
+</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">hycom_ALL</span></code> provides domain-independent pre/post processing utilities used to prepare
+external input files. Like MSCPROGS and FABM, it only needs to be compiled once per
+machine/compiler setup (not per experiment) or when the source code changes.</p>
+<details class="sd-sphinx-override sd-dropdown sd-card sd-mb-3">
+<summary class="sd-summary-title sd-card-header">
+<span class="sd-summary-text">What hycom_ALL compiles and what it is used for</span><span class="sd-summary-state-marker sd-summary-chevron-right"><svg version="1.1" width="1.5em" height="1.5em" class="sd-octicon sd-octicon-chevron-right" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.72 18.78a.75.75 0 0 1 0-1.06L14.44 12 8.72 6.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0Z"></path></svg></span></summary><div class="sd-summary-content sd-card-body docutils">
+<p class="sd-card-text"><code class="docutils literal notranslate"><span class="pre">Make_all.com</span></code> builds executables into several subdirectories:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p class="sd-card-text">Directory</p></th>
+<th class="head"><p class="sd-card-text">Purpose</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p class="sd-card-text"><code class="docutils literal notranslate"><span class="pre">relax/</span></code></p></td>
+<td><p class="sd-card-text">Generate relaxation climatologies (<code class="docutils literal notranslate"><span class="pre">relaxi</span></code>, <code class="docutils literal notranslate"><span class="pre">relaxv</span></code>, <code class="docutils literal notranslate"><span class="pre">rmu</span></code>, …)</p></td>
+</tr>
+<tr class="row-odd"><td><p class="sd-card-text"><code class="docutils literal notranslate"><span class="pre">topo/</span></code></p></td>
+<td><p class="sd-card-text">Grid and bathymetry processing</p></td>
+</tr>
+<tr class="row-even"><td><p class="sd-card-text"><code class="docutils literal notranslate"><span class="pre">archive/</span></code></p></td>
+<td><p class="sd-card-text">Archive file conversion (<code class="docutils literal notranslate"><span class="pre">archv2data2d</span></code>, <code class="docutils literal notranslate"><span class="pre">archt2archv</span></code>, …)</p></td>
+</tr>
+<tr class="row-odd"><td><p class="sd-card-text"><code class="docutils literal notranslate"><span class="pre">force/</span></code></p></td>
+<td><p class="sd-card-text">Atmospheric forcing file preparation</p></td>
+</tr>
+<tr class="row-even"><td><p class="sd-card-text"><code class="docutils literal notranslate"><span class="pre">meanstd/</span></code></p></td>
+<td><p class="sd-card-text">Compute mean and standard deviation fields</p></td>
+</tr>
+<tr class="row-odd"><td><p class="sd-card-text"><code class="docutils literal notranslate"><span class="pre">sample/</span></code></p></td>
+<td><p class="sd-card-text">Sample model output at points or sections</p></td>
+</tr>
+<tr class="row-even"><td><p class="sd-card-text"><code class="docutils literal notranslate"><span class="pre">subregion/</span></code></p></td>
+<td><p class="sd-card-text">Extract subregions from model output</p></td>
+</tr>
+<tr class="row-odd"><td><p class="sd-card-text"><code class="docutils literal notranslate"><span class="pre">bin/</span></code></p></td>
+<td><p class="sd-card-text">General utilities, including <code class="docutils literal notranslate"><span class="pre">hycom_nest_dates</span></code> (used for nesting)</p></td>
+</tr>
+</tbody>
+</table>
+<p class="sd-card-text">All programs read <code class="docutils literal notranslate"><span class="pre">regional.grid.b</span></code> at runtime to get the grid dimensions for the
+domain being processed. The same executables work for any HYCOM configuration.</p>
+<p class="sd-card-text">These utilities are called by setup and pre-processing scripts such as
+<code class="docutils literal notranslate"><span class="pre">create_ref_case.sh</span></code> (relaxation climatologies and MPI tile definition files) and
+<code class="docutils literal notranslate"><span class="pre">nemo2hycom.sh</span></code> (boundary and initial conditions from NEMO output). Recompilation is
+only needed when the HPC modules or compiler change.</p>
+</div>
+</details><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span><span class="si">${</span><span class="nv">HOME</span><span class="si">}</span>/NERSC-HYCOM-CICE/hycom/hycom_ALL/hycom_2.2.72_ALL
+</pre></div>
+</div>
+<p>Open <code class="docutils literal notranslate"><span class="pre">Make_all.src</span></code> in a text editor. Find the <code class="docutils literal notranslate"><span class="pre">ARCH</span></code> line and set it to your compiler:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">setenv</span> <span class="n">ARCH</span> <span class="n">intelIFC</span>
+</pre></div>
+</div>
+<p>Then compile:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>csh<span class="w"> </span>./Make_clean.com
+csh<span class="w"> </span>./Make_all.com
+</pre></div>
+</div>
+<details class="sd-sphinx-override sd-dropdown sd-card sd-mb-3">
+<summary class="sd-summary-title sd-card-header">
+<span class="sd-summary-text">Olivia (NRIS/Sigma2)</span><span class="sd-summary-state-marker sd-summary-chevron-right"><svg version="1.1" width="1.5em" height="1.5em" class="sd-octicon sd-octicon-chevron-right" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.72 18.78a.75.75 0 0 1 0-1.06L14.44 12 8.72 6.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0Z"></path></svg></span></summary><div class="sd-summary-content sd-card-body docutils">
+<div class="admonition caution">
+<p class="admonition-title">Caution</p>
+<p class="sd-card-text">The Olivia <code class="docutils literal notranslate"><span class="pre">hycom_ALL</span></code> build is <strong>not complete</strong>. Set the compiler to <code class="docutils literal notranslate"><span class="pre">intelIFX</span></code> in
+<code class="docutils literal notranslate"><span class="pre">Make_all.src</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">setenv</span> <span class="n">ARCH</span> <span class="n">intelIFX</span>
+</pre></div>
+</div>
+<p class="sd-card-text">then run <code class="docutils literal notranslate"><span class="pre">csh</span> <span class="pre">./Make_all.com</span></code>. Per <code class="docutils literal notranslate"><span class="pre">README.olivia</span></code>, only the NetCDF routines build correctly
+so far (<code class="docutils literal notranslate"><span class="pre">csh</span> <span class="pre">Make_ncdf.com</span></code>); the remaining utilities are not yet ported.</p>
+</div>
+</div>
+</details></section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="experiment-setup.html" class="btn btn-neutral float-left" title="Set up the work directory" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="forcing.html" class="btn btn-neutral float-right" title="Initial conditions" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Nansen Environmental and Remote Sensing Center.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
