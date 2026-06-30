@@ -54,6 +54,12 @@ fi
 
 ml load matplotlib/3.5.2-foss-2022a
 cd ${BINDIR}/river-topaz/scripts/GloFAS
+
+depthfile=${BASEDIR}/topo/regional.depth.a
+[ ! -e "$depthfile" ] && { echo "Could not find $depthfile" ; exit 1 ; }
+
+[ -z "$depthfile" ] && { echo "Could not find depth file in ${BASEDIR}/topo/" ; exit 1 ; }
+
 echo "python ${BINDIR}/river-topaz/scripts/GloFAS/hycom_river_hifre.py $start $stop $S/ $depthfile"
 
 cmd="python ${BINDIR}/river-topaz/scripts/GloFAS/hycom_river_hifre.py $start $stop $S/ $depthfile"
