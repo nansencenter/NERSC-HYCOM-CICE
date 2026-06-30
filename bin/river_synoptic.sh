@@ -33,7 +33,7 @@ source ${BINDIR}/common_functions.sh || { echo "Could not source ${BINDIR}/commo
 source ${BASEDIR}/REGION.src || { echo "Could not source ${BASEDIR}/REGION.src" ; exit 1 ; }
 source ./EXPT.src || { echo "Could not source ./EXPT.src" ; exit 1 ; }
 
-D=$BASEDIR/force/rivers/$E/
+D=$BASEDIR/force/rivers/$E
 S=$D/SCRATCH
 [ ! -d $D ] && mkdir -p $D
 [ ! -d $S ] && mkdir -p $S
@@ -43,12 +43,19 @@ cd       $S || { echo " Could not descend scratch dir $S" ; exit 1;}
 # --- Input. Function in common_functions.sh
 #
 #copy_setup_files $S
-
+# check the right depth files:
+if [ -s ${BASEDIR}/topo/regional.depth.a -a -s ${BASEDIR}/topo/regional.depth.b ]; then
+   depthfile=${BASEDIR}/topo/regional.depth.a
+else
+   #depthfile=$(ls ${BASEDIR}/topo/depth_*.a 2>/dev/null | head -1)
+   depthfile=${BASEDIR}/topo/depth_${R}_${T}.a
+fi
+[ -z "$depthfile" ] && { echo "Could not find depth file ${depthfile} in ${BASEDIR}/topo/" ; exit 1 ; }
 
 ml load matplotlib/3.5.2-foss-2022a
 cd ${BINDIR}/river-topaz/scripts/GloFAS
-depthfile=$(ls ${BASEDIR}/topo/depth_*.a 2>/dev/null | head -1)
-[ -z "$depthfile" ] && { echo "Could not find depth file in ${BASEDIR}/topo/" ; exit 1 ; }
+echo "python ${BINDIR}/river-topaz/scripts/GloFAS/hycom_river_hifre.py $start $stop $S/ $depthfile"
+
 cmd="python ${BINDIR}/river-topaz/scripts/GloFAS/hycom_river_hifre.py $start $stop $S/ $depthfile"
 eval $cmd   ||  { echo "Error running $cmd " ; exit 1 ; }
 
