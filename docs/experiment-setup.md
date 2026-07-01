@@ -452,6 +452,7 @@ Open `$WORK/<CONFIGNAME>/expt_<EXPT_ID>/EXPT.src` and update:
 | `X=` | `"<EXPT_ID>"` e.g. `"02.6"` | Experiment identifier (dot notation) |
 | `E=` | `"<IEXPT>"` e.g. `"026"` | Experiment identifier (no dot) |
 | `T=` | `"04"` | Topography version |
+| `export V=` | `"2.2.98"` or `"2.3"` | HYCOM version, determines which source directory is used when compiling |
 | `export NMPI=` | e.g. `504` for TP2 on Betzy | Number of ocean MPI tiles |
 | `export MXBLCKS=` | e.g. `9` | Maximum ice blocks per MPI process |
 | `export COMPILE_BIOMODEL=` | `"yes"` or `"no"` | BGC coupling on/off |
@@ -481,7 +482,6 @@ recommended in the error message.
 
 | Variable | Description |
 |----------|-------------|
-| `export V=` | HYCOM version; determines which source directory is used when compiling |
 | `export SIGVER=` | Equation of state version; must be consistent with `thflag` in `blkdat.input` |
 | `export K=` | Number of layers — auto-derived from `blkdat.input`, no need to edit |
 | `export P=` | Experiment directory path — set automatically from the script location |
