@@ -40,6 +40,7 @@ The naming conventions are as follows:
 HYCOM 2.3 restart files are **not** compatible with HYCOM 2.2. If you have
 restart files produced by a 2.3 run, you cannot use them to restart a 2.2 model.
 The reverse is fine: 2.2 restart files can be used to start a 2.3 run.
+The archived restart files below come from HYCOM 2.3.
 :::
 
 For TP2 hindcast runs, restart files are archived at:

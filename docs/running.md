@@ -21,6 +21,10 @@ The job script `srjob.sh` handles three things automatically:
   It exits with a non-zero code if any required file is missing, aborting the job before
   the model starts.
 
+:::{warning}
+As all the files needed are staged into the scratch directory (`expt_<EXPT_ID>/SCRATCH/`), where the model runs, `expt_preprocess.sh` should be run for every new build or change in the files mentioned above. Otherwise, the previous versions of the files remain staged. By default, this step is handled automatically by the job script `srjob.sh`.
+:::
+
   ::::{dropdown} Run manually
 
   ```bash
@@ -48,6 +52,7 @@ Open `srjob.sh` in a text editor and update:
 
 | Variable | Value | Description |
 |----------|-------|-------------|
+| `NMPI` | `"<NMPI>"` e.g. `504` | Update NMPI if needed |
 | `START` | `"YYYY-MM-DDT00:00:00"` | Run start time |
 | `END` | `"YYYY-MM-DDT00:00:00"` | Run end time |
 | `INITFLG` | `""` or `"--init"` | `""` for a restart run; `"--init"` to initialize from climatology |
