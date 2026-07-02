@@ -22,7 +22,7 @@ The job script `srjob.sh` handles three things automatically:
   the model starts.
 
 :::{warning}
-As all the files needed are staged into the scratch directory (`expt_<EXPT_ID>/SCRATCH/`), where the model runs, `expt_preprocess.sh` should be called for every new build or change in the files mentionned above. If it is not, the previous version remains staged. By default, it is handled in the job script `srjob.sh`.
+As all the files needed are staged into the scratch directory (`expt_<EXPT_ID>/SCRATCH/`), where the model runs, `expt_preprocess.sh` should be run for every new build or change in the files mentioned above. Otherwise, the previous versions of the files remain staged. By default, this step is handled automatically by the job script `srjob.sh`.
 :::
 
   ::::{dropdown} Run manually
