@@ -1,4 +1,0 @@
-# TP2 Requirements
-
-This guide covers installing the TP2 (HYCOM 17 km Arctic Ocean configuration) with ECOSMO
-(biogeochemical module) on the Sigma2 HPC system Betzy.
