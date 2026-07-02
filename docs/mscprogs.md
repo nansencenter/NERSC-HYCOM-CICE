@@ -5,6 +5,8 @@ analysing HYCOM model output. It is a general-purpose toolkit covering grid proj
 averaging, section transports, Lagrangian ice drift, grid utilities, and more.
 The tools live in `hycom/MSCPROGS/`.
 
+All of these post-processing and analysis steps can alternatively be done with [xhycom](https://xhycom.readthedocs.io/en/latest/index.html), a Python-based toolkit for working with HYCOM output.
+
 For compilation instructions, see [Compile MSCPROGS](compilation.md#compile-mscprogs-libhycnersca).
 
 ## Running the tools
