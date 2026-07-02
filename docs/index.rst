@@ -46,6 +46,7 @@ coupled via the Earth System Modeling Framework (ESMF).
    :caption: Post-processing
 
    mscprogs
+   xhycom
 
 .. toctree::
    :maxdepth: 2

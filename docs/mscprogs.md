@@ -7,6 +7,16 @@ The tools live in `hycom/MSCPROGS/`.
 
 For compilation instructions, see [Compile MSCPROGS](compilation.md#compile-mscprogs-libhycnersca).
 
+:::{important}
+There are two ways to post-process and analyse HYCOM output — pick one:
+
+- **MSCPROGS** (this page) — the original Fortran/C toolkit, described below.
+- **[xhycom](xhycom.md)** — a Python-based toolkit covering the same
+  post-processing and analysis tasks.
+
+You don't need both. See [xhycom](xhycom.md) if you'd rather work in Python.
+:::
+
 ## Running the tools
 
 ### Environment setup
