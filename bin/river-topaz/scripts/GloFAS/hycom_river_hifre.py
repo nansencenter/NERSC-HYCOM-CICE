@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import argparse
+import os
 import sys
 import numpy as np
 import xarray as xr
@@ -25,7 +26,7 @@ logger.propagate=False # Dont propagate to parent in hierarchy (determined by ".
 def date_as_Julian_day(date):
     return (pd.Timestamp(date)-pd.Timestamp(year=1900, month=12, day=31)).days
 
-def create_river_forcing(input_dataset,start_date,end_date,dt=.25):
+def create_river_forcing(input_dataset,start_date,end_date,topaz_grid_file,topaz_depth_file,dt=.25):
     """
     Creates river forcing [ab] files with dt period (6 hourly if dt=0.25) from start_date to end_date (included)
     :param input_dataset: Name of the dataset to be used (NetCDF file)
@@ -55,15 +56,21 @@ def create_river_forcing(input_dataset,start_date,end_date,dt=.25):
     input_grids=None
     day_cntr=0
 
+    import time as _time
+    t_total_start = _time.time()
 
     for value in data.time.values:
+
+        t_day_start = _time.time()
+        date_str = str(value)[:10]
 
         daily_river_discharge=data.sel(time=value)
 
         correct_GloFAS=(value.astype('datetime64[Y]').astype(int)+1970>=2001) & Apply_GloFAS_correction #correction starts in 2001
-        
 
-        grids = compute_discharge_noUI(river_data=daily_river_discharge, lazy_mode=lazy_mode,input_grids=input_grids,correct_GloFAS=correct_GloFAS,Edit_estuaries=Edit_estuaries,Propagation_cleaning_step=Propagation_cleaning_step,
+
+        grids = compute_discharge_noUI(river_data=daily_river_discharge,topaz_grid_file=topaz_grid_file,topaz_depth_file=topaz_depth_file,
+                                       lazy_mode=lazy_mode,input_grids=input_grids,correct_GloFAS=correct_GloFAS,Edit_estuaries=Edit_estuaries,Propagation_cleaning_step=Propagation_cleaning_step,
                                        rradius = rradius ,alongshoreradius = alongshoreradius)
 
         day_cntr+=1
@@ -84,9 +91,11 @@ def create_river_forcing(input_dataset,start_date,end_date,dt=.25):
                foutfile=output_path+"riverh_{start}_{end}_{dtt}h".format(start=start_date[:10],end=end_date[:10],dtt=dt*24)
             else:
                foutfile=output_path+"riverh_{start}_{end}_{dtt}d".format(start=start_date[:10],end=end_date[:10],dtt=dt)
-            ffile = abfile.ABFileRiverForcing(foutfile, "w",idm=idm, jdm=jdm,
+            ffile = abfile.ABFileRiverForcing(foutfile, "w", mask=True, idm=idm, jdm=jdm,
                 cline1="GloFAS v4.0",
                 cline2="river forcing (m/s)")
+
+            land_mask = grids.topaz_depth_grid.depth.mask.reshape((jdm, idm))
 
             input_grids=grids #The day one grids will be used for the other days
 
@@ -96,7 +105,7 @@ def create_river_forcing(input_dataset,start_date,end_date,dt=.25):
 
  
         N=int(1//dt) #new dim size
-        river_flux_topaz_extended=np.stack([river_flux_topaz] * N, axis=2)
+        river_flux_topaz_extended=np.repeat(river_flux_topaz[:, :, np.newaxis], N, axis=2)
 
 
         # Convert dtime1 slice to indices
@@ -138,17 +147,24 @@ def create_river_forcing(input_dataset,start_date,end_date,dt=.25):
 
             for dtime in np.arange(date_as_Julian_day(value)-1,date_as_Julian_day(value),dt):
                 ffile.write_field(river_forcing['river_flux'].loc[dict(dtime1=dtime)].data*conv,
-                                river_forcing['river_flux'].loc[dict(dtime1=dtime)].data*conv,
+                                land_mask,
                                 'rivers', dtime, dt)
 
         #finally we write last day in the file
         if date_as_Julian_day(value)==end_date_as_day.days:
             period_in_hours = 24 * dt  # For conversion
             ffile.write_field(river_forcing['river_flux'].loc[dict(dtime1=end_date_as_day.days)].data * conv,
-                                             river_forcing['river_flux'].loc[dict(dtime1=end_date_as_day.days)].data * conv,
+                                             land_mask,
                                             'rivers', end_date_as_day.days, dt)
 
+        print("Day %s done in %.1f s  (total elapsed: %.1f s)" % (
+              date_str, _time.time()-t_day_start, _time.time()-t_total_start))
+
     ffile.close()
+
+    n_days = day_cntr
+    t_total = _time.time() - t_total_start
+    print("\nFinished: %d days processed in %.1f s  (%.1f s/day)" % (n_days, t_total, t_total/max(n_days,1)))
 
     return river_forcing
 
@@ -163,9 +179,10 @@ if __name__ == "__main__" :
           setattr(args, self.dest, tmp)
 
    parser = argparse.ArgumentParser(description='Prepare HYCOM forcing files from a set of input files')
-   parser.add_argument('start_time', action=DateTimeParseAction, help='Start time in UTC zone. Format = YYYY-mm-dd<THH:MM:SS>')   
-   parser.add_argument('end_time',   action=DateTimeParseAction, help='Stop  time in UTC zone. Format = YYYY-mm-dd<THH:MM:SS>')
+   parser.add_argument('start_time',    action=DateTimeParseAction, help='Start time in UTC zone. Format = YYYY-mm-dd<THH:MM:SS>')
+   parser.add_argument('end_time',      action=DateTimeParseAction, help='Stop  time in UTC zone. Format = YYYY-mm-dd<THH:MM:SS>')
    parser.add_argument('Outfile_drt',   type=str, help='directory to save the output files')
+   parser.add_argument('depth_file',    type=str, help='path to the HYCOM depth .a file for this grid configuration')
 
    args = parser.parse_args()
 
@@ -187,8 +204,11 @@ if __name__ == "__main__" :
    GloFASdata_path='/cluster/projects/nn9481k/GloFAS_data/TOPAZrunoff_data'
    if GloFASdata_path not in sys.path:
        sys.path.append(GloFASdata_path)
-   input_dataset=GloFASdata_path+'/../data_v40/data_all_year.nc' # path to netcdf file 
-                                                                 #containing raw GloFAS data 
+   input_dataset=GloFASdata_path+'/../data_v40/data_all_year.nc' # path to netcdf file
+                                                                 #containing raw GloFAS data
+
+   topaz_depth_file=args.depth_file
+   topaz_grid_file =os.path.join(os.path.dirname(topaz_depth_file), 'regional.grid.a')
 
    Apply_GloFAS_correction=True #True to Apply GloFAS correction starting from 2001
 
@@ -205,7 +225,8 @@ if __name__ == "__main__" :
 #---------------------------------------------------------------------------------------------
 
    river_forcing=create_river_forcing(input_dataset=input_dataset,
-                    start_date=start_date,end_date=end_date)
+                    start_date=start_date,end_date=end_date,
+                    topaz_grid_file=topaz_grid_file,topaz_depth_file=topaz_depth_file)
    river_netcdf=river_forcing['river_flux'].transpose("dtime1","longitude","latitude")
    river_netcdf.to_netcdf('{wrkdrt}/riverh_{start}_{end}.nc'.format(wrkdrt=output_path,
                     start=start_date[:10],end=end_date[:10]),unlimited_dims='dtime1')

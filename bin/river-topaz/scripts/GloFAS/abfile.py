@@ -105,23 +105,25 @@ class AFile(object) :
       logger.debug("zaiowr_a h shape = %s, w.size=%d"%(h.shape,w.size,))
       # Calc min and mask
       #print("mask boolean:",self._mask)
+      if self._real4 :
+         struct_fmt="f"
+         h_stored = h.astype(numpy.float32)
+      else :
+         struct_fmt="d"
+         h_stored = h.astype(numpy.float64)
+
       if self._mask :
          I=numpy.where(mask!=True)
-         hmax=h[I].max()
-         hmin=h[I].min()
+         hmax=h_stored[I].max()
+         hmin=h_stored[I].min()
          J=numpy.where(mask.flatten())
          w[J] = self._spval
         # print "writerecord w mask:",numpy.count_nonzero(mask),mask.size
         # print "writerecord w mask:",hmin,hmax,w[0:self._idm*self._jdm].min(),w[0:self._idm*self._jdm].max()
       else :
-         hmax=h.max()
-         hmin=h.min()
+         hmax=h_stored.max()
+         hmin=h_stored.min()
          #print "writerecord wo mask:",hmin,hmax
-
-      if self._real4 :
-         struct_fmt="f"
-      else :
-         struct_fmt="d"
 
       # 1) Use struct
       #binpack=struct.pack("%s%d%s"%(self._endian_structfmt,w.size,struct_fmt),*w[:])
