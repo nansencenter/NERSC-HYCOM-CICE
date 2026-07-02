@@ -19,7 +19,7 @@ See the [HPC environment](installation.md#hpc-environment) section for details.
 :::{note}
 Olivia support is a work in progress. The status of each step is called out below: the
 MSCPROGS build is the most complete, while HYCOM-CICE is untested and `hycom_ALL` is
-incomplete. These notes track `README.olivia`.
+incomplete. These notes track [README.olivia](https://github.com/kvikende/NERSC-HYCOM-CICE/blob/wip-olivia/README.olivia).
 :::
 
 ## Compile MSCPROGS (libhycnersc.a)
@@ -109,7 +109,7 @@ ${HOME}/local/fabm/hycom/lib64/libfabm.a
 ```
 
 :::{caution}
-On Olivia, BGC/FABM compilation is **untested** and is not covered by `README.olivia`. In
+On Olivia, BGC/FABM compilation is **untested** and is not covered by [README.olivia](https://github.com/kvikende/NERSC-HYCOM-CICE/blob/wip-olivia/README.olivia). In
 principle it would use `-DCMAKE_Fortran_COMPILER=ifx` in place of `ifort` above.
 :::
 
@@ -200,7 +200,7 @@ bash ${HOME}/NERSC-HYCOM-CICE/bin/compile_model.sh -c olivia -u ifx
 `$EBROOTESMF`; for CICE it passes `CC=icx`.
 
 :::{note}
-**Known unresolved issues** (from `README.olivia`): `create_ref_case.sh` has a `module load`
+**Known unresolved issues** (from [README.olivia](https://github.com/kvikende/NERSC-HYCOM-CICE/blob/wip-olivia/README.olivia): `create_ref_case.sh` has a `module load`
 at line 132, and `bin/ice_climatology/extract_clim_iceh.sh` has `module load` lines (87 and
 90) whose Olivia-equivalent modules are not compatible with the compilation environment.
 These need adjusting before the setup/run steps will work.
@@ -325,7 +325,7 @@ The Olivia `hycom_ALL` build is **not complete**. Set the compiler to `intelIFX`
 setenv ARCH intelIFX
 ```
 
-then run `csh ./Make_all.com`. Per `README.olivia`, only the NetCDF routines build correctly
+then run `csh ./Make_all.com`. Per [README.olivia](https://github.com/kvikende/NERSC-HYCOM-CICE/blob/wip-olivia/README.olivia), only the NetCDF routines build correctly
 so far (`csh Make_ncdf.com`); the remaining utilities are not yet ported.
 :::
 
