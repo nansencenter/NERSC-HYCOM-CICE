@@ -151,13 +151,6 @@ Run this command at the start of each session or job script where you need the
 environment. If you only use one Python environment, you can also add it to `~/.bashrc`
 to activate it automatically.
 
-:::{tip}
-The steps above are also scripted under `environment/py-nhc/`: set `$PYLIBSPATH` in
-`py-nhc-env-post.sh`, then run `create_python_env.sh` (with the `hpc-container-wrapper`
-module loaded). It builds the container into `environment/py-nhc/py-nhc-env/`; add that
-`bin/` directory to `$PATH` to activate.
-:::
-
 ::::
 
 ### Use the environment
