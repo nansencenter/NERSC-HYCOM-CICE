@@ -113,7 +113,6 @@ export IDM=$(blkdat_get blkdat.input idm)
 export JDM=$(blkdat_get blkdat.input jdm)
 export LWFLAG=`grep "'lwflag' =" blkdat.input | awk '{printf("%1d", $1)}'`
 
-export HRIVER=$(grep "highfq_river" ../hycom_opt | awk -F= '{printf("%s", $2)}' | tr -d ' \t\r\n')
 restarti=$(blkdat_get_string blkdat.input nmrsti "restart_in")
 
 # Add period to restart file name if not present...
@@ -383,7 +382,6 @@ if [ $FLXOFF -eq 1 ] ; then
     echo "fLxoff=F: No attempt to use flux offset correction" 
 fi
 
-
 # MOSTAFA: END
 
 #
@@ -391,13 +389,14 @@ fi
 # --- KAL: rivers are experiment-dependent
 #
 if [ $PRIVER -eq 0 ] ; then
-echo "**No river forcing. Set the priver to 1 to add river forcing"
-fi
-if [ $PRIVER -eq 1 ] ; then
-  echo "**Setting up river forcing  from priver"
+  if [ "$V" == "2.3" ]; then
+     echo "**No river forcing. Set the priver to 1 or 2 to add river forcing"
+  fi
+elif [ $PRIVER -eq 1 ] ; then
+  echo "**Setting up climatological river forcing  from priver"
   cp $BASEDIR/force/rivers/$E/rivers.a forcing.rivers.a || tellerror "Could not get river .a file"
   cp $BASEDIR/force/rivers/$E/rivers.b forcing.rivers.b || tellerror "Could not get river .b file"
-   if [ $NTRACR -ne 0 ] ; then
+  if [ $NTRACR -ne 0 ] ; then
       echo "**Setting up bio river forcing"
       cp $BASEDIR/force/rivers/$E/ECO_no3.a rivers.ECO_no3.a || tellwarn "Could not get NO3 river .a file"
       cp $BASEDIR/force/rivers/$E/ECO_no3.b rivers.ECO_no3.b || tellwarn "Could not get NO3 river .b file"
@@ -405,16 +404,33 @@ if [ $PRIVER -eq 1 ] ; then
       cp $BASEDIR/force/rivers/$E/ECO_sil.b rivers.ECO_sil.b || tellwarn "Could not get SIL river .b file"
       cp $BASEDIR/force/rivers/$E/ECO_pho.a rivers.ECO_pho.a || tellwarn "Could not get PHO river .a file"
       cp $BASEDIR/force/rivers/$E/ECO_pho.b rivers.ECO_pho.b || tellwarn "Could not get PHO river .b file"
-   fi
+  fi
+elif [ $PRIVER -eq 2 ] ; then
+  if [ $NTRACR -ne 0 ] ; then
+      echo "**Setting up bio river forcing"
+      cp $BASEDIR/force/rivers/$E/ECO_no3.a rivers.ECO_no3.a || tellwarn "Could not get NO3 river .a file"
+      cp $BASEDIR/force/rivers/$E/ECO_no3.b rivers.ECO_no3.b || tellwarn "Could not get NO3 river .b file"
+      cp $BASEDIR/force/rivers/$E/ECO_sil.a rivers.ECO_sil.a || tellwarn "Could not get SIL river .a file"
+      cp $BASEDIR/force/rivers/$E/ECO_sil.b rivers.ECO_sil.b || tellwarn "Could not get SIL river .b file"
+      cp $BASEDIR/force/rivers/$E/ECO_pho.a rivers.ECO_pho.a || tellwarn "Could not get PHO river .a file"
+      cp $BASEDIR/force/rivers/$E/ECO_pho.b rivers.ECO_pho.b || tellwarn "Could not get PHO river .b file"
+  fi
 fi
-
 # 0: can be used for offline to create the riverh.[ab], when the model integration is multiple years.
 River_online=0
 if [ "$HRIVER" = ".true." ]; then
-   echo "Note: PRIVER must be 0 for highfq_river=true " 
-   echo "highfq_river=true: **Setting up high frequency river forcing  from hycom_opt highfq_river"
    # Check range of file against start and stop times
    RDIR=$BASEDIR/force/rivers/$E
+   if [ "$V" == "2.3"]; then
+      echo "Implement in hycom2.2:"
+      echo "Note: PRIVER must be 2 in blkdat.input " 
+      Rforfile="forcing.rivers"
+   else
+      echo "Implement in hycom2.2:"
+      echo "Note: PRIVER must be 0 for highfq_river=true " 
+      echo "highfq_river=true in hycom_opt: setting up high frequency river forcing"
+      Rforfile="forcing.riverh"
+   fi
    if [ ! -s  ${RDIR}/riverh.a -o  ! -s ${RDIR}/riverh.b -o ${River_online} -eq 1 ]; then 
       echo "Create the synoptic river forcing by the python routine ..."
       cd $P
@@ -424,19 +440,18 @@ if [ "$HRIVER" = ".true." ]; then
    fi
    if [ -f  $RDIR/riverh.a -a  -f $RDIR/riverh.b ] 
    then
-     ln -sf $RDIR/riverh.a forcing.riverh.a || tellerror "Could not get riverh .a file"
-     ln -sf $RDIR/riverh.b forcing.riverh.b || tellerror "Could not get riverh .b file"
-     frcstart=$(head -n  6 forcing.riverh.b | tail -n1 | sed "s/.*=//" | sed "s/^[ ]*//" | cut -d " " -f 1)
-     frcstop=$(tail -n 1 forcing.riverh.b             | sed "s/.*=//" | sed "s/^[ ]*//" | cut -d " " -f 1)
+     ln -sf $RDIR/riverh.a ${Rforfile}.a || tellerror "Could not get river .a file"
+     ln -sf $RDIR/riverh.b ${Rforfile}.b || tellerror "Could not get river .b file"
+     frcstart=$(head -n  6 ${Rforfile}.b | tail -n1 | sed "s/.*=//" | sed "s/^[ ]*//" | cut -d " " -f 1)
+     frcstop=$(tail -n 1 ${Rforfile}.b             | sed "s/.*=//" | sed "s/^[ ]*//" | cut -d " " -f 1)
      test1=$(echo ${tstart#-}'>='$frcstart | bc -l)
      test2=$(echo $tstop '<='$frcstop  | bc -l)
-     [ $test1 -eq 1 ] || tellerror "File $S/forcing.riverh.b: forcing starts after  model starts"
-     [ $test2 -eq 1 ] || tellerror "File $S/forcing.riverh.b: forcing stops  before model stops"
+     [ $test1 -eq 1 ] || tellerror "File $S/${Rforfile}.b: forcing starts after  model starts"
+     [ $test2 -eq 1 ] || tellerror "File $S/${Rforfile}.b: forcing stops  before model stops"
    fi
    cd $S
-else
-   echo "highfq_river=false: No attemp to use high frequency river runnoff"
 fi
+
 #
 # --- kpar forcing
 #
@@ -647,6 +662,35 @@ else
       cp $D/${filename}.a .
       cp $D/${filename}.b .
 
+#
+# --- Start compute Montg. on the go, to be sure it is computed from the right nesting file.
+# --- For operatinal runs and other rund where it is certain that there has been no 
+# --- changes to the model setup, this part should be commented out. 
+#
+#      imontg=0
+#       if [ [ $tmp -eq 1 -o $tmp2 -eq 1 ] -a [ $imontg -eq 1] ]; then
+#         echo "debug: $(pwd)" 
+#         ### "Calculate and Write Montgometry potential into the nesting files"
+#         echo "filename="${filename}
+#         for yy in `seq ${start_year} ${end_year}`; do
+#           y=$(( $yy % 4 ))
+#           if [ $y -eq 0 ]; then
+#              echo "$yy is Leap Year!"
+#              end_day=366
+#           else
+#              end_day=365
+#              echo "$yy is not a Leap Year!"
+#           fi
+#           for dn in `seq -w ${start_oday} ${end_day}`; do
+#              python ../calc_montg1.py /cluster/work/users/achoth/TP5a0.06/nest/080_NewMontg/archv.${yy}_${dn}_00.b  /cluster/work/users/achoth/TP5a0.06/expt_08.1/data/${filename}.b  ${nestdir}/
+#             python $BINDIR/calc_montg1.py $BASEDIR/nest/$E/archv.${yy}_${dn}_00.b  $BASEDIR/expt_$X/data/${filename}.b  ${nestdir}/
+#           done
+#         done
+#         echo " Nesting Files Modified Successfully "
+#       fi
+#
+# --- End compute Montg. on the go, to be sure it is computed from the right nesting file.
+#     
    elif [ -f $D/${filename}_mem001.a -a -f $D/${filename}_mem001.b ]; then
       echo "using HYCOM restart files ${filename}_mem???.[ab] from data dir $D"
       for f in $D/${filename}_mem*.? ; do

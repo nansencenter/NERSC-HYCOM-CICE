@@ -30,7 +30,12 @@ usage="
 "
 nlayers=50
 grid_type=native
-bio_flag=0
+# default no biology
+NO3flag=NONE
+PO4flag=NONE
+SIflag=NONE
+O2flag=NONE
+
 setup_only=0
 
 # This will process optional arguments
@@ -45,7 +50,10 @@ while true; do
     case "$1" in
     -b)
         shift;
-        bio_flag=1
+	NO3flag=T
+	PO4flag=T
+	SIflag=T
+	O2flag=T
         ;;
     -g)
         grid_type=regular
@@ -221,12 +229,10 @@ export L="_L${target_kdm}"
 #
 if [ "${grid_type}" == "native"  ] ; then
    prog_subreg=${HYCOM_ALL}/subregion/src/isubaregion_modified
-   prog_nemo=${HYCOM_ALL}/relax/src/nemo_archvz_biophys
 else
-#   prog_subreg=${HYCOM_ALL}/subregion/src/isubaregion_modified
    prog_subreg=${HYCOM_ALL}/subregion/src/isubaregion
-   prog_nemo=${HYCOM_ALL}/relax/src/nemo_archvz_biophys
 fi
+prog_nemo=${HYCOM_ALL}/relax/src/nemo_archvz_biophys
 #
 #
 #
@@ -303,6 +309,47 @@ touch   ${target_archv}.b && rm ${target_archv}.b
 logfile=${N}/nemo_archv.log
 touch $logfile && rm $logfile
 
+# modified for shell parallel runs
+create_blkdat_subset_function(){
+      echo "Retrieve blkdat.input and create subset"
+      touch blkdat.subset
+      rm    blkdat.subset
+      #echo "" > blkdat.subset
+      echo "NEMO Relaxation fields"                              > blkdat.subset
+      echo "  $SIGVERSN        'sigver ' = Version of eqn of state  "                        >> blkdat.subset
+      echo "  1        'levtop ' = top level of input clim. to use (optional, default 1)"  >> blkdat.subset
+      egrep "'iversn'"    blkdat.input >> blkdat.subset
+      egrep "'iexpt '"    blkdat.input >> blkdat.subset
+      egrep "'mapflg'"    blkdat.input >> blkdat.subset
+      egrep "'yrflag'"    blkdat.input >> blkdat.subset
+      egrep "'idm   '"    blkdat.input >> blkdat.subset
+      egrep "'jdm   '"    blkdat.input >> blkdat.subset
+      echo "  0        'jdw    ' = width of zonal average (optional, default 0)"  >> blkdat.subset
+      echo "  -1       'itest  ' = grid point where detailed diagnostics are desired"  >> blkdat.subset
+      echo "  -1       'jtest  ' = grid point where detailed diagnostics are desired"  >> blkdat.subset
+      egrep "'kdm   '"    blkdat.input >> blkdat.subset
+      egrep "'nhybrd'"    blkdat.input >> blkdat.subset
+      egrep "'nsigma'"    blkdat.input >> blkdat.subset
+      egrep "'isotop'"    blkdat.input >> blkdat.subset
+      egrep "'dp00  '"    blkdat.input >> blkdat.subset
+      egrep "'dp00x '"    blkdat.input >> blkdat.subset
+      egrep "'dp00f '"    blkdat.input >> blkdat.subset
+      egrep "'ds00  '"    blkdat.input >> blkdat.subset
+      egrep "'ds00x '"    blkdat.input >> blkdat.subset
+      egrep "'ds00f '"    blkdat.input >> blkdat.subset
+      egrep "'ds0k  '"    blkdat.input >> blkdat.subset
+      egrep "'dp0k  '"    blkdat.input >> blkdat.subset
+      egrep "'dp00i '"    blkdat.input >> blkdat.subset
+      egrep "'thflag'"    blkdat.input >> blkdat.subset
+      egrep "'thbase'"    blkdat.input >> blkdat.subset
+      egrep "'vsigma'"    blkdat.input >> blkdat.subset
+      egrep "'sigma '"    blkdat.input >> blkdat.subset
+      egrep "'thkmin'"    blkdat.input >> blkdat.subset
+      if [ ! -s  blkdat.subset ] ; then
+         echo "Couldnt get blkdat.input " ; exit 1 ;
+      fi
+      mv blkdat.subset fort.99
+}
 # Extract 'iexpt' value from blkdat.input and fort.99
 iexpt_blkdat_input=$(grep "'iexpt '" blkdat.input | awk '{print $1}')
 if [ -f fort.99 ] ; then
@@ -323,28 +370,11 @@ logfile=${NEST}/nest_${target_archv}.log
 touch $logfile && rm $logfile
 
 echo $logfile
+# Remove target_archv
 touch ${NEST}/${target_archv}.a
 touch ${NEST}/${target_archv}.b
 rm -rf ${NEST}/${target_archv}.*
-
-if [[ "${bio_flag}" -eq 0 ]] ; then
-
-${prog_nemo}  >> $logfile  <<EOF
-${N}/${target_archv}${L}.a
-${NEST}/${target_archv}.a
-${nlayers}
-${N}/ZL${nlayers}.txt
-T
-T
-T
-T
-T
-NONE
-NONE
-NONE
-NONE
-EOF
-else
+# Remove target_bioarchv
 test1=${target_archv:0:5}
 test2=${target_archv:5:16}
 target_bioarchv=${test1}_fabm${test2}
@@ -364,12 +394,11 @@ T
 T
 T
 T
-T
-T
-T
-T
+${NO3flag}
+${PO4flag}
+${SIflag}
+${O2flag}
 EOF
-fi
 
 
 fi
@@ -386,7 +415,7 @@ else
     touch ${D}/${source_archv_i}.b
     rm -f ${N}/${target_archv}${L}.*
     rm -f ${D}/${source_archv_i}.*
-    rm -f ${NEST}/nest_${target_archv}.log
+#    rm -f ${NEST}/nest_${target_archv}.log
     echo "Succesfully created archive file: $2"
 
     # using montg_regress.pckl(for TP5)/TP2_montg_regress.pckl is not recommended;for now the solution is to use ${BINDIR}/calc_montg1.py afterwards with a restart file 
