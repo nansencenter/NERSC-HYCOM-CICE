@@ -108,7 +108,7 @@ downwelling longwave radiation (STRD) included directly. Other supported options
 `erai`, `noresm`, and `ec_op`.
 
 The input data paths are configured in XML files under `$NHCROOT/input/` (e.g.
-`era5.xml`). On Betzy, the ERA5 data is at `/cluster/projects/nn9481k/ERA5_6h/`. This
+`era5.xml`). On Betzy, the ERA5 data is at `/cluster/projects/nn2993k/ERA5_6h/`. This
 path can be overridden by setting `ERA5_PATH` in the environment before running the
 script.
 
@@ -597,7 +597,7 @@ sbatch nesting_job.sh 2018 2019
 ```bash
 #!/bin/bash
 #SBATCH --job-name=nesting
-#SBATCH --account=nn9481k
+#SBATCH --account=nn2993k
 #SBATCH --time=24:00:00
 #SBATCH --qos=preproc
 #SBATCH --ntasks=12
@@ -759,7 +759,7 @@ few missing files. For a full year, the submission script below is more economic
 uses ~512 MB peak RAM — well within the node's 256 GB. A full month finishes in under a minute:
 
 ```bash
-srun --nodes=1 --ntasks=32 --time=01:00:00 --qos=devel --account=nn9481k --pty bash
+srun --nodes=1 --ntasks=32 --time=01:00:00 --qos=devel --account=nn2993k --pty bash
 ```
 
 Once inside the session, activate the Python environment:
@@ -825,7 +825,7 @@ sbatch montg1_job.sh
 ```bash
 #!/bin/bash
 #SBATCH --job-name=montg1
-#SBATCH --account=nn9481k
+#SBATCH --account=nn2993k
 #SBATCH -t 01:00:00
 #SBATCH --qos=preproc
 #SBATCH --ntasks=32          # covers a full month (≤31 files) in one batch; ~512 MB peak per task

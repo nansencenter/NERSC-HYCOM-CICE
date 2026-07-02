@@ -21,6 +21,47 @@ The `bin` symlink is required because scripts in `bin/` call each other using re
 symlink, those internal calls would fail.
 :::
 
+`expt_preprocess.sh` looks up `nest/`, `relax/`, and `force/` relative to the `<CONFIGNAME>/`
+directory — redirect them with symlinks onto the scratch filesystem. Set `WDIR` to the scratch
+path for your machine:
+
+::::{dropdown} WDIR — scratch path by machine
+::::{tab-set}
+:::{tab-item} Betzy
+```bash
+WDIR=$USERWORK/${CONFIGNAME}
+```
+:::
+:::{tab-item} Olivia
+```bash
+WDIR=/cluster/work/projects/nn2993k/$USER/${CONFIGNAME}
+```
+:::
+::::
+::::
+
+Then create the directories and symlinks:
+
+```bash
+mkdir -p $WDIR $WDIR/nest
+
+cd $WORK/${CONFIGNAME}
+mv relax $WDIR/relax
+mv force $WDIR/force
+mkdir -p $WDIR/force/synoptic
+
+ln -sf $WDIR/nest  nest
+ln -sf $WDIR/relax relax
+ln -sf $WDIR/force force
+```
+
+:::{important}
+`nest/`, `relax/`, and `force/` hold input data that is expensive to regenerate. Because the
+scratch filesystem is purged after 21 days, stage this data back from NIRD (or re-create it)
+before restarting a run if these directories have aged out.
+:::
+
+
 ## Configure REGION.src
 
 Copy the template into the configuration directory:
@@ -487,6 +528,48 @@ recommended in the error message.
 | `export P=` | Experiment directory path — set automatically from the script location |
 | `export D=` | Permanent data directory (`P/data`) — set automatically |
 | `export S=` | Scratch directory (`P/SCRATCH`) — set automatically |
+
+::::
+
+::::{dropdown} Both machines — redirect `SCRATCH` and `data` onto the scratch filesystem
+
+Keep the experiment tree (configuration and `build/`) on the non-purged `$WORK`
+(`/cluster/projects/nn2993k/$USER`), and put the two large directories — scratch and output —
+on the fast, purged scratch filesystem. Override the auto-set `S=` and `D=` lines in `EXPT.src`.
+The scratch path differs by machine:
+
+::::{tab-set}
+:::{tab-item} Betzy
+```bash
+export S=$USERWORK/<CONFIGNAME>/expt_<EXPT_ID>/SCRATCH
+export D=$USERWORK/<CONFIGNAME>/expt_<EXPT_ID>/data
+```
+:::
+:::{tab-item} Olivia
+```bash
+export S=/cluster/work/projects/nn2993k/$USER/<CONFIGNAME>/expt_<EXPT_ID>/SCRATCH
+export D=/cluster/work/projects/nn2993k/$USER/<CONFIGNAME>/expt_<EXPT_ID>/data
+```
+:::
+::::
+
+This is safe: `expt_preprocess.sh` only creates (`mkdir -p`) and enters (`cd`) `$S` and `$D` —
+it never deletes them — and the overrides propagate automatically when `expt_new.sh` copies
+`EXPT.src` to a new experiment. `P=` and `build/` stay on `$WORK`, so the configuration and
+compiled executable survive the purge.
+
+:::{note}
+`expt_preprocess.sh` also accesses `relax/` via `${D}/../../relax/` (two levels up from `$D`).
+When `D=` is overridden to a path on the scratch filesystem, `${D}/../../` resolves to the
+scratch `<CONFIGNAME>/` subtree — so `relax/` must be on scratch as well, which is exactly what
+the symlinks described above ([Set up the work directory](#set-up-the-work-directory)) provide.
+:::
+
+:::{important}
+`data/` is now on the purged filesystem, so **archive completed output to NIRD on a rolling
+basis** (e.g. per model year as it finishes) from a service node — the scratch filesystem is
+purged by file age, so early output can age out while a long run is still going.
+:::
 
 ::::
 

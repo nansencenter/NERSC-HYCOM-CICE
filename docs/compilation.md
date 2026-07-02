@@ -9,6 +9,17 @@ See the [HPC environment](installation.md#hpc-environment) section for details.
 
 ::::
 
+::::{dropdown} Source HPC environment — Olivia (NRIS/Sigma2)
+
+```{include} _snippets/olivia_hpc_env.md
+```
+
+::::
+
+:::{note}
+Olivia support is a work in progress. 
+:::
+
 ## Compile MSCPROGS (libhycnersc.a)
 
 > **Before compiling:** source the HPC environment file to load the correct modules and compilers
@@ -80,6 +91,7 @@ After installation, `libfabm.a` is at:
 ```
 ${HOME}/local/fabm/hycom/lib64/libfabm.a
 ```
+
 
 ## Compile HYCOM-CICE
 
@@ -243,3 +255,4 @@ Then compile:
 csh ./Make_clean.com
 csh ./Make_all.com
 ```
+

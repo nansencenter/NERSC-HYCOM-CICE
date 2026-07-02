@@ -5,6 +5,8 @@ analysing HYCOM model output. It is a general-purpose toolkit covering grid proj
 averaging, section transports, Lagrangian ice drift, grid utilities, and more.
 The tools live in `hycom/MSCPROGS/`.
 
+All of these post-processing and analysis steps can alternatively be done with [xhycom](https://xhycom.readthedocs.io/en/latest/index.html), a Python-based toolkit for working with HYCOM output.
+
 For compilation instructions, see [Compile MSCPROGS](compilation.md#compile-mscprogs-libhycnersca).
 
 ## Running the tools
@@ -117,6 +119,62 @@ than a grid. It reads `stations.in` instead of `proj.in`, together with
 group, named `<inputbase>_group<groupname>.nc`. A list of all generated files is
 written to `hyc2stations.filelist`. A helper script `setupstations.py` generates
 `stations.in` entries from start/end coordinates along a rhumb line.
+
+### Batch post-processing
+
+For a single run or a few files, running `hyc2proj` interactively (above) is fine. For many
+files — e.g. a multi-year reanalysis — submit it as a SLURM job. A convenient pattern is to
+parallelise by year: stage each year's archives into its own `Y<year>/` directory together
+with a copy of the required input files, then run one `hyc2proj` task per year.
+
+The required files (see
+[`hyc2proj`](#hyc2proj-and-hyc2stations-projection-and-interpolation)) must be present in
+each per-year directory: `regional.grid.*`, `regional.depth.*`, `grid.info`, `proj.in`,
+`depthlevels.in`, the matching `extract.*` file, and the compiled `hyc2proj` executable.
+
+:::{note}
+The parallel-by-year wrapper does not work with `detvflux` — leave it off in
+`extract.archm`/`extract.archv`.
+:::
+
+::::{dropdown} Example: parallel-by-year SLURM script (Olivia)
+
+The header (`#SBATCH` options) and module block are machine-specific. On Olivia, use a CPU
+partition and load the modules established when
+[compiling MSCPROGS](compilation.md#compile-mscprogs-libhycnersca).
+
+```bash
+#!/bin/bash
+#SBATCH --account=nn2993k
+#SBATCH --job-name=hyc2proj
+#SBATCH --nodes=1
+#SBATCH --ntasks=32            # one task per year
+#SBATCH --mem-per-cpu=10G
+#SBATCH --time=05:00:00        # ~3 h per model year, as a guide
+
+# --- Olivia HPC modules ---
+source $HOME/NERSC-HYCOM-CICE/environment/olivia_env.sh
+ulimit -s 2000000
+
+yr_s=1993
+yr_e=2024
+rid=archm.
+
+# Stage each year's archives + input files into Y<year>/
+for year in $(seq $yr_s $yr_e); do
+    dir="Y$year"; mkdir -p "$dir"
+    cp ./regional.* ./grid.info ./extract.archm ./depthlevels.in ./proj.in ./hyc2proj "$dir"/
+    mv ${rid}${year}_*.a ${rid}${year}_*.b "$dir"/ 2>/dev/null
+done
+
+# Run one hyc2proj per year in parallel
+for year in $(seq $yr_s $yr_e); do
+    ( cd "Y$year" && srun --exclusive -n1 -c1 ./hyc2proj --vertint linear ${rid}${year}_*.a ) &
+done
+wait
+```
+
+::::
 
 ## `m2nc` / `m2t` — 2D field extraction to NetCDF
 
@@ -252,6 +310,38 @@ Requires the external FES2014 C library and the GNU C compiler; see
 | `Tides_CSR` | `csr2mod_GE` | Tidal boundary forcing from CSR tidal atlas |
 | `TRIP` | `trip_*` | River forcing from the TRIP database + ERA40/ERA-i runoff |
 | `ZONAL` | `zonal`, `mosf` | Zonal averages and meridional overturning streamfunction |
+
+## Post-processing runs from NIRD
+
+NIRD access differs between machines:
+
+| | Login node | SVC node | Compute node |
+|---|---|---|---|
+| Betzy | read-write | — | not mounted |
+| Olivia | not mounted | read-write | read-only |
+
+The recommended workflow is to **copy** (not symlink) archives onto the scratch filesystem
+before processing — the [parallel-by-year `hyc2proj` script](#batch-post-processing) *moves*
+files into per-year directories, which fails on a read-only source, and streaming large
+3-D archives live over NIRD is slow.
+
+Stage the archive files (`archm.*` / `archv.*`, both `.a` and `.b`) together with the run's
+`regional.*` and `grid.info` into a scratch directory:
+
+- **Betzy**: copy from the login node to `/cluster/work/users/$USER/postproc/<run>/`
+- **Olivia**: copy from a service (SVC) node to `/cluster/work/projects/nn2993k/$USER/postproc/<run>/`
+
+Then run the post-processing tool from the staging directory. On Olivia, tools that only
+read archives — `m2nc`, `hycave`, `m2section` — can also read directly from NIRD inside a
+batch job, skipping the staging step.
+
+Move the resulting `.nc` files to `/cluster/projects/nn2993k/$USER/...` (or back to NIRD)
+before the 21-day scratch purge, then delete the staged archives.
+
+:::{tip}
+For a large multi-year run, stage and process one year at a time to keep the scratch
+footprint bounded.
+:::
 
 ## Input files
 

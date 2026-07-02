@@ -122,10 +122,9 @@ written, and set `INITFLG=""` (restart run).
 
 ## Visualization
 
-Sample Jupyter notebooks for plotting HYCOM output are available in the
-[TP2_setup repository](https://github.com/nansencenter/TP2_setup):
+If you prefer to work with xarray for analysis and visualization, check out [xhycom](https://xhycom.readthedocs.io/en/latest/index.html).
 
-- [plot_2D_TP2_temp.ipynb](https://github.com/nansencenter/TP2_setup/blob/main/plot_2D_TP2_temp.ipynb) — 2D surface maps
-- [plot_section_TP2.ipynb](https://github.com/nansencenter/TP2_setup/blob/main/plot_section_TP2.ipynb) — vertical cross-sections
+Otherwise, sample Jupyter notebooks for plotting HYCOM output are also available in the [TP2_setup repository](https://github.com/nansencenter/TP2_setup).
 
 These notebooks read files from `$WORK/<CONFIGNAME>/expt_<EXPT_ID>/data/`.
+
