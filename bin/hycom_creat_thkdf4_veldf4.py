@@ -5,16 +5,9 @@ import abfile
 import modeltools.hycom
 import modeltools.tools
 import argparse
-import matplotlib
-import numpy
 import logging
 import datetime
 import re
-matplotlib.use('Agg')
-import logging
-from mpl_toolkits.axes_grid1 import make_axes_locatable, axes_size
-#from mpl_toolkits.basemap import Basemap
-import matplotlib.pyplot
 # Set up logger
 _loglevel=logging.DEBUG
 logger = logging.getLogger(__name__)
