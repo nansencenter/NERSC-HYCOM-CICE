@@ -15,7 +15,6 @@ import logging
 from mpl_toolkits.axes_grid1 import make_axes_locatable, axes_size
 #from mpl_toolkits.basemap import Basemap
 import matplotlib.pyplot
-import cmocean
 # Set up logger
 _loglevel=logging.DEBUG
 logger = logging.getLogger(__name__)
