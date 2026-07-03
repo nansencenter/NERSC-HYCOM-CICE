@@ -19,6 +19,8 @@ import platform
 import shutil
 import subprocess
 import textwrap
+from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pytest
@@ -70,7 +72,7 @@ _CONTAINER_BUILD_SCRIPT = textwrap.dedent("""\
 
 # ── environment detection ─────────────────────────────────────────────────────
 
-def _find_esmf_mk():
+def _find_esmf_mk() -> str | None:
     """Return path to esmf.mk, or None if not found."""
     if "ESMFMKFILE" in os.environ:
         return os.environ["ESMFMKFILE"]
@@ -87,7 +89,8 @@ def _find_esmf_mk():
     return next((p for p in candidates if os.path.exists(p)), None)
 
 
-def _podman_image_ok():
+def _podman_image_ok() -> bool:
+    """Return True if Podman is available and the hycom-esmf-spike image exists."""
     if not shutil.which("podman"):
         return False
     r = subprocess.run(
@@ -97,8 +100,8 @@ def _podman_image_ok():
     return r.returncode == 0
 
 
-def _build_env():
-    """Return 'native', 'podman', or None."""
+def _build_env() -> str | None:
+    """Return 'native', 'podman', or None depending on what build toolchain is available."""
     if platform.system() == "Linux" and _find_esmf_mk():
         return "native"
     if platform.system() == "Darwin" and _podman_image_ok():
@@ -109,7 +112,7 @@ def _build_env():
 # ── fixtures ──────────────────────────────────────────────────────────────────
 
 @pytest.fixture(scope="session")
-def tp0_topo():
+def tp0_topo() -> dict[str, Any]:
     """Paths to committed TP0 topo files (always in the repo)."""
     return {
         "grid":      os.path.join(TOPO_DIR, "regional.grid"),
@@ -121,13 +124,13 @@ def tp0_topo():
 
 
 @pytest.fixture(scope="session")
-def tp0_blkdat():
+def tp0_blkdat() -> str:
     """Path to blkdat.input for TP0 expt_01.0."""
     return os.path.join(EXPT_DIR, "blkdat.input")
 
 
 @pytest.fixture(scope="session")
-def tp0_ice_in():
+def tp0_ice_in() -> str:
     """Path to CICE ice_in namelist for TP0 expt_01.0."""
     return os.path.join(EXPT_DIR, "ice_in")
 
@@ -320,7 +323,7 @@ def _write_glorys_physics(path: str) -> None:
 
 
 @pytest.fixture(scope="session")
-def glorys_fixtures(tmp_path_factory):
+def glorys_fixtures(tmp_path_factory) -> dict[str, str]:
     """Synthetic GLORYS coord, mask/bathy, and physics NetCDF files (5×5×5, lat ≥ 30 °N)."""
     pytest.importorskip("netCDF4", reason="netCDF4 required for GLORYS preprocessing tests")
     d = tmp_path_factory.mktemp("glorys")
@@ -428,7 +431,7 @@ def _write_era5_xml(path: str, era5_dir: str) -> None:
 
 
 @pytest.fixture(scope="session")
-def era5_fixtures(tmp_path_factory):
+def era5_fixtures(tmp_path_factory) -> dict[str, str]:
     """
     Synthetic ERA5 NetCDF files (one per variable) + XML config for hycom_atmfor.py.
 

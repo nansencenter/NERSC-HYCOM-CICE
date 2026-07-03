@@ -1,5 +1,5 @@
 """
-Phase 1 tests — preprocessing script smoke tests.
+Preprocessing script smoke tests.
 
 Covers:
   - nemo2archvz_regular.py  (GLORYS → HYCOM archive in z-coordinates)

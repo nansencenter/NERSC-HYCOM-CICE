@@ -1,16 +1,15 @@
 """
-Phase 2 tests — compile hycom_cice for TP0 expt_01.0.
+Compilation tests — build hycom_cice for TP0 expt_01.0.
 
-These tests require either:
-  • Native Linux with conda-forge ESMF in the environment, or
-  • macOS with Podman and the ``hycom-esmf-spike`` image built.
-
-They are skipped automatically when neither is available (e.g. a developer
-machine with none of the build toolchain set up).
+Requires either native Linux with conda-forge ESMF, or macOS with Podman
+and the ``hycom-esmf-spike`` image built. Skipped automatically when neither
+is available.
 """
 
+from typing import Any
 
-def test_compile_succeeds(compiled_hycom):
+
+def test_compile_succeeds(compiled_hycom: dict[str, Any]) -> None:
     """compile_model.sh must exit 0 for TP0 expt_01.0 with gfortran+OpenMPI+ESMF."""
     assert compiled_hycom["success"], (
         "compile_model.sh failed.\n"
@@ -19,7 +18,7 @@ def test_compile_succeeds(compiled_hycom):
     )
 
 
-def test_compile_produces_executable(compiled_hycom):
+def test_compile_produces_executable(compiled_hycom: dict[str, Any]) -> None:
     """The build log must mention creation of the hycom_cice executable."""
     assert compiled_hycom["success"], "Build failed — see test_compile_succeeds for details"
     combined = compiled_hycom["stdout"] + compiled_hycom["stderr"]

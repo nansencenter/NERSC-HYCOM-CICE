@@ -1,5 +1,5 @@
 """
-Phase 1 tests — bin/ script import and CLI smoke tests.
+bin/ script import and CLI smoke tests.
 
 Checks that the scripts in bin/ are importable (i.e. their dependencies are
 installed) and that the ones with pure-function logic produce correct output
@@ -10,6 +10,8 @@ import importlib.util
 import os
 import subprocess
 import sys
+import types
+from pathlib import Path
 
 import pytest
 
@@ -30,7 +32,7 @@ _SCRIPT_ENV = {
 }
 
 
-def _import_script(name):
+def _import_script(name: str) -> types.ModuleType:
     """Import a bin/ script as a module without executing __main__."""
     path = os.path.join(BIN_DIR, name)
     spec = importlib.util.spec_from_file_location(name.replace(".py", ""), path)
@@ -48,7 +50,7 @@ def _import_script(name):
     "namelist_extract.py",
     # hycom_kapref.py / calc_montg1.py import matplotlib — excluded from routine CI
 ])
-def test_script_imports(script):
+def test_script_imports(script: str) -> None:
     """Each script must be importable — catches missing dependencies."""
     _import_script(script)
 
@@ -56,7 +58,8 @@ def test_script_imports(script):
 # ── hycom_date.py ─────────────────────────────────────────────────────────────
 
 class TestHycomDate:
-    def test_datetime_to_ordinal_cli(self):
+    def test_datetime_to_ordinal_cli(self) -> None:
+        """Converts an ISO-8601 datetime to (year, day-of-year, hour) ordinal form."""
         result = subprocess.run(
             [sys.executable,
              os.path.join(BIN_DIR, "hycom_date.py"),
@@ -68,7 +71,8 @@ class TestHycomDate:
         assert "190" in result.stdout
         assert "12"  in result.stdout
 
-    def test_ordinal_to_datetime_cli(self):
+    def test_ordinal_to_datetime_cli(self) -> None:
+        """Converts a (year, day-of-year, hour) ordinal back to ISO-8601 datetime."""
         result = subprocess.run(
             [sys.executable,
              os.path.join(BIN_DIR, "hycom_date.py"),
@@ -82,7 +86,8 @@ class TestHycomDate:
 # ── namelist_extract.py ───────────────────────────────────────────────────────
 
 class TestNamelistExtract:
-    def test_extract_ice_in_value(self, tp0_ice_in):
+    def test_extract_ice_in_value(self, tp0_ice_in: str) -> None:
+        """Extracts a named value from a CICE ice_in namelist file."""
         result = subprocess.run(
             [sys.executable,
              os.path.join(BIN_DIR, "namelist_extract.py"),
@@ -97,7 +102,7 @@ class TestNamelistExtract:
 # ── hycom_timesteps.py ────────────────────────────────────────────────────────
 
 class TestHycomTimesteps:
-    def test_valid_timesteps_for_tp0(self, tp0_blkdat, tmp_path):
+    def test_valid_timesteps_for_tp0(self, tp0_blkdat: str, tmp_path: Path) -> None:
         """Script reads blkdat.input and prints valid baroclinic timestep options."""
         result = subprocess.run(
             [sys.executable,
