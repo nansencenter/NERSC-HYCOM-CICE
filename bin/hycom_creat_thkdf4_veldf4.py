@@ -104,10 +104,10 @@ def main(rmuwidth,exptid="") :
     wdth=rmuwidth
     mnn=0.02
     mxx=0.125
-    thkdf4_array=numpy.zeros(depth.shape)
+    thkdf4_array=np.zeros(depth.shape)
     thkdf4_array[:,:]=mnn
     ddd_mnn_mxx=np.linspace(mnn, mxx, num=wdth)
-    ddd_mxx_mnn=numpy.flip(ddd_mnn_mxx[:])
+    ddd_mxx_mnn=np.flip(ddd_mnn_mxx[:])
     #print("ddd_E=",ddd_mnn_mxx[:])
     ##AA thkdf4_array[:,:]=0.015
     ##AA ddd=[(0.015+ii*0.0055) for ii in range(20)]
