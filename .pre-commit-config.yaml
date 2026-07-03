@@ -16,3 +16,10 @@ repos:
         args: [--severity=warning, --shell=bash]
         # exclude third-party Fortran build scripts
         exclude: ^(hycom/|cice/|MSCPROGS/)
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.11.0
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
