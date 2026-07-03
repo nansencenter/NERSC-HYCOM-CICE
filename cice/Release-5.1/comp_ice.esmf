@@ -134,7 +134,7 @@ if ( ! -f $MACROFILE ) then
 endif
 
 
-icc -o makdep $CBLD/makdep.c                         || exit 2
+gcc -std=gnu89 -o makdep $CBLD/makdep.c              || exit 2
 
 setenv MAKECMD make
 #MAKECMD=gmake

@@ -70,7 +70,7 @@ c
               surflx(i,j) = (1.0-covice(i,j))*surflx(i,j) +
      &                                        flxice(i,j)   !cell average
               sstflx(i,j) = (1.0-covice(i,j))*sstflx(i,j)   !relax over ocean
-              if (sss_underice==.false.) then
+              if (.not. sss_underice) then
                  if (covice(i,j)>=0.15) then
                     sssflx(i,j)=0.0                            !skip relaxation bellow sea ice
                  else
