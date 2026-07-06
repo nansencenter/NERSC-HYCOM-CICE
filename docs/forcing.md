@@ -51,12 +51,28 @@ For TP2 hindcast runs, restart files are archived at:
 
 For example, to start on 27 August 2016 (240th day of year):
 
+::::{dropdown} WDIR — scratch path by machine
+::::{tab-set}
+:::{tab-item} Betzy
 ```bash
 CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+WDIR=$USERWORK/${CONFIGNAME}
+```
+:::
+:::{tab-item} Olivia
+```bash
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+WDIR=/cluster/work/projects/nn2993k/$USER/${CONFIGNAME}
+```
+:::
+::::
+::::
+
+```bash
 EXPT_ID=<EXPT_ID>         # e.g. 01.0
 
-mkdir -p $WORK/${CONFIGNAME}/expt_${EXPT_ID}/data/cice
-cd $WORK/${CONFIGNAME}/expt_${EXPT_ID}/data
+mkdir -p $WDIR/expt_${EXPT_ID}/data/cice
+cd $WDIR/expt_${EXPT_ID}/data
 
 cp /nird/datalake/NS9481K/shuang/TP2_output/expt_02.6/restart/restart.2016_240_00_0000.a .
 cp /nird/datalake/NS9481K/shuang/TP2_output/expt_02.6/restart/restart.2016_240_00_0000.b .
