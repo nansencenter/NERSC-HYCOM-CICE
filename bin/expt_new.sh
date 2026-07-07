@@ -72,9 +72,9 @@ export JDM=`grep "'jdm   '" $BASEDIR/topo/regional.grid.b | awk '{printf("%1d", 
 # Set up new blkdat.input
 mv blkdat.input blkdat.input.tmp
 cat blkdat.input.tmp | \
-   sed "s/^[ ]*[0-9]*[\t ]*'iexpt '/ $enew\t  'iexpt '/" |\
-   sed "s/^[ ]*[0-9]*[\t ]*'idm   '/ $IDM\t  'idm   '/"  |\
-   sed "s/^[ ]*[0-9]*[\t ]*'jdm   '/ $JDM\t  'jdm   '/" \
+   sed "s/^[ ]*[0-9]*[[:blank:]]*'iexpt '/ $enew\t  'iexpt '/" |\
+   sed "s/^[ ]*[0-9]*[[:blank:]]*'idm   '/ $IDM\t  'idm   '/"  |\
+   sed "s/^[ ]*[0-9]*[[:blank:]]*'jdm   '/ $JDM\t  'jdm   '/" \
    > blkdat.input
 rm blkdat.input.tmp
 
