@@ -6,7 +6,7 @@ The codes evaluate the model output against:
 2) satellite data
 3) BGC-Argo profiles
 
-**!!! IMPORTANT !!!** Use the provided "parameter_validation_generic.ipynb" file and copy it somewhere else in order not to overwrite the one in the github repository. It includes scripts to plot validation datasets. Move on to the following scripts for beginning validation.
+**!!! IMPORTANT !!!** Use the provided "parameter_validation_generic.ipynb" file and copy it somewhere else in order not to overwrite the one in the github repository. It includes scripts to plot validation datasets. Move on to the following scripts for beginning validation. Note that the instructions in this notebook are not definitive, but are examples for how to handle model outputs. Each study has specific needs, thus the user should modify the notebook scripts for their own purposes.
 
 If this is NOT your first time validating your model, below is the quick list of scripts you can execute in the following order. If this is the first time, jump to Section I for detailed instructions and first time use. Don't forget to adjust your region (e.g. TP2) and experiment (e.g. 010).
 

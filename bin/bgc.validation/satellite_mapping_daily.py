@@ -59,17 +59,17 @@ def main(region,experiment,date1,date2,workdir):
             "r",idm=idm,jdm=jdm)
     depthm=abdepth.read_field("depth")
 
-    nmonths = ( int(date2)+1 - int(date1) ) * 12
-    satoutput = np.zeros((nmonths,jdm,idm))
-    modeloutput = np.zeros((nmonths,jdm,idm))
+    ndays = int(( datetime.datetime(int(date2),12,31) - datetime.datetime(int(date1),1,1) ).days) + 1 
+    satoutput = np.zeros((ndays,jdm,idm))
+    modeloutput = np.zeros((ndays,jdm,idm))
 
     namencout = workdir + user + "/" + \
-        region + "/" + experiment + "/data/CHL_monthly_colocated_"+date1+"_"+date2+".nc"
+        region + "/" + experiment + "/data/CHL_daily_colocated_"+date1+"_"+date2+".nc"
     ncout = NetCDFFile(namencout, "w", format="NETCDF4")
 
     ncout.createDimension("JJ",jdm)
     ncout.createDimension("II",idm)
-    ncout.createDimension("time",nmonths)
+    ncout.createDimension("time",ndays)
 #    ncout.createVariable("latitude","f8",("JJ","II"))
 #    ncout.createVariable("longitude","f8",("JJ","II"))
 
@@ -90,24 +90,29 @@ def main(region,experiment,date1,date2,workdir):
     ncout.variables["longitude"][:]=plon
     ncout.variables["latitude"][:]=plat
 
-    timecal =  datetime.datetime(int(date1), 1, 15)
-    for tim in range(nmonths):
+    timecal =  datetime.datetime(int(date1), 1, 1)
+    tim = 0
+    while timecal <= datetime.datetime(int(date2),12,31):
         month = int( timecal.strftime('%m') )
         daym = int( timecal.strftime('%d') )
         year = int( timecal.strftime('%Y') )
-        print(str(year)+"-"+str(month).zfill(2))
+        day_of_year = int(timecal.strftime('%j'))
+        print(str(year)+"-"+str(month).zfill(2)+"-"+str(daym).zfill(2))
+        print(str(year)+"_"+str(day_of_year).zfill(3))
         if region != 'NA2a0.80' :
           f = abfile.ABFileArchv(workdir + user + "/" + \
-              region + "/" + experiment + "/data/"+"AVE."+str(month).zfill(2)+"."+str(year)+"."+str(year)+".b","r")
+              region + "/" + experiment + "/data/"+"archm."+str(year)+"_"+str(day_of_year).zfill(3)+"_12.b","r")
+          print("archm."+str(year)+"_"+str(day_of_year).zfill(3)+"_12.b")
           kdm  = max(f.fieldlevels)
           chl  = np.zeros((kdm,jdm,idm))
           deep = np.zeros((kdm,jdm,idm))
           deepd= np.zeros((kdm,jdm,idm))
           for k in range(kdm) :
-#              dummy = f.read_field('ECO_diac',k+1)
-#              chl[k,:,:] = chl[k,:,:] + dummy # first add diatom chl
-#              dummy = f.read_field('ECO_flac',k+1)
-#              chl[k,:,:] = chl[k,:,:] + dummy # then add flagellate
+              #dummy = f.read_field('ECO_diac',k+1)
+              #chl[k,:,:] = chl[k,:,:] + dummy # first add diatom chl
+              #dummy = f.read_field('ECO_flac',k+1)
+              #chl[k,:,:] = chl[k,:,:] + dummy # then add flagellate
+              #chl[k,:,:] = np.ma.masked_array(chl[k,:,:],dummy.mask)
               dummy = f.read_field('total_ch',k+1)
               chl[k,:,:] = chl[k,:,:] + dummy
               chl[k,:,:] = np.ma.masked_array(chl[k,:,:],dummy.mask)
@@ -120,62 +125,25 @@ def main(region,experiment,date1,date2,workdir):
                  deep[k,:,:] = deepd[k-1,:,:]/2. + deep[k-1,:,:] + dummy / 2.
               deep[k,:,:] = np.ma.masked_array(deep[k,:,:],dummy.mask)
 
-        satdir = 'https://www.oceancolour.org/thredds/dodsC/cci/v5.0-release/geographic/monthly/'
-        globchl = satdir+ 'chlor_a/' + str(year) + \
-                     '/ESACCI-OC-L3S-CHLOR_A-MERGED-1M_MONTHLY_4km_GEO_PML_OCx-' + \
-                            str(year) + str(timecal.month).zfill(2) + '-fv5.0.nc'
-        chlname = 'chlor_a'
-        #is_it_there=True
-        tries = 1000
-        for i in range(tries):
-         try:
-           ncc = NetCDFFile(globchl)
-           satlat = ncc.variables['lat'][:]
-           satlon = ncc.variables['lon'][:]
-    #       time= nc.variables['time'][:]
-           satchl = ncc.variables[chlname][0,:,:]
-           #satchl = nc.variables['chlor_a'][0,:,:]
-           ncc.close()
-           break
-         except Exception as e :
-           if i < tries - 1:
-              print("ERROR, try number : ",i+1)
-              continue
-           else:
-              print('File does not exist : chlor_a : ' + \
-                 str(year) + str(timecal.month).zfill(2) + str(timecal.day).zfill(2))
-              #is_it_there=False
-              break
+        satdir = '/cluster/work/users/cagyum/Satellite.GLOB.L3.TP5/'
+        globchl = satdir+ 'CHL.' + str(year) + '.' + str(month).zfill(2)+ '.' + str(daym).zfill(2) + '.nc'
+        chlname = 'CHL'
+        print(globchl)
 
+        ncc = NetCDFFile(globchl)
+        satlat = ncc.variables['latitude'][:]
+        satlon = ncc.variables['longitude'][:]
+        satchl = ncc.variables[chlname][0,:,:]
+        ncc.close()
 
-#        if is_it_there:
-#           ncc = NetCDFFile(globchl)
+        globkd = satdir+  'KD490.' + str(year) + '.' + str(month).zfill(2)+ '.' + str(daym).zfill(2) + '.nc' 
+        kdname = 'KD490'
+        print(globkd)
 
+        nck = NetCDFFile(globkd)
+        satkd = nck.variables[kdname][0,:,:]
+        nck.close()
 
-        globkd = satdir+ 'kd/' + str(year) + \
-                    '/ESACCI-OC-L3S-K_490-MERGED-1M_MONTHLY_4km_GEO_PML_KD490_Lee-' + \
-                           str(year) + str(timecal.month).zfill(2) + '-fv5.0.nc'
-        kdname = 'kd_490'
-
-        for i in range(tries):
-           try:
-               nck = NetCDFFile(globkd)
-               satkd = nck.variables[kdname][0,:,:]
-               nck.close()
-               break
-           except Exception as e :
-                if i < tries - 1:
-                    print("ERROR, try number : ",i+1)
-                    continue
-                else:
-                    print('File does not exist : chlor_a : ' + \
-                       str(year)  + str(timecal.month).zfill(2) + str(timecal.day).zfill(2))
-                    satkd = np.copy(satchl)
-                    satkd = 1./10.
-                    break
-
-
-    #     satkd[satkd.mask]=1./10. # set 1/kd to 10m if masked. This is effective if chl not masked but kd masked. so chl can compute.
 
         depthmf = np.asfortranarray(depthm)
         deepf   = np.asfortranarray(deep)
@@ -188,9 +156,7 @@ def main(region,experiment,date1,date2,workdir):
         satlonf = np.asfortranarray(satlon)
         scpxf   = np.asfortranarray(scpx)
         scpyf   = np.asfortranarray(scpy)
- #       maskf   = np.asfortranarray(mask)
 
-#        satout,kdout,modelout = _the_loop.main(depthmf,scpxf,scpyf,platf,plonf,deepf,chlf,satlatf,satlonf,satchlf,satkdf)
         satout,kdout,modelout = _FRAM_the_mapping_loop.main(depthmf,scpxf,scpyf,platf,plonf,deepf,chlf,satlatf,satlonf,satchlf,satkdf)
 
         satout = np.ma.masked_where(satout>1000.,satout)
@@ -205,7 +171,9 @@ def main(region,experiment,date1,date2,workdir):
         ncout.variables["time"][tim] = netCDF4.date2num(timecal, units = time.units, calendar = time.calendar)
         ncout.sync()
   
-        timecal = timecal + relativedelta(months=1)
+        timecal = timecal + relativedelta(days=1)
+        tim = tim + 1
+        print('---')
 
     ncout.close()
 
