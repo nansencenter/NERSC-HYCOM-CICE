@@ -59,7 +59,7 @@ The scripts below take time. I suggest using a virtual terminal (e.g. screen).
 
 ## I.I Regional masks
 
-The validation scripts aim to unify the process. As such, a common region definitions is essential. The commands below creates these masks as binary pickle files and stores them in the same folder. The files are already created and copied to cluster/projects (i.e. /cluster/projects/nn9481k/BGC.Validataion/). There is no need to repeat this process. The command below is here for documentation as an example:
+The validation scripts aim to unify the process. As such, a common region definitions is essential. The commands below creates these masks as binary pickle files and stores them in the same folder. The files are already created and copied to cluster/projects (i.e. /cluster/projects/nn9481k/BGC.Validation/). There is no need to repeat this process. The command below is here for documentation as an example:
 ```
 python make_OM_regional_masks.py TP5a0.06 /cluster/work/users/cagyum/TP5a0.06/topo/regional.grid
 ```
