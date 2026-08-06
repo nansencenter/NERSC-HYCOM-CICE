@@ -103,12 +103,16 @@ def main(filemesh, merged_nc_file, bio_file=None, iexpt=1, iversn=22, yrflag=3):
             po4 = np.squeeze(bio.variables["po4"][:])
             si  = np.squeeze(bio.variables["si"][:])
             o2  = np.squeeze(bio.variables["o2"][:])
+            dissic = np.squeeze(bio.variables["dissic"][:])
+            talk = np.squeeze(bio.variables["talk"][:])
 
             # Same conversions as esm2archvz.py
             no3 *= 6.625 * 12.01 * 1000.0
             si   *= 6.625 * 12.01 * 1000.0
             po4 *= 106.0 * 12.01 * 1000.0
             o2  *= 1000.0
+            dissic = dissic * 1000.0   # mol/m3 -> mmol C/m3
+            talk = talk * 1000.0   # mol/m3 -> mmol C/m3 
 
         # Read Pre-Calculated 2D Barotropic currents and SSH
         ubaro_raw = np.squeeze(ncid.variables["ubaro_netcdf"][:])
@@ -194,6 +198,8 @@ def main(filemesh, merged_nc_file, bio_file=None, iexpt=1, iversn=22, yrflag=3):
             po4l = np.squeeze(po4[k])
             sil  = np.squeeze(si[k])
             o2l  = np.squeeze(o2[k])
+            dissicl = np.squeeze(dissic[k])
+            talkl = np.squeeze(talk[k])
 
             no3l = np.where(no3l < 1e8, no3l, np.nan)
             no3l = np.minimum(np.maximum(maplev(no3l), 0.0), 1.0e8)
@@ -207,6 +213,12 @@ def main(filemesh, merged_nc_file, bio_file=None, iexpt=1, iversn=22, yrflag=3):
             o2l = np.where(o2l < 1e8, o2l, np.nan)
             o2l = np.minimum(np.maximum(maplev(o2l), 0.0), 1.0e8)
 
+            dissicl = np.where(dissicl < 1e8, dissicl, np.nan)
+            dissicl = np.minimum(np.maximum(maplev(dissicl), 0.0), 1.0e8)
+
+            talkl = np.where(talkl < 1e8, talkl, np.nan)
+            talkl = np.minimum(np.maximum(maplev(talkl), 0.0), 1.0e8)
+
         if k > 0:
             empty_layer_mask = (dzl < 1e-4)
             tl[empty_layer_mask] = tl_above[empty_layer_mask]
@@ -217,7 +229,9 @@ def main(filemesh, merged_nc_file, bio_file=None, iexpt=1, iversn=22, yrflag=3):
                 po4l[empty_layer_mask] = po4_above[empty_layer_mask]
                 sil[empty_layer_mask]  = si_above[empty_layer_mask]
                 o2l[empty_layer_mask]  = o2_above[empty_layer_mask]
-        
+                dissicl[empty_layer_mask] = dissic_above[empty_layer_mask]
+                talkl[empty_layer_mask] = talk_above[empty_layer_mask]
+
         tl_above = np.copy(tl)
         sl_above = np.copy(sl)
 
@@ -226,6 +240,8 @@ def main(filemesh, merged_nc_file, bio_file=None, iexpt=1, iversn=22, yrflag=3):
             po4_above = np.copy(po4l)
             si_above  = np.copy(sil)
             o2_above  = np.copy(o2l)
+            dissic_above = np.copy(dissicl)
+            talk_above = np.copy(talkl)
 
         onem = 9806.0
         outfile.write_field(ul, ip, "u-vel.", 0, time, k+1, 0) 
@@ -239,6 +255,8 @@ def main(filemesh, merged_nc_file, bio_file=None, iexpt=1, iversn=22, yrflag=3):
             outfile.write_field(po4l, ip, "ECO_pho", 0, time, k+1, 0)
             outfile.write_field(sil,  ip, "ECO_sil", 0, time, k+1, 0)
             outfile.write_field(o2l,  ip, "ECO_oxy", 0, time, k+1, 0)
+            outfile.write_field(dissicl, ip, "CO2_c", 0, time, k+1, 0)
+            outfile.write_field(talkl, ip, "CO2_TA", 0, time, k+1, 0)
 
     outfile.close()
     logger.info(f"Finalized: {oname}")
