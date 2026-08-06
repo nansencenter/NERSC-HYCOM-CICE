@@ -742,7 +742,7 @@ call check_finite("AFTER VERTICAL", n)
     end do
 #endif
 
-call fabm_model%prepare_inputs
+call fabm_model%prepare_inputs(real(nstep))
 !      do k=1,kk
 !        do j=1,jj
 !          call fabm_get_light_extinction(fabm_model, 1, ii, j, k, extinction)

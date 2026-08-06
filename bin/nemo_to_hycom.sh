@@ -17,17 +17,22 @@
 # (2) May 2019: some correction on biophys [ab] files, Mostafa Bakhoday-Paskyabi
 # (3) July 9 2019, accounting for both bio & phy nesting.
 # (4) July 11 2019, further imporvment.
-OPTSTRING="b:d:g:i:m:n:h"
+OPTSTRING="b:c:d:g:i:m:n:h"
 echo "Set defaults that assume grid_type=native"
 grid_type=native
 maxinc=50
 bio_file=""
+coord_file=""
 while getopts ${OPTSTRING} opt; do
   case ${opt} in
     b)
       echo "Option -b biofile was triggered, Argument: ${OPTARG}"
       echo "Default empty string (no biofile)"
       bio_file=${OPTARG}
+      ;;
+    c)
+      echo "Option -c coord_file was triggered, Argument: ${OPTARG}"
+      coord_file=${OPTARG}
       ;;
     d)
       echo "Option -d Destination experiment triggered, Argument: ${OPTARG}"
@@ -76,8 +81,11 @@ while getopts ${OPTSTRING} opt; do
      echo "-g: grid_type. Either native or regular"
      echo "-h: This message (help)"
      echo "-i: maxinc. Default 50. Distance where the algorithm search for water points"
+     echo "-c: coord_file. Path to coordinates.nc containing e3t (vertical layer thicknesses, regular grid only)."
+     echo "    If not set, derived from -m by replacing the last 13 characters with 'coordinates.nc'."
+     echo "    Use this when the mesh file (-m) does not follow the expected naming convention."
      echo "-m: mercator_mesh file. Default (native):  /nird/datapeak/NS9481K/MERCATOR_DATA/GRID_COORD/ext-GL12V1_mesh_zgr.nc"
-     echo "    if -g is set to regular default will change to /nird/datapeak/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO-MFC_001_030_mask_bathy.nc"
+     echo "    if -g is set to regular default will change to /nird/datapeak/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO_MFC_001_24_MESH.nc"
      echo "-n: Mandatory: Path and Pattern of Mercator input netCDF files."
      exit 1
      ;;
@@ -121,9 +129,9 @@ if [ ${grid_type} == "native" ] ; then
 elif [ ${grid_type} == "regular" ] ; then
         timevar="time"
         if [ -z "$mercator_mesh" ]; then
-                export mercator_mesh="/nird/datapeak/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO-MFC_001_030_mask_bathy.nc"
+                export mercator_mesh="/nird/datapeak/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO_MFC_001_24_MESH.nc"
                 echo "mercator_mesh has not been set."
-		echo "set to default (regular) /nird/datapeak/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO-MFC_001_030_mask_bathy.nc"
+		echo "set to default (regular) /nird/datapeak/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO_MFC_001_24_MESH.nc"
         fi
 fi
 
@@ -199,7 +207,8 @@ for filename in $ncfile ; do
       fi
    else
       if [[ "${bio_file}" == "" ]] ; then
-      ${BINDIR}/nemo2archvz_regular.py $mercator_mesh $filename --iexpt ${iexpt} --iversn ${iversn} --yrflag ${yrflag}
+      coord_arg="" ; [[ -n "${coord_file}" ]] && coord_arg="--coord_file=${coord_file}"
+      ${BINDIR}/nemo2archvz_regular.py $mercator_mesh $filename --iexpt ${iexpt} --iversn ${iversn} --yrflag ${yrflag} ${coord_arg}
       ########################
       #
       # (2) Based on generated archive files in (1) the grid and topography files are generated.
@@ -209,7 +218,8 @@ for filename in $ncfile ; do
       ########################
       else
 
-      ${BINDIR}/nemo2archvz_regular.py $mercator_mesh $filename --bio_file=${bio_file}  --iexpt ${iexpt} --iversn ${iversn} --yrflag ${yrflag}
+      coord_arg="" ; [[ -n "${coord_file}" ]] && coord_arg="--coord_file=${coord_file}"
+      ${BINDIR}/nemo2archvz_regular.py $mercator_mesh $filename --bio_file=${bio_file}  --iexpt ${iexpt} --iversn ${iversn} --yrflag ${yrflag} ${coord_arg}
       ########################
       #
       # (2) Based on generated archive files in (1) the grid and topography files are generated.
