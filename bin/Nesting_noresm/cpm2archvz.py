@@ -70,7 +70,7 @@ def read_mesh(filemesh):
     
     return depth, plon, plat
 
-def main(filemesh, merged_nc_files, iexpt=1, iversn=22, yrflag=3):
+def main(filemesh, merged_nc_files, bio_file=None, iexpt=1, iversn=22, yrflag=3):
     depth, plon, plat = read_mesh(filemesh)
     ip = (depth == 0)  # Land mask: True where depth is 0
 
@@ -82,6 +82,10 @@ def main(filemesh, merged_nc_files, iexpt=1, iversn=22, yrflag=3):
         logger.info(f"Processing unified merged file: {os.path.basename(nc_file)}")
         
         with Dataset(nc_file, "r") as ncid:
+
+            # Open optional biogeochemical variables if provided
+            bio = Dataset(bio_file, "r") if bio_file is not None else None
+
             # Time parsing
             time = ncid.variables["time"][0]
             tunit = ncid.variables["time"].units
@@ -94,6 +98,18 @@ def main(filemesh, merged_nc_files, iexpt=1, iversn=22, yrflag=3):
             t = np.squeeze(ncid.variables["thetao"][:])
             s = np.squeeze(ncid.variables["so"][:])
 
+            if bio is not None:
+                no3 = np.squeeze(bio.variables["no3"][:])
+                po4 = np.squeeze(bio.variables["po4"][:])
+                si  = np.squeeze(bio.variables["si"][:])
+                o2  = np.squeeze(bio.variables["o2"][:])
+
+                # Same conversions as esm2archvz.py
+                no3 *= 6.625 * 12.01 * 1000.0
+                si   *= 6.625 * 12.01 * 1000.0
+                po4 *= 106.0 * 12.01 * 1000.0
+                o2  *= 1000.0
+
             # Read Pre-Calculated 2D Barotropic currents and SSH
             ubaro_raw = np.squeeze(ncid.variables["ubaro_netcdf"][:])
             vbaro_raw = np.squeeze(ncid.variables["vbaro_netcdf"][:])
@@ -104,6 +120,9 @@ def main(filemesh, merged_nc_files, iexpt=1, iversn=22, yrflag=3):
             z_levels = ncid.variables["depth"][:]
             nlev = np.size(z_levels)
             dz = lev_bnds[:, 1] - lev_bnds[:, 0]
+
+            if bio is not None:
+                bio.close()
 
         # Clean fill values
         u = np.where(np.abs(u) < 1e10, u, 0.)
@@ -167,13 +186,43 @@ def main(filemesh, merged_nc_files, iexpt=1, iversn=22, yrflag=3):
             tl = np.where(tl <= 5e2, tl, np.nan)
             tl = np.minimum(np.maximum(maplev(tl), -5.0), 50.0)
 
+            if bio_file is not None:
+                no3l = np.squeeze(no3[k])
+                po4l = np.squeeze(po4[k])
+                sil  = np.squeeze(si[k])
+                o2l  = np.squeeze(o2[k])
+
+                no3l = np.where(no3l < 1e8, no3l, np.nan)
+                no3l = np.minimum(np.maximum(maplev(no3l), 0.0), 1.0e8)
+
+                po4l = np.where(po4l < 1e8, po4l, np.nan)
+                po4l = np.minimum(np.maximum(maplev(po4l), 0.0), 1.0e8)
+
+                sil = np.where(sil < 1e8, sil, np.nan)
+                sil = np.minimum(np.maximum(maplev(sil), 0.0), 1.0e8)
+
+                o2l = np.where(o2l < 1e8, o2l, np.nan)
+                o2l = np.minimum(np.maximum(maplev(o2l), 0.0), 1.0e8)
+
             if k > 0:
                 empty_layer_mask = (dzl < 1e-4)
                 tl[empty_layer_mask] = tl_above[empty_layer_mask]
                 sl[empty_layer_mask] = sl_above[empty_layer_mask]
+
+                if bio_file is not None:
+                    no3l[empty_layer_mask] = no3_above[empty_layer_mask]
+                    po4l[empty_layer_mask] = po4_above[empty_layer_mask]
+                    sil[empty_layer_mask]  = si_above[empty_layer_mask]
+                    o2l[empty_layer_mask]  = o2_above[empty_layer_mask]
             
             tl_above = np.copy(tl)
             sl_above = np.copy(sl)
+
+            if bio_file is not None:
+                no3_above = np.copy(no3l)
+                po4_above = np.copy(po4l)
+                si_above  = np.copy(sil)
+                o2_above  = np.copy(o2l)
 
             onem = 9806.0
             outfile.write_field(ul, ip, "u-vel.", 0, time, k+1, 0) 
@@ -182,6 +231,12 @@ def main(filemesh, merged_nc_files, iexpt=1, iversn=22, yrflag=3):
             outfile.write_field(tl, ip, "temp", 0, time, k+1, 0)
             outfile.write_field(sl, ip, "salin", 0, time, k+1, 0)
 
+            if bio_file is not None:
+                outfile.write_field(no3l, ip, "ECO_no3", 0, time, k+1, 0)
+                outfile.write_field(po4l, ip, "ECO_pho", 0, time, k+1, 0)
+                outfile.write_field(sil,  ip, "ECO_sil", 0, time, k+1, 0)
+                outfile.write_field(o2l,  ip, "ECO_oxy", 0, time, k+1, 0)
+
         outfile.close()
         logger.info(f"Finalized: {oname}")
 
@@ -189,9 +244,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Convert preprocessed unified NorCPM NetCDF files to HYCOM format.')
     parser.add_argument('meshfile', type=str, help="Mesh footprint file path")
     parser.add_argument('merged_nc_files', type=str, nargs="+", help="Target .merged_YYYY-MM.nc files")
+    parser.add_argument('--bio-file', type=str, default=None, help="Optional NetCDF file containing biogeochemical variables.")
     parser.add_argument('--iexpt', type=int, default=1)
     parser.add_argument('--iversn', type=int, default=22)
     parser.add_argument('--yrflag', type=int, default=3)
 
     args = parser.parse_args()
-    main(args.meshfile, args.merged_nc_files, iexpt=args.iexpt, iversn=args.iversn, yrflag=args.yrflag)
+    main(args.meshfile, args.merged_nc_files, bio_file=args.bio_file, iexpt=args.iexpt, iversn=args.iversn, yrflag=args.yrflag)
