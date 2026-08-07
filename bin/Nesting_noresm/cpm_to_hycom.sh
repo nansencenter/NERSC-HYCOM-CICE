@@ -84,7 +84,7 @@ for file in ${input_files}; do
         echo "Using biology file: ${bio_file}"
 
         python ${BASEDIR}/bin/Nesting_noresm/cpm2archvz.py "${esm_gridfile}" "${file}" \
-            --bio_file="${bio_file}" --iexpt ${iexpt} --iversn ${iversn} --yrflag ${yrflag}
+            --bio-file="${bio_file}" --iexpt ${iexpt} --iversn ${iversn} --yrflag ${yrflag}
 
         archv_name=$(model_datetime "${file}")
 
