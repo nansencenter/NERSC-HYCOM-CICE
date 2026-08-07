@@ -1,0 +1,59 @@
+#==============================================================================
+# Makefile macros for Olivia, Linux oneAPI environment
+#==============================================================================
+
+SLIBS      :=
+ULIBS      :=
+
+CPP        := cpp
+CPPFLAGS   := -P -traditional
+CPPDEFS    := -DLINUX
+CFLAGS     := -c -O2
+ifeq ($(COMMDIR), mpi)
+   FC         := mpifort
+else
+   FC         := ifx
+endif
+FREEFLAGS  := -FR
+FFLAGS     := -traceback -g -O2 -convert big_endian -assume byterecl -real-size 64 -integer-size 32
+
+ifeq ($(THRD), yes)
+   FFLAGS  := $(FFLAGS) -qopenmp
+endif
+
+MOD_SUFFIX := mod
+LD         := $(FC)
+LDFLAGS    := $(FFLAGS) -v
+
+    CPPDEFS := $(CPPDEFS) -DNXGLOB=$(NXGLOB) -DNYGLOB=$(NYGLOB) \
+                -DBLCKX=$(BLCKX) -DBLCKY=$(BLCKY) -DMXBLCKS=$(MXBLCKS) \
+                -DNICELYR=$(NICELYR) -DNSNWLYR=$(NSNWLYR) -DNICECAT=$(NICECAT) \
+                -DTRAGE=$(TRAGE) -DTRFY=$(TRFY) -DTRLVL=$(TRLVL) -DTRPND=$(TRPND) \
+                -DTRBRI=$(TRBRI) -DNTRAERO=$(NTRAERO) -DNBGCLYR=$(NBGCLYR) \
+                -DTRBGCS=$(TRBGCS) -DNUMIN=$(NUMIN) -DNUMAX=$(NUMAX) \
+                -DNERSC_HYCOM_CICE
+    CPPDEFS := $(CPPDEFS) -DESMF_INTERFACE -DUSE_ESMF_LIB
+    CPPDEFS := $(CPPDEFS) -Dcoupled
+
+ifeq ($(DITTO), yes)
+   CPPDEFS := $(CPPDEFS) -DREPRODUCIBLE
+endif
+
+ifeq ($(BARRIERS), yes)
+   CPPDEFS := $(CPPDEFS) -Dgather_scatter_barrier
+endif
+
+ifeq ($(IO_TYPE), netcdf)
+   CPPDEFS := $(CPPDEFS) -Dncdf
+   ifdef EBROOTNETCDFMINFORTRAN
+      INCLDIR := $(INCLDIR) -I$(EBROOTNETCDFMINFORTRAN)/include
+      SLIBS   := $(SLIBS) -L$(EBROOTNETCDFMINFORTRAN)/lib -lnetcdff
+   endif
+   ifdef EBROOTNETCDF
+      INCLDIR := $(INCLDIR) -I$(EBROOTNETCDF)/include
+      SLIBS   := $(SLIBS) -L$(EBROOTNETCDF)/lib64 -lnetcdf
+   endif
+endif
+
+INCLDIR := $(INCLDIR) -I$(ESMF_DIR)include -I$(ESMF_MOD_DIR)
+SLIBS := -lesmf_fullylinked $(SLIBS) -L$(ESMF_LIB_DIR)
