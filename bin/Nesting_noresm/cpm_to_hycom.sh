@@ -73,7 +73,7 @@ for file in ${input_files}; do
 
     else
 
-        bio_file="${file/merged/biomerged}"
+        bio_file="${file/hmphyglb/hmbgcglb}"
 
         if [ ! -f "${bio_file}" ]; then
             echo "Error: Biological file not found:"
