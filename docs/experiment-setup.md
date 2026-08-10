@@ -164,6 +164,15 @@ values for your experiment. For TP2, the file should look like this:
 | `highfq_river` | Use time-varying (high-frequency) river forcing instead of the climatological river forcing. Requires `priver=0` in `blkdat.input`; the two options are mutually exclusive. |
 | `sssrmx_scalar` | Maximum SSS anomaly (psu) at which relaxation is still applied. Relaxation is suppressed where the model–climatology difference exceeds this value. `99.` (template default) means no cap; `.5` limits relaxation to within 0.5 psu of climatology. |
 
+Finally, copy your customized `hycom_opt` to your scratch filesystem.
+
+```bash
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+EXPT_ID=<EXPT_ID>         # e.g. 01.0
+
+cp $WORK/${CONFIGNAME}/expt_${EXPT_ID}/hycom_opt $WDIR/expt_${EXPT_ID}/.
+```
+
 ## Configure blkdat.input
 
 `blkdat.input` controls core model parameters. The easiest starting point is to copy it
