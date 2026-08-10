@@ -510,14 +510,14 @@ The scratch path differs by machine:
 ::::{tab-set}
 :::{tab-item} Betzy
 ```bash
-export S=$USERWORK/<CONFIGNAME>/expt_<EXPT_ID>/SCRATCH
-export D=$USERWORK/<CONFIGNAME>/expt_<EXPT_ID>/data
+export S=$USERWORK/<CONFIGNAME>/expt_${X}/SCRATCH
+export D=$USERWORK/<CONFIGNAME>/expt_${X}/data
 ```
 :::
 :::{tab-item} Olivia
 ```bash
-export S=/cluster/work/projects/nn2993k/$USER/<CONFIGNAME>/expt_<EXPT_ID>/SCRATCH
-export D=/cluster/work/projects/nn2993k/$USER/<CONFIGNAME>/expt_<EXPT_ID>/data
+export S=/cluster/work/projects/nn2993k/$USER/<CONFIGNAME>/expt_${X}/SCRATCH
+export D=/cluster/work/projects/nn2993k/$USER/<CONFIGNAME>/expt_${X}/data
 ```
 :::
 ::::
