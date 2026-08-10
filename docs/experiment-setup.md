@@ -171,9 +171,9 @@ from an existing experiment for your configuration. For TP2, reference files are
 at:
 
 - **With nesting boundary**:
-  `/nird/datalake/NS9481K/shuang/TP2_setup/exp02.6_seaclim_ref/blkdat.input`
+  `/nird/datalake/NS9481K/shuang/TP2_setup/exp02.8_seaclim_ref_new/blkdat.input_nest`
 - **With climatology boundary**:
-  `/nird/datalake/NS9481K/shuang/TP2_setup/exp02.6_seaclim_ref/blkdat.input_clim`
+  `/nird/datalake/NS9481K/shuang/TP2_setup/exp02.8_seaclim_ref_new/blkdat.input_clim`
 
 Copy it into place:
 
