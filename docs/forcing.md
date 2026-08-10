@@ -179,7 +179,7 @@ boundaries, but using different mechanisms, source data, and required files:
 | | Climatological relaxation | GLORYS nesting |
 |---|---|---|
 | **Run class** | Spin-up | Restart |
-| **`blkdat.input`** | `relax=1` | `nestfq=1`, `bnstfq=1`, `lbflag=2` |
+| **`blkdat.input`** | `relax=1`; `trcrlx=1` when `ntracr>0`, else `0`; `nestfq=0`, `bnstfq=0`, `lbflag=0` | `relax=0`, `trcrlx=0`; `nestfq=1`, `bnstfq=1`, `lbflag=2` |
 | **Source data (physics)** | WOA2018 monthly climatology | GLORYS12 daily reanalysis |
 | **Source data (BGC, `ntracr>0`)** | WOA2013/GLODAP climatology | CMEMS BGC reanalysis (`GLOBAL_MULTIYEAR_BIO_001_033`) |
 | **Variables nudged (physics)** | T, S, interface heights (no transports) | T, S, velocity, layer thickness, SSH |
