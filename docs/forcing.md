@@ -1,3 +1,29 @@
+NERSC-HYCOM-CICE supports two run classes: a **spin-up** (cold start) that initialises
+the model state from climatology and integrates for multiple decades to establish a
+realistic circulation, and a **restart run** that continues from existing HYCOM and CICE
+restart files for hindcast or forecast production. The table below summarises how the
+forcing differs between the two; the sections that follow describe each component in detail.
+
+| | Spin-up (cold start) | Restart run |
+|---|---|---|
+| **Ocean T/S initial state** | WOA2018 climatology; must start in September | From HYCOM restart file |
+| **Velocity / SSH initial state** | Zero (at rest) | From HYCOM restart file |
+| **BGC initial state** | WOA2013/GLODAP climatology (BGC spin-up phase) | From HYCOM restart file |
+| **Ice initial state** | TP4 assimilation climatology | CICE restart file |
+| **Atmospheric forcing** | ERA5 | ERA5 |
+| **Lateral boundary forcing** | WOA2018 climatology; T/S only, no transports | GLORYS12; T/S, velocity, layer thickness, SSH |
+| **BGC boundary forcing** | WOA2013/GLODAP climatology | CMEMS BGC reanalysis |
+| **SSS restoring** | WOA2018 (`sssflg=1`) | WOA2018 (`sssflg=1`) |
+
+After a cold start, expect a multi-decade spin-up before the circulation is reliable.
+In practice, the spin-up often proceeds in two phases: first with physics only, then
+with BGC activated after several years — restarting physics from a physics-only restart
+file and initialising BGC from climatology (WOA2013/GLODAP) — while keeping
+climatological physics boundaries throughout.
+Restart files are written at regular intervals during the spin-up; one or more restart
+runs are then initialised from the same pair of HYCOM and CICE spin-up restart files, so the spin-up does not
+need to be repeated.
+
 ## Initial conditions
 
 Two initialization modes are available, selected via `INITFLG` in `srjob.sh`
@@ -7,23 +33,11 @@ Two initialization modes are available, selected via `INITFLG` in `srjob.sh`
    valid at the start date. This is the standard mode for hindcast and forecast runs.
    See [Restart files](#restart-files) below for how to obtain them.
 
-2. **Climatological initialization** (cold start, `INITFLG="--init"`): temperature and salinity (T/S)
-   are read from `relax/<IEXPT>/relax_tem.[ab]` and `relax_sal.[ab]`; layer thicknesses
-   are computed internally from the T/S profiles; velocities and sea surface height (SSH)
-   start at zero. The start date must be in September (Arctic sea ice is at its annual
-   minimum in September, making it a natural starting point). The ice state is
-   initialised from a climatology derived from TP4 assimilation data
-   (`TP4b_1991-2020_AssimSurf.nc`); the same source is used for both TP2 and TP5.
-   Expect a multi-year spin-up before the circulation is reliable. See
+2. **Climatological initialization** (cold start, `INITFLG="--init"`): T/S are read from
+   `relax/<IEXPT>/relax_tem.[ab]` and `relax_sal.[ab]`; layer thicknesses are computed
+   internally from the T/S profiles. The start date must be in September. See
    [Climatologies and river forcing](#climatologies-and-river-forcing) for how to
    prepare the required files.
-
-   :::{note}
-   The `relax_*` file names reflect their use as targets for climatological relaxation
-   during the run (see [Climatologies and river forcing](#climatologies-and-river-forcing)).
-   During initialization, no relaxation is applied. The files are simply read once as the
-   initial T/S state.
-   :::
 
 ### Restart files
 
@@ -51,7 +65,7 @@ For TP2 hindcast runs, restart files are archived at:
 
 For example, to start on 27 August 2016 (240th day of year):
 
-::::{dropdown} WDIR — scratch path by machine
+:::::{dropdown} WDIR — scratch path by machine
 ::::{tab-set}
 :::{tab-item} Betzy
 ```bash
@@ -66,7 +80,7 @@ WDIR=/cluster/work/projects/nn2993k/$USER/${CONFIGNAME}
 ```
 :::
 ::::
-::::
+:::::
 
 ```bash
 EXPT_ID=<EXPT_ID>         # e.g. 01.0
@@ -159,14 +173,40 @@ range is encoded in the filename.
 
 ## Open boundary forcing
 
+Both run classes (spin-up and restart run) nudge the model toward an external dataset in a zone near the open
+boundaries, but using different mechanisms, source data, and required files:
+
+| | Climatological relaxation | GLORYS nesting |
+|---|---|---|
+| **Run class** | Spin-up | Restart |
+| **`blkdat.input`** | `relax=1` | `nestfq=1`, `bnstfq=1`, `lbflag=2` |
+| **Source data (physics)** | WOA2018 monthly climatology | GLORYS12 daily reanalysis |
+| **Source data (BGC, `ntracr>0`)** | WOA2013/GLODAP climatology | CMEMS BGC reanalysis (`GLOBAL_MULTIYEAR_BIO_001_033`) |
+| **Variables nudged (physics)** | T, S, interface heights (no transports) | T, S, velocity, layer thickness, SSH |
+| **Variables nudged (BGC, `ntracr>0`)** | BGC tracers | BGC tracers |
+| **`ports.input`** | Not required | Required |
+| **Nudging coefficient** | `relax_rmu.[ab]` in `relax/<IEXPT>/` | `rmu.[ab]`, `rmutr.[ab]` in `nest/<IEXPT>/` |
+| **Boundary data files** | `relax_tem`, `relax_sal`, `relax_int`; BGC climatologies when `ntracr>0` | `archv.*`; `archv_fabm.*` when `ntracr>0` |
+| **Sponge layers** | Optional (`thkdf4`, `veldf4`) | Optional (`thkdf4`, `veldf4`) |
+
+:::{note}
+The sponge layer (enhanced diffusion), the boundary nudging zone (`nest/rmu`), and the
+climatological relaxation zone (`relax/relax_rmu`) are three independent mechanisms with
+independently defined spatial extents. They are generated by separate scripts and need
+not cover the same area.
+:::
+
+The remainder of this section describes the GLORYS nesting setup for restart runs, except [Sponge layers](#sponge-layers) which applies to both run classes.
+For climatological relaxation, see [Climatologies and river forcing](#climatologies-and-river-forcing).
+
 The open boundaries of a regional ocean model must be forced by time-varying fields (e.g., temperature, salinity, velocity, and optionally BGC tracers) from an external ocean product. The source can be a reanalysis such as GLORYS12 or output from another ocean model simulation that covers the domain boundaries. This approach is called **offline nesting**, and is the approach supported by NERSC-HYCOM-CICE: information flows in one direction only, from the external product into the regional model. The regional model has no influence on the boundary conditions it receives. This is in contrast to *online* (two-way) nesting, where the regional model (the inner nest) and an outer nest model run simultaneously and exchange information at their shared boundary. Online nesting is not supported here.
 Further detail on offline nesting in HYCOM can be found in the [HYCOM User Guide](https://www.hycom.org/hycom/documentation) and the [HYCOM examples wiki](https://github.com/HYCOM/HYCOM-examples/wiki/GOMb0.08).
 
 Offline nesting is activated in HYCOM-CICE by setting `nestfq > 0` (interval in days between 3D nesting archive reads) or `bnstfq > 0` (interval in days between barotropic nesting archive reads) in `blkdat.input`. Three groups of files are required:
 
-- **Boundary configuration files** — define the open boundary geometry and relaxation coefficients for the boundary nudging zone (`ports.input`, `rmu`, `rmutr`).
-- **Nesting files** — pre-interpolated boundary conditions from the external product, stored in HYCOM's `archv` format. Must span the run period; HYCOM interpolates in time between snapshots.
-- **Sponge layers** *(optional)* — spatially varying biharmonic diffusion fields (`thkdf4`, `veldf4`) that damp noise near the open boundaries.
+- [Boundary configuration files](#boundary-configuration-files) — define the open boundary geometry and relaxation coefficients for the boundary nudging zone (`ports.input`, `rmu`, `rmutr`).
+- [Nesting files](#nesting-files) — pre-interpolated boundary conditions from the external product, stored in HYCOM's `archv` format. Must span the run period; HYCOM interpolates in time between snapshots.
+- [Sponge layers](#sponge-layers) *(optional)* — spatially varying biharmonic diffusion fields (`thkdf4`, `veldf4`) that damp noise near the open boundaries.
 
 
 
@@ -899,13 +939,6 @@ setting `thkdf4` and `veldf4` to negative values in `blkdat.input`, which tells 
 to read spatially varying 2D fields from file rather than using a uniform scalar. The
 following files must then be present under `$WORK/<CONFIGNAME>/relax/<IEXPT>/`:
 
-:::{note}
-The sponge layer (enhanced diffusion), the boundary nudging zone (`nest/rmu`), and the
-climatological relaxation zone (`relax_rmu`) are three independent mechanisms with
-independently defined spatial extents. They are generated by separate scripts and need
-not cover the same area.
-:::
-
 | File | Description |
 |------|-------------|
 | `thkdf4.[a,b]` | 2D biharmonic diffusion coefficient for layer thickness |
@@ -978,14 +1011,14 @@ open boundaries, over the specified number of grid cells. The result is written 
 
 This step is handled by `create_ref_case.sh`, which generates the files needed for
 **climatological relaxation** and [climatological initialization](#initial-conditions).
-Climatological relaxation nudges T, S, and interface heights toward monthly climatology
-in a zone along selected open boundary walls. This is distinct from
-[nesting nudging](#open-boundary-forcing), which nudges toward time-varying GLORYS
-fields. The two mechanisms are independent and can operate simultaneously. The default in `create_ref_case.sh` activates the Pacific open boundary (the Northern
-wall in grid coordinates) only: 20 grid cells wide, with a 20-day e-folding time at the
-wall decreasing linearly to zero. The width and time scale are set in
-`create_ref_case.sh`, not in `blkdat.input`. `relax` in `blkdat.input` is simply an
-on/off switch for climatological relaxation.
+
+Climatological relaxation uses the same nudging mechanism as [GLORYS nesting](#open-boundary-forcing)
+but with WOA2018 monthly climatology as the source (see [comparison table](#forcing) at
+the top of this page). The default in `create_ref_case.sh` activates the Pacific open
+boundary (the Northern wall in grid coordinates) only: 20 grid cells wide, with a
+20-day e-folding time at the wall decreasing linearly to zero. The width and time scale
+are set in `create_ref_case.sh`, not in `blkdat.input`. `relax` in `blkdat.input` is
+simply an on/off switch for climatological relaxation.
 
 `create_ref_case.sh` generates:
 
