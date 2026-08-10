@@ -1495,8 +1495,8 @@ contains
          stdname='standard_salinity_divideby_1000'
       case ('detvflux')
          vname='expc'
-         units='mmol m-2 d-1'
-         limits=(/0.0,1500.0/)
+         units='mol m-2 d-1'
+         limits=(/0.0,1.5/)
          stdname='sinking_mole_flux_of_particulate_organic_matter_expressed_as_carbon_in_sea_water'
       case ('pp_d_nor')
          vname='pp_depth'
