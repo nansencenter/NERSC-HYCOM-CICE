@@ -522,6 +522,11 @@ export D=/cluster/work/projects/nn2993k/$USER/<CONFIGNAME>/expt_<EXPT_ID>/data
 :::
 ::::
 
+:::{important}
+`data/` is on the purged filesystem, so **archive completed output to NIRD on a rolling
+basis** (e.g. per model year as it finishes) from a service node.
+:::
+
 :::{note}
 For TP2, the available topography versions are: `01` (initial interpolation), `02` (adds
 Ob river channel), `03` (identical to `02`), `04` (blends `02`/`03` with NEMO topography
@@ -564,12 +569,6 @@ compiled executable survive the purge.
 When `D=` is overridden to a path on the scratch filesystem, `${D}/../../` resolves to the
 scratch `<CONFIGNAME>/` subtree — so `relax/` must be on scratch as well, which is exactly what
 the symlinks described above ([Set up the work directory](#set-up-the-work-directory)) provide.
-:::
-
-:::{important}
-`data/` is now on the purged filesystem, so **archive completed output to NIRD on a rolling
-basis** (e.g. per model year as it finishes) from a service node — the scratch filesystem is
-purged by file age, so early output can age out while a long run is still going.
 :::
 
 ::::
