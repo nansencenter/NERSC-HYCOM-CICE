@@ -497,6 +497,30 @@ Open `$WORK/<CONFIGNAME>/expt_<EXPT_ID>/EXPT.src` and update:
 | `export NMPI=` | e.g. `504` for TP2 on Betzy | Number of ocean MPI tiles |
 | `export MXBLCKS=` | e.g. `9` | Maximum ice blocks per MPI process |
 | `export COMPILE_BIOMODEL=` | `"yes"` or `"no"` | BGC coupling on/off |
+| `export S=` | machine-specific (see dropdown below) | Scratch directory |
+| `export D=` | machine-specific (see dropdown below) | Data directory |
+
+::::{dropdown} Both machines — redirect `SCRATCH` and `data` onto the scratch filesystem
+
+Keep the experiment tree (configuration and `build/`) on the non-purged `$WORK`
+(`/cluster/projects/nn2993k/$USER`), and put the two large directories — scratch and output —
+on the fast, purged scratch filesystem. Override the auto-set `S=` and `D=` lines in `EXPT.src`.
+The scratch path differs by machine:
+
+::::{tab-set}
+:::{tab-item} Betzy
+```bash
+export S=$USERWORK/<CONFIGNAME>/expt_<EXPT_ID>/SCRATCH
+export D=$USERWORK/<CONFIGNAME>/expt_<EXPT_ID>/data
+```
+:::
+:::{tab-item} Olivia
+```bash
+export S=/cluster/work/projects/nn2993k/$USER/<CONFIGNAME>/expt_<EXPT_ID>/SCRATCH
+export D=/cluster/work/projects/nn2993k/$USER/<CONFIGNAME>/expt_<EXPT_ID>/data
+```
+:::
+::::
 
 :::{note}
 For TP2, the available topography versions are: `01` (initial interpolation), `02` (adds
@@ -526,32 +550,9 @@ recommended in the error message.
 | `export SIGVER=` | Equation of state version; must be consistent with `thflag` in `blkdat.input` |
 | `export K=` | Number of layers — auto-derived from `blkdat.input`, no need to edit |
 | `export P=` | Experiment directory path — set automatically from the script location |
-| `export D=` | Permanent data directory (`P/data`) — set automatically |
-| `export S=` | Scratch directory (`P/SCRATCH`) — set automatically |
 
 ::::
 
-::::{dropdown} Both machines — redirect `SCRATCH` and `data` onto the scratch filesystem
-
-Keep the experiment tree (configuration and `build/`) on the non-purged `$WORK`
-(`/cluster/projects/nn2993k/$USER`), and put the two large directories — scratch and output —
-on the fast, purged scratch filesystem. Override the auto-set `S=` and `D=` lines in `EXPT.src`.
-The scratch path differs by machine:
-
-::::{tab-set}
-:::{tab-item} Betzy
-```bash
-export S=$USERWORK/<CONFIGNAME>/expt_<EXPT_ID>/SCRATCH
-export D=$USERWORK/<CONFIGNAME>/expt_<EXPT_ID>/data
-```
-:::
-:::{tab-item} Olivia
-```bash
-export S=/cluster/work/projects/nn2993k/$USER/<CONFIGNAME>/expt_<EXPT_ID>/SCRATCH
-export D=/cluster/work/projects/nn2993k/$USER/<CONFIGNAME>/expt_<EXPT_ID>/data
-```
-:::
-::::
 
 This is safe: `expt_preprocess.sh` only creates (`mkdir -p`) and enters (`cd`) `$S` and `$D` —
 it never deletes them — and the overrides propagate automatically when `expt_new.sh` copies
