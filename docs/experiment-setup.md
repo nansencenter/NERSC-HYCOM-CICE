@@ -152,7 +152,6 @@ values for your experiment. For TP2, the file should look like this:
 &hycom_nml
   write_arche = .false.
   sss_underice= .false.
-  highfq_river= .false.
   sssrmx_scalar=.5
 /
 ```
@@ -161,8 +160,16 @@ values for your experiment. For TP2, the file should look like this:
 |--------|-------------|
 | `write_arche` | Write ESMF archive files at each coupling step. Useful for debugging the ESMF coupling interface; leave `.false.` for normal runs. |
 | `sss_underice` | Apply SSS relaxation under sea ice. When `.false.`, SSS relaxation is suppressed where ice cover ≥ 15%. |
-| `highfq_river` | Use time-varying (high-frequency) river forcing instead of the climatological river forcing. Requires `priver=0` in `blkdat.input`; the two options are mutually exclusive. |
 | `sssrmx_scalar` | Maximum SSS anomaly (psu) at which relaxation is still applied. Relaxation is suppressed where the model–climatology difference exceeds this value. `99.` (template default) means no cap; `.5` limits relaxation to within 0.5 psu of climatology. |
+
+:::{note}
+HYCOM 2.2.98 also supports a `highfq_river` option (use time-varying, high-frequency river
+forcing instead of climatological river forcing). **This option is not available in HYCOM 2.3**
+— including it in `hycom_opt` with 2.3 will cause a namelist read error at startup.
+When using HYCOM 2.2.98 with `highfq_river = .true.`, you must also set `priver=0` in
+`blkdat.input`; the two options are mutually exclusive and the model will abort if both are
+enabled.
+:::
 
 ## Configure blkdat.input
 
