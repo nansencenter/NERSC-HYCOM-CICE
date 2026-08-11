@@ -580,5 +580,52 @@ scratch `<CONFIGNAME>/` subtree — so `relax/` must be on scratch as well, whic
 the symlinks described above ([Set up the work directory](#set-up-the-work-directory)) provide.
 :::
 
-::::
+## Files in the experiment directory
+
+To conclude the experiment setup, here is an overview of everything now present in the
+experiment directory. No action is needed — this is for reference only. Most files are
+copied from the template experiment by `expt_new.sh`; exceptions are noted.
+
+**Configuration files**
+
+| File | Purpose |
+|------|---------|
+| `blkdat.input` | Main HYCOM parameter/namelist file |
+| `EXPT.src` | Shell environment setup — defines experiment identifiers (`X`, `E`, `V`, `K`), paths to SCRATCH (`S`) and data directory (`D`), MPI task count, and other compile/run flags. Sourced by job scripts. |
+| `hycom_opt` | HYCOM optional namelist (`&hycom_nml`) — copied to the work directory by the preprocess script on each run |
+| `patch.input` | Domain decomposition tile layout for parallel HYCOM |
+
+**CICE namelist files**
+
+`cice_limits.py` reads `ice_in` as a template and rewrites it into SCRATCH with updated timing, processor count, and run type. The `.0`/`.1` variants are human-maintained references to copy to `ice_in` when switching modes.
+
+| File | Purpose |
+|------|---------|
+| `ice_in` | Active CICE namelist template — modified by `cice_limits.py` at run time |
+| `ice_in.0` | CICE namelist for cold start (`runtype=initial`, `restart=false`) |
+| `ice_in.1` | CICE namelist for continuation (`runtype=continue`, `restart=true`) |
+
+**Initial condition files**
+
+| File | Purpose |
+|------|---------|
+| `ice_initial.nc` | Initial ice state and SST/SSS for CICE cold start — staged separately from the projects filesystem (spin-up only; not needed for restart runs) |
+
+**Job scripts**
+
+| File | Purpose |
+|------|---------|
+| `srjob.sh` | Main Slurm job script for a single run segment |
+| `srjob_loop.sh` | Slurm job script for looped continuation runs |
+| `sr_job_ensemble.sh` | Slurm job script for ensemble runs |
+| `preprocess_mem.sh` | Preprocess script variant for ensemble members |
+| `sr_ensemble_post.sh` | Ensemble postprocessing script (currently empty) |
+| `create_ref_case.sh` | One-time setup script to create a new experiment from a reference case — copied from `bin/` manually (see [Climatologies and river forcing](forcing.md#climatologies-and-river-forcing)) |
+
+**Ensemble forcing**
+
+| File | Purpose |
+|------|---------|
+| `force_perturb-2.2` | Binary for generating perturbed atmospheric forcing fields for ensemble runs |
+| `infile2.in_init` | Parameters for random forcing perturbation (variances, correlation scales) — used by `force_perturb-2.2` |
 
