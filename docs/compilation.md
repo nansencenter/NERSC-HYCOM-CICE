@@ -31,12 +31,18 @@ MSCPROGS provides `libhycnersc.a`, a shared library used by the [MSCPROGS post-p
 
 Create a symlink for your machine and compiler, then build and install:
 
+::::{dropdown} Betzy (NRIS/Sigma2)
+
+Use the Betzy make include (`make.betzy.ifort`, which selects the `ifort` compiler):
+
 ```bash
 cd ${HOME}/NERSC-HYCOM-CICE/hycom/MSCPROGS/src/Make.Inc
 ln -sf make.betzy.ifort make.inc
 cd ${HOME}/NERSC-HYCOM-CICE/hycom/MSCPROGS/src
 gmake clean && gmake all && gmake install
 ```
+
+::::
 
 ::::{dropdown} Olivia (NRIS/Sigma2)
 
