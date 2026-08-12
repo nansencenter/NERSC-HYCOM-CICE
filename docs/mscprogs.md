@@ -57,6 +57,16 @@ cd $WORK/${CONFIGNAME}/expt_${EXPT_ID}/data/
 [expt_postprocess.sh](running.md#submit-a-job) copies `regional.grid.*` and `regional.depth.*` here
 automatically after each model run, so the grid files are already in place.
 
+If you plan to use `hyc2proj` or `hyc2stations`, also copy `grid.info` (conformal mapping
+parameters for the model grid). For standard configurations (TP0, TP2, TP5) it is included
+in the repository:
+
+```bash
+cp ${HOME}/NERSC-HYCOM-CICE/${CONFIGNAME}/topo/grid.info .
+```
+
+For other configurations, copy it from `$WORK/${CONFIGNAME}/topo/`.
+
 You still need to copy the relevant [input files](#input-files) into the working
 directory. Example input files are provided in `$MSCPROGS/Input/`.
 
@@ -66,6 +76,41 @@ You can also run MSCPROGS tools directly from the scratch directory
 `expt_preprocess.sh` already copies `regional.grid.*` and `regional.depth.*`
 there, so only the input files need to be copied in — the same step as above.
 :::
+
+::::{dropdown} Working with data on NIRD
+
+If the data is on NIRD (your own archived run or a collaborator's) and you do not want to write into that directory, create your own working directory and copy the grid files:
+
+```bash
+mkdir -p <workdir> && cd <workdir>
+cp /nird/path/to/expt/data/regional.grid.* .
+cp /nird/path/to/expt/data/regional.depth.* .
+cp ${HOME}/NERSC-HYCOM-CICE/<CONFIGNAME>/topo/grid.info .   # only needed for hyc2proj and hyc2stations; available in the repo for standard configs (TP0, TP2, TP5)
+```
+
+Then copy the tool-specific input files and pass the archive files as arguments — output is written to the current directory, leaving the source data untouched.
+
+NIRD access differs between machines:
+
+| | Login node | SVC node | Compute node |
+|---|---|---|---|
+| Betzy | read-write | — | not mounted |
+| Olivia | not mounted | read-write | read-only |
+
+**Copy** (not symlink) the archive files (`archm.*` / `archv.*`, both `.a` and `.b`) onto scratch before processing — the [parallel-by-year `hyc2proj` script](#batch-post-processing) *moves* files into per-year directories, which fails on a read-only source, and streaming large 3-D archives live over NIRD is slow:
+
+- **Betzy**: copy from the login node to `/cluster/work/users/$USER/postproc/<run>/`
+- **Olivia**: copy from a service (SVC) node to `/cluster/work/projects/nn2993k/$USER/postproc/<run>/`
+
+On Olivia, tools that only read archives — `m2nc`, `hycave`, `m2section` — can also read directly from NIRD inside a batch job, skipping the staging step.
+
+Move the resulting `.nc` files to `/cluster/projects/nn2993k/$USER/...` (or back to NIRD) before the 21-day scratch purge, then delete the staged archives.
+
+:::{tip}
+For a large multi-year run, stage and process one year at a time to keep the scratch footprint bounded.
+:::
+
+::::
 
 ### Typical workflow
 
@@ -96,10 +141,7 @@ Four output projections are supported:
 `hyc2proj` requires the following files in the working directory:
 
 - `regional.grid.a/.b` and `regional.depth.a/.b` — already present in `data/` and `SCRATCH/`
-- `grid.info` — conformal mapping parameters for the model grid; copy from `topo/`:
-  ```bash
-  cp $WORK/<CONFIGNAME>/topo/grid.info .
-  ```
+- `grid.info` — conformal mapping parameters for the model grid (see [Working directory](#working-directory))
 - `proj.in` — target projection and grid (see [Input files](#input-files))
 - `depthlevels.in` — vertical depth levels to interpolate to
 - an `extract.*` file — fields to extract; the tool auto-selects the file by name based on the input file type (e.g. `extract.archm` for archm files), so the name must not be changed
@@ -109,7 +151,6 @@ spline. `staircase` and `linear` options are also available (faster but lower
 quality).
 
 ```bash
-cp $WORK/<CONFIGNAME>/topo/grid.info .
 cp $MSCPROGS/Input/proj.in.regular_grid proj.in     # choose and edit a sample proj.in
 cp $MSCPROGS/Input/depthlevels.in .
 cp $MSCPROGS/Input/extract.archm .
@@ -327,38 +368,6 @@ Requires the external FES2014 C library and the GNU C compiler; see
 | `Tides_CSR` | `csr2mod_GE` | Tidal boundary forcing from CSR tidal atlas |
 | `TRIP` | `trip_*` | River forcing from the TRIP database + ERA40/ERA-i runoff |
 | `ZONAL` | `zonal`, `mosf` | Zonal averages and meridional overturning streamfunction |
-
-## Post-processing runs from NIRD
-
-NIRD access differs between machines:
-
-| | Login node | SVC node | Compute node |
-|---|---|---|---|
-| Betzy | read-write | — | not mounted |
-| Olivia | not mounted | read-write | read-only |
-
-The recommended workflow is to **copy** (not symlink) archives onto the scratch filesystem
-before processing — the [parallel-by-year `hyc2proj` script](#batch-post-processing) *moves*
-files into per-year directories, which fails on a read-only source, and streaming large
-3-D archives live over NIRD is slow.
-
-Stage the archive files (`archm.*` / `archv.*`, both `.a` and `.b`) together with the run's
-`regional.*` and `grid.info` into a scratch directory:
-
-- **Betzy**: copy from the login node to `/cluster/work/users/$USER/postproc/<run>/`
-- **Olivia**: copy from a service (SVC) node to `/cluster/work/projects/nn2993k/$USER/postproc/<run>/`
-
-Then run the post-processing tool from the staging directory. On Olivia, tools that only
-read archives — `m2nc`, `hycave`, `m2section` — can also read directly from NIRD inside a
-batch job, skipping the staging step.
-
-Move the resulting `.nc` files to `/cluster/projects/nn2993k/$USER/...` (or back to NIRD)
-before the 21-day scratch purge, then delete the staged archives.
-
-:::{tip}
-For a large multi-year run, stage and process one year at a time to keep the scratch
-footprint bounded.
-:::
 
 ## Input files
 
