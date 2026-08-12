@@ -73,7 +73,7 @@ elif [ ${forcing:0:6} == "noresm" ] ; then
 elif [ ${forcing:0:9} == "norcpm_3h" ] ; then
 	xmlfile=${INPUTDIR}/norcpm_3h.xml
 	if [[ -n $NORCPM_PATH ]] ; then
-		ROOTPATH=$NORCPM_PATH
+		ROOTPATH=$NORCPM_PATH_MEM
 	fi	
 else 
    tellerror "Forcing option is erai, era5, ec_op or noresm ..."
@@ -97,12 +97,14 @@ else
 fi
 eval $cmd   ||  { echo "Error running $cmd " ; exit 1 ; }
 
-# The nersc era40 forcing is region-independent 
 for i in forcing.*.[ab] ; do
    new=$(echo $i | sed "s/^forcing\.//")
    mv $i $D/$new
    echo "Created  $D$new"
 done
+
+rm -f $D/stamp_*
+touch $D/stamp_${start}-${stop}
 
 
 

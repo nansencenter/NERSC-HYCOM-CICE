@@ -17,17 +17,22 @@
 # (2) May 2019: some correction on biophys [ab] files, Mostafa Bakhoday-Paskyabi
 # (3) July 9 2019, accounting for both bio & phy nesting.
 # (4) July 11 2019, further imporvment.
-OPTSTRING="b:d:g:i:m:n:h"
+OPTSTRING="b:c:d:g:i:m:n:h"
 echo "Set defaults that assume grid_type=native"
 grid_type=native
 maxinc=50
 bio_file=""
+coord_file=""
 while getopts ${OPTSTRING} opt; do
   case ${opt} in
     b)
       echo "Option -b biofile was triggered, Argument: ${OPTARG}"
       echo "Default empty string (no biofile)"
       bio_file=${OPTARG}
+      ;;
+    c)
+      echo "Option -c coord_file was triggered, Argument: ${OPTARG}"
+      coord_file=${OPTARG}
       ;;
     d)
       echo "Option -d Destination experiment triggered, Argument: ${OPTARG}"
@@ -66,9 +71,9 @@ while getopts ${OPTSTRING} opt; do
      echo "    Note that the grids are non-native and interpolated into a rectilinear mercator grids horizontally."
      echo ""
      echo "Example:"
-     echo "   pathtobin/nemo_to_hycom.sh -d ../../TP5a0.06/expt_01.0/ -n "/nird/projects/NS9481K/MERCATOR_DATA/PHY/2011/MERCATOR-PHY-24-2011-01-02*.nc" -g regular"
-     echo "   pathtobin/nemo_to_hycom.sh -d ../../TP5a0.06/expt_01.2/ -n "/nird/projects/NS9481K/MERCATOR_DATA/PHY/2007/ext-GLORYS12V1_1dAV_20070302_20070303_grid2D_R20070307.nc" -g native"
-     echo "../bin/nemo_to_hycom.sh -d../../TP5a0.06/expt_01.0/ -n /nird/projects/NS9481K/MERCATOR_DATA/PHY/2013/ext-GLORYS12V1_1dAV_2013110*_grid2D*.nc -b /nird/projects/NS9481K/MERCATOR_DATA/BIO/DAILY/2013/global_analysis_forecast_bio_2013110*.nc"
+     echo "   pathtobin/nemo_to_hycom.sh -d ../../TP5a0.06/expt_01.0/ -n "/nird/datapeak/NS9481K/MERCATOR_DATA/PHY/2011/MERCATOR-PHY-24-2011-01-02*.nc" -g regular"
+     echo "   pathtobin/nemo_to_hycom.sh -d ../../TP5a0.06/expt_01.2/ -n "/nird/datapeak/NS9481K/MERCATOR_DATA/PHY/2007/ext-GLORYS12V1_1dAV_20070302_20070303_grid2D_R20070307.nc" -g native"
+     echo "../bin/nemo_to_hycom.sh -d../../TP5a0.06/expt_01.0/ -n /nird/datapeak/NS9481K/MERCATOR_DATA/PHY/2013/ext-GLORYS12V1_1dAV_2013110*_grid2D*.nc -b /nird/datapeak/NS9481K/MERCATOR_DATA/BIO/DAILY/2013/global_analysis_forecast_bio_2013110*.nc"
      echo " NOTE YOU NEED TO RUN THIS SCRIPT WITHIN THE NEMO EXPERIMENT FOLDER"
      echo " The following arguments are valid:"
      echo "-b: bio file including path"
@@ -76,8 +81,11 @@ while getopts ${OPTSTRING} opt; do
      echo "-g: grid_type. Either native or regular"
      echo "-h: This message (help)"
      echo "-i: maxinc. Default 50. Distance where the algorithm search for water points"
-     echo "-m: mercator_mesh file. Default (native):  /nird/projects/NS9481K/MERCATOR_DATA/GRID_COORD/ext-GL12V1_mesh_zgr.nc"
-     echo "    if -g is set to regular default will change to /nird/projects/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO_MFC_001_24_MESH.nc"
+     echo "-c: coord_file. Path to coordinates.nc containing e3t (vertical layer thicknesses, regular grid only)."
+     echo "    If not set, derived from -m by replacing the last 13 characters with 'coordinates.nc'."
+     echo "    Use this when the mesh file (-m) does not follow the expected naming convention."
+     echo "-m: mercator_mesh file. Default (native):  /nird/datapeak/NS9481K/MERCATOR_DATA/GRID_COORD/ext-GL12V1_mesh_zgr.nc"
+     echo "    if -g is set to regular default will change to /nird/datapeak/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO_MFC_001_24_MESH.nc"
      echo "-n: Mandatory: Path and Pattern of Mercator input netCDF files."
      exit 1
      ;;
@@ -114,16 +122,16 @@ fi
 if [ ${grid_type} == "native" ] ; then
         timevar="time_counter"
 	if [ -z "$mercator_mesh" ]; then
-		export mercator_mesh="/nird/projects/NS9481K/MERCATOR_DATA/GRID_COORD/ext-GL12V1_mesh_zgr.nc"
+		export mercator_mesh="/nird/datapeak/NS9481K/MERCATOR_DATA/GRID_COORD/ext-GL12V1_mesh_zgr.nc"
 		echo "mercator_mesh has not been set."
-		echo "set to default (native) /nird/projects/NS9481K/MERCATOR_DATA/GRID_COORD/ext-GL12V1_mesh_zgr.nc"
+		echo "set to default (native) /nird/datapeak/NS9481K/MERCATOR_DATA/GRID_COORD/ext-GL12V1_mesh_zgr.nc"
         fi
 elif [ ${grid_type} == "regular" ] ; then
         timevar="time"
         if [ -z "$mercator_mesh" ]; then
-                export mercator_mesh="/nird/projects/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO_MFC_001_24_MESH.nc"
+                export mercator_mesh="/nird/datapeak/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO_MFC_001_24_MESH.nc"
                 echo "mercator_mesh has not been set."
-		echo "set to default (regular) /nird/projects/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO_MFC_001_24_MESH.nc"
+		echo "set to default (regular) /nird/datapeak/NS9481K/MERCATOR_DATA/REGULAR_GRID_COORD/GLO_MFC_001_24_MESH.nc"
         fi
 fi
 
@@ -199,7 +207,8 @@ for filename in $ncfile ; do
       fi
    else
       if [[ "${bio_file}" == "" ]] ; then
-      ${BINDIR}/nemo2archvz_regular.py $mercator_mesh $filename --iexpt ${iexpt} --iversn ${iversn} --yrflag ${yrflag}
+      coord_arg="" ; [[ -n "${coord_file}" ]] && coord_arg="--coord_file=${coord_file}"
+      ${BINDIR}/nemo2archvz_regular.py $mercator_mesh $filename --iexpt ${iexpt} --iversn ${iversn} --yrflag ${yrflag} ${coord_arg}
       ########################
       #
       # (2) Based on generated archive files in (1) the grid and topography files are generated.
@@ -209,7 +218,8 @@ for filename in $ncfile ; do
       ########################
       else
 
-      ${BINDIR}/nemo2archvz_regular.py $mercator_mesh $filename --bio_file=${bio_file}  --iexpt ${iexpt} --iversn ${iversn} --yrflag ${yrflag}
+      coord_arg="" ; [[ -n "${coord_file}" ]] && coord_arg="--coord_file=${coord_file}"
+      ${BINDIR}/nemo2archvz_regular.py $mercator_mesh $filename --bio_file=${bio_file}  --iexpt ${iexpt} --iversn ${iversn} --yrflag ${yrflag} ${coord_arg}
       ########################
       #
       # (2) Based on generated archive files in (1) the grid and topography files are generated.

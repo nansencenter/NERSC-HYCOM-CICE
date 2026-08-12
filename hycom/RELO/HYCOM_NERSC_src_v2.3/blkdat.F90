@@ -2198,7 +2198,8 @@
 ! --- thermo      use thermodynamic forcing 
 ! --- pensol      use penetrating solar radiation (input above)
 ! --- pcipf       use E-P forcing (may be redefined in forfun)
-! --- priver      rivers as a precipitation bogas
+! --- priver      rivers as a precipitation bogas priver=0 no river, priver=1 climatological river, priver=2: High frequent river
+! (like high frequent atm forcing)
 !
 ! --- srelax      activate surface salinity        climatological nudging
 ! --- trelax      activate surface temperature     climatological nudging
@@ -2219,7 +2220,7 @@
       endif !1st tile
       call blkinl(relax, 'relax ')
       call blkinl(trcrlx,'trcrlx')
-      call blkinl(priver,'priver')
+      call blkini(priver,'priver')
 !
 ! --- 'epmass' = E-P mass exchange flag (0=no,1=yes,2=river)
       call blkini(epmass,'epmass')
@@ -2228,10 +2229,10 @@
       write(lp,*)
       endif !1st tile
 !
-      if     (priver .and. .not.thermo) then
+      if     ((priver>0) .and. .not.thermo) then
         if (mnproc.eq.1) then
         write(lp,'(/ a /)')  &
-         &'error - priver must be .false. for flxflg=0'
+         &'error - priver must be 0 for flxflg=0'
         call flush(lp)
         endif !1st tile
         call xcstop('(blkdat)')
@@ -2946,3 +2947,4 @@
 !> Aug. 2024 - added ocnscl
 !> Sep. 2024 - added hybthk
 !> Dec. 2024 - Removed negative wndflg and amoflg due to inclusion of ocnscl
+!> May. 2026 - Changed priver to integer in order to allow for high frequent river
