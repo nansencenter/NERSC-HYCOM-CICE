@@ -678,7 +678,7 @@ program p_hyc2proj
                   hy3d=biovar
                   deallocate(biovar)
                 else if (trim(fld(ifld)%fextract)=='detvflux') then
-                  ! Compute detritus flux (mg C m-2 day-1)   
+                  ! Compute detritus flux (mol C m-2 day-1)   
                   allocate(det(idm,jdm,kdm))
                   allocate(dsnk(idm,jdm,kdm))
                   allocate(biovar(idm,jdm,kdm))

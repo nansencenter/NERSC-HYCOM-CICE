@@ -446,13 +446,13 @@ module m_bio_conversions
 ! To prevent outlier values, we first calculate the sinking speed (dsnk/det) and
 ! convert it to 1/d
       spd = (dsnk/det)*86400.
-! and set minimum and maximum values, and convert mgC m-2 d-1 --> mmolC m-2 d-1 
+! and set minimum and maximum values, and convert mgC m-2 d-1 --> molC m-2 d-1 
       spd = max(spd,0.5)
       spd = min(spd,12.0)
-      bot_flux = det * spd / ccar
+      bot_flux = det * spd / ccar / 1000.0
        
 
-!! compute flux of detritus to the seafloor mgC m-2 d-1 --> mmolC m-2 d-1                                                                                       !      bot_flux=det * srdet_eco / ccar 
+!! compute flux of detritus to the seafloor mgC m-2 d-1 --> molC m-2 d-1                                                                                       !      bot_flux=det * srdet_eco / ccar 
 
    end subroutine det_bottom_flux
 
