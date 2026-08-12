@@ -44,14 +44,13 @@ usage="
    code in $sourcedir, then pushed to the code repository
 
    Example:
-      $(basename $0) [ -u ] [ -c cluster ] [ -m mpi_library ] compiler
+      $(basename $0) [ -u ]  [ -m mpi_library ]  compiler
 
    arguments   :
-      compiler : compiler to use for. Currently supported: ifort ifx gfortran pgi
+      compiler : compiler to use for. Currently supported: ifort gfortran pgi
 
    optional arguments :
       -u              : update code in build dir from $sourcedir
-      -c cluster      : set cluster/site explicitly (overrides hostname/domain detection)
       -m mpi_library  : on some machines you need to specify what mpi library to use
 
 
@@ -66,34 +65,29 @@ usage="
 "
 
 # This will process optional arguments
-options=$(getopt -o c:m:u -- "$@")
+options=$(getopt -o m:u -- "$@")
 [ $? -eq 0 ] || {
     echo "$usage"
     echo "Error: Incorrect options provided"
     exit 1
 }
 mpilib=""
-cluster=""
 eval set -- "$options"
 while true; do
     case "$1" in
-            -c)
-                  shift;
-                  cluster=$1
-                  ;;
-            -m)
-                  shift;
-                  mpilib=$1
-                  ;;
-            -u)
-                  update="update"
-                  ;;
-            --)
-                  shift
-                  break
-                  ;;
-      esac
-      shift
+    -m)
+       shift;
+       mpilib=$1
+        ;;
+    -u)
+       update="update"
+        ;;
+    --)
+        shift
+        break
+        ;;
+    esac
+    shift
 done
 
 
@@ -102,12 +96,11 @@ if [ $# -gt 0 ] ; then
    compiler=$1
 else 
    echo "$usage"
-   echo "Error: Need to provide compiler to script, options: gfortran pgi ifort ifx "
+   echo "Error: Need to provide compiler to script, options: gfortran pgi ifort "
    exit 1
 fi
 echo "$(basename $0) : compiler=$compiler"
 echo "$(basename $0) : mpilib=$mpilib"
-echo "$(basename $0) : cluster=$cluster"
 
 # Check ARCH based on uname. Only Linux accepted 
 ARCH=$(uname -s)
@@ -128,51 +121,41 @@ unamen=$(uname -n)
 hostnamed=$(hostname -d)
 
 echo $unamen
-if [ -n "${cluster}" ] ; then
-   SITE="${cluster}"
+# Hardcoded cases - hexagon
+if [ "${unamen:5:5}" == "bullx" ] ; then
+   SITE="surfsara"
    MACROID=$ARCH.$SITE.$compiler
-else
-   # Hardcoded cases - hexagon
-   if [ "${unamen:5:5}" == "bullx" ] ; then
-      SITE="surfsara"
-      MACROID=$ARCH.$SITE.$compiler
 
-   elif [ "${unamen:0:5}" == "alvin" ] ; then
-      SITE="alvin"
-      MACROID=$ARCH.$SITE.$compiler
+elif [ "${unamen:0:5}" == "alvin" ] ; then
+   SITE="alvin"
+   MACROID=$ARCH.$SITE.$compiler
 
-   elif [ "${unamen:0:5}" == "elvis" ] ; then
-      SITE="elvis"
-      MACROID=$ARCH.$SITE.$compiler
-   elif [ "${hostnamed:0:5}" == "betzy" ] ; then
-      SITE="betzy"
-      MACROID=$ARCH.$SITE.$compiler
-   elif [ "${hostnamed:0:4}" == "fram" ] ; then # fram
-      SITE="fram"
-      MACROID=$ARCH.$SITE.$compiler
-   # Generic case. SITE is empty
-   elif [[ "${ARCH}" == "Linux" ]] ; then
-      if [ -z "${mpilib}" ] ; then
-         echo "mpilib must be set on input running on generic linux machine (-m option)"
-         exit 4
-       fi
-      if [ "${mpilib}" == "olivia" ] ; then
-         SITE="olivia"
-         MACROID=$ARCH.$SITE.$compiler
-      else
-         SITE=""
-         MACROID=$ARCH.$compiler.$mpilib
-      fi
-
-      echo 'MACROID=' ${MACROID}
-       if [ "${mpilib}" == "fram" ]; then
-          SITE="fram"
-       fi
-
-   else
-      echo "Unknown SITE. uname -n gives $unamen"
-      exit 3
+elif [ "${unamen:0:5}" == "elvis" ] ; then
+   SITE="elvis"
+   MACROID=$ARCH.$SITE.$compiler
+elif [ "${hostnamed:0:5}" == "betzy" ] ; then
+   SITE="betzy"
+   MACROID=$ARCH.$SITE.$compiler
+elif [ "${hostnamed:0:4}" == "fram" ] ; then # fram
+   SITE="fram"
+   MACROID=$ARCH.$SITE.$compiler
+# Generic case. SITE is empty
+elif [[ "${ARCH}" == "Linux" ]] ; then
+   SITE=""
+   if [ -z "${mpilib}" ] ; then
+      echo "mpilib must be set on input running on generic linux machine (-m option)"
+      exit 4
    fi
+   MACROID=$ARCH.$compiler.$mpilib
+
+   echo 'MACROID=' ${MACROID}
+   if [ "${mpilib}" == "fram" ]; then
+      SITE="fram"
+   fi
+
+else
+   echo "Unknown SITE. uname -n gives $unamen"
+   exit 3
 fi
 echo "$(basename $0) : SITE=$SITE"
 echo $MACROID
@@ -197,7 +180,7 @@ elif [ "$SITE" == "fram" ] ; then
    export ESMF_MOD_DIR=${ESMF_DIR}mod/
    export ESMF_LIB_DIR=${ESMF_DIR}lib/
 
-elif [ "$SITE" == "betzy" ] || [ "$SITE" == "olivia" ] ; then
+elif [ "$SITE" == "betzy" ] ; then
    export ESMF_DIR=${EBROOTESMF}/
    export ESMF_MOD_DIR=${ESMF_DIR}mod/
    export ESMF_LIB_DIR=${ESMF_DIR}lib/
@@ -347,11 +330,7 @@ if [ ${ICEFLG} -eq 2 ] ; then
    echo $MACROID
    # 1) Compile CICE. Environment variables need to be passe to script
    cd $targetcicedir
-    if [ "$SITE" == "olivia" ] ; then
-       env RES=gx3 GRID=${IDM}x${JDM} SITE=$SITE MACROID=$MACROID CC=icx ./comp_ice.esmf
-    else
-       env RES=gx3 GRID=${IDM}x${JDM} SITE=$SITE MACROID=$MACROID ./comp_ice.esmf
-    fi
+   env RES=gx3 GRID=${IDM}x${JDM} SITE=$SITE MACROID=$MACROID ./comp_ice.esmf
    res=$?
    if [ $res -ne 0 ] ; then 
       echo
