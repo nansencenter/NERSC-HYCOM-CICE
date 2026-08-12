@@ -23,8 +23,7 @@ You don't need both. See [xhycom](xhycom.md) if you'd rather work in Python.
 
 ### Environment setup
 
-Before running any MSCPROGS tool, load the HPC modules and set `$MSCPROGS`.
-See the [HPC environment](installation.md#hpc-environment) section for details.
+Before running any MSCPROGS tool, load the HPC modules and set `$MSCPROGS` and `$PATH`.
 
 ::::{dropdown} Source HPC environment — Betzy (NRIS/Sigma2)
 
@@ -33,18 +32,26 @@ See the [HPC environment](installation.md#hpc-environment) section for details.
 
 ::::
 
-```bash
-source $WORK/<CONFIGNAME>/REGION.src    # sets $MSCPROGS and other paths
+::::{dropdown} Source HPC environment — Olivia (NRIS/Sigma2)
+
+```{include} _snippets/olivia_hpc_env.md
 ```
 
-`REGION.src` also adds `$MSCPROGS/bin` and `$MSCPROGS/bin_setup` to your `PATH`, so all MSCPROGS executables are immediately available.
+::::
+
+```bash
+export MSCPROGS=${HOME}/NERSC-HYCOM-CICE/hycom/MSCPROGS
+export PATH=${MSCPROGS}/bin:${MSCPROGS}/bin_setup:${PATH}
+```
 
 ### Working directory
 
 The natural place to run MSCPROGS tools is the experiment data directory:
 
 ```bash
-cd $WORK/<CONFIGNAME>/expt_<EXPT_ID>/data/
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+EXPT_ID=<EXPT_ID>         # e.g. 01.0
+cd $WORK/${CONFIGNAME}/expt_${EXPT_ID}/data/
 ```
 
 [expt_postprocess.sh](running.md#submit-a-job) copies `regional.grid.*` and `regional.depth.*` here
