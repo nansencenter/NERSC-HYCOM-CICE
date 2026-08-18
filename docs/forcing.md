@@ -340,12 +340,14 @@ Use `stage_nesting_files.sh` to copy or extract the files needed for a given dat
 ```bash
 CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
 IEXPT=<IEXPT>             # e.g. 010
+START=<START>             # e.g. 1993-01-01T00:00:00
+END=<END>                 # e.g. 2025-01-01T00:00:00
 
 $HOME/NERSC-HYCOM-CICE/bin/stage_nesting_files.sh \
     /nird/datalake/NS9481K/shuang/nest/TP2_expt023 \
     $WORK/${CONFIGNAME}/nest/${IEXPT} \
-    <START> \
-    <END>
+    ${START} \
+    ${END}
 ```
 Here, `START` and `END` are the run start and end times, see the [srjob.sh variable table](running.md#submit-a-job) for the
 expected format. Two optional flags are supported (in any order):
