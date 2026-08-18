@@ -67,7 +67,7 @@ Open `srjob.sh` in a text editor and update:
 
 > **`INITFLG=""` (restart from files):** HYCOM and CICE read from restart files in
 > `data/` at the start date. The open boundary forcing is determined by `blkdat.input`,
-> not by this flag, so two distinct scenarios share this setting:
+> not by this flag, so three distinct scenarios share this setting:
 >
 > - **Continuing a spin-up** (e.g. the previous job hit the wall-time limit): leave
 >   `blkdat.input` unchanged. Climatological boundaries remain active. Update `START`
@@ -76,6 +76,9 @@ Open `srjob.sh` in a text editor and update:
 >   GLORYS settings (`relax=0`, `nestfq=1`, `bnstfq=1`, `lbflag=2`) and stage the
 >   GLORYS nesting files before submitting. See
 >   [Open boundary forcing](forcing.md#open-boundary-forcing).
+> - **Continuing a hindcast or forecast** (e.g. the previous job hit the wall-time
+>   limit): leave `blkdat.input` unchanged. GLORYS boundaries remain active. Update
+>   `START` to the date of the last restart file in `data/` and resubmit.
 
 :::{note}
 For reference when setting `#SBATCH --time`: a 1-year TP2 run with BGC on 4 Betzy nodes (504 cores) takes approximately 5–6 hours of wall time.
