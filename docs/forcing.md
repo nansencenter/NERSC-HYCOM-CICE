@@ -340,15 +340,25 @@ Use `stage_nesting_files.sh` to copy or extract the files needed for a given dat
 ```bash
 CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
 IEXPT=<IEXPT>             # e.g. 010
+START=<START>             # e.g. 1993-01-02
+END=<END>                 # e.g. 2025-01-01
 
-$HOME/NERSC-HYCOM-CICE/bin/stage_nesting_files.sh \
+nohup $HOME/NERSC-HYCOM-CICE/bin/stage_nesting_files.sh \
     /nird/datalake/NS9481K/shuang/nest/TP2_expt023 \
     $WORK/${CONFIGNAME}/nest/${IEXPT} \
-    <START> \
-    <END>
+    ${START} \
+    ${END} \
+    --no-fabm \
+    --skip-existing \
+    > nest_stage.log 2>&1 &
+echo $!
 ```
-Here, `START` and `END` are the run start and end times, see the [srjob.sh variable table](running.md#submit-a-job) for the
-expected format. Two optional flags are supported (in any order):
+Here, `START` and `END` are dates in `YYYY-MM-DD` format. Note this differs from the
+`YYYY-MM-DDT00:00:00` format used in `srjob.sh`. The script stages one extra day on each
+side of the period so HYCOM can interpolate across the run boundaries. For a multi-year
+run this can take 30–60 minutes over NIRD; run it with `nohup ... &` as above so it
+survives logout. `--skip-existing` lets you safely restart if it is interrupted.
+Two optional flags are supported (in any order):
 
 | Flag | Effect |
 |------|--------|
