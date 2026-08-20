@@ -716,12 +716,12 @@ cd $WORK/${CONFIGNAME}/expt_${EXPT_ID}
 mkdir -p ../nest/${IEXPT}/Montg
 python $HOME/NERSC-HYCOM-CICE/bin/calc_montg1.py \
     ../nest/${IEXPT}/archv.YYYY_DDD_00.a \
-    ./data/restart.YYYY_DDD_00_0000.a \
+    $USERWORK/${CONFIGNAME}/expt_${EXPT_ID}/data/restart.YYYY_DD_00_0000.a \
     ../nest/${IEXPT}/Montg/
 mv ../nest/${IEXPT}/Montg/archv.YYYY_DDD_00.[ab] ../nest/${IEXPT}/
 ```
 
-Replace `restart.YYYY_DDD_00_0000.a` with the actual restart file in `data/` (see
+Replace `restart.YYYY_DDD_00_0000.a` with the actual restart file in `$USERWORK/${CONFIGNAME}/expt_${EXPT_ID}/data/` (see
 [Restart files](#restart-files)), and `archv.YYYY_DDD_00.a` with the nesting file whose Montgomery potential you want to modify.
 
 :::{dropdown} What calc_montg1.py does
@@ -794,7 +794,7 @@ Once inside the session, activate the Python environment:
 CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
 IEXPT=<IEXPT>             # e.g. 010
 EXPT_ID=<EXPT_ID>         # e.g. 01.0
-restartfile="./data/restart.YYYY_DDD_00_0000.a"  # adapt to your restart file
+restartfile=$USERWORK/${CONFIGNAME}/expt_${EXPT_ID}/data/restart.YYYY_DDD_00_0000.a"  # adapt to your restart file
 
 cd $WORK/${CONFIGNAME}/expt_${EXPT_ID}
 outdir="../nest/${IEXPT}/Montg"
@@ -860,7 +860,7 @@ conda activate hycom-cice
 CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
 IEXPT=<IEXPT>             # e.g. 010
 EXPT_ID=<EXPT_ID>         # e.g. 01.0
-restartfile="./data/restart.YYYY_DDD_00_0000.a"  # adapt to your restart file
+restartfile=$USERWORK/${CONFIGNAME}/expt_${EXPT_ID}/data/restart.YYYY_DDD_00_0000.a  # adapt to your restart file
 
 outdir="../nest/${IEXPT}/Montg"
 mkdir -p ${outdir}
