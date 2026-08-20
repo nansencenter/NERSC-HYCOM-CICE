@@ -123,33 +123,6 @@ ln -sf Linux.betzy.ifort_cice.V23 \
     ${HOME}/NERSC-HYCOM-CICE/hycom/RELO/config/Linux.betzy.ifort_cice
 ```
 
-:::{note}
-**If compiling with the BGC module:** ensure `ntracr` in `blkdat.input` is non-zero and
-copy the FABM configuration files and CICE namelist into the experiment directory before
-compiling:
-
-```bash
-CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
-EXPT_ID=<EXPT_ID>         # e.g. 01.0
-
-cd ${WORK}/${CONFIGNAME}/expt_${EXPT_ID}
-cp /nird/datalake/NS9481K/shuang/TP2_setup/exp02.6_seaclim_ref/fabm.yaml .
-cp /nird/datalake/NS9481K/shuang/TP2_setup/exp02.6_seaclim_ref/hycom_fabm.nml .
-cp /nird/datalake/NS9481K/shuang/TP2_setup/exp02.6_seaclim_ref/ice_in .
-```
-
-These files are also required to run the model. Copy them to your scratch filesystem before starting a simulation with BGC.
-
-```bash
-CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
-EXPT_ID=<EXPT_ID>         # e.g. 01.0
-
-cp $WORK/${CONFIGNAME}/expt_${EXPT_ID}/fabm.yaml $WDIR/expt_${EXPT_ID}/.
-cp $WORK/${CONFIGNAME}/expt_${EXPT_ID}/hycom_fabm.nml $WDIR/expt_${EXPT_ID}/.
-cp $WORK/${CONFIGNAME}/expt_${EXPT_ID}/ice_in $WDIR/expt_${EXPT_ID}/.
-```
-:::
-
 Run the compile script from the experiment directory:
 
 ```bash

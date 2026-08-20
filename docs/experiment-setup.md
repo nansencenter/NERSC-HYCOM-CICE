@@ -580,6 +580,33 @@ scratch `<CONFIGNAME>/` subtree — so `relax/` must be on scratch as well, whic
 the symlinks described above ([Set up the work directory](#set-up-the-work-directory)) provide.
 :::
 
+## Additional steps when using the BGC module
+
+When compiling with the BGC module, ensure `ntracr` in `blkdat.input` is non-zero and
+copy the FABM configuration files and CICE namelist into the experiment directory before
+compiling HYCOM-CICE:
+
+```bash
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+EXPT_ID=<EXPT_ID>         # e.g. 01.0
+
+cd ${WORK}/${CONFIGNAME}/expt_${EXPT_ID}
+cp /nird/datalake/NS9481K/shuang/TP2_setup/exp02.6_seaclim_ref/fabm.yaml .
+cp /nird/datalake/NS9481K/shuang/TP2_setup/exp02.6_seaclim_ref/hycom_fabm.nml .
+cp /nird/datalake/NS9481K/shuang/TP2_setup/exp02.6_seaclim_ref/ice_in .
+```
+
+These files are also required when running the model with BGC. Copy them to your scratch filesystem before starting a simulation with BGC.
+
+```bash
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+EXPT_ID=<EXPT_ID>         # e.g. 01.0
+
+cp $WORK/${CONFIGNAME}/expt_${EXPT_ID}/fabm.yaml $WDIR/expt_${EXPT_ID}/.
+cp $WORK/${CONFIGNAME}/expt_${EXPT_ID}/hycom_fabm.nml $WDIR/expt_${EXPT_ID}/.
+cp $WORK/${CONFIGNAME}/expt_${EXPT_ID}/ice_in $WDIR/expt_${EXPT_ID}/.
+```
+
 ## Files in the experiment directory
 
 To conclude the experiment setup, here is an overview of everything now present in the
