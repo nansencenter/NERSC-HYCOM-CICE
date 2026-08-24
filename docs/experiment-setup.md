@@ -194,9 +194,9 @@ update these fields for each new experiment:
 | `ntracr` | Number of BGC tracers | `0` = none, `1` = ECOSMO |
 
 The following fields control the open boundary forcing mode and must be set consistently
-for each run class (spin-up versus restart run, see [Forcing](forcing.md) for details):
+for each run class (climatological relaxation versus nesting run, see [Forcing](forcing.md) for details):
 
-| Field | Spin-up | Restart run | Description |
+| Field | Climatological relaxation | Nesting | Description |
 |-------|---------|-------------|-------------|
 | `relax` | `1` | `0` | Activate climatological lateral boundary nudging |
 | `trcrlx` | `1` (if `ntracr>0`) else `0` | `0` | Activate climatological lateral boundary BGC tracer nudging |
