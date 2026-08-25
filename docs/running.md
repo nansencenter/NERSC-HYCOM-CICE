@@ -55,15 +55,30 @@ Open `srjob.sh` in a text editor and update:
 | `NMPI` | `"<NMPI>"` e.g. `504` | Update NMPI if needed |
 | `START` | `"YYYY-MM-DDT00:00:00"` | Run start time |
 | `END` | `"YYYY-MM-DDT00:00:00"` | Run end time |
-| `INITFLG` | `""` or `"--init"` | `""` for a restart run; `"--init"` to initialize from climatology |
+| `INITFLG` | `""` or `"--init"` | `"--init"` for a cold start; `""` to restart from files (see note below) |
 | `#SBATCH --time` | `"HH:MM:SS"` | Wall-clock time limit |
 
-> **`INITFLG="--init"` (climatological initialization):** No restart files are needed.
+> **`INITFLG="--init"` (cold start):** No restart files are needed.
 > Temperature and salinity (T/S) are set directly from the climatological fields in
 > `relax/` (see [Climatologies and river forcing](forcing.md#climatologies-and-river-forcing));
 > velocities and sea surface height (SSH) start at zero. The model then spins up under realistic atmospheric
 > forcing. The start date must be in September (the month of Arctic sea ice minimum).
 > See [Initial conditions](forcing.md#initial-conditions) for details on both options.
+
+> **`INITFLG=""` (restart from files):** HYCOM and CICE read from restart files in
+> `data/` at the start date. The open boundary forcing is determined by `blkdat.input`,
+> not by this flag, so three distinct scenarios share this setting:
+>
+> - **Continuing a spin-up** (e.g. the previous job hit the wall-time limit): leave
+>   `blkdat.input` unchanged. Climatological boundaries remain active. Update `START`
+>   to the date of the last restart file in `data/` and resubmit.
+> - **Starting a hindcast or forecast from a spun-up state**: update `blkdat.input` to
+>   GLORYS settings (`relax=0`, `nestfq=1`, `bnstfq=1`, `lbflag=2`) and stage the
+>   GLORYS nesting files before submitting. See
+>   [Open boundary forcing](forcing.md#open-boundary-forcing).
+> - **Continuing a hindcast or forecast** (e.g. the previous job hit the wall-time
+>   limit): leave `blkdat.input` unchanged. GLORYS boundaries remain active. Update
+>   `START` to the date of the last restart file in `data/` and resubmit.
 
 :::{note}
 For reference when setting `#SBATCH --time`: a 1-year TP2 run with BGC on 4 Betzy nodes (504 cores) takes approximately 5–6 hours of wall time.

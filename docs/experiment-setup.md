@@ -202,6 +202,23 @@ update these fields for each new experiment:
 | `iexpt` | Experiment number ×10 | e.g. `026` for expt `02.6` |
 | `ntracr` | Number of BGC tracers | `0` = none, `1` = ECOSMO |
 
+The following fields control the open boundary forcing mode and must be set consistently
+for each run class (climatological relaxation versus nesting run, see [Forcing](forcing.md) for details):
+
+| Field | Climatological relaxation | Nesting | Description |
+|-------|---------|-------------|-------------|
+| `relax` | `1` | `0` | Activate climatological lateral boundary nudging |
+| `trcrlx` | `1` (if `ntracr>0`) else `0` | `0` | Activate climatological lateral boundary BGC tracer nudging |
+| `bnstfq` | `0` | `1` | Days between barotropic nesting archive reads |
+| `nestfq` | `0` | `1` | Days between 3D nesting archive reads |
+| `lbflag` | `0` | `2` | Lateral barotropic boundary flag |
+
+:::{warning}
+For spin-up runs, set `trcrlx=0` when `ntracr=0` (physics-only spin-up). If `trcrlx=1`
+without the corresponding BGC climatology files prepared, the model will crash at
+startup looking for files such as `relax_ECO*`.
+:::
+
 ::::{dropdown} Full blkdat.input parameter reference (with example values)
 
 **Grid and configuration**
