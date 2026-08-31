@@ -1264,8 +1264,9 @@ Steps:
 > **TODO:** The Greenland files (`griver.a/b`) are on the TP5 grid (780×800) and must be regridded to TP2 before merging. How?
 
 ::::
-::::
+
 ::::{dropdown} Optional 2: high-frequency river forcing from GloFAS
+
 
 ::::
 
