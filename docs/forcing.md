@@ -1292,10 +1292,10 @@ Example:
 
 Limits: At moment, all the river data are stored in one netCDF file data_all_year.nc, but it covers the years from 1979 to the end of 2024. For real-time implementation, this file should be replaced, and depending on the practical implementation case.
 #---------------------------------------
-#--N.B--corrected by Jiping Xie in July 2026--------------------  
+#--N.B--correction in July 2026---------  
 N.B.: in hycom.2.2.98: before your model runs, the two parameter settings should be consistent: priver=0 (blkdat.input) and highfq_river  = .true. (hycom.opt). Under this setting, the high-frequency river will be active in the model, and the concerned model will search the file named "riverh.ab".
 
-But in hycom 2.3, the "priver" setting was changed in recent months. So the relevant priver setting must be set to 2 for high-frequency river forcing, and you should skip the highfq_river=.true. setting. In the end, the model will the file named "rivers.ab"
+But in hycom 2.3, the "priver" setting was changed in recent months. So set the relevant priver setting to 2 for high-frequency river forcing, and skip the highfq_river=.true. setting. In the end, the model will the file named "rivers.ab"
 
 ::::
 
