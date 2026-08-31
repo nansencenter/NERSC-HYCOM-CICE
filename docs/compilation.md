@@ -9,6 +9,17 @@ See the [HPC environment](installation.md#hpc-environment) section for details.
 
 ::::
 
+::::{dropdown} Source HPC environment — Olivia (NRIS/Sigma2)
+
+```{include} _snippets/olivia_hpc_env.md
+```
+
+::::
+
+:::{note}
+Olivia support is a work in progress. 
+:::
+
 ## Compile MSCPROGS (libhycnersc.a)
 
 > **Before compiling:** source the HPC environment file to load the correct modules and compilers
@@ -81,6 +92,7 @@ After installation, `libfabm.a` is at:
 ${HOME}/local/fabm/hycom/lib64/libfabm.a
 ```
 
+
 ## Compile HYCOM-CICE
 
 > **Before compiling:** source the HPC environment file to load the correct modules and compilers
@@ -110,22 +122,6 @@ ls -la ${HOME}/NERSC-HYCOM-CICE/hycom/RELO/config/Linux.betzy.ifort_cice
 ln -sf Linux.betzy.ifort_cice.V23 \
     ${HOME}/NERSC-HYCOM-CICE/hycom/RELO/config/Linux.betzy.ifort_cice
 ```
-
-:::{note}
-**If compiling with the BGC module:** ensure `ntracr` in `blkdat.input` is non-zero and
-copy the FABM configuration files and CICE namelist into the experiment directory before
-compiling:
-
-```bash
-CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
-EXPT_ID=<EXPT_ID>         # e.g. 01.0
-
-cd ${WORK}/${CONFIGNAME}/expt_${EXPT_ID}
-cp /nird/datalake/NS9481K/shuang/TP2_setup/exp02.6_seaclim_ref/fabm.yaml .
-cp /nird/datalake/NS9481K/shuang/TP2_setup/exp02.6_seaclim_ref/hycom_fabm.nml .
-cp /nird/datalake/NS9481K/shuang/TP2_setup/exp02.6_seaclim_ref/ice_in .
-```
-:::
 
 Run the compile script from the experiment directory:
 
@@ -243,3 +239,4 @@ Then compile:
 csh ./Make_clean.com
 csh ./Make_all.com
 ```
+

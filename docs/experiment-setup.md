@@ -21,6 +21,47 @@ The `bin` symlink is required because scripts in `bin/` call each other using re
 symlink, those internal calls would fail.
 :::
 
+`expt_preprocess.sh` looks up `nest/`, `relax/`, and `force/` relative to the `<CONFIGNAME>/`
+directory — redirect them with symlinks onto the scratch filesystem. Set `WDIR` to the scratch
+path for your machine:
+
+::::{dropdown} WDIR — scratch path by machine
+::::{tab-set}
+:::{tab-item} Betzy
+```bash
+WDIR=$USERWORK/${CONFIGNAME}
+```
+:::
+:::{tab-item} Olivia
+```bash
+WDIR=/cluster/work/projects/nn2993k/$USER/${CONFIGNAME}
+```
+:::
+::::
+::::
+
+Then create the directories and symlinks:
+
+```bash
+mkdir -p $WDIR $WDIR/nest
+
+cd $WORK/${CONFIGNAME}
+mv relax $WDIR/relax
+mv force $WDIR/force
+mkdir -p $WDIR/force/synoptic
+
+ln -sf $WDIR/nest  nest
+ln -sf $WDIR/relax relax
+ln -sf $WDIR/force force
+```
+
+:::{important}
+`nest/`, `relax/`, and `force/` hold input data that is expensive to regenerate. Because the
+scratch filesystem is purged after 21 days, stage this data back from NIRD (or re-create it)
+before restarting a run if these directories have aged out.
+:::
+
+
 ## Configure REGION.src
 
 Copy the template into the configuration directory:
@@ -123,6 +164,15 @@ values for your experiment. For TP2, the file should look like this:
 | `highfq_river` | Use time-varying (high-frequency) river forcing instead of the climatological river forcing. Requires `priver=0` in `blkdat.input`; the two options are mutually exclusive. |
 | `sssrmx_scalar` | Maximum SSS anomaly (psu) at which relaxation is still applied. Relaxation is suppressed where the model–climatology difference exceeds this value. `99.` (template default) means no cap; `.5` limits relaxation to within 0.5 psu of climatology. |
 
+Finally, copy your customized `hycom_opt` to your scratch filesystem.
+
+```bash
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+EXPT_ID=<EXPT_ID>         # e.g. 01.0
+
+cp $WORK/${CONFIGNAME}/expt_${EXPT_ID}/hycom_opt $WDIR/expt_${EXPT_ID}/.
+```
+
 ## Configure blkdat.input
 
 `blkdat.input` controls core model parameters. The easiest starting point is to copy it
@@ -130,9 +180,9 @@ from an existing experiment for your configuration. For TP2, reference files are
 at:
 
 - **With nesting boundary**:
-  `/nird/datalake/NS9481K/shuang/TP2_setup/exp02.6_seaclim_ref/blkdat.input`
+  `/nird/datalake/NS9481K/shuang/TP2_setup/exp02.8_seaclim_ref_new/blkdat.input_nest`
 - **With climatology boundary**:
-  `/nird/datalake/NS9481K/shuang/TP2_setup/exp02.6_seaclim_ref/blkdat.input_clim`
+  `/nird/datalake/NS9481K/shuang/TP2_setup/exp02.8_seaclim_ref_new/blkdat.input_clim`
 
 Copy it into place:
 
@@ -151,6 +201,23 @@ update these fields for each new experiment:
 |-------|-------------|-------|
 | `iexpt` | Experiment number ×10 | e.g. `026` for expt `02.6` |
 | `ntracr` | Number of BGC tracers | `0` = none, `1` = ECOSMO |
+
+The following fields control the open boundary forcing mode and must be set consistently
+for each run class (climatological relaxation versus nesting run, see [Forcing](forcing.md) for details):
+
+| Field | Climatological relaxation | Nesting | Description |
+|-------|---------|-------------|-------------|
+| `relax` | `1` | `0` | Activate climatological lateral boundary nudging |
+| `trcrlx` | `1` (if `ntracr>0`) else `0` | `0` | Activate climatological lateral boundary BGC tracer nudging |
+| `bnstfq` | `0` | `1` | Days between barotropic nesting archive reads |
+| `nestfq` | `0` | `1` | Days between 3D nesting archive reads |
+| `lbflag` | `0` | `2` | Lateral barotropic boundary flag |
+
+:::{warning}
+For spin-up runs, set `trcrlx=0` when `ntracr=0` (physics-only spin-up). If `trcrlx=1`
+without the corresponding BGC climatology files prepared, the model will crash at
+startup looking for files such as `relax_ECO*`.
+:::
 
 ::::{dropdown} Full blkdat.input parameter reference (with example values)
 
@@ -452,9 +519,39 @@ Open `$WORK/<CONFIGNAME>/expt_<EXPT_ID>/EXPT.src` and update:
 | `X=` | `"<EXPT_ID>"` e.g. `"02.6"` | Experiment identifier (dot notation) |
 | `E=` | `"<IEXPT>"` e.g. `"026"` | Experiment identifier (no dot) |
 | `T=` | `"04"` | Topography version |
+| `export V=` | `"2.2.98"` or `"2.3"` | HYCOM version, determines which source directory is used when compiling |
 | `export NMPI=` | e.g. `504` for TP2 on Betzy | Number of ocean MPI tiles |
 | `export MXBLCKS=` | e.g. `9` | Maximum ice blocks per MPI process |
 | `export COMPILE_BIOMODEL=` | `"yes"` or `"no"` | BGC coupling on/off |
+| `export S=` | machine-specific (see dropdown below) | Scratch directory |
+| `export D=` | machine-specific (see dropdown below) | Data directory |
+
+::::{dropdown} Both machines — redirect `SCRATCH` and `data` onto the scratch filesystem
+
+Keep the experiment tree (configuration and `build/`) on the non-purged `$WORK`
+(`/cluster/projects/nn2993k/$USER`), and put the two large directories — scratch and output —
+on the fast, purged scratch filesystem. Override the auto-set `S=` and `D=` lines in `EXPT.src`.
+The scratch path differs by machine:
+
+::::{tab-set}
+:::{tab-item} Betzy
+```bash
+export S=$USERWORK/<CONFIGNAME>/expt_${X}/SCRATCH
+export D=$USERWORK/<CONFIGNAME>/expt_${X}/data
+```
+:::
+:::{tab-item} Olivia
+```bash
+export S=/cluster/work/projects/nn2993k/$USER/<CONFIGNAME>/expt_${X}/SCRATCH
+export D=/cluster/work/projects/nn2993k/$USER/<CONFIGNAME>/expt_${X}/data
+```
+:::
+::::
+
+:::{important}
+`data/` is on the purged filesystem, so **archive completed output to NIRD on a rolling
+basis** (e.g. per model year as it finishes) from a service node.
+:::
 
 :::{note}
 For TP2, the available topography versions are: `01` (initial interpolation), `02` (adds
@@ -481,12 +578,98 @@ recommended in the error message.
 
 | Variable | Description |
 |----------|-------------|
-| `export V=` | HYCOM version; determines which source directory is used when compiling |
 | `export SIGVER=` | Equation of state version; must be consistent with `thflag` in `blkdat.input` |
 | `export K=` | Number of layers — auto-derived from `blkdat.input`, no need to edit |
 | `export P=` | Experiment directory path — set automatically from the script location |
-| `export D=` | Permanent data directory (`P/data`) — set automatically |
-| `export S=` | Scratch directory (`P/SCRATCH`) — set automatically |
 
 ::::
+
+
+This is safe: `expt_preprocess.sh` only creates (`mkdir -p`) and enters (`cd`) `$S` and `$D` —
+it never deletes them — and the overrides propagate automatically when `expt_new.sh` copies
+`EXPT.src` to a new experiment. `P=` and `build/` stay on `$WORK`, so the configuration and
+compiled executable survive the purge.
+
+:::{note}
+`expt_preprocess.sh` also accesses `relax/` via `${D}/../../relax/` (two levels up from `$D`).
+When `D=` is overridden to a path on the scratch filesystem, `${D}/../../` resolves to the
+scratch `<CONFIGNAME>/` subtree — so `relax/` must be on scratch as well, which is exactly what
+the symlinks described above ([Set up the work directory](#set-up-the-work-directory)) provide.
+:::
+
+## Additional steps when using the BGC module
+
+When compiling with the BGC module, ensure `ntracr` in `blkdat.input` is non-zero and
+copy the FABM configuration files and CICE namelist into the experiment directory before
+compiling HYCOM-CICE:
+
+```bash
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+EXPT_ID=<EXPT_ID>         # e.g. 01.0
+
+cd ${WORK}/${CONFIGNAME}/expt_${EXPT_ID}
+cp /nird/datalake/NS9481K/shuang/TP2_setup/exp02.6_seaclim_ref/fabm.yaml .
+cp /nird/datalake/NS9481K/shuang/TP2_setup/exp02.6_seaclim_ref/hycom_fabm.nml .
+cp /nird/datalake/NS9481K/shuang/TP2_setup/exp02.6_seaclim_ref/ice_in .
+```
+
+These files are also required when running the model with BGC. Copy them to your scratch filesystem before starting a simulation with BGC.
+
+```bash
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+EXPT_ID=<EXPT_ID>         # e.g. 01.0
+
+cp $WORK/${CONFIGNAME}/expt_${EXPT_ID}/fabm.yaml $WDIR/expt_${EXPT_ID}/.
+cp $WORK/${CONFIGNAME}/expt_${EXPT_ID}/hycom_fabm.nml $WDIR/expt_${EXPT_ID}/.
+cp $WORK/${CONFIGNAME}/expt_${EXPT_ID}/ice_in $WDIR/expt_${EXPT_ID}/.
+```
+
+## Files in the experiment directory
+
+To conclude the experiment setup, here is an overview of everything now present in the
+experiment directory. No action is needed — this is for reference only. Most files are
+copied from the template experiment by `expt_new.sh`; exceptions are noted.
+
+**Configuration files**
+
+| File | Purpose |
+|------|---------|
+| `blkdat.input` | Main HYCOM parameter/namelist file |
+| `EXPT.src` | Shell environment setup — defines experiment identifiers (`X`, `E`, `V`, `K`), paths to SCRATCH (`S`) and data directory (`D`), MPI task count, and other compile/run flags. Sourced by job scripts. |
+| `hycom_opt` | HYCOM optional namelist (`&hycom_nml`) — copied to the work directory by the preprocess script on each run |
+| `patch.input` | Domain decomposition tile layout for parallel HYCOM |
+
+**CICE namelist files**
+
+`cice_limits.py` reads `ice_in` as a template and rewrites it into SCRATCH with updated timing, processor count, and run type. The `.0`/`.1` variants are human-maintained references to copy to `ice_in` when switching modes.
+
+| File | Purpose |
+|------|---------|
+| `ice_in` | Active CICE namelist template — modified by `cice_limits.py` at run time |
+| `ice_in.0` | CICE namelist for cold start (`runtype=initial`, `restart=false`) |
+| `ice_in.1` | CICE namelist for continuation (`runtype=continue`, `restart=true`) |
+
+**Initial condition files**
+
+| File | Purpose |
+|------|---------|
+| `ice_initial.nc` | Initial ice state and SST/SSS for CICE cold start — staged separately from the projects filesystem (spin-up only; not needed for restart runs) |
+
+**Job scripts**
+
+| File | Purpose |
+|------|---------|
+| `srjob.sh` | Main Slurm job script for a single run segment |
+| `srjob_loop.sh` | Slurm job script for looped continuation runs |
+| `sr_job_ensemble.sh` | Slurm job script for ensemble runs |
+| `preprocess_mem.sh` | Preprocess script variant for ensemble members |
+| `sr_ensemble_post.sh` | Ensemble postprocessing script (currently empty) |
+| `create_ref_case.sh` | One-time setup script to create a new experiment from a reference case — copied from `bin/` manually (see [Climatologies and river forcing](forcing.md#climatologies-and-river-forcing)) |
+
+**Ensemble forcing**
+
+| File | Purpose |
+|------|---------|
+| `force_perturb-2.2` | Binary for generating perturbed atmospheric forcing fields for ensemble runs |
+| `infile2.in_init` | Parameters for random forcing perturbation (variances, correlation scales) — used by `force_perturb-2.2` |
 
