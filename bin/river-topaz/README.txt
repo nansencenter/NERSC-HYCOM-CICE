@@ -26,10 +26,15 @@ Example:
 3) The source data including the model grid information and the river data (netCDF) are stored at /cluster/projects/nn9481k/GloFAS_data/data_v40 and /cluster/projects/nn9481k/GloFAS_data/TOPAZrunoff_data/. They are defined in the Python routine:river-topaz/scripts/GloFAS/hycom_river_hifre.py
 
 
-4) N.B.: (hycom.2.2.98): before your model runs, the two parameter settings should be consistent: priver=0 (blkdat.input) and highfq_river  = .true. (hycom.opt). Under this setting, the high-frequency river will be active in the model. But in hycom 2.3, the "priver" setting was changed in recent months. So the relevant setting of priver requires it to be set to 2 for the high-frequency river forcing, and skipping the highfq_river=.true. setting. in hycom_opt.
-
 Limits: At moment, all the river data are stored in one netCDF file data_all_year.nc, but it covers the years from 1979 to the end of 2024. For real-time implementation, this file should be replaced, and depending on the practical implementation case.
 # updated by Jiping Xie in November 2025 
 #---------------------------------------
+
+#--N.B:---------------------------------
+# corrected by Jiping Xie in July 2026  
+N.B.: (hycom.2.2.98): before your model runs, the two parameter settings should be consistent: priver=0 (blkdat.input) and highfq_river  = .true. (hycom.opt). Under this setting, the high-frequency river will be active in the model. 
+
+But in hycom 2.3, the "priver" setting was changed in recent months. So the relevant setting of priver requires it to be set to 2 for the high-frequency river forcing, and skipping the highfq_river=.true. setting. in hycom_opt.
+
 
 
