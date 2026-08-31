@@ -482,6 +482,7 @@ end subroutine
       character(len=80) :: fname
       character(len=40) :: timeunits
       real, dimension(maxntrans) :: voltrans,heattrans ! NB - heattrans does not consider ice
+      real, dimension(maxntrans) :: frestrans        ! NB - frestrans does not consider ice
       real, dimension(maxntrans) :: ivoltrans,iareatrans
       integer :: itrans, ipnt, isec, ipiv, jpiv, kdm ,icrit
       real :: masku, maskv,  rtime, rtime2
@@ -511,6 +512,7 @@ end subroutine
       sumdepth=0.
       olddepth=0.
       voltrans(:)=0.
+      frestrans(:)=0.
       heattrans(:)=0.
       pu=0.
       pv=0.
@@ -621,6 +623,12 @@ end subroutine
                heattrans(itrans) = heattrans(itrans)                                           +  &
                     masku*transfacu(ipiv,jpiv)*((temp(ipiv,jpiv))-0.)*cpsw*(1000.) + &  !+dens(ipiv,jpiv))  +  &
                     maskv*transfacv(ipiv,jpiv)*((temp(ipiv,jpiv))-0.)*cpsw*(1000.)  !+dens(ipiv,jpiv))
+
+               !  34.8 psu
+               frestrans(itrans) = frestrans(itrans)                    +  &
+                    masku*transfacu(ipiv,jpiv)*(1-saln(ipiv,jpiv)/34.8) +  &
+                    maskv*transfacv(ipiv,jpiv)*(1-saln(ipiv,jpiv)/34.8)
+
 #if defined (SCALAR_TRANS) 
                do ist=1,num_scalar_trans
                   scalar_trans(itrans,ist) = scalar_trans(itrans,ist) +   &
@@ -729,6 +737,9 @@ end subroutine
          comment='Volume Transport',appendfile=vapp,timeunits=trim(timeunits))
       call ncwrite_transportdata('heat_transport',heattrans(1:ntrans),ntrans,rtime2,2,units='W', &
          comment='Heat Transport',appendfile=vapp,timeunits=trim(timeunits))
+      call ncwrite_transportdata('freshwater_transport',frestrans(1:ntrans)*1e-6,ntrans,rtime2,2,units='Sv', &
+         comment='Freshwater Transport',appendfile=vapp,timeunits=trim(timeunits))
+
 #if defined (SCALAR_TRANS) 
       do ist=1,num_scalar_trans
          call ncwrite_transportdata(trim(scalar_trans_name(ist))//'_transport', &
