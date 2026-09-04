@@ -483,7 +483,11 @@ follows.
 ...
 4000.0
 ```
-
+To extract variables from bottom layer only. 
+```
+1        # number of depth levels
+-1
+```
 ### `sections.in`
 
 Defines named sections as lon/lat endpoint pairs for `m2section`,
