@@ -1150,15 +1150,17 @@ c
 #ifdef _FABM_
       call hycom_fabm_configure()
       ntracr = size(fabm_model%interior_state_variables)
+      niatrc = size(fabm_model%surface_state_variables)
 #else
       ntracr = abs(ntracr)
+      niatrc = 0
 #endif
       trcout = ntracr.ne.0
 c
-      if (ntracr.gt.mxtrcr) then
+      if (ntracr.gt.mxtrcr .or. niatrc.gt.mxtrcr) then
         if (mnproc.eq.1) then
         write(lp,'(/ a,i3, a /)') 
-     &    'error - maximum ntracr is',mxtrcr,
+     &    'error - maximum ntracr and niatrc is',mxtrcr,
      &    '  (recompile with larger mxtrcr)'
         call flush(lp)
         endif !1st tile

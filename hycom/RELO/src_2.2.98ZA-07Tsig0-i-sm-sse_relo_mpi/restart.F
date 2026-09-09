@@ -321,6 +321,10 @@ c
         do ktr=1,size(fabm_model%surface_state_variables)
           call restart_in3d(fabm_surface_state(1-nbdy,1-nbdy,1,ktr),2,
      &      ip,fabm_model%surface_state_variables(ktr)%name(1:8))
+#ifdef IA_DRIFT          
+          ia_tracer(:,:,1,ktr) = fabm_surface_state(:,:,1,ktr)
+          ia_tracer(:,:,2,ktr) = fabm_surface_state(:,:,2,ktr)
+#endif
         enddo
         do ktr=1,size(fabm_model%bottom_state_variables)
           call restart_in3d(fabm_bottom_state(1-nbdy,1-nbdy,1,ktr),2,

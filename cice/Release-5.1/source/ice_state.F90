@@ -171,7 +171,7 @@
 ! author: William H. Lipscomb, LANL
 
       subroutine bound_state (aicen, trcrn, &
-                              vicen, vsnon)
+                              vicen, vsnon, ia_tracer)
 
       use ice_boundary, only: ice_halo, ice_HaloMask, ice_HaloUpdate, &
           ice_HaloDestroy
@@ -183,6 +183,11 @@
          aicen , & ! fractional ice area
          vicen , & ! volume per unit area of ice          (m)
          vsnon     ! volume per unit area of snow         (m)
+
+      real (kind=dbl_kind), &
+         dimension(nx_block,ny_block,6,max_blocks), & 
+         intent(inout), optional :: &
+         ia_tracer  ! ice-algae tracers
 
       real (kind=dbl_kind), &
          dimension(nx_block,ny_block,max_ntrcr,ncat,max_blocks), &
@@ -224,6 +229,10 @@
                               field_loc_center, field_type_scalar)
          call ice_HaloUpdate (vsnon,            halo_info_aicemask, &
                               field_loc_center, field_type_scalar)
+         if (present(ia_tracer)) then
+            call ice_HaloUpdate (ia_tracer,     halo_info_aicemask, &
+                              field_loc_center, field_type_scalar)
+         endif
          call ice_HaloDestroy(halo_info_aicemask)
 
       else
@@ -233,6 +242,10 @@
                               field_loc_center, field_type_scalar)
          call ice_HaloUpdate (vsnon,            halo_info, &
                               field_loc_center, field_type_scalar)
+         if (present(ia_tracer)) then
+            call ice_HaloUpdate (ia_tracer,     halo_info_aicemask, &
+                              field_loc_center, field_type_scalar)
+         endif
       endif
 
       end subroutine bound_state

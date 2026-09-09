@@ -43,6 +43,23 @@
          ss_tltx , & ! sea surface slope, x-direction (m/m)
          ss_tlty , & ! sea surface slope, y-direction
 
+#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT)
+       ! in from hycom_ecosmo ice-algae
+         ialg    , & ! ice algae biomass  (mg C/m^2)
+         idet    , & ! ice algae detritus (mg C/m^2)
+         ino3    , & ! nitrate in ice     (mmol N/m^2)
+         inh4    , & ! ammonium in ice    (mmol N/m^2)
+         ipho    , & ! phosphate in ice   (mmol P/m^2)
+         isil    , & ! silicate in ice    (mmol Si/m^2)
+       ! out to hycom_ecosmo ice-algae
+         ialg_exp    , & ! ice algae biomass  (mg C/m^2)
+         idet_exp    , & ! ice algae detritus (mg C/m^2)
+         ino3_exp    , & ! nitrate in ice     (mmol N/m^2)
+         inh4_exp    , & ! ammonium in ice    (mmol N/m^2)
+         ipho_exp    , & ! phosphate in ice   (mmol P/m^2)
+         isil_exp    , & ! silicate in ice    (mmol Si/m^2)
+#endif
+
        ! out to atmosphere
          strairxT, & ! stress on ice by air, x-direction
          strairyT, & ! stress on ice by air, y-direction
@@ -439,6 +456,15 @@
       hmix  (:,:,:) = c20             ! ocean mixed layer depth
       daice_da(:,:,:) = c0            ! data assimilation increment rate
 
+#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT)
+      ! in from hycom_ecosmo ice-algae
+      ialg   (:,:,:) = c0             ! ice algae biomass  (mg C/m^2)
+      idet   (:,:,:) = c0             ! ice algae detritus (mg C/m^2)
+      ino3   (:,:,:) = c0             ! nitrate in ice     (mmol N/m^2)
+      inh4   (:,:,:) = c0             ! ammonium in ice    (mmol N/m^2)
+      ipho   (:,:,:) = c0             ! phosphate in ice   (mmol P/m^2)
+      isil   (:,:,:) = c0             ! silicate in ice    (mmol Si/m^2)
+#endif
       !-----------------------------------------------------------------
       ! fluxes sent to atmosphere
       !-----------------------------------------------------------------
@@ -474,6 +500,15 @@
       fsalt_da(:,:,:) = c0
       flux_bio (:,:,:,:) = c0 ! bgc
 
+#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT)
+      ! out to hycom_ecosmo ice-algae
+      ialg_exp   (:,:,:) = c0             ! ice algae biomass  (mg C/m^2)
+      idet_exp   (:,:,:) = c0             ! ice algae detritus (mg C/m^2)
+      ino3_exp   (:,:,:) = c0             ! nitrate in ice     (mmol N/m^2)
+      inh4_exp   (:,:,:) = c0             ! ammonium in ice    (mmol N/m^2)
+      ipho_exp   (:,:,:) = c0             ! phosphate in ice   (mmol P/m^2)
+      isil_exp   (:,:,:) = c0             ! silicate in ice    (mmol Si/m^2)
+#endif
       !-----------------------------------------------------------------
       ! derived or computed fields
       !-----------------------------------------------------------------

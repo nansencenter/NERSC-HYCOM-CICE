@@ -451,7 +451,7 @@
                                         fbot,     l_stop,   &
                                         istop,    jstop)
 
-      if (l_stop) return
+      !if (l_stop) return !shuang for now
 
       !-----------------------------------------------------------------
       ! If prescribed ice, set hi back to old values
@@ -2391,7 +2391,7 @@
          write(nu_diag,*) fsurfn(i,j)*dt, flatn(i,j)*dt, &
                           fswint(i,j)*dt, fhocnn(i,j)*dt, &
                           fsnow(i,j)*Lfresh*dt, fadvocn(i,j)*dt
-         return
+         !return !shuang for now
          endif
       enddo
 

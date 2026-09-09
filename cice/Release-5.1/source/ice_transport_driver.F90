@@ -16,6 +16,11 @@
       use ice_kinds_mod
       use ice_communicate, only: my_task, master_task
       use ice_fileunits, only: nu_diag
+#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT)
+      use ice_domain_size, only: max_blocks
+      use ice_blocks, only: nx_block, ny_block
+      use ice_constants, only: c1
+#endif
 
       implicit none
       private
@@ -51,6 +56,11 @@
          l_dp_midpt = .true.  ! if true, find departure points using
                               ! corrected midpoint velocity
                           
+#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT)
+      real (kind=dbl_kind), dimension (nx_block,ny_block,6,max_blocks), public :: &
+         ia_tracer              ! 6 ice-algae variables for drifting
+#endif
+
 !=======================================================================
 
       contains
@@ -77,7 +87,11 @@
 
       call ice_timer_start(timer_advect)  ! advection 
 
+#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT)
+      ntrace = 8 + ntrcr ! hice,hsno, 6 ice-algae tracers, trcr
+#else
       ntrace = 2 + ntrcr ! hice,hsno,trcr
+#endif
 
       if (allocated(tracer_type)) deallocate(tracer_type)
       if (allocated(depend)) deallocate(depend)
@@ -92,7 +106,7 @@
 
           depend(1:2)         = 0 ! hice, hsno
           tracer_type(1:2)    = 1 ! no dependency
-      
+
           k = 2
 
           do nt = 1, ntrcr
@@ -108,6 +122,10 @@
                 endif
              endif
           enddo
+#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT)         
+          depend(k+ntrcr+1:k+ntrcr+6)      = 0 ! 6 ice-algae tracers
+          tracer_type(k+ntrcr+1:k+ntrcr+6) = 1 ! no dependency
+#endif
 
           has_dependents = .false.
           do nt = 1, ntrace
@@ -174,6 +192,26 @@
                 write(nu_diag,*) 'nt_bgc_sk',nt,depend(nt),tracer_type(nt),&
                                               has_dependents(nt)
           enddo
+#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT)
+             nt = k+ntrcr+1
+                write(nu_diag,*) '   ialg  ',nt,depend(nt),tracer_type(nt),&
+                                              has_dependents(nt)
+             nt = k+ntrcr+2
+                write(nu_diag,*) '   idet  ',nt,depend(nt),tracer_type(nt),&
+                                              has_dependents(nt)
+             nt = k+ntrcr+3
+                write(nu_diag,*) '   ino3  ',nt,depend(nt),tracer_type(nt),&
+                                              has_dependents(nt)
+             nt = k+ntrcr+4
+                write(nu_diag,*) '   inh4  ',nt,depend(nt),tracer_type(nt),&
+                                              has_dependents(nt)
+             nt = k+ntrcr+5
+                write(nu_diag,*) '   ipho  ',nt,depend(nt),tracer_type(nt),&
+                                              has_dependents(nt)
+             nt = k+ntrcr+6
+                write(nu_diag,*) '   isil  ',nt,depend(nt),tracer_type(nt),&
+                                              has_dependents(nt)
+#endif
           endif ! master_task
 
           if (trim(advection)=='remap') call init_remap    ! grid quantities
@@ -214,6 +252,9 @@
       use ice_timers, only: ice_timer_start, ice_timer_stop, &
           timer_advect, timer_bound
       use ice_transport_remap, only: horizontal_remap, make_masks
+#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT)
+      use ice_flux, only: ialg, idet, ino3, inh4, ipho, isil
+#endif
 
       real (kind=dbl_kind), intent(in) ::     &
          dt      ! time step
@@ -334,17 +375,34 @@
       !$OMP PARALLEL DO PRIVATE(iblk)
       do iblk = 1, nblocks
 
+#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT)
+         ia_tracer(:,:,1,iblk) = ialg(:,:,iblk)
+         ia_tracer(:,:,2,iblk) = idet(:,:,iblk)
+         ia_tracer(:,:,3,iblk) = ino3(:,:,iblk)
+         ia_tracer(:,:,4,iblk) = inh4(:,:,iblk)
+         ia_tracer(:,:,5,iblk) = ipho(:,:,iblk)
+         ia_tracer(:,:,6,iblk) = isil(:,:,iblk)
+#endif
     !-------------------------------------------------------------------
     ! Fill arrays with fields to be remapped.
     !-------------------------------------------------------------------
 
+#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT)
+         call state_to_tracers(nx_block,          ny_block,             &
+                               ntrcr,             ntrace,               &
+                               aice0(:,:,  iblk), aicen(:,:,:,iblk),    &
+                               trcrn(:,:,1:ntrcr,:,iblk),               &
+                               vicen(:,:,:,iblk), vsnon(:,:,  :,iblk),  &
+                               ia_tracer(:,:,:,iblk),                   &
+                               aim  (:,:,:,iblk), trm  (:,:,:,:,iblk))
+#else
          call state_to_tracers(nx_block,          ny_block,             &
                                ntrcr,             ntrace,               &
                                aice0(:,:,  iblk), aicen(:,:,:,iblk),    &
                                trcrn(:,:,1:ntrcr,:,iblk),               &
                                vicen(:,:,:,iblk), vsnon(:,:,  :,iblk),  &
                                aim  (:,:,:,iblk), trm  (:,:,:,:,iblk))
-
+#endif
       enddo
       !$OMP END PARALLEL DO
 
@@ -487,13 +545,22 @@
       !$OMP PARALLEL DO PRIVATE(iblk)
       do iblk = 1, nblocks
 
+#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT)        
+         call tracers_to_state (nx_block,          ny_block,            &
+                                ntrcr,             ntrace,              &
+                                aim  (:,:,:,iblk), trm  (:,:,:,:,iblk), &
+                                aice0(:,:,  iblk), aicen(:,:,:,iblk),   &
+                                trcrn(:,:,1:ntrcr,:,iblk),              &
+                                ia_tracer(:,:,:,iblk),              &
+                                vicen(:,:,:,iblk), vsnon(:,:,  :,iblk))
+#else
          call tracers_to_state (nx_block,          ny_block,            &
                                 ntrcr,             ntrace,              &
                                 aim  (:,:,:,iblk), trm  (:,:,:,:,iblk), &
                                 aice0(:,:,  iblk), aicen(:,:,:,iblk),   &
                                 trcrn(:,:,1:ntrcr,:,iblk),              &
                                 vicen(:,:,:,iblk), vsnon(:,:,  :,iblk))
-
+#endif
       enddo                     ! iblk
       !$OMP END PARALLEL DO
 
@@ -503,8 +570,13 @@
 
       call ice_timer_start(timer_bound)
 
+#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT)
+      call bound_state (aicen, trcrn,     &
+                        vicen, vsnon, ia_tracer)
+#else
       call bound_state (aicen, trcrn,     &
                         vicen, vsnon)
+#endif
 
       call ice_timer_stop(timer_bound)
 
@@ -786,12 +858,22 @@
 !
 ! author William H. Lipscomb, LANL
 
+#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT)
+      subroutine state_to_tracers (nx_block, ny_block,   &
+                                   ntrcr,    ntrace,     &
+                                   aice0,    aicen,      &
+                                   trcrn,                &
+                                   vicen,    vsnon,      &
+                                   ia_tracer,            &
+                                   aim,      trm)
+#else
       subroutine state_to_tracers (nx_block, ny_block,   &
                                    ntrcr,    ntrace,     &
                                    aice0,    aicen,      &
                                    trcrn,                &
                                    vicen,    vsnon,      &
                                    aim,      trm)
+#endif
 
       use ice_constants, only: c0, c1, rhos, Lfresh, puny
       use ice_domain_size, only: ncat, nslyr
@@ -816,6 +898,12 @@
            intent(in) ::     &
            trcrn     ! ice area tracers
 
+#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT)
+      real (kind=dbl_kind), dimension (nx_block,ny_block,6),     &
+           intent(in) ::     &
+           ia_tracer     ! ice-algae tracers
+#endif
+
       real (kind=dbl_kind), dimension (nx_block,ny_block,0:ncat),     &
             intent(out)::     &
            aim       ! mean ice area in each grid cell
@@ -834,6 +922,11 @@
       real (kind=dbl_kind) ::     &
            w1             ! work variable
 
+#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT)
+      real (kind=dbl_kind), dimension (nx_block,ny_block) ::   &
+           aice       ! ice area aggregated over categories in each grid cell
+#endif
+
       integer (kind=int_kind), dimension(nx_block*ny_block,0:ncat) ::  &
            indxi        ,&! compressed i/j indices
            indxj
@@ -842,6 +935,9 @@
            icells         ! number of cells with ice
 
       aim(:,:,0) = aice0(:,:)
+#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT)
+      aice(:,:) = c1 - aice0(:,:)
+#endif
 
       do n = 1, ncat
 
@@ -895,6 +991,15 @@
                enddo
             endif
          enddo
+#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT)
+         do it = 1, 6
+            do ij = 1, icells(n)
+               i = indxi(ij,n)
+               j = indxj(ij,n)
+               trm(i,j,kt+ntrcr+it,n) = ia_tracer(i,j,it) / aice(i,j) * aim(i,j,n) ! in this loop aice will not be zero
+            enddo
+         enddo
+#endif
       enddo                     ! ncat
  
       end subroutine state_to_tracers
@@ -905,12 +1010,22 @@
 !
 ! author William H. Lipscomb, LANL
 
+#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT)
+      subroutine tracers_to_state (nx_block, ny_block,   &
+                                   ntrcr,    ntrace,     &
+                                   aim,      trm,        &
+                                   aice0,    aicen,      &
+                                   trcrn,                &
+                                   ia_tracer,            &
+                                   vicen,    vsnon)
+#else
       subroutine tracers_to_state (nx_block, ny_block,   &
                                    ntrcr,    ntrace,     &
                                    aim,      trm,        &
                                    aice0,    aicen,      &
                                    trcrn,                &
                                    vicen,    vsnon)
+#endif
 
       use ice_constants, only: c0, rhos, Lfresh
       use ice_domain_size, only: ncat, nslyr
@@ -942,6 +1057,11 @@
       real (kind=dbl_kind), dimension (nx_block,ny_block,ntrcr,ncat),  &
            intent(inout) ::     &
            trcrn     ! tracers
+#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT)
+      real (kind=dbl_kind), dimension (nx_block,ny_block,6),  &
+           intent(inout) ::     &
+           ia_tracer     ! ice-algae tracers, not yet scaled by aice 
+#endif
 
       ! local variables
 
@@ -954,7 +1074,16 @@
       integer (kind=int_kind), dimension (nx_block*ny_block) ::     &
            indxi, indxj      ! compressed indices
 
+#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT)
+      real (kind=dbl_kind), dimension (nx_block,ny_block) ::     &
+           aice     !  mean ice area in grid cell
+#endif
+
       aice0(:,:) = aim(:,:,0)
+#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT)
+      ia_tracer(:,:,:) = c0
+      aice(:,:) = c1 - aice0(:,:)
+#endif
 
       do n = 1, ncat
 
@@ -997,6 +1126,15 @@
                enddo
             endif
          enddo
+#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT)
+         do it = 1, 6
+            do ij = 1, icells
+               i = indxi(ij)
+               j = indxj(ij)
+               ia_tracer(i,j,it) = ia_tracer(i,j,it) + trm(i,j,kt+ntrcr+it,n)
+            enddo
+         enddo
+#endif
       enddo                     ! ncat
 
       end subroutine tracers_to_state
