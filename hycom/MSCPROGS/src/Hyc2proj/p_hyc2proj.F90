@@ -73,8 +73,9 @@ program p_hyc2proj
 !AS06092011 - adding biological variables for MyOcean
    real, allocatable, dimension(:,:,:) :: fla, dia, nit, pho, oxy, pp, biovar,s1000,ccl
    real, allocatable, dimension(:,:,:) :: u,v
-   real, allocatable, dimension(:,:,:) :: micro, meso, sil,dic,ph,det,detr, pco2,dsnk,dom
+   real, allocatable, dimension(:,:,:) :: micro, meso, sil,dic,ph,det,detr,detf,pco2,dsnk,dom
    real, allocatable, dimension(:,:)   :: biovar2d
+   real, allocatable, dimension(:,:)   :: ia, nit_ia, sil_ia, pho_ia, iatt, ppia  ! ice-algae
    real, allocatable, dimension(:,:)   :: hy2d, hy2d2, regu2d, strmf, &
       mld1, mld2, dplayer, meanssh, sla, ub, vb, mqlon, mqlat
    real, allocatable, dimension(:) :: tmpx, tmpy
@@ -537,6 +538,20 @@ program p_hyc2proj
                   call chlorophyll(fla,dia,ccl,biovar,idm,jdm,kdm)
                   hy3d=biovar
                   deallocate(dia,fla,ccl,biovar)
+               else if (trim(fld(ifld)%fextract)=='chla_ia') then
+                  ! Compute chlorophyll a including ice-algae(mg m-3)
+                  allocate(dia(idm,jdm,kdm))
+                  allocate(fla(idm,jdm,kdm))
+                  allocate(ccl(idm,jdm,kdm))
+                  allocate(ia(idm,jdm))
+                  allocate(biovar(idm,jdm,kdm))
+                  call HFReadField3D(hfile,dia,idm,jdm,kdm,'ECO_diac     ',1)
+                  call HFReadField3D(hfile,fla,idm,jdm,kdm,'ECO_flac     ',1)
+                  call HFReadField3D(hfile,ccl,idm,jdm,kdm,'ECO_cclc     ',1)
+                  call HFReadField(hfile,ia,idm,jdm,    'IA_Ialg   ',0,1)
+                  call chlorophyll_ia(fla,dia,ccl,ia,biovar,idm,jdm,kdm,pres,onem)
+                  hy3d=biovar
+                  deallocate(dia,fla,ccl,ia,biovar)
                else if (trim(fld(ifld)%fextract)=='nitrate') then
                   ! Compute nitrate (mmole m-3)
                   allocate(nit(idm,jdm,kdm))
@@ -545,6 +560,16 @@ program p_hyc2proj
                   call nitrate_conv(nit,biovar,idm,jdm,kdm)
                   hy3d=biovar
                   deallocate(nit,biovar)
+               else if (trim(fld(ifld)%fextract)=='nit_ia') then
+                  ! Compute nitrate including ice-algae nit(mmole m-3)
+                  allocate(nit(idm,jdm,kdm))
+                  allocate(nit_ia(idm,jdm))
+                  allocate(biovar(idm,jdm,kdm))
+                  call HFReadField3D(hfile,nit,idm,jdm,kdm,'ECO_no3     ',1)
+                  call HFReadField(hfile,nit_ia,idm,jdm,    'IA_Ino3   ',0,1) !mmol N/m2
+                  call nitrate_ia_conv(nit,nit_ia,biovar,idm,jdm,kdm,pres,onem)
+                  hy3d=biovar
+                  deallocate(nit,nit_ia,biovar)
                else if (trim(fld(ifld)%fextract)=='silicate') then
                   ! Compute silicate (mmole m-3)
                   allocate(sil(idm,jdm,kdm))
@@ -553,6 +578,16 @@ program p_hyc2proj
                   call silicate_conv(sil,biovar,idm,jdm,kdm)
                   hy3d=biovar
                   deallocate(sil,biovar)
+               else if (trim(fld(ifld)%fextract)=='sil_ia') then
+                  ! Compute silicate including ice-algae sil(mmole m-3)
+                  allocate(sil(idm,jdm,kdm))
+                  allocate(sil_ia(idm,jdm))
+                  allocate(biovar(idm,jdm,kdm))
+                  call HFReadField3D(hfile,sil,idm,jdm,kdm,'ECO_sil     ',1)
+                  call HFReadField(hfile,sil_ia,idm,jdm,    'IA_Isil   ',0,1) !mmol Si/m2
+                  call silicate_ia_conv(sil,sil_ia,biovar,idm,jdm,kdm,pres,onem)
+                  hy3d=biovar
+                  deallocate(sil,sil_ia,biovar)
                else if (trim(fld(ifld)%fextract)=='phosphat') then
                   ! Compute phosphate (mmole m-3)
                   allocate(pho(idm,jdm,kdm))
@@ -561,6 +596,16 @@ program p_hyc2proj
                   call phosphate_conv(pho,biovar,idm,jdm,kdm)
                   hy3d=biovar
                   deallocate(pho,biovar)
+               else if (trim(fld(ifld)%fextract)=='pho_ia') then
+                  ! Compute phosphate including ice-algae pho(mmole m-3)
+                  allocate(pho(idm,jdm,kdm))
+                  allocate(pho_ia(idm,jdm))
+                  allocate(biovar(idm,jdm,kdm))
+                  call HFReadField3D(hfile,pho,idm,jdm,kdm,'ECO_pho     ',1)
+                  call HFReadField(hfile,pho_ia,idm,jdm,    'IA_Ipho   ',0,1) !mmol P/m2
+                  call phosphate_ia_conv(pho,pho_ia,biovar,idm,jdm,kdm,pres,onem)
+                  hy3d=biovar
+                  deallocate(pho,pho_ia,biovar)
                else if (trim(fld(ifld)%fextract)=='pbiomass') then
                   ! Compute phytoplankton biomass (mmoleC m-3)
                   allocate(dia(idm,jdm,kdm))
@@ -573,6 +618,21 @@ program p_hyc2proj
                   call pbiomass(dia,fla,ccl,biovar,idm,jdm,kdm)
                   hy3d=biovar
                   deallocate(dia,fla,ccl,biovar)
+! icealage shuang
+               else if (trim(fld(ifld)%fextract)=='piabiom') then
+                  ! Compute phytoplankton biomass including ice-algae(mmoleC m-3)
+                  allocate(dia(idm,jdm,kdm))
+                  allocate(fla(idm,jdm,kdm))
+                  allocate(ccl(idm,jdm,kdm))
+                  allocate(ia(idm,jdm))
+                  allocate(biovar(idm,jdm,kdm))
+                  call HFReadField3D(hfile,dia,idm,jdm,kdm,'ECO_dia     ',1)
+                  call HFReadField3D(hfile,fla,idm,jdm,kdm,'ECO_fla     ',1)
+                  call HFReadField3D(hfile,ccl,idm,jdm,kdm,'ECO_ccl     ',1)
+                  call HFReadField(hfile,ia,idm,jdm,    'IA_Ialg   ',0,1)
+                  call piabiom(dia,fla,ccl,ia,biovar,idm,jdm,kdm,pres,onem)
+                  hy3d=biovar
+                  deallocate(dia,fla,ccl,ia,biovar)
                else if (trim(fld(ifld)%fextract)=='zbiomass') then
                   ! Compute zooplankton biomass (mmole C m-3)
                   allocate(micro(idm,jdm,kdm))
@@ -639,6 +699,18 @@ program p_hyc2proj
                   call pp_conv(pp,biovar,idm,jdm,kdm)
                   hy3d=biovar
                   deallocate(pp,biovar)
+               else if (trim(fld(ifld)%fextract)=='netppia') then
+                  ! Compute net primary production including ice-algae(mg m-3 d-1)
+                  allocate(pp(idm,jdm,kdm))
+                  allocate(ppia(idm,jdm))
+                  allocate(ia(idm,jdm))
+                  allocate(biovar(idm,jdm,kdm))
+                  call HFReadField3D(hfile,pp,idm,jdm,kdm,'ECO_netp',1)
+                  call HFReadField(hfile,ppia,idm,jdm,    'IA_priIA   ',0,1)
+                  call HFReadField(hfile,ia,idm,jdm,    'IA_Ialg   ',0,1)
+                  call ppia_conv(pp,ppia,ia,biovar,idm,jdm,kdm,pres,onem)
+                  hy3d=biovar
+                  deallocate(pp,ppia,ia,biovar)
                else if (trim(fld(ifld)%fextract)=='grosspp') then
                   ! Compute gross primary production (mg m-3 d-1)
                   allocate(pp(idm,jdm,kdm))
@@ -647,6 +719,16 @@ program p_hyc2proj
                   call pp_conv(pp,biovar,idm,jdm,kdm)
                   hy3d=biovar
                   deallocate(pp,biovar)
+               else if (trim(fld(ifld)%fextract)=='grospia') then
+                  ! Compute gross primary production including ice-algae(mg m-3 d-1)
+                  allocate(pp(idm,jdm,kdm))
+                  allocate(ppia(idm,jdm))
+                  allocate(biovar(idm,jdm,kdm))
+                  call HFReadField3D(hfile,pp,idm,jdm,kdm,'ECO_prim',1)
+                  call HFReadField(hfile,ppia,idm,jdm,    'IA_priIA   ',0,1)
+                  call grossppia_conv(pp,ppia,biovar,idm,jdm,kdm,pres,onem)
+                  hy3d=biovar
+                  deallocate(pp,ppia,biovar)
                else if (trim(fld(ifld)%fextract)=='attcoeff') then
                   ! Compute attenuation coefficient (m-1)
                   allocate(dia(idm,jdm,kdm))
@@ -663,6 +745,26 @@ program p_hyc2proj
                   call attenuation(dia,fla,ccl,det,dom,biovar,idm,jdm,kdm)
                   hy3d=biovar
                   deallocate(dia,fla,ccl,det,dom,biovar)
+               else if (trim(fld(ifld)%fextract)=='atten_ia') then
+                  ! Compute attenuation coefficient including ice-algae(m-1)
+                  !allocate(attenu(idm,jdm,kdm))
+                  allocate(dia(idm,jdm,kdm))
+                  allocate(fla(idm,jdm,kdm))
+                  allocate(ccl(idm,jdm,kdm))
+                  allocate(det(idm,jdm,kdm))
+                  allocate(dom(idm,jdm,kdm))
+                  allocate(iatt(idm,jdm))
+                  allocate(biovar(idm,jdm,kdm))
+                  call HFReadField3D(hfile,dia,idm,jdm,kdm,'ECO_diac     ',1)
+                  call HFReadField3D(hfile,fla,idm,jdm,kdm,'ECO_flac     ',1)
+                  call HFReadField3D(hfile,ccl,idm,jdm,kdm,'ECO_cclc     ',1)
+                  call HFReadField3D(hfile,det,idm,jdm,kdm,'ECO_det    ',1)
+                  call HFReadField3D(hfile,dom,idm,jdm,kdm,'ECO_dom     ',1)
+                  call HFReadField(hfile,iatt,idm,jdm,    'IA_Iatt   ',0,1)
+                  !call HFReadField3D(hfile,attenu,idm,jdm,kdm,'attenuat     ',1)
+                  call attenuation_ia(dia,fla,ccl,det,dom,iatt,biovar,idm,jdm,kdm)
+                  hy3d=biovar
+                  deallocate(dia,fla,ccl,det,dom,iatt,biovar)
                else if (trim(fld(ifld)%fextract)=='dic') then
                   ! Compute dissolved inorganic carbon (m-1)
                   allocate(dic(idm,jdm,kdm))
@@ -687,6 +789,18 @@ program p_hyc2proj
                   call det_bottom_flux(det,dsnk,biovar,onem,idm,jdm,kdm)
                   hy3d=biovar
                   deallocate(det,dsnk,biovar)
+                else if (trim(fld(ifld)%fextract)=='detvfxia') then
+                  ! Compute detritus flux including ice-algae(mg C m-2 day-1)   
+                  allocate(det(idm,jdm,kdm))
+                  allocate(detf(idm,jdm,kdm))
+                  allocate(dsnk(idm,jdm,kdm))
+                  allocate(biovar(idm,jdm,kdm))
+                  call HFReadField3D(hfile,det,idm,jdm,kdm,'ECO_det ',1)
+                  call HFReadField3D(hfile,detf,idm,jdm,kdm,'ECO_detf ',1)
+                  call HFReadField3D(hfile,dsnk,idm,jdm,kdm,'ECO_dsnk ',1)
+                  call det_ia_bottom_flux(det,detf,dsnk,biovar,onem,idm,jdm,kdm)
+                  hy3d=biovar
+                  deallocate(det,detf,biovar)
                 else if (trim(fld(ifld)%fextract)=='spco2') then
                   ! Compute surface partial pressure of CO2 in water (Pa)
                   allocate(pco2(idm,jdm,kdm))
