@@ -25,7 +25,7 @@ symlink, those internal calls would fail.
 directory — redirect them with symlinks onto the scratch filesystem. Set `WDIR` to the scratch
 path for your machine:
 
-::::{dropdown} WDIR — scratch path by machine
+:::::{dropdown} WDIR — scratch path by machine
 ::::{tab-set}
 :::{tab-item} Betzy
 ```bash
@@ -38,7 +38,7 @@ WDIR=/cluster/work/projects/nn2993k/$USER/${CONFIGNAME}
 ```
 :::
 ::::
-::::
+:::::
 
 Then create the directories and symlinks:
 
@@ -62,7 +62,7 @@ before restarting a run if these directories have aged out.
 :::
 
 
-## Configure REGION.src
+## Configure `REGION.src`
 
 Copy the template into the configuration directory:
 
@@ -135,45 +135,95 @@ and relaxation fields:
 
 ::::
 
-Copy `hycom_opt` into the experiment directory:
+## Configure `EXPT.src`
 
+`EXPT.src` sets experiment-level parameters sourced at runtime and during compilation.
+Open `$WORK/<CONFIGNAME>/expt_<EXPT_ID>/EXPT.src` and update:
+
+| Line to find | Value to set | Notes |
+|--------------|--------------|-------|
+| `X=` | `"<EXPT_ID>"` e.g. `"02.6"` | Experiment identifier (dot notation) |
+| `E=` | `"<IEXPT>"` e.g. `"026"` | Experiment identifier (no dot) |
+| `T=` | `"04"` | Topography version |
+| `export V=` | `"2.2.98"` or `"2.3"` | HYCOM version, determines which source directory is used when compiling |
+| `export NMPI=` | e.g. `504` for TP2 on Betzy | Number of ocean MPI tiles |
+| `export MXBLCKS=` | e.g. `9` | Maximum ice blocks per MPI process |
+| `export COMPILE_BIOMODEL=` | `"yes"` or `"no"` | BGC coupling on/off |
+| `export S=` | machine-specific (see dropdown below) | Scratch directory |
+| `export D=` | machine-specific (see dropdown below) | Data directory |
+
+::::{dropdown} Both machines — redirect `SCRATCH` and `data` onto the scratch filesystem
+
+Keep the experiment tree (configuration and `build/`) on the non-purged `$WORK`
+(`/cluster/projects/nn2993k/$USER`), and put the two large directories — scratch and output —
+on the fast, purged scratch filesystem. Override the auto-set `S=` and `D=` lines in `EXPT.src`.
+The scratch path differs by machine:
+
+::::{tab-set}
+:::{tab-item} Betzy
 ```bash
-CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
-EXPT_ID=<EXPT_ID>         # e.g. 01.0
-
-cd $WORK/${CONFIGNAME}/expt_${EXPT_ID}
-cp $HOME/NERSC-HYCOM-CICE/TP5a0.06/expt_01.0/hycom_opt .
+export S=$USERWORK/<CONFIGNAME>/expt_${X}/SCRATCH
+export D=$USERWORK/<CONFIGNAME>/expt_${X}/data
 ```
-
-`hycom_opt` is a Fortran namelist read by the model at runtime. Open it and update the
-values for your experiment. For TP2, the file should look like this:
-
-```
-&hycom_nml
-  write_arche = .false.
-  sss_underice= .false.
-  highfq_river= .false.
-  sssrmx_scalar=.5
-/
-```
-
-| Option | Description |
-|--------|-------------|
-| `write_arche` | Write ESMF archive files at each coupling step. Useful for debugging the ESMF coupling interface; leave `.false.` for normal runs. |
-| `sss_underice` | Apply SSS relaxation under sea ice. When `.false.`, SSS relaxation is suppressed where ice cover ≥ 15%. |
-| `highfq_river` | Use time-varying (high-frequency) river forcing instead of the climatological river forcing. Requires `priver=0` in `blkdat.input`; the two options are mutually exclusive. |
-| `sssrmx_scalar` | Maximum SSS anomaly (psu) at which relaxation is still applied. Relaxation is suppressed where the model–climatology difference exceeds this value. `99.` (template default) means no cap; `.5` limits relaxation to within 0.5 psu of climatology. |
-
-Finally, copy your customized `hycom_opt` to your scratch filesystem.
-
+:::
+:::{tab-item} Olivia
 ```bash
-CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
-EXPT_ID=<EXPT_ID>         # e.g. 01.0
-
-cp $WORK/${CONFIGNAME}/expt_${EXPT_ID}/hycom_opt $WDIR/expt_${EXPT_ID}/.
+export S=/cluster/work/projects/nn2993k/$USER/<CONFIGNAME>/expt_${X}/SCRATCH
+export D=/cluster/work/projects/nn2993k/$USER/<CONFIGNAME>/expt_${X}/data
 ```
+:::
+::::
 
-## Configure blkdat.input
+:::{important}
+`data/` is on the purged filesystem, so **archive completed output to NIRD on a rolling
+basis** (e.g. per model year as it finishes) from a service node.
+:::
+
+:::{note}
+For TP2, the available topography versions are: `01` (initial interpolation), `02` (adds
+Ob river channel), `03` (identical to `02`), `04` (blends `02`/`03` with NEMO topography
+at the nesting boundary). Higher numbers are newer refinements, not changes in resolution.
+Use `04` for current experiments.
+:::
+
+:::{note}
+`NMPI` is determined by the tiling step in
+[Preparing External Files](external-files.md) (which requires
+[hycom_ALL](compilation.md#compile-hycom-all) to be compiled first). For TP2 on Betzy,
+with topography version `04` and `Icore=29, Jcore=26`, the result is `504`, so you can
+set that now. For other configurations, leave it as a placeholder and fill it in after
+running `create_ref_case.sh`. Compilation of HYCOM-CICE does not use `NMPI`.
+:::
+
+:::{note}
+If the model reports that ice blocks exceed the maximum, increase `MXBLCKS` to the value
+recommended in the error message.
+:::
+
+::::{dropdown} Other variables in EXPT.src
+
+| Variable | Description |
+|----------|-------------|
+| `export SIGVER=` | Equation of state version; must be consistent with `thflag` in `blkdat.input` |
+| `export K=` | Number of layers — auto-derived from `blkdat.input`, no need to edit |
+| `export P=` | Experiment directory path — set automatically from the script location |
+
+::::
+
+
+This is safe: `expt_preprocess.sh` only creates (`mkdir -p`) and enters (`cd`) `$S` and `$D` —
+it never deletes them — and the overrides propagate automatically when `expt_new.sh` copies
+`EXPT.src` to a new experiment. `P=` and `build/` stay on `$WORK`, so the configuration and
+compiled executable survive the purge.
+
+:::{note}
+`expt_preprocess.sh` also accesses `relax/` via `${D}/../../relax/` (two levels up from `$D`).
+When `D=` is overridden to a path on the scratch filesystem, `${D}/../../` resolves to the
+scratch `<CONFIGNAME>/` subtree — so `relax/` must be on scratch as well, which is exactly what
+the symlinks described above ([Set up the work directory](#set-up-the-work-directory)) provide.
+:::
+
+## Configure `blkdat.input`
 
 `blkdat.input` controls core model parameters. The easiest starting point is to copy it
 from an existing experiment for your configuration. For TP2, reference files are available
@@ -509,98 +559,205 @@ isopycnal target densities ranging from 24.05 to 28.12 (sigma units).
 
 
 
-## Configure EXPT.src
+## Configure `hycom_opt`
 
-`EXPT.src` sets experiment-level parameters sourced at runtime and during compilation.
-Open `$WORK/<CONFIGNAME>/expt_<EXPT_ID>/EXPT.src` and update:
+Copy `hycom_opt` into the experiment directory:
 
-| Line to find | Value to set | Notes |
-|--------------|--------------|-------|
-| `X=` | `"<EXPT_ID>"` e.g. `"02.6"` | Experiment identifier (dot notation) |
-| `E=` | `"<IEXPT>"` e.g. `"026"` | Experiment identifier (no dot) |
-| `T=` | `"04"` | Topography version |
-| `export V=` | `"2.2.98"` or `"2.3"` | HYCOM version, determines which source directory is used when compiling |
-| `export NMPI=` | e.g. `504` for TP2 on Betzy | Number of ocean MPI tiles |
-| `export MXBLCKS=` | e.g. `9` | Maximum ice blocks per MPI process |
-| `export COMPILE_BIOMODEL=` | `"yes"` or `"no"` | BGC coupling on/off |
-| `export S=` | machine-specific (see dropdown below) | Scratch directory |
-| `export D=` | machine-specific (see dropdown below) | Data directory |
-
-::::{dropdown} Both machines — redirect `SCRATCH` and `data` onto the scratch filesystem
-
-Keep the experiment tree (configuration and `build/`) on the non-purged `$WORK`
-(`/cluster/projects/nn2993k/$USER`), and put the two large directories — scratch and output —
-on the fast, purged scratch filesystem. Override the auto-set `S=` and `D=` lines in `EXPT.src`.
-The scratch path differs by machine:
-
-::::{tab-set}
-:::{tab-item} Betzy
 ```bash
-export S=$USERWORK/<CONFIGNAME>/expt_${X}/SCRATCH
-export D=$USERWORK/<CONFIGNAME>/expt_${X}/data
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+EXPT_ID=<EXPT_ID>         # e.g. 01.0
+
+cd $WORK/${CONFIGNAME}/expt_${EXPT_ID}
+cp $HOME/NERSC-HYCOM-CICE/TP5a0.06/expt_01.0/hycom_opt .
 ```
-:::
-:::{tab-item} Olivia
+
+`hycom_opt` is a Fortran namelist read by the model at runtime. Open it and update the
+values for your experiment. For TP2, the file should look like this:
+
+```
+&hycom_nml
+  write_arche = .false.
+  sss_underice= .false.
+  highfq_river= .false.
+  sssrmx_scalar=.5
+/
+```
+
+| Option | Description |
+|--------|-------------|
+| `write_arche` | Write ESMF archive files at each coupling step. Useful for debugging the ESMF coupling interface; leave `.false.` for normal runs. |
+| `sss_underice` | Apply SSS relaxation under sea ice. When `.false.`, SSS relaxation is suppressed where ice cover ≥ 15%. |
+| `highfq_river` | Use time-varying (high-frequency) river forcing instead of the climatological river forcing. Requires `priver=0` in `blkdat.input`; the two options are mutually exclusive. |
+| `sssrmx_scalar` | Maximum SSS anomaly (psu) at which relaxation is still applied. Relaxation is suppressed where the model–climatology difference exceeds this value. `99.` (template default) means no cap; `.5` limits relaxation to within 0.5 psu of climatology. |
+
+Finally, copy your customized `hycom_opt` to your scratch filesystem.
+
 ```bash
-export S=/cluster/work/projects/nn2993k/$USER/<CONFIGNAME>/expt_${X}/SCRATCH
-export D=/cluster/work/projects/nn2993k/$USER/<CONFIGNAME>/expt_${X}/data
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+EXPT_ID=<EXPT_ID>         # e.g. 01.0
+
+cp $WORK/${CONFIGNAME}/expt_${EXPT_ID}/hycom_opt $WDIR/expt_${EXPT_ID}/.
 ```
-:::
+
+## Configure `ice_in`
+
+`ice_in` is the CICE Fortran namelist, read at runtime. It must be present in the experiment
+directory — `expt_preprocess.sh` reads it from there and writes an updated copy to SCRATCH before
+each run.
+
+Copy the CICE namelist into the experiment directory:
+
+```bash
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+EXPT_ID=<EXPT_ID>         # e.g. 01.0
+
+cd ${WORK}/${CONFIGNAME}/expt_${EXPT_ID}
+cp /nird/datalake/NS9481K/shuang/TP2_setup/exp02.6_seaclim_ref/ice_in .
+```
+
+::::{dropdown} Contents of ice_in
+
+`ice_in` is organised into namelist groups.
+
+**`&setup_nml` — run control and I/O**
+
+| Field | Example value | Description |
+|-------|---------------|-------------|
+| `days_per_year` | `365` | Calendar days per year |
+| `use_leap_years` | `.true.` | Use leap-year calendar |
+| `year_init` | `1958` | Reference year from which `istep0` is counted |
+| `istep0` | — | Starting time step **(auto)** |
+| `dt` | `900.0` | Ice model time step (s); must match HYCOM `cplifq` |
+| `npt` | — | Number of time steps for this segment **(auto)** |
+| `ndtd` | `1` | Dynamics subcycles per `dt` (EVP uses `ndte` instead) |
+| `runtype` | — | `'initial'` or `'continue'` **(auto)** |
+| `ice_ic` | — | Initial condition file; set to `'read'` on cold start **(auto)** |
+| `restart` | — | Read restart file **(auto)** |
+| `use_restart_time` | — | Use time from restart file **(auto)** |
+| `restart_format` | `'nc'` | Restart file format (`'nc'` = NetCDF) |
+| `restart_dir` | `'./cice/'` | Directory for restart files |
+| `restart_file` | `'iced'` | Restart file base name |
+| `pointer_file` | `'./cice/ice.restart_file'` | Points to the latest restart file |
+| `dumpfreq` | `'d'` | Restart dump frequency unit (`'d'`=days, `'m'`=months) |
+| `dumpfreq_n` | `20` | Restart dump interval |
+| `dump_last` | `.true.` | Always write a restart at the end of the run |
+| `diagfreq` | `96` | Diagnostic output interval (time steps) |
+| `histfreq` | `'h','d','m','x','x'` | History output frequency for each of 5 streams |
+| `histfreq_n` | `0,1,0,1,1` | Interval for each stream (`0` = off) |
+| `hist_avg` | `.true.` | Write time-averaged (not instantaneous) history fields |
+| `history_dir` | `'./cice/'` | Directory for history (archive) output |
+| `history_file` | `'iceh'` | History file base name |
+
+**`&grid_nml` — grid**
+
+| Field | Example value | Description |
+|-------|---------------|-------------|
+| `grid_format` | `'nc'` | Grid file format (NetCDF) |
+| `grid_type` | `'regional'` | Regional (non-periodic) grid |
+| `grid_file` | `'cice_grid.nc'` | CICE grid file |
+| `kmt_file` | `'cice_kmt.nc'` | Ocean depth mask file |
+| `kcatbound` | `0` | Ice thickness category boundary scheme (0 = CICE default) |
+
+**`&domain_nml` — MPI decomposition**
+
+| Field | Example value | Description |
+|-------|---------------|-------------|
+| `nprocs` | — | Number of MPI tasks **(auto)** |
+| `processor_shape` | `'square-pop'` | Tile shape heuristic |
+| `distribution_type` | `'cartesian'` | Tile distribution method |
+| `ew_boundary_type` | `'open'` | East–west boundary (open for regional) |
+| `ns_boundary_type` | `'open'` | North–south boundary (open for regional) |
+
+**`&tracer_nml` — prognostic ice tracers**
+
+| Field | Description |
+|-------|-------------|
+| `tr_iage` | Ice age tracer |
+| `tr_FY` | First-year ice fraction |
+| `tr_lvl` | Level-ice area and volume (needed for level-ice pond scheme) |
+| `tr_pond_lvl` | Level-ice melt pond tracer (enabled; see `&ponds_nml`) |
+| `tr_aero` | Aerosol tracer (off) |
+| `restart_*` | Read tracer from restart file (set `.false.` on cold start) |
+
+**`&thermo_nml` — thermodynamics**
+
+| Field | Example value | Description |
+|-------|---------------|-------------|
+| `kitd` | `1` | Thickness distribution scheme (1 = linear remapping) |
+| `ktherm` | `2` | Thermodynamics scheme (2 = mushy-layer) |
+| `conduct` | `'bubbly'` | Thermal conductivity parameterization |
+
+The mushy-layer scheme (`ktherm=2`) treats brine pockets explicitly and is more physical than
+the older BL99 scheme (`ktherm=1`). `tfrz_option = 'mushy'` in `&forcing_nml` should match.
+
+**`&dynamics_nml` — ice dynamics**
+
+| Field | Example value | Description |
+|-------|---------------|-------------|
+| `kdyn` | `1` | Dynamics scheme (1 = EVP) |
+| `ndte` | `120` | EVP subcycles per `dt` |
+| `advection` | `'remap'` | Advection scheme (incremental remapping) |
+| `kstrength` | `1` | Ice strength parameterization |
+| `krdg_partic` | `1` | Ridging participation function |
+| `krdg_redist` | `1` | Ridging redistribution function |
+
+**`&shortwave_nml` — shortwave radiation and albedo**
+
+| Field | Example value | Description |
+|-------|---------------|-------------|
+| `shortwave` | `'dEdd'` | Shortwave scheme (delta-Eddington multiple scattering) |
+| `albedo_type` | `'default'` | Albedo parameterization |
+| `albicev` / `albicei` | `0.78` / `0.36` | Bare ice albedo (visible / near-IR) |
+| `albsnowv` / `albsnowi` | `0.98` / `0.70` | Snow albedo (visible / near-IR) |
+| `ahmax` | `0.3` | Snow depth for maximum albedo (m) |
+
+**`&ponds_nml` — melt ponds**
+
+| Field | Example value | Description |
+|-------|---------------|-------------|
+| `frzpnd` | `'hlid'` | Pond freeze-up scheme (refreezing lid) |
+| `rfracmin` / `rfracmax` | `0.15` / `1.0` | Min/max melt-water fraction retained as ponds |
+| `dpscale` | `1e-3` | Pond depth scaling |
+
+**`&forcing_nml` — atmospheric and ocean forcing**
+
+In the coupled HYCOM–CICE setup, atmosphere and ocean fields are exchanged via ESMF at each
+coupling interval (`cplifq` in `blkdat.input`). Key flags:
+
+| Field | Value | Description |
+|-------|-------|-------------|
+| `atm_data_type` | `'None'` | Atmosphere from ESMF coupling, not from file |
+| `calc_strair` | `.true.` | Compute wind stress from wind speed |
+| `calc_Tsfc` | `.true.` | Compute surface temperature internally |
+| `tfrz_option` | `'mushy'` | Freezing point consistent with mushy-layer thermo |
+| `oceanmixed_ice` | `.false.` | No internal ocean mixed layer (ocean from HYCOM) |
+| `update_ocn_f` | `.true.` | Pass freshwater/heat fluxes back to ocean |
+| `formdrag` | `.true.` | Form drag parameterization for wind stress |
+| `restore_sst` / `restore_ice` | `.false.` | No restoring in fully coupled mode |
+
+**`&icefields_nml` and friends — output field selection**
+
+These namelists control which fields appear in each history stream. Frequency codes:
+`'h'` = hourly stream 1, `'d'` = daily stream 2, `'m'` = monthly stream 3, `'x'` = never.
+Fields in `&icefields_mechred_nml`, `&icefields_pond_nml`, `&icefields_bgc_nml`, and
+`&icefields_drag_nml` follow the same convention for ridging, pond, BGC, and drag diagnostics
+respectively.
+
 ::::
 
-:::{important}
-`data/` is on the purged filesystem, so **archive completed output to NIRD on a rolling
-basis** (e.g. per model year as it finishes) from a service node.
-:::
+Finally, copy your customized `ice_in` to your scratch filesystem.
 
-:::{note}
-For TP2, the available topography versions are: `01` (initial interpolation), `02` (adds
-Ob river channel), `03` (identical to `02`), `04` (blends `02`/`03` with NEMO topography
-at the nesting boundary). Higher numbers are newer refinements, not changes in resolution.
-Use `04` for current experiments.
-:::
+```bash
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+EXPT_ID=<EXPT_ID>         # e.g. 01.0
 
-:::{note}
-`NMPI` is determined by the tiling step in
-[Preparing External Files](external-files.md) (which requires
-[hycom_ALL](compilation.md#compile-hycom-all) to be compiled first). For TP2 on Betzy,
-with topography version `04` and `Icore=29, Jcore=26`, the result is `504`, so you can
-set that now. For other configurations, leave it as a placeholder and fill it in after
-running `create_ref_case.sh`. Compilation of HYCOM-CICE does not use `NMPI`.
-:::
-
-:::{note}
-If the model reports that ice blocks exceed the maximum, increase `MXBLCKS` to the value
-recommended in the error message.
-:::
-
-::::{dropdown} Other variables in EXPT.src
-
-| Variable | Description |
-|----------|-------------|
-| `export SIGVER=` | Equation of state version; must be consistent with `thflag` in `blkdat.input` |
-| `export K=` | Number of layers — auto-derived from `blkdat.input`, no need to edit |
-| `export P=` | Experiment directory path — set automatically from the script location |
-
-::::
-
-
-This is safe: `expt_preprocess.sh` only creates (`mkdir -p`) and enters (`cd`) `$S` and `$D` —
-it never deletes them — and the overrides propagate automatically when `expt_new.sh` copies
-`EXPT.src` to a new experiment. `P=` and `build/` stay on `$WORK`, so the configuration and
-compiled executable survive the purge.
-
-:::{note}
-`expt_preprocess.sh` also accesses `relax/` via `${D}/../../relax/` (two levels up from `$D`).
-When `D=` is overridden to a path on the scratch filesystem, `${D}/../../` resolves to the
-scratch `<CONFIGNAME>/` subtree — so `relax/` must be on scratch as well, which is exactly what
-the symlinks described above ([Set up the work directory](#set-up-the-work-directory)) provide.
-:::
+cp $WORK/${CONFIGNAME}/expt_${EXPT_ID}/ice_in $WDIR/expt_${EXPT_ID}/.
+```
 
 ## Additional steps when using the BGC module
 
 When compiling with the BGC module, ensure `ntracr` in `blkdat.input` is non-zero and
-copy the FABM configuration files and CICE namelist into the experiment directory before
+copy the FABM configuration files into the experiment directory before
 compiling HYCOM-CICE:
 
 ```bash
@@ -610,7 +767,6 @@ EXPT_ID=<EXPT_ID>         # e.g. 01.0
 cd ${WORK}/${CONFIGNAME}/expt_${EXPT_ID}
 cp /nird/datalake/NS9481K/shuang/TP2_setup/exp02.6_seaclim_ref/fabm.yaml .
 cp /nird/datalake/NS9481K/shuang/TP2_setup/exp02.6_seaclim_ref/hycom_fabm.nml .
-cp /nird/datalake/NS9481K/shuang/TP2_setup/exp02.6_seaclim_ref/ice_in .
 ```
 
 These files are also required when running the model with BGC. Copy them to your scratch filesystem before starting a simulation with BGC.
@@ -621,7 +777,6 @@ EXPT_ID=<EXPT_ID>         # e.g. 01.0
 
 cp $WORK/${CONFIGNAME}/expt_${EXPT_ID}/fabm.yaml $WDIR/expt_${EXPT_ID}/.
 cp $WORK/${CONFIGNAME}/expt_${EXPT_ID}/hycom_fabm.nml $WDIR/expt_${EXPT_ID}/.
-cp $WORK/${CONFIGNAME}/expt_${EXPT_ID}/ice_in $WDIR/expt_${EXPT_ID}/.
 ```
 
 ## Files in the experiment directory
