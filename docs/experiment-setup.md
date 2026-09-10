@@ -745,14 +745,11 @@ respectively.
 
 ::::
 
-Finally, copy your customized `ice_in` to your scratch filesystem.
-
-```bash
-CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
-EXPT_ID=<EXPT_ID>         # e.g. 01.0
-
-cp $WORK/${CONFIGNAME}/expt_${EXPT_ID}/ice_in $WDIR/expt_${EXPT_ID}/.
-```
+:::{note}
+No need to copy `ice_in` to the scratch filesystem manually —
+[`expt_preprocess.sh`](running.md#submit-a-job) reads it from the experiment directory and
+writes an updated copy to `SCRATCH/` before each run.
+:::
 
 ## Additional steps when using the BGC module
 
