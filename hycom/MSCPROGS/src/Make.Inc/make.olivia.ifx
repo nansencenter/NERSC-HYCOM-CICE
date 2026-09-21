@@ -1,4 +1,3 @@
-# include file for fimm, intel compilers (adapted for ifx/icx)
 CF90 = ifx
 CF77 = $(CF90)
 CC = icx
