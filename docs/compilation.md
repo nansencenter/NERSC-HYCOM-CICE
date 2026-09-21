@@ -160,12 +160,6 @@ stale `.o` files and produce a binary that still uses the previous flags.
 rm build/src_*/*.o
 bash ${HOME}/NERSC-HYCOM-CICE/bin/compile_model.sh ifort
 ```
-
-You can verify the flags embedded in the new binary with:
-
-```bash
-strings build/src_*/hycom_cice | grep -o 'DNERSC[^ ]*'
-```
 :::
 
 :::{warning}
