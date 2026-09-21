@@ -149,7 +149,24 @@ To change **Makefile compile flags** (compiler options, linker settings):
 | Scope | How |
 |-------|-----|
 | All future builds (global) | Edit `Linux.betzy.ifort_cice.V22` or `.V23` in the repo, then recompile with `-u` |
-| This build only (local) | Edit the config file inside `build/src_.../` directly, then recompile **without** `-u` |
+| This build only (local) | Edit the config file inside `build/config/` directly, then recompile **without** `-u` |
+
+:::{warning}
+**After changing `CPPFLAGS` in a config file, you must delete the existing object files
+before recompiling.** `make` tracks file timestamps, not flag content — it will relink the
+stale `.o` files and produce a binary that still uses the previous flags.
+
+```bash
+rm build/src_*/*.o
+bash ${HOME}/NERSC-HYCOM-CICE/bin/compile_model.sh ifort
+```
+
+You can verify the flags embedded in the new binary with:
+
+```bash
+strings build/src_*/hycom_cice | grep -o 'DNERSC[^ ]*'
+```
+:::
 
 :::{warning}
 Recompiling with `-u` resyncs source from the repository and **overwrites any local edits
