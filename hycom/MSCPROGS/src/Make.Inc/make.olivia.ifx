@@ -1,0 +1,35 @@
+# include file for fimm, intel compilers (adapted for ifx/icx)
+CF90 = ifx
+CF77 = $(CF90)
+CC = icx
+LD = $(CF90)
+
+# CPP, used internally by compilers
+CPP = /usr/bin/cpp -P -traditional-cpp
+CPPARCH = -DIA32 -DREA8 -DMPI -DSERIA_IO -DTIMER -DIARGC -DFFTW -LAPACK
+
+# Flags for fixed/free format
+F90FLG = -free
+F77FLG = -fixed
+
+# NetCDF settings
+NETCDF_INC = -I$(EBROOTNETCDFMINFORTRAN)/include
+NETCDF_LIB = -L$(EBROOTNETCDFMINFORTRAN)/lib -lnetcdff -L$(EBROOTNETCDF)/lib64 -lnetcdf
+
+# Compiler flags - real*8 version
+FFLAGS = -g -O2 -convert big_endian -assume byterecl -r8 $(NETCDF_INC)
+CFLAGS = -O2
+
+# Compiler flags - real*4 version (Needed for NCARG routines)
+FFLAGSR4 = -g -O2 -real_size 32 -convert big_endian
+CFLAGSR4 = -O2
+
+# Linker flags
+LINKFLAGS = $(FFLAGS)
+
+# Libraries
+# Note: -qmkl is the modern successor to -lmkl for ifx
+LIBS = $(NETCDF_LIB) -lfftw3 -qmkl
+
+# Define CPP flags consistent with libs above
+CPPFLAGS = -DFFTW -DLAPACK

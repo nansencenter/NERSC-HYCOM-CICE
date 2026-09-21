@@ -134,7 +134,11 @@ if ( ! -f $MACROFILE ) then
 endif
 
 
-icc -o makdep $CBLD/makdep.c                         || exit 2
+if ($?CC) then
+  $CC -o makdep $CBLD/makdep.c                       || exit 2
+else
+  icc -o makdep $CBLD/makdep.c                       || exit 2
+endif
 
 setenv MAKECMD make
 #MAKECMD=gmake
@@ -159,4 +163,3 @@ echo $NBGCLYR = NBGCLYR, number of bio grid layers
 echo $TRBGCS  = TRBGCS,  number of BGC tracers
 
 echo $result
-
