@@ -21,6 +21,10 @@ The job script `srjob.sh` handles three things automatically:
   It exits with a non-zero code if any required file is missing, aborting the job before
   the model starts.
 
+:::{warning}
+As all the files needed are staged into the scratch directory (`expt_<EXPT_ID>/SCRATCH/`), where the model runs, `expt_preprocess.sh` should be run for every new build or change in the files mentioned above. Otherwise, the previous versions of the files remain staged. By default, this step is handled automatically by the job script `srjob.sh`.
+:::
+
   ::::{dropdown} Run manually
 
   ```bash
@@ -48,17 +52,33 @@ Open `srjob.sh` in a text editor and update:
 
 | Variable | Value | Description |
 |----------|-------|-------------|
+| `NMPI` | `"<NMPI>"` e.g. `504` | Update NMPI if needed |
 | `START` | `"YYYY-MM-DDT00:00:00"` | Run start time |
 | `END` | `"YYYY-MM-DDT00:00:00"` | Run end time |
-| `INITFLG` | `""` or `"--init"` | `""` for a restart run; `"--init"` to initialize from climatology |
+| `INITFLG` | `""` or `"--init"` | `"--init"` for a cold start; `""` to restart from files (see note below) |
 | `#SBATCH --time` | `"HH:MM:SS"` | Wall-clock time limit |
 
-> **`INITFLG="--init"` (climatological initialization):** No restart files are needed.
+> **`INITFLG="--init"` (cold start):** No restart files are needed.
 > Temperature and salinity (T/S) are set directly from the climatological fields in
 > `relax/` (see [Climatologies and river forcing](forcing.md#climatologies-and-river-forcing));
 > velocities and sea surface height (SSH) start at zero. The model then spins up under realistic atmospheric
 > forcing. The start date must be in September (the month of Arctic sea ice minimum).
 > See [Initial conditions](forcing.md#initial-conditions) for details on both options.
+
+> **`INITFLG=""` (restart from files):** HYCOM and CICE read from restart files in
+> `data/` at the start date. The open boundary forcing is determined by `blkdat.input`,
+> not by this flag, so three distinct scenarios share this setting:
+>
+> - **Continuing a spin-up** (e.g. the previous job hit the wall-time limit): leave
+>   `blkdat.input` unchanged. Climatological boundaries remain active. Update `START`
+>   to the date of the last restart file in `data/` and resubmit.
+> - **Starting a hindcast or forecast from a spun-up state**: update `blkdat.input` to
+>   GLORYS settings (`relax=0`, `nestfq=1`, `bnstfq=1`, `lbflag=2`) and stage the
+>   GLORYS nesting files before submitting. See
+>   [Open boundary forcing](forcing.md#open-boundary-forcing).
+> - **Continuing a hindcast or forecast** (e.g. the previous job hit the wall-time
+>   limit): leave `blkdat.input` unchanged. GLORYS boundaries remain active. Update
+>   `START` to the date of the last restart file in `data/` and resubmit.
 
 :::{note}
 For reference when setting `#SBATCH --time`: a 1-year TP2 run with BGC on 4 Betzy nodes (504 cores) takes approximately 5–6 hours of wall time.
@@ -67,6 +87,9 @@ For reference when setting `#SBATCH --time`: a 1-year TP2 run with BGC on 4 Betz
 Then submit:
 
 ```bash
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+EXPT_ID=<EXPT_ID>         # e.g. 01.0
+
 cd $WORK/<CONFIGNAME>/expt_<EXPT_ID>
 sbatch srjob.sh
 ```
@@ -87,6 +110,9 @@ When the job finishes, restart files and daily mean files are moved to the `data
 Confirm successful completion by checking the stop file:
 
 ```bash
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+EXPT_ID=<EXPT_ID>         # e.g. 01.0
+
 cat $WORK/<CONFIGNAME>/expt_<EXPT_ID>/log/hycom.stop
 ```
 
@@ -108,6 +134,9 @@ What happens to output files depends on how the run ended:
   Run postprocessing manually before resubmitting:
 
   ```bash
+  CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+  EXPT_ID=<EXPT_ID>         # e.g. 01.0
+
   cd $WORK/<CONFIGNAME>/expt_<EXPT_ID>
   ../expt_postprocess.sh
   ```
@@ -122,10 +151,9 @@ written, and set `INITFLG=""` (restart run).
 
 ## Visualization
 
-Sample Jupyter notebooks for plotting HYCOM output are available in the
-[TP2_setup repository](https://github.com/nansencenter/TP2_setup):
+If you prefer to work with xarray for analysis and visualization, check out [xhycom](https://xhycom.readthedocs.io/en/latest/index.html).
 
-- [plot_2D_TP2_temp.ipynb](https://github.com/nansencenter/TP2_setup/blob/main/plot_2D_TP2_temp.ipynb) — 2D surface maps
-- [plot_section_TP2.ipynb](https://github.com/nansencenter/TP2_setup/blob/main/plot_section_TP2.ipynb) — vertical cross-sections
+Otherwise, sample Jupyter notebooks for plotting HYCOM output are also available in the [TP2_setup repository](https://github.com/nansencenter/TP2_setup).
 
 These notebooks read files from `$WORK/<CONFIGNAME>/expt_<EXPT_ID>/data/`.
+

@@ -19,6 +19,17 @@ git clone https://github.com/pmlmodelling/ersem.git
 git clone https://github.com/nansencenter/nersc.git
 ```
 
+## Configure ~/.bashrc
+
+Add the following to your `~/.bashrc` on every machine you use:
+
+```bash
+export WORK=/cluster/projects/nn2993k/$USER
+```
+
+This sets `$WORK` to the non-purged projects filesystem used throughout the setup. See the
+[directory structure](overview.md#directory-structure) section for details.
+
 ## Python environment
 
 A dedicated Python environment keeps the model's Python dependencies isolated from other
@@ -47,12 +58,11 @@ After sourcing, your prompt should show `(base)`, confirming you are in the base
 **2. Configure conda directories**
 
 The default locations for package cache and environments are in `${HOME}`, which has
-limited quota. Run the following once to redirect both to your project directory, replacing
-`<PROJECT>` with your project code (e.g. `nn2993k`). Both settings are saved to `~/.condarc`.
+limited quota. Run the following once to redirect both to your project directory. Both settings are saved to `~/.condarc`.
 
 ```bash
-conda config --append pkgs_dirs /cluster/projects/<PROJECT>/conda/${USER}/package-cache
-conda config --append envs_dirs /cluster/projects/<PROJECT>/conda/${USER}
+conda config --append pkgs_dirs /cluster/projects/nn2993k/conda/${USER}/package-cache
+conda config --append envs_dirs /cluster/projects/nn2993k/conda/${USER}
 ```
 
 ::::
@@ -230,12 +240,27 @@ the model.
 
 ::::
 
-The dropdown below shows the full content of `betzy_env.sh` for reference — what you
+::::{dropdown} Source HPC environment — Olivia (NRIS/Sigma2)
+
+```{include} _snippets/olivia_hpc_env.md
+```
+
+::::
+
+The dropdowns below show the full content of each `*_env.sh` for reference — what you
 source is exactly what is displayed.
 
 ::::{dropdown} View betzy_env.sh
 
 :::{literalinclude} ../environment/betzy_env.sh
+:language: bash
+:::
+
+::::
+
+::::{dropdown} View olivia_env.sh
+
+:::{literalinclude} ../environment/olivia_env.sh
 :language: bash
 :::
 

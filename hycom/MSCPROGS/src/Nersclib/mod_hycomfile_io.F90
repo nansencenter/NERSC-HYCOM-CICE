@@ -278,14 +278,16 @@ contains
          read(nop,316) ctitle,df%iversn,df%iexpt,df%yrflag
          !!get dump time from filename
          !!TODO: what if under 1 hour?
-         if (trim(df%filebase(1:4))=='arch') then
-            read(df%filebase(7:10),'(i4.4)') df%iyear
-            read(df%filebase(12:14),'(i3.3)') df%iday
-            read(df%filebase(16:17),'(i2.2)') df%ihour
+         !!Use basename offset so full paths (e.g. /nird/...) work as well as bare names
+         ind = index(trim(df%filebase), '/', back=.true.)
+         if (df%filebase(ind+1:ind+4)=='arch') then
+            read(df%filebase(ind+7 :ind+10),'(i4.4)') df%iyear
+            read(df%filebase(ind+12:ind+14),'(i3.3)') df%iday
+            read(df%filebase(ind+16:ind+17),'(i2.2)') df%ihour
          else ! RUNID stamp in filebase:
-            read(df%filebase(10:13),'(i4.4)') df%iyear
-            read(df%filebase(15:17),'(i3.3)') df%iday
-            read(df%filebase(19:20),'(i2.2)') df%ihour
+            read(df%filebase(ind+10:ind+13),'(i4.4)') df%iyear
+            read(df%filebase(ind+15:ind+17),'(i3.3)') df%iday
+            read(df%filebase(ind+19:ind+20),'(i2.2)') df%ihour
          end if
          print*,'year is ', df%iyear
          print*,'day is ',df%iday
