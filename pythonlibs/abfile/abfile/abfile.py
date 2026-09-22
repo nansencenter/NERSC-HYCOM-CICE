@@ -159,7 +159,7 @@ class AFile(object) :
       w=numpy.fromfile(self._filea,dtype=mydtype,count=int(self.n2drec))
 
       w=w[0:self.idm*self.jdm]
-      w.shape=(self.jdm,self.idm)
+      w=w.reshape((self.jdm,self.idm))
       #print w.min(),w.max()
       w=numpy.ma.masked_where(w>self.huge*.5,w)
       #print w.min(),w.max()

@@ -18,7 +18,7 @@ FIXEDFLAGS := -132
 FREEFLAGS  := 
 # work-around for gcc to ensure that denormailzed numbers are 
 # flushed to zero: -march=pentium4 -msse2 -mfpmath=sse
-FFLAGS     := -O2 -w -fconvert=big-endian    -fdefault-real-8 -fdefault-double-8
+FFLAGS     := -O2 -w -fconvert=big-endian    -fdefault-real-8 -fdefault-double-8 -fallow-argument-mismatch
 MOD_SUFFIX := mod
 LD         := $(FC)
 LDFLAGS    := $(FFLAGS) -v
@@ -43,7 +43,7 @@ endif
 
 INCLDIR := $(INCLDIR) -I/$(ESMF_DIR)/include -I/$(ESMF_MOD_DIR)
 #SLIBS := $(SLIBS) -L$(ESMF_DIR)/lib/ -lesmf -llapack -lblas -lzceh   -pgcpplibs -lnetcdf  -lnetcdf_c++4 #-lnetcdf 
-SLIBS := -lesmf  $(SLIBS) -L$(ESMF_LIB_DIR) -llapack -lblas -lzceh   -pgcpplibs 
+SLIBS := -lesmf  $(SLIBS) -L$(ESMF_LIB_DIR) -llapack -lblas
 
 
 ### note this file does not include PIO capability

@@ -57,3 +57,35 @@ To see how your changes to the documentation render, you have two options:
 - The table of contents is defined in `docs/index.rst`.
 - To add a new page, create a `.md` file in `docs/` and add its name (without
   extension) to the appropriate `toctree` block in `docs/index.rst`.
+
+## Development environment
+
+To work on the code locally, set up the Python environment from the repo root:
+
+```bash
+conda env create -f environment/python.yaml
+conda activate hycom-cice
+```
+
+Then install the local Python libraries:
+
+```bash
+pip install pythonlibs/modeltools pythonlibs/modelgrid pythonlibs/gridxsec pythonlibs/abfile
+```
+
+See [installation.md](installation.md) for HPC-specific setup (Betzy, Olivia).
+
+## Running the tests
+
+With the environment active, run the full test suite from the repo root:
+
+```bash
+conda activate hycom-cice
+pytest
+```
+
+To run a single file:
+
+```bash
+pytest tests/test_phase3.py
+```
