@@ -3,15 +3,17 @@ pres     intf          # Field used to determine layer interfaces
 2 F F F                # 2-D, sphere, rotate, index velocities   
 1 800 1 760       # section plot ia:ib ja:jb
 1 1   XX XX   X     # extracted layers for 3-d fields (not used for 2-d)
-netpp    01 50   T
-chla     01 50   T 
-attcoeff 01 50   T 
-nitrate  01 50   T 
-phosphat 01 50   T 
-pbiomass 01 50   T 
+netppia  01 50   T
+chla_ia  01 50   T 
+atten_ia 01 50   T 
+nit_ia   01 50   T 
+pho_ia   01 50   T 
+piabiom  01 50   T 
 zbiomass 01 50   T
 oxygen   01 50   T 
-silicate 01 50   T
-detvflux 01 50   T
+sil_ia   01 50   T
+detvfxia 01 50   T
 ph       01 50   T
 dic      01 50   T
+poc      01 50   T
+spco2    01 50   T

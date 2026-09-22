@@ -1,11 +1,11 @@
 module m_bio_conversions
-   real, parameter :: b2=0.04, ny=1.38E-2, N2CHLA=11.0, kd_chl=0.02
+   real, parameter :: b2=0.04, ny=1.38E-2, N2CHLA=11.0, kd_chl=0.02 
    real, parameter :: cnit=14.01,cpho=30.97,csil=28.09, ccar=12.01
    real, parameter :: oxyml=44.6608009,oxygr=32.0,C2NIT=6.625 ! redfield
 ! _FABM__caglar_
-   real, parameter :: kd_chla=0.05737798064012768   ! was 0.4 before Nov23 update, light attenuation coeff. for chlorophyll
-   real, parameter :: kd_det=0.16218644594775256   ! was 0.0 before Nov23 update, light attenuation coeff. for detritus
-   real, parameter :: kd_dom=0.18206465359221413   ! was 0.0 before Nov23 update, light attenuation coeff. for DOM
+   real, parameter :: kd_chla=0.0339  ! 
+   real, parameter :: kd_det=0.0   ! 
+   real, parameter :: kd_dom=0.0   !
    real, parameter :: C2SIL=6.625    ! redfield C:Si mol ratio.
    real, parameter :: C2PHO=106.0    ! redfield C:P mol ratio
    real, parameter :: C2CHLA_IA=38.0    ! C:Chla ratio for ice-algae (Delille et al., 2002)
@@ -448,18 +448,18 @@ module m_bio_conversions
 ! To prevent outlier values, we first calculate the sinking speed (dsnk/det) and
 ! convert it to 1/d
       spd = (dsnk/det)*86400.
-! and set minimum and maximum values, and convert mgC m-2 d-1 --> mmolC m-2 d-1 
+! and set minimum and maximum values, and convert mgC m-2 d-1 --> molC m-2 d-1 
       spd = max(spd,0.5)
       spd = min(spd,12.0)
-      bot_flux = det * spd / ccar
+      bot_flux = det * spd / ccar / 1000.0
        
 
-!! compute flux of detritus to the seafloor mgC m-2 d-1 --> mmolC m-2 d-1                                                                                       !      bot_flux=det * srdet_eco / ccar 
+!! compute flux of detritus to the seafloor mgC m-2 d-1 --> molC m-2 d-1                                                                                       !      bot_flux=det * srdet_eco / ccar 
 
    end subroutine det_bottom_flux
 
    subroutine det_ia_bottom_flux(det,detf,dsnk,bot_flux,onem,idm,jdm,kdm)
-! compute flux of detritus to the seafloor including ice_algae: mmolC m-2 d-1
+! compute flux of detritus to the seafloor including ice_algae: molC m-2 d-1
       implicit none
 
       integer, intent(in) :: idm,jdm,kdm
@@ -473,12 +473,12 @@ module m_bio_conversions
 ! To prevent outlier values, we first calculate the sinking speed (dsnk/det) and
 ! convert it to 1/d
       spd = (dsnk/det)*86400.
-! and set minimum and maximum values, and convert mgC m-2 d-1 --> mmolC m-2 d-1 
+! and set minimum and maximum values, and convert mgC m-2 d-1 --> molC m-2 d-1 
       spd = max(spd,0.5)
       spd = min(spd,12.0)
-      bot_flux = det * spd / ccar
+      bot_flux = det * spd / ccar / 1000.0
    
-      bot_flux = bot_flux + detf * sinkIdet / ccar    
+      bot_flux = bot_flux + detf * sinkIdet / ccar / 1000.0    
 
    end subroutine det_ia_bottom_flux
 
@@ -835,7 +835,7 @@ module m_bio_conversions
      end subroutine dic_conv
 
      subroutine pco2_conv(spco2_ppm,spco2,idm,jdm,kdm)
-     !compute dic: mole m-3
+     !
       implicit none
 
       integer, intent(in) :: idm,jdm,kdm

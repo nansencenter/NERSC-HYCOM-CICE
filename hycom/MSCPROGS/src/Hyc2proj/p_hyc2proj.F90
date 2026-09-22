@@ -780,7 +780,7 @@ program p_hyc2proj
                   hy3d=biovar
                   deallocate(biovar)
                 else if (trim(fld(ifld)%fextract)=='detvflux') then
-                  ! Compute detritus flux (mg C m-2 day-1)   
+                  ! Compute detritus flux (mol C m-2 day-1)   
                   allocate(det(idm,jdm,kdm))
                   allocate(dsnk(idm,jdm,kdm))
                   allocate(biovar(idm,jdm,kdm))
@@ -790,7 +790,7 @@ program p_hyc2proj
                   hy3d=biovar
                   deallocate(det,dsnk,biovar)
                 else if (trim(fld(ifld)%fextract)=='detvfxia') then
-                  ! Compute detritus flux including ice-algae(mg C m-2 day-1)   
+                  ! Compute detritus flux including ice-algae(mol C m-2 day-1)   
                   allocate(det(idm,jdm,kdm))
                   allocate(detf(idm,jdm,kdm))
                   allocate(dsnk(idm,jdm,kdm))
