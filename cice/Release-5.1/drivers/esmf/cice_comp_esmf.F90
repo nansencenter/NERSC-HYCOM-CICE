@@ -6,7 +6,11 @@ use ice_blocks,      only : nx_block, ny_block
 use ice_domain_size, only : max_blocks
 IMPLICIT NONE
    !--Import Fields
+#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT) 
+   integer, parameter :: numImpFields=29
+#else 
    integer, parameter :: numImpFields=23 !KAL
+#endif
    character(ESMF_MAXSTR), save :: impFieldName(    numImpFields),    &
                                    impFieldLongName(numImpFields), &
                                    impFieldStdName( numImpFields), &
@@ -16,7 +20,11 @@ IMPLICIT NONE
 !   integer,                save :: impFieldHalo(    numImpFields)
 !
 !--Export Fields
+#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT) 
+   integer, parameter :: numExpFields=17
+#else
    integer, parameter :: numExpFields=11
+#endif
    character(ESMF_MAXSTR), save :: expFieldName(    numExpFields), &
                                    expFieldLongName(numExpFields), &
                                    expFieldStdName( numExpFields), &
@@ -564,7 +572,6 @@ implicit none
    call ESMF_LogWrite("CICE ESMF Setup routine called",ESMF_LOGMSG_INFO, rc=rc)
    call ESMF_LogFlush(rc=rc)
 
-
    !---------------------------------------------------------------------
    !--Set up attributes for import and export fields
    !---------------------------------------------------------------------
@@ -625,6 +632,32 @@ implicit none
    expFieldUnits(   11) = "m s-1"
 !   expFieldHalo(    11) = halo_pv !vector p-grid
 !
+#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT) 
+   expFieldName(    12) = "ialg"
+   expFieldLongName(12) = "Ice algae biomass"
+   expFieldStdName( 12) = "Ice algae biomass"
+   expFieldUnits(   12) = "mg C m**-2"
+   expFieldName(    13) = "idet"
+   expFieldLongName(13) = "Ice algae detritus"
+   expFieldStdName( 13) = "Ice algae detritus"
+   expFieldUnits(   13) = "mg C m**-2"
+   expFieldName(    14) = "ino3"
+   expFieldLongName(14) = "Nitrate in ice"
+   expFieldStdName( 14) = "Nitrate in ice"
+   expFieldUnits(   14) = "mmol N m**-2"
+   expFieldName(    15) = "inh4"
+   expFieldLongName(15) = "Ammonium in ice"
+   expFieldStdName( 15) = "Ammonium in ice"
+   expFieldUnits(   15) = "mmol N m**-2"
+   expFieldName(    16) = "ipho"
+   expFieldLongName(16) = "Phosphate in ice"
+   expFieldStdName( 16) = "Phosphate in ice"
+   expFieldUnits(   16) = "mmol P m**-2"
+   expFieldName(    17) = "isil"
+   expFieldLongName(17) = "Silicate in ice"
+   expFieldStdName( 17) = "Silicate in ice"
+   expFieldUnits(   17) = "mmol Si m**-2"
+#endif
 !  expFieldName(    12) = "patm"
 !  expFieldLongName(12) = "Surface Air Pressure"
 !  expFieldStdName( 12) = "surface_air_pressure"
@@ -743,6 +776,32 @@ implicit none
    impFieldStdName( 23) = ""
    impFieldUnits(   23) = "kg m**-2 s*-1"
 !KAL - new
+#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT) 
+   impFieldName(    24) = "ialg"
+   impFieldLongName(24) = "Ice algae biomass"
+   impFieldStdName( 24) = "Ice algae biomass"
+   impFieldUnits(   24) = "mg C m**-2"
+   impFieldName(    25) = "idet"
+   impFieldLongName(25) = "Ice algae detritus"
+   impFieldStdName( 25) = "Ice algae detritus"
+   impFieldUnits(   25) = "mg C m**-2"
+   impFieldName(    26) = "ino3"
+   impFieldLongName(26) = "Nitrate in ice"
+   impFieldStdName( 26) = "Nitrate in ice"
+   impFieldUnits(   26) = "mmol N m**-2"
+   impFieldName(    27) = "inh4"
+   impFieldLongName(27) = "Ammonium in ice"
+   impFieldStdName( 27) = "Ammonium in ice"
+   impFieldUnits(   27) = "mmol N m**-2"
+   impFieldName(    28) = "ipho"
+   impFieldLongName(28) = "Phosphate in ice"
+   impFieldStdName( 28) = "Phosphate in ice"
+   impFieldUnits(   28) = "mmol P m**-2"
+   impFieldName(    29) = "isil"
+   impFieldLongName(29) = "Silicate in ice"
+   impFieldStdName( 29) = "Silicate in ice"
+   impFieldUnits(   29) = "mmol Si m**-2"
+#endif
 
 
    !---------------------------------------------------------------------
@@ -1004,8 +1063,8 @@ implicit none
         if (ESMF_LogFoundError(rc, msg="cice_setup_Esmf: Fieldget import", rcToReturn=rc2)) &
            call ESMF_Finalize(rc=rc)
         impData(i,deCount+1)%p(:,:) = 0.0
-!        print '("my_task ",i4, "deCount=",i4, "localDeCount=",i4, ": init imp fieldname=",a)', &
-!             my_task,deCount, localDeCount,trim(impFieldName(i))
+        !print '("my_task ",i4, "deCount=",i4, "localDeCount=",i4, ": init imp fieldname=",a)', &
+        !     my_task,deCount, localDeCount,trim(impFieldName(i))
      end do
    enddo
    call ESMF_LogFlush(rc=rc)
@@ -1047,6 +1106,9 @@ subroutine cice_put_export(export_state)
    use ice_domain,      only : nblocks, blocks_ice
    use ice_flux,        only : strocnxT, strocnyT, fhocn, fsalt, fresh, fswthru, frzmlt
    use ice_flux,        only : fhocn_ai, fsalt_ai, fresh_ai, fswthru_ai
+#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT) 
+   use ice_flux,        only : ialg_exp, idet_exp, ino3_exp, inh4_exp, ipho_exp, isil_exp
+#endif
    use ice_state,       only : aice, vice, trcr,  uvel, vvel
    use ice_constants,   only : Tffresh
    use ice_grid,        only : u2tgrid_vector
@@ -1072,7 +1134,7 @@ subroutine cice_put_export(export_state)
    call ESMF_LogWrite("CICE Put Export routine called", ESMF_LOGMSG_INFO, rc=rc)
    call ESMF_LogFlush(rc=rc)
 
-   ! Get import fields - Import fields must match export fields of "the other" model
+   ! Get export fields - Export fields must match import fields of "the other" model
    do ifld=1,numExpFields
       !print *,ifld,trim(impFieldName(ifld))
       do iblk=1,nblocks
@@ -1201,6 +1263,62 @@ subroutine cice_put_export(export_state)
                  
             end do
             end do
+#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT) 
+         ! Ice-algae biomass
+         elseif (trim(expFieldName(ifld)) == "ialg") then
+            do j=jlo,jhi
+            do i=ilo,ihi
+               ig  = this_block%i_glob(i)
+               jg  = this_block%j_glob(j)
+               expData(ifld,iblk)%p(ig,jg) = ialg_exp(i,j,iblk)
+            end do
+            end do
+         ! Ice-algae ditritus
+         elseif (trim(expFieldName(ifld)) == "idet") then
+            do j=jlo,jhi
+            do i=ilo,ihi
+               ig  = this_block%i_glob(i)
+               jg  = this_block%j_glob(j)
+               expData(ifld,iblk)%p(ig,jg) = idet_exp(i,j,iblk)
+            end do
+            end do
+         ! Ice-algae nitrate
+         elseif (trim(expFieldName(ifld)) == "ino3") then
+            do j=jlo,jhi
+            do i=ilo,ihi
+               ig  = this_block%i_glob(i)
+               jg  = this_block%j_glob(j)
+               expData(ifld,iblk)%p(ig,jg) = ino3_exp(i,j,iblk)
+            end do
+            end do
+         ! Ice-algae ammonium
+         elseif (trim(expFieldName(ifld)) == "inh4") then
+            do j=jlo,jhi
+            do i=ilo,ihi
+               ig  = this_block%i_glob(i)
+               jg  = this_block%j_glob(j)
+               expData(ifld,iblk)%p(ig,jg) = inh4_exp(i,j,iblk)
+            end do
+            end do
+         ! Ice-algae phosphate
+         elseif (trim(expFieldName(ifld)) == "ipho") then
+            do j=jlo,jhi
+            do i=ilo,ihi
+               ig  = this_block%i_glob(i)
+               jg  = this_block%j_glob(j)
+               expData(ifld,iblk)%p(ig,jg) = ipho_exp(i,j,iblk)
+            end do
+            end do
+         ! Ice-algae silicate
+         elseif (trim(expFieldName(ifld)) == "isil") then
+            do j=jlo,jhi
+            do i=ilo,ihi
+               ig  = this_block%i_glob(i)
+               jg  = this_block%j_glob(j)
+               expData(ifld,iblk)%p(ig,jg) = isil_exp(i,j,iblk)
+            end do
+            end do
+#endif
          else 
             if (my_task==master_task .and. iblk==1) then
                print '(a)',"WARN: Unhandled CICE export field "//trim(impFieldName(ifld))
@@ -1220,6 +1338,10 @@ subroutine cice_get_import(import_state)
                                uatm, vatm, Tair, zlvl, potT, &
                                ss_tltx, ss_tlty, Qa, rhoa, flw, &
                                fsnow, frain, swvdr, swvdf, swidr, swidf
+#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT) 
+   use ice_flux,        only : ialg, idet, ino3, inh4, ipho, isil
+#endif
+
    use ice_grid,        only : t2ugrid_vector
    implicit none
    type(ESMF_State)       :: import_state
@@ -1442,6 +1564,56 @@ subroutine cice_get_import(import_state)
                !print *,"Setting flw",flw(i,j,iblk)
             end do
             end do
+#if defined(NERSC_HYCOM_CICE) && defined(IA_DRIFT)
+         elseif (trim(impFieldName(ifld)) == "ialg") then
+            do j=jlo,jhi
+            do i=ilo,ihi
+               ig  = this_block%i_glob(i)
+               jg  = this_block%j_glob(j)
+               ialg(i,j,iblk) = impData(ifld,iblk)%p(ig,jg)
+            end do
+            end do
+         elseif (trim(impFieldName(ifld)) == "idet") then
+            do j=jlo,jhi
+            do i=ilo,ihi
+               ig  = this_block%i_glob(i)
+               jg  = this_block%j_glob(j)
+               idet(i,j,iblk) = impData(ifld,iblk)%p(ig,jg)
+            end do
+            end do
+         elseif (trim(impFieldName(ifld)) == "ino3") then
+            do j=jlo,jhi
+            do i=ilo,ihi
+               ig  = this_block%i_glob(i)
+               jg  = this_block%j_glob(j)
+               ino3(i,j,iblk) = impData(ifld,iblk)%p(ig,jg)
+            end do
+            end do
+         elseif (trim(impFieldName(ifld)) == "inh4") then
+            do j=jlo,jhi
+            do i=ilo,ihi
+               ig  = this_block%i_glob(i)
+               jg  = this_block%j_glob(j)
+               inh4(i,j,iblk) = impData(ifld,iblk)%p(ig,jg)
+            end do
+            end do
+         elseif (trim(impFieldName(ifld)) == "ipho") then
+            do j=jlo,jhi
+            do i=ilo,ihi
+               ig  = this_block%i_glob(i)
+               jg  = this_block%j_glob(j)
+               ipho(i,j,iblk) = impData(ifld,iblk)%p(ig,jg)
+            end do
+            end do
+         elseif (trim(impFieldName(ifld)) == "isil") then
+            do j=jlo,jhi
+            do i=ilo,ihi
+               ig  = this_block%i_glob(i)
+               jg  = this_block%j_glob(j)
+               isil(i,j,iblk) = impData(ifld,iblk)%p(ig,jg)
+            end do
+            end do
+#endif
          ! TODO: Add stop for unknown fields(?)
          else 
             if (my_task==master_task .and. iblk==1) then

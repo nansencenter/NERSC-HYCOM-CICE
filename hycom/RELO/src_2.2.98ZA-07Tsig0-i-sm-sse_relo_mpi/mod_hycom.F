@@ -142,7 +142,11 @@ c --- Attribute names for fields
      &    attNameAddOff   = "add_offset"
 c
 c --- Import Fields
+#if defined(_FABM_) && defined(IA_DRIFT)
+      integer, parameter :: numImpFields=17
+#else
       integer, parameter :: numImpFields=11
+#endif
       character(ESMF_MAXSTR), save :: impFieldName(    numImpFields),
      &                                impFieldLongName(numImpFields),
      &                                impFieldStdName( numImpFields),
@@ -152,7 +156,11 @@ c --- Import Fields
       integer,                save :: impFieldHalo(    numImpFields)
 c
 c --- Export Fields
+#if defined(_FABM_) && defined(IA_DRIFT)
+      integer, parameter :: numExpFields=29
+#else
       integer, parameter :: numExpFields=23 !KAL
+#endif
       character(ESMF_MAXSTR), save :: expFieldName(    numExpFields),
      &                                expFieldLongName(numExpFields),
      &                                expFieldStdName( numExpFields),
@@ -349,6 +357,32 @@ c
       impFieldStdName( 11) = "sea_ice_y_velocity"
       impFieldUnits(   11) = "m s-1"
       impFieldHalo(    11) = halo_pv !vector p-grid
+#if defined(_FABM_) && defined(IA_DRIFT) 
+      impFieldName(    12) = "ialg"
+      impFieldLongName(12) = "Ice algae biomass"
+      impFieldStdName( 12) = "Ice algae biomass"
+      impFieldUnits(   12) = "mg C m**-2"
+      impFieldName(    13) = "idet"
+      impFieldLongName(13) = "Ice algae detritus"
+      impFieldStdName( 13) = "Ice algae detritus"
+      impFieldUnits(   13) = "mg C m**-2"
+      impFieldName(    14) = "ino3"
+      impFieldLongName(14) = "Nitrate in ice"
+      impFieldStdName( 14) = "Nitrate in ice"
+      impFieldUnits(   14) = "mmol N m**-2"
+      impFieldName(    15) = "inh4"
+      impFieldLongName(15) = "Ammonium in ice"
+      impFieldStdName( 15) = "Ammonium in ice"
+      impFieldUnits(   15) = "mmol N m**-2"
+      impFieldName(    16) = "ipho"
+      impFieldLongName(16) = "Phosphate in ice"
+      impFieldStdName( 16) = "Phosphate in ice"
+      impFieldUnits(   16) = "mmol P m**-2"
+      impFieldName(    17) = "isil"
+      impFieldLongName(17) = "Silicate in ice"
+      impFieldStdName( 17) = "Silicate in ice"
+      impFieldUnits(   17) = "mmol Si m**-2"
+#endif
 *
 *     impFieldName(    12) = "patm"
 *     impFieldLongName(12) = "Surface Air Pressure"
@@ -467,6 +501,32 @@ c
       expFieldLongName(23) = "Snowfall Rate"
       expFieldStdName( 23) = ""
       expFieldUnits(   23) = "kg m**-2 s*-1"
+#if defined(_FABM_) && defined(IA_DRIFT)
+      expFieldName(    24) = "ialg"
+      expFieldLongName(24) = "Ice algae biomass"
+      expFieldStdName( 24) = "Ice algae biomass"
+      expFieldUnits(   24) = "mg C m**-2"
+      expFieldName(    25) = "idet"
+      expFieldLongName(25) = "Ice algae detritus"
+      expFieldStdName( 25) = "Ice algae detritus"
+      expFieldUnits(   25) = "mg C m**-2"
+      expFieldName(    26) = "ino3"
+      expFieldLongName(26) = "Nitrate in ice"
+      expFieldStdName( 26) = "Nitrate in ice"
+      expFieldUnits(   26) = "mmol N m**-2"
+      expFieldName(    27) = "inh4"
+      expFieldLongName(27) = "Ammonium in ice"
+      expFieldStdName( 27) = "Ammonium in ice"
+      expFieldUnits(   27) = "mmol N m**-2"
+      expFieldName(    28) = "ipho"
+      expFieldLongName(28) = "Phosphate in ice"
+      expFieldStdName( 28) = "Phosphate in ice"
+      expFieldUnits(   28) = "mmol P m**-2"
+      expFieldName(    29) = "isil"
+      expFieldLongName(29) = "Silicate in ice"
+      expFieldStdName( 29) = "Silicate in ice"
+      expFieldUnits(   29) = "mmol Si m**-2"
+#endif
 !KAL  TODO: Export longw7ve, shortwave, rainfall rate, snow rate,
 !KAL  TODO: air density, specific humidity
 !KAL - new
@@ -773,7 +833,7 @@ c
 c --- Fill export state.
 c --- Calculate ssfi "in place"
 c
-      integer i,j,k,rc
+      integer i,j,k,rc,nia
       real    ssh2m
       real    tmxl,smxl,umxl,vmxl,hfrz,tfrz,t2f,ssfi
       real    dp1,usur1,vsur1,psur1,dp2,usur2,vsur2,psur2,thksur
@@ -1087,6 +1147,11 @@ c --------- We dont handle cases where input is E-P.
                call xchalt('Setup_ESMF: unhandled empflg=3')
                stop 'Setup_ESMF: unhandled empflg=3'
             end if
+#if defined(_FABM_) && defined(IA_DRIFT)
+            do nia = 1,niatrc
+                expData(23+nia)%p(i+i0,j+j0)=ia_tracer(i,j,m,nia)
+            end do
+#endif
           else
             util2(i,j)              = 0.0
             util3(i,j)              = 0.0
@@ -1138,8 +1203,11 @@ C      call ESMF_LogFlush(rc=rc)
 c
 c --- Extract import state.
 c
-      integer i,j,rc
-c
+      integer i,j,rc,nia
+#if defined(_FABM_) && defined(IA_DRIFT)
+c --- shuang: Static logical variable to track first-time call
+      logical, save :: first_call = .true.
+#endif
 c --- Report
 #if (USE_ESMF_5)
       call ESMF_LogWrite("HYCOM Import_ESMF called",
@@ -1175,6 +1243,16 @@ c --- Arctic (tripole) domain, top row is replicated (ignore it)
              siu_import(i,j) = impData(10)%p(i+i0,j+j0) !Sea Ice X-Velocity
              siv_import(i,j) = impData(11)%p(i+i0,j+j0) !Sea Ice Y-Velocity
             if     (iceflg.ge.2 .and. icmflg.ne.3) then
+#if defined(_FABM_) && defined(IA_DRIFT)
+             if (first_call) then
+                 ! do nothing  
+             else
+              do nia = 1, niatrc
+                 ia_tracer(i,j,1:2,nia) = impData(11+nia)%p(i+i0,j+j0)
+                 fabm_surface_state(i,j,:,nia) = ia_tracer(i,j,:,nia)
+              enddo
+             end if
+#endif
               covice(i,j) = impData(1)%p(i+i0,j+j0) !Sea Ice Concentration
                 si_c(i,j) = impData(1)%p(i+i0,j+j0) !Sea Ice Concentration
               if     (covice(i,j).gt.0.0) then
@@ -1227,6 +1305,9 @@ c --- Arctic (tripole) domain, top row is replicated (ignore it)
           endif !ishlf
         enddo !i
       enddo !j
+#if defined(_FABM_) && defined(IA_DRIFT)
+      first_call = .false.
+#endif
 C --- Added by KAL. Mainly needed for si_u and si_v, but lets do everything for now ...
 C --- NB: May need to set vland first...
       call xctilr( sic_import,1,1,nbdy,nbdy,halo_ps)  !Sea Ice Concentration
@@ -1254,6 +1335,9 @@ C --- NB: May need to set vland first...
         call xctilr(  si_h,1,1,nbdy,nbdy,halo_ps)  !Sea Ice Thickness
         call xctilr(  si_u,1,1,nbdy,nbdy,halo_pv)  !Sea Ice X-Velocity
         call xctilr(  si_v,1,1,nbdy,nbdy,halo_pv)  !Sea Ice Y-Velocity
+#if defined(_FABM_) && defined(IA_DRIFT)
+        call xctilr(  ia_tracer,1,1,nbdy,nbdy,halo_ps)  !Ice-algae
+#endif
       elseif (iceflg.ge.2 .and. icmflg.eq.3) then
         call xctilr(  si_c,1,1,nbdy,nbdy,halo_ps)  !Sea Ice Concentration
         call xctilr( si_tx,1,1,nbdy,nbdy,halo_pv)  !Sea Ice X-Stress into ocean

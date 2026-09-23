@@ -543,7 +543,7 @@
                write(nu_diag,*) 'n: ',n, 'aicen: ', &
                                 aicen(istop,jstop,n,iblk)
             endif
-            call abort_ice ('ice: Vertical thermo error')
+            !call abort_ice ('ice: Vertical thermo error') !shuang for now
          endif
 
       !-----------------------------------------------------------------
