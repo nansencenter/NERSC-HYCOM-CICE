@@ -138,6 +138,8 @@ Check and update the symlink if needed:
 ```bash
 ls -la ${HOME}/NERSC-HYCOM-CICE/hycom/RELO/config/Linux.betzy.ifort_cice
 # To switch to V23:
+# Target is relative; it is resolved from the link's own directory (config/),
+# so this works from any working directory — no need to cd first.
 ln -sf Linux.betzy.ifort_cice.V23 \
     ${HOME}/NERSC-HYCOM-CICE/hycom/RELO/config/Linux.betzy.ifort_cice
 ```
@@ -157,6 +159,32 @@ The script manages the `build/` directory containing a per-experiment copy of th
 - **First compile** (`build/` does not exist): source is automatically synced from the repository.
 - **Recompile after repo changes** (use `-u`): source is resynced from the repository, overwriting any local modifications in `build/`.
 - **Recompile without `-u`**: uses whatever is currently in `build/`, preserving any local edits.
+
+To change **C preprocessor feature flags**, edit (or create) `hycom_feature_flags` in the
+experiment directory and recompile (see step 5 in the dropdown above).
+
+To change **Makefile compile flags** (compiler options, linker settings):
+
+| Scope | How |
+|-------|-----|
+| All future builds (global) | Edit `Linux.betzy.ifort_cice.V22` or `.V23` in the repo, then recompile with `-u` |
+| This build only (local) | Edit the config file inside `build/config/` directly, then recompile **without** `-u` |
+
+:::{warning}
+**After changing `CPPFLAGS` in a config file, you must delete the existing object files
+before recompiling.** `make` tracks file timestamps, not flag content — it will relink the
+stale `.o` files and produce a binary that still uses the previous flags.
+
+```bash
+rm build/src_*/*.o
+bash ${HOME}/NERSC-HYCOM-CICE/bin/compile_model.sh ifort
+```
+:::
+
+:::{warning}
+Recompiling with `-u` resyncs source from the repository and **overwrites any local edits
+inside `build/`**, including a locally modified config file.
+:::
 
 To start completely fresh, delete `build/` before running the script:
 
