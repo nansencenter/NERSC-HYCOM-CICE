@@ -17,7 +17,7 @@ See the [HPC environment](installation.md#hpc-environment) section for details.
 ::::
 
 :::{note}
-Olivia support is a work in progress. 
+Olivia support is a work in progress. MSCPROGS compilation is tested; HYCOM-CICE and `hycom_ALL` are not yet covered.
 :::
 
 ## Compile MSCPROGS (libhycnersc.a)
@@ -29,12 +29,32 @@ MSCPROGS provides `libhycnersc.a`, a shared library used by the [MSCPROGS post-p
 
 Create a symlink for your machine and compiler, then build and install:
 
+::::{dropdown} Betzy (NRIS/Sigma2)
+
+Use the Betzy make include (`make.betzy.ifort`, which selects the `ifort` compiler):
+
 ```bash
 cd ${HOME}/NERSC-HYCOM-CICE/hycom/MSCPROGS/src/Make.Inc
 ln -sf make.betzy.ifort make.inc
 cd ${HOME}/NERSC-HYCOM-CICE/hycom/MSCPROGS/src
 gmake clean && gmake all && gmake install
 ```
+
+::::
+
+::::{dropdown} Olivia (NRIS/Sigma2)
+
+Use the Olivia make include (`make.olivia.ifx`, which selects the `ifx`/`icx` compilers and
+links FFTW + MKL):
+
+```bash
+cd ${HOME}/NERSC-HYCOM-CICE/hycom/MSCPROGS/src/Make.Inc
+ln -sf make.olivia.ifx make.inc
+cd ${HOME}/NERSC-HYCOM-CICE/hycom/MSCPROGS/src
+gmake clean && gmake all && gmake install
+```
+
+::::
 
 After installation, `libhycnersc.a` is at:
 
@@ -91,7 +111,6 @@ After installation, `libfabm.a` is at:
 ```
 ${HOME}/local/fabm/hycom/lib64/libfabm.a
 ```
-
 
 ## Compile HYCOM-CICE
 
