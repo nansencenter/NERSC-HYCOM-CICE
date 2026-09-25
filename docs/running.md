@@ -87,9 +87,6 @@ For reference when setting `#SBATCH --time`: a 1-year TP2 run with BGC on 4 Betz
 Then submit:
 
 ```bash
-CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
-EXPT_ID=<EXPT_ID>         # e.g. 01.0
-
 cd $WORK/<CONFIGNAME>/expt_<EXPT_ID>
 sbatch srjob.sh
 ```
@@ -110,9 +107,6 @@ When the job finishes, restart files and daily mean files are moved to the `data
 Confirm successful completion by checking the stop file:
 
 ```bash
-CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
-EXPT_ID=<EXPT_ID>         # e.g. 01.0
-
 cat $WORK/<CONFIGNAME>/expt_<EXPT_ID>/log/hycom.stop
 ```
 
@@ -134,9 +128,6 @@ What happens to output files depends on how the run ended:
   Run postprocessing manually before resubmitting:
 
   ```bash
-  CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
-  EXPT_ID=<EXPT_ID>         # e.g. 01.0
-
   cd $WORK/<CONFIGNAME>/expt_<EXPT_ID>
   ../expt_postprocess.sh
   ```

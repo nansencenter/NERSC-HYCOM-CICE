@@ -40,6 +40,10 @@ c
       nbio = ntracr
       trcflg(1) = 906
       trcflg(2:nbio) = -906
+      
+      if (ntracr.eq.0) then
+        return  ! no tracer
+      endif
 #else
       if (ntracr.eq.0) then
         return  ! no tracer

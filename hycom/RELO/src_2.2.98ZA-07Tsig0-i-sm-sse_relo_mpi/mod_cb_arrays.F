@@ -27,6 +27,16 @@ c
 #endif
      & tracer         ! inert tracers
 
+#ifdef _FABM_
+#if defined(RELO)
+      real, save, target, allocatable, dimension(:,:,:,:) ::
+#else
+      real, save, target,
+     &      dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,2,mxtrcr) ::
+#endif
+     & ia_tracer      ! ice algae tracers, for drifting with ice 
+#endif
+
 #if defined(RELO)
       real, save, allocatable, dimension(:,:,:) ::
 #else
@@ -673,6 +683,7 @@ c --- 'icefrq' = relax to tfrz with e-folding time of icefrq time steps
 c --- 'icpfrq' = number of time steps between sea-ice updates
 c --- 'ntracr' = number of tracers (<=mxtrcr)
 c --- 'trcflg' = tracer type flag (one per tracer)
+c --- 'niatrc' = number of ice-algae tracers
 c --- 'clmflg' = climatology frequency flag (6=bimonthly,12=monthly)
 c --- 'dypflg' = KT: diapycnal mixing flag (0=none,1=KPP,2=explicit)
 c --- 'iniflg' = initial state flag (0=level,1=zonal,2=climatology)
@@ -725,7 +736,7 @@ c
      &               tsofrq,mixfrq,icefrq,icpfrq,nhybrd,nsigma,
      &               hybmap,hybflg,advflg,advtyp,momtyp,
      &               kapref,kapnum,
-     &               ntracr,trcflg(mxtrcr),
+     &               ntracr,trcflg(mxtrcr),niatrc,
      &               clmflg,dypflg,iniflg,lbflag,mapflg,yrflag,sshflg,
      &               iversn,iexpt,jerlv0,
      &               iceflg,ishelf,icmflg,wndflg,ustflg,
@@ -814,6 +825,15 @@ c
 #endif
               tracer = r_init
       endif
+c
+#ifdef _FABM_
+#if defined(RELO)
+        allocate(
+     &        ia_tracer(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,2,niatrc) )
+        call mem_stat_add( 6*(idm+2*nbdy)*(jdm+2*nbdy)*2*niatrc )
+#endif
+              ia_tracer = r_init
+#endif
 c
 #if defined(RELO)
       allocate(

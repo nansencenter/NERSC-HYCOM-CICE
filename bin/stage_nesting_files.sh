@@ -37,21 +37,26 @@ done
 mkdir -p "${WORK_NST}" || { echo "Cannot create ${WORK_NST}"; exit 1; }
 cd "${WORK_NST}"       || { echo "Cannot cd to ${WORK_NST}";   exit 1; }
 
-for (( d=$(date -u -d "$DATE_START - 1 day" +%s); d<=$(date -u -d "$DATE_END + 1 day" +%s); d+=86400 )); do
+d_start=$(date -u -d "$DATE_START - 1 day" +%s)
+d_end=$(date -u -d "$DATE_END + 1 day" +%s)
+
+# Build the set of needed filenames (for --skip-existing and direct-copy paths)
+declare -A needed_physics needed_fabm
+for (( d=d_start; d<=d_end; d+=86400 )); do
     DATE_NOW=$(date -u -d "@$d" +%Y-%m-%d)
     YYYY=$(date -d "$DATE_NOW" +%Y)
     DOY=$(date -d  "$DATE_NOW" +%j)
-
     afile=archv.${YYYY}_${DOY}_00.a
     bfile=archv.${YYYY}_${DOY}_00.b
     afile_fabm=archv_fabm.${YYYY}_${DOY}_00.a
     bfile_fabm=archv_fabm.${YYYY}_${DOY}_00.b
 
+    # Skip if already present
     if $SKIP_EXISTING && [ -f "$afile" ] && [ -f "$bfile" ]; then
         if ! $WITH_FABM || ( [ -f "$afile_fabm" ] && [ -f "$bfile_fabm" ] ); then continue; fi
     fi
 
-    # copy directly if files are available individually
+    # Copy directly if individual files are available
     if [ -f "${DIR_NST}/${afile}" ]; then
         cp "${DIR_NST}/${afile}" "${DIR_NST}/${bfile}" .
         if $WITH_FABM && [ -f "${DIR_NST}/${afile_fabm}" ]; then
@@ -60,25 +65,41 @@ for (( d=$(date -u -d "$DATE_START - 1 day" +%s); d<=$(date -u -d "$DATE_END + 1
         continue
     fi
 
-    # otherwise extract from tar archives (files may be grouped by DOY range)
-    if [ -d "${DIR_NST}/tar_files" ]; then
-        for f in "${DIR_NST}/tar_files/archv.${YYYY}_"*.tar.gz; do
-            range=$(echo "${f#${DIR_NST}/tar_files/archv.${YYYY}_}" | sed 's/\.tar\.gz//')
-            start=$((10#${range%_*}))
-            end=$((10#${range#*_}))
-            if (( 10#$DOY >= start && 10#$DOY <= end )); then
-                tar -xzf "${DIR_NST}/tar_files/archv.${YYYY}_${range}.tar.gz" "$afile" "$bfile"
-            fi
-        done
-        if $WITH_FABM; then
-            for f in "${DIR_NST}/tar_files/archv_fabm.${YYYY}_"*.tar.gz; do
-                range=$(echo "${f#${DIR_NST}/tar_files/archv_fabm.${YYYY}_}" | sed 's/\.tar\.gz//')
-                start=$((10#${range%_*}))
-                end=$((10#${range#*_}))
-                if (( 10#$DOY >= start && 10#$DOY <= end )); then
-                    tar -xzf "${DIR_NST}/tar_files/archv_fabm.${YYYY}_${range}.tar.gz" "$afile_fabm" "$bfile_fabm"
-                fi
-            done
-        fi
+    # Otherwise queue for tar extraction
+    needed_physics["$afile"]=1
+    needed_physics["$bfile"]=1
+    if $WITH_FABM; then
+        needed_fabm["$afile_fabm"]=1
+        needed_fabm["$bfile_fabm"]=1
     fi
 done
+
+# Extract all needed files from tar archives — one pass per archive
+if [ -d "${DIR_NST}/tar_files" ] && [ ${#needed_physics[@]} -gt 0 ]; then
+    for f in "${DIR_NST}/tar_files/archv."*.tar.gz; do
+        [ -f "$f" ] || continue
+        # Collect files from this archive that we actually need
+        to_extract=()
+        while IFS= read -r member; do
+            [[ -v needed_physics["$member"] ]] && to_extract+=("$member")
+        done < <(tar -tzf "$f" 2>/dev/null)
+        if [ ${#to_extract[@]} -gt 0 ]; then
+            echo "Extracting ${#to_extract[@]} files from $(basename "$f")"
+            tar -xzf "$f" "${to_extract[@]}"
+        fi
+    done
+fi
+
+if $WITH_FABM && [ -d "${DIR_NST}/tar_files" ] && [ ${#needed_fabm[@]} -gt 0 ]; then
+    for f in "${DIR_NST}/tar_files/archv_fabm."*.tar.gz; do
+        [ -f "$f" ] || continue
+        to_extract=()
+        while IFS= read -r member; do
+            [[ -v needed_fabm["$member"] ]] && to_extract+=("$member")
+        done < <(tar -tzf "$f" 2>/dev/null)
+        if [ ${#to_extract[@]} -gt 0 ]; then
+            echo "Extracting ${#to_extract[@]} files from $(basename "$f")"
+            tar -xzf "$f" "${to_extract[@]}"
+        fi
+    done
+fi
