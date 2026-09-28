@@ -31,6 +31,9 @@ cd $SLURM_SUBMIT_DIR       ||  { echo "Could not go to dir $SLURM_O_WORKDIR  "; 
 source ../REGION.src  || { echo "Could not source ../REGION.src "; exit 1; }
 source ./EXPT.src  || { echo "Could not source EXPT.src"; exit 1; }
 source $NHCROOT/environment/betzy_env.sh || { echo "Could not source betzy_env.sh "; exit 1; }
+module load Miniforge3/24.1.2-0          || { echo "Could not load Miniforge3 module"; exit 1; }
+source ${EBROOTMINIFORGE3}/bin/activate  || { echo "Could not activate Miniforge3 base"; exit 1; }
+conda activate hycom-cice                || { echo "Could not activate hycom-cice conda environment"; exit 1; }
 echo "NMPI =$NMPI (Number of MPI tasks needed for running job) "
 
 START="1990-01-01T00:00:00"

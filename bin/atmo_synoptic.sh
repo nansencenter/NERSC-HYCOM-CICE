@@ -97,12 +97,14 @@ else
 fi
 eval $cmd   ||  { echo "Error running $cmd " ; exit 1 ; }
 
-# The nersc era40 forcing is region-independent 
 for i in forcing.*.[ab] ; do
    new=$(echo $i | sed "s/^forcing\.//")
    mv $i $D/$new
    echo "Created  $D$new"
 done
+
+rm -f $D/stamp_*
+touch $D/stamp_${start}-${stop}
 
 
 

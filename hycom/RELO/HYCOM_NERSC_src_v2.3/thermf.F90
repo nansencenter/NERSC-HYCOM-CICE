@@ -904,7 +904,7 @@
       enddo
 !$OMP END PARALLEL DO
 !
-      if     (.false. .and. itest.gt.0 .and. jtest.gt.0) then
+      if     (.true. .and. itest.gt.0 .and. jtest.gt.0) then
         write(lp,'(i9,2i5,a/19x,4f10.4)') &
           nstep,i0+itest,j0+jtest, &
           '    sstflx     ustar    hekman    surflx', &
@@ -912,13 +912,16 @@
           ustar( itest,jtest), &
           hekman(itest,jtest), &
           surflx(itest,jtest)
-        write(lp,'(i9,2i5,a/19x,4f10.4)') &
-          nstep,i0+itest,j0+jtest, &
+        write(lp,'(i9,2i5,2f8.4,a/19x,4f10.4)') &
+          nstep,i0+itest,j0+jtest, wr0,wr1, & 
           '    sswflx     wtrflx   rivflx    sssflx', &
           sswflx(itest,jtest), &
           wtrflx(itest,jtest), &
           rivflx(itest,jtest), &
           sssflx(itest,jtest)
+          write(lp,*) rivflx(itest,jtest)
+          write(lp,*) rivers(itest,jtest,1),rivers(itest,jtest,2)
+      call flush(lp)
       endif !test
 !
 ! --- smooth surface fluxes?
@@ -1127,9 +1130,6 @@
 #endif
 #ifdef CPL_OASIS_HYCOM
       use mod_cpl_oasis_init
-#endif
-#if defined (NERSC_HYCOM_CICE)
-      use mod_NERSCnml, only : highfq_river
 #endif
 
       implicit none
@@ -1973,7 +1973,7 @@
 ! --- wtrflx = water flux (m/s kg/m**3) into ocean
       wtrflx(i,j)=-emnp*rhoref
 ! --- allow for rivers as a precipitation bogas (m/s kg/m**3)
-      if     (priver) then
+      if     (priver == 1) then
         if(cesmbeta .and. cpl_orivers.and.cpl_irivers) then
             rivflx(i,j) = (imp_orivers(i,j,1)+imp_irivers(i,j,1)) &
                         * rhoref
@@ -1984,8 +1984,8 @@
         endif
 !       wtrflx(i,j) = wtrflx(i,j)+rivflx(i,j) !update wtrflx in thermf_oi
 #if defined(NERSC_HYCOM_CICE)
-      elseif (highfq_river) then
-        rivflx(i,j) = ( rivers(i,j,l0)*w0+rivers(i,j,l1)*w1)   &
+      elseif (priver == 2) then
+        rivflx(i,j) = ( rivers(i,j,1)*wr0+rivers(i,j,2)*wr1)   &
                     * rhoref
 #endif
       else

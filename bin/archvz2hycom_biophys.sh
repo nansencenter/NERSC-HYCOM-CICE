@@ -35,6 +35,8 @@ NO3flag=NONE
 PO4flag=NONE
 SIflag=NONE
 O2flag=NONE
+DISSICflag=NONE
+TALKflag=NONE
 
 setup_only=0
 
@@ -54,6 +56,8 @@ while true; do
 	PO4flag=T
 	SIflag=T
 	O2flag=T
+	DISSICflag=T
+	TALKflag=T
         ;;
     -g)
         grid_type=regular
@@ -357,6 +361,8 @@ ${NO3flag}
 ${PO4flag}
 ${SIflag}
 ${O2flag}
+${DISSICflag}
+${TALKflag}
 EOF
 
 

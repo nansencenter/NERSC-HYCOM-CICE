@@ -6,7 +6,7 @@ import re
 import xml.etree.ElementTree
 import datetime
 import cfunits
-import netcdftime
+import cftime as netcdftime
 import scipy
 
 class FieldInterpolatorError(object) :
