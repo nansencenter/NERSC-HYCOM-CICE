@@ -474,6 +474,9 @@ end subroutine
       real, parameter :: t0deg    =273.15   ! 0 deg C in K
       real, parameter ::     g    =9.806    ! 0 deg C in K
 
+      real, parameter :: ref_temp =0.0      ! deg C for heat transport  
+      real, parameter :: ref_salt =34.8     ! psu for freshwater transport 
+
       real, dimension(idm,jdm) :: olddepth,sumdepth, saln, dp, utot,vtot,temp, &
          transfacu,transfacv, salu, salv, temu, temv, dpu,dpv, pu, pv, &
          dens
@@ -621,13 +624,13 @@ end subroutine
                !  NB -- requires dp to be in pressure coords - is relative to 0
                !  deg C
                heattrans(itrans) = heattrans(itrans)                                           +  &
-                    masku*transfacu(ipiv,jpiv)*((temp(ipiv,jpiv))-0.)*cpsw*(1000.) + &  !+dens(ipiv,jpiv))  +  &
-                    maskv*transfacv(ipiv,jpiv)*((temp(ipiv,jpiv))-0.)*cpsw*(1000.)  !+dens(ipiv,jpiv))
+                    masku*transfacu(ipiv,jpiv)*((temp(ipiv,jpiv))-ref_temp)*cpsw*(1000.) + &  !+dens(ipiv,jpiv))  +  &
+                    maskv*transfacv(ipiv,jpiv)*((temp(ipiv,jpiv))-ref_temp)*cpsw*(1000.)  !+dens(ipiv,jpiv))
 
                !  34.8 psu
                frestrans(itrans) = frestrans(itrans)                    +  &
-                    masku*transfacu(ipiv,jpiv)*(1-saln(ipiv,jpiv)/34.8) +  &
-                    maskv*transfacv(ipiv,jpiv)*(1-saln(ipiv,jpiv)/34.8)
+                    masku*transfacu(ipiv,jpiv)*(1-saln(ipiv,jpiv)/ref_salt) +  &
+                    maskv*transfacv(ipiv,jpiv)*(1-saln(ipiv,jpiv)/ref_salt)
 
 #if defined (SCALAR_TRANS) 
                do ist=1,num_scalar_trans
@@ -698,10 +701,8 @@ end subroutine
          else
             open(33,file=trim(fname),status="unknown",form="formatted",position="append")
          end if
-         !open(33,file=trim(fname),status="replace",form="formatted",position="rewind")
 #if defined (SCALAR_TRANS) 
          write(cnst,'(i2)') num_scalar_trans
-         !write(cline,'(f14.4,f14.4,e14.4)') rtime,voltrans(itrans)*1e-6,heattrans(itrans) !MS. 120312
          write(cline,'(f14.4,f18.4,e14.4)') rtime,voltrans(itrans)*1e-6,heattrans(itrans)
          cline2=''
          if (num_scalar_trans>0) then
@@ -712,7 +713,6 @@ end subroutine
          write(33,'(f14.4,f14.4,e14.4)') rtime,voltrans(itrans)*1e-6,heattrans(itrans)
 #endif
          close(33)
-
 
          ! This is a file list generated for each pass - dumps the transport
          ! files which are created
