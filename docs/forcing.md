@@ -5,12 +5,12 @@ differ between the two; the sections that follow describe each component in deta
 
 | | Climatological boundaries | GLORYS boundaries |
 |---|---|---|
-| **Typical use** | Spin-up | Hindcast / forecast |
-| **`INITFLG`** in `srjob.sh` | `"--init"` (cold start) or `""` (continuation) | `""` |
+| **Typical use** | Spin-up | Hindcast / forecast; cycled spin-up (experimental) |
+| **`INITFLG`** in `srjob.sh` | `"--init"` (cold start) or `""` (continuation) | `""`, or `"--init-ice"` (HYCOM restart, CICE cold start) |
 | **Ocean T/S initial state** | WOA2018 climatology (cold start) or HYCOM restart file | HYCOM restart file |
 | **Velocity / SSH initial state** | Zero (cold start) or from HYCOM restart file | From HYCOM restart file |
 | **BGC initial state** | WOA2013/GLODAP climatology (cold start) or HYCOM restart file | From HYCOM restart file |
-| **Ice initial state** | TP4 assimilation climatology (cold start) or CICE restart file | CICE restart file |
+| **Ice initial state** | TP4 assimilation climatology (cold start) or CICE restart file | CICE restart file, or `ice_initial.nc` with `"--init-ice"` |
 | **Atmospheric forcing** | ERA5 | ERA5 |
 | **Lateral boundary forcing** | WOA2018 climatology; T/S only, no transports | GLORYS12; T/S, velocity, layer thickness, SSH |
 | **BGC boundary forcing** | WOA2013/GLODAP climatology | CMEMS BGC reanalysis |
@@ -22,6 +22,14 @@ In practice, the spin-up often proceeds in two phases: first with physics only, 
 with BGC activated after several years — restarting physics from a physics-only restart
 file and initialising BGC from climatology (WOA2013/GLODAP) — while keeping
 climatological physics boundaries throughout.
+
+As an experimental alternative, the spin-up can instead cycle repeatedly through a fixed
+period with GLORYS boundaries (e.g. 1993–1997 five times, or 1993–2002 twice), starting on
+1 September 1993 from the GLORYS ocean state and GLORYS12/TOPAZ4b sea ice
+(`INITFLG="--init-ice"`, see item 3 under [Initial conditions](#initial-conditions)).
+`blkdat.input` then keeps the GLORYS settings throughout. See
+[Cycled spin-up](running.md#cycled-spin-up) for how to run it.
+
 Restart files are written at regular intervals (controlled by `rstrfq` in `blkdat.input`)
 and serve three purposes: (1) continuing the spin-up across multiple job submissions —
 set `INITFLG=""` and update `START` to the last restart date, keeping `blkdat.input`
@@ -45,6 +53,13 @@ of the boundary forcing mode, which is set via `blkdat.input` (see the table abo
    spun-up state (switching to GLORYS `blkdat.input` settings), or to continue a
    hindcast or forecast across job submissions.
    See [Restart files](#restart-files).
+
+3. **HYCOM restart, CICE cold start** (`INITFLG="--init-ice"`, experimental): HYCOM reads a restart
+   file as in (2); CICE is initialised from `ice_initial.nc` as in (1), and no CICE
+   restart file is needed. Use this when the HYCOM restart has no matching CICE restart,
+   e.g. when the ocean is initialised from a GLORYS state. The start date must be in
+   September. `ice_initial.nc` can be built from reanalysis sea ice fields with
+   `bin/cice_ice_initial.py`; ready-made files for 1 September 1993 are on NIRD (see [Initial state for 1 September 1993](running.md#initial-state-for-1-september-1993)).
 
 ### Restart files
 
@@ -108,10 +123,11 @@ For a cold start (`INITFLG="--init"`), the start date (see `START` in the [srjob
 Two sets of initial files are required instead of restart files.
 
 **Ice initial state (`ice_initial.nc`)** — CICE reads this file for the initial ice
-concentration, thickness, and SST/SSS fields. It is included in the experiment directory
-on the projects filesystem, but must be copied to the scratch work directory (the parent
-of `SCRATCH`) before the first run, as the preprocess script does not do this
-automatically:
+concentration, thickness, and SST/SSS fields (also for `INITFLG="--init-ice"`), from
+`ocn_data_dir` in `ice_in` (`'../'`, i.e. the scratch work directory, the parent of
+`SCRATCH`). If `ice_initial.nc` is present in the experiment directory on the projects
+filesystem, the preprocess script copies it there automatically, replacing any existing
+copy. Otherwise, copy it there yourself before the first run:
 
 :::::{dropdown} WDIR — scratch path by machine
 ::::{tab-set}
@@ -225,7 +241,7 @@ boundaries, but using different mechanisms, source data, and required files:
 
 | | Climatological relaxation | GLORYS nesting |
 |---|---|---|
-| **Typical use** | Spin-up | Hindcast / forecast |
+| **Typical use** | Spin-up | Hindcast / forecast; cycled spin-up (experimental) |
 | **`blkdat.input`** | `relax=1`; `trcrlx=1` when `ntracr>0`, else `0`; `nestfq=0`, `bnstfq=0`, `lbflag=0` | `relax=0`, `trcrlx=0`; `nestfq=1`, `bnstfq=1`, `lbflag=2` |
 | **Source data (physics)** | WOA2018 monthly climatology | GLORYS12 daily reanalysis |
 | **Source data (BGC, `ntracr>0`)** | WOA2013/GLODAP climatology | CMEMS BGC reanalysis (`GLOBAL_MULTIYEAR_BIO_001_033`) |
