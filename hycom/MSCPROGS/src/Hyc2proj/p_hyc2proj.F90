@@ -71,10 +71,10 @@ program p_hyc2proj
    real, allocatable, dimension(:,:,:) :: hy3d, regu3d, regusp3d, depthint, &
       hy3d2,pres, levint, temp, sal, dens
 !AS06092011 - adding biological variables for MyOcean
-   real, allocatable, dimension(:,:,:) :: fla, dia, nit, pho, oxy, pp, biovar,s1000,ccl
+   real, allocatable, dimension(:,:,:) :: fla, dia, nit, nh4,pho, oxy, pp, biovar,s1000,ccl
    real, allocatable, dimension(:,:,:) :: u,v
-   real, allocatable, dimension(:,:,:) :: micro, meso, sil,dic,ph,det,detr,detf,pco2,dsnk,dom
-   real, allocatable, dimension(:,:)   :: biovar2d
+   real, allocatable, dimension(:,:,:) :: micro, meso, sil,dic, alk,ph,det,detr,detf,pco2,dsnk,dom
+   real, allocatable, dimension(:,:)   :: biovar2d,oxymin,zminoxy
    real, allocatable, dimension(:,:)   :: ia, nit_ia, sil_ia, pho_ia, iatt, ppia  ! ice-algae
    real, allocatable, dimension(:,:)   :: hy2d, hy2d2, regu2d, strmf, &
       mld1, mld2, dplayer, meanssh, sla, ub, vb, mqlon, mqlat
@@ -570,6 +570,14 @@ program p_hyc2proj
                   call nitrate_ia_conv(nit,nit_ia,biovar,idm,jdm,kdm,pres,onem)
                   hy3d=biovar
                   deallocate(nit,nit_ia,biovar)
+               else if (trim(fld(ifld)%fextract)=='ammonium') then
+                  ! Compute ammonium (mmole m-3)
+                  allocate(nh4(idm,jdm,kdm))
+                  allocate(biovar(idm,jdm,kdm))
+                  call HFReadField3D(hfile,nh4,idm,jdm,kdm,'ECO_nh4     ',1)
+                  call nitrate_conv(nh4,biovar,idm,jdm,kdm)  !use the same function as for no3
+                  hy3d=biovar
+                  deallocate(nh4,biovar)
                else if (trim(fld(ifld)%fextract)=='silicate') then
                   ! Compute silicate (mmole m-3)
                   allocate(sil(idm,jdm,kdm))
@@ -773,8 +781,16 @@ program p_hyc2proj
                   call dic_conv(dic,biovar,idm,jdm,kdm)
                   hy3d=biovar
                   deallocate(dic,biovar)
+               else if (trim(fld(ifld)%fextract)=='alk') then
+                  ! Compute total alkalinity
+                  allocate(alk(idm,jdm,kdm))
+                  allocate(biovar(idm,jdm,kdm))
+                  call HFReadField3D(hfile,alk,idm,jdm,kdm,'CO2_TA     ',1)
+                  call alk_conv(alk,biovar,idm,jdm,kdm)
+                  hy3d=biovar
+                  deallocate(alk,biovar)
                else if (trim(fld(ifld)%fextract)=='ph') then
-                  ! Compute dissolved inorganic carbon (m-1)
+                  ! Compute pH
                   allocate(biovar(idm,jdm,kdm))
                   call HFReadField3D(hfile,biovar,idm,jdm,kdm,'CO2_pH     ',1)
                   hy3d=biovar
@@ -957,7 +973,49 @@ program p_hyc2proj
                   call integrated_chlorophyll_eco(dia,fla,pres,biovar2d,onem,idm,jdm,kdm)
                   hy2d=biovar2d
                   deallocate(dia,fla,biovar2d)
-
+              else if (trim(fld(ifld)%fextract)=='zeu') then
+                  ! Compute attenuation coefficient (m-1) first
+                  allocate(dia(idm,jdm,kdm))
+                  allocate(fla(idm,jdm,kdm))
+                  allocate(ccl(idm,jdm,kdm))
+                  allocate(det(idm,jdm,kdm))
+                  allocate(dom(idm,jdm,kdm))
+                  allocate(biovar(idm,jdm,kdm))
+                  call HFReadField3D(hfile,dia,idm,jdm,kdm,'ECO_diac     ',1)
+                  call HFReadField3D(hfile,fla,idm,jdm,kdm,'ECO_flac     ',1)
+                  call HFReadField3D(hfile,ccl,idm,jdm,kdm,'ECO_cclc     ',1)
+                  call HFReadField3D(hfile,det,idm,jdm,kdm,'ECO_det     ',1)
+                  call HFReadField3D(hfile,dom,idm,jdm,kdm,'ECO_dom     ',1)
+                  call attenuation(dia,fla,ccl,det,dom,biovar,idm,jdm,kdm)
+                  hy3d=biovar
+                  deallocate(dia,fla,ccl,det,dom,biovar)
+                  ! Compute euphotic layer depth (m)
+                  allocate(biovar2D(idm,jdm))
+                  call euphotic_depth(hy3d,biovar2d,idm,jdm,kdm,pres,onem)
+                  hy2d=biovar2d
+                  deallocate(biovar2d)
+              else if (trim(fld(ifld)%fextract)=='oxymin') then
+                  ! Compute minimal oxygen in water column (mmol m-3) 
+                  allocate(oxy(idm,jdm,kdm))
+                  allocate(biovar(idm,jdm,kdm))
+                  allocate(oxymin(idm,jdm)) 
+                  allocate(zminoxy(idm,jdm))
+                  call HFReadField3D(hfile,oxy,idm,jdm,kdm,'ECO_oxy     ',1)
+                  call oxygen_conv(oxy,biovar,idm,jdm,kdm)
+                  call oxygen_minimum(biovar,oxymin,zminoxy,idm,jdm,kdm,pres,onem)
+                  hy2d=oxymin
+                  deallocate(oxy,biovar,oxymin,zminoxy)
+              else if (trim(fld(ifld)%fextract)=='zoxymin') then
+                  ! Compute depth of minimal oxygen (m)
+                  allocate(oxy(idm,jdm,kdm))
+                  allocate(biovar(idm,jdm,kdm))
+                  allocate(oxymin(idm,jdm))  
+                  allocate(zminoxy(idm,jdm))
+                  call HFReadField3D(hfile,oxy,idm,jdm,kdm,'ECO_oxy     ',1)
+                  call oxygen_conv(oxy,biovar,idm,jdm,kdm)
+                  call oxygen_minimum(biovar,oxymin,zminoxy,idm,jdm,kdm,pres,onem)
+                  hy2d=zminoxy
+                  deallocate(oxy,biovar,oxymin,zminoxy)
 !KAL20151109 - Adding bottom temperature as a 2D field. Vertical interpolation to 10 meter above seabed
               else if (trim(fld(ifld)%fextract)=='btemp') then 
                   call HFReadField3D(hfile,hy3d,idm,jdm,kdm,'temp    ',1)
