@@ -149,16 +149,11 @@ written, and set `INITFLG=""` (restart run).
 
 ## Cycled spin-up
 
-:::{warning}
-The cycled spin-up is **experimental** and not yet tested in production runs. The
-standard spin-up with climatological boundaries (see
-[Initial conditions](forcing.md#initial-conditions)) remains the default. Nothing
-described here changes the behaviour of `srjob.sh` or existing experiments.
-:::
-
-As an alternative to spinning up with climatological boundaries, the model can be run
-repeatedly over a fixed period with GLORYS boundaries (e.g. 1993–1997 five times, or
-1993–2002 twice). `srjob_cycle.sh` does this; it is in the TP2 (`TP2a0.10/expt_01.0`) and
+The cycled spin-up is one of two spin-up strategies (see
+[Spin-up strategies](forcing.md#spin-up-strategies)); the other is the climatological
+spin-up with `srjob.sh`. In the cycled spin-up, the model runs repeatedly over a fixed
+period with GLORYS boundaries (e.g. 1993–1997 five times, or 1993–2002 twice).
+`srjob_cycle.sh` does this; it is in the TP2 (`TP2a0.10/expt_01.0`) and
 TP5 (`TP5a0.06/expt_02.3`) template experiments, which differ only in the SLURM settings
 and `NMPI`. `blkdat.input` keeps the GLORYS nesting settings throughout; no new
 `blkdat.input` option is needed. The first cycle can start on 1 September 1993 from the

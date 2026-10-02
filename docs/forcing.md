@@ -1,11 +1,13 @@
 NERSC-HYCOM-CICE supports two boundary forcing configurations: **climatological
-boundaries** for spin-up runs, and **GLORYS reanalysis boundaries** for hindcast and
-forecast runs. The table below summarises how the initial state and forcing
-differ between the two; the sections that follow describe each component in detail.
+boundaries**, used for the climatological spin-up, and **GLORYS reanalysis boundaries**,
+used for the cycled spin-up and for hindcast and forecast runs (see
+[Spin-up strategies](#spin-up-strategies)). The table below summarises how the initial
+state and forcing differ between the two; the sections that follow describe each
+component in detail.
 
 | | Climatological boundaries | GLORYS boundaries |
 |---|---|---|
-| **Typical use** | Spin-up | Hindcast / forecast; cycled spin-up (experimental) |
+| **Typical use** | Climatological spin-up | Cycled spin-up; hindcast / forecast |
 | **`INITFLG`** in `srjob.sh` | `"--init"` (cold start) or `""` (continuation) | `""`, or `"--init-ice"` (HYCOM restart, CICE cold start) |
 | **Ocean T/S initial state** | WOA2018 climatology (cold start) or HYCOM restart file | HYCOM restart file |
 | **Velocity / SSH initial state** | Zero (cold start) or from HYCOM restart file | From HYCOM restart file |
@@ -17,24 +19,31 @@ differ between the two; the sections that follow describe each component in deta
 | **SSS restoring** | WOA2018 (`sssflg=1`) | WOA2018 (`sssflg=1`) |
 | **Key `blkdat.input` settings** | `relax=1`, `nestfq=0`, `bnstfq=0`, `lbflag=0` | `relax=0`, `nestfq=1`, `bnstfq=1`, `lbflag=2` |
 
-After a cold start, expect a multi-decade spin-up before the circulation is reliable.
-In practice, the spin-up often proceeds in two phases: first with physics only, then
-with BGC activated after several years — restarting physics from a physics-only restart
-file and initialising BGC from climatology (WOA2013/GLODAP) — while keeping
-climatological physics boundaries throughout.
+## Spin-up strategies
 
-As an experimental alternative, the spin-up can instead cycle repeatedly through a fixed
-period with GLORYS boundaries (e.g. 1993–1997 five times, or 1993–2002 twice), starting on
-1 September 1993 from the GLORYS ocean state and GLORYS12/TOPAZ4b sea ice
-(`INITFLG="--init-ice"`, see item 3 under [Initial conditions](#initial-conditions)).
-`blkdat.input` then keeps the GLORYS settings throughout. See
-[Cycled spin-up](running.md#cycled-spin-up) for how to run it.
+Two spin-up strategies are supported:
+
+- **Cycled spin-up** (recommended): the model runs repeatedly through a fixed period with
+  GLORYS boundaries (e.g. 1993–1997 five times, or 1993–2002 twice). The first cycle starts
+  on 1 September 1993 from the GLORYS ocean state and GLORYS12/TOPAZ4b sea ice
+  (`INITFLG="--init-ice"`, see item 3 under [Initial conditions](#initial-conditions)).
+  `blkdat.input` keeps the GLORYS settings throughout, so the boundary forcing is the same
+  as in the hindcast that follows. See [Cycled spin-up](running.md#cycled-spin-up) for how
+  to run it.
+- **Climatological spin-up**: the model is cold-started from climatology in September
+  (`INITFLG="--init"`) and runs with climatological boundaries. Expect a multi-decade
+  spin-up before the circulation is reliable. In practice, it often proceeds in two
+  phases: first with physics only, then with BGC activated after several years —
+  restarting physics from a physics-only restart file and initialising BGC from
+  climatology (WOA2013/GLODAP) — while keeping climatological physics boundaries
+  throughout. For a hindcast, `blkdat.input` is then switched to GLORYS boundaries.
 
 Restart files are written at regular intervals (controlled by `rstrfq` in `blkdat.input`)
-and serve three purposes: (1) continuing the spin-up across multiple job submissions —
+and serve three purposes: (1) continuing a spin-up across multiple job submissions —
 set `INITFLG=""` and update `START` to the last restart date, keeping `blkdat.input`
-unchanged; (2) branching off a hindcast or forecast from a mature spin-up state, where
-`blkdat.input` is switched to GLORYS boundaries; and (3) continuing a hindcast or
+unchanged (`srjob_cycle.sh` does this automatically for the cycled spin-up); (2) branching
+off a hindcast or forecast from a spun-up state, where `blkdat.input` is switched to
+GLORYS boundaries after a climatological spin-up; and (3) continuing a hindcast or
 forecast across multiple job submissions, analogously to (1).
 
 ## Initial conditions
@@ -42,22 +51,23 @@ forecast across multiple job submissions, analogously to (1).
 `INITFLG` in `srjob.sh` controls how the **initial model state** is set. It is independent
 of the boundary forcing mode, which is set via `blkdat.input` (see the table above):
 
-1. **Cold start** (`INITFLG="--init"`): Used for the first segment of a spin-up. T/S are
+1. **Cold start** (`INITFLG="--init"`): Used for the first segment of a climatological spin-up. T/S are
    read from climatological fields in `relax/`; velocities and SSH start at zero; CICE is
    initialised from `ice_initial.nc`. The start date must be in September.
    See [Cold start initial files](#cold-start-initial-files).
 
 2. **Restart** (`INITFLG=""`): HYCOM and CICE read from restart files written by a
    previous run. Use this to continue a spin-up across job submissions (keeping
-   climatological `blkdat.input` settings), to start a hindcast or forecast from a
-   spun-up state (switching to GLORYS `blkdat.input` settings), or to continue a
-   hindcast or forecast across job submissions.
+   `blkdat.input` unchanged), to start a hindcast or forecast from a spun-up state
+   (with GLORYS `blkdat.input` settings), or to continue a hindcast or forecast across
+   job submissions.
    See [Restart files](#restart-files).
 
-3. **HYCOM restart, CICE cold start** (`INITFLG="--init-ice"`, experimental): HYCOM reads a restart
+3. **HYCOM restart, CICE cold start** (`INITFLG="--init-ice"`): HYCOM reads a restart
    file as in (2); CICE is initialised from `ice_initial.nc` as in (1), and no CICE
    restart file is needed. Use this when the HYCOM restart has no matching CICE restart,
-   e.g. when the ocean is initialised from a GLORYS state. The start date must be in
+   e.g. when the ocean is initialised from a GLORYS state (first segment of the cycled
+   spin-up). The start date must be in
    September. `ice_initial.nc` can be built from reanalysis sea ice fields with
    `bin/cice_ice_initial.py`; ready-made files for 1 September 1993 are on NIRD (see [Initial state for 1 September 1993](running.md#initial-state-for-1-september-1993)).
 
@@ -241,7 +251,7 @@ boundaries, but using different mechanisms, source data, and required files:
 
 | | Climatological relaxation | GLORYS nesting |
 |---|---|---|
-| **Typical use** | Spin-up | Hindcast / forecast; cycled spin-up (experimental) |
+| **Typical use** | Climatological spin-up | Cycled spin-up; hindcast / forecast |
 | **`blkdat.input`** | `relax=1`; `trcrlx=1` when `ntracr>0`, else `0`; `nestfq=0`, `bnstfq=0`, `lbflag=0` | `relax=0`, `trcrlx=0`; `nestfq=1`, `bnstfq=1`, `lbflag=2` |
 | **Source data (physics)** | WOA2018 monthly climatology | GLORYS12 daily reanalysis |
 | **Source data (BGC, `ntracr>0`)** | WOA2013/GLODAP climatology | CMEMS BGC reanalysis (`GLOBAL_MULTIYEAR_BIO_001_033`) |

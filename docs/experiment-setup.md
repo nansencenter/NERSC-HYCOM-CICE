@@ -175,7 +175,7 @@ export D=/cluster/work/projects/nn2993k/$USER/<CONFIGNAME>/expt_${X}/data
 ::::
 
 :::{note}
-For the experimental cycled spin-up (`srjob_cycle.sh`, see
+For the cycled spin-up (`srjob_cycle.sh`, see
 [Cycled spin-up](running.md#cycled-spin-up)), append `${SPINUP_CYCLE:+/cycle_${SPINUP_CYCLE}}`
 to `D`, e.g. `export D=$USERWORK/<CONFIGNAME>/expt_${X}/data${SPINUP_CYCLE:+/cycle_${SPINUP_CYCLE}}`.
 `SPINUP_CYCLE` is only set by `srjob_cycle.sh`, so other job scripts still write to `data/`.
@@ -270,11 +270,11 @@ for each run class (climatological relaxation versus nesting run, see [Forcing](
 | `nestfq` | `0` | `1` | Days between 3D nesting archive reads |
 | `lbflag` | `0` | `2` | Lateral barotropic boundary flag |
 
-The experimental cycled spin-up (see [Cycled spin-up](running.md#cycled-spin-up)) uses the
+The cycled spin-up (see [Cycled spin-up](running.md#cycled-spin-up)) uses the
 nesting settings throughout; start from the `blkdat.input_nest` reference file.
 
 :::{warning}
-For runs with climatological relaxation (standard spin-up), set `trcrlx=0` when `ntracr=0`
+For runs with climatological relaxation (climatological spin-up), set `trcrlx=0` when `ntracr=0`
 (physics-only spin-up). If `trcrlx=1`
 without the corresponding BGC climatology files prepared, the model will crash at
 startup looking for files such as `relax_ECO*`.
@@ -824,7 +824,7 @@ copied from the template experiment by `expt_new.sh`; exceptions are noted.
 |------|---------|
 | `srjob.sh` | Main Slurm job script for a single run segment |
 | `srjob_loop.sh` | Slurm job script for looped continuation runs |
-| `srjob_cycle.sh` | Slurm job script for the experimental cycled spin-up — repeats a period with GLORYS boundaries and resubmits itself (see [Cycled spin-up](running.md#cycled-spin-up)) |
+| `srjob_cycle.sh` | Slurm job script for the cycled spin-up — repeats a period with GLORYS boundaries and resubmits itself (see [Cycled spin-up](running.md#cycled-spin-up)) |
 | `sr_job_ensemble.sh` | Slurm job script for ensemble runs |
 | `preprocess_mem.sh` | Preprocess script variant for ensemble members |
 | `sr_ensemble_post.sh` | Ensemble postprocessing script (currently empty) |
