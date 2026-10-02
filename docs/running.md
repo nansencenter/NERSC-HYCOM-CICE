@@ -184,7 +184,10 @@ HYCOM `.b` header; `istep1`, `time` and the calendar attributes of the CICE rest
   [Initial conditions](forcing.md#initial-conditions)). For the files for 1 September 1993, see
   [Cycled spin-up initial files](forcing.md#cycled-spin-up-initial-files).
 - The nesting files must cover `CYCLE_END` itself, since HYCOM interpolates in time
-  between daily files.
+  between daily files, and their Montgomery potential (`montg1`) must be fixed with the
+  restart file of the first cycle as reference (see
+  [Cycled spin-up initial files](forcing.md#cycled-spin-up-initial-files)): HYCOM keeps the
+  reference state of that restart through all cycles.
 - Both models must write a restart at the end of every segment: `rstrfq` in `blkdat.input`
   must be positive (a negative value suppresses the end-of-run restart) and `dump_last = .true.`
   in `ice_in`. Restart dates need not line up with `CYCLE_END`. The job stops if a segment
