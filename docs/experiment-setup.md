@@ -174,6 +174,13 @@ export D=/cluster/work/projects/nn2993k/$USER/<CONFIGNAME>/expt_${X}/data
 :::
 ::::
 
+:::{note}
+For the experimental cycled spin-up (`srjob_cycle.sh`, see
+[Cycled spin-up](running.md#cycled-spin-up)), append `${SPINUP_CYCLE:+/cycle_${SPINUP_CYCLE}}`
+to `D`, e.g. `export D=$USERWORK/<CONFIGNAME>/expt_${X}/data${SPINUP_CYCLE:+/cycle_${SPINUP_CYCLE}}`.
+`SPINUP_CYCLE` is only set by `srjob_cycle.sh`, so other job scripts still write to `data/`.
+:::
+
 :::{important}
 `data/` is on the purged filesystem, so **archive completed output to NIRD on a rolling
 basis** (e.g. per model year as it finishes) from a service node.
@@ -263,8 +270,12 @@ for each run class (climatological relaxation versus nesting run, see [Forcing](
 | `nestfq` | `0` | `1` | Days between 3D nesting archive reads |
 | `lbflag` | `0` | `2` | Lateral barotropic boundary flag |
 
+The experimental cycled spin-up (see [Cycled spin-up](running.md#cycled-spin-up)) uses the
+nesting settings throughout; start from the `blkdat.input_nest` reference file.
+
 :::{warning}
-For spin-up runs, set `trcrlx=0` when `ntracr=0` (physics-only spin-up). If `trcrlx=1`
+For runs with climatological relaxation (standard spin-up), set `trcrlx=0` when `ntracr=0`
+(physics-only spin-up). If `trcrlx=1`
 without the corresponding BGC climatology files prepared, the model will crash at
 startup looking for files such as `relax_ECO*`.
 :::
@@ -805,7 +816,7 @@ copied from the template experiment by `expt_new.sh`; exceptions are noted.
 
 | File | Purpose |
 |------|---------|
-| `ice_initial.nc` | Initial ice state and SST/SSS for CICE cold start — staged separately from the projects filesystem (spin-up only; not needed for restart runs) |
+| `ice_initial.nc` | Initial ice state and SST/SSS for a CICE cold start (`INITFLG="--init"` or `"--init-ice"`); copied to the scratch work directory by the preprocess script if present in the experiment directory. Not needed when CICE starts from a restart file |
 
 **Job scripts**
 
@@ -813,6 +824,7 @@ copied from the template experiment by `expt_new.sh`; exceptions are noted.
 |------|---------|
 | `srjob.sh` | Main Slurm job script for a single run segment |
 | `srjob_loop.sh` | Slurm job script for looped continuation runs |
+| `srjob_cycle.sh` | Slurm job script for the experimental cycled spin-up — repeats a period with GLORYS boundaries and resubmits itself (see [Cycled spin-up](running.md#cycled-spin-up)) |
 | `sr_job_ensemble.sh` | Slurm job script for ensemble runs |
 | `preprocess_mem.sh` | Preprocess script variant for ensemble members |
 | `sr_ensemble_post.sh` | Ensemble postprocessing script (currently empty) |

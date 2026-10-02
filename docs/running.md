@@ -189,6 +189,10 @@ HYCOM `.b` header; `istep1`, `time` and the calendar attributes of the CICE rest
   [Initial conditions](forcing.md#initial-conditions)). For 1 September 1993, see below.
 - The nesting files must cover `CYCLE_END` itself, since HYCOM interpolates in time
   between daily files.
+- Both models must write a restart at the end of every segment: `rstrfq` in `blkdat.input`
+  must be positive (a negative value suppresses the end-of-run restart) and `dump_last = .true.`
+  in `ice_in`. Restart dates need not line up with `CYCLE_END`. The job stops if a segment
+  ends without both restart files.
 - The job continues from the latest HYCOM/CICE restart pair in the cycle data
   directories, so it can simply be resubmitted after a crash. If the job was killed by
   SLURM, run postprocessing with the cycle of the interrupted segment first, e.g.
