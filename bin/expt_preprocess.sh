@@ -504,6 +504,14 @@ fi
 #
 # --- tracer relaxation
 #
+# Remove tracer relaxation/initialisation files left in SCRATCH by earlier segments;
+# HYCOM opens every relax.<tracer>.a present. They are linked again below if needed.
+rm -f relax.ECO_*.[ab] relax.CO2_*.[ab]
+# BGC starting together with physics from a restart without tracers (--init-ice, ntracr>0)
+bgc_init=0
+if [ "$initstr" == "--init-ice" -a $NTRACR -gt 0 ] ; then
+   bgc_init=1
+fi
 if [ $TRCRLX -ne 0 -o $NTRACR -eq -1 ] ; then
    echo "**Setting up tracer relaxation"
    for i in ECO_no3 ECO_pho ECO_sil ECO_oxy CO2_TA CO2_c; do
@@ -525,7 +533,46 @@ if [ $TRCRLX -ne 0 -o $NTRACR -eq -1 ] ; then
    else
      [ ! -f  $INPUTDIR/co2_annmean_gl.txt ] && tellerror "$INPUTDIR/co2_annmean_gl.txt does not exist"
      ln -sf $INPUTDIR/co2_annmean_gl.txt co2_annmean_gl.txt || tellerror "Could not get co2_annmean_gl.txt"
-   fi 
+   fi
+elif [ $bgc_init -eq 1 ] ; then
+   # HYCOM initialises the tracers (initrc) when ntracr<0: FABM defaults (fabm.yaml), then
+   # every tracer with a relax.<tracer> file is set from it. Use the BGC nesting state
+   # written by archv2bgcinit.py to the data dir where available, otherwise the
+   # climatology in relax/$E, otherwise the FABM default.
+   echo "**Setting up BGC initialisation (BGC starts together with physics from restart)"
+   sed -i "s/^\([ \t]*\)\([0-9][0-9]*\)\([ \t]*'ntracr'\)/\1-\2\3/" blkdat.input
+   echo "ntracr in SCRATCH/blkdat.input: $(grep "'ntracr'" blkdat.input)"
+   nfound=0
+   for f in $D/relax.*.a ; do
+      [ -f "$f" ] || continue
+      i=$(basename $f .a | sed "s/^relax\.//")
+      [ -f $D/relax.$i.b ] || { tellerror "$D/relax.$i.b does not exist" ; continue ; }
+      ln -sf $f relax.$i.a           || tellerror "Could not get relax.$i.a"
+      ln -sf $D/relax.$i.b relax.$i.b || tellerror "Could not get relax.$i.b"
+      echo "  $i: from BGC nesting state in $D"
+      nfound=$((nfound+1))
+   done
+   [ $nfound -eq 0 ] && tellwarn "No BGC initial state relax.<tracer>.[ab] in $D (see bin/archv2bgcinit.py)"
+   for i in ECO_no3 ECO_pho ECO_sil ECO_oxy CO2_TA CO2_c; do
+      [ -e relax.$i.a ] && continue
+      if [ -f $BASEDIR/relax/${E}/relax.$i.a -a -f $BASEDIR/relax/${E}/relax.$i.b ] ; then
+         ln -sf $BASEDIR/relax/${E}/relax.$i.a relax.$i.a || tellerror "Could not get relax.$i.a"
+         ln -sf $BASEDIR/relax/${E}/relax.$i.b relax.$i.b || tellerror "Could not get relax.$i.b"
+         echo "  $i: from climatology in $BASEDIR/relax/${E}"
+      else
+         tellwarn "$i: no initial state in $D or $BASEDIR/relax/${E}, FABM default (fabm.yaml) used"
+      fi
+   done
+   if [ -f $BASEDIR/relax/${E}/relax_rmu.a -a -f $BASEDIR/relax/${E}/relax_rmu.b ] ; then
+      ln -sf $BASEDIR/relax/${E}/relax_rmu.a relax.rmutr.a  || tellerror "Could not get relax.rmutr.a"
+      ln -sf $BASEDIR/relax/${E}/relax_rmu.b relax.rmutr.b  || tellerror "Could not get relax.rmutr.b"
+   fi
+   if [ "${DOWNSCALING:-no}" == "yes" ] ; then
+     ln -sf $INPUTDIR/co2_annmean_${DS_scenario}.txt co2_annmean_gl.txt || tellerror "Could not get co2_annmean_gl.txt"
+   else
+     [ ! -f  $INPUTDIR/co2_annmean_gl.txt ] && tellerror "$INPUTDIR/co2_annmean_gl.txt does not exist"
+     ln -sf $INPUTDIR/co2_annmean_gl.txt co2_annmean_gl.txt || tellerror "Could not get co2_annmean_gl.txt"
+   fi
 fi
 #
 # - thermobaric reference state?
