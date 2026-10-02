@@ -13,12 +13,11 @@ spin-up.
   1993–1997 five times, or 1993–2002 twice). `blkdat.input` keeps the GLORYS settings
   throughout, so the boundary forcing is the same as in the hindcast that follows. See
   [Cycled spin-up](running.md#cycled-spin-up) for how to run it.
-  With BGC (`ntracr>0`), the BGC tracers start at the same time, initialised as in a cold
-  start except that nitrate, phosphate, silicate and oxygen come from the CMEMS BGC
-  reanalysis (the BGC nesting file for that day) instead of the WOA2013 climatology: DIC
-  and alkalinity from the GLODAP climatology (if available), all other tracers from the
-  default values in `fabm.yaml`. The BGC nesting files then also provide the BGC boundary
-  forcing during the cycles.
+  With BGC (`ntracr>0`), the BGC tracers start at the same time: nitrate, phosphate,
+  silicate and oxygen from the CMEMS BGC reanalysis (the BGC nesting file for that day),
+  DIC and alkalinity from the GLODAP climatology (if available), and all other tracers
+  from the default values in `fabm.yaml`. The BGC nesting files then also provide the BGC
+  boundary forcing during the cycles.
 - **Climatological spin-up**: the model starts from climatology in September — temperature
   and salinity from WOA2018, velocity and SSH zero, sea ice from the TP4 assimilation
   climatology (`INITFLG="--init"`) — and runs with climatological boundaries. 
