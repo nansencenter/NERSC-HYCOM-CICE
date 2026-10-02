@@ -246,8 +246,8 @@ The restart (and BGC files) must end up in the experiment's `D` for cycle 01.
 
 **With BGC** (`ntracr>0`), also copy the `bgc/` files. HYCOM then initialises the tracers in
 the first segment: `expt_preprocess.sh` makes `ntracr` negative in the `SCRATCH` copy of
-`blkdat.input` for the `INITFLG="--init-ice"` segment, so that HYCOM reads only the physics
-from the restart, sets every tracer to its default value in `fabm.yaml` (see
+`blkdat.input` for the `INITFLG="--init-ice"` segment (see the dropdown below for why), so
+that HYCOM reads only the physics from the restart, sets every tracer to its default value in `fabm.yaml` (see
 [Additional steps when using the BGC module](experiment-setup.md#additional-steps-when-using-the-bgc-module))
 and then overwrites the tracers that have a file `relax.<tracer>.[ab]`:
 
@@ -263,6 +263,37 @@ and then overwrites the tracers that have a file `relax.<tracer>.[ab]`:
 HYCOM only uses `relax.<tracer>` files for initialisation with `iniflg=2` in
 `blkdat.input`. The BGC nesting files must cover the whole cycling period, since they also
 provide the BGC boundary forcing (see [Nesting files](#nesting-files)).
+
+::::{dropdown} Why `ntracr` is made negative for the first segment
+
+The sign of `ntracr` in `blkdat.input` tells HYCOM where the BGC tracers come from:
+
+- `ntracr > 0`: the tracers are read from the restart file.
+- `ntracr < 0`: the tracers are not read from the restart file but initialised by HYCOM:
+  every tracer is set to its default value in `fabm.yaml`, then the tracers that have a
+  file `relax.<tracer>.[ab]` are overwritten from it (with `iniflg=2`).
+
+The restart file built from GLORYS contains only physics. With `ntracr > 0`, HYCOM would
+try to read tracer records that are not there and stop. The first segment of the cycled
+spin-up therefore needs `ntracr < 0`. All later segments need `ntracr > 0`: from then on
+the tracers must be read from the restart files written by HYCOM, otherwise the BGC state
+would be initialised again at every segment and every cycle.
+
+The sign thus has to change exactly once, after the first segment. Instead of changing
+`blkdat.input` by hand, which does not fit with `srjob_cycle.sh` running all segments and
+cycles in sequence, `expt_preprocess.sh` does it automatically. You keep `ntracr` positive
+in `blkdat.input`; for the `INITFLG="--init-ice"` segment only, the preprocess script makes
+it negative in the copy of `blkdat.input` in `SCRATCH`, which is the one HYCOM reads. (For
+the climatological spin-up, the same switch is done by hand when BGC is activated after
+the physics-only phase: `ntracr` negative for the first run with BGC, then positive.)
+
+There is a single `blkdat.input` for all segments and cycles, the one in the experiment
+directory; `expt_preprocess.sh` copies it to `SCRATCH` at the start of every segment.
+`expt_postprocess.sh` copies the `SCRATCH` version to the data directory after every
+segment, so `data/cycle_NN/blkdat.input` is the version used in the last segment of that
+cycle; only after the first segment does `data/cycle_01/blkdat.input` briefly show the
+negative `ntracr`.
+::::
 
 ::::{dropdown} Building the initial files for another configuration
 
