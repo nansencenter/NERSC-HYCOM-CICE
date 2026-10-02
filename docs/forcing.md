@@ -194,11 +194,67 @@ files for initialisation only with `iniflg=2` in `blkdat.input`.
 
 The cycled spin-up starts on 1 September 1993 from the GLORYS12 state, with
 `INITFLG="--init-ice"`: HYCOM starts from a restart file built from GLORYS, CICE is
-cold-started from an `ice_initial.nc` built from reanalysis sea ice fields. For TP2a0.10
-(topography 04, 50 layers, HYCOM 2.3), ready-made files are on NIRD in
-`/nird/datapeak/NS9481K/SPINUP_INIT/`; for other configurations they are built with the
-scripts below. See [Initial state for 1 September 1993](running.md#initial-state-for-1-september-1993)
-for the files and commands.
+cold-started from an `ice_initial.nc` built from reanalysis sea ice fields, and BGC (if
+used) is initialised by HYCOM in the first segment. The files go into the experiment
+directory (`ice_initial.nc`) and into the data directory of the first cycle
+(`data/cycle_01`, see [Cycled spin-up](running.md#cycled-spin-up)).
+
+**Ready-made files** — for TP2a0.10 (topography 04, 50 layers, HYCOM 2.3) the files are
+shared on NIRD:
+
+```
+/nird/datapeak/NS9481K/SPINUP_INIT/
+├── README.md
+├── sources/
+│   ├── glorys12_ice_19930901.nc    # GLORYS12 siconc, sithick (Copernicus Marine)
+│   └── topaz4b_ice_19930901.nc     # TOPAZ4b siconc, sithick, sisnthick (Copernicus Marine)
+└── TP2a0.10/                       # topography 04, 50 layers, HYCOM 2.3
+    ├── ice_initial_19930901.nc
+    ├── restart.1993_244_00_0000.[ab]   # physics
+    └── bgc/                            # BGC initial state (ntracr>0), relax/022/relax_int layers
+        └── relax.ECO_{no3,pho,sil,oxy}.[ab]
+```
+
+:::::{dropdown} WDIR — scratch path by machine
+::::{tab-set}
+:::{tab-item} Betzy
+```bash
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+WDIR=$USERWORK/${CONFIGNAME}
+```
+:::
+:::{tab-item} Olivia
+```bash
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+WDIR=/cluster/work/projects/nn2993k/$USER/${CONFIGNAME}
+```
+:::
+::::
+:::::
+
+```bash
+EXPT_ID=<EXPT_ID>         # e.g. 03.0
+N=/nird/datapeak/NS9481K/SPINUP_INIT/TP2a0.10
+
+mkdir -p $WDIR/expt_${EXPT_ID}/data/cycle_01
+cp $N/restart.1993_244_00_0000.[ab] $WDIR/expt_${EXPT_ID}/data/cycle_01/
+# cp $N/bgc/relax.ECO_*.[ab] $WDIR/expt_${EXPT_ID}/data/cycle_01/   # only with BGC
+cp $N/ice_initial_19930901.nc $WORK/${CONFIGNAME}/expt_${EXPT_ID}/ice_initial.nc
+```
+
+The restart (and BGC files) must end up in the experiment's `D` for cycle 01. Please add
+files built for a new configuration to `SPINUP_INIT/<CONFIGNAME>/` and describe them in
+its README.
+
+For another configuration (e.g. TP5a0.06, or another topography or number of layers),
+build the files as described below, from the experiment directory. The commands use:
+
+```bash
+CONFIGNAME=<CONFIGNAME>   # e.g. TP5a0.06
+IEXPT=<IEXPT>             # nesting/relax dir, e.g. 023
+T=<T>                     # topography version, e.g. 05
+N=/nird/datapeak/NS9481K/SPINUP_INIT
+```
 
 **HYCOM restart from GLORYS** (`restart.1993_244_00_0000.[ab]`) — built by
 `bin/archv2restart.py` from the GLORYS nesting file for that day
@@ -206,26 +262,68 @@ for the files and commands.
 the GLORYS state on the model grid and layers. Temperature, salinity, layer thickness and
 the baroclinic and barotropic velocities are copied from the nesting file; the barotropic
 pressure (SSH) is computed from `srfhgt` and `montg1`. `pbot`, `psikk` and `thkk` are taken
-from an existing restart file of the same configuration, so `montg1` in the nesting files
-must be consistent with that restart (see `calc_montg1.py` under
-[Nesting files](#nesting-files)). The restart is placed in the data directory of the first
-cycle.
+from an existing restart file of the same configuration (template), so `montg1` in the
+nesting files must be consistent with that restart (check with `calc_montg1.py`, see
+[Nesting files](#nesting-files)), otherwise the barotropic pressure is wrong. NaN values in
+the nesting file are filled with the nearest ocean value.
+
+```bash
+python $HOME/NERSC-HYCOM-CICE/bin/archv2restart.py ../nest/${IEXPT}/archv.1993_244_00 \
+    <template restart without .a/.b> --outdir <data dir of cycle 01>
+```
+
+Options `--zero-velocity` and `--zero-ssh` start the ocean with zero velocities or SSH
+instead.
 
 **Ice initial state** (`ice_initial.nc`) — built by `bin/cice_ice_initial.py`:
-concentration from GLORYS12 and thickness from TOPAZ4b for 1 September 1993 (PIOMAS can be
-used instead), interpolated to the model grid; SST/SSS from the top layer of the GLORYS
-nesting file, so that they are consistent with the ocean initial state. It is used in the
-same way as for a cold start (see above).
+concentration from GLORYS12 and thickness from TOPAZ4b for 1 September 1993, interpolated
+to the model grid; SST/SSS from the top layer of the GLORYS nesting file, so that they are
+consistent with the ocean initial state. It is used in the same way as for a cold start
+(see [Cold start initial files](#cold-start-initial-files)).
+
+```bash
+python $HOME/NERSC-HYCOM-CICE/bin/cice_ice_initial.py 1993-09-01T00:00:00 ../nest/${IEXPT}/archv.1993_244_00 \
+    --griddir ../topo --kmt ../topo/kmt_${CONFIGNAME}_${T}.nc \
+    --aice-source glorys --hi-source topaz \
+    --glorys-file $N/sources/glorys12_ice_19930901.nc --topaz-file $N/sources/topaz4b_ice_19930901.nc \
+    -o ice_initial.nc
+```
+
+`cice_ice_initial.py` can also use PIOMAS (`--aice-source piomas`, `--hi-source piomas`) or
+other combinations of the three sources. Interpolation is done on points, so it does not
+depend on the structure of the source or target grid. The GLORYS land mask is read from the
+GLORYS physics file of the same day in `MERCATOR_DATA/PHY`.
 
 **BGC initial state** (`ntracr>0`) — as for a cold start, HYCOM initialises the tracers in
 the first segment: `expt_preprocess.sh` makes `ntracr` negative in the `SCRATCH` copy of
-`blkdat.input`, so that HYCOM reads only the physics from the restart. Nitrate,
-phosphate, silicate and oxygen come from the CMEMS BGC reanalysis instead of WOA2013:
-`bin/archv2bgcinit.py` writes them from the BGC nesting file
-(`archv_fabm.1993_244_00`) as `relax.<tracer>.[ab]` files to the data directory of the
-first cycle. DIC and alkalinity always come from the GLODAP climatology in
-`relax/<IEXPT>/`; the preprocess script stops if it is missing. All other tracers start
-from the defaults in `fabm.yaml`.
+`blkdat.input` for the `INITFLG="--init-ice"` segment, so that HYCOM reads only the physics
+from the restart, sets every tracer to its default value in `fabm.yaml` (see
+[Additional steps when using the BGC module](experiment-setup.md#additional-steps-when-using-the-bgc-module))
+and then overwrites the tracers that have a file `relax.<tracer>.[ab]`:
+
+- DIC and alkalinity always come from the GLODAP climatology in `relax/<IEXPT>/`
+  (`relax.CO2_c`, `relax.CO2_TA`, built by `relax_dic.sh` and `relax_alk.sh`, see
+  [Climatologies and river forcing](#climatologies-and-river-forcing)); the preprocess script
+  stops with an error if it is missing.
+- Nitrate, phosphate, silicate and oxygen come from the CMEMS BGC reanalysis:
+  `bin/archv2bgcinit.py` writes them from the BGC nesting file for that day as
+  `relax.<tracer>.[ab]` files to the data directory of the first cycle. Without these
+  files, the preprocess script falls back to the WOA2013 climatology in `relax/<IEXPT>/`.
+- All other tracers start from the defaults in `fabm.yaml`.
+
+```bash
+python $HOME/NERSC-HYCOM-CICE/bin/archv2bgcinit.py ../nest/${IEXPT}/archv.1993_244_00 \
+    ../nest/${IEXPT}/archv_fabm.1993_244_00 --relax-int ../relax/${IEXPT}/relax_int \
+    --outdir <data dir of cycle 01>
+```
+
+The files have the format of the monthly tracer climatology (12 identical months on the
+`relax_int` layers), so they must be built with the experiment's own `relax_int`. HYCOM only
+uses `relax.<tracer>` files for initialisation with `iniflg=2` in `blkdat.input`. For TP2,
+the BGC nesting file for 1993-09-01 is in
+`/nird/datalake/NS9481K/shuang/nest/TP2_expt023/tar_files/archv_fabm.1993_201_300.tar.gz`;
+stage the BGC nesting files for the whole cycling period with `stage_nesting_files.sh` (see
+[Nesting files](#nesting-files)), since they also provide the BGC boundary forcing.
 
 ## Atmospheric forcing
 

@@ -157,7 +157,7 @@ period with GLORYS boundaries (e.g. 1993–1997 five times, or 1993–2002 twice
 TP5 (`TP5a0.06/expt_02.3`) template experiments, which differ only in the SLURM settings
 and `NMPI`. `blkdat.input` keeps the GLORYS nesting settings throughout; no new
 `blkdat.input` option is needed. The first cycle can start on 1 September 1993 from the
-GLORYS state (see [Initial state for 1 September 1993](#initial-state-for-1-september-1993)).
+GLORYS state (see [Cycled spin-up initial files](forcing.md#cycled-spin-up-initial-files)).
 
 The model always runs on real dates inside the period, so atmospheric forcing, nesting
 files and river forcing are used unchanged. At the end of each cycle, `bin/cycle_wrap.py`
@@ -181,7 +181,8 @@ HYCOM `.b` header; `istep1`, `time` and the calendar attributes of the CICE rest
 - The first cycle needs the HYCOM restart for `SPINUP_START` in `data/cycle_01`. If there is
   no CICE restart for `SPINUP_START`, CICE is cold-started from `ice_initial.nc` in the
   experiment directory (`INITFLG="--init-ice"`, see
-  [Initial conditions](forcing.md#initial-conditions)). For 1 September 1993, see below.
+  [Initial conditions](forcing.md#initial-conditions)). For the files for 1 September 1993, see
+  [Cycled spin-up initial files](forcing.md#cycled-spin-up-initial-files).
 - The nesting files must cover `CYCLE_END` itself, since HYCOM interpolates in time
   between daily files.
 - Both models must write a restart at the end of every segment: `rstrfq` in `blkdat.input`
@@ -195,101 +196,6 @@ HYCOM `.b` header; `istep1`, `time` and the calendar attributes of the CICE rest
 - The boundary and atmospheric forcing jump from `CYCLE_END` back to `CYCLE_START` at each
   wrap. Atmospheric CO2 (`co2_annmean_gl.txt`) follows the model date and is also reset
   each cycle, which matters for BGC.
-
-### Initial state for 1 September 1993
-
-The ocean starts from the GLORYS12 state of the nesting file for 1993-09-01, the sea ice
-from GLORYS12 concentration and TOPAZ4b thickness. The files are shared on NIRD:
-
-```
-/nird/datapeak/NS9481K/SPINUP_INIT/
-├── README.md
-├── sources/
-│   ├── glorys12_ice_19930901.nc    # GLORYS12 siconc, sithick (Copernicus Marine)
-│   └── topaz4b_ice_19930901.nc     # TOPAZ4b siconc, sithick, sisnthick (Copernicus Marine)
-└── TP2a0.10/                       # topography 04, 50 layers, HYCOM 2.3
-    ├── ice_initial_19930901.nc
-    ├── restart.1993_244_00_0000.[ab]   # physics
-    └── bgc/                            # BGC initial state (ntracr>0), relax/022/relax_int layers
-        └── relax.ECO_{no3,pho,sil,oxy}.[ab]
-```
-
-For TP2a0.10 with topography 04, 50 layers and HYCOM 2.3, copy the ready-made files:
-
-```bash
-EXPT_ID=<EXPT_ID>         # e.g. 03.0
-N=/nird/datapeak/NS9481K/SPINUP_INIT/TP2a0.10
-mkdir -p $WDIR/expt_${EXPT_ID}/data/cycle_01
-cp $N/restart.1993_244_00_0000.[ab] $WDIR/expt_${EXPT_ID}/data/cycle_01/
-# cp $N/bgc/relax.ECO_*.[ab] $WDIR/expt_${EXPT_ID}/data/cycle_01/   # only with BGC
-cp $N/ice_initial_19930901.nc $WORK/TP2a0.10/expt_${EXPT_ID}/ice_initial.nc
-```
-
-where `WDIR` is the scratch path (see [Restart files](forcing.md#restart-files)); the
-restart must end up in the experiment's `D` for cycle 01.
-
-For another configuration (e.g. TP5a0.06, or another topography or number of layers),
-build the two files from the experiment directory; this needs the nesting file for
-1993-09-01 and a restart file of the same configuration as template:
-
-```bash
-CONFIGNAME=<CONFIGNAME>   # e.g. TP5a0.06
-IEXPT=<IEXPT>             # nesting dir, e.g. 023
-T=<T>                     # topography version, e.g. 05
-N=/nird/datapeak/NS9481K/SPINUP_INIT
-
-# HYCOM restart restart.1993_244_00_0000.[ab]
-python $HOME/NERSC-HYCOM-CICE/bin/archv2restart.py ../nest/${IEXPT}/archv.1993_244_00 \
-    <template restart without .a/.b> --outdir <data dir of cycle 01>
-
-# CICE initial state
-python $HOME/NERSC-HYCOM-CICE/bin/cice_ice_initial.py 1993-09-01T00:00:00 ../nest/${IEXPT}/archv.1993_244_00 \
-    --griddir ../topo --kmt ../topo/kmt_${CONFIGNAME}_${T}.nc \
-    --aice-source glorys --hi-source topaz \
-    --glorys-file $N/sources/glorys12_ice_19930901.nc --topaz-file $N/sources/topaz4b_ice_19930901.nc \
-    -o ice_initial.nc
-```
-
-- `archv2restart.py` takes `pbot`, `psikk` and `thkk` from the template restart. `montg1` in
-  the nesting files must be consistent with its `psikk`/`thkk` (check with `calc_montg1.py`,
-  see [Nesting files](forcing.md#nesting-files)), otherwise the barotropic pressure is wrong.
-  NaN values in the nesting file are filled with the nearest ocean value. Options
-  `--zero-velocity` and `--zero-ssh` start the ocean with zero velocities or SSH instead.
-- With BGC (`ntracr>0`), the BGC tracers are initialised by HYCOM in the first segment,
-  as in a cold start: `expt_preprocess.sh` makes `ntracr` negative in the `SCRATCH` copy of
-  `blkdat.input` for the `INITFLG="--init-ice"` segment, and HYCOM sets every tracer to its
-  default value in `fabm.yaml` (see
-  [Additional steps when using the BGC module](experiment-setup.md#additional-steps-when-using-the-bgc-module))
-  and then overwrites the tracers that have a file `relax.<tracer>.[ab]`. DIC and
-  alkalinity always come from the GLODAP climatology in `relax/<IEXPT>/`; for the other
-  tracers, the preprocess script links these files from the cycle 01 data directory where
-  present, otherwise the climatology in `relax/<IEXPT>/` (WOA2013). To start nitrate, phosphate,
-  silicate and oxygen from the CMEMS BGC reanalysis, write them from the BGC nesting file to
-  the cycle 01 data directory:
-
-  ```bash
-  python $HOME/NERSC-HYCOM-CICE/bin/archv2bgcinit.py ../nest/${IEXPT}/archv.1993_244_00 \
-      ../nest/${IEXPT}/archv_fabm.1993_244_00 --relax-int ../relax/${IEXPT}/relax_int \
-      --outdir <data dir of cycle 01>
-  ```
-
-  The files have the format of the monthly tracer climatology (12 identical months on the
-  `relax_int` layers), so they must be built with the experiment's own `relax_int`. HYCOM
-  only uses `relax.<tracer>` files for initialisation with `iniflg=2` in `blkdat.input`.
-  The GLODAP climatology for DIC and alkalinity (`relax.CO2_c`, `relax.CO2_TA` in
-  `relax/<IEXPT>/`, built by `relax_dic.sh` and `relax_alk.sh`, see
-  [Climatologies and river forcing](forcing.md#climatologies-and-river-forcing)) is required;
-  the preprocess script stops with an error if it is missing. The BGC
-  nesting file for 1993-09-01 is in
-  `/nird/datalake/NS9481K/shuang/nest/TP2_expt023/tar_files/archv_fabm.1993_201_300.tar.gz`;
-  stage the BGC nesting files for the whole cycling period with `stage_nesting_files.sh`
-  (see [Nesting files](forcing.md#nesting-files)).
-- `cice_ice_initial.py` can also use PIOMAS (`--aice-source piomas`, `--hi-source piomas`)
-  or other combinations of the three sources. Interpolation is done on points, so it does
-  not depend on the structure of the source or target grid. The GLORYS land mask is read
-  from the GLORYS physics file of the same day in `MERCATOR_DATA/PHY`.
-- Please add files built for a new configuration to `SPINUP_INIT/<CONFIGNAME>/` and
-  describe them in its README.
 
 ## Visualization
 
