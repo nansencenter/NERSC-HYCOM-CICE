@@ -25,6 +25,18 @@ else
       initstr="$3"
    fi
 fi
+# Init flag (INITFLG in srjob.sh):
+#   ""           : HYCOM and CICE start from restart files
+#   "--init"     : cold start of HYCOM (climatology in relax/) and CICE (ice_initial.nc)
+#   "--init-ice" : HYCOM starts from restart file, cold start of CICE (ice_initial.nc)
+case "$initstr" in
+   ""|"--init"|"--init-ice") ;;
+   *) tellerror "Unknown init flag $initstr (must be empty, --init or --init-ice)" ; exit 1 ;;
+esac
+hycom_initstr=""
+cice_initstr=""
+[ "$initstr" == "--init" ] && hycom_initstr="--init"
+[ "$initstr" == "--init" -o "$initstr" == "--init-ice" ] && cice_initstr="--init"
 echo "Start time is $starttime"
 echo "Stop  time is $endtime"
 
@@ -124,11 +136,11 @@ fi
 #
 # --- Set up time limits
 #
-cmd="$BINDIR/hycom_limits.py $starttime $endtime $initstr"
+cmd="$BINDIR/hycom_limits.py $starttime $endtime $hycom_initstr"
 echo "*Setting up HYCOM time limits : $cmd "
 eval $cmd ||  tellerror "$cmd failed"
 if [ $ICEFLG -eq 2 ] ; then
-   cmd="$BINDIR/cice_limits.py $initstr $starttime $endtime $NMPI $P/ice_in"
+   cmd="$BINDIR/cice_limits.py $cice_initstr $starttime $endtime $NMPI $P/ice_in"
    echo "*Setting up CICE  time limits : $cmd "
    eval $cmd ||  tellerror "$cmd failed"
 fi
@@ -140,6 +152,7 @@ if [ $ICEFLG -eq 2 ] ; then
    export ice_restart_dir=$($HYCOM_PYTHON_ROUTINES/namelist_extract.py ice_in setup_nml restart_dir)
    export ice_restart_file=$($HYCOM_PYTHON_ROUTINES/namelist_extract.py ice_in setup_nml restart_file)
    export ice_restart_pointer_file=$($HYCOM_PYTHON_ROUTINES/namelist_extract.py ice_in setup_nml pointer_file)
+   export ice_ocn_data_dir=$($HYCOM_PYTHON_ROUTINES/namelist_extract.py ice_in forcing_nml ocn_data_dir)
 fi
 
 
@@ -226,22 +239,29 @@ rm    ports.input tracer.input
 
 
 # Get init flag from start time
-if [ "$initstr" == "--init" ] ;then
+# init=1: cold start of HYCOM; ice_init=1: cold start of CICE
+if [ "$hycom_initstr" == "--init" ] ;then
    init=1
-else 
+else
    init=0
+fi
+if [ "$cice_initstr" == "--init" ] ;then
+   ice_init=1
+else
+   ice_init=0
 fi
 tstart=$(cat limits | tr -s " " | sed "s/^[ ]*//" | cut -d " " -f1)
 tstop=$(cat limits  | tr -s " " | sed "s/^[ ]*//" | cut -d " " -f2)
 echo "Fetched from limits:"
 echo "--------------------"
 echo "init   is $init"
+echo "ice_init is $ice_init"
 echo "tstart is $tstart"
 echo "tstop  is $tstop"
 echo "--------------------"
 
-# Check that start time is in September when starting from climatology                                                           
-if [ "$initstr" == "--init" ] ;then
+# Check that start time is in September when starting from climatology (HYCOM and/or CICE)
+if [ $init -eq 1 -o $ice_init -eq 1 ] ;then
     if [ "$start_month" != "09" ]; then
         tellerror "We recommend starting the model in September when starting from \                                             
 climatology. You can override September initilization by commenting out \                                                        
@@ -484,6 +504,14 @@ fi
 #
 # --- tracer relaxation
 #
+# Remove tracer relaxation/initialisation files left in SCRATCH by earlier segments;
+# HYCOM opens every relax.<tracer>.a present. They are linked again below if needed.
+rm -f relax.ECO_*.[ab] relax.CO2_*.[ab]
+# BGC starting together with physics from a restart without tracers (--init-ice, ntracr>0)
+bgc_init=0
+if [ "$initstr" == "--init-ice" -a $NTRACR -gt 0 ] ; then
+   bgc_init=1
+fi
 if [ $TRCRLX -ne 0 -o $NTRACR -eq -1 ] ; then
    echo "**Setting up tracer relaxation"
    for i in ECO_no3 ECO_pho ECO_sil ECO_oxy CO2_TA CO2_c; do
@@ -505,7 +533,57 @@ if [ $TRCRLX -ne 0 -o $NTRACR -eq -1 ] ; then
    else
      [ ! -f  $INPUTDIR/co2_annmean_gl.txt ] && tellerror "$INPUTDIR/co2_annmean_gl.txt does not exist"
      ln -sf $INPUTDIR/co2_annmean_gl.txt co2_annmean_gl.txt || tellerror "Could not get co2_annmean_gl.txt"
-   fi 
+   fi
+elif [ $bgc_init -eq 1 ] ; then
+   # HYCOM initialises the tracers (initrc) when ntracr<0: FABM defaults (fabm.yaml), then
+   # every tracer with a relax.<tracer> file is set from it. DIC and alkalinity always come
+   # from the GLODAP climatology in relax/$E (required). Other tracers come from the BGC
+   # nesting state written by archv2bgcinit.py to the data dir where available, otherwise
+   # the climatology in relax/$E, otherwise the FABM default.
+   echo "**Setting up BGC initialisation (BGC starts together with physics from restart)"
+   sed -i "s/^\([ \t]*\)\([0-9][0-9]*\)\([ \t]*'ntracr'\)/\1-\2\3/" blkdat.input
+   echo "ntracr in SCRATCH/blkdat.input: $(grep "'ntracr'" blkdat.input)"
+   nfound=0
+   for i in CO2_TA CO2_c; do
+      if [ -f $BASEDIR/relax/${E}/relax.$i.a -a -f $BASEDIR/relax/${E}/relax.$i.b ] ; then
+         ln -sf $BASEDIR/relax/${E}/relax.$i.a relax.$i.a || tellerror "Could not get relax.$i.a"
+         ln -sf $BASEDIR/relax/${E}/relax.$i.b relax.$i.b || tellerror "Could not get relax.$i.b"
+         echo "  $i: from GLODAP climatology in $BASEDIR/relax/${E}"
+      else
+         tellerror "$BASEDIR/relax/${E}/relax.$i.[ab] does not exist (GLODAP climatology, needed for BGC initialisation; see relax_dic.sh, relax_alk.sh)"
+      fi
+   done
+   for f in $D/relax.*.a ; do
+      [ -f "$f" ] || continue
+      i=$(basename $f .a | sed "s/^relax\.//")
+      [ -e relax.$i.a ] && continue   # DIC and alkalinity: GLODAP climatology linked above
+      [ -f $D/relax.$i.b ] || { tellerror "$D/relax.$i.b does not exist" ; continue ; }
+      ln -sf $f relax.$i.a           || tellerror "Could not get relax.$i.a"
+      ln -sf $D/relax.$i.b relax.$i.b || tellerror "Could not get relax.$i.b"
+      echo "  $i: from BGC nesting state in $D"
+      nfound=$((nfound+1))
+   done
+   [ $nfound -eq 0 ] && tellwarn "No BGC initial state relax.<tracer>.[ab] in $D (see bin/archv2bgcinit.py)"
+   for i in ECO_no3 ECO_pho ECO_sil ECO_oxy; do
+      [ -e relax.$i.a ] && continue
+      if [ -f $BASEDIR/relax/${E}/relax.$i.a -a -f $BASEDIR/relax/${E}/relax.$i.b ] ; then
+         ln -sf $BASEDIR/relax/${E}/relax.$i.a relax.$i.a || tellerror "Could not get relax.$i.a"
+         ln -sf $BASEDIR/relax/${E}/relax.$i.b relax.$i.b || tellerror "Could not get relax.$i.b"
+         echo "  $i: from climatology in $BASEDIR/relax/${E}"
+      else
+         tellwarn "$i: no initial state in $D or $BASEDIR/relax/${E}, FABM default (fabm.yaml) used"
+      fi
+   done
+   if [ -f $BASEDIR/relax/${E}/relax_rmu.a -a -f $BASEDIR/relax/${E}/relax_rmu.b ] ; then
+      ln -sf $BASEDIR/relax/${E}/relax_rmu.a relax.rmutr.a  || tellerror "Could not get relax.rmutr.a"
+      ln -sf $BASEDIR/relax/${E}/relax_rmu.b relax.rmutr.b  || tellerror "Could not get relax.rmutr.b"
+   fi
+   if [ "${DOWNSCALING:-no}" == "yes" ] ; then
+     ln -sf $INPUTDIR/co2_annmean_${DS_scenario}.txt co2_annmean_gl.txt || tellerror "Could not get co2_annmean_gl.txt"
+   else
+     [ ! -f  $INPUTDIR/co2_annmean_gl.txt ] && tellerror "$INPUTDIR/co2_annmean_gl.txt does not exist"
+     ln -sf $INPUTDIR/co2_annmean_gl.txt co2_annmean_gl.txt || tellerror "Could not get co2_annmean_gl.txt"
+   fi
 fi
 #
 # - thermobaric reference state?
@@ -701,8 +779,8 @@ else
       tellerror "Could not find HYCOM restart file ${filename}.[ab] in $D"
    fi
 
-   #CICE restart
-   if [ $ICEFLG -eq 2 ] ; then
+   #CICE restart (not needed for cold start of CICE)
+   if [ $ICEFLG -eq 2 -a $ice_init -eq 0 ] ; then
       filenameice="${ice_restart_dir}/${ice_restart_file}.${start_year}-${start_month}-${start_day}-${start_dsec}"
 
       # Try to fetch restart from data dir $D
@@ -724,6 +802,22 @@ else
    fi
 
 
+fi
+
+#
+# --- CICE cold start: initial ice state from ice_initial.nc in ocn_data_dir (relative to scratch dir).
+# --- Copied from the experiment dir if present there, otherwise it must already be in place.
+#
+if [ $ICEFLG -eq 2 -a $ice_init -eq 1 ] ; then
+   ice_initial=${ice_ocn_data_dir%/}/ice_initial.nc
+   if [ -f $P/ice_initial.nc ] ; then
+      echo "using CICE initial state $P/ice_initial.nc -> $ice_initial"
+      cp $P/ice_initial.nc $ice_initial || tellerror "Could not copy $P/ice_initial.nc to $ice_initial"
+   elif [ -f $ice_initial ] ; then
+      echo "using CICE initial state $ice_initial (already in place)"
+   else
+      tellerror "Could not find CICE initial state ice_initial.nc in $P or $(cd ${ice_ocn_data_dir} 2>/dev/null && pwd)"
+   fi
 fi
 
 

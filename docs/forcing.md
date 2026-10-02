@@ -1,50 +1,85 @@
+This page describes how the model is initialised and forced. Two spin-up strategies are
+supported; they differ in the initial state and in the boundary forcing used during the
+spin-up.
+
+## Spin-up strategies
+
+- **Cycled spin-up** (recommended): the model starts from the GLORYS12 reanalysis state on
+  1 September 1993. Ocean temperature, salinity, layer thickness, velocity and SSH come
+  from the GLORYS nesting file for that day, converted to a HYCOM restart file; sea ice
+  concentration comes from GLORYS12 and sea ice thickness from TOPAZ4b
+  (`INITFLG="--init-ice"`, see [Cycled spin-up initial files](#cycled-spin-up-initial-files)).
+  The model then runs repeatedly through a fixed period with GLORYS boundaries (e.g.
+  1993–1997 five times, or 1993–2002 twice). `blkdat.input` keeps the GLORYS settings
+  throughout, so the boundary forcing is the same as in the hindcast that follows. See
+  [Cycled spin-up](running.md#cycled-spin-up) for how to run it.
+  With BGC (`ntracr>0`), the BGC tracers start at the same time: nitrate, phosphate,
+  silicate and oxygen from the CMEMS BGC reanalysis (the BGC nesting file for that day),
+  DIC and alkalinity from the GLODAP climatology, and all other tracers from the default
+  values in `fabm.yaml` (see
+  [Additional steps when using the BGC module](experiment-setup.md#additional-steps-when-using-the-bgc-module)). The BGC nesting files then also provide the BGC
+  boundary forcing during the cycles.
+- **Climatological spin-up**: the model starts from climatology in September — temperature
+  and salinity from WOA2018, velocity and SSH zero, sea ice from the TP4 assimilation
+  climatology (`INITFLG="--init"`) — and runs with climatological boundaries. 
+  In practice, it often proceeds
+  in two phases: first with physics only, then with BGC activated after several years —
+  restarting physics from a physics-only restart file and initialising BGC from
+  climatology (WOA2013/GLODAP) — while keeping climatological physics boundaries
+  throughout. For a hindcast, `blkdat.input` is then switched to GLORYS boundaries.
+
+Restart files are written at regular intervals (controlled by `rstrfq` in `blkdat.input`)
+and serve three purposes: (1) continuing a spin-up across multiple job submissions —
+set `INITFLG=""` and update `START` to the last restart date, keeping `blkdat.input`
+unchanged (`srjob_cycle.sh` does this automatically for the cycled spin-up); (2) branching
+off a hindcast or forecast from a spun-up state, where `blkdat.input` is switched to
+GLORYS boundaries after a climatological spin-up; and (3) continuing a hindcast or
+forecast across multiple job submissions, analogously to (1).
+
+## Boundary forcing configurations
+
 NERSC-HYCOM-CICE supports two boundary forcing configurations: **climatological
-boundaries** for spin-up runs, and **GLORYS reanalysis boundaries** for hindcast and
-forecast runs. The table below summarises how the initial state and forcing
-differ between the two; the sections that follow describe each component in detail.
+boundaries**, used for the climatological spin-up, and **GLORYS reanalysis boundaries**,
+used for the cycled spin-up and for hindcast and forecast runs. The table below summarises
+how the initial state and forcing differ between the two; the sections that follow
+describe each component in detail.
 
 | | Climatological boundaries | GLORYS boundaries |
 |---|---|---|
-| **Typical use** | Spin-up | Hindcast / forecast |
-| **`INITFLG`** in `srjob.sh` | `"--init"` (cold start) or `""` (continuation) | `""` |
-| **Ocean T/S initial state** | WOA2018 climatology (cold start) or HYCOM restart file | HYCOM restart file |
-| **Velocity / SSH initial state** | Zero (cold start) or from HYCOM restart file | From HYCOM restart file |
+| **Typical use** | Climatological spin-up | Cycled spin-up; hindcast / forecast |
+| **`INITFLG`** | First segment: `"--init"` (HYCOM and CICE cold start from climatology). Later segments: `""` | Cycled spin-up, first segment: `"--init-ice"` (HYCOM from a restart built from GLORYS, CICE cold start from `ice_initial.nc`). All other runs: `""` |
+| **Ocean T/S initial state** | WOA2018 climatology (cold start) or HYCOM restart file | GLORYS12 (first segment of the cycled spin-up) or HYCOM restart file |
+| **Velocity / SSH initial state** | Zero (cold start) or from HYCOM restart file | GLORYS12 (first segment of the cycled spin-up) or HYCOM restart file |
 | **BGC initial state** | WOA2013/GLODAP climatology (cold start) or HYCOM restart file | From HYCOM restart file |
-| **Ice initial state** | TP4 assimilation climatology (cold start) or CICE restart file | CICE restart file |
+| **Ice initial state** | TP4 assimilation climatology (cold start) or CICE restart file | GLORYS12 concentration and TOPAZ4b thickness (`ice_initial.nc`, first segment of the cycled spin-up) or CICE restart file |
 | **Atmospheric forcing** | ERA5 | ERA5 |
 | **Lateral boundary forcing** | WOA2018 climatology; T/S only, no transports | GLORYS12; T/S, velocity, layer thickness, SSH |
 | **BGC boundary forcing** | WOA2013/GLODAP climatology | CMEMS BGC reanalysis |
-| **SSS restoring** | WOA2018 (`sssflg=1`) | WOA2018 (`sssflg=1`) |
 | **Key `blkdat.input` settings** | `relax=1`, `nestfq=0`, `bnstfq=0`, `lbflag=0` | `relax=0`, `nestfq=1`, `bnstfq=1`, `lbflag=2` |
-
-After a cold start, expect a multi-decade spin-up before the circulation is reliable.
-In practice, the spin-up often proceeds in two phases: first with physics only, then
-with BGC activated after several years — restarting physics from a physics-only restart
-file and initialising BGC from climatology (WOA2013/GLODAP) — while keeping
-climatological physics boundaries throughout.
-Restart files are written at regular intervals (controlled by `rstrfq` in `blkdat.input`)
-and serve three purposes: (1) continuing the spin-up across multiple job submissions —
-set `INITFLG=""` and update `START` to the last restart date, keeping `blkdat.input`
-unchanged; (2) branching off a hindcast or forecast from a mature spin-up state, where
-`blkdat.input` is switched to GLORYS boundaries; and (3) continuing a hindcast or
-forecast across multiple job submissions, analogously to (1).
 
 ## Initial conditions
 
-`INITFLG` in `srjob.sh` controls how the **initial model state** is set. It is independent
+`INITFLG` (set in `srjob.sh`, or automatically by `srjob_cycle.sh`) controls how the **initial model state** is set. It is independent
 of the boundary forcing mode, which is set via `blkdat.input` (see the table above):
 
-1. **Cold start** (`INITFLG="--init"`): Used for the first segment of a spin-up. T/S are
+1. **Cold start** (`INITFLG="--init"`): Used for the first segment of a climatological spin-up. T/S are
    read from climatological fields in `relax/`; velocities and SSH start at zero; CICE is
    initialised from `ice_initial.nc`. The start date must be in September.
    See [Cold start initial files](#cold-start-initial-files).
 
 2. **Restart** (`INITFLG=""`): HYCOM and CICE read from restart files written by a
    previous run. Use this to continue a spin-up across job submissions (keeping
-   climatological `blkdat.input` settings), to start a hindcast or forecast from a
-   spun-up state (switching to GLORYS `blkdat.input` settings), or to continue a
-   hindcast or forecast across job submissions.
+   `blkdat.input` unchanged), to start a hindcast or forecast from a spun-up state
+   (with GLORYS `blkdat.input` settings), or to continue a hindcast or forecast across
+   job submissions.
    See [Restart files](#restart-files).
+
+3. **HYCOM restart, CICE cold start** (`INITFLG="--init-ice"`): HYCOM reads a restart
+   file as in (2); CICE is initialised from `ice_initial.nc` as in (1), and no CICE
+   restart file is needed. Use this when the HYCOM restart has no matching CICE restart,
+   e.g. when the ocean is initialised from a GLORYS state (first segment of the cycled
+   spin-up, see [Cycled spin-up initial files](#cycled-spin-up-initial-files)). The start
+   date must be in September.
 
 ### Restart files
 
@@ -104,14 +139,19 @@ cp /nird/datalake/NS9481K/shuang/TP2_output/expt_02.6/cice/iced.2016-08-27-00000
 
 ### Cold start initial files
 
-For a cold start (`INITFLG="--init"`), the start date (see `START` in the [srjob.sh variable table](running.md#submit-a-job)) must be in September.
-Two sets of initial files are required instead of restart files.
+A cold start (`INITFLG="--init"`) starts the climatological spin-up. The start date (see
+`START` in the [srjob.sh variable table](running.md#submit-a-job)) must be in September.
+The following initial files are required instead of restart files.
 
 **Ice initial state (`ice_initial.nc`)** — CICE reads this file for the initial ice
-concentration, thickness, and SST/SSS fields. It is included in the experiment directory
-on the projects filesystem, but must be copied to the scratch work directory (the parent
-of `SCRATCH`) before the first run, as the preprocess script does not do this
-automatically:
+concentration, thickness, and SST/SSS fields, from `ocn_data_dir` in `ice_in` (`'../'`,
+i.e. the scratch work directory, the parent of `SCRATCH`). For the climatological spin-up,
+use the `ice_initial.nc` of the template experiment, built from the TP4 assimilation
+climatology (the cycled spin-up uses a different file, see
+[Cycled spin-up initial files](#cycled-spin-up-initial-files)). If `ice_initial.nc` is
+present in the experiment directory on the projects filesystem, the preprocess script
+copies it there automatically, replacing any existing copy. Otherwise, copy it there
+yourself before the first run:
 
 :::::{dropdown} WDIR — scratch path by machine
 ::::{tab-set}
@@ -141,6 +181,208 @@ cp $WORK/${CONFIGNAME}/expt_${EXPT_ID}/ice_initial.nc $WDIR/expt_${EXPT_ID}/
 `create_ref_case.sh`, described in
 [Climatologies and river forcing](#climatologies-and-river-forcing).
 Layer thicknesses are computed internally from the T/S profiles. 
+
+**BGC initial state** (`ntracr>0`) — HYCOM sets every tracer to its default value in
+`fabm.yaml` (see [Additional steps when using the BGC module](experiment-setup.md#additional-steps-when-using-the-bgc-module))
+and then overwrites the tracers that have a climatology file `relax.<tracer>.[ab]`:
+nitrate, phosphate, silicate and oxygen from WOA2013, DIC and alkalinity from GLODAP, in
+`relax/<IEXPT>/` (generated by `create_ref_case.sh`, see
+[Climatologies and river forcing](#climatologies-and-river-forcing)). HYCOM uses these
+files for initialisation only with `iniflg=2` in `blkdat.input`.
+
+### Cycled spin-up initial files
+
+The cycled spin-up starts on 1 September 1993 from the GLORYS12 state, with
+`INITFLG="--init-ice"`: HYCOM starts from a restart file built from GLORYS, CICE is
+cold-started from an `ice_initial.nc` built from reanalysis sea ice fields, and BGC (if
+used) is initialised by HYCOM in the first segment. The files go into the experiment
+directory (`ice_initial.nc`) and into the data directory of the first cycle
+(`data/cycle_01`, see [Cycled spin-up](running.md#cycled-spin-up)).
+
+**Ready-made files** — for TP2a0.10 (topography 04, 50 layers, HYCOM 2.3) the files are
+shared on NIRD:
+
+```
+/nird/datapeak/NS9481K/SPINUP_INIT/
+├── README.md
+├── sources/
+│   ├── glorys12_ice_19930901.nc    # GLORYS12 siconc, sithick (Copernicus Marine)
+│   └── topaz4b_ice_19930901.nc     # TOPAZ4b siconc, sithick, sisnthick (Copernicus Marine)
+└── TP2a0.10/                       # topography 04, 50 layers, HYCOM 2.3
+    ├── ice_initial_19930901.nc
+    ├── restart.1993_244_00_0000.[ab]   # physics
+    └── bgc/                            # BGC initial state (ntracr>0), relax/022/relax_int layers
+        └── relax.ECO_{no3,pho,sil,oxy}.[ab]
+```
+
+:::::{dropdown} WDIR — scratch path by machine
+::::{tab-set}
+:::{tab-item} Betzy
+```bash
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+WDIR=$USERWORK/${CONFIGNAME}
+```
+:::
+:::{tab-item} Olivia
+```bash
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+WDIR=/cluster/work/projects/nn2993k/$USER/${CONFIGNAME}
+```
+:::
+::::
+:::::
+
+```bash
+EXPT_ID=<EXPT_ID>         # e.g. 03.0
+N=/nird/datapeak/NS9481K/SPINUP_INIT/TP2a0.10
+
+mkdir -p $WDIR/expt_${EXPT_ID}/data/cycle_01
+cp $N/restart.1993_244_00_0000.[ab] $WDIR/expt_${EXPT_ID}/data/cycle_01/
+cp $N/bgc/relax.ECO_*.[ab] $WDIR/expt_${EXPT_ID}/data/cycle_01/   # only with BGC
+cp $N/ice_initial_19930901.nc $WORK/${CONFIGNAME}/expt_${EXPT_ID}/ice_initial.nc
+```
+
+The restart (and BGC files) must end up in the experiment's `D` for cycle 01.
+
+**Fix the Montgomery potential in the nesting files for this restart** — required. The
+restart defines the reference state of the run (`psikk`, `thkk`, computed from the GLORYS
+state on 1 September 1993 as at a HYCOM cold start, see the dropdown below). HYCOM keeps
+this reference for the whole spin-up, also across the cycle wraps. `montg1` in the nesting
+files used for the boundary forcing must be computed with the same reference, so run
+`calc_montg1.py` with this restart for all nesting files of the cycling period (e.g.
+1993-09-01 to 1998-01-01), as described under
+[Fix the Montgomery potential](#nesting-files), with
+`$WDIR/expt_${EXPT_ID}/data/cycle_01/restart.1993_244_00_0000.a` as the restart file.
+Nesting files fixed for another restart (e.g. from an earlier experiment) are not
+consistent with it. The fixed nesting files can be shared by all cycled spin-ups of the
+same configuration that start from the same restart.
+
+**With BGC** (`ntracr>0`), also copy the `bgc/` files. HYCOM then initialises the tracers in
+the first segment: `expt_preprocess.sh` makes `ntracr` negative in the `SCRATCH` copy of
+`blkdat.input` for the `INITFLG="--init-ice"` segment (see the dropdown below for why), so
+that HYCOM reads only the physics from the restart, sets every tracer to its default value in `fabm.yaml` (see
+[Additional steps when using the BGC module](experiment-setup.md#additional-steps-when-using-the-bgc-module))
+and then overwrites the tracers that have a file `relax.<tracer>.[ab]`:
+
+- Nitrate, phosphate, silicate and oxygen from the CMEMS BGC reanalysis (the `bgc/` files in
+  the data directory of the first cycle; without them, the WOA2013 climatology in
+  `relax/<IEXPT>/` is used).
+- DIC and alkalinity always from the GLODAP climatology in `relax/<IEXPT>/` (`relax.CO2_c`,
+  `relax.CO2_TA`, built by `relax_dic.sh` and `relax_alk.sh`, see
+  [Climatologies and river forcing](#climatologies-and-river-forcing)); the preprocess script
+  stops with an error if it is missing.
+- All other tracers from the defaults in `fabm.yaml`.
+
+HYCOM only uses `relax.<tracer>` files for initialisation with `iniflg=2` in
+`blkdat.input`. The BGC nesting files must cover the whole cycling period, since they also
+provide the BGC boundary forcing (see [Nesting files](#nesting-files)).
+
+::::{dropdown} Why `ntracr` is made negative for the first segment
+
+The sign of `ntracr` in `blkdat.input` tells HYCOM where the BGC tracers come from:
+
+- `ntracr > 0`: the tracers are read from the restart file.
+- `ntracr < 0`: the tracers are not read from the restart file but initialised by HYCOM:
+  every tracer is set to its default value in `fabm.yaml`, then the tracers that have a
+  file `relax.<tracer>.[ab]` are overwritten from it (with `iniflg=2`).
+
+The restart file built from GLORYS contains only physics. With `ntracr > 0`, HYCOM would
+try to read tracer records that are not there and stop. The first segment of the cycled
+spin-up therefore needs `ntracr < 0`. All later segments need `ntracr > 0`: from then on
+the tracers must be read from the restart files written by HYCOM, otherwise the BGC state
+would be initialised again at every segment and every cycle.
+
+The sign thus has to change exactly once, after the first segment. Instead of changing
+`blkdat.input` by hand, which does not fit with `srjob_cycle.sh` running all segments and
+cycles in sequence, `expt_preprocess.sh` does it automatically. You keep `ntracr` positive
+in `blkdat.input`; for the `INITFLG="--init-ice"` segment only, the preprocess script makes
+it negative in the copy of `blkdat.input` in `SCRATCH`, which is the one HYCOM reads. (For
+the climatological spin-up, the same switch is done by hand when BGC is activated after
+the physics-only phase: `ntracr` negative for the first run with BGC, then positive.)
+
+There is a single `blkdat.input` for all segments and cycles, the one in the experiment
+directory; `expt_preprocess.sh` copies it to `SCRATCH` at the start of every segment.
+`expt_postprocess.sh` copies it to the data directory after every segment, so
+`data/cycle_NN/blkdat.input` is the `blkdat.input` used by cycle NN. The version with
+negative `ntracr` that HYCOM read in the first segment is kept as
+`data/cycle_01/blkdat.input.init`.
+::::
+
+::::{dropdown} Building the initial files for another configuration
+
+For another configuration (e.g. TP5a0.06, or another topography or number of layers),
+build the files from the experiment directory. The commands use:
+
+```bash
+CONFIGNAME=<CONFIGNAME>   # e.g. TP5a0.06
+IEXPT=<IEXPT>             # nesting/relax dir, e.g. 023
+T=<T>                     # topography version, e.g. 05
+N=/nird/datapeak/NS9481K/SPINUP_INIT
+```
+
+**HYCOM restart from GLORYS** (`restart.1993_244_00_0000.[ab]`) — built by
+`bin/archv2restart.py` from the GLORYS nesting file for that day
+(`nest/<IEXPT>/archv.1993_244_00`, see [Nesting files](#nesting-files)), which already holds
+the GLORYS state on the model grid and layers. Temperature, salinity, layer thickness and
+the baroclinic and barotropic velocities are copied from the nesting file. No template
+restart is needed: `pbot`, `thkk` and `psikk` are computed from the nesting file exactly as
+HYCOM computes them at a cold start (`inicon.F90`), as if this state were the initial state
+of the run — `pbot` is the sum of the layer thicknesses, the Montgomery potential is
+integrated downward from zero at the surface (ocean at rest with a flat surface), and
+`thkk` and `psikk` are the virtual potential density and Montgomery potential of the
+bottom layer. The barotropic pressure `pbavg` (SSH) is then computed from `srfhgt` with
+these, in the same way as in `calc_montg1.py`, so it does not depend on `montg1` in the
+nesting file. The script warns that `montg1` in the nesting file is not consistent with the
+new restart unless the nesting file was already fixed with it; afterwards, fix the nesting
+files with this restart (see above). Only `kapref=0` is supported. NaN values in the nesting
+file are filled with the nearest ocean value. Run it from the experiment directory after
+sourcing `EXPT.src` (for `SIGVER`, or use `--sigver`):
+
+```bash
+python $HOME/NERSC-HYCOM-CICE/bin/archv2restart.py ../nest/${IEXPT}/archv.1993_244_00 \
+    --outdir <data dir of cycle 01>
+```
+
+Options `--zero-velocity` and `--zero-ssh` start the ocean with zero velocities or SSH
+instead.
+
+**Ice initial state** (`ice_initial.nc`) — built by `bin/cice_ice_initial.py`:
+concentration from GLORYS12 and thickness from TOPAZ4b for 1 September 1993, interpolated
+to the model grid; SST/SSS from the top layer of the GLORYS nesting file, so that they are
+consistent with the ocean initial state. It is used in the same way as for a cold start
+(see [Cold start initial files](#cold-start-initial-files)).
+
+```bash
+python $HOME/NERSC-HYCOM-CICE/bin/cice_ice_initial.py 1993-09-01T00:00:00 ../nest/${IEXPT}/archv.1993_244_00 \
+    --griddir ../topo --kmt ../topo/kmt_${CONFIGNAME}_${T}.nc \
+    --aice-source glorys --hi-source topaz \
+    --glorys-file $N/sources/glorys12_ice_19930901.nc --topaz-file $N/sources/topaz4b_ice_19930901.nc \
+    -o ice_initial.nc
+```
+
+`cice_ice_initial.py` can also use PIOMAS (`--aice-source piomas`, `--hi-source piomas`) or
+other combinations of the three sources. Interpolation is done on points, so it does not
+depend on the structure of the source or target grid. The GLORYS land mask is read from the
+GLORYS physics file of the same day in `MERCATOR_DATA/PHY`.
+
+**BGC initial state** (`relax.ECO_{no3,pho,sil,oxy}.[ab]`) — built by
+`bin/archv2bgcinit.py` from the BGC nesting file for that day (CMEMS BGC reanalysis), written
+to the data directory of the first cycle:
+
+```bash
+python $HOME/NERSC-HYCOM-CICE/bin/archv2bgcinit.py ../nest/${IEXPT}/archv.1993_244_00 \
+    ../nest/${IEXPT}/archv_fabm.1993_244_00 --relax-int ../relax/${IEXPT}/relax_int \
+    --outdir <data dir of cycle 01>
+```
+
+The files have the format of the monthly tracer climatology (12 identical months on the
+`relax_int` layers), so they must be built with the experiment's own `relax_int`. For TP2,
+the BGC nesting file for 1993-09-01 is in
+`/nird/datalake/NS9481K/shuang/nest/TP2_expt023/tar_files/archv_fabm.1993_201_300.tar.gz`.
+
+Please add files built for a new configuration to `SPINUP_INIT/<CONFIGNAME>/` on NIRD and
+describe them in its README.
+::::
 
 ## Atmospheric forcing
 
@@ -225,7 +467,7 @@ boundaries, but using different mechanisms, source data, and required files:
 
 | | Climatological relaxation | GLORYS nesting |
 |---|---|---|
-| **Typical use** | Spin-up | Hindcast / forecast |
+| **Typical use** | Climatological spin-up | Cycled spin-up; hindcast / forecast |
 | **`blkdat.input`** | `relax=1`; `trcrlx=1` when `ntracr>0`, else `0`; `nestfq=0`, `bnstfq=0`, `lbflag=0` | `relax=0`, `trcrlx=0`; `nestfq=1`, `bnstfq=1`, `lbflag=2` |
 | **Source data (physics)** | WOA2018 monthly climatology | GLORYS12 daily reanalysis |
 | **Source data (BGC, `ntracr>0`)** | WOA2013/GLODAP climatology | CMEMS BGC reanalysis (`GLOBAL_MULTIYEAR_BIO_001_033`) |
@@ -782,11 +1024,12 @@ Output: `$WORK/<CONFIGNAME>/nest/<IEXPT>/archv.YYYY_DDD_HH.[ab]`
 **Fix the Montgomery potential**
 
 The nesting archives require a correct `montg1` (Montgomery potential) field, which
-depends on `psikk` (the Montgomery potential at the deepest isopycnal interface) and
-`thkk` (the virtual bottom layer thickness) from a restart file of the destination
-model. Files generated by `nemo_to_hycom.sh` in the dropdown above have `montg1 = 0`; files copied from
+depends on `psikk` (the Montgomery potential in the bottom layer) and `thkk` (the virtual
+potential density in the bottom layer) from a restart file of the destination model. Files generated by `nemo_to_hycom.sh` in the dropdown above have `montg1 = 0`; files copied from
 elsewhere may have a non-zero value but one computed from a different model run, making
-it inconsistent with the restart files you are using.
+it inconsistent with the restart files you are using. For the cycled spin-up, use the
+restart file of the first cycle (`data/cycle_01/restart.1993_244_00_0000`, see
+[Cycled spin-up initial files](#cycled-spin-up-initial-files)).
 
 Run `calc_montg1.py` once per archive file, from the destination experiment directory.
 Before running, load the HPC environment and activate the Python environment:
@@ -834,9 +1077,13 @@ and S using the equation of state selected by `thflag` in `blkdat.input`. It als
 
 **What it reads from the restart**
 
-It reads `psikk` and `thkk` — the Montgomery potential and thickness of the virtual
-bottom layer, which sits below the deepest active isopycnal layer. `psikk` and `thkk` do not
-vary within a model run, so any restart from the same run produces the correct result.
+It reads `psikk` and `thkk` — the Montgomery potential and the virtual potential density
+in the bottom layer (layer `kdm`). Virtual potential density is potential density plus
+HYCOM's thermobaric correction (`kapref`); with `kapref=0` it is the potential density.
+HYCOM sets `psikk` and `thkk` when a run is initialised and keeps them fixed: they are the
+lower boundary from which the Montgomery potential is integrated upward through the layers.
+`psikk` and `thkk` do not vary within a model run, so any restart from the same run produces
+the correct result.
 
 **How montg1 is computed**
 

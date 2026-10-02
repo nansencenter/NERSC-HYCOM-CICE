@@ -55,7 +55,7 @@ Open `srjob.sh` in a text editor and update:
 | `NMPI` | `"<NMPI>"` e.g. `504` | Update NMPI if needed |
 | `START` | `"YYYY-MM-DDT00:00:00"` | Run start time |
 | `END` | `"YYYY-MM-DDT00:00:00"` | Run end time |
-| `INITFLG` | `""` or `"--init"` | `"--init"` for a cold start; `""` to restart from files (see note below) |
+| `INITFLG` | `""`, `"--init"` or `"--init-ice"` | `"--init"` for a cold start; `""` to restart from files; `"--init-ice"` for a HYCOM restart with a CICE cold start (see notes below) |
 | `#SBATCH --time` | `"HH:MM:SS"` | Wall-clock time limit |
 
 > **`INITFLG="--init"` (cold start):** No restart files are needed.
@@ -63,7 +63,7 @@ Open `srjob.sh` in a text editor and update:
 > `relax/` (see [Climatologies and river forcing](forcing.md#climatologies-and-river-forcing));
 > velocities and sea surface height (SSH) start at zero. The model then spins up under realistic atmospheric
 > forcing. The start date must be in September (the month of Arctic sea ice minimum).
-> See [Initial conditions](forcing.md#initial-conditions) for details on both options.
+> See [Initial conditions](forcing.md#initial-conditions) for details on all options.
 
 > **`INITFLG=""` (restart from files):** HYCOM and CICE read from restart files in
 > `data/` at the start date. The open boundary forcing is determined by `blkdat.input`,
@@ -79,6 +79,13 @@ Open `srjob.sh` in a text editor and update:
 > - **Continuing a hindcast or forecast** (e.g. the previous job hit the wall-time
 >   limit): leave `blkdat.input` unchanged. GLORYS boundaries remain active. Update
 >   `START` to the date of the last restart file in `data/` and resubmit.
+
+> **`INITFLG="--init-ice"` (HYCOM restart, CICE cold start):** HYCOM reads its restart
+> file from `data/` at the start date, as for `INITFLG=""`, while CICE is initialised
+> from `ice_initial.nc` as for `INITFLG="--init"`; no CICE restart file is needed. Use this
+> when the ocean initial state comes from a restart file that was not written together
+> with a CICE restart, e.g. one built from a GLORYS state. The start date must be in September.
+> See [Initial conditions](forcing.md#initial-conditions).
 
 :::{note}
 For reference when setting `#SBATCH --time`: a 1-year TP2 run with BGC on 4 Betzy nodes (504 cores) takes approximately 5–6 hours of wall time.
@@ -139,6 +146,59 @@ What happens to output files depends on how the run ended:
 
 In both cases, update `START` in `srjob.sh` to the date of the last restart file
 written, and set `INITFLG=""` (restart run).
+
+## Cycled spin-up
+
+The cycled spin-up is one of two spin-up strategies (see
+[Spin-up strategies](forcing.md#spin-up-strategies)); the other is the climatological
+spin-up with `srjob.sh`. In the cycled spin-up, the model runs repeatedly over a fixed
+period with GLORYS boundaries (e.g. 1993–1997 five times, or 1993–2002 twice).
+`srjob_cycle.sh` does this; it is in the TP2 (`TP2a0.10/expt_01.0`) and
+TP5 (`TP5a0.06/expt_02.3`) template experiments, which differ only in the SLURM settings
+and `NMPI`. `blkdat.input` keeps the GLORYS nesting settings throughout; no new
+`blkdat.input` option is needed. The first cycle can start on 1 September 1993 from the
+GLORYS state (see [Cycled spin-up initial files](forcing.md#cycled-spin-up-initial-files)).
+
+The model always runs on real dates inside the period, so atmospheric forcing, nesting
+files and river forcing are used unchanged. At the end of each cycle, `bin/cycle_wrap.py`
+copies the HYCOM and CICE restart files valid at `CYCLE_END` to the next cycle as restart
+files valid at `CYCLE_START`, shifting only their time information (`nstep`, `dtime` in the
+HYCOM `.b` header; `istep1`, `time` and the calendar attributes of the CICE restart).
+
+| Variable | Example | Description |
+|----------|---------|-------------|
+| `SPINUP_START` | `"1993-09-01T00:00:00"` | Start of the first cycle; may lie inside the period |
+| `CYCLE_START` | `"1993-01-01T00:00:00"` | Start of cycles 2, 3, … |
+| `CYCLE_END` | `"1998-01-01T00:00:00"` | End of every cycle (wrap date, exclusive) |
+| `NCYCLES` | `5` | Number of cycles |
+| `SEGMENT_MONTHS` | `12` | Length of one preprocess/run/postprocess segment |
+| `SEGMENTS_PER_JOB` | `8` | Segments per job before it resubmits itself (`RESUBMIT="yes"`) |
+
+- Each cycle writes to its own data directory `data/cycle_NN`, so archives and
+  restart files of different cycles do not overwrite each other. `D` in `EXPT.src`
+  must contain `${SPINUP_CYCLE:+/cycle_${SPINUP_CYCLE}}`, e.g.
+  `export D=$P/data${SPINUP_CYCLE:+/cycle_${SPINUP_CYCLE}}`; `SPINUP_CYCLE` is only set by `srjob_cycle.sh`, so other job scripts still write to `data/`.
+- The first cycle needs the HYCOM restart for `SPINUP_START` in `data/cycle_01`. If there is
+  no CICE restart for `SPINUP_START`, CICE is cold-started from `ice_initial.nc` in the
+  experiment directory (`INITFLG="--init-ice"`, see
+  [Initial conditions](forcing.md#initial-conditions)). For the files for 1 September 1993, see
+  [Cycled spin-up initial files](forcing.md#cycled-spin-up-initial-files).
+- The nesting files must cover `CYCLE_END` itself, since HYCOM interpolates in time
+  between daily files, and their Montgomery potential (`montg1`) must be fixed with the
+  restart file of the first cycle as reference (see
+  [Cycled spin-up initial files](forcing.md#cycled-spin-up-initial-files)): HYCOM keeps the
+  reference state of that restart through all cycles.
+- Both models must write a restart at the end of every segment: `rstrfq` in `blkdat.input`
+  must be positive (a negative value suppresses the end-of-run restart) and `dump_last = .true.`
+  in `ice_in`. Restart dates need not line up with `CYCLE_END`. The job stops if a segment
+  ends without both restart files.
+- The job continues from the latest HYCOM/CICE restart pair in the cycle data
+  directories, so it can simply be resubmitted after a crash. If the job was killed by
+  SLURM, run postprocessing with the cycle of the interrupted segment first, e.g.
+  `SPINUP_CYCLE=02 ../bin/expt_postprocess.sh`.
+- The boundary and atmospheric forcing jump from `CYCLE_END` back to `CYCLE_START` at each
+  wrap. Atmospheric CO2 (`co2_annmean_gl.txt`) follows the model date and is also reset
+  each cycle, which matters for BGC.
 
 ## Visualization
 
