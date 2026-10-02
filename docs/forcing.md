@@ -1,39 +1,23 @@
-NERSC-HYCOM-CICE supports two boundary forcing configurations: **climatological
-boundaries**, used for the climatological spin-up, and **GLORYS reanalysis boundaries**,
-used for the cycled spin-up and for hindcast and forecast runs (see
-[Spin-up strategies](#spin-up-strategies)). The table below summarises how the initial
-state and forcing differ between the two; the sections that follow describe each
-component in detail.
-
-| | Climatological boundaries | GLORYS boundaries |
-|---|---|---|
-| **Typical use** | Climatological spin-up | Cycled spin-up; hindcast / forecast |
-| **`INITFLG`** in `srjob.sh` | `"--init"` (cold start) or `""` (continuation) | `""`, or `"--init-ice"` (HYCOM restart, CICE cold start) |
-| **Ocean T/S initial state** | WOA2018 climatology (cold start) or HYCOM restart file | HYCOM restart file |
-| **Velocity / SSH initial state** | Zero (cold start) or from HYCOM restart file | From HYCOM restart file |
-| **BGC initial state** | WOA2013/GLODAP climatology (cold start) or HYCOM restart file | From HYCOM restart file |
-| **Ice initial state** | TP4 assimilation climatology (cold start) or CICE restart file | CICE restart file, or `ice_initial.nc` with `"--init-ice"` |
-| **Atmospheric forcing** | ERA5 | ERA5 |
-| **Lateral boundary forcing** | WOA2018 climatology; T/S only, no transports | GLORYS12; T/S, velocity, layer thickness, SSH |
-| **BGC boundary forcing** | WOA2013/GLODAP climatology | CMEMS BGC reanalysis |
-| **SSS restoring** | WOA2018 (`sssflg=1`) | WOA2018 (`sssflg=1`) |
-| **Key `blkdat.input` settings** | `relax=1`, `nestfq=0`, `bnstfq=0`, `lbflag=0` | `relax=0`, `nestfq=1`, `bnstfq=1`, `lbflag=2` |
+This page describes how the model is initialised and forced. Two spin-up strategies are
+supported; they differ in the initial state and in the boundary forcing used during the
+spin-up.
 
 ## Spin-up strategies
 
-Two spin-up strategies are supported:
-
-- **Cycled spin-up** (recommended): the model runs repeatedly through a fixed period with
-  GLORYS boundaries (e.g. 1993–1997 five times, or 1993–2002 twice). The first cycle starts
-  on 1 September 1993 from the GLORYS ocean state and GLORYS12/TOPAZ4b sea ice
+- **Cycled spin-up** (recommended): the model starts from the GLORYS12 reanalysis state on
+  1 September 1993. Ocean temperature, salinity, layer thickness, velocity and SSH come
+  from the GLORYS nesting file for that day, converted to a HYCOM restart file; sea ice
+  concentration comes from GLORYS12 and sea ice thickness from TOPAZ4b
   (`INITFLG="--init-ice"`, see item 3 under [Initial conditions](#initial-conditions)).
-  `blkdat.input` keeps the GLORYS settings throughout, so the boundary forcing is the same
-  as in the hindcast that follows. See [Cycled spin-up](running.md#cycled-spin-up) for how
-  to run it.
-- **Climatological spin-up**: the model is cold-started from climatology in September
-  (`INITFLG="--init"`) and runs with climatological boundaries. Expect a multi-decade
-  spin-up before the circulation is reliable. In practice, it often proceeds in two
-  phases: first with physics only, then with BGC activated after several years —
+  The model then runs repeatedly through a fixed period with GLORYS boundaries (e.g.
+  1993–1997 five times, or 1993–2002 twice). `blkdat.input` keeps the GLORYS settings
+  throughout, so the boundary forcing is the same as in the hindcast that follows. See
+  [Cycled spin-up](running.md#cycled-spin-up) for how to run it.
+- **Climatological spin-up**: the model starts from climatology in September — temperature
+  and salinity from WOA2018, velocity and SSH zero, sea ice from the TP4 assimilation
+  climatology (`INITFLG="--init"`) — and runs with climatological boundaries. Expect a
+  multi-decade spin-up before the circulation is reliable. In practice, it often proceeds
+  in two phases: first with physics only, then with BGC activated after several years —
   restarting physics from a physics-only restart file and initialising BGC from
   climatology (WOA2013/GLODAP) — while keeping climatological physics boundaries
   throughout. For a hindcast, `blkdat.input` is then switched to GLORYS boundaries.
@@ -46,9 +30,31 @@ off a hindcast or forecast from a spun-up state, where `blkdat.input` is switche
 GLORYS boundaries after a climatological spin-up; and (3) continuing a hindcast or
 forecast across multiple job submissions, analogously to (1).
 
+## Boundary forcing configurations
+
+NERSC-HYCOM-CICE supports two boundary forcing configurations: **climatological
+boundaries**, used for the climatological spin-up, and **GLORYS reanalysis boundaries**,
+used for the cycled spin-up and for hindcast and forecast runs. The table below summarises
+how the initial state and forcing differ between the two; the sections that follow
+describe each component in detail.
+
+| | Climatological boundaries | GLORYS boundaries |
+|---|---|---|
+| **Typical use** | Climatological spin-up | Cycled spin-up; hindcast / forecast |
+| **`INITFLG`** | First segment: `"--init"` (HYCOM and CICE cold start from climatology). Later segments: `""` | Cycled spin-up, first segment: `"--init-ice"` (HYCOM from a restart built from GLORYS, CICE cold start from `ice_initial.nc`). All other runs: `""` |
+| **Ocean T/S initial state** | WOA2018 climatology (cold start) or HYCOM restart file | GLORYS12 (first segment of the cycled spin-up) or HYCOM restart file |
+| **Velocity / SSH initial state** | Zero (cold start) or from HYCOM restart file | GLORYS12 (first segment of the cycled spin-up) or HYCOM restart file |
+| **BGC initial state** | WOA2013/GLODAP climatology (cold start) or HYCOM restart file | From HYCOM restart file |
+| **Ice initial state** | TP4 assimilation climatology (cold start) or CICE restart file | GLORYS12 concentration and TOPAZ4b thickness (`ice_initial.nc`, first segment of the cycled spin-up) or CICE restart file |
+| **Atmospheric forcing** | ERA5 | ERA5 |
+| **Lateral boundary forcing** | WOA2018 climatology; T/S only, no transports | GLORYS12; T/S, velocity, layer thickness, SSH |
+| **BGC boundary forcing** | WOA2013/GLODAP climatology | CMEMS BGC reanalysis |
+| **SSS restoring** | WOA2018 (`sssflg=1`) | WOA2018 (`sssflg=1`) |
+| **Key `blkdat.input` settings** | `relax=1`, `nestfq=0`, `bnstfq=0`, `lbflag=0` | `relax=0`, `nestfq=1`, `bnstfq=1`, `lbflag=2` |
+
 ## Initial conditions
 
-`INITFLG` in `srjob.sh` controls how the **initial model state** is set. It is independent
+`INITFLG` (set in `srjob.sh`, or automatically by `srjob_cycle.sh`) controls how the **initial model state** is set. It is independent
 of the boundary forcing mode, which is set via `blkdat.input` (see the table above):
 
 1. **Cold start** (`INITFLG="--init"`): Used for the first segment of a climatological spin-up. T/S are
