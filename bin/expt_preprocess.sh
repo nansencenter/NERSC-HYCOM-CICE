@@ -536,16 +536,27 @@ if [ $TRCRLX -ne 0 -o $NTRACR -eq -1 ] ; then
    fi
 elif [ $bgc_init -eq 1 ] ; then
    # HYCOM initialises the tracers (initrc) when ntracr<0: FABM defaults (fabm.yaml), then
-   # every tracer with a relax.<tracer> file is set from it. Use the BGC nesting state
-   # written by archv2bgcinit.py to the data dir where available, otherwise the
-   # climatology in relax/$E, otherwise the FABM default.
+   # every tracer with a relax.<tracer> file is set from it. DIC and alkalinity always come
+   # from the GLODAP climatology in relax/$E (required). Other tracers come from the BGC
+   # nesting state written by archv2bgcinit.py to the data dir where available, otherwise
+   # the climatology in relax/$E, otherwise the FABM default.
    echo "**Setting up BGC initialisation (BGC starts together with physics from restart)"
    sed -i "s/^\([ \t]*\)\([0-9][0-9]*\)\([ \t]*'ntracr'\)/\1-\2\3/" blkdat.input
    echo "ntracr in SCRATCH/blkdat.input: $(grep "'ntracr'" blkdat.input)"
    nfound=0
+   for i in CO2_TA CO2_c; do
+      if [ -f $BASEDIR/relax/${E}/relax.$i.a -a -f $BASEDIR/relax/${E}/relax.$i.b ] ; then
+         ln -sf $BASEDIR/relax/${E}/relax.$i.a relax.$i.a || tellerror "Could not get relax.$i.a"
+         ln -sf $BASEDIR/relax/${E}/relax.$i.b relax.$i.b || tellerror "Could not get relax.$i.b"
+         echo "  $i: from GLODAP climatology in $BASEDIR/relax/${E}"
+      else
+         tellerror "$BASEDIR/relax/${E}/relax.$i.[ab] does not exist (GLODAP climatology, needed for BGC initialisation; see relax_dic.sh, relax_alk.sh)"
+      fi
+   done
    for f in $D/relax.*.a ; do
       [ -f "$f" ] || continue
       i=$(basename $f .a | sed "s/^relax\.//")
+      [ -e relax.$i.a ] && continue   # DIC and alkalinity: GLODAP climatology linked above
       [ -f $D/relax.$i.b ] || { tellerror "$D/relax.$i.b does not exist" ; continue ; }
       ln -sf $f relax.$i.a           || tellerror "Could not get relax.$i.a"
       ln -sf $D/relax.$i.b relax.$i.b || tellerror "Could not get relax.$i.b"
@@ -553,7 +564,7 @@ elif [ $bgc_init -eq 1 ] ; then
       nfound=$((nfound+1))
    done
    [ $nfound -eq 0 ] && tellwarn "No BGC initial state relax.<tracer>.[ab] in $D (see bin/archv2bgcinit.py)"
-   for i in ECO_no3 ECO_pho ECO_sil ECO_oxy CO2_TA CO2_c; do
+   for i in ECO_no3 ECO_pho ECO_sil ECO_oxy; do
       [ -e relax.$i.a ] && continue
       if [ -f $BASEDIR/relax/${E}/relax.$i.a -a -f $BASEDIR/relax/${E}/relax.$i.b ] ; then
          ln -sf $BASEDIR/relax/${E}/relax.$i.a relax.$i.a || tellerror "Could not get relax.$i.a"

@@ -258,10 +258,12 @@ python $HOME/NERSC-HYCOM-CICE/bin/cice_ice_initial.py 1993-09-01T00:00:00 ../nes
 - With BGC (`ntracr>0`), the BGC tracers are initialised by HYCOM in the first segment,
   as in a cold start: `expt_preprocess.sh` makes `ntracr` negative in the `SCRATCH` copy of
   `blkdat.input` for the `INITFLG="--init-ice"` segment, and HYCOM sets every tracer to its
-  default value in `fabm.yaml` and then overwrites the tracers that have a file
-  `relax.<tracer>.[ab]`. The preprocess script links these files from the cycle 01 data
-  directory where present, otherwise the climatology in `relax/<IEXPT>/` (WOA2013 for
-  nutrients and oxygen, GLODAP for DIC and alkalinity). To start nitrate, phosphate,
+  default value in `fabm.yaml` (see
+  [Additional steps when using the BGC module](experiment-setup.md#additional-steps-when-using-the-bgc-module))
+  and then overwrites the tracers that have a file `relax.<tracer>.[ab]`. DIC and
+  alkalinity always come from the GLODAP climatology in `relax/<IEXPT>/`; for the other
+  tracers, the preprocess script links these files from the cycle 01 data directory where
+  present, otherwise the climatology in `relax/<IEXPT>/` (WOA2013). To start nitrate, phosphate,
   silicate and oxygen from the CMEMS BGC reanalysis, write them from the BGC nesting file to
   the cycle 01 data directory:
 
@@ -274,10 +276,10 @@ python $HOME/NERSC-HYCOM-CICE/bin/cice_ice_initial.py 1993-09-01T00:00:00 ../nes
   The files have the format of the monthly tracer climatology (12 identical months on the
   `relax_int` layers), so they must be built with the experiment's own `relax_int`. HYCOM
   only uses `relax.<tracer>` files for initialisation with `iniflg=2` in `blkdat.input`.
-  Without the GLODAP climatology for DIC and alkalinity (`relax.CO2_c`, `relax.CO2_TA` in
+  The GLODAP climatology for DIC and alkalinity (`relax.CO2_c`, `relax.CO2_TA` in
   `relax/<IEXPT>/`, built by `relax_dic.sh` and `relax_alk.sh`, see
-  [Climatologies and river forcing](forcing.md#climatologies-and-river-forcing)), these start
-  from the uniform values in `fabm.yaml`; the preprocess script warns about this. The BGC
+  [Climatologies and river forcing](forcing.md#climatologies-and-river-forcing)) is required;
+  the preprocess script stops with an error if it is missing. The BGC
   nesting file for 1993-09-01 is in
   `/nird/datalake/NS9481K/shuang/nest/TP2_expt023/tar_files/archv_fabm.1993_201_300.tar.gz`;
   stage the BGC nesting files for the whole cycling period with `stage_nesting_files.sh`

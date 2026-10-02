@@ -692,6 +692,159 @@ cp $WORK/${CONFIGNAME}/expt_${EXPT_ID}/hycom_fabm.nml $WDIR/expt_${EXPT_ID}/.
 cp $WORK/${CONFIGNAME}/expt_${EXPT_ID}/ice_in $WDIR/expt_${EXPT_ID}/.
 ```
 
+::::{dropdown} Contents of fabm.yaml (TP2 reference)
+
+`fabm.yaml` configures the FABM biogeochemical models coupled to HYCOM: the carbonate
+system (`CO2`, `ersem/carbonate`), the ECOSMO ecosystem model (`ECO`, `nersc/ecosmo`) and
+light (`gotm/light`). The tracer names in HYCOM files combine instance and variable name,
+e.g. `ECO_no3`, `CO2_c`. The `initialization` values are the uniform initial values used
+when HYCOM initialises the tracers (cold start, or `ntracr<0`); tracers with a
+`relax.<tracer>` file are then overwritten from that file (see
+[Initial conditions](forcing.md#initial-conditions)). Reference file:
+`/nird/datalake/NS9481K/shuang/TP2_setup/exp02.8_seaclim_ref_new/fabm.yaml`.
+
+```yaml
+instances:
+  CO2:
+    initialization:
+      TA: 2300.0
+      c: 2200.0
+    model: ersem/carbonate
+  ECO:
+    coupling:
+      Om_cal_target: CO2_Om_cal
+      alk_target: CO2_TA
+      dic_target: CO2_c
+    initialization:
+      ccl: 0.1
+      cclchl: 0.005
+      det: 0.1
+      dia: 0.1
+      diachl: 0.005
+      dom: 3.0
+      dsnk: 5.78703e-06
+      fla: 0.1
+      flachl: 0.005
+      mesozoo: 0.01
+      microzoo: 0.01
+      nh4: 8.0
+      no3: 1200.0
+      opa: 0.1
+      oxy: 300.0
+      pho: 1200.0
+      sed1: 113.6
+      sed2: 56.65
+      sed3: 82.2
+      sil: 1000.0
+    model: nersc/ecosmo
+    parameters:
+      EXdet: 0.0
+      EXdom: 0.0
+      EXphy: 0.0339
+      GrZlCocco: 0.99
+      GrZlP: 0.92
+      GrZlZ: 0.559
+      GrZsCocco: 1.01
+      GrZsP: 1.05
+      Km2Cocco: 285.18
+      Km2Pl: 285.18
+      Km2Ps: 285.18
+      Km2Zl: 285.18
+      Km2Zs: 285.18
+      MAXchl2nBG: 2.94
+      MAXchl2nCocco: 3.08
+      MAXchl2nPl: 2.95
+      MAXchl2nPs: 3.39
+      MINchl2nBG: 0.265
+      MINchl2nCocco: 0.265
+      MINchl2nPl: 0.265
+      MINchl2nPs: 0.265
+      RelSEDp1: 0.15
+      RelSEDp2: 0.1
+      RgZl: 0.427
+      RgZs: 0.552
+      TctrlDenit: 0.15
+      alfaBG: 0.0393
+      alfaCocco: 0.0259
+      alfaPl: 0.0595
+      alfaPs: 0.0369
+      bg_growth_minimum_daily_rad: 120.0
+      burialRt: 5.0e-05
+      couple_co2: true
+      excZl: 0.078
+      excZs: 0.078
+      frr: 0.4
+      gammaZd: 0.3
+      gammaZlp: 0.75
+      gammaZsp: 0.75
+      m2Pl: 0.285
+      m2Ps: 0.285
+      m2Zl: 0.085
+      m2Zs: 0.085
+      mPl: 0.0411
+      mPs: 0.0411
+      mZl: 0.0388
+      mZs: 0.0388
+      mort2Cocco: 0.285
+      mortCocco: 0.0411
+      muCocco: 0.4
+      muPl: 0.62
+      muPs: 0.43
+      nfixation_minimum_daily_par: 35.0
+      prefZlBG: 0.0
+      prefZlCocco: 0.19
+      prefZlD: 0.07
+      prefZlPl: 0.54
+      prefZlPs: 0.07
+      prefZlZs: 0.11
+      prefZsBG: 0.0
+      prefZsCocco: 0.1
+      prefZsD: 0.06
+      prefZsPl: 0.2
+      prefZsPs: 0.65
+      psi: 3.0
+      rNH4: 0.2
+      rNH4cocco: 0.2
+      rNO3: 0.5
+      rNO3cocco: 1.0
+      rPO4: 0.05
+      rPO4cocco: 0.0015
+      rSi: 0.5
+      regenSi: 0.015
+      reminD: 0.00315
+      reminSED: 0.001
+      reminSEDsi: 0.0002
+      resuspRt: 25.0
+      sedimRt: 5.0
+      sinkBgD: 0.0
+      sinkCocco: 1.5
+      sinkCoccoD: 5.73
+      sinkDet: 5.0
+      sinkDia: 0.0
+      sinkDiaD: 5.59
+      sinkFlaD: 0.468
+      sinkMesD: 7.96
+      sinkMicD: 0.987
+      sinkOPAL: 5.0
+      surface_deposition_nh4: 0.0
+      surface_deposition_no3: 0.0
+      surface_deposition_pho: 0.0
+      surface_deposition_sil: 0.0
+      turn_on_additional_diagnostics: true
+      use_chl: true
+      use_chl_in_PI_curve: true
+      use_coccolithophores: true
+      use_community_sinking: true
+      use_cyanos: false
+  light:
+    model: gotm/light
+    parameters:
+      A: 0.58
+      g1: 0.35
+      g2: 23.0
+```
+::::
+
 ## Files in the experiment directory
 
 To conclude the experiment setup, here is an overview of everything now present in the
