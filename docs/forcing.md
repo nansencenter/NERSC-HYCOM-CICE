@@ -238,16 +238,36 @@ N=/nird/datapeak/NS9481K/SPINUP_INIT/TP2a0.10
 
 mkdir -p $WDIR/expt_${EXPT_ID}/data/cycle_01
 cp $N/restart.1993_244_00_0000.[ab] $WDIR/expt_${EXPT_ID}/data/cycle_01/
-# cp $N/bgc/relax.ECO_*.[ab] $WDIR/expt_${EXPT_ID}/data/cycle_01/   # only with BGC
+cp $N/bgc/relax.ECO_*.[ab] $WDIR/expt_${EXPT_ID}/data/cycle_01/   # only with BGC
 cp $N/ice_initial_19930901.nc $WORK/${CONFIGNAME}/expt_${EXPT_ID}/ice_initial.nc
 ```
 
-The restart (and BGC files) must end up in the experiment's `D` for cycle 01. Please add
-files built for a new configuration to `SPINUP_INIT/<CONFIGNAME>/` and describe them in
-its README.
+The restart (and BGC files) must end up in the experiment's `D` for cycle 01.
+
+**With BGC** (`ntracr>0`), also copy the `bgc/` files. HYCOM then initialises the tracers in
+the first segment: `expt_preprocess.sh` makes `ntracr` negative in the `SCRATCH` copy of
+`blkdat.input` for the `INITFLG="--init-ice"` segment, so that HYCOM reads only the physics
+from the restart, sets every tracer to its default value in `fabm.yaml` (see
+[Additional steps when using the BGC module](experiment-setup.md#additional-steps-when-using-the-bgc-module))
+and then overwrites the tracers that have a file `relax.<tracer>.[ab]`:
+
+- Nitrate, phosphate, silicate and oxygen from the CMEMS BGC reanalysis (the `bgc/` files in
+  the data directory of the first cycle; without them, the WOA2013 climatology in
+  `relax/<IEXPT>/` is used).
+- DIC and alkalinity always from the GLODAP climatology in `relax/<IEXPT>/` (`relax.CO2_c`,
+  `relax.CO2_TA`, built by `relax_dic.sh` and `relax_alk.sh`, see
+  [Climatologies and river forcing](#climatologies-and-river-forcing)); the preprocess script
+  stops with an error if it is missing.
+- All other tracers from the defaults in `fabm.yaml`.
+
+HYCOM only uses `relax.<tracer>` files for initialisation with `iniflg=2` in
+`blkdat.input`. The BGC nesting files must cover the whole cycling period, since they also
+provide the BGC boundary forcing (see [Nesting files](#nesting-files)).
+
+::::{dropdown} Building the initial files for another configuration
 
 For another configuration (e.g. TP5a0.06, or another topography or number of layers),
-build the files as described below, from the experiment directory. The commands use:
+build the files from the experiment directory. The commands use:
 
 ```bash
 CONFIGNAME=<CONFIGNAME>   # e.g. TP5a0.06
@@ -294,22 +314,9 @@ other combinations of the three sources. Interpolation is done on points, so it 
 depend on the structure of the source or target grid. The GLORYS land mask is read from the
 GLORYS physics file of the same day in `MERCATOR_DATA/PHY`.
 
-**BGC initial state** (`ntracr>0`) — as for a cold start, HYCOM initialises the tracers in
-the first segment: `expt_preprocess.sh` makes `ntracr` negative in the `SCRATCH` copy of
-`blkdat.input` for the `INITFLG="--init-ice"` segment, so that HYCOM reads only the physics
-from the restart, sets every tracer to its default value in `fabm.yaml` (see
-[Additional steps when using the BGC module](experiment-setup.md#additional-steps-when-using-the-bgc-module))
-and then overwrites the tracers that have a file `relax.<tracer>.[ab]`:
-
-- DIC and alkalinity always come from the GLODAP climatology in `relax/<IEXPT>/`
-  (`relax.CO2_c`, `relax.CO2_TA`, built by `relax_dic.sh` and `relax_alk.sh`, see
-  [Climatologies and river forcing](#climatologies-and-river-forcing)); the preprocess script
-  stops with an error if it is missing.
-- Nitrate, phosphate, silicate and oxygen come from the CMEMS BGC reanalysis:
-  `bin/archv2bgcinit.py` writes them from the BGC nesting file for that day as
-  `relax.<tracer>.[ab]` files to the data directory of the first cycle. Without these
-  files, the preprocess script falls back to the WOA2013 climatology in `relax/<IEXPT>/`.
-- All other tracers start from the defaults in `fabm.yaml`.
+**BGC initial state** (`relax.ECO_{no3,pho,sil,oxy}.[ab]`) — built by
+`bin/archv2bgcinit.py` from the BGC nesting file for that day (CMEMS BGC reanalysis), written
+to the data directory of the first cycle:
 
 ```bash
 python $HOME/NERSC-HYCOM-CICE/bin/archv2bgcinit.py ../nest/${IEXPT}/archv.1993_244_00 \
@@ -318,12 +325,13 @@ python $HOME/NERSC-HYCOM-CICE/bin/archv2bgcinit.py ../nest/${IEXPT}/archv.1993_2
 ```
 
 The files have the format of the monthly tracer climatology (12 identical months on the
-`relax_int` layers), so they must be built with the experiment's own `relax_int`. HYCOM only
-uses `relax.<tracer>` files for initialisation with `iniflg=2` in `blkdat.input`. For TP2,
+`relax_int` layers), so they must be built with the experiment's own `relax_int`. For TP2,
 the BGC nesting file for 1993-09-01 is in
-`/nird/datalake/NS9481K/shuang/nest/TP2_expt023/tar_files/archv_fabm.1993_201_300.tar.gz`;
-stage the BGC nesting files for the whole cycling period with `stage_nesting_files.sh` (see
-[Nesting files](#nesting-files)), since they also provide the BGC boundary forcing.
+`/nird/datalake/NS9481K/shuang/nest/TP2_expt023/tar_files/archv_fabm.1993_201_300.tar.gz`.
+
+Please add files built for a new configuration to `SPINUP_INIT/<CONFIGNAME>/` on NIRD and
+describe them in its README.
+::::
 
 ## Atmospheric forcing
 
