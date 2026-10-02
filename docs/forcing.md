@@ -289,10 +289,10 @@ the physics-only phase: `ntracr` negative for the first run with BGC, then posit
 
 There is a single `blkdat.input` for all segments and cycles, the one in the experiment
 directory; `expt_preprocess.sh` copies it to `SCRATCH` at the start of every segment.
-`expt_postprocess.sh` copies the `SCRATCH` version to the data directory after every
-segment, so `data/cycle_NN/blkdat.input` is the `blkdat.input` used by cycle NN. (Right
-after the first segment of cycle 01 it shows the negative `ntracr`, until the next segment
-overwrites it.)
+`expt_postprocess.sh` copies it to the data directory after every segment, so
+`data/cycle_NN/blkdat.input` is the `blkdat.input` used by cycle NN. The version with
+negative `ntracr` that HYCOM read in the first segment is kept as
+`data/cycle_01/blkdat.input.init`.
 ::::
 
 ::::{dropdown} Building the initial files for another configuration
