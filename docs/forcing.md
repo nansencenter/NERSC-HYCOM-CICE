@@ -171,6 +171,7 @@ WDIR=/cluster/work/projects/nn2993k/$USER/${CONFIGNAME}
 :::::
 
 ```bash
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
 EXPT_ID=<EXPT_ID>         # e.g. 01.0
 
 cp $WORK/${CONFIGNAME}/expt_${EXPT_ID}/ice_initial.nc $WDIR/expt_${EXPT_ID}/
@@ -233,6 +234,7 @@ WDIR=/cluster/work/projects/nn2993k/$USER/${CONFIGNAME}
 :::::
 
 ```bash
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
 EXPT_ID=<EXPT_ID>         # e.g. 03.0
 N=/nird/datapeak/NS9481K/SPINUP_INIT/TP2a0.10
 
@@ -243,19 +245,6 @@ cp $N/ice_initial_19930901.nc $WORK/${CONFIGNAME}/expt_${EXPT_ID}/ice_initial.nc
 ```
 
 The restart (and BGC files) must end up in the experiment's `D` for cycle 01.
-
-**Fix the Montgomery potential in the nesting files for this restart** — required. The
-restart defines the reference state of the run (`psikk`, `thkk`, computed from the GLORYS
-state on 1 September 1993 as at a HYCOM cold start, see the dropdown below). HYCOM keeps
-this reference for the whole spin-up, also across the cycle wraps. `montg1` in the nesting
-files used for the boundary forcing must be computed with the same reference, so run
-`calc_montg1.py` with this restart for all nesting files of the cycling period (e.g.
-1993-09-01 to 1998-01-01), as described under
-[Fix the Montgomery potential](#nesting-files), with
-`$WDIR/expt_${EXPT_ID}/data/cycle_01/restart.1993_244_00_0000.a` as the restart file.
-Nesting files fixed for another restart (e.g. from an earlier experiment) are not
-consistent with it. The fixed nesting files can be shared by all cycled spin-ups of the
-same configuration that start from the same restart.
 
 **With BGC** (`ntracr>0`), also copy the `bgc/` files. HYCOM then initialises the tracers in
 the first segment: `expt_preprocess.sh` makes `ntracr` negative in the `SCRATCH` copy of
@@ -412,6 +401,8 @@ expected format. To prepare it manually, first activate the
 ```bash
 CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
 EXPT_ID=<EXPT_ID>         # e.g. 01.0
+START=<START>             # e.g. 2013-01-01T00:00:00
+END=<END>                 # e.g. 2014-01-01T00:00:00
 
 cd $WORK/${CONFIGNAME}/expt_${EXPT_ID}
 $HOME/NERSC-HYCOM-CICE/bin/atmo_synoptic.sh era5+lw $START $END
