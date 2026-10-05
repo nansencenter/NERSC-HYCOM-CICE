@@ -244,8 +244,6 @@ cp $N/bgc/relax.ECO_*.[ab] $WDIR/expt_${EXPT_ID}/data/cycle_01/   # only with BG
 cp $N/ice_initial_19930901.nc $WORK/${CONFIGNAME}/expt_${EXPT_ID}/ice_initial.nc
 ```
 
-The restart (and BGC files) must end up in the experiment's `D` for cycle 01.
-
 **With BGC** (`ntracr>0`), also copy the `bgc/` files. HYCOM then initialises the tracers in
 the first segment: `expt_preprocess.sh` makes `ntracr` negative in the `SCRATCH` copy of
 `blkdat.input` for the `INITFLG="--init-ice"` segment (see the dropdown below for why), so
@@ -1036,23 +1034,6 @@ source ${HOME}/NERSC-HYCOM-CICE/environment/betzy_env.sh
 
 :::
 
-```bash
-CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
-IEXPT=<IEXPT>             # e.g. 010
-EXPT_ID=<EXPT_ID>         # e.g. 01.0
-
-cd $WORK/${CONFIGNAME}/expt_${EXPT_ID}
-mkdir -p ../nest/${IEXPT}/Montg
-python $HOME/NERSC-HYCOM-CICE/bin/calc_montg1.py \
-    ../nest/${IEXPT}/archv.YYYY_DDD_00.a \
-    $USERWORK/${CONFIGNAME}/expt_${EXPT_ID}/data/restart.YYYY_DD_00_0000.a \
-    ../nest/${IEXPT}/Montg/
-mv ../nest/${IEXPT}/Montg/archv.YYYY_DDD_00.[ab] ../nest/${IEXPT}/
-```
-
-Replace `restart.YYYY_DDD_00_0000.a` with the actual restart file in `$USERWORK/${CONFIGNAME}/expt_${EXPT_ID}/data/` (see
-[Restart files](#restart-files)), and `archv.YYYY_DDD_00.a` with the nesting file whose Montgomery potential you want to modify.
-
 :::{dropdown} What calc_montg1.py does
 
 The script recomputes only the `montg1` (Montgomery potential) field in each archive,
@@ -1099,12 +1080,8 @@ written to a temporary `Montg/` subdirectory and then moved back to overwrite th
 original. Use any restart from the same model run you will use for your simulation. All
 restarts from the same run produce the same `montg1` because `psikk` and `thkk` do not
 vary within a run, so it does not matter which restart date you choose. 
-Executing the above command takes roughly 12 seconds on a login node, so for many files consider running in
-parallel on a compute node using one of the options below.
-
-::::{dropdown} Interactive node
-
-The `devel` queue allocates immediately but bills for the entire node (128 cores)
+Executing the above command takes roughly 12 seconds on a login node, so for many files run in
+parallel on a compute node. The `devel` queue allocates immediately but bills for the entire node (128 cores)
 regardless of how many tasks you use. It is best for quick testing or patching a
 few missing files. For a full year, the submission script below is more economical.
 32 tasks is enough to cover a full month (at most 31 files) in one batch, and each task
@@ -1158,8 +1135,6 @@ else
     echo "${missing} file(s) failed — not moving any files. Check the output above."
 fi
 ```
-
-::::
 
 :::{dropdown} Submission script
 
