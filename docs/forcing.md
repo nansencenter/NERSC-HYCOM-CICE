@@ -1066,7 +1066,9 @@ lifetime of a run. For the cycled spin-up, use a restart from
 `data/cycle_01/` (see [Cycled spin-up initial files](#cycled-spin-up-initial-files)).
 
 Each file takes roughly 12 seconds; run in parallel on a compute node. On Betzy, request
-an interactive `devel` node (allocates immediately), load the environment, and run:
+an interactive `devel` node (allocates immediately) for up to a few months of files —
+for a full year or more, use the submission script below instead to avoid the 1-hour
+`devel` time limit:
 
 ```bash
 srun --nodes=1 --ntasks=32 --time=01:00:00 --qos=devel --account=nn2993k --pty bash
