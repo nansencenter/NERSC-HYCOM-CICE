@@ -1027,6 +1027,8 @@ contains
      is3DVar=.true.
    else if(cfld=='nit_ia') then
      is3DVar=.true.
+   else if(cfld=='ammonium') then
+     is3DVar=.true.
    else if(cfld=='silicate') then
      is3DVar=.true.
    else if(cfld=='sil_ia') then
@@ -1065,6 +1067,8 @@ contains
      is3DVar=.true.
    else if(cfld=='dic') then
      is3DVar=.true.
+   else if(cfld=='alk') then
+     is3DVar=.true.
    else if(cfld=='ph') then
      is3DVar=.true.
    else if(cfld=='spco2') then
@@ -1075,6 +1079,8 @@ contains
    else if(cfld=='utotl' .and. trim(df%ftype)=='archv') then
      is3DVar=.true.
    else if(cfld=='wtotl') then
+     is3DVar=.true.
+   else if(cfld=='s-diff') then
      is3DVar=.true.
    else        
      is3DVar=count( df%cfld == char8 .and. df%tlevel==timelevel ) > 1
@@ -1282,6 +1288,11 @@ contains
          end if
          units='m s-1' ; vname='vbaroclin'
          limits=(/-3,3/)
+      case ('s-diff') 
+         stdname='vertical_scaler_diffusivity' 
+         units='m2 s-1' ; vname='sdiffu'
+         !limits=(/1.e-5,2.e-2/)
+         limits=(/1.e-6,1./)
       case ('hice','hicem','hi','hi_d') 
          stdname='sea_ice_thickness' ; units='m' ; vname='sithick'
          cellmethod='area: mean where sea_ice'
@@ -1587,6 +1598,11 @@ contains
          units='mmol m-3'
          limits=(/0.,50./)
          stdname='mole_concentration_of_nitrate_in_sea_water'
+         case ('ammonium')
+         vname='nh4'
+         units='mmol m-3'
+         limits=(/0.,3.5/)
+         stdname='mole_concentration_of_ammonium_in_sea_water'
          case ('silicate','sil_ia')
          vname='si'
          units='mmol m-3'
@@ -1632,16 +1648,26 @@ contains
          units='mmol m-3'
          limits=(/0.,1000./)
          stdname='mole_concentration_of_dissolved_molecular_oxygen_in_sea_water'
+         case ('oxymin')
+         vname='o2min'
+         units='mmol m-3'
+         limits=(/0.,1000./)
+         stdname='minimum_oxygen_concentration_in_water_column'
+         case ('zoxymin')
+         vname='zo2min'
+         units='m'
+         limits=(/0.,5000./)
+         stdname='depth_of_minimum_oxygen_concentration'
          case ('gpp_int')
-         vname='gpp'
+         vname='intgpp'
          units='mg m-2 d-1'
          limits=(/0.,8460./)
-         stdname='gross_primary_productivity_of_biomass_expressed_as_carbon'
+         stdname='depth_integrated_gross_primary_productivity_of_biomass_expressed_as_carbon'
          case ('npp_int')
-         vname='npp'
+         vname='intnpp'
          units='mg m-2 d-1'
          limits=(/-8460.,8460./)
-         stdname='net_primary_productivity_of_biomass_expressed_as_carbon'
+         stdname='depth_integrated_net_primary_productivity_of_biomass_expressed_as_carbon'
          case ('netpp','netppia')
          vname='nppv'
          units='mg m-3 day-1'
@@ -1657,11 +1683,21 @@ contains
          units='m-1'
          limits=(/0.,1./)
          stdname='volume_attenuation_coefficient_of_downwelling_radiative_flux_in_sea_water'
+         case ('zeu')
+         vname='heup'
+         units='m'
+         limits=(/0.,10000./)
+         stdname='euphotic_layer_depth'
          case ('dic')
          vname='dissic'
          units='mole m-3'
          limits=(/1.,3./)
          stdname='mole_concentration_of_dissolved_inorganic_carbon_in_sea_water'
+         case ('alk')
+         vname='TA'
+         units='mole m-3'
+         limits=(/1.,3./)
+         stdname='mole_concentration_of_total_alkalinity_in_sea_water'
          case ('ph')
          vname='ph'
          units='1'
@@ -1672,6 +1708,11 @@ contains
          units='Pa'
          limits=(/0.,100./)
          stdname='surface_partial_pressure_of_carbon_dioxide_in_sea_water'
+         case ('CO2_fair')
+         vname='cflx'
+         units='mmol m-2 d-1'
+         limits=(/-500.,500./)
+         stdname='surface_downward_carbon_dioxide_flux_into_sea_water'
 ! _FABM__caglar_
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
