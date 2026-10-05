@@ -1020,20 +1020,6 @@ it inconsistent with the restart files you are using. For the cycled spin-up, us
 restart file of the first cycle (`data/cycle_01/restart.1993_244_00_0000`, see
 [Cycled spin-up initial files](#cycled-spin-up-initial-files)).
 
-Run `calc_montg1.py` once per archive file, from the destination experiment directory.
-Before running, load the HPC environment and activate the Python environment:
-
-:::{dropdown} Loading the HPC environment and Python environment on Betzy
-
-```bash
-source ${HOME}/NERSC-HYCOM-CICE/environment/betzy_env.sh
-```
-
-```{include} _snippets/betzy_python_activate.md
-```
-
-:::
-
 :::{dropdown} What calc_montg1.py does
 
 The script recomputes only the `montg1` (Montgomery potential) field in each archive,
@@ -1075,23 +1061,20 @@ montg1 = montg1pb × pbavg + montg1c
 :::
 
 
-The script cannot read and write the same file simultaneously, so the corrected file is
-written to a temporary `Montg/` subdirectory and then moved back to overwrite the
-original. Use any restart from the same model run you will use for your simulation. All
-restarts from the same run produce the same `montg1` because `psikk` and `thkk` do not
-vary within a run, so it does not matter which restart date you choose. 
-Executing the above command takes roughly 12 seconds on a login node, so for many files run in
-parallel on a compute node. The `devel` queue allocates immediately but bills for the entire node (128 cores)
-regardless of how many tasks you use. It is best for quick testing or patching a
-few missing files. For a full year, the submission script below is more economical.
-32 tasks is enough to cover a full month (at most 31 files) in one batch, and each task
-uses ~512 MB peak RAM — well within the node's 256 GB. A full month finishes in under a minute:
+The corrected file is written to a temporary `Montg/` subdirectory and moved back to
+overwrite the original. Any restart from the same run works — `psikk` and `thkk` are
+fixed for the lifetime of a run.
+
+Each file takes roughly 12 seconds; run in parallel on a compute node. Request an
+interactive `devel` node (allocates immediately), load the environment, and run:
 
 ```bash
 srun --nodes=1 --ntasks=32 --time=01:00:00 --qos=devel --account=nn2993k --pty bash
 ```
 
-Once inside the session, activate the Python environment:
+```bash
+source ${HOME}/NERSC-HYCOM-CICE/environment/betzy_env.sh
+```
 
 :::{dropdown} Activating the Python environment on Betzy
 
