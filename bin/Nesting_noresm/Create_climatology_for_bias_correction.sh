@@ -1,5 +1,5 @@
 #! /bin/bash
-module load CDO/1.9.10-iimpi-2022a
+module load CDO/2.2.2-gompi-2023b
 
 source_nesting_experiment_path=$PWD
 source ../REGION.src
@@ -20,7 +20,7 @@ fi
 long_name=$1
 
 # Default WOA directory
-directory="/cluster/projects/nn2993k/WOA18/"
+directory="/cluster/projects/nn2993k/ModelInput/WOA2018"
 # you can overwrite this by:
 # e.g. ../bin/Nesting_noresm/Create_climatology_for_bias_correction.sh silicate woa=/path/to/other/directory
 
@@ -106,14 +106,16 @@ for ((mon=00; mon<=16;mon+=1)); do
 done
 
 
-# select the deep levels from the seasonal files for t and s and annual files for nutrients/oxygen
+# select the deep levels from the seasonal files for t, s and oxygen (monthly WOA fields only
+# go to 1500 m/57 levels, seasonal fields go to the full 5500 m/102 levels), and from the
+# annual file for nitrate/phosphate/silicate (monthly fields only go to 800 m/43 levels)
 echo "select the deep levels from the seasonal files"
 if [ "$vari" = "t" -o  "$vari" = "s" -o "$vari" = "o" ]; then
     mon1=13; mon2=16; numl=58; #temperature, salinity or oxygen
     winnum=13; sprnum=14; sumnum=15; autnum=16; #season files in the deep
 else
     mon1=0; mon2=0;   numl=44; # nutrients
-    winnum=00; sprnum=00; sumnum=00; autnum=00; #annual file in the deep    
+    winnum=00; sprnum=00; sumnum=00; autnum=00; #annual file in the deep
 fi
 
 for ((mon=$mon1; mon<=$mon2;mon+=1)); do 
@@ -190,7 +192,7 @@ cdo mergetime "${Nesting_Files_PATH}/woa18_${version}_${vari}_an_*_noresm_esmlev
 if [ "$vari" = "n" -o  "$vari" = "i" -o "$vari" = "p" -o "$vari" = "o" ]; then
     # from microm/kg to mole/m3
     # assming constant seawter density of 1028 kg/m3.
-    cdo divc,1028.0 "${Nesting_Files_PATH}/woa18_${version}_${vari}_year_noresm_esmlev.nc"\
+    cdo mulc,1.028e-3 "${Nesting_Files_PATH}/woa18_${version}_${vari}_year_noresm_esmlev.nc"\
 	"${Nesting_Files_PATH}/woa18_${version}_${vari}_year_noresm_esmlev_unit.nc"
 else
     #already the same unit
