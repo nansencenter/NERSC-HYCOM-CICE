@@ -1153,6 +1153,7 @@ CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
 IEXPT=<IEXPT>             # e.g. 010
 EXPT_ID=<EXPT_ID>         # e.g. 01.0
 restartfile=$USERWORK/${CONFIGNAME}/expt_${EXPT_ID}/data/restart.YYYY_DDD_00_0000.a  # adapt to your restart file
+# cycled spin-up: restartfile=$USERWORK/${CONFIGNAME}/expt_${EXPT_ID}/data/cycle_01/restart.1993_244_00_0000.a
 
 outdir="../nest/${IEXPT}/Montg"
 mkdir -p ${outdir}
