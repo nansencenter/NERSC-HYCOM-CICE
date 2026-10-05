@@ -1064,8 +1064,8 @@ overwrite the original. Use a restart from the specific run whose nesting files 
 fixing — any restart from that run works, since `psikk` and `thkk` are fixed for the
 lifetime of a run.
 
-Each file takes roughly 12 seconds; run in parallel on a compute node. Request an
-interactive `devel` node (allocates immediately), load the environment, and run:
+Each file takes roughly 12 seconds; run in parallel on a compute node. On Betzy, request
+an interactive `devel` node (allocates immediately), load the environment, and run:
 
 ```bash
 srun --nodes=1 --ntasks=32 --time=01:00:00 --qos=devel --account=nn2993k --pty bash
@@ -1118,7 +1118,7 @@ else
 fi
 ```
 
-:::{dropdown} Submission script
+:::{dropdown} Submission script (Betzy)
 
 Save as `montg1_job.sh` in `$WORK/<CONFIGNAME>/expt_<EXPT_ID>/`. Set `IEXPT`, `EXPT_ID`,
 and the restart file path at the top of the script, then submit from there:
