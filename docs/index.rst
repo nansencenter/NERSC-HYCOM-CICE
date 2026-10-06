@@ -14,15 +14,5 @@ coupled via the Earth System Modeling Framework (ESMF).
    compilation
    forcing
    running
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Post-processing
-
-   mscprogs
-   xhycom
-
-.. toctree::
-   :maxdepth: 2
-
+   postprocessing
    contributing
