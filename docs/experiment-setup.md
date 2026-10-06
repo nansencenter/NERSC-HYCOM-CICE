@@ -1,3 +1,5 @@
+# Experiment setup
+
 In the following, `<CONFIGNAME>`, `<EXPT_ID>`, and `<IEXPT>` are placeholders for user-defined
 values, see the table in the [directory structure section](overview.md#directory-structure) for a
 description and examples of each.

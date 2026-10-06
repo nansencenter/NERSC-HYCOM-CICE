@@ -7,38 +7,12 @@ coupled via the Earth System Modeling Framework (ESMF).
 
 .. toctree::
    :maxdepth: 2
-   :caption: Overview
 
    overview
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Installation
-
    installation
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Experiment setup
-
    experiment-setup
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Compilation
-
    compilation
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Forcing Files
-
    forcing
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Running the Model
-
    running
 
 .. toctree::
@@ -50,6 +24,5 @@ coupled via the Earth System Modeling Framework (ESMF).
 
 .. toctree::
    :maxdepth: 2
-   :caption: Development
 
    contributing

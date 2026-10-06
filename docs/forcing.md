@@ -1,8 +1,11 @@
-This page describes how the model is initialised and forced. Two spin-up strategies are
-supported; they differ in the initial state and in the boundary forcing used during the
-spin-up.
+# Forcing files
+
+This page describes how the model is initialised and forced. 
 
 ## Spin-up strategies
+
+Two spin-up strategies are supported; they differ in the initial state and in the boundary forcing used during the
+spin-up.
 
 - **Cycled spin-up** (recommended): the model starts from the GLORYS12 reanalysis state on
   1 September 1993. Ocean temperature, salinity, layer thickness, velocity and SSH come

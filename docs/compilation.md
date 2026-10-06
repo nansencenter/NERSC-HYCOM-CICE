@@ -1,3 +1,5 @@
+# Compilation
+
 (compilation-top)=
 Before compiling, source the HPC environment file to load the correct modules and compilers.
 See the [HPC environment](installation.md#hpc-environment) section for details.
