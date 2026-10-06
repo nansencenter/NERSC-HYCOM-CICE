@@ -22,8 +22,8 @@
 # CICE is cold-started from ice_initial.nc (INITFLG="--init-ice").
 #
 # The job can be resubmitted at any time: it continues from the latest restart pair
-# found in the cycle data directories. After SEGMENTS_PER_JOB segments it resubmits
-# itself (RESUBMIT=yes).
+# found in the cycle data directories. It runs one segment per job and resubmits
+# itself automatically until all cycles are done.
 #
 export NMPI=636
 export SLURM_SUBMIT_DIR=$(pwd)
@@ -56,9 +56,7 @@ SPINUP_START="1993-09-01T00:00:00"   # start of cycle 1
 CYCLE_START="1993-01-01T00:00:00"    # start of cycles 2..NCYCLES
 CYCLE_END="1998-01-01T00:00:00"      # end of every cycle (wrap date)
 NCYCLES=5
-SEGMENT_MONTHS=12                    # length of one preprocess/run/postprocess segment
-SEGMENTS_PER_JOB=8                   # segments before the job resubmits itself
-RESUBMIT="yes"
+SEGMENT_MONTHS=48                    # length of one preprocess/run/postprocess segment
 JOBSCRIPT=srjob_cycle.sh             # this script, for resubmission
 # --------------------------------------------------------------------
 
@@ -102,7 +100,6 @@ latest_restart() {
 [ $(epoch $SPINUP_START) -ge $(epoch $CYCLE_START) -a $(epoch $SPINUP_START) -lt $(epoch $CYCLE_END) ] || \
    { echo "SPINUP_START must lie in [CYCLE_START,CYCLE_END)"; exit 1; }
 
-nseg=0
 PREV_D=""
 for c in $(seq 1 $NCYCLES) ; do
    export SPINUP_CYCLE=$(printf "%02d" $c)
@@ -125,13 +122,6 @@ for c in $(seq 1 $NCYCLES) ; do
    echo "Cycle $SPINUP_CYCLE: continuing from $cur"
 
    while [ $(epoch $cur) -lt $(epoch $CYCLE_END) ] ; do
-      if [ $nseg -ge $SEGMENTS_PER_JOB ] ; then
-         if [ "$RESUBMIT" == "yes" ] ; then
-            echo "Done $nseg segments, resubmitting $JOBSCRIPT"
-            cd $EXPTDIR && sbatch $JOBSCRIPT
-         fi
-         exit 0
-      fi
       START=$cur
       END=$(add_months $cur $SEGMENT_MONTHS)
       [ $(epoch $END) -gt $(epoch $CYCLE_END) ] && END=$CYCLE_END
@@ -158,7 +148,11 @@ for c in $(seq 1 $NCYCLES) ; do
       [ "$(latest_restart $D $END $END none)" == "$END" ] || \
          { echo "Cycle $SPINUP_CYCLE: no HYCOM/CICE restart for $END in $D after segment, stopping"; exit 1; }
       cur=$END
-      nseg=$((nseg+1))
+      if [ $(epoch $cur) -lt $(epoch $CYCLE_END) ] || [ $c -lt $NCYCLES ] ; then
+         echo "Segment done, resubmitting $JOBSCRIPT"
+         cd $EXPTDIR && sbatch $JOBSCRIPT
+         exit 0
+      fi
    done
    echo "Cycle $SPINUP_CYCLE finished"
    PREV_D=$D
