@@ -1,52 +1,53 @@
-(submit-a-job)=
-## Submit a job
+# Running the model
 
-The job script `srjob.sh` handles three things automatically:
+The model is run using one of the job scripts in the experiment directory. Choose the one for your scenario:
 
-- **[Atmospheric forcing generation](forcing.md#atmospheric-forcing)** — downloads and
-  prepares ERA5 forcing for the run period
-- **Stage run files** — runs `expt_preprocess.sh` to stage all files the model needs into
-  the scratch directory (`expt_<EXPT_ID>/SCRATCH/`). Specifically, it:
-  - Reads and validates settings from `blkdat.input` (time steps, flags, experiment number)
-  - Copies the MPI partition file (`topo/partit/depth_R_T.NNNN`, where `NNNN` is the
-    MPI task count) to `patch.input` in the scratch directory
-  - Symlinks or copies all forcing files (atmospheric, river, kpar, relaxation
-    climatologies, diffusion fields, nesting files)
-  - Verifies that atmospheric forcing covers the full run period
-  - Copies restart files (HYCOM and CICE) from the data directory
-  - Copies the `hycom_cice` executable from `build/`
-  - Writes the `limits` file with start and stop times via `hycom_limits.py`
-  - Moves old output files to `KEEP/`
+| Script | Use case |
+|--------|----------|
+| [`srjob.sh`](#submit-a-job) | Single run segment — hindcast, forecast, or continuation spin-up |
+| [`srjob_cycle.sh`](#cycled-spin-up) | Cycled spin-up — repeats a period with GLORYS boundaries |
 
-  It exits with a non-zero code if any required file is missing, aborting the job before
-  the model starts.
+Each script runs `expt_preprocess.sh` at the start of every segment. This script:
+
+- Reads and validates settings from `blkdat.input` (time steps, flags, experiment number)
+- Copies the MPI partition file (`topo/partit/depth_R_T.NNNN`, where `NNNN` is the
+  MPI task count) to `patch.input` in the scratch directory
+- Symlinks or copies all forcing files (atmospheric, river, kpar, relaxation
+  climatologies, diffusion fields, nesting files)
+- Verifies that atmospheric forcing covers the full run period
+- Copies restart files (HYCOM and CICE) from the data directory
+- Copies the `hycom_cice` executable from `build/`
+- Writes the `limits` file with start and stop times via `hycom_limits.py`
+- Moves old output files to `KEEP/`
+
+It exits with a non-zero code if any required file is missing, aborting the job before
+the model starts. After the model finishes, `expt_postprocess.sh` moves restart files,
+daily mean archives (`archv.*`), and CICE output from `SCRATCH/` to `data/` and
+`data/cice/`, and writes `log/hycom.stop` with `GOODRUN` or `BADRUN`. The `data/`
+directory is then ready for analysis with the [post-processing tools](postprocessing.md).
 
 :::{warning}
-As all the files needed are staged into the scratch directory (`expt_<EXPT_ID>/SCRATCH/`), where the model runs, `expt_preprocess.sh` should be run for every new build or change in the files mentioned above. Otherwise, the previous versions of the files remain staged. By default, this step is handled automatically by the job script `srjob.sh`.
+Because all required files are staged into `SCRATCH/` before each run,
+`expt_preprocess.sh` must be re-run whenever the build or any input file changes.
+The job scripts do this automatically; if you run it manually beforehand, comment out
+the call in the job script to avoid staging twice.
 :::
 
-  ::::{dropdown} Run manually
+:::{dropdown} Run expt_preprocess.sh manually
 
-  ```bash
-  cd $WORK/<CONFIGNAME>/expt_<EXPT_ID>
-  ../bin/expt_preprocess.sh ${START} ${END} $INITFLG
-  ```
+```bash
+cd $WORK/<CONFIGNAME>/expt_<EXPT_ID>
+../bin/expt_preprocess.sh ${START} ${END} $INITFLG
+```
 
-  Use the same `START`, `END`, and `INITFLG` values as in `srjob.sh` (see the table
-  below for formats). A successful run prints `No fatal errors. Ok to start model set up in ..`.
+Use the same `START`, `END`, and `INITFLG` values as in the job script. A successful run
+prints `No fatal errors. Ok to start model set up in ..`. Useful to verify that all
+required files are in place before submitting.
 
-  Running `expt_preprocess.sh` manually beforehand is useful to verify that all required
-  files are in place before submitting the job. If you do, comment out the
-  `expt_preprocess.sh` call in `srjob.sh` to avoid staging the files twice.
-  ::::
+:::
 
-- **Job submission** — submits the model to the SLURM queue
-
-- **Post-processing** — runs `expt_postprocess.sh` after the model finishes. It moves
-  restart files, daily mean archives (`archv.*`), and CICE output from the scratch
-  directory to `data/` and `data/cice/`, and writes `log/hycom.stop` with `GOODRUN` or
-  `BADRUN` depending on whether the model reached a normal stop. The `data/` directory
-  is then ready for analysis with the [MSCPROGS post-processing tools](mscprogs.md).
+(submit-a-job)=
+## Submit a job (`srjob.sh`)
 
 Open `srjob.sh` in a text editor and update:
 
@@ -55,7 +56,7 @@ Open `srjob.sh` in a text editor and update:
 | `NMPI` | `"<NMPI>"` e.g. `504` | Update NMPI if needed |
 | `START` | `"YYYY-MM-DDT00:00:00"` | Run start time |
 | `END` | `"YYYY-MM-DDT00:00:00"` | Run end time |
-| `INITFLG` | `""`, `"--init"` or `"--init-ice"` | `"--init"` for a cold start; `""` to restart from files; `"--init-ice"` for a HYCOM restart with a CICE cold start (see notes below) |
+| `INITFLG` | `""` or `"--init"` | `"--init"` for a cold start; `""` to restart from files |
 | `#SBATCH --time` | `"HH:MM:SS"` | Wall-clock time limit |
 
 > **`INITFLG="--init"` (cold start):** No restart files are needed.
@@ -80,15 +81,9 @@ Open `srjob.sh` in a text editor and update:
 >   limit): leave `blkdat.input` unchanged. GLORYS boundaries remain active. Update
 >   `START` to the date of the last restart file in `data/` and resubmit.
 
-> **`INITFLG="--init-ice"` (HYCOM restart, CICE cold start):** HYCOM reads its restart
-> file from `data/` at the start date, as for `INITFLG=""`, while CICE is initialised
-> from `ice_initial.nc` as for `INITFLG="--init"`; no CICE restart file is needed. Use this
-> when the ocean initial state comes from a restart file that was not written together
-> with a CICE restart, e.g. one built from a GLORYS state. The start date must be in September.
-> See [Initial conditions](forcing.md#initial-conditions).
 
 :::{note}
-For reference when setting `#SBATCH --time`: a 1-year TP2 run with BGC on 4 Betzy nodes (504 cores) takes approximately 5–6 hours of wall time.
+For reference when setting `#SBATCH --time`: a 1-year TP2 run with BGC on 4 Betzy nodes (504 cores) takes approximately 5–6 hours; a 1-year TP5 run without BGC on 5 nodes (636 cores) takes approximately 6–7 hours.
 :::
 
 Then submit:
@@ -107,20 +102,7 @@ squeue -u $USER
 A useful tool for generating SLURM job scripts is available at:
 <https://open.pages.sigma2.no/job-script-generator/>
 
-
-## Check results
-
-When the job finishes, restart files and daily mean files are moved to the `data/` directory.
-Confirm successful completion by checking the stop file:
-
-```bash
-cat $WORK/<CONFIGNAME>/expt_<EXPT_ID>/log/hycom.stop
-```
-
-The file should contain `GOODRUN`. If not, inspect the log files under `log/` for
-error messages.
-
-## Restarting after a crash
+### Restarting after a crash
 
 What happens to output files depends on how the run ended:
 
@@ -139,31 +121,23 @@ What happens to output files depends on how the run ended:
   ../expt_postprocess.sh
   ```
 
-  This moves the restart and archive files written before the crash to `data/`,
-  where `srjob.sh` will pick them up on the next run. If you skip this step and
-  resubmit directly, `expt_preprocess.sh` will move the files to `SCRATCH/KEEP/`
-  instead — they are not lost, but you will need to copy them to `data/` manually.
+  This moves the restart and archive files to `data/`, where `srjob.sh` will pick
+  them up. If you skip this step and resubmit directly, `expt_preprocess.sh` will
+  move the files to `SCRATCH/KEEP/` instead — they are not lost, but you will need
+  to copy them to `data/` manually.
 
 In both cases, update `START` in `srjob.sh` to the date of the last restart file
-written, and set `INITFLG=""` (restart run).
+written, and set `INITFLG=""`.
 
-## Cycled spin-up
+## Cycled spin-up (`srjob_cycle.sh`)
 
-The cycled spin-up is one of two spin-up strategies (see
-[Spin-up strategies](forcing.md#spin-up-strategies)); the other is the climatological
-spin-up with `srjob.sh`. In the cycled spin-up, the model runs repeatedly over a fixed
-period with GLORYS boundaries (e.g. 1993–1997 five times, or 1993–2002 twice).
-`srjob_cycle.sh` does this; it is in the TP2 (`TP2a0.10/expt_01.0`) and
-TP5 (`TP5a0.06/expt_02.3`) template experiments, which differ only in the SLURM settings
-and `NMPI`. `blkdat.input` keeps the GLORYS nesting settings throughout; no new
-`blkdat.input` option is needed. The first cycle can start on 1 September 1993 from the
-GLORYS state (see [Cycled spin-up initial files](forcing.md#cycled-spin-up-initial-files)).
+`srjob_cycle.sh` runs a fixed period with GLORYS boundaries repeatedly (e.g. 1993–1997
+five times). At the end of each cycle, `bin/cycle_wrap.py` shifts the restart files
+valid at `CYCLE_END` back to `CYCLE_START` so the next cycle starts seamlessly. For the
+initial files and nesting file requirements, see
+[Cycled spin-up](forcing.md#cycled-spin-up-initial-files).
 
-The model always runs on real dates inside the period, so atmospheric forcing, nesting
-files and river forcing are used unchanged. At the end of each cycle, `bin/cycle_wrap.py`
-copies the HYCOM and CICE restart files valid at `CYCLE_END` to the next cycle as restart
-files valid at `CYCLE_START`, shifting only their time information (`nstep`, `dtime` in the
-HYCOM `.b` header; `istep1`, `time` and the calendar attributes of the CICE restart).
+Open `srjob_cycle.sh` and update:
 
 | Variable | Example | Description |
 |----------|---------|-------------|
@@ -171,34 +145,61 @@ HYCOM `.b` header; `istep1`, `time` and the calendar attributes of the CICE rest
 | `CYCLE_START` | `"1993-01-01T00:00:00"` | Start of cycles 2, 3, … |
 | `CYCLE_END` | `"1998-01-01T00:00:00"` | End of every cycle (wrap date, exclusive) |
 | `NCYCLES` | `5` | Number of cycles |
-| `SEGMENT_MONTHS` | `12` | Length of one preprocess/run/postprocess segment |
-| `SEGMENTS_PER_JOB` | `8` | Segments per job before it resubmits itself (`RESUBMIT="yes"`) |
+| `SEGMENT_MONTHS` | `72` (TP2), `48` (TP5) | Maximum months per preprocess–run–postprocess iteration; the last segment of each cycle is clipped to `CYCLE_END`. The job runs one segment, then resubmits itself |
 
-- Each cycle writes to its own data directory `data/cycle_NN`, so archives and
-  restart files of different cycles do not overwrite each other. `D` in `EXPT.src`
-  must contain `${SPINUP_CYCLE:+/cycle_${SPINUP_CYCLE}}`, e.g.
-  `export D=$P/data${SPINUP_CYCLE:+/cycle_${SPINUP_CYCLE}}`; `SPINUP_CYCLE` is only set by `srjob_cycle.sh`, so other job scripts still write to `data/`.
-- The first cycle needs the HYCOM restart for `SPINUP_START` in `data/cycle_01`. If there is
-  no CICE restart for `SPINUP_START`, CICE is cold-started from `ice_initial.nc` in the
-  experiment directory (`INITFLG="--init-ice"`, see
-  [Initial conditions](forcing.md#initial-conditions)). For the files for 1 September 1993, see
-  [Cycled spin-up initial files](forcing.md#cycled-spin-up-initial-files).
-- The nesting files must cover `CYCLE_END` itself, since HYCOM interpolates in time
-  between daily files, and their Montgomery potential (`montg1`) must be fixed with the
-  restart file of the first cycle as reference (see
-  [Cycled spin-up initial files](forcing.md#cycled-spin-up-initial-files)): HYCOM keeps the
-  reference state of that restart through all cycles.
-- Both models must write a restart at the end of every segment: `rstrfq` in `blkdat.input`
-  must be positive (a negative value suppresses the end-of-run restart) and `dump_last = .true.`
-  in `ice_in`. Restart dates need not line up with `CYCLE_END`. The job stops if a segment
-  ends without both restart files.
-- The job continues from the latest HYCOM/CICE restart pair in the cycle data
-  directories, so it can simply be resubmitted after a crash. If the job was killed by
-  SLURM, run postprocessing with the cycle of the interrupted segment first, e.g.
-  `SPINUP_CYCLE=02 ../bin/expt_postprocess.sh`.
-- The boundary and atmospheric forcing jump from `CYCLE_END` back to `CYCLE_START` at each
-  wrap. Atmospheric CO2 (`co2_annmean_gl.txt`) follows the model date and is also reset
-  each cycle, which matters for BGC.
+:::{note}
+Set `SEGMENT_MONTHS` so the segment fits within the wall-time limit (`#SBATCH --time`). The defaults above are based on TP2 with BGC taking 5–6 h/year and TP5 without BGC taking 6–7 h/year on Betzy (see the timing note in [Submit a job](#submit-a-job)).
+:::
+
+Before submitting, check:
+
+- `D` in `EXPT.src` already contains `${SPINUP_CYCLE:+/cycle_${SPINUP_CYCLE}}` in the
+  template experiments, so each cycle writes to its own `data/cycle_NN/` directory.
+  If you set up your experiment from scratch, verify this is in place.
+- Both models must write a restart at the end of every segment: `rstrfq` in
+  `blkdat.input` must be positive and `dump_last = .true.` in `ice_in`.
+
+Then submit:
+
+```bash
+cd $WORK/<CONFIGNAME>/expt_<EXPT_ID>
+sbatch srjob_cycle.sh
+```
+
+### Restarting after a crash
+
+`srjob_cycle.sh` always continues from the latest HYCOM/CICE restart pair in the cycle
+data directories, so in most cases you can simply resubmit.
+
+- **Model exits with an error but the SLURM job completes normally**: `expt_postprocess.sh`
+  still runs and moves files to `data/cycle_NN/`. Resubmit directly.
+
+- **Job is killed by SLURM** (wall-time limit, out-of-memory, node failure, or
+  `scancel`): `expt_postprocess.sh` never runs. Output files remain in `SCRATCH/`.
+  Run postprocessing manually with the cycle number of the interrupted segment before
+  resubmitting:
+
+  ```bash
+  CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+  EXPT_ID=<EXPT_ID>         # e.g. 01.0
+  cd $WORK/${CONFIGNAME}/expt_${EXPT_ID}
+  SPINUP_CYCLE=<NN> ../bin/expt_postprocess.sh
+  ```
+
+  This moves the restart and archive files to `data/cycle_NN/`, where
+  `srjob_cycle.sh` will pick them up on the next run.
+
+## Check results
+
+When the job finishes, restart files and daily mean files are moved to `data/`.
+Confirm successful completion:
+
+```bash
+cat $WORK/<CONFIGNAME>/expt_<EXPT_ID>/log/hycom.stop
+```
+
+The file should contain `GOODRUN`. If not, inspect the log files under `log/` for
+error messages.
 
 ## Visualization
 
