@@ -395,8 +395,8 @@ echo "FLXOFF =  $FLXOFF"
 if [ $FLXOFF -eq 1 ] ; then
  echo "===================================================="
  echo " -------flux off set true: copy flux off set files-"
-   cp ${D}/../../relax/${E}/offlux.a forcing.offlux.a || tellerror "Could not get offlux .a file"
-   cp ${D}/../../relax/${E}/offlux.b forcing.offlux.b || tellerror "Could not get offlux .b file"
+   cp ${S}/../../relax/${E}/offlux.a forcing.offlux.a || tellerror "Could not get offlux .a file"
+   cp ${S}/../../relax/${E}/offlux.b forcing.offlux.b || tellerror "Could not get offlux .b file"
  echo "===================================================="
  else
     echo "fLxoff=F: No attempt to use flux offset correction" 
@@ -611,26 +611,26 @@ testthkdf4=$(echo $THKDF4'<'0.0 | bc -l)
 [ -f thkdf4.a ] && rm thkdf4.a
 [ -f thkdf4.b ] && rm thkdf4.b
 if [ ${testthkdf4} -eq 1 ] ; then 
-   ${pget} ${D}/../../relax/${E}/thkdf4.a thkdf4.a  || tellerror "Could not get thkdf4.a"
-   ${pget} ${D}/../../relax/${E}/thkdf4.b thkdf4.b  || tellerror "Could not get thkdf4.b"
+   ${pget} ${S}/../../relax/${E}/thkdf4.a thkdf4.a  || tellerror "Could not get thkdf4.a"
+   ${pget} ${S}/../../relax/${E}/thkdf4.b thkdf4.b  || tellerror "Could not get thkdf4.b"
 fi
 
 [ -f thkdf2.a ] && rm thkdf2.a
 [ -f thkdf2.b ] && rm thkdf2.b
 if [ ${testthkdf2} -eq 1 ] ; then 
-   ${pget} ${D}/../../relax/${E}/thkdf2.a thkdf2.a  || tellerror "Could not get thkdf2.a"
-   ${pget} ${D}/../../relax/${E}/thkdf2.b thkdf2.b  || tellerror "Could not get thkdf2.b"
+   ${pget} ${S}/../../relax/${E}/thkdf2.a thkdf2.a  || tellerror "Could not get thkdf2.a"
+   ${pget} ${S}/../../relax/${E}/thkdf2.b thkdf2.b  || tellerror "Could not get thkdf2.b"
 fi
 testveldf4=$(echo $VELDF4'<'0.0 | bc -l)
 if [ ${testveldf4} -eq 1 ] ; then 
-   ${pget} ${D}/../../relax/${E}/veldf4.a veldf4.a  || tellerror "Could not get veldf4.a"
-   ${pget} ${D}/../../relax/${E}/veldf4.b veldf4.b  || tellerror "Could not get veldf4.b"
+   ${pget} ${S}/../../relax/${E}/veldf4.a veldf4.a  || tellerror "Could not get veldf4.a"
+   ${pget} ${S}/../../relax/${E}/veldf4.b veldf4.b  || tellerror "Could not get veldf4.b"
 fi
 
 # Check hycom optional file: hycom_opt
 echo "Checking the access to hycom_opt"
 [ -s ./hycom_opt ] && rm ./hycom_opt
-${pget} ../hycom_opt hycom_opt || { tellerror "Could not get ../hycom_opt"; exit 1; }
+${pget} $P/hycom_opt hycom_opt || { tellerror "Could not get $P/hycom_opt"; exit 1; }
 
 # TODO Limited set of tests for now. 
 # Link in nest dir if nesting activated
