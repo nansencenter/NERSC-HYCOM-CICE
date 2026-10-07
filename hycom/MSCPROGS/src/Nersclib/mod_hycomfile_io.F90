@@ -1067,8 +1067,6 @@ contains
      is3DVar=.true.
    else if(cfld=='ph') then
      is3DVar=.true.
-   else if(cfld=='spco2') then
-     is3DVar=.true.
 ! _FABM__caglar_
    else if(cfld=='utotl' .and. trim(df%ftype)=='archm') then
      is3DVar=.true.
