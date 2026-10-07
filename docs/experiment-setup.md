@@ -173,71 +173,8 @@ When using HYCOM 2.2.98 with `highfq_river = .true.`, you must also set `priver=
 enabled.
 :::
 
-Finally, copy your customized `hycom_opt` to your scratch filesystem.
-
-```bash
-CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
-EXPT_ID=<EXPT_ID>         # e.g. 01.0
-
-cp $WORK/${CONFIGNAME}/expt_${EXPT_ID}/hycom_opt $WDIR/expt_${EXPT_ID}/.
-```
-
-<<<<<<< HEAD
-:::{note}
-For the cycled spin-up (`srjob_cycle.sh`, see
-[Cycled spin-up](running.md#cycled-spin-up)), append `${SPINUP_CYCLE:+/cycle_${SPINUP_CYCLE}}`
-to `D`, e.g. `export D=$USERWORK/<CONFIGNAME>/expt_${X}/data${SPINUP_CYCLE:+/cycle_${SPINUP_CYCLE}}`.
-`SPINUP_CYCLE` is only set by `srjob_cycle.sh`, so other job scripts still write to `data/`.
-:::
-
-:::{important}
-`data/` is on the purged filesystem, so **archive completed output to NIRD on a rolling
-basis** (e.g. per model year as it finishes) from a service node.
-:::
-
-:::{note}
-For TP2, the available topography versions are: `01` (initial interpolation), `02` (adds
-Ob river channel), `03` (identical to `02`), `04` (blends `02`/`03` with NEMO topography
-at the nesting boundary). Higher numbers are newer refinements, not changes in resolution.
-Use `04` for current experiments.
-:::
-
-:::{note}
-`NMPI` is determined by the tiling step in
-[Preparing External Files](external-files.md) (which requires
-[hycom_ALL](compilation.md#compile-hycom-all) to be compiled first). For TP2 on Betzy,
-with topography version `04` and `Icore=29, Jcore=26`, the result is `504`, so you can
-set that now. For other configurations, leave it as a placeholder and fill it in after
-running `create_ref_case.sh`. Compilation of HYCOM-CICE does not use `NMPI`.
-:::
-
-:::{note}
-If the model reports that ice blocks exceed the maximum, increase `MXBLCKS` to the value
-recommended in the error message.
-:::
-
-::::{dropdown} Other variables in EXPT.src
-
-| Variable | Description |
-|----------|-------------|
-| `export SIGVER=` | Equation of state version; must be consistent with `thflag` in `blkdat.input` |
-| `export K=` | Number of layers — auto-derived from `blkdat.input`, no need to edit |
-| `export P=` | Experiment directory path — set automatically from the script location |
-
-::::
-
-
-This is safe: `expt_preprocess.sh` only creates (`mkdir -p`) and enters (`cd`) `$S` and `$D` —
-it never deletes them — and the overrides propagate automatically when `expt_new.sh` copies
-`EXPT.src` to a new experiment. `P=` and `build/` stay on `$WORK`, so the configuration and
-compiled executable survive the purge.
-
-:::{note}
-`expt_preprocess.sh` also accesses `relax/` via `${D}/../../relax/` (two levels up from `$D`).
-When `D=` is overridden to a path on the scratch filesystem, `${D}/../../` resolves to the
-scratch `<CONFIGNAME>/` subtree — so `relax/` must be on scratch as well, which is exactly what
-the symlinks described above ([Set up the work directory](#set-up-the-work-directory)) provide.
-:::
+The preprocess script copies `hycom_opt` from the experiment directory (`$P`) into
+`SCRATCH/` on each run, so there is no need to copy it to the scratch filesystem.
 
 ## Configure `blkdat.input`
 
@@ -618,6 +555,13 @@ export D=/cluster/work/projects/nn2993k/$USER/<CONFIGNAME>/expt_${X}/data
 :::
 ::::
 
+:::{note}
+For the cycled spin-up (`srjob_cycle.sh`, see
+[Cycled spin-up](running.md#cycled-spin-up)), append `${SPINUP_CYCLE:+/cycle_${SPINUP_CYCLE}}`
+to `D`, e.g. `export D=$USERWORK/<CONFIGNAME>/expt_${X}/data${SPINUP_CYCLE:+/cycle_${SPINUP_CYCLE}}`.
+`SPINUP_CYCLE` is only set by `srjob_cycle.sh`, so other job scripts still write to `data/`.
+:::
+
 :::{important}
 `data/` is on the purged filesystem, so **archive completed output to NIRD on a rolling
 basis** (e.g. per model year as it finishes) from a service node.
@@ -661,8 +605,8 @@ it never deletes them — and the overrides propagate automatically when `expt_n
 compiled executable survive the purge.
 
 :::{note}
-`expt_preprocess.sh` also accesses `relax/` via `${D}/../../relax/` (two levels up from `$D`).
-When `D=` is overridden to a path on the scratch filesystem, `${D}/../../` resolves to the
+`expt_preprocess.sh` also accesses `relax/` via `${S}/../../relax/` (two levels up from `$S`).
+When `S=` is overridden to a path on the scratch filesystem, `${S}/../../` resolves to the
 scratch `<CONFIGNAME>/` subtree — so `relax/` must be on scratch as well, which is exactly what
 the symlinks described above ([Set up the work directory](#set-up-the-work-directory)) provide.
 :::
@@ -859,7 +803,7 @@ copied from the template experiment by `expt_new.sh`; exceptions are noted.
 |------|---------|
 | `blkdat.input` | Main HYCOM parameter/namelist file |
 | `EXPT.src` | Shell environment setup — defines experiment identifiers (`X`, `E`, `V`, `K`), paths to SCRATCH (`S`) and data directory (`D`), MPI task count, and other compile/run flags. Sourced by job scripts. |
-| `hycom_opt` | HYCOM optional namelist (`&hycom_nml`) — copied to the work directory by the preprocess script on each run |
+| `hycom_opt` | HYCOM optional namelist (`&hycom_nml`) — copied from the experiment directory into `SCRATCH/` by the preprocess script on each run |
 | `patch.input` | Domain decomposition tile layout for parallel HYCOM |
 
 **CICE namelist files**
