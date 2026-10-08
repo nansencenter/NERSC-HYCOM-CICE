@@ -145,10 +145,10 @@ Open `srjob_cycle.sh` and update:
 | `CYCLE_START` | `"1993-01-01T00:00:00"` | Start of cycles 2, 3, … |
 | `CYCLE_END` | `"1998-01-01T00:00:00"` | End of every cycle (wrap date, exclusive) |
 | `NCYCLES` | `5` | Number of cycles |
-| `SEGMENT_MONTHS` | `72` (TP2), `48` (TP5) | Maximum months per preprocess–run–postprocess iteration; the last segment of each cycle is clipped to `CYCLE_END`. The job runs one segment, then resubmits itself |
+| `CYCLES_PER_JOB` | `1` | Number of cycles run in one job before it resubmits itself (see [Restarting after a crash](#restarting-after-a-crash)) |
 
 :::{note}
-Set `SEGMENT_MONTHS` so the segment fits within the wall-time limit (`#SBATCH --time`). The defaults above are based on TP2 with BGC taking 5–6 h/year and TP5 without BGC taking 6–7 h/year on Betzy (see the timing note in [Submit a job](#submit-a-job)).
+A full cycle must fit within the wall-time limit (`#SBATCH --time`); raise `CYCLES_PER_JOB` if several fit. On Betzy, TP2 with BGC takes 5–6 h/year and TP5 without BGC 6–7 h/year, so a 5-year cycle takes about 25–35 h (see the timing note in [Submit a job](#submit-a-job)).
 :::
 
 Before submitting, check:
@@ -156,7 +156,7 @@ Before submitting, check:
 - `D` in `EXPT.src` already contains `${SPINUP_CYCLE:+/cycle_${SPINUP_CYCLE}}` in the
   template experiments, so each cycle writes to its own `data/cycle_NN/` directory.
   If you set up your experiment from scratch, verify this is in place.
-- Both models must write a restart at the end of every segment: `rstrfq` in
+- Both models must write a restart at the end of every cycle: `rstrfq` in
   `blkdat.input` must be positive and `dump_last = .true.` in `ice_in`.
 
 Then submit:
@@ -171,12 +171,19 @@ sbatch srjob_cycle.sh
 `srjob_cycle.sh` always continues from the latest HYCOM/CICE restart pair in the cycle
 data directories, so in most cases you can simply resubmit.
 
+The resubmitted job finishes the interrupted cycle from that restart. The partial cycle
+counts towards `CYCLES_PER_JOB`: with `CYCLES_PER_JOB=1` the job resubmits itself once
+the interrupted cycle is done, and the next cycle starts in a new job. With
+`CYCLES_PER_JOB=2` it finishes the interrupted cycle and then runs one more full cycle.
+That is always shorter than two full cycles, so it fits the wall-time limit if two full
+cycles do.
+
 - **Model exits with an error but the SLURM job completes normally**: `expt_postprocess.sh`
   still runs and moves files to `data/cycle_NN/`. Resubmit directly.
 
 - **Job is killed by SLURM** (wall-time limit, out-of-memory, node failure, or
   `scancel`): `expt_postprocess.sh` never runs. Output files remain in `SCRATCH/`.
-  Run postprocessing manually with the cycle number of the interrupted segment before
+  Run postprocessing manually with the cycle number of the interrupted cycle before
   resubmitting:
 
   ```bash

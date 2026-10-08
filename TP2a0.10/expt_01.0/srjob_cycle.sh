@@ -22,8 +22,9 @@
 # CICE is cold-started from ice_initial.nc (INITFLG="--init-ice").
 #
 # The job can be resubmitted at any time: it continues from the latest restart pair
-# found in the cycle data directories. It runs one segment per job and resubmits
-# itself automatically until all cycles are done.
+# found in the cycle data directories. It runs up to CYCLES_PER_JOB cycles per job (an
+# interrupted cycle is continued from its latest restart) and resubmits itself
+# automatically until all cycles are done.
 #
 export NMPI=504
 export SLURM_SUBMIT_DIR=$(pwd)
@@ -56,7 +57,7 @@ SPINUP_START="1993-09-01T00:00:00"   # start of cycle 1
 CYCLE_START="1993-01-01T00:00:00"    # start of cycles 2..NCYCLES
 CYCLE_END="1998-01-01T00:00:00"      # end of every cycle (wrap date)
 NCYCLES=5
-SEGMENT_MONTHS=72                    # length of one preprocess/run/postprocess segment
+CYCLES_PER_JOB=1                     # cycles per job; one cycle must fit in the wall-time limit
 JOBSCRIPT=srjob_cycle.sh             # this script, for resubmission
 # --------------------------------------------------------------------
 
@@ -64,9 +65,6 @@ EXPTDIR=$P
 
 # Seconds since epoch of an ISO date YYYY-mm-ddTHH:MM:SS
 epoch() { date -u -d "${1/T/ } UTC" +%s ; }
-
-# ISO date + N months
-add_months() { date -u -d "${1/T/ } UTC +$2 months" +%Y-%m-%dT%H:%M:%S ; }
 
 # ISO date of HYCOM restart suffix YYYY_DDD_HH_SSSS
 restart_iso() {
@@ -101,6 +99,7 @@ latest_restart() {
    { echo "SPINUP_START must lie in [CYCLE_START,CYCLE_END)"; exit 1; }
 
 PREV_D=""
+NDONE=0                              # cycles run in this job
 for c in $(seq 1 $NCYCLES) ; do
    export SPINUP_CYCLE=$(printf "%02d" $c)
    cd $EXPTDIR || { echo "Could not go to dir $EXPTDIR"; exit 1; }
@@ -121,10 +120,9 @@ for c in $(seq 1 $NCYCLES) ; do
    fi
    echo "Cycle $SPINUP_CYCLE: continuing from $cur"
 
-   while [ $(epoch $cur) -lt $(epoch $CYCLE_END) ] ; do
+   if [ $(epoch $cur) -lt $(epoch $CYCLE_END) ] ; then
       START=$cur
-      END=$(add_months $cur $SEGMENT_MONTHS)
-      [ $(epoch $END) -gt $(epoch $CYCLE_END) ] && END=$CYCLE_END
+      END=$CYCLE_END
       INITFLG=""
       if [ $c -eq 1 -a "$START" == "$SPINUP_START" -a ! -f $D/$(cice_restart $START) ] ; then
          INITFLG="--init-ice"
@@ -146,14 +144,14 @@ for c in $(seq 1 $NCYCLES) ; do
       ../bin/expt_postprocess.sh
 
       [ "$(latest_restart $D $END $END none)" == "$END" ] || \
-         { echo "Cycle $SPINUP_CYCLE: no HYCOM/CICE restart for $END in $D after segment, stopping"; exit 1; }
-      cur=$END
-      if [ $(epoch $cur) -lt $(epoch $CYCLE_END) ] || [ $c -lt $NCYCLES ] ; then
-         echo "Segment done, resubmitting $JOBSCRIPT"
+         { echo "Cycle $SPINUP_CYCLE: no HYCOM/CICE restart for $END in $D after cycle, stopping"; exit 1; }
+      NDONE=$((NDONE+1))
+      if [ $c -lt $NCYCLES -a $NDONE -ge $CYCLES_PER_JOB ] ; then
+         echo "Cycle $SPINUP_CYCLE finished, resubmitting $JOBSCRIPT"
          cd $EXPTDIR && sbatch $JOBSCRIPT
          exit 0
       fi
-   done
+   fi
    echo "Cycle $SPINUP_CYCLE finished"
    PREV_D=$D
 done
