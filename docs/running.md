@@ -118,7 +118,7 @@ What happens to output files depends on how the run ended:
 
   ```bash
   cd $WORK/<CONFIGNAME>/expt_<EXPT_ID>
-  ../expt_postprocess.sh
+  ../bin/expt_postprocess.sh
   ```
 
   This moves the restart and archive files to `data/`, where `srjob.sh` will pick
