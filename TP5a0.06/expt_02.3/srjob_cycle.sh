@@ -59,6 +59,7 @@ CYCLE_END="1998-01-01T00:00:00"      # end of every cycle (wrap date)
 NCYCLES=5
 CYCLES_PER_JOB=1                     # cycles per job; one cycle must fit in the wall-time limit
 JOBSCRIPT=srjob_cycle.sh             # this script, for resubmission
+ATMO_FORCING="era5+lw"               # forcing option for atmo_synoptic.sh; "" to never generate forcing
 # --------------------------------------------------------------------
 
 EXPTDIR=$P
@@ -97,6 +98,32 @@ latest_restart() {
 [ $(epoch $CYCLE_START) -lt $(epoch $CYCLE_END) ] || { echo "CYCLE_START must be before CYCLE_END"; exit 1; }
 [ $(epoch $SPINUP_START) -ge $(epoch $CYCLE_START) -a $(epoch $SPINUP_START) -lt $(epoch $CYCLE_END) ] || \
    { echo "SPINUP_START must lie in [CYCLE_START,CYCLE_END)"; exit 1; }
+
+# Atmospheric forcing is the same for all cycles: generate it once for CYCLE_START..CYCLE_END
+# unless the existing forcing in force/synoptic/$E already covers that period.
+# Forcing times in the .b files are in HYCOM days (days since 1900-12-31).
+hycom_day() { echo $(( ($(epoch $1) - $(epoch 1900-12-31T00:00:00)) / 86400 )) ; }
+forcing_covers() {
+   local b=$1 first last
+   [ -s $b -a -s ${b%.b}.a ] || return 1
+   first=$(head -n 6 $b | tail -n 1 | sed "s/.*=//" | awk '{print $1}')
+   last=$(tail -n 1 $b | sed "s/.*=//" | awk '{print $1}')
+   awk -v f=$first -v l=$last -v s=$2 -v e=$3 'BEGIN { exit !(f <= s && l >= e) }'
+}
+FORCDIR=$EXPTDIR/../force/synoptic/$E
+if [ -n "$ATMO_FORCING" ] ; then
+   cs=$(hycom_day $CYCLE_START) ; ce=$(hycom_day $CYCLE_END) ; ok=1
+   for v in radflx shwflx vapmix airtmp precip mslprs wndewd wndnwd dewpt ; do
+      forcing_covers $FORCDIR/$v.b $cs $ce || { ok=0 ; break ; }
+   done
+   if [ $ok -eq 1 ] ; then
+      echo "Atmospheric forcing in $FORCDIR covers $CYCLE_START..$CYCLE_END"
+   else
+      echo "Generating atmospheric forcing ($ATMO_FORCING) for $CYCLE_START..$CYCLE_END in $FORCDIR"
+      cd $EXPTDIR || { echo "Could not go to dir $EXPTDIR"; exit 1; }
+      ../bin/atmo_synoptic.sh $ATMO_FORCING $CYCLE_START $CYCLE_END || { echo "atmo_synoptic.sh failed"; exit 1; }
+   fi
+fi
 
 PREV_D=""
 NDONE=0                              # cycles run in this job

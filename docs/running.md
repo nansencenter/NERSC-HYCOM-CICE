@@ -57,7 +57,14 @@ Open `srjob.sh` in a text editor and update:
 | `START` | `"YYYY-MM-DDT00:00:00"` | Run start time |
 | `END` | `"YYYY-MM-DDT00:00:00"` | Run end time |
 | `INITFLG` | `""` or `"--init"` | `"--init"` for a cold start; `""` to restart from files |
+| `ATMO_FORCING` | `"era5+lw"` | Forcing option for `atmo_synoptic.sh`; `""` to never generate atmospheric forcing in the job |
 | `#SBATCH --time` | `"HH:MM:SS"` | Wall-clock time limit |
+
+Before running the model, `srjob.sh` checks whether the atmospheric forcing in
+`force/synoptic/<IEXPT>/` already covers `START`..`END`. If it does, the existing files
+are kept; if not, the job runs `atmo_synoptic.sh $ATMO_FORCING $START $END`, which
+overwrites them. To reuse forcing across several jobs, generate it once for the whole
+period (see [Atmospheric forcing](forcing.md#atmospheric-forcing)).
 
 > **`INITFLG="--init"` (cold start):** No restart files are needed.
 > Temperature and salinity (T/S) are set directly from the climatological fields in
@@ -146,10 +153,21 @@ Open `srjob_cycle.sh` and update:
 | `CYCLE_END` | `"1998-01-01T00:00:00"` | End of every cycle (wrap date, exclusive) |
 | `NCYCLES` | `5` | Number of cycles |
 | `CYCLES_PER_JOB` | `1` | Number of cycles run in one job before it resubmits itself (see [Restarting after a crash](#restarting-after-a-crash)) |
+| `ATMO_FORCING` | `"era5+lw"` | Forcing option for `atmo_synoptic.sh`; `""` to never generate atmospheric forcing in the job |
 
 :::{note}
 A full cycle must fit within the wall-time limit (`#SBATCH --time`); raise `CYCLES_PER_JOB` if several fit. On Betzy, TP2 with BGC takes 5–6 h/year and TP5 without BGC 6–7 h/year, so a 5-year cycle takes about 25–35 h (see the timing note in [Submit a job](#submit-a-job)).
 :::
+
+All cycles use the same atmospheric forcing. Before the first cycle, `srjob_cycle.sh`
+checks that the forcing in `force/synoptic/<IEXPT>/` covers `CYCLE_START`..`CYCLE_END`.
+This means all of `CYCLE_START`..`CYCLE_END`, not just `SPINUP_START`..`CYCLE_END`,
+because cycles 2, 3, … start at `CYCLE_START`. If the forcing does not cover that
+period, the job runs `atmo_synoptic.sh $ATMO_FORCING $CYCLE_START $CYCLE_END` once,
+overwriting the existing files; otherwise it reuses them. Generating several years of
+forcing inside the job holds all the job's nodes for a serial task, so you may prefer to
+run `atmo_synoptic.sh` for `CYCLE_START`..`CYCLE_END` beforehand (see
+[Atmospheric forcing](forcing.md#atmospheric-forcing)).
 
 Before submitting, check:
 

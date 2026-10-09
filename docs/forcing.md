@@ -379,12 +379,23 @@ describe them in its README.
 This step is handled by the script `atmo_synoptic.sh`.
 
 :::{note}
-The job script `srjob.sh` calls `atmo_synoptic.sh` automatically
-(see [Submit a job](running.md#submit-a-job)). Skip this section if you submit via
-`srjob.sh` (recommended). You may still want to run `atmo_synoptic.sh` manually to
-verify the input files are in place before submitting; if so, comment out the
-`atmo_synoptic.sh` call in `srjob.sh` to prevent the job from regenerating the files
-(output filenames have no dates, so they would be silently overwritten).
+The job scripts `srjob.sh` and `srjob_cycle.sh` call `atmo_synoptic.sh` automatically,
+but only when needed. Before running the model they read the first and last forcing
+times from the `.b` files in `force/synoptic/<IEXPT>/`. If all nine fields already cover
+the run period, the existing files are reused; otherwise `atmo_synoptic.sh` regenerates
+them for that period, overwriting what is there (output filenames have no dates). The
+forcing option is set by `ATMO_FORCING` in the job script (default `era5+lw`; set it to
+`""` to never generate forcing in the job). Skip this section if you submit via one of
+these scripts (recommended). You can also run `atmo_synoptic.sh` manually beforehand,
+e.g. once for a long period that covers several jobs: the job then finds the forcing in
+place and leaves it untouched.
+
+The run period is `START`..`END` for `srjob.sh` (see
+[Submit a job](running.md#submit-a-job)) and `CYCLE_START`..`CYCLE_END` for
+`srjob_cycle.sh` (see [Cycled spin-up](running.md#cycled-spin-up)). If you generate the
+forcing manually for a cycled spin-up, start it at `CYCLE_START`, not `SPINUP_START`.
+Every cycle after the first starts at `CYCLE_START`, and `expt_preprocess.sh` aborts with
+`forcing starts after model starts` if the forcing begins later.
 :::
 
 Atmospheric forcing must be prepared for each run period. `START` and `END` are the run

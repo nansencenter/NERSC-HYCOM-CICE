@@ -42,9 +42,32 @@ INITFLG="--init"
 #INITFLG=""
 echo "Start time in pbsjob.sh: $START"
 echo "End   time in pbsjob.sh: $END"
-# Generate atmospheric forcing :
-#atmo_synoptic.sh erai+all $START $END 
-../bin/atmo_synoptic.sh era5+lw $START $END
+# Generate atmospheric forcing, unless the existing forcing in force/synoptic/$E already
+# covers START..END (atmo_synoptic.sh overwrites it). Forcing times in the .b files are
+# in HYCOM days (days since 1900-12-31).
+ATMO_FORCING="era5+lw"               # forcing option for atmo_synoptic.sh; "" to never generate forcing
+epoch() { date -u -d "${1/T/ } UTC" +%s ; }
+hycom_day() { echo $(( ($(epoch $1) - $(epoch 1900-12-31T00:00:00)) / 86400 )) ; }
+forcing_covers() {
+   local b=$1 first last
+   [ -s $b -a -s ${b%.b}.a ] || return 1
+   first=$(head -n 6 $b | tail -n 1 | sed "s/.*=//" | awk '{print $1}')
+   last=$(tail -n 1 $b | sed "s/.*=//" | awk '{print $1}')
+   awk -v f=$first -v l=$last -v s=$2 -v e=$3 'BEGIN { exit !(f <= s && l >= e) }'
+}
+FORCDIR=$P/../force/synoptic/$E
+if [ -n "$ATMO_FORCING" ] ; then
+   fs=$(hycom_day $START) ; fe=$(hycom_day $END) ; ok=1
+   for v in radflx shwflx vapmix airtmp precip mslprs wndewd wndnwd dewpt ; do
+      forcing_covers $FORCDIR/$v.b $fs $fe || { ok=0 ; break ; }
+   done
+   if [ $ok -eq 1 ] ; then
+      echo "Atmospheric forcing in $FORCDIR covers $START..$END"
+   else
+      echo "Generating atmospheric forcing ($ATMO_FORCING) for $START..$END in $FORCDIR"
+      ../bin/atmo_synoptic.sh $ATMO_FORCING $START $END || { echo "atmo_synoptic.sh failed"; exit 1; }
+   fi
+fi
 
 # Transfer data files to scratch - must be in "expt_XXX" dir for this script
 ../bin/expt_preprocess.sh $START $END $INITFLG        ||  { echo "Preprocess had fatal errors "; exit 1; }
