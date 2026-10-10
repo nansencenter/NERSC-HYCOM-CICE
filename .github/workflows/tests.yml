@@ -1,0 +1,43 @@
+name: tests
+
+on:
+  push:
+    branches: [develop, master]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build dependencies (conda-forge)
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-activate-base: true
+          activate-environment: ""
+
+      - name: Install ESMF and Fortran toolchain
+        shell: bash -el {0}
+        run: |
+          conda install -y -c conda-forge \
+            gfortran openmpi esmf netcdf-fortran make csh gawk rsync
+
+      - name: Install Python test dependencies
+        shell: bash -el {0}
+        run: |
+          pip install pytest numpy f90nml
+
+      - name: Set ESMF environment variables
+        shell: bash -el {0}
+        run: |
+          CONDA_BASE=$(conda info --base)
+          echo "ESMF_DIR=${CONDA_BASE}"           >> $GITHUB_ENV
+          echo "ESMF_MOD_DIR=${CONDA_BASE}/mod"   >> $GITHUB_ENV
+          echo "ESMF_LIB_DIR=${CONDA_BASE}/lib"   >> $GITHUB_ENV
+          echo "ESMFMKFILE=${CONDA_BASE}/lib/esmf.mk" >> $GITHUB_ENV
+
+      - name: Run tests
+        shell: bash -el {0}
+        run: pytest

@@ -16,8 +16,8 @@
 #
 #FC            = gfortran
 FC            = mpif90
-INCLUDES      = -I${ESMF_MOD_DIR} -I${ESMF_DIR}/include -I./CICE/rundir/compile
-FCFFLAGS      =	-g -fconvert=big-endian -fdefault-real-8 -fdefault-double-8
+INCLUDES      = -I${ESMF_MOD_DIR} -I${ESMF_DIR}/include -I../CICE/rundir/compile
+FCFFLAGS      =	-g -fconvert=big-endian -fdefault-real-8 -fdefault-double-8 -fallow-argument-mismatch
 FCFFLAGS      :=	$(FCFFLAGS) $(INCLUDES)
 
 CC            =	mpicc
@@ -49,3 +49,6 @@ RM            = \rm -f
 
 .F.o:
 	$(FC) $(CPPFLAGS) $(FCFFLAGS) -c $*.F
+
+.F90.o:
+	$(FC) $(CPPFLAGS) $(FCFFLAGS) -c $*.F90

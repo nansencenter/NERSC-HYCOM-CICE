@@ -69,7 +69,7 @@ conda config --append envs_dirs /cluster/projects/nn2993k/conda/${USER}
 
 ### Create the environment
 
-::::{dropdown} Betzy (NRIS/Sigma2) and workstation
+::::{dropdown} Laptop / workstation / Betzy (NRIS/Sigma2)
 
 ```bash
 conda env create -f ${HOME}/NERSC-HYCOM-CICE/environment/python.yaml
@@ -176,7 +176,7 @@ environment is activated by prepending its `bin` directory to `PATH`.
 
 ### Update the environment
 
-::::{dropdown} Betzy (NRIS/Sigma2) and workstation
+::::{dropdown} Laptop / workstation / Betzy (NRIS/Sigma2)
 
 To sync the environment with changes to `python.yaml`:
 

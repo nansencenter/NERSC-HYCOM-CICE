@@ -15,5 +15,6 @@ dependencies:
   - pip
   - udunits2
   - cmocean
+  - pytest
   - pip:
       - cfunits
