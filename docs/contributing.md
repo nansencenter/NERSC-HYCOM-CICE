@@ -57,3 +57,27 @@ To see how your changes to the documentation render, you have two options:
 - The table of contents is defined in `docs/index.rst`.
 - To add a new page, create a `.md` file in `docs/` and add its name (without
   extension) to the appropriate `toctree` block in `docs/index.rst`.
+
+## Pre-commit hooks
+
+The repository uses [pre-commit](https://pre-commit.com) to run static checks
+before each commit. The hooks check shell scripts with
+[ShellCheck](https://www.shellcheck.net/) and enforce basic file hygiene
+(trailing whitespace, end-of-file newlines, YAML syntax, merge-conflict markers).
+
+`pre-commit` is included in `environment/python.yaml`. To activate the hooks
+after setting up your environment, run once:
+
+```bash
+pre-commit install
+```
+
+After that, the checks run automatically on every `git commit`. To run them
+manually across all files:
+
+```bash
+pre-commit run --all-files
+```
+
+The same checks run in CI on every push and pull request, so they will catch
+issues even without a local install.
