@@ -1268,7 +1268,7 @@ contains
          if (.not.gridrotate) then
             stdname='baroclinic_eastward_sea_water_velocity' 
          else
-            stdname='baroclinic_x_sea_water_velocity' 
+            stdname='baroclinic_sea_water_x_velocity' 
          end if
          units='m s-1' ; vname='ubaroclin'
          limits=(/-3,3/)
@@ -1276,7 +1276,7 @@ contains
          if (.not.gridrotate) then
             stdname='baroclinic_northward_sea_water_velocity' 
          else
-            stdname='baroclinic_y_sea_water_velocity' 
+            stdname='baroclinic_sea_water_y_velocity' 
          end if
          units='m s-1' ; vname='vbaroclin'
          limits=(/-3,3/)
@@ -1303,7 +1303,7 @@ contains
          if (.not.gridrotate) then
             stdname='barotropic_eastward_sea_water_velocity' 
          else
-            stdname='barotropic_x_sea_water_velocity' 
+            stdname='barotropic_sea_water_x_velocity' 
          end if
          units='m s-1' ; vname='ubarotrop'
          limits=(/-3,3/)
@@ -1311,7 +1311,7 @@ contains
          if (.not.gridrotate) then
             stdname='barotropic_northward_sea_water_velocity' 
          else
-            stdname='barotropic_y_sea_water_velocity' 
+            stdname='barotropic_sea_water_y_velocity' 
          end if
          units='m s-1' ; vname='vbarotrop'
          limits=(/-3,3/)
@@ -1542,7 +1542,7 @@ contains
          limits=(/0.,200./)
          stdname='depth_integrated_chlorophyll_one_optical_depth'
 !AS06092011
-      case ('albedo','albsni_d')
+      case ('albedo','albsni_d','albsni')
          vname='sialb'
          units='1'
          limits=(/0.,1./)
