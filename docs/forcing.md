@@ -1066,8 +1066,8 @@ open boundaries, over the specified number of grid cells. The result is written 
 
 ## River forcing
 
-River discharge is added as a precipitation bogus at the coastal grid cells near each
-river mouth, controlled by `priver` in `blkdat.input`. Three river forcing
+River discharge is applied in the same way as precipitation at the coastal grid cells
+near each river mouth, controlled by `priver` in `blkdat.input`. Three river forcing
 options are available:
 
 | | AHYPE/EHYPE climatology (default) | AHYPE/EHYPE + TRIP + Greenland melt | GloFAS |
