@@ -1066,8 +1066,8 @@ open boundaries, over the specified number of grid cells. The result is written 
 
 ## River forcing
 
-Rivers enter HYCOM as a freshwater flux at the coastal grid cells near each river mouth
-(a precipitation bogus), controlled by `priver` in `blkdat.input`. Three river forcing
+River discharge is added as a precipitation bogus at the coastal grid cells near each
+river mouth, controlled by `priver` in `blkdat.input`. Three river forcing
 options are available:
 
 | | AHYPE/EHYPE climatology (default) | AHYPE/EHYPE + TRIP + Greenland melt | GloFAS |
@@ -1079,7 +1079,7 @@ options are available:
 | **HYCOM 2.2.98** | `priver=1` | `priver=1` | `priver=0` and `highfq_river=.true.` in `hycom_opt` |
 | **Details** | [Climatologies](#climatologies) | [AHYPE/EHYPE with TRIP and Greenland melt](#ahype-ehype-climatology-with-trip-runoff-and-greenland-melt) | [GloFAS](#time-varying-river-forcing-from-glofas) |
 
-All three options only change the freshwater discharge. For BGC runs (`ntracr ≠ 0`), the
+All three options only change the river discharge. For BGC runs (`ntracr ≠ 0`), the
 river nutrient files (`ECO_no3`, `ECO_sil`, `ECO_pho`) always come from
 `create_ref_case.sh` and are climatological (including the Ob Bay spreading and the EMEP
 N/P deposition).
@@ -1197,7 +1197,7 @@ rivers:dtime1,range =   40909.0000      1.0000,  0.000000e+00  1.234567e-05
 ```
 
 GloFAS discharge (m³/s) is distributed over the coastal grid cells near each estuary and
-converted to a water flux (m/s). Each daily value is placed at 00:00 of its date.
+divided by the grid-cell area, giving m/s. Each daily value is placed at 00:00 of its date.
 
 #### Source data
 
