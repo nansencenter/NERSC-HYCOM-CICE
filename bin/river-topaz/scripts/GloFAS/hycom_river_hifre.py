@@ -183,8 +183,14 @@ if __name__ == "__main__" :
    parser.add_argument('end_time',      action=DateTimeParseAction, help='Stop  time in UTC zone. Format = YYYY-mm-dd<THH:MM:SS>')
    parser.add_argument('Outfile_drt',   type=str, help='directory to save the output files')
    parser.add_argument('depth_file',    type=str, help='path to the HYCOM depth .a file for this grid configuration')
+   parser.add_argument('--dt',          type=float, default=0.25,
+                       help='Output record interval as fraction of a day (default 0.25 = 6-hourly, '
+                            'required by HYCOM 2.2.98 where rivers must match the atmospheric forcing times; '
+                            'use 1.0 = daily for HYCOM 2.3, priver=2, which interpolates between any records)')
 
    args = parser.parse_args()
+   if args.dt <= 0. or args.dt > 1. or abs(1./args.dt - round(1./args.dt)) > 1e-6:
+      parser.error('--dt must divide one day evenly (e.g. 0.25, 0.5, 1.0)')
 
    # Start date of forcing file with format: YYYY-MM-DDT00:00:00.000000000
    start_date=str(args.start_time)[0:10] + 'T00:00:00.000000000' 
@@ -226,7 +232,8 @@ if __name__ == "__main__" :
 
    river_forcing=create_river_forcing(input_dataset=input_dataset,
                     start_date=start_date,end_date=end_date,
-                    topaz_grid_file=topaz_grid_file,topaz_depth_file=topaz_depth_file)
+                    topaz_grid_file=topaz_grid_file,topaz_depth_file=topaz_depth_file,
+                    dt=args.dt)
    river_netcdf=river_forcing['river_flux'].transpose("dtime1","longitude","latitude")
    river_netcdf.to_netcdf('{wrkdrt}/riverh_{start}_{end}.nc'.format(wrkdrt=output_path,
                     start=start_date[:10],end=end_date[:10]),unlimited_dims='dtime1')

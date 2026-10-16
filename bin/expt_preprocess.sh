@@ -113,6 +113,17 @@ export IDM=$(blkdat_get blkdat.input idm)
 export JDM=$(blkdat_get blkdat.input jdm)
 export LWFLAG=`grep "'lwflag' =" blkdat.input | awk '{printf("%1d", $1)}'`
 
+# High-frequency (GloFAS) river forcing:
+#   HYCOM 2.3   : priver=2 in blkdat.input
+#   HYCOM 2.2.98: priver=0 in blkdat.input and highfq_river=.true. in hycom_opt
+HRIVER=".false."
+if [ "$V" == "2.3" ] ; then
+   [ "$PRIVER" -eq 2 ] && HRIVER=".true."
+elif [ -s $P/hycom_opt ] && grep -v "^ *!" $P/hycom_opt | grep -iq "highfq_river *= *\.true\." ; then
+   HRIVER=".true."
+fi
+export HRIVER
+
 restarti=$(blkdat_get_string blkdat.input nmrsti "restart_in")
 
 # Add period to restart file name if not present...
@@ -416,19 +427,19 @@ elif [ $PRIVER -eq 2 ] ; then
       cp $BASEDIR/force/rivers/$E/ECO_pho.b rivers.ECO_pho.b || tellwarn "Could not get PHO river .b file"
   fi
 fi
-# 0: can be used for offline to create the riverh.[ab], when the model integration is multiple years.
+# 1: (re)create riverh.[ab] for the period of every job with river_synoptic.sh
+# 0: use the existing riverh.[ab]. Create it offline with river_synoptic.sh when the
+#    model integration covers multiple years (only created here if it does not exist).
 River_online=0
 if [ "$HRIVER" = ".true." ]; then
    # Check range of file against start and stop times
    RDIR=$BASEDIR/force/rivers/$E
-   if [ "$V" == "2.3"]; then
-      echo "Implement in hycom2.2:"
-      echo "Note: PRIVER must be 2 in blkdat.input " 
+   if [ "$V" == "2.3" ]; then
+      echo "**Setting up high frequency river forcing (priver=2, HYCOM 2.3)"
       Rforfile="forcing.rivers"
    else
-      echo "Implement in hycom2.2:"
-      echo "Note: PRIVER must be 0 for highfq_river=true " 
-      echo "highfq_river=true in hycom_opt: setting up high frequency river forcing"
+      echo "**Setting up high frequency river forcing (highfq_river=.true., HYCOM 2.2.98)"
+      echo "Note: PRIVER must be 0 for highfq_river=true "
       Rforfile="forcing.riverh"
    fi
    if [ ! -s  ${RDIR}/riverh.a -o  ! -s ${RDIR}/riverh.b -o ${River_online} -eq 1 ]; then 
@@ -438,7 +449,7 @@ if [ "$HRIVER" = ".true." ]; then
       eval $cmd ||  tellerror "$cmd failed"
       cd $S
    fi
-   if [ -f  $RDIR/riverh.a -a  -f $RDIR/riverh.b ] 
+   if [ -s  $RDIR/riverh.a -a  -s $RDIR/riverh.b ] 
    then
      ln -sf $RDIR/riverh.a ${Rforfile}.a || tellerror "Could not get river .a file"
      ln -sf $RDIR/riverh.b ${Rforfile}.b || tellerror "Could not get river .b file"
@@ -448,6 +459,8 @@ if [ "$HRIVER" = ".true." ]; then
      test2=$(echo $tstop '<='$frcstop  | bc -l)
      [ $test1 -eq 1 ] || tellerror "File $S/${Rforfile}.b: forcing starts after  model starts"
      [ $test2 -eq 1 ] || tellerror "File $S/${Rforfile}.b: forcing stops  before model stops"
+   else
+     tellerror "Could not find high frequency river forcing $RDIR/riverh.[ab]"
    fi
    cd $S
 fi
