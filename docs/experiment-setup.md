@@ -167,7 +167,7 @@ HYCOM 2.2.98 also supports a `highfq_river` option (use time-varying, high-frequ
 forcing instead of climatological river forcing). **This option is not available in HYCOM 2.3**
 — including it in `hycom_opt` with 2.3 will cause a namelist read error at startup. In
 HYCOM 2.3, time-varying river forcing is selected with `priver=2` in `blkdat.input` instead
-(see [time-varying river forcing from GloFAS](forcing.md#climatologies-and-river-forcing)).
+(see [Time-varying river forcing from GloFAS](forcing.md#time-varying-river-forcing-from-glofas)).
 When using HYCOM 2.2.98 with `highfq_river = .true.`, you must also set `priver=0` in
 `blkdat.input`; the two options are mutually exclusive and the model will abort if both are
 enabled.
@@ -673,7 +673,7 @@ copied from the template experiment by `expt_new.sh`; exceptions are noted.
 | `sr_job_ensemble.sh` | Slurm job script for ensemble runs |
 | `preprocess_mem.sh` | Preprocess script variant for ensemble members |
 | `sr_ensemble_post.sh` | Ensemble postprocessing script (currently empty) |
-| `create_ref_case.sh` | One-time setup script to create a new experiment from a reference case — copied from `bin/` manually (see [Climatologies and river forcing](forcing.md#climatologies-and-river-forcing)) |
+| `create_ref_case.sh` | One-time setup script to create a new experiment from a reference case — copied from `bin/` manually (see [Climatologies](forcing.md#climatologies)) |
 
 **Ensemble forcing**
 
