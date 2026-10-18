@@ -264,6 +264,8 @@ contains
    call handle_err(NF90_DEF_VAR(ncstate%ncid,'time',NF90_DOUBLE,ncstate%t_dimension_id,var_id))
    call handle_err(NF90_PUT_ATT(ncstate%ncid,var_id,'units',tunits))
    call handle_err(NF90_PUT_ATT(ncstate%ncid,var_id,'long_name', 'forecast time'))
+   call handle_err(NF90_PUT_ATT(ncstate%ncid,var_id,'standard_name', 'time'))
+   call handle_err(NF90_PUT_ATT(ncstate%ncid,var_id,'axis', 'T'))
    call handle_err(nf90_enddef(ncstate%ncid))
    call handle_err(NF90_PUT_VAR(ncstate%ncid,var_id,timeval))
    call handle_err(nf90_redef(ncstate%ncid))
@@ -447,6 +449,7 @@ contains
 
    integer :: var_dims(ndims)
    integer :: fieldint(nx,ny,nz)
+   integer :: chunksizes(ndims)
    integer :: shuffle, deflate, deflate_level !AA Needed for netCDF4 compression
    integer :: varid, countlo, counthi 
    character(len=85) :: stdname, longname, units, vnamenc, cellmethod
@@ -501,8 +504,23 @@ contains
 
    ! Define variable and set netCDF4 compression
    call handle_err(NF90_DEF_VAR(ncstate%ncid,trim(vnamenc),NF90_FLOAT,var_dims,varid))
-   !If needed, one may set chunksizes, currently disabled 
-   !call handle_err(NF90_DEF_VAR_CHUNKING(ncstate%ncid,varid,NF90_CHUNKED,chunksizes))
+   !If needed, one may set chunksizes 
+   ! Logical chunking policy: moderate horizontal tiles, fixed depth chunk, and time chunk = 1.
+   select case (ndims)
+   case (1)
+      chunksizes = (/ max(1, nx) /)
+   case (2)
+      chunksizes = (/ max(1, min(nx,256)), max(1, min(ny,256)) /)
+   case (3)
+      if (ncstate%stations) then
+         chunksizes = (/ max(1, min(nx,1024)), max(1, min(ny,64)), 1 /)
+      else
+         chunksizes = (/ max(1, min(nx,256)), max(1, min(ny,256)), 1 /)
+      end if
+   case (4)
+      chunksizes = (/ max(1, min(nx,256)), max(1, min(ny,256)), max(1, min(nz,4)), 1 /)
+   end select
+   call handle_err(NF90_DEF_VAR_CHUNKING(ncstate%ncid,varid,NF90_CHUNKED,chunksizes))
    call handle_err(NF90_DEF_VAR_DEFLATE(ncstate%ncid,varid,            &
                                                      shuffle = 1,      &
                                                      deflate = 1,      &
