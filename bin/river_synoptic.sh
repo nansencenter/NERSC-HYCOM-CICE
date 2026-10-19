@@ -69,7 +69,8 @@ else
    exit 1
 fi
 
-ml load matplotlib/3.5.2-foss-2022a
+# Needs the hycom-cice Python environment (xarray etc.). Do not load the matplotlib module here:
+# it puts the module's Python 3.10 numpy on PYTHONPATH, which breaks the environment's python.
 cd ${BINDIR}/river-topaz/scripts/GloFAS
 
 cmd="python ${BINDIR}/river-topaz/scripts/GloFAS/hycom_river_hifre.py --dt $dt $start $stop $S/ $depthfile"
