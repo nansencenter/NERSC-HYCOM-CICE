@@ -1077,14 +1077,28 @@ options are available:
 | **File in `force/rivers/<IEXPT>/`** | `rivers.[ab]` | `rivers.[ab]` (overwrites the default) | `riverh.[ab]` (separate file) |
 | **HYCOM 2.3** | `priver=1` | `priver=1` | `priver=2` |
 | **HYCOM 2.2.98** | `priver=1` | `priver=1` | `priver=0` and `highfq_river=.true.` in `hycom_opt` |
-| **Details** | [Climatologies](#climatologies) | [AHYPE/EHYPE with TRIP and Greenland melt](#ahype-ehype-climatology-with-trip-runoff-and-greenland-melt) | [GloFAS](#time-varying-river-forcing-from-glofas) |
+| **Details** | [AHYPE/EHYPE (default)](#ahype-ehype-climatology-default) | [AHYPE/EHYPE with TRIP and Greenland melt](#ahype-ehype-climatology-with-trip-runoff-and-greenland-melt) | [GloFAS](#time-varying-river-forcing-from-glofas) |
 
 All three options only change the river discharge. For BGC runs (`ntracr ≠ 0`), the
 river nutrient files (`ECO_no3`, `ECO_sil`, `ECO_pho`) always come from
 `create_ref_case.sh` and are climatological (including the Ob Bay spreading and the EMEP
 N/P deposition).
 
+### AHYPE/EHYPE climatology (default)
+
+The default river forcing is a monthly AHYPE/EHYPE discharge climatology. It is generated
+by `create_ref_case.sh`, which calls `river_nersc.sh` with
+`rivers_ahype-ehype_clim_rev2.dat` and writes `force/rivers/<IEXPT>/rivers.[ab]` (plus the
+BGC river nutrient files when `ntracr ≠ 0`). No extra step is needed; set `priver=1` in
+`blkdat.input`. See [Climatologies](#climatologies) for how to run `create_ref_case.sh`.
+
 ### AHYPE/EHYPE climatology with TRIP runoff and Greenland melt
+
+:::{important}
+Run these steps **after** `create_ref_case.sh`. `create_ref_case.sh` writes the default
+AHYPE/EHYPE climatology to `force/rivers/<IEXPT>/rivers.[ab]`, so running (or rerunning)
+it afterwards overwrites the merged river forcing, and these steps must be repeated.
+:::
 
 A more complete river forcing combining AHYPE/EHYPE, TRIP, and Greenland
 ice melt can be built manually using the scripts in `$HOME/NERSC-HYCOM-CICE/bin/`:
@@ -1112,11 +1126,6 @@ Steps:
 2. Run `river_trip.sh` to produce TRIP river runoff.
 3. Run `merge_TRIP_Hype_abfile_4Greenlnad.py` to merge all sources into a single
    `rivers.a/b`, including Greenland ice melt.
-
-> **TODO:** Clarify whether `triver` in `blkdat.input` needs to be set to `1` when using
-> the merged river forcing that includes Greenland ice melt.
-
-> **TODO:** The Greenland files (`griver.a/b`) are on the TP5 grid (780×800) and must be regridded to TP2 before merging. How?
 
 ### Time-varying river forcing from GloFAS
 
