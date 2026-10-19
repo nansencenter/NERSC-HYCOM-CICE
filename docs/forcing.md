@@ -1109,11 +1109,19 @@ climatology. The merged forcing is the sum of three monthly climatologies:
   or ERA-Interim runoff to river mouths using a river network database. It is produced
   by `river_trip.sh`. Only the TRIP values along the Greenland coast are used (three
   lat/lon boxes between 57°N and 83°N); TRIP runoff elsewhere is discarded.
-- **Greenland ice melt**: a precomputed file,
-  `/cluster/projects/nn2993k/TRIP/triver_Roshin/grivers.[ab]`. This file is on an
-  800×760 grid (TP5a0.06) and can only be used for TP5a0.06. Other grids need a
-  `grivers.[ab]` on their own grid; no tool for producing one exists in the repository yet.
-  The merge script stops with an error if any input file is not on the model grid.
+- **Greenland ice melt**: a precomputed monthly climatology (about 252 km³/yr, nearly
+  constant through the year) in `/cluster/projects/nn2993k/TRIP/triver_Roshin/`, one
+  file per model grid:
+
+  | File | Grid | Notes |
+  |---|---|---|
+  | `grivers.[ab]` | TP5a0.06 (800×760) | original file |
+  | `grivers_tp2.[ab]` | TP2a0.10 (400×380) | regridded from `grivers.[ab]` with `regrid_grivers.py`, land mask of `depth_TP2a0.10_04` |
+
+  The merge script picks the file whose grid matches `regional.grid` automatically (see
+  step 3). For any other grid, create a file first (see
+  [Greenland ice melt for other grids](#greenland-ice-melt-for-other-grids)). The merge
+  script stops with an error if any input file is not on the model grid.
 
 Run the steps below from the experiment directory, with the HPC environment sourced and
 the Python environment activated (see [Climatologies](#climatologies)):
@@ -1151,7 +1159,7 @@ RDIR=$WORK/${CONFIGNAME}/force/rivers/${IEXPT}
 3. **Merge the three sources.** The merge script reads `regional.grid.[ab]` from the
    current directory and writes `merged_tot_rev2_rivers.[ab]` plus diagnostic maps
    (`*.png`) there, so run it in a separate directory. The arguments are, in order, the
-   TRIP, AHYPE/EHYPE and Greenland ice melt `.a` files:
+   TRIP and AHYPE/EHYPE `.a` files:
 
    ```bash
    mkdir -p $RDIR/merge && cd $RDIR/merge
@@ -1159,9 +1167,14 @@ RDIR=$WORK/${CONFIGNAME}/force/rivers/${IEXPT}
    ln -sf $WORK/${CONFIGNAME}/topo/regional.grid.b .
    python $HOME/NERSC-HYCOM-CICE/bin/merge_TRIP_Hype_abfile_4Greenland.py \
        $RDIR/forcing.rivers.a \
-       $RDIR/rivers_ahype-ehype.a \
-       /cluster/projects/nn2993k/TRIP/triver_Roshin/grivers.a
+       $RDIR/rivers_ahype-ehype.a
    ```
+
+   The Greenland ice melt file is taken from `$TRIP_PATH/triver_Roshin/`: the script uses
+   the `grivers*.[ab]` whose `i/jdm` line in the `.b` file matches `regional.grid`, and
+   prints which one it uses (e.g. `grivers_tp2.a` for TP2a0.10). It stops if there is no
+   such file, or more than one. To use a different file, pass its `.a` file as a third
+   argument.
 
 4. **Install the merged file as the river forcing** and keep `priver=1` in
    `blkdat.input`:
@@ -1174,6 +1187,30 @@ RDIR=$WORK/${CONFIGNAME}/force/rivers/${IEXPT}
 
 To go back to the default, copy `rivers_ahype-ehype.[ab]` back to `rivers.[ab]`. The BGC
 river nutrient files are not changed by these steps.
+
+#### Greenland ice melt for other grids
+
+`/cluster/projects/nn2993k/TRIP/triver_Roshin/regrid_grivers.py` moves the TP5a0.06
+`grivers.[ab]` to another grid. For every TP5 cell with ice melt, it moves the volume
+flux (flux × cell area) to the nearest ocean cell (depth > 0.1 m) of the target grid and
+divides by the target cell area. The total volume is conserved exactly in every month.
+Each TP5 cell goes to a single target cell, and no extra along-shore spreading is applied.
+On a coarser grid, melt from fjords the grid does not resolve is moved to the nearest
+resolved ocean cell (for TP2a0.10: up to 133 km, in Disko Bay/Uummannaq and Scoresby Sund;
+3.9 km³/yr of the 252 km³/yr moves more than 50 km).
+
+The result depends on the land mask of the target depth file, so use the depth file of
+the topography version the experiment runs with (`T` in `EXPT.src`). Name the output
+`grivers_<something>` so that the merge script can find it, and keep only one file per
+grid size in the directory. For example, `grivers_tp2.[ab]` was created with:
+
+```bash
+cd /cluster/projects/nn2993k/TRIP/triver_Roshin
+python regrid_grivers.py grivers.a /cluster/projects/nn2993k/TP5a0.06/topo/regional.grid \
+    $WORK/TP2a0.10/topo/regional.grid $WORK/TP2a0.10/topo/depth_TP2a0.10_04 grivers_tp2
+```
+
+The script prints the total volume on both grids and how much melt was moved how far.
 
 ### Time-varying river forcing from GloFAS
 

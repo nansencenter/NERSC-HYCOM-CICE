@@ -1,6 +1,7 @@
 ### PS. module load Cartopy/0.18.0-foss-2020a-Python-3.8.2
 from netCDF4 import Dataset
 import argparse
+import glob
 import os
 import re
 import sys
@@ -28,6 +29,24 @@ def check_afile(afile,idm,jdm,nrec=12):
    if os.path.getsize(afile)!=nrec*n2drec*4:
       sys.exit("Error: size of %s (%d bytes) does not match %d records on a %dx%d grid (%d bytes)"%(
          afile,os.path.getsize(afile),nrec,idm,jdm,nrec*n2drec*4))
+
+
+def find_griver(griverdir,idm,jdm):
+   # Return the Greenland ice melt file in griverdir whose .b is on the idm x jdm model grid
+   # (e.g. grivers.a for TP5a0.06, grivers_tp2.a for TP2a0.10). Stop if there is none or more than one.
+   matches=[]
+   for bfile in sorted(glob.glob(os.path.join(griverdir,"grivers*.b"))):
+      m=re.search(r"i/jdm\s*=\s*(\d+)\s+(\d+)",open(bfile).read())
+      if m and (int(m.group(1)),int(m.group(2)))==(idm,jdm):
+         matches.append(bfile[:-2]+".a")
+   if not matches:
+      sys.exit("Error: no grivers*.[ab] on a %dx%d grid in %s. Create one with "
+               "regrid_grivers.py in that directory, or pass the file explicitly."%(idm,jdm,griverdir))
+   if len(matches)>1:
+      sys.exit("Error: several grivers files on a %dx%d grid in %s: %s. Pass one explicitly."%(
+         idm,jdm,griverdir,", ".join(matches)))
+   print("Using Greenland ice melt file %s"%matches[0])
+   return matches[0]
 
 
 def greenlandmask(fld,lats,lons):
@@ -85,7 +104,9 @@ if __name__ == "__main__" :
    parser = argparse.ArgumentParser(description='')
    parser.add_argument('Trip_river_afile',  help='Trip_river_afile')
    parser.add_argument('Hype_river_afile',  help='Hype_river_afile')
-   parser.add_argument('griver_afile',  help='greenland_glacier_river_afile')
+   parser.add_argument('griver_afile', nargs='?', default=None,
+                       help='Greenland ice melt .a file. Default: the grivers*.a in '
+                            '$TRIP_PATH/triver_Roshin/ that is on the model grid')
   
    # The first input is from ETRIP and the second one is from HYPE
    # we have added the third input corresponding to griver (Green land Glacier from /cluster/projects/nn2993k/TRIP/triver_Roshin/)
@@ -102,6 +123,9 @@ if __name__ == "__main__" :
    plat=gfile.read_field("plat")
    [jdm,idm]=np.shape(scpx)
    #
+   if args.griver_afile is None:
+      griverdir=os.path.join(os.environ.get("TRIP_PATH","/cluster/projects/nn2993k/TRIP/"),"triver_Roshin")
+      args.griver_afile=find_griver(griverdir,idm,jdm)
    for f in [args.Trip_river_afile,args.Hype_river_afile,args.griver_afile]:
       check_afile(f,idm,jdm)
 
@@ -177,6 +201,38 @@ if __name__ == "__main__" :
 
 
 
+   #Check the merged river flux before writing: no masked (padding) values, no negative values,
+   #and nothing above maxflux [m/s], which is far above any real river
+   maxflux=1.e-3
+   for recrd in range(12) :
+      dummy_sum=np.ma.masked_invalid(ice_griverflux[recrd,:,:]+tot_hyp_trip_riverflux[recrd,:,:])
+      if np.ma.count_masked(dummy_sum)>0 or dummy_sum.min()<0. or dummy_sum.max()>maxflux:
+         sys.exit("Error: merged river flux for month %02d is invalid: min=%g max=%g masked=%d (allowed 0 to %g m/s)"%(
+            recrd+1,dummy_sum.min(),dummy_sum.max(),np.ma.count_masked(dummy_sum),maxflux))
+
+   #Now write to ab files the tot river flux (before plotting, so a plotting error cannot lose it)
+   #print '-----------------'
+   #write to ab file
+   af = abf.AFile(lons.shape[1],lons.shape[0],"merged_tot_rev2_rivers.a","w")
+   bf = open("merged_tot_rev2_rivers.b","w")
+   bf.write("Tot. river mass flux from Hype + Greenland(TRIP rivers+ ice melt)  \n")
+   bf.write("\n")
+   bf.write("\n")
+   bf.write("\n")
+   bf.write("i/jdm =  %5d %5d\n"%(lons.shape[1],lons.shape[0]))
+   for recrd in range(12) :
+      dummy_sum=ice_griverflux[recrd,:,:]+tot_hyp_trip_riverflux[recrd,:,:]
+      hmin,hmax = af.writerecord(dummy_sum,None,record=recrd)
+      bf.write(" rivers:month,range = %2.2i%16.8e%16.8e\n"%((recrd+1),hmin,hmax))
+   af.close()
+   bf.close()
+     
+  
+  
+  
+   print("Wrote merged_tot_rev2_rivers.[ab]")
+
+
    import matplotlib.pyplot as plt
    # Not necessary if coordinates are already in 2D arrays.
    cmap="jet"
@@ -191,7 +247,9 @@ if __name__ == "__main__" :
    lon=lons
    lat=lats
    proj=ccrs.Stereographic(central_latitude=90.0,central_longitude=-40.0)
-   pxy = proj.transform_points(ccrs.PlateCarree(), lon, lat)
+   # Projections return NaN for lat >= ~89.9 with recent cartopy/PROJ (cartopy 0.25, PROJ 9.8),
+   # which makes pcolormesh fail. Clip latitude for the plot coordinates only.
+   pxy = proj.transform_points(ccrs.PlateCarree(), lon, np.minimum(lat,89.8))
    px=pxy[:,:,0]
    py=pxy[:,:,1]
 
@@ -203,8 +261,8 @@ if __name__ == "__main__" :
       fig = plt.figure(figsize=(8,8))
       ax = plt.axes(projection=proj)
       ax.set_extent([-179, 179, 53, 85],ccrs.PlateCarree())
-      ax.add_feature(cfeature.GSHHSFeature('auto', edgecolor='grey'))
-      ax.add_feature(cfeature.GSHHSFeature('auto', facecolor='grey'))
+      ax.add_feature(cfeature.LAND, facecolor='grey')
+      ax.add_feature(cfeature.COASTLINE, edgecolor='grey')
       ax.gridlines()
 
       #for Greenland remove Unesco and add Trip data
@@ -239,8 +297,8 @@ if __name__ == "__main__" :
       fig = plt.figure(figsize=(8,8))
       ax = plt.axes(projection=proj)
       ax.set_extent([-179, 179, 53, 85],ccrs.PlateCarree())
-      ax.add_feature(cfeature.GSHHSFeature('auto', edgecolor='grey'))
-      ax.add_feature(cfeature.GSHHSFeature('auto', facecolor='grey'))
+      ax.add_feature(cfeature.LAND, facecolor='grey')
+      ax.add_feature(cfeature.COASTLINE, edgecolor='grey')
       ax.gridlines()
       #ax=fig.add_subplot(111)
       #cmap=plt.get_cmap("jet")
@@ -276,8 +334,8 @@ if __name__ == "__main__" :
       fig = plt.figure(figsize=(8,8))
       ax = plt.axes(projection=proj)
       ax.set_extent([-179, 179, 53, 85],ccrs.PlateCarree())
-      ax.add_feature(cfeature.GSHHSFeature('auto', edgecolor='grey'))
-      ax.add_feature(cfeature.GSHHSFeature('auto', facecolor='grey'))
+      ax.add_feature(cfeature.LAND, facecolor='grey')
+      ax.add_feature(cfeature.COASTLINE, edgecolor='grey')
       ax.gridlines()
       #ax=fig.add_subplot(111)
       #cmap=plt.get_cmap("jet")
@@ -306,35 +364,3 @@ if __name__ == "__main__" :
       ax.clear()
       ##cb.remove()
       plt.close()
-
-   
-   #Check the merged river flux before writing: no masked (padding) values, no negative values,
-   #and nothing above maxflux [m/s], which is far above any real river
-   maxflux=1.e-3
-   for recrd in range(12) :
-      dummy_sum=np.ma.masked_invalid(ice_griverflux[recrd,:,:]+tot_hyp_trip_riverflux[recrd,:,:])
-      if np.ma.count_masked(dummy_sum)>0 or dummy_sum.min()<0. or dummy_sum.max()>maxflux:
-         sys.exit("Error: merged river flux for month %02d is invalid: min=%g max=%g masked=%d (allowed 0 to %g m/s)"%(
-            recrd+1,dummy_sum.min(),dummy_sum.max(),np.ma.count_masked(dummy_sum),maxflux))
-
-   #Now write to ab files the tot river flux
-   #print '-----------------'
-   #write to ab file
-   af = abf.AFile(lons.shape[1],lons.shape[0],"merged_tot_rev2_rivers.a","w")
-   bf = open("merged_tot_rev2_rivers.b","w")
-   bf.write("Tot. river mass flux from Hype + Greenland(TRIP rivers+ ice melt)  \n")
-   bf.write("\n")
-   bf.write("\n")
-   bf.write("\n")
-   bf.write("i/jdm =  %5d %5d\n"%(lons.shape[1],lons.shape[0]))
-   for recrd in range(12) :
-      dummy_sum=ice_griverflux[recrd,:,:]+tot_hyp_trip_riverflux[recrd,:,:]
-      hmin,hmax = af.writerecord(dummy_sum,None,record=recrd)
-      bf.write(" rivers:month,range = %2.2i%16.8e%16.8e\n"%((recrd+1),hmin,hmax))
-   af.close()
-   bf.close()
-     
-  
-  
-  
-
