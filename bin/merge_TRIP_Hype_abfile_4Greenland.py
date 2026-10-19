@@ -1,6 +1,9 @@
 ### PS. module load Cartopy/0.18.0-foss-2020a-Python-3.8.2
 from netCDF4 import Dataset
 import argparse
+import os
+import re
+import sys
 import numpy as np
 import abfile.abfile as abf
 import logging
@@ -8,6 +11,24 @@ import matplotlib
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 #
+
+def check_afile(afile,idm,jdm,nrec=12):
+   # Stop if afile (and its .b) is not nrec records on the idm x jdm model grid. AFile does not
+   # check this itself, and reading a file from another grid silently gives scrambled fields
+   # (including the 2**100 padding values) instead of an error.
+   bfile=afile[:-2]+".b"
+   if not os.path.isfile(bfile):
+      sys.exit("Error: %s not found"%bfile)
+   m=re.search(r"i/jdm\s*=\s*(\d+)\s+(\d+)",open(bfile).read())
+   if not m:
+      sys.exit("Error: could not find i/jdm in %s"%bfile)
+   if (int(m.group(1)),int(m.group(2)))!=(idm,jdm):
+      sys.exit("Error: %s is on a %sx%s grid, but regional.grid is %dx%d"%(bfile,m.group(1),m.group(2),idm,jdm))
+   n2drec=((idm*jdm+4095)//4096)*4096
+   if os.path.getsize(afile)!=nrec*n2drec*4:
+      sys.exit("Error: size of %s (%d bytes) does not match %d records on a %dx%d grid (%d bytes)"%(
+         afile,os.path.getsize(afile),nrec,idm,jdm,nrec*n2drec*4))
+
 
 def greenlandmask(fld,lats,lons):
    #--------
@@ -69,7 +90,7 @@ if __name__ == "__main__" :
    # The first input is from ETRIP and the second one is from HYPE
    # we have added the third input corresponding to griver (Green land Glacier from /cluster/projects/nn2993k/TRIP/triver_Roshin/)
    #example
-   #python ./merge_TRIP_Hype_abfile_4Greenlnad.py ./SCRATCH_ERAI-TRIP/rivers.a ./SCRATCH_hype_rev2/rev2_rivers.a ./SCRATCH_greenlanice/rivers.a
+   #python ./merge_TRIP_Hype_abfile_4Greenland.py ./SCRATCH_ERAI-TRIP/rivers.a ./SCRATCH_hype_rev2/rev2_rivers.a ./SCRATCH_greenlanice/rivers.a
 
    args = parser.parse_args()
 
@@ -81,6 +102,8 @@ if __name__ == "__main__" :
    plat=gfile.read_field("plat")
    [jdm,idm]=np.shape(scpx)
    #
+   for f in [args.Trip_river_afile,args.Hype_river_afile,args.griver_afile]:
+      check_afile(f,idm,jdm)
 
    lons=plon
    lats=plat
@@ -90,7 +113,7 @@ if __name__ == "__main__" :
    file_TRIP_river=args.Trip_river_afile
    afile_trip = abf.AFile(idm,jdm,file_TRIP_river,"r")
     # compute monthly flux:
-   Greenland_trip_discharge_month = np.NaN * np.ones([12,])
+   Greenland_trip_discharge_month = np.nan * np.ones([12,])
    Greenland_trip_riverflux=np.zeros((12,jdm,idm))
    Green_trip_total_riverflux=np.zeros(lons.shape)
    countr=0
@@ -136,7 +159,7 @@ if __name__ == "__main__" :
    #-------------- Read from Greenland ice melt griver
    file_griver=args.griver_afile
    afile_gr = abf.AFile(idm,jdm,file_griver,"r")
-   Greenland_icemelt_month = np.NaN * np.ones([12,])
+   Greenland_icemelt_month = np.nan * np.ones([12,])
    # compute monthly flux:
    ice_griverflux=np.zeros((12,jdm,idm))
    gice_total_riverflux=np.zeros(lons.shape)
@@ -285,6 +308,15 @@ if __name__ == "__main__" :
       plt.close()
 
    
+   #Check the merged river flux before writing: no masked (padding) values, no negative values,
+   #and nothing above maxflux [m/s], which is far above any real river
+   maxflux=1.e-3
+   for recrd in range(12) :
+      dummy_sum=np.ma.masked_invalid(ice_griverflux[recrd,:,:]+tot_hyp_trip_riverflux[recrd,:,:])
+      if np.ma.count_masked(dummy_sum)>0 or dummy_sum.min()<0. or dummy_sum.max()>maxflux:
+         sys.exit("Error: merged river flux for month %02d is invalid: min=%g max=%g masked=%d (allowed 0 to %g m/s)"%(
+            recrd+1,dummy_sum.min(),dummy_sum.max(),np.ma.count_masked(dummy_sum),maxflux))
+
    #Now write to ab files the tot river flux
    #print '-----------------'
    #write to ab file
