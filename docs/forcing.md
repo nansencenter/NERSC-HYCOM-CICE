@@ -1073,7 +1073,7 @@ options are available:
 | | AHYPE/EHYPE climatology (default) | AHYPE/EHYPE + TRIP + Greenland melt | GloFAS |
 |---|---|---|---|
 | **Time variation** | Monthly climatology | Monthly climatology | Daily reanalysis (1979–2024) |
-| **Produced by** | `create_ref_case.sh` | `river_nersc.sh`, `river_trip.sh`, `merge_TRIP_Hype_abfile_4Greenlnad.py` | `river_synoptic.sh` |
+| **Produced by** | `create_ref_case.sh` | `river_nersc.sh`, `river_trip.sh`, `merge_TRIP_Hype_abfile_4Greenland.py` | `river_synoptic.sh` |
 | **File in `force/rivers/<IEXPT>/`** | `rivers.[ab]` | `rivers.[ab]` (overwrites the default) | `riverh.[ab]` (separate file) |
 | **HYCOM 2.3** | `priver=1` | `priver=1` | `priver=2` |
 | **HYCOM 2.2.98** | `priver=1` | `priver=1` | `priver=0` and `highfq_river=.true.` in `hycom_opt` |
@@ -1111,7 +1111,9 @@ climatology. The merged forcing is the sum of three monthly climatologies:
   lat/lon boxes between 57°N and 83°N); TRIP runoff elsewhere is discarded.
 - **Greenland ice melt**: a precomputed file,
   `/cluster/projects/nn2993k/TRIP/triver_Roshin/grivers.[ab]`. This file is on an
-  800×760 grid (TP5a0.06); other grids need a `grivers.[ab]` on their own grid.
+  800×760 grid (TP5a0.06) and can only be used for TP5a0.06. Other grids need a
+  `grivers.[ab]` on their own grid; no tool for producing one exists in the repository yet.
+  The merge script stops with an error if any input file is not on the model grid.
 
 Run the steps below from the experiment directory, with the HPC environment sourced and
 the Python environment activated (see [Climatologies](#climatologies)):
@@ -1155,7 +1157,7 @@ RDIR=$WORK/${CONFIGNAME}/force/rivers/${IEXPT}
    mkdir -p $RDIR/merge && cd $RDIR/merge
    ln -sf $WORK/${CONFIGNAME}/topo/regional.grid.a .
    ln -sf $WORK/${CONFIGNAME}/topo/regional.grid.b .
-   python $HOME/NERSC-HYCOM-CICE/bin/merge_TRIP_Hype_abfile_4Greenlnad.py \
+   python $HOME/NERSC-HYCOM-CICE/bin/merge_TRIP_Hype_abfile_4Greenland.py \
        $RDIR/forcing.rivers.a \
        $RDIR/rivers_ahype-ehype.a \
        /cluster/projects/nn2993k/TRIP/triver_Roshin/grivers.a
