@@ -1100,32 +1100,78 @@ AHYPE/EHYPE climatology to `force/rivers/<IEXPT>/rivers.[ab]`, so running (or re
 it afterwards overwrites the merged river forcing, and these steps must be repeated.
 :::
 
-A more complete river forcing combining AHYPE/EHYPE, TRIP, and Greenland
-ice melt can be built manually using the scripts in `$HOME/NERSC-HYCOM-CICE/bin/`:
+This option adds Greenland runoff and Greenland ice melt to the default AHYPE/EHYPE
+climatology. The merged forcing is the sum of three monthly climatologies:
 
-- **AHYPE/EHYPE** (Arctic/European HYPE — Hydrological Predictions for the Environment):
-  a hydrological model providing spatially distributed river discharge. Produced by
-  `river_nersc.sh`, which places discharge along the coast using a `rivers.dat` file.
-- **TRIP** (Total Runoff Integrating Pathways): routes ERA40/ERAI reanalysis runoff to
-  river mouths using a river network database. Produced by `river_trip.sh`.
+- **AHYPE/EHYPE** (Arctic/European HYPE — Hydrological Predictions for the Environment)
+  discharge: the default `rivers.[ab]` from `create_ref_case.sh`.
+- **Greenland runoff from TRIP** (Total Runoff Integrating Pathways), which routes ERA40
+  or ERA-Interim runoff to river mouths using a river network database. It is produced
+  by `river_trip.sh`. Only the TRIP values along the Greenland coast are used (three
+  lat/lon boxes between 57°N and 83°N); TRIP runoff elsewhere is discarded.
+- **Greenland ice melt**: a precomputed file,
+  `/cluster/projects/nn2993k/TRIP/triver_Roshin/grivers.[ab]`. This file is on an
+  800×760 grid (TP5a0.06); other grids need a `grivers.[ab]` on their own grid.
 
-All scripts must be run from the experiment directory. They write to
-`$WORK/<CONFIGNAME>/force/rivers/`, overwriting the default files from
-`create_ref_case.sh`.
+Run the steps below from the experiment directory, with the HPC environment sourced and
+the Python environment activated (see [Climatologies](#climatologies)):
 
 ```bash
-CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+CONFIGNAME=<CONFIGNAME>   # e.g. TP5a0.06
 EXPT_ID=<EXPT_ID>         # e.g. 01.0
+IEXPT=<IEXPT>             # e.g. 010
 
 cd $WORK/${CONFIGNAME}/expt_${EXPT_ID}
+RDIR=$WORK/${CONFIGNAME}/force/rivers/${IEXPT}
 ```
 
-Steps:
+1. **Generate the TRIP runoff.** `TRIP_PATH` in `REGION.src` must point to the TRIP data
+   (`/cluster/projects/nn2993k/TRIP/` on Betzy). The argument is the runoff source,
+   `erai` or `era40`; run the script without arguments to see the optional spreading
+   radii.
 
-1. Run `river_nersc.sh` to produce AHYPE/EHYPE river runoff.
-2. Run `river_trip.sh` to produce TRIP river runoff.
-3. Run `merge_TRIP_Hype_abfile_4Greenlnad.py` to merge all sources into a single
-   `rivers.a/b`, including Greenland ice melt.
+   ```bash
+   $HOME/NERSC-HYCOM-CICE/bin/river_trip.sh erai
+   ```
+
+   This writes `$RDIR/forcing.rivers.[ab]` (12 monthly records). It does not touch the
+   default `rivers.[ab]`.
+
+2. **Keep a copy of the default AHYPE/EHYPE climatology.** The merge must always start
+   from the default file, not from an earlier merged `rivers.[ab]`, otherwise Greenland
+   is counted twice.
+
+   ```bash
+   cp $RDIR/rivers.a $RDIR/rivers_ahype-ehype.a
+   cp $RDIR/rivers.b $RDIR/rivers_ahype-ehype.b
+   ```
+
+3. **Merge the three sources.** The merge script reads `regional.grid.[ab]` from the
+   current directory and writes `merged_tot_rev2_rivers.[ab]` plus diagnostic maps
+   (`*.png`) there, so run it in a separate directory. The arguments are, in order, the
+   TRIP, AHYPE/EHYPE and Greenland ice melt `.a` files:
+
+   ```bash
+   mkdir -p $RDIR/merge && cd $RDIR/merge
+   ln -sf $WORK/${CONFIGNAME}/topo/regional.grid.a .
+   ln -sf $WORK/${CONFIGNAME}/topo/regional.grid.b .
+   python $HOME/NERSC-HYCOM-CICE/bin/merge_TRIP_Hype_abfile_4Greenlnad.py \
+       $RDIR/forcing.rivers.a \
+       $RDIR/rivers_ahype-ehype.a \
+       /cluster/projects/nn2993k/TRIP/triver_Roshin/grivers.a
+   ```
+
+4. **Install the merged file as the river forcing** and keep `priver=1` in
+   `blkdat.input`:
+
+   ```bash
+   cp merged_tot_rev2_rivers.a $RDIR/rivers.a
+   cp merged_tot_rev2_rivers.b $RDIR/rivers.b
+   cd $WORK/${CONFIGNAME}/expt_${EXPT_ID}
+   ```
+
+To go back to the default, copy `rivers_ahype-ehype.[ab]` back to `rivers.[ab]`. The BGC
+river nutrient files are not changed by these steps.
 
 ### Time-varying river forcing from GloFAS
 
