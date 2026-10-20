@@ -1262,11 +1262,19 @@ for HYCOM 2.2.98 also works with HYCOM 2.3, but a daily file does **not** work w
 Set `River_online=1` to regenerate it for every job. Every job checks that the file covers
 the whole model period and stops with an error if it does not.
 
-**Offline mode.** For multi-year runs, generate the file once for the whole period. Run
-`river_synoptic.sh` from the experiment directory, passing the start and end of the period
-(same `YYYY-MM-DDTHH:MM:SS` format as `START`/`END` in `srjob.sh`). The end date must be
-on or after the end of the last model job. An optional third argument overrides the record
-interval (fraction of a day):
+**Offline mode.** For multi-year runs, generate the file once for the whole period before
+running the model. The end date must be on or after the end of the last model job.
+`river_synoptic.sh` processes one GloFAS day at a time: after 2–3 minutes of setup it takes
+about 30 s per day on a Betzy login node and a few seconds per day on a compute node. Run
+short periods directly on the login node, and longer ones as a Slurm job array, which
+processes the years in parallel. Both give the same file. Activate the Python environment
+first (see [Climatologies](#climatologies) below).
+
+::::{dropdown} Short periods: on the login node
+
+Run `river_synoptic.sh` from the experiment directory, passing the start and end of the
+period (same `YYYY-MM-DDTHH:MM:SS` format as `START`/`END` in `srjob.sh`). An optional third
+argument overrides the record interval (fraction of a day):
 
 ```bash
 CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
@@ -1277,33 +1285,16 @@ $HOME/NERSC-HYCOM-CICE/bin/river_synoptic.sh 2013-01-01T00:00:00 2014-01-01T00:0
 $HOME/NERSC-HYCOM-CICE/bin/river_synoptic.sh 2013-01-01T00:00:00 2014-01-01T00:00:00 0.25   # force 6-hourly
 ```
 
-Activate the Python environment first (see
-[Climatologies](#climatologies) below). Processing takes
-about the same time per GloFAS day for any record interval: after 2–3 minutes of setup,
-about 30 s per day on a Betzy login node and a few seconds per day on a compute node.
-For multi-year periods, use the Slurm job array described in
-[Long periods with a Slurm job array](#long-periods-with-a-slurm-job-array).
+A year takes about 3 hours this way; for more than a few months, use the Slurm job array.
 
-Output is written to `$WORK/<CONFIGNAME>/force/rivers/<IEXPT>/riverh.[ab]`. The same
-field is also saved in NetCDF for inspection, as
-`$WORK/<CONFIGNAME>/force/rivers/<IEXPT>/SCRATCH/riverh_<start>_<end>.nc`. Each `.b` record line holds the model day (days since
-1900-12-31) and the record interval in days, e.g. for daily records:
+::::
 
-```
-rivers:dtime1,range =   40909.0000      1.0000,  0.000000e+00  1.234567e-05
-```
+::::{dropdown} Long periods: Slurm job array
 
-GloFAS discharge (m³/s) is distributed over the coastal grid cells near each estuary and
-divided by the grid-cell area, giving m/s. Each daily value is placed at 00:00 of its date.
-
-#### Long periods with a Slurm job array
-
-For multi-year periods, run the years in parallel as a Slurm job array and join them
-afterwards with `bin/concat_riverh.py`. Each array task runs the same code as
-`river_synoptic.sh` for one calendar year, so a multi-year period takes about as long as
-one year, and the result is identical to a single `river_synoptic.sh` run.
-
-::::{dropdown} Submission script
+The years are run in parallel as a Slurm job array and joined afterwards with
+`bin/concat_riverh.py`. Each array task runs the same code as `river_synoptic.sh` for one
+calendar year, so a multi-year period takes about as long as one year, and the result is
+identical to a single `river_synoptic.sh` run.
 
 Save the script below as `riverh_job.sh` in the experiment directory,
 `$WORK/<CONFIGNAME>/expt_<EXPT_ID>/`, and set `CONFIGNAME`, `IEXPT`, `DT` and `DEPTH` at
@@ -1385,7 +1376,19 @@ python $HOME/NERSC-HYCOM-CICE/bin/concat_riverh.py --from 2000-01-01 --to 2000-1
 
 ::::
 
-::::{dropdown} Source data
+Output is written to `$WORK/<CONFIGNAME>/force/rivers/<IEXPT>/riverh.[ab]`. The same
+field is also saved in NetCDF for inspection, as
+`$WORK/<CONFIGNAME>/force/rivers/<IEXPT>/SCRATCH/riverh_<start>_<end>.nc`. Each `.b` record line holds the model day (days since
+1900-12-31) and the record interval in days, e.g. for daily records:
+
+```
+rivers:dtime1,range =   40909.0000      1.0000,  0.000000e+00  1.234567e-05
+```
+
+GloFAS discharge (m³/s) is distributed over the coastal grid cells near each estuary and
+divided by the grid-cell area, giving m/s. Each daily value is placed at 00:00 of its date.
+
+#### Source data
 
 All input data are under `/cluster/projects/nn9481k/GloFAS_data/` on Betzy. They are read
 internally by `river_synoptic.sh`, so you do not need to touch them, unless the period
@@ -1393,6 +1396,8 @@ needs to be extended beyond 30 June 2024 (see below). Requesting a period outsid
 stops with an error. The paths are set in
 `bin/river-topaz/scripts/GloFAS/hycom_river_hifre.py` (discharge) and
 `compute_discharge_NoUI.py` (all other files).
+
+::::{dropdown} Overview of the input files
 
 **Original GloFAS data** (independent of the model grid):
 
@@ -1413,13 +1418,15 @@ stops with an error. The paths are set in
 | File | Contents |
 |---|---|
 | `TOPAZrunoff_data/TOPAZ2/`, `TOPAZ5/` | Copies of TP2 and TP5 grid and depth files, for running the method on its own. Not used by `river_synoptic.sh`, which uses the experiment's `topo/` (`regional.depth.[ab]`, or `depth_<CONFIGNAME>_<T>.[ab]` if it does not exist). |
-| `TOPAZrunoff_data/river/GloFAS_edit_files/estuaries_edit.csv` | Manual changes of estuary positions, given as model grid indices, so only valid for the grid they were made for. Not used by default (`Edit_estuaries=False` in `hycom_river_hifre.py`). |
+| `TOPAZrunoff_data/river/GloFAS_edit_files/estuaries_edit.csv` | Example file for manual changes of estuary positions (section 3 of the technical documentation), given as model grid indices, so only valid for the grid they were made for. Its three entries are test edits that move estuaries in Iceland and on the Kola Peninsula 350–570 km offshore, so do not use it as is. Not used by default (`Edit_estuaries=False` in `hycom_river_hifre.py`). |
 
 The spreading of each estuary's discharge over the nearby coastal cells is not stored in
 a file: it is computed for the model grid, with the radii `rradius` (180 km) and
 `alongshoreradius` (360 km) set in `hycom_river_hifre.py`.
 
-**Extending the discharge data beyond 30 June 2024**
+::::
+
+::::{dropdown} Extending the discharge data beyond 30 June 2024
 
 `bin/river-topaz/scripts/GloFAS_download.py` downloads further months of the same data
 from the Copernicus Early Warning Data Store (EWDS), one request per month (about 1 GB
