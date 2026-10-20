@@ -1357,31 +1357,40 @@ cs=${YEAR}-01-01
 ce=$((YEAR+1))-01-01
 [[ "$ce" > "$END" ]] && ce=$END
 
-OUT=$WORK/${CONFIGNAME}/force/rivers/${IEXPT}/SCRATCH/chunks/
+OUT=$WORK/${CONFIGNAME}/force/rivers/${IEXPT}/SCRATCH/chunks_${START}_${END}/
 mkdir -p $OUT
 cd $HOME/NERSC-HYCOM-CICE/bin/river-topaz/scripts/GloFAS
 python -u hycom_river_hifre.py --dt $DT ${cs}T00:00:00 ${ce}T00:00:00 $OUT $DEPTH
 ```
 
-Submit one array task per year from the experiment directory. `%12` runs at most 12
+Submit one array task per year from the experiment directory, together with a job that
+joins the years into `riverh.[ab]` once all of them have finished. `%12` runs at most 12
 years at a time, the `preproc` limit on Betzy. One year takes about 20 minutes and 6 GB
 of memory on a Betzy compute node:
 
 ```bash
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+EXPT_ID=<EXPT_ID>         # e.g. 01.0
+IEXPT=<IEXPT>             # e.g. 010
+START=1993-01-01          # first day of the period
+END=2024-06-30            # last day of the period (included)
+
 cd $WORK/${CONFIGNAME}/expt_${EXPT_ID}
 mkdir -p log
-sbatch --array=1993-2024%12 riverh_job.sh 1993-01-01 2024-06-30
+jid=$(sbatch --parsable --array=${START:0:4}-${END:0:4}%12 riverh_job.sh $START $END)
+RDIR=$WORK/${CONFIGNAME}/force/rivers/${IEXPT}
+sbatch --dependency=afterok:$jid --account=nn2993k --qos=preproc --time=00:30:00 --mem=2G \
+    --output=log/riverh_join.%j.out \
+    --wrap="python $HOME/NERSC-HYCOM-CICE/bin/concat_riverh.py $RDIR/riverh $RDIR/SCRATCH/chunks_${START}_${END}/riverh_*.a"
 ```
 
-When all tasks have finished (`squeue -u $USER` shows none left), check that no log in
-`log/riverh.*.out` reports an error, then join the years into the river forcing file. The
-yearly files are named after their dates, so the shell lists them in time order; make sure
-`SCRATCH/chunks/` holds only the years of this period:
-
-```bash
-cd $WORK/${CONFIGNAME}/force/rivers/${IEXPT}
-python $HOME/NERSC-HYCOM-CICE/bin/concat_riverh.py riverh SCRATCH/chunks/riverh_*.a
-```
+The join job only starts if every year finished successfully, and `concat_riverh.py`
+checks the result: records evenly spaced over the whole period (no missing or incomplete
+year), and no NaN, negative or implausibly large values. If a check fails it writes no
+`riverh.[ab]` and says why in `log/riverh_join.<jobid>.out`; otherwise the log ends with
+`all checks passed`. If a year fails, the join job stays in the queue with the reason
+`DependencyNeverSatisfied`: cancel it, check `log/riverh.<jobid>_<year>.out`, and resubmit
+the failed year (`--array=<year>`) and the join job.
 
 Where two years overlap, `concat_riverh.py` takes the records from the later year, so
 `riverh.[ab]` is identical, byte for byte, to a single `river_synoptic.sh` run over the
