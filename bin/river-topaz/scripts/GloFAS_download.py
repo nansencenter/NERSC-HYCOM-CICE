@@ -36,10 +36,11 @@ def request(year: int, month: int) -> dict:
         "system_version": ["version_4_0"],
         "hydrological_model": ["lisflood"],
         "product_type": ["consolidated"],
-        "variable": ["river_discharge_in_the_last_24_hours"],
-        "hyear": [f"{year}"],
-        "hmonth": [f"{month:02d}"],
-        "hday": [f"{day:02d}" for day in range(1, 32)],  # days a month does not have are ignored
+        "timespan": ["time_mean"],
+        "variable": ["average_river_discharge_in_the_last_24_hours"],
+        "year": [f"{year}"],
+        "month": [f"{month:02d}"],
+        "day": [f"{day:02d}" for day in range(1, 32)],  # days a month does not have are ignored
         "data_format": "netcdf",
         "download_format": "unarchived",
         "area": AREA,
@@ -56,6 +57,10 @@ def match_reference(raw_file: str, out_file: str, reference: str) -> None:
     ds = xr.open_dataset(raw_file)
     if "time" not in ds.dims and "valid_time" in ds.dims:
         ds = ds.drop_vars("time", errors="ignore").rename({"valid_time": "time"})
+    if "dis24" not in ds.data_vars:
+        if len(ds.data_vars) != 1:
+            sys.exit("Error: %s has no dis24 and more than one variable: %s" % (raw_file, list(ds.data_vars)))
+        ds = ds.rename({list(ds.data_vars)[0]: "dis24"})
     ds = ds[["dis24"]].reset_coords(drop=True)
     ds = ds.sel(latitude=ref.latitude, longitude=ref.longitude, method="nearest", tolerance=1e-3)
     for c in ("latitude", "longitude"):
