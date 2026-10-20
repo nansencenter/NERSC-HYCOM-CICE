@@ -47,16 +47,19 @@ def request(year: int, month: int) -> dict:
     }
 
 
-def match_reference(raw_file: str, out_file: str, reference: str) -> None:
+def match_reference(raw_file: str, out_file: str, reference: str, year: int, month: int) -> None:
     """Cut a downloaded month to the reference grid, check it and write it as out_file.
 
-    Renames the time dimension to 'time' if needed (newer EWDS NetCDF files use
-    'valid_time'), keeps only dis24 and stops if the grid does not match the reference.
+    EWDS dates each daily mean by the end of its 24 hours ('valid_time'), while
+    data_all_year.nc dates it by the start (the day it is the mean of). valid_time is
+    therefore moved back one day and renamed to 'time'. Keeps only dis24 and stops if the
+    grid does not match the reference.
     """
     ref = xr.open_dataset(reference)
     ds = xr.open_dataset(raw_file)
     if "time" not in ds.dims and "valid_time" in ds.dims:
         ds = ds.drop_vars("time", errors="ignore").rename({"valid_time": "time"})
+        ds["time"] = ds.time - np.timedelta64(1, "D")
     if "dis24" not in ds.data_vars:
         if len(ds.data_vars) != 1:
             sys.exit("Error: %s has no dis24 and more than one variable: %s" % (raw_file, list(ds.data_vars)))
@@ -66,9 +69,14 @@ def match_reference(raw_file: str, out_file: str, reference: str) -> None:
     for c in ("latitude", "longitude"):
         if not np.allclose(ds[c].values, ref[c].values, atol=1e-6):
             sys.exit("Error: %s of %s does not match %s" % (c, raw_file, reference))
+    ds = ds.assign_coords(latitude=ref.latitude, longitude=ref.longitude)  # remove rounding differences
     days = pd.DatetimeIndex(ds.time.values)
     if (np.diff(days.values) != np.timedelta64(1, "D")).any():
         sys.exit("Error: %s does not contain consecutive days" % raw_file)
+    if (days[0].year, days[0].month, days[0].day) != (year, month, 1) or days[-1].month != month \
+            or (days[-1] + pd.Timedelta(days=1)).month == month:
+        sys.exit("Error: %s covers %s to %s, not the whole month %04d-%02d"
+                 % (raw_file, days[0].date(), days[-1].date(), year, month))
     ds["time"].encoding = {k: v for k, v in ref["time"].encoding.items() if k in ("units", "calendar", "dtype")}
     ds["dis24"].encoding = {"dtype": "float32", "zlib": False}
     ds.to_netcdf(out_file)
@@ -97,7 +105,7 @@ def main() -> None:
             continue
         raw_file = out_file + ".download"
         client.retrieve(DATASET, request(month.year, month.month)).download(raw_file)
-        match_reference(raw_file, out_file, a.reference)
+        match_reference(raw_file, out_file, a.reference, month.year, month.month)
         os.remove(raw_file)
 
 
