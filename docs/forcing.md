@@ -1277,9 +1277,11 @@ $HOME/NERSC-HYCOM-CICE/bin/river_synoptic.sh 2013-01-01T00:00:00 2014-01-01T00:0
 ```
 
 Activate the Python environment first (see
-[Climatologies](#climatologies) below). Processing takes about
-the same time per GloFAS day for any record interval, so multi-year periods can take long;
-consider submitting the command as a batch job (`--qos=preproc`).
+[Climatologies](#climatologies) below). Processing takes
+about the same time per GloFAS day for any record interval: after 2–3 minutes of setup,
+about 30 s per day on a Betzy login node and a few seconds per day on a compute node.
+For multi-year periods, use the Slurm job array described in
+[Long periods with a Slurm job array](#long-periods-with-a-slurm-job-array).
 
 Output is written to `$WORK/<CONFIGNAME>/force/rivers/<IEXPT>/riverh.[ab]`. The same
 field is also saved in NetCDF for inspection, as
@@ -1292,6 +1294,89 @@ rivers:dtime1,range =   40909.0000      1.0000,  0.000000e+00  1.234567e-05
 
 GloFAS discharge (m³/s) is distributed over the coastal grid cells near each estuary and
 divided by the grid-cell area, giving m/s. Each daily value is placed at 00:00 of its date.
+
+#### Long periods with a Slurm job array
+
+For multi-year periods, run the years in parallel as a Slurm job array and join them
+afterwards. Each array task runs the same code as `river_synoptic.sh` for one calendar
+year; a multi-year period then takes about as long as one year.
+
+Save the following as `riverh_job.sh` in the experiment directory and set `CONFIGNAME`,
+`IEXPT` and `DT` at the top. `DT` is the record interval in days: `1.0` for HYCOM 2.3,
+`0.25` for HYCOM 2.2.98 (see the table above). `DEPTH` is the depth file
+`river_synoptic.sh` uses: `regional.depth.a` if it exists, otherwise
+`depth_<CONFIGNAME>_<T>.a`.
+
+```bash
+#!/bin/bash
+#SBATCH --job-name=riverh
+#SBATCH --account=nn2993k
+#SBATCH --time=02:00:00
+#SBATCH --qos=preproc
+#SBATCH --ntasks=1
+#SBATCH --mem=16G
+#SBATCH -o log/riverh.%A_%a.out
+
+START=$1   # first day of the whole period, YYYY-MM-DD
+END=$2     # last day of the whole period (included), YYYY-MM-DD
+if [[ -z "$START" || -z "$END" || -z "$SLURM_ARRAY_TASK_ID" ]]; then
+    echo "Usage: sbatch --array=<FIRST_YEAR>-<LAST_YEAR>%12 riverh_job.sh <START> <END>"
+    exit 1
+fi
+set --    # conda's activate would otherwise see the arguments
+
+source ${HOME}/NERSC-HYCOM-CICE/environment/betzy_env.sh
+module load Miniforge3/24.1.2-0
+source ${EBROOTMINIFORGE3}/bin/activate
+conda activate hycom-cice
+
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+IEXPT=<IEXPT>             # e.g. 010
+DT=1.0                    # record interval [days]: 1.0 for HYCOM 2.3, 0.25 for 2.2.98
+DEPTH=$WORK/${CONFIGNAME}/topo/regional.depth.a
+
+# This task's year. It runs until 1 January of the next year, because a day's records
+# are only written once the next day is processed; concat_riverh.py removes the overlap.
+YEAR=$SLURM_ARRAY_TASK_ID
+cs=${YEAR}-01-01
+[[ "$cs" < "$START" ]] && cs=$START
+ce=$((YEAR+1))-01-01
+[[ "$ce" > "$END" ]] && ce=$END
+
+OUT=$WORK/${CONFIGNAME}/force/rivers/${IEXPT}/SCRATCH/chunks/
+mkdir -p $OUT
+cd $HOME/NERSC-HYCOM-CICE/bin/river-topaz/scripts/GloFAS
+python -u hycom_river_hifre.py --dt $DT ${cs}T00:00:00 ${ce}T00:00:00 $OUT $DEPTH
+```
+
+Submit one array task per year, from the experiment directory. `%12` runs at most 12
+years at a time, the `preproc` limit on Betzy. One year takes about 20 minutes and 6 GB
+of memory on a Betzy compute node:
+
+```bash
+cd $WORK/${CONFIGNAME}/expt_${EXPT_ID}
+mkdir -p log
+sbatch --array=1993-2024%12 riverh_job.sh 1993-01-01 2024-12-31
+```
+
+When all tasks have finished (`squeue -u $USER` shows none left), check that no log in
+`log/riverh.*.out` reports an error, then join the years into the river forcing file. The
+yearly files are named after their dates, so the shell lists them in time order; make sure
+`SCRATCH/chunks/` holds only the years of this period:
+
+```bash
+cd $WORK/${CONFIGNAME}/force/rivers/${IEXPT}
+python $HOME/NERSC-HYCOM-CICE/bin/concat_riverh.py riverh SCRATCH/chunks/riverh_*.a
+```
+
+Where two years overlap, `concat_riverh.py` takes the records from the later year, so
+`riverh.[ab]` is identical, byte for byte, to a single `river_synoptic.sh` run over the
+whole period (checked for daily and 6-hourly records). `concat_riverh.py` can also cut a
+period out of any `riverh.[ab]`, e.g. a single year:
+
+```bash
+python $HOME/NERSC-HYCOM-CICE/bin/concat_riverh.py --from 2000-01-01 --to 2000-12-31 riverh_2000 riverh.a
+```
 
 #### Source data
 
