@@ -45,6 +45,12 @@ def create_river_forcing(input_dataset,start_date,end_date,topaz_grid_file,topaz
         data['valid_time']=data['time'] #'valid_time' field is essential for processing,
         #But it sometimes disappears when merging GloFAS data from different years with CDO command
 
+    # Stop if the GloFAS data do not cover the whole period: sel() would silently return
+    # fewer days, and the last requested day would then not be written at all.
+    t0, t1 = data.time.values[0], data.time.values[-1]
+    if np.datetime64(start_date) < t0 or np.datetime64(end_date) > t1:
+        sys.exit("Error: requested period %s to %s, but %s only covers %s to %s"
+                 % (start_date[:10], end_date[:10], input_dataset, str(t0)[:10], str(t1)[:10]))
     data = data.sel(time=slice(start_date, end_date))
 
     #Create list of times in days since 01/01/1900 with dt as timestep
