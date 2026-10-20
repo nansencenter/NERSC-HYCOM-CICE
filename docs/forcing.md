@@ -1072,7 +1072,7 @@ options are available:
 
 | | AHYPE/EHYPE climatology (default) | AHYPE/EHYPE + TRIP + Greenland melt | GloFAS |
 |---|---|---|---|
-| **Time variation** | Monthly climatology | Monthly climatology | Daily reanalysis (1979–2024) |
+| **Time variation** | Monthly climatology | Monthly climatology | Daily reanalysis (1 January 1979 to 30 June 2024) |
 | **Produced by** | `create_ref_case.sh` | `river_nersc.sh`, `river_trip.sh`, `merge_TRIP_Hype_abfile_4Greenland.py` | `river_synoptic.sh` |
 | **File in `force/rivers/<IEXPT>/`** | `rivers.[ab]` | `rivers.[ab]` (overwrites the default) | `riverh.[ab]` (separate file) |
 | **HYCOM 2.3** | `priver=1` | `priver=1` | `priver=2` |
@@ -1252,7 +1252,8 @@ same file, `force/rivers/<IEXPT>/riverh.[ab]`; `expt_preprocess.sh` links it to
 `forcing.riverh.[ab]` or `forcing.rivers.[ab]` as appropriate. In HYCOM 2.3, the daily file
 gives exactly the same forcing as the 6-hourly file used by 2.2.98, because the 6-hourly
 values are themselves linear interpolations between the daily GloFAS values. The daily file
-is a quarter of the size and takes less memory to produce.
+is a quarter of the size and takes less memory to produce. An existing 6-hourly file made
+for HYCOM 2.2.98 also works with HYCOM 2.3, but a daily file does **not** work with 2.2.98.
 
 #### Online and offline mode
 
@@ -1298,11 +1299,15 @@ divided by the grid-cell area, giving m/s. Each daily value is placed at 00:00 o
 #### Long periods with a Slurm job array
 
 For multi-year periods, run the years in parallel as a Slurm job array and join them
-afterwards. Each array task runs the same code as `river_synoptic.sh` for one calendar
-year; a multi-year period then takes about as long as one year.
+afterwards with `bin/concat_riverh.py`. Each array task runs the same code as
+`river_synoptic.sh` for one calendar year, so a multi-year period takes about as long as
+one year, and the result is identical to a single `river_synoptic.sh` run.
 
-Save the following as `riverh_job.sh` in the experiment directory and set `CONFIGNAME`,
-`IEXPT` and `DT` at the top. `DT` is the record interval in days: `1.0` for HYCOM 2.3,
+::::{dropdown} Submission script
+
+Save the script below as `riverh_job.sh` in the experiment directory,
+`$WORK/<CONFIGNAME>/expt_<EXPT_ID>/`, and set `CONFIGNAME`, `IEXPT`, `DT` and `DEPTH` at
+the top. `DT` is the record interval in days: `1.0` for HYCOM 2.3,
 `0.25` for HYCOM 2.2.98 (see the table above). `DEPTH` is the depth file
 `river_synoptic.sh` uses: `regional.depth.a` if it exists, otherwise
 `depth_<CONFIGNAME>_<T>.a`.
@@ -1317,6 +1322,11 @@ Save the following as `riverh_job.sh` in the experiment directory and set `CONFI
 #SBATCH --mem=16G
 #SBATCH -o log/riverh.%A_%a.out
 
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+IEXPT=<IEXPT>             # e.g. 010
+DT=1.0                    # record interval [days]: 1.0 for HYCOM 2.3, 0.25 for 2.2.98
+DEPTH=$WORK/${CONFIGNAME}/topo/regional.depth.a
+
 START=$1   # first day of the whole period, YYYY-MM-DD
 END=$2     # last day of the whole period (included), YYYY-MM-DD
 if [[ -z "$START" || -z "$END" || -z "$SLURM_ARRAY_TASK_ID" ]]; then
@@ -1329,11 +1339,6 @@ source ${HOME}/NERSC-HYCOM-CICE/environment/betzy_env.sh
 module load Miniforge3/24.1.2-0
 source ${EBROOTMINIFORGE3}/bin/activate
 conda activate hycom-cice
-
-CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
-IEXPT=<IEXPT>             # e.g. 010
-DT=1.0                    # record interval [days]: 1.0 for HYCOM 2.3, 0.25 for 2.2.98
-DEPTH=$WORK/${CONFIGNAME}/topo/regional.depth.a
 
 # This task's year. It runs until 1 January of the next year, because a day's records
 # are only written once the next day is processed; concat_riverh.py removes the overlap.
@@ -1349,14 +1354,14 @@ cd $HOME/NERSC-HYCOM-CICE/bin/river-topaz/scripts/GloFAS
 python -u hycom_river_hifre.py --dt $DT ${cs}T00:00:00 ${ce}T00:00:00 $OUT $DEPTH
 ```
 
-Submit one array task per year, from the experiment directory. `%12` runs at most 12
+Submit one array task per year from the experiment directory. `%12` runs at most 12
 years at a time, the `preproc` limit on Betzy. One year takes about 20 minutes and 6 GB
 of memory on a Betzy compute node:
 
 ```bash
 cd $WORK/${CONFIGNAME}/expt_${EXPT_ID}
 mkdir -p log
-sbatch --array=1993-2024%12 riverh_job.sh 1993-01-01 2024-12-31
+sbatch --array=1993-2024%12 riverh_job.sh 1993-01-01 2024-06-30
 ```
 
 When all tasks have finished (`squeue -u $USER` shows none left), check that no log in
@@ -1378,30 +1383,90 @@ period out of any `riverh.[ab]`, e.g. a single year:
 python $HOME/NERSC-HYCOM-CICE/bin/concat_riverh.py --from 2000-01-01 --to 2000-12-31 riverh_2000 riverh.a
 ```
 
-#### Source data
+::::
 
-GloFAS input data and the TOPAZ runoff grid files are stored at:
+::::{dropdown} Source data
 
-```
-/cluster/projects/nn9481k/GloFAS_data/data_v40
-/cluster/projects/nn9481k/GloFAS_data/TOPAZrunoff_data/
-```
+All input data are under `/cluster/projects/nn9481k/GloFAS_data/` on Betzy. They are read
+internally by `river_synoptic.sh`, so you do not need to touch them, unless the period
+needs to be extended beyond 30 June 2024 (see below). Requesting a period outside the data
+stops with an error. The paths are set in
+`bin/river-topaz/scripts/GloFAS/hycom_river_hifre.py` (discharge) and
+`compute_discharge_NoUI.py` (all other files).
 
-The GloFAS source data and TOPAZ runoff grid files are read internally by
-`river_synoptic.sh`; their paths are configured in
-`bin/river-topaz/scripts/GloFAS/hycom_river_hifre.py`. You do not need to interact with
-these files directly, unless the coverage period needs to be extended beyond 2024, in which
-case the input dataset at `/cluster/projects/nn9481k/GloFAS_data/data_v40/` would need to
-be updated.
+**Original GloFAS data** (independent of the model grid):
 
-:::{note}
-An existing 6-hourly `riverh.[ab]` made for HYCOM 2.2.98 also works with HYCOM 2.3
-(`priver=2`), since 2.3 accepts any record interval. A daily file does **not** work with
-2.2.98.
-:::
+| File | Contents |
+|---|---|
+| `data_v40/data_all_year.nc` | GloFAS v4.0 reanalysis, daily mean discharge (`dis24`, m³/s) on the native 0.05° grid, 40–90°N, 1 January 1979 to 30 June 2024. Downloaded from Copernicus (cropped to 40–90°N in the request), converted from GRIB to NetCDF and merged from yearly files with `cdo mergetime`; values unchanged. |
+| `TOPAZrunoff_data/river/auxiliary_files__glofas_v4_0/` | GloFAS v4.0 static maps on the same grid: local drainage direction (`ldd`), upstream area (`uparea`) and elevation. Used to find the estuaries: river mouths (`ldd=5`) with an upstream area above 1000 km² and an elevation below 100 m. Must match the GloFAS version of the discharge. |
+
+**Derived at NERSC** (independent of the model grid):
+
+| File | Contents |
+|---|---|
+| `TOPAZrunoff_data/river/correction_files/largest_river_correction_2001_2019.nc` | Day-of-year correction (slope and intercept) for the Ob, Lena and Yenisei, fitted from GloFAS against ArcticGRO observations for 2001–2019. Applied to discharge from 2001 onwards. |
+| `RiverCorrection/GRO_Dataframes/` | ArcticGRO daily observations for the three rivers. Only needed to recompute the correction file. |
+
+**Specific to a model grid:**
+
+| File | Contents |
+|---|---|
+| `TOPAZrunoff_data/TOPAZ2/`, `TOPAZ5/` | Copies of TP2 and TP5 grid and depth files, for running the method on its own. Not used by `river_synoptic.sh`, which uses the experiment's `topo/` (`regional.depth.[ab]`, or `depth_<CONFIGNAME>_<T>.[ab]` if it does not exist). |
+| `TOPAZrunoff_data/river/GloFAS_edit_files/estuaries_edit.csv` | Manual changes of estuary positions, given as model grid indices, so only valid for the grid they were made for. Not used by default (`Edit_estuaries=False` in `hycom_river_hifre.py`). |
+
+The spreading of each estuary's discharge over the nearby coastal cells is not stored in
+a file: it is computed for the model grid, with the radii `rradius` (180 km) and
+`alongshoreradius` (360 km) set in `hycom_river_hifre.py`.
+
+**Extending the discharge data beyond 30 June 2024**
+
+`bin/river-topaz/scripts/GloFAS_download.py` downloads further months of the same data
+from the Copernicus Early Warning Data Store (EWDS), one request per month (about 1 GB
+each), and cuts them to the grid of `data_all_year.nc`:
+
+1. Create an account at the [EWDS](https://ewds.climate.copernicus.eu) (separate from
+   Copernicus Marine and the Climate Data Store), and accept the licence at the bottom of
+   the *Download* tab of the dataset
+   [cems-glofas-historical](https://ewds.climate.copernicus.eu/datasets/cems-glofas-historical).
+   Then put the *Personal Access Token* from your EWDS profile page in `~/.cdsapirc`,
+   readable only by you:
+
+   ```bash
+   cat > ~/.cdsapirc << 'EOF'
+   url: https://ewds.climate.copernicus.eu/api
+   key: <your-personal-access-token>
+   EOF
+   chmod 600 ~/.cdsapirc
+   ```
+
+2. Download the missing months (first and last month, both included) with the Python
+   environment activated:
+
+   ```bash
+   python $HOME/NERSC-HYCOM-CICE/bin/river-topaz/scripts/GloFAS_download.py 2024-07 2025-06 $WORK/glofas_new
+   ```
+
+   The script stops if a month does not match the grid of `data_all_year.nc`. Only
+   consolidated reanalysis data are requested; the most recent months may not be
+   available yet.
+
+3. Append them to the existing file (about 480 GB, so this takes a while):
+
+   ```bash
+   module load CDO/2.2.2-gompi-2023b
+   cdo mergetime /cluster/projects/nn9481k/GloFAS_data/data_v40/data_all_year.nc \
+       $WORK/glofas_new/data_*.nc $WORK/glofas_new/data_all_year.nc
+   ```
+
+4. Replace `data_v40/data_all_year.nc` with the new file. The directory is not writable
+   for the project group, so ask its owner, or set `input_dataset` in
+   `hycom_river_hifre.py` to your new file.
+
+::::
 
 For background on the method, see the technical documentation by Adrien Acchiardi
-(`bin/river-topaz/river_forcing_documentation.pdf`, August 2025).
+(`bin/river-topaz/river_forcing_documentation.pdf`, September 2025).
 
 ## Climatologies
 
