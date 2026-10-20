@@ -1101,7 +1101,12 @@ it afterwards overwrites the merged river forcing, and these steps must be repea
 :::
 
 This option adds Greenland runoff and Greenland ice melt to the default AHYPE/EHYPE
-climatology. The merged forcing is the sum of three monthly climatologies:
+climatology. The merged forcing is the sum of three monthly climatologies: the default
+AHYPE/EHYPE discharge, Greenland runoff from TRIP, and a precomputed Greenland ice melt
+climatology. It takes four steps: generate the TRIP runoff, keep a copy of the default
+`rivers.[ab]`, merge, and install the merged file as `rivers.[ab]` (keep `priver=1`).
+
+::::{dropdown} The three sources
 
 - **AHYPE/EHYPE** (Arctic/European HYPE — Hydrological Predictions for the Environment)
   discharge: the default `rivers.[ab]` from `create_ref_case.sh`.
@@ -1119,9 +1124,13 @@ climatology. The merged forcing is the sum of three monthly climatologies:
   | `grivers_tp2.[ab]` | TP2a0.10 (400×380) | regridded from `grivers.[ab]` with `regrid_grivers.py`, land mask of `depth_TP2a0.10_04` |
 
   The merge script picks the file whose grid matches `regional.grid` automatically (see
-  step 3). For any other grid, create a file first (see
-  [Greenland ice melt for other grids](#greenland-ice-melt-for-other-grids)). The merge
-  script stops with an error if any input file is not on the model grid.
+  step 3). For any other grid, create a file first (see the dropdown *Greenland ice melt
+  for other grids* below). The merge script stops with an error if any input file is not
+  on the model grid.
+
+::::
+
+::::{dropdown} Steps
 
 Run the steps below from the experiment directory, with the HPC environment sourced and
 the Python environment activated (see [Climatologies](#climatologies)):
@@ -1188,7 +1197,9 @@ RDIR=$WORK/${CONFIGNAME}/force/rivers/${IEXPT}
 To go back to the default, copy `rivers_ahype-ehype.[ab]` back to `rivers.[ab]`. The BGC
 river nutrient files are not changed by these steps.
 
-#### Greenland ice melt for other grids
+::::
+
+::::{dropdown} Greenland ice melt for other grids
 
 `/cluster/projects/nn2993k/TRIP/triver_Roshin/regrid_grivers.py` moves the TP5a0.06
 `grivers.[ab]` to another grid. For every TP5 cell with ice melt, it moves the volume
@@ -1212,6 +1223,8 @@ python regrid_grivers.py grivers.a /cluster/projects/nn2993k/TP5a0.06/topo/regio
 
 The script prints the total volume on both grids and how much melt was moved how far.
 
+::::
+
 ### Time-varying river forcing from GloFAS
 
 Time-varying river forcing uses daily GloFAS v4.0 reanalysis discharge instead of the
@@ -1234,9 +1247,12 @@ and the model switch decides which file is used:
 The AHYPE/EHYPE `rivers.[ab]` from `create_ref_case.sh` stays on disk unchanged;
 setting `priver=1` again switches back to it.
 
-For BGC runs, the climatological river nutrient files are still required and still read
-with `priver=2`, so nutrient loads do not follow the time-varying GloFAS discharge (see
-above).
+For BGC runs, the river nutrient files stay climatological (see above).
+
+The record interval of `riverh.[ab]` is chosen automatically from the HYCOM version (`V` in
+`EXPT.src`): daily for HYCOM 2.3, 6-hourly for 2.2.98.
+
+::::{dropdown} Record interval: HYCOM 2.2.98 and 2.3
 
 The record interval of the output file depends on the HYCOM version (`V` in `EXPT.src`):
 
@@ -1254,6 +1270,8 @@ gives exactly the same forcing as the 6-hourly file used by 2.2.98, because the 
 values are themselves linear interpolations between the daily GloFAS values. The daily file
 is a quarter of the size and takes less memory to produce. An existing 6-hourly file made
 for HYCOM 2.2.98 also works with HYCOM 2.3, but a daily file does **not** work with 2.2.98.
+
+::::
 
 #### Online and offline mode
 
