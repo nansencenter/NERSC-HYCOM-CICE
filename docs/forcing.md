@@ -1412,6 +1412,8 @@ field is also saved in NetCDF for inspection, as
 rivers:dtime1,range =   40909.0000      1.0000,  0.000000e+00  1.234567e-05
 ```
 
+::::{dropdown} How the GloFAS discharge is processed
+
 Each day of GloFAS discharge (m³/s) is processed as follows:
 
 1. Missing values (a few GloFAS cells on single days, e.g. the Mackenzie on 7 May 2021) are
@@ -1424,6 +1426,8 @@ Each day of GloFAS discharge (m³/s) is processed as follows:
    are set to zero.
 4. The discharge is spread over the coastal cells near each estuary and divided by the
    grid-cell area, giving m/s. Each daily value is placed at 00:00 of its date.
+
+::::
 
 ::::{dropdown} Known issue: rivers far from the model grid are kept
 
