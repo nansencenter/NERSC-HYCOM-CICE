@@ -1092,6 +1092,36 @@ by `create_ref_case.sh`, which calls `river_nersc.sh` with
 BGC river nutrient files when `ntracr ≠ 0`). No extra step is needed; set `priver=1` in
 `blkdat.input`. See [Climatologies](#climatologies) for how to run `create_ref_case.sh`.
 
+::::{dropdown} How the discharge is spread from the river mouths
+
+`river_nersc.sh <rradius> <alongshoreradius> <rivers.dat>` runs the MSCPROGS program
+`rivers` (`hycom/MSCPROGS/src/River_Forcing/mod_rivers.F`, routine `accrivers`).
+`create_ref_case.sh` uses `rradius` = 100 km and `alongshoreradius` = 300 km. For each
+river in the `.dat` file (position, annual mean discharge, monthly weights):
+
+1. **River mouth.** The mouth is the coastal ocean cell (an ocean cell with at least three
+   land neighbours) closest to the river position in the `.dat` file. There is no
+   distance limit.
+2. **Connected land.** The land cells connected to the mouth are found by growing a
+   square around the mouth. For each ocean cell nearby, `landdist` is the distance to the
+   nearest of these connected land cells, so islands and other coasts are ignored.
+3. **Weights.** An ocean cell at distance `d` from the mouth gets the weight
+
+   `w = exp(−d / alongshoreradius) × exp(−max(1, 2·landdist / rradius))`
+
+   if `d < alongshoreradius` and `landdist < rradius`; all other cells get zero. The
+   first factor makes the weight decrease with distance from the mouth. The second
+   keeps the water near the coast: it is constant (e⁻¹) within `rradius/2` of the coast
+   and decreases to e⁻² at `rradius`.
+4. **Normalisation.** The weights are divided by their sum, so the volume of each river
+   is conserved exactly, and the flux is `Q·w / cell area` (m/s). The program stops if
+   the weights sum to almost nothing (the mouth is too far from land).
+
+There is no check that the water can reach a cell through the ocean, so water can cross
+a narrow peninsula that belongs to the connected land.
+
+::::
+
 ### AHYPE/EHYPE climatology with TRIP runoff and Greenland melt
 
 :::{important}
@@ -1127,6 +1157,48 @@ climatology. It takes four steps: generate the TRIP runoff, keep a copy of the d
   step 3). For any other grid, create a file first (see the dropdown *Greenland ice melt
   for other grids* below). The merge script stops with an error if any input file is not
   on the model grid.
+
+::::
+
+::::{dropdown} How TRIP runoff and ice melt are spread
+
+The three sources are spread separately and then added; the merge script itself does
+not spread anything. The AHYPE/EHYPE part is spread as described for the
+[default climatology](#ahype-ehype-climatology-default).
+
+**TRIP runoff** is spread by the MSCPROGS program `trip_tohycom`
+(`hycom/MSCPROGS/src/TRIP/p_trip_tohycom.F90`), called by `river_trip.sh`:
+
+1. **Scaling.** The TRIP river-mouth flow climatology (`$TRIP_PATH/<erai|era40>/`) is
+   multiplied by 0.9142, so that the global total matches an estimate of global P−E
+   (1.268 Sv).
+2. **River mouths.** Every TRIP cell with flow is located on the model grid. If it falls
+   on land, its flow goes to the nearest ocean cell within 300 km; if there is none, the
+   flow is dropped (logged as "Failed to place N river points dry in model"; 28 points
+   for TP2a0.10). If it falls on the ocean, it goes to the nearest coastal ocean cell
+   (at least three land neighbours).
+3. **Spreading.** All ocean cells within a circle around the mouth get the weight
+   `exp(−(landdist / L)²)`, where `landdist` is the distance to the nearest land cell (any
+   land). The weights are scaled to a mean of one and the flux is `w·Q / (area of the
+   circle)`, so the volume is conserved only approximately (exactly for equal cell
+   areas). There is no check that the water can reach a cell through the ocean.
+
+   `river_trip.sh` passes its two radii in the opposite order to what `trip_tohycom`
+   expects: the *along-shore* radius (`-t`, default 150 km) becomes the radius of the
+   circle, and the *across-shore* radius (`-n`, default 50 km) becomes the land-distance
+   scale `L`. The log of `trip_tohycom` therefore prints "Alongshore radius is 50000" and
+   "Across-shore radius is 150000". Despite the names, there is no separate along-shore
+   weighting: the circle is the same in all directions.
+4. **Greenland boxes.** The merge script keeps only the spread TRIP flux inside the three
+   Greenland boxes. Because the boxes are applied after spreading, a patch that crosses a
+   box edge is cut, and patches from rivers outside Greenland (e.g. Ellesmere and Baffin
+   Island, the boxes reach 75°W) are partly included.
+
+**Greenland ice melt** (`grivers.[ab]`) is used as it is: it is already spread on the
+TP5a0.06 grid (about ten smooth coastal patches, 5367 grid cells in total). How it was
+made is not documented. For other grids, `regrid_grivers.py` moves each TP5 cell's volume
+to the nearest ocean cell of the new grid, without spreading it again (see *Greenland ice
+melt for other grids* below).
 
 ::::
 
@@ -1425,7 +1497,52 @@ Each day of GloFAS discharge (m³/s) is processed as follows:
    other rivers, and all years before 2001, are uncorrected GloFAS. Negative corrected values
    are set to zero.
 4. The discharge is spread over the coastal cells near each estuary and divided by the
-   grid-cell area, giving m/s. Each daily value is placed at 00:00 of its date.
+   grid-cell area, giving m/s (see the next dropdown). Each daily value is placed at 00:00
+   of its date.
+
+::::
+
+::::{dropdown} How the discharge is spread from the estuaries
+
+GloFAS does not use the MSCPROGS programs. The spreading is done in Python
+(`propagate_river_plume()` in `bin/river-topaz/scripts/GloFAS/GloFAS_grid.py`) and follows
+the idea of the MSCPROGS `rivers` program used for the
+[default climatology](#ahype-ehype-climatology-default), with extra cleaning and
+smoothing steps. Its purpose, according to the technical report of the GloFAS river
+forcing, is numerical: putting a whole river into one grid cell would flood the cell and
+make the model unstable, so the water is spread around the mouth and the model's advection
+forms the plume. The radii are set in `hycom_river_hifre.py`: `rradius` = 180 km and
+`alongshoreradius` = 360 km.
+
+The weights are computed on the first day only and reused for all later days. For each
+estuary on the model grid:
+
+1. **Distance from the mouth.** An ocean cell at distance `d` from the mouth gets
+   `w = exp(−d / alongshoreradius)`, and zero beyond `alongshoreradius`.
+2. **Distance from the coast.** The weight is multiplied by `exp(−2·landdist / rradius)`,
+   and set to zero further than `rradius` from land (`landdist` = distance to the
+   nearest land cell). Unlike MSCPROGS, the factor keeps increasing towards the coast.
+3. **Same landmass.** The land is divided into connected land areas. Ocean cells whose
+   nearest land is a different land area than the mouth's (e.g. an island) get zero, so
+   islands near the mouth do not attract water.
+4. **No crossing of land.** For each remaining cell, a path to the mouth is followed
+   along the grid (first along one grid direction, then the other). If it crosses more
+   than 15 land cells, the cell gets zero. This stops water from reaching the other side
+   of a peninsula (e.g. Ob water on the far side of Yamal). It can be switched off with
+   `Propagation_cleaning_step=False`.
+5. **Smoothing.** The weights are smoothed with a Gaussian filter (σ = 3 grid cells,
+   about 40–60 km on TP2a0.10) and set to zero on land. This step is not in the technical
+   report. It spreads the weights up to about 9 grid cells beyond the limits of steps 1–2,
+   and can give weight again to cells that step 4 removed, if they are close to cells that
+   kept their weight.
+6. **Normalisation.** The weights are divided by their sum, so the volume of each estuary
+   is conserved exactly, and the flux is `Q·w / cell area` (m/s). All estuaries are added.
+
+Compared with the default AHYPE/EHYPE climatology (100 km and 300 km), the GloFAS radii
+are larger and the smoothing spreads the water further, so GloFAS river water starts out
+more widely spread. In the TOPAZ runs of the technical report, for example, GloFAS put
+Yenisei water directly into the open Kara Sea, while the default climatology put both
+the Ob and the Yenisei water into the Gulf of Ob.
 
 ::::
 
