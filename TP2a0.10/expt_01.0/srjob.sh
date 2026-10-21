@@ -29,6 +29,7 @@ cd $SLURM_SUBMIT_DIR       ||  { echo "Could not go to dir $SLURM_O_WORKDIR  "; 
 
 # Initialize environment (sets Scratch dir ($S), Data dir $D ++ )
 source ../REGION.src  || { echo "Could not source ../REGION.src "; exit 1; }
+unset SPINUP_CYCLE   # only used by srjob_cycle.sh; without it D is data/, not data/cycle_NN
 source ./EXPT.src  || { echo "Could not source EXPT.src"; exit 1; }
 source $NHCROOT/environment/betzy_env.sh || { echo "Could not source betzy_env.sh "; exit 1; }
 module load Miniforge3/24.1.2-0          || { echo "Could not load Miniforge3 module"; exit 1; }

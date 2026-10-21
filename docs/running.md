@@ -238,8 +238,6 @@ Then start the hindcast with [`srjob.sh`](#submit-a-job):
 - Stage the GLORYS nesting files (and BGC nesting files, if `ntracr>0`) for the whole
   hindcast period, not just the cycle period. `srjob.sh` regenerates the atmospheric
   forcing for `START`..`END` if the existing files do not cover it.
-- Make sure `SPINUP_CYCLE` is not set in the shell you submit from (`unset SPINUP_CYCLE`):
-  `sbatch` passes it on to the job, and `D` would then point to `data/cycle_NN/`.
 
 ## Check results
 
