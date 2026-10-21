@@ -1094,11 +1094,19 @@ BGC river nutrient files when `ntracr ≠ 0`). No extra step is needed; set `pri
 
 ::::{dropdown} How the discharge is spread from the river mouths
 
-`river_nersc.sh <rradius> <alongshoreradius> <rivers.dat>` runs the MSCPROGS program
-`rivers` (`hycom/MSCPROGS/src/River_Forcing/mod_rivers.F`, routine `accrivers`).
-`create_ref_case.sh` uses `rradius` = 100 km and `alongshoreradius` = 300 km.
+The river discharge comes from a text file listing the rivers,
+`rivers_ahype-ehype_clim_rev2.dat` in the repository's `input/` directory (`$INPUTDIR`,
+set in `REGION.src`). `create_ref_case.sh` passes it to `river_nersc.sh` together with two radii:
 
-The `.dat` file has three lines per river, e.g.
+```bash
+river_nersc.sh 100 300 $INPUTDIR/rivers_ahype-ehype_clim_rev2.dat
+```
+
+`river_nersc.sh` runs the MSCPROGS program `rivers`
+(`hycom/MSCPROGS/src/River_Forcing/mod_rivers.F`, routine `accrivers`) with
+`rradius` = 100 km and `alongshoreradius` = 300 km.
+
+The river file has three lines per river, e.g.
 
 ```
 T  NoName     AHYPE3 monthly climatology for years 1979 to 2013; SUBID 1001486
