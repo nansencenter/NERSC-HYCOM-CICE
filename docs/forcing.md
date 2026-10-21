@@ -1539,10 +1539,7 @@ GloFAS does not use the MSCPROGS programs. The spreading is done in Python
 (`propagate_river_plume()` in `bin/river-topaz/scripts/GloFAS/GloFAS_grid.py`) and follows
 the idea of the MSCPROGS `rivers` program used for the
 [default climatology](#ahype-ehype-climatology-default), with extra cleaning and
-smoothing steps. Its purpose, according to the technical report of the GloFAS river
-forcing, is numerical: putting a whole river into one grid cell would flood the cell and
-make the model unstable, so the water is spread around the mouth and the model's advection
-forms the plume. The radii are set in `hycom_river_hifre.py`: `rradius` = 180 km and
+smoothing steps. The radii are set in `hycom_river_hifre.py`: `rradius` = 180 km and
 `alongshoreradius` = 360 km.
 
 The weights are computed on the first day only and reused for all later days. For each
@@ -1574,27 +1571,6 @@ are larger and the smoothing spreads the water further, so GloFAS river water st
 more widely spread. In the TOPAZ runs of the technical report, for example, GloFAS put
 Yenisei water directly into the open Kara Sea, while the default climatology put both
 the Ob and the Yenisei water into the Gulf of Ob.
-
-::::
-
-::::{dropdown} Known issue: rivers far from the model grid are kept
-
-Every estuary is kept, however far it is from the nearest ocean cell of the model grid.
-`get_glofas_into_topaz()` in `GloFAS_grid.py` has a 100 km distance threshold, but it
-only sets the stored distance to NaN; `find_estuaries()` does not use it, so no estuary is
-dropped. (The docstring says the threshold is in metres; the distances are in km.)
-
-Rivers that drain into seas outside the grid therefore end up at the nearest ocean cell of
-the grid, which can be in another ocean basin. On TP2a0.10:
-
-- the Amur (about 9400 m³/s, Sea of Okhotsk) ends up in the Laptev Sea, about 2000 km away;
-- Gulf of Alaska rivers (Copper, Susitna) end up in Bristol Bay, 500–770 km away.
-
-Simply making the 100 km threshold work would also drop large Arctic rivers whose
-estuaries the model grid does not resolve, e.g. the Yenisei (about 220 km on TP2a0.10) and
-the Taz/Pur in the Gulf of Ob (about 170 km). A working threshold would need to be well
-above that (e.g. ~300 km) and checked for the grid used. Check where the large rivers end
-up when using GloFAS on a new grid.
 
 ::::
 
