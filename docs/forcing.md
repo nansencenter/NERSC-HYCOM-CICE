@@ -1096,8 +1096,26 @@ BGC river nutrient files when `ntracr ≠ 0`). No extra step is needed; set `pri
 
 `river_nersc.sh <rradius> <alongshoreradius> <rivers.dat>` runs the MSCPROGS program
 `rivers` (`hycom/MSCPROGS/src/River_Forcing/mod_rivers.F`, routine `accrivers`).
-`create_ref_case.sh` uses `rradius` = 100 km and `alongshoreradius` = 300 km. For each
-river in the `.dat` file (position, annual mean discharge, monthly weights):
+`create_ref_case.sh` uses `rradius` = 100 km and `alongshoreradius` = 300 km.
+
+The `.dat` file has three lines per river, e.g.
+
+```
+T  NoName     AHYPE3 monthly climatology for years 1979 to 2013; SUBID 1001486
+     9.01368 0.02868 0.02199 0.01998 0.04046 0.16036 0.21117 0.13422 0.09068 0.08621 0.09010 0.07173 0.04442
+    53.71   -60.68
+```
+
+1. `T`/`F` (river used or not), followed by a free-text label (here the data source and the
+   HYPE catchment ID).
+2. Annual mean discharge (km³/yr) and 12 monthly weights (January to December, summing to
+   about 1).
+3. Latitude and longitude of the river mouth. There are no grid indices; the model cell is
+   found from the position (see below).
+
+`rivers_ahype-ehype_clim_rev2.dat` contains 4414 rivers: 3327 from Arctic HYPE (AHYPE3,
+1979–2013 climatology) and 1087 from European HYPE (E-HYPE). Rivers whose position lies
+outside the model grid are skipped. For each other river:
 
 1. **River mouth.** The mouth is the coastal ocean cell (an ocean cell with at least three
    land neighbours) closest to the river position in the `.dat` file. There is no
