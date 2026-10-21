@@ -154,6 +154,7 @@ Open `srjob_cycle.sh` and update:
 | `NCYCLES` | `5` | Number of cycles |
 | `CYCLES_PER_JOB` | `1` | Number of cycles run in one job before it resubmits itself (see [Restarting after a crash](#restarting-after-a-crash)) |
 | `ATMO_FORCING` | `"era5+lw"` | Forcing option for `atmo_synoptic.sh`; `""` to never generate atmospheric forcing in the job |
+| `HINDCAST_WRAP` | `1` | `1`: after the last cycle, wrap its restarts to `CYCLE_START` in `data/` for the hindcast (see [Starting the hindcast](#starting-the-hindcast)); `0` to skip |
 
 :::{note}
 A full cycle must fit within the wall-time limit (`#SBATCH --time`); raise `CYCLES_PER_JOB` if several fit. On Betzy, TP2 with BGC takes 5–6 h/year and TP5 without BGC 6–7 h/year, so a 5-year cycle takes about 25–35 h (see the timing note in [Submit a job](#submit-a-job)).
@@ -213,6 +214,32 @@ cycles do.
 
   This moves the restart and archive files to `data/cycle_NN/`, where
   `srjob_cycle.sh` will pick them up on the next run.
+
+### Starting the hindcast
+
+The hindcast is a separate run in `data/`, not part of the cycles. With
+`HINDCAST_WRAP=1`, after the last cycle `srjob_cycle.sh` wraps its restarts valid at
+`CYCLE_END` (e.g. 1 January 1998 in `data/cycle_05/`) to `CYCLE_START` (1 January 1993)
+in `data/`, i.e. `restart.1993_001_00_0000.[ab]` and `cice/iced.1993-01-01-00000.nc`.
+If these files are already there, for example when the job is resubmitted after all
+cycles are done, the wrap is skipped.
+
+To do the wrap by hand (e.g. if `HINDCAST_WRAP=0`), run from the experiment directory:
+
+```bash
+python ../bin/cycle_wrap.py data/cycle_05 data 1998-01-01T00:00:00 1993-01-01T00:00:00 \
+       --blkdat blkdat.input --ice-in ice_in
+```
+
+Then start the hindcast with [`srjob.sh`](#submit-a-job):
+
+- Set `START` to `CYCLE_START` (e.g. `"1993-01-01T00:00:00"`) and `INITFLG=""`.
+- Leave `blkdat.input` unchanged: it already has the GLORYS boundary settings.
+- Stage the GLORYS nesting files (and BGC nesting files, if `ntracr>0`) for the whole
+  hindcast period, not just the cycle period. `srjob.sh` regenerates the atmospheric
+  forcing for `START`..`END` if the existing files do not cover it.
+- Make sure `SPINUP_CYCLE` is not set in the shell you submit from (`unset SPINUP_CYCLE`):
+  `sbatch` passes it on to the job, and `D` would then point to `data/cycle_NN/`.
 
 ## Check results
 

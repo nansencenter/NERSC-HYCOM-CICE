@@ -26,6 +26,10 @@
 # interrupted cycle is continued from its latest restart) and resubmits itself
 # automatically until all cycles are done.
 #
+# With HINDCAST_WRAP=1, the restarts valid at CYCLE_END of the last cycle are finally
+# wrapped to CYCLE_START in the plain data directory data/ (SPINUP_CYCLE unset). The
+# hindcast is then started separately with srjob.sh (START=CYCLE_START, INITFLG="").
+#
 export NMPI=636
 export SLURM_SUBMIT_DIR=$(pwd)
 # Enter directory from where the job was submitted
@@ -60,6 +64,7 @@ NCYCLES=5
 CYCLES_PER_JOB=1                     # cycles per job; one cycle must fit in the wall-time limit
 JOBSCRIPT=srjob_cycle.sh             # this script, for resubmission
 ATMO_FORCING="era5+lw"               # forcing option for atmo_synoptic.sh; "" to never generate forcing
+HINDCAST_WRAP=1                      # 1: after the last cycle, wrap its restarts to CYCLE_START in data/ for the hindcast; 0: no wrap
 # --------------------------------------------------------------------
 
 EXPTDIR=$P
@@ -183,4 +188,20 @@ for c in $(seq 1 $NCYCLES) ; do
    PREV_D=$D
 done
 echo "All $NCYCLES cycles finished"
+
+# Hindcast start: wrap the restarts valid at CYCLE_END of the last cycle to CYCLE_START in
+# the hindcast data directory (D without cycle_NN). Skipped if they are already there.
+if [ "$HINDCAST_WRAP" == "1" ] ; then
+   cd $EXPTDIR || { echo "Could not go to dir $EXPTDIR"; exit 1; }
+   unset SPINUP_CYCLE
+   source ./EXPT.src  || { echo "Could not source EXPT.src"; exit 1; }
+   if [ "$(latest_restart $D $CYCLE_START $CYCLE_START none)" == "$CYCLE_START" ] ; then
+      echo "Hindcast: HYCOM/CICE restarts for $CYCLE_START already in $D, not wrapping"
+   else
+      echo "Hindcast: wrapping restarts $CYCLE_END in $PREV_D to $CYCLE_START in $D"
+      python ../bin/cycle_wrap.py $PREV_D $D $CYCLE_END $CYCLE_START --blkdat blkdat.input --ice-in ice_in \
+         || { echo "cycle_wrap.py failed"; exit 1; }
+   fi
+   echo "Hindcast: start it with srjob.sh, START=\"$CYCLE_START\", INITFLG=\"\""
+fi
 exit 0
