@@ -1,27 +1,22 @@
-# MSCPROGS post-processing tools
+# Post-processing
+
+There are two ways to post-process and analyse HYCOM output — pick one:
+
+- **[MSCPROGS](#mscprogs-post-processing-tools)** — the original Fortran/C toolkit for grid projection, field extraction, temporal averaging, section transports, and more.
+- **[xhycom](#xhycom-post-processing-tools)** — a Python-based toolkit covering the same tasks.
+
+## MSCPROGS post-processing tools
 
 MSCPROGS is a collection of Fortran (and C) programs for post-processing and
 analysing HYCOM model output. It is a general-purpose toolkit covering grid projection, field extraction, temporal
 averaging, section transports, Lagrangian ice drift, grid utilities, and more.
 The tools live in `hycom/MSCPROGS/`.
 
-All of these post-processing and analysis steps can alternatively be done with [xhycom](https://xhycom.readthedocs.io/en/latest/index.html), a Python-based toolkit for working with HYCOM output.
-
 For compilation instructions, see [Compile MSCPROGS](compilation.md#compile-mscprogs-libhycnersca).
 
-:::{important}
-There are two ways to post-process and analyse HYCOM output — pick one:
+### Running the tools
 
-- **MSCPROGS** (this page) — the original Fortran/C toolkit, described below.
-- **[xhycom](xhycom.md)** — a Python-based toolkit covering the same
-  post-processing and analysis tasks.
-
-You don't need both. See [xhycom](xhycom.md) if you'd rather work in Python.
-:::
-
-## Running the tools
-
-### Environment setup
+#### Environment setup
 
 Before running any MSCPROGS tool, load the HPC modules and set `$MSCPROGS` and `$PATH`.
 
@@ -44,7 +39,7 @@ export MSCPROGS=${HOME}/NERSC-HYCOM-CICE/hycom/MSCPROGS
 export PATH=${MSCPROGS}/bin:${MSCPROGS}/bin_setup:${PATH}
 ```
 
-### Working directory
+#### Working directory
 
 The natural place to run MSCPROGS tools is the experiment data directory:
 
@@ -112,7 +107,7 @@ For a large multi-year run, stage and process one year at a time to keep the scr
 
 ::::
 
-### Typical workflow
+#### Typical workflow
 
 The general pattern for any MSCPROGS tool is:
 
@@ -125,7 +120,7 @@ The general pattern for any MSCPROGS tool is:
    ```
 3. Process the output NetCDF files with your analysis scripts.
 
-## `hyc2proj` and `hyc2stations` — projection and interpolation
+### `hyc2proj` and `hyc2stations` — projection and interpolation
 
 `hyc2proj` projects HYCOM isopycnal-layer output onto a regular grid and
 interpolates vertically to fixed depth levels, writing CF-compliant NetCDF.
@@ -178,7 +173,7 @@ group, named `<inputbase>_group<groupname>.nc`. A list of all generated files is
 written to `hyc2stations.filelist`. A helper script `setupstations.py` generates
 `stations.in` entries from start/end coordinates along a rhumb line.
 
-### Batch post-processing
+#### Batch post-processing
 
 For a single run or a few files, running `hyc2proj` interactively (above) is fine. For many
 files — e.g. a multi-year reanalysis — submit it as a SLURM job. A convenient pattern is to
@@ -234,7 +229,7 @@ wait
 
 ::::
 
-## `m2nc` / `m2t` — 2D field extraction to NetCDF
+### `m2nc` / `m2t` — 2D field extraction to NetCDF
 
 Reads HYCOM `.ab` files and writes selected 2D fields to `tmp1.nc`. Fields to
 extract are specified in the relevant `extract.*` file. Multiple input files
@@ -252,7 +247,7 @@ m2nc archm.*.a
 No vertical interpolation — output stays on isopycnal layers.
 :::
 
-## `h2nc` (ExtractNC3D) — 3D field extraction to NetCDF
+### `h2nc` (ExtractNC3D) — 3D field extraction to NetCDF
 
 ```bash
 h2nc <file(s)>
@@ -262,7 +257,7 @@ Converts HYCOM `.ab` files to NetCDF with 3D fields. Like `m2nc` it uses the
 `extract.*` files to select fields, but retains the full vertical structure.
 Output is written to `tmp1.nc`.
 
-## `hycave` — temporal averaging
+### `hycave` — temporal averaging
 
 Computes a thickness-weighted time mean across the supplied files. `filetype` is
 one of `restart`, `nersc_daily`, `nersc_weekly`, `archv`, or `archm`. Requires
@@ -275,7 +270,7 @@ for `archv`. Input files are not modified.
 hycave nersc_daily TP2daily*.a
 ```
 
-## `m2section`, `m2transport`, `m2transport2` — section transports
+### `m2section`, `m2transport`, `m2transport2` — section transports
 
 Extracts data along user-defined sections and computes transports. Sections are
 defined in `sections.in` (see [Input files](#input-files)). All three scripts
@@ -318,7 +313,7 @@ the second — positive is to the right. Sections follow great circles, not
 rhumb lines.
 :::
 
-## `icedrift2` — Lagrangian ice drift
+### `icedrift2` — Lagrangian ice drift
 
 ```bash
 icedrift2            # reads Input/icedrift.in
@@ -332,7 +327,7 @@ against IABP buoy data or as input for data assimilation. Output is written to
 file, e.g. `<driftfile>.uf` and `<driftfile>_diag.uf`). A text summary is
 written to `tsdrift.asc`.
 
-## `nestbat` — nesting bathymetry
+### `nestbat` — nesting bathymetry
 
 Adjusts a local-domain depth file so bathymetry at the nesting boundary is
 consistent with the parent (global) grid, smoothly transitioning across a
@@ -340,13 +335,13 @@ user-specified zone. The `nestbat-2.2` version is used by the `nestbat.sh` setup
 script. Run from an empty working directory containing the required global and
 local grid files; the program is interactive.
 
-## `Tides_FES2014` — tidal forcing from FES atlas
+### `Tides_FES2014` — tidal forcing from FES atlas
 
 Generates tidal boundary conditions for HYCOM from the FES2014 tidal atlas.
 Requires the external FES2014 C library and the GNU C compiler; see
 `src/Tides_FES2014/README.md` for build instructions.
 
-## Other tools
+### Other tools
 
 | Tool | Executable | Purpose |
 |---|---|---|
@@ -369,13 +364,13 @@ Requires the external FES2014 C library and the GNU C compiler; see
 | `TRIP` | `trip_*` | River forcing from the TRIP database + ERA40/ERA-i runoff |
 | `ZONAL` | `zonal`, `mosf` | Zonal averages and meridional overturning streamfunction |
 
-## Input files
+### Input files
 
 Most tools share a common set of input files, stored as examples in
 `$MSCPROGS/Input/`. Copy the relevant file to the working directory and edit
 as needed.
 
-### `extract.*` files
+#### `extract.*` files
 
 Controls which fields are extracted. The tool auto-detects the file type from
 the input filename and opens the corresponding extract file by name — so the
@@ -430,7 +425,7 @@ Field names differ between file types — `saln` / `temp` in daily output, `sali
 / `thknss` in archv. Always copy the extract file that matches your input file type.
 :::
 
-### `proj.in`
+#### `proj.in`
 
 Defines the target projection for `hyc2proj`. Example files for all four
 projections are in `Input/`.
@@ -485,7 +480,7 @@ native
 ```
 Extracts a sub-domain without horizontal interpolation.
 
-### `depthlevels.in`
+#### `depthlevels.in`
 
 Specifies the target vertical depth levels (in metres) for `hyc2proj` and
 `hyc2stations`. The first line is the number of levels; one depth per line
@@ -500,7 +495,7 @@ follows.
 4000.0
 ```
 
-### `sections.in`
+#### `sections.in`
 
 Defines named sections as lon/lat endpoint pairs for `m2section`,
 `m2transport`, and `m2transport2`.
@@ -521,7 +516,7 @@ Sections follow great circles between the two endpoints. The transport sign
 convention is: positive to the right when standing at the start point and
 facing the end point.
 
-### `transport.in`
+#### `transport.in`
 
 Used by `m2transport2` to filter transport by depth range, salinity range,
 or temperature range. Each line defines one transport component:
@@ -540,7 +535,7 @@ SVINOY         SVINOY   DEPTH      n    0.00 1000.00
 | Min | Lower bound of the criterion range |
 | Max | Upper bound of the criterion range |
 
-### `stations.in`
+#### `stations.in`
 
 Defines groups of station positions for `hyc2stations`. Each group starts
 with `#GROUPNAME` and is followed by lon/lat pairs, one per line.
@@ -558,3 +553,12 @@ with `#GROUPNAME` and is followed by lon/lat pairs, one per line.
 
 The helper script `setupstations.py` generates these point lists by
 interpolating at regular spacing along a rhumb line between two endpoints.
+
+
+## xhycom post-processing tools
+
+[xhycom](https://github.com/nansencenter/xhycom) is a Python-based toolkit for
+post-processing and analysing HYCOM model output.
+
+See the [xhycom documentation](https://github.com/nansencenter/xhycom) for
+installation and usage instructions.

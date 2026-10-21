@@ -1,3 +1,5 @@
+# Experiment setup
+
 In the following, `<CONFIGNAME>`, `<EXPT_ID>`, and `<IEXPT>` are placeholders for user-defined
 values, see the table in the [directory structure section](overview.md#directory-structure) for a
 description and examples of each.
@@ -171,16 +173,10 @@ When using HYCOM 2.2.98 with `highfq_river = .true.`, you must also set `priver=
 enabled.
 :::
 
-Finally, copy your customized `hycom_opt` to your scratch filesystem.
+The preprocess script copies `hycom_opt` from the experiment directory (`$P`) into
+`SCRATCH/` on each run, so there is no need to copy it to the scratch filesystem.
 
-```bash
-CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
-EXPT_ID=<EXPT_ID>         # e.g. 01.0
-
-cp $WORK/${CONFIGNAME}/expt_${EXPT_ID}/hycom_opt $WDIR/expt_${EXPT_ID}/.
-```
-
-## Configure blkdat.input
+## Configure `blkdat.input`
 
 `blkdat.input` controls core model parameters. The easiest starting point is to copy it
 from an existing experiment for your configuration. For TP2, reference files are available
@@ -220,8 +216,12 @@ for each run class (climatological relaxation versus nesting run, see [Forcing](
 | `nestfq` | `0` | `1` | Days between 3D nesting archive reads |
 | `lbflag` | `0` | `2` | Lateral barotropic boundary flag |
 
+The cycled spin-up (see [Cycled spin-up](running.md#cycled-spin-up)) uses the
+nesting settings throughout; start from the `blkdat.input_nest` reference file.
+
 :::{warning}
-For spin-up runs, set `trcrlx=0` when `ntracr=0` (physics-only spin-up). If `trcrlx=1`
+For runs with climatological relaxation (climatological spin-up), set `trcrlx=0` when `ntracr=0`
+(physics-only spin-up). If `trcrlx=1`
 without the corresponding BGC climatology files prepared, the model will crash at
 startup looking for files such as `relax_ECO*`.
 :::
@@ -555,6 +555,13 @@ export D=/cluster/work/projects/nn2993k/$USER/<CONFIGNAME>/expt_${X}/data
 :::
 ::::
 
+:::{note}
+For the cycled spin-up (`srjob_cycle.sh`, see
+[Cycled spin-up](running.md#cycled-spin-up)), append `${SPINUP_CYCLE:+/cycle_${SPINUP_CYCLE}}`
+to `D`, e.g. `export D=$USERWORK/<CONFIGNAME>/expt_${X}/data${SPINUP_CYCLE:+/cycle_${SPINUP_CYCLE}}`.
+`SPINUP_CYCLE` is only set by `srjob_cycle.sh`, so other job scripts still write to `data/`.
+:::
+
 :::{important}
 `data/` is on the purged filesystem, so **archive completed output to NIRD on a rolling
 basis** (e.g. per model year as it finishes) from a service node.
@@ -598,8 +605,8 @@ it never deletes them — and the overrides propagate automatically when `expt_n
 compiled executable survive the purge.
 
 :::{note}
-`expt_preprocess.sh` also accesses `relax/` via `${D}/../../relax/` (two levels up from `$D`).
-When `D=` is overridden to a path on the scratch filesystem, `${D}/../../` resolves to the
+`expt_preprocess.sh` also accesses `relax/` via `${S}/../../relax/` (two levels up from `$S`).
+When `S=` is overridden to a path on the scratch filesystem, `${S}/../../` resolves to the
 scratch `<CONFIGNAME>/` subtree — so `relax/` must be on scratch as well, which is exactly what
 the symlinks described above ([Set up the work directory](#set-up-the-work-directory)) provide.
 :::
@@ -631,6 +638,159 @@ cp $WORK/${CONFIGNAME}/expt_${EXPT_ID}/hycom_fabm.nml $WDIR/expt_${EXPT_ID}/.
 cp $WORK/${CONFIGNAME}/expt_${EXPT_ID}/ice_in $WDIR/expt_${EXPT_ID}/.
 ```
 
+::::{dropdown} Contents of fabm.yaml (TP2 reference)
+
+`fabm.yaml` configures the FABM biogeochemical models coupled to HYCOM: the carbonate
+system (`CO2`, `ersem/carbonate`), the ECOSMO ecosystem model (`ECO`, `nersc/ecosmo`) and
+light (`gotm/light`). The tracer names in HYCOM files combine instance and variable name,
+e.g. `ECO_no3`, `CO2_c`. The `initialization` values are the uniform initial values used
+when HYCOM initialises the tracers (cold start, or `ntracr<0`); tracers with a
+`relax.<tracer>` file are then overwritten from that file (see
+[Initial conditions](forcing.md#initial-conditions)). Reference file:
+`/nird/datalake/NS9481K/shuang/TP2_setup/exp02.8_seaclim_ref_new/fabm.yaml`.
+
+```yaml
+instances:
+  CO2:
+    initialization:
+      TA: 2300.0
+      c: 2200.0
+    model: ersem/carbonate
+  ECO:
+    coupling:
+      Om_cal_target: CO2_Om_cal
+      alk_target: CO2_TA
+      dic_target: CO2_c
+    initialization:
+      ccl: 0.1
+      cclchl: 0.005
+      det: 0.1
+      dia: 0.1
+      diachl: 0.005
+      dom: 3.0
+      dsnk: 5.78703e-06
+      fla: 0.1
+      flachl: 0.005
+      mesozoo: 0.01
+      microzoo: 0.01
+      nh4: 8.0
+      no3: 1200.0
+      opa: 0.1
+      oxy: 300.0
+      pho: 1200.0
+      sed1: 113.6
+      sed2: 56.65
+      sed3: 82.2
+      sil: 1000.0
+    model: nersc/ecosmo
+    parameters:
+      EXdet: 0.0
+      EXdom: 0.0
+      EXphy: 0.0339
+      GrZlCocco: 0.99
+      GrZlP: 0.92
+      GrZlZ: 0.559
+      GrZsCocco: 1.01
+      GrZsP: 1.05
+      Km2Cocco: 285.18
+      Km2Pl: 285.18
+      Km2Ps: 285.18
+      Km2Zl: 285.18
+      Km2Zs: 285.18
+      MAXchl2nBG: 2.94
+      MAXchl2nCocco: 3.08
+      MAXchl2nPl: 2.95
+      MAXchl2nPs: 3.39
+      MINchl2nBG: 0.265
+      MINchl2nCocco: 0.265
+      MINchl2nPl: 0.265
+      MINchl2nPs: 0.265
+      RelSEDp1: 0.15
+      RelSEDp2: 0.1
+      RgZl: 0.427
+      RgZs: 0.552
+      TctrlDenit: 0.15
+      alfaBG: 0.0393
+      alfaCocco: 0.0259
+      alfaPl: 0.0595
+      alfaPs: 0.0369
+      bg_growth_minimum_daily_rad: 120.0
+      burialRt: 5.0e-05
+      couple_co2: true
+      excZl: 0.078
+      excZs: 0.078
+      frr: 0.4
+      gammaZd: 0.3
+      gammaZlp: 0.75
+      gammaZsp: 0.75
+      m2Pl: 0.285
+      m2Ps: 0.285
+      m2Zl: 0.085
+      m2Zs: 0.085
+      mPl: 0.0411
+      mPs: 0.0411
+      mZl: 0.0388
+      mZs: 0.0388
+      mort2Cocco: 0.285
+      mortCocco: 0.0411
+      muCocco: 0.4
+      muPl: 0.62
+      muPs: 0.43
+      nfixation_minimum_daily_par: 35.0
+      prefZlBG: 0.0
+      prefZlCocco: 0.19
+      prefZlD: 0.07
+      prefZlPl: 0.54
+      prefZlPs: 0.07
+      prefZlZs: 0.11
+      prefZsBG: 0.0
+      prefZsCocco: 0.1
+      prefZsD: 0.06
+      prefZsPl: 0.2
+      prefZsPs: 0.65
+      psi: 3.0
+      rNH4: 0.2
+      rNH4cocco: 0.2
+      rNO3: 0.5
+      rNO3cocco: 1.0
+      rPO4: 0.05
+      rPO4cocco: 0.0015
+      rSi: 0.5
+      regenSi: 0.015
+      reminD: 0.00315
+      reminSED: 0.001
+      reminSEDsi: 0.0002
+      resuspRt: 25.0
+      sedimRt: 5.0
+      sinkBgD: 0.0
+      sinkCocco: 1.5
+      sinkCoccoD: 5.73
+      sinkDet: 5.0
+      sinkDia: 0.0
+      sinkDiaD: 5.59
+      sinkFlaD: 0.468
+      sinkMesD: 7.96
+      sinkMicD: 0.987
+      sinkOPAL: 5.0
+      surface_deposition_nh4: 0.0
+      surface_deposition_no3: 0.0
+      surface_deposition_pho: 0.0
+      surface_deposition_sil: 0.0
+      turn_on_additional_diagnostics: true
+      use_chl: true
+      use_chl_in_PI_curve: true
+      use_coccolithophores: true
+      use_community_sinking: true
+      use_cyanos: false
+  light:
+    model: gotm/light
+    parameters:
+      A: 0.58
+      g1: 0.35
+      g2: 23.0
+```
+::::
+
 ## Files in the experiment directory
 
 To conclude the experiment setup, here is an overview of everything now present in the
@@ -643,7 +803,7 @@ copied from the template experiment by `expt_new.sh`; exceptions are noted.
 |------|---------|
 | `blkdat.input` | Main HYCOM parameter/namelist file |
 | `EXPT.src` | Shell environment setup — defines experiment identifiers (`X`, `E`, `V`, `K`), paths to SCRATCH (`S`) and data directory (`D`), MPI task count, and other compile/run flags. Sourced by job scripts. |
-| `hycom_opt` | HYCOM optional namelist (`&hycom_nml`) — copied to the work directory by the preprocess script on each run |
+| `hycom_opt` | HYCOM optional namelist (`&hycom_nml`) — copied from the experiment directory into `SCRATCH/` by the preprocess script on each run |
 | `patch.input` | Domain decomposition tile layout for parallel HYCOM |
 
 **CICE namelist files**
@@ -660,7 +820,7 @@ copied from the template experiment by `expt_new.sh`; exceptions are noted.
 
 | File | Purpose |
 |------|---------|
-| `ice_initial.nc` | Initial ice state and SST/SSS for CICE cold start — staged separately from the projects filesystem (spin-up only; not needed for restart runs) |
+| `ice_initial.nc` | Initial ice state and SST/SSS for a CICE cold start (`INITFLG="--init"` or `"--init-ice"`); copied to the scratch work directory by the preprocess script if present in the experiment directory. Not needed when CICE starts from a restart file |
 
 **Job scripts**
 
@@ -668,6 +828,7 @@ copied from the template experiment by `expt_new.sh`; exceptions are noted.
 |------|---------|
 | `srjob.sh` | Main Slurm job script for a single run segment |
 | `srjob_loop.sh` | Slurm job script for looped continuation runs |
+| `srjob_cycle.sh` | Slurm job script for the cycled spin-up — repeats a period with GLORYS boundaries and resubmits itself (see [Cycled spin-up](running.md#cycled-spin-up)) |
 | `sr_job_ensemble.sh` | Slurm job script for ensemble runs |
 | `preprocess_mem.sh` | Preprocess script variant for ensemble members |
 | `sr_ensemble_post.sh` | Ensemble postprocessing script (currently empty) |
