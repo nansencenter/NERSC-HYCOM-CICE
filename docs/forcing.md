@@ -1597,14 +1597,6 @@ stops with an error. The paths are set in
 | File | Contents |
 |---|---|
 | `TOPAZrunoff_data/river/correction_files/largest_river_correction_2001_2019.nc` | Day-of-year correction (slope and intercept) for the Ob, Lena and Yenisei, fitted from GloFAS against ArcticGRO observations for 2001–2019. Applied to discharge from 2001 onwards. |
-| `RiverCorrection/GRO_Dataframes/` | ArcticGRO daily observations for the three rivers. Only needed to recompute the correction file. |
-
-**Specific to a model grid:**
-
-| File | Contents |
-|---|---|
-| `TOPAZrunoff_data/TOPAZ2/`, `TOPAZ5/` | Copies of TP2 and TP5 grid and depth files, for running the method on its own. Not used by `river_synoptic.sh`, which uses the experiment's `topo/` (`regional.depth.[ab]`, or `depth_<CONFIGNAME>_<T>.[ab]` if it does not exist). |
-| `TOPAZrunoff_data/river/GloFAS_edit_files/estuaries_edit.csv` | Example file for manual changes of estuary positions (section 3 of the technical documentation), given as model grid indices, so only valid for the grid they were made for. Its three entries are test edits that move estuaries in Iceland and on the Kola Peninsula 350–570 km offshore, so do not use it as is. Not used by default (`Edit_estuaries=False` in `hycom_river_hifre.py`). |
 
 The spreading of each estuary's discharge over the nearby coastal cells is not stored in
 a file: it is computed for the model grid, with the radii `rradius` (180 km) and
