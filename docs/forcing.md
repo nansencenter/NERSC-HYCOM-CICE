@@ -1412,8 +1412,39 @@ field is also saved in NetCDF for inspection, as
 rivers:dtime1,range =   40909.0000      1.0000,  0.000000e+00  1.234567e-05
 ```
 
-GloFAS discharge (m³/s) is distributed over the coastal grid cells near each estuary and
-divided by the grid-cell area, giving m/s. Each daily value is placed at 00:00 of its date.
+Each day of GloFAS discharge (m³/s) is processed as follows:
+
+1. Missing values (a few GloFAS cells on single days, e.g. the Mackenzie on 7 May 2021) are
+   linearly interpolated in time from the nearest days with data; each fill is logged.
+2. Estuaries are the GloFAS river mouths north of 50°N with an upstream area above 1000 km²
+   and an elevation below 10 m. Each is moved to the nearest ocean cell of the model grid.
+3. From 2001 onwards, only the Ob, Lena and Yenisei are corrected towards ArcticGRO
+   observations (a linear correction for each day of the year, fitted for 2001–2019). All
+   other rivers, and all years before 2001, are uncorrected GloFAS. Negative corrected values
+   are set to zero.
+4. The discharge is spread over the coastal cells near each estuary and divided by the
+   grid-cell area, giving m/s. Each daily value is placed at 00:00 of its date.
+
+::::{dropdown} Known issue: rivers far from the model grid are kept
+
+Every estuary is kept, however far it is from the nearest ocean cell of the model grid.
+`get_glofas_into_topaz()` in `GloFAS_grid.py` has a 100 km distance threshold, but it
+only sets the stored distance to NaN; `find_estuaries()` does not use it, so no estuary is
+dropped. (The docstring says the threshold is in metres; the distances are in km.)
+
+Rivers that drain into seas outside the grid therefore end up at the nearest ocean cell of
+the grid, which can be in another ocean basin. On TP2a0.10:
+
+- the Amur (about 9400 m³/s, Sea of Okhotsk) ends up in the Laptev Sea, about 2000 km away;
+- Gulf of Alaska rivers (Copper, Susitna) end up in Bristol Bay, 500–770 km away.
+
+Simply making the 100 km threshold work would also drop large Arctic rivers whose
+estuaries the model grid does not resolve, e.g. the Yenisei (about 220 km on TP2a0.10) and
+the Taz/Pur in the Gulf of Ob (about 170 km). A working threshold would need to be well
+above that (e.g. ~300 km) and checked for the grid used. Check where the large rivers end
+up when using GloFAS on a new grid.
+
+::::
 
 #### Source data
 
@@ -1431,7 +1462,7 @@ stops with an error. The paths are set in
 | File | Contents |
 |---|---|
 | `data_v40/data_all_year.nc` | GloFAS v4.0 reanalysis, daily mean discharge (`dis24`, m³/s) on the native 0.05° grid, 40–90°N, 1 January 1979 to 30 June 2024. Downloaded from Copernicus (cropped to 40–90°N in the request), converted from GRIB to NetCDF and merged from yearly files with `cdo mergetime`; values unchanged. |
-| `TOPAZrunoff_data/river/auxiliary_files__glofas_v4_0/` | GloFAS v4.0 static maps on the same grid: local drainage direction (`ldd`), upstream area (`uparea`) and elevation. Used to find the estuaries: river mouths (`ldd=5`) with an upstream area above 1000 km² and an elevation below 100 m. Must match the GloFAS version of the discharge. |
+| `TOPAZrunoff_data/river/auxiliary_files__glofas_v4_0/` | GloFAS v4.0 static maps on the same grid: local drainage direction (`ldd`), upstream area (`uparea`) and elevation. Used to find the estuaries: river mouths (`ldd=5`) with an upstream area above 1000 km² and an elevation below 10 m, north of 50°N. Must match the GloFAS version of the discharge. |
 
 **Derived at NERSC** (independent of the model grid):
 
