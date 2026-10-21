@@ -1125,12 +1125,17 @@ T  NoName     AHYPE3 monthly climatology for years 1979 to 2013; SUBID 1001486
 1979–2013 climatology) and 1087 from European HYPE (E-HYPE). Rivers whose position lies
 outside the model grid are skipped. For each other river:
 
-1. **River mouth.** The mouth is the coastal ocean cell (an ocean cell with at least three
-   land neighbours) closest to the river position in the `.dat` file. There is no
-   distance limit.
-2. **Connected land.** The land cells connected to the mouth are found by growing a
-   square around the mouth. For each ocean cell nearby, `landdist` is the distance to the
-   nearest of these connected land cells, so islands and other coasts are ignored.
+1. **River mouth.** The mouth is the coastal ocean cell closest to the river position in
+   the river file. A coastal ocean cell is an ocean cell with at least three land cells
+   among its 8 neighbours (3×3 stencil, diagonals included). There is no distance limit.
+2. **Connected land.** Starting from the land cells next to the mouth, all land cells
+   that can be reached from them over land are marked as "connected land": the coast the
+   river flows out of and the land behind it, not just the mouth. The search grows a
+   square around the mouth until it extends `max(rradius, alongshoreradius)` from the
+   mouth, so it covers the whole area that can receive water. Islands, and land that is
+   joined to the river's coast only outside the search area, are not connected. For each ocean cell in that area,
+   `landdist` is the distance to the nearest connected land cell, so islands and other
+   coasts do not count as coast in step 3.
 3. **Weights.** An ocean cell at distance `d` from the mouth gets the weight
 
    `w = exp(−d / alongshoreradius) × exp(−max(1, 2·landdist / rradius))`
@@ -1202,7 +1207,7 @@ not spread anything. The AHYPE/EHYPE part is spread as described for the
    on land, its flow goes to the nearest ocean cell within 300 km; if there is none, the
    flow is dropped (logged as "Failed to place N river points dry in model"; 28 points
    for TP2a0.10). If it falls on the ocean, it goes to the nearest coastal ocean cell
-   (at least three land neighbours).
+   (at least three land cells among its 8 neighbours, as for AHYPE/EHYPE).
 3. **Spreading.** All ocean cells within a circle around the mouth get the weight
    `exp(−(landdist / L)²)`, where `landdist` is the distance to the nearest land cell (any
    land). The weights are scaled to a mean of one and the flux is `w·Q / (area of the
