@@ -326,7 +326,11 @@ class GloFAS_grid:
                 slope=correction.sel({'river':river})['Slope'].data #Select slope and intercept for day and river
                 intercept=correction.sel({'river':river})['Intercept'].data
 
-                self.df_dis_Estuary.at[idx,'dis24']=(self.df_dis_Estuary.at[idx,'dis24']*slope+intercept).astype(np.float32)#Correcting the discharge value
+                corrected=self.df_dis_Estuary.at[idx,'dis24']*slope+intercept #Correcting the discharge value
+                if corrected<0: #The linear correction can give negative discharge (e.g. Lena in late May); set it to zero
+                    print('Corrected discharge of %s is negative (%.1f m3/s), set to 0' % (river, corrected))
+                    corrected=0.
+                self.df_dis_Estuary.at[idx,'dis24']=np.float32(corrected)
 
             # #To delete the main rivers from total discharge:
             #     print("!!!!!!!!!!!!We are deleting main rivers!!!!!!!!!!!!!!")
