@@ -5,7 +5,7 @@ eyear=$2
 sjday=$(((($syear-1901)*1461)/4 + 30))
 ejday=$(((($eyear-1901)*1461)/4 - 60))
 echo $sjday $ejday
-echo 3 30.4375 30.4375 $sjday $ejday | /cluster/work/users/cagyum/NERSC-HYCOM-CICE/hycom/hycom_ALL/hycom_2.2.72_ALL/bin/hycom_nest_dates > correct_dates.txt
+echo 3 30.4375 30.4375 $sjday $ejday | ${NHCROOT}/hycom/hycom_ALL/hycom_2.2.72_ALL/bin/hycom_nest_dates > correct_dates.txt
 
 linecount=0
 for ((year=syear; year<eyear; year+=1)); do
