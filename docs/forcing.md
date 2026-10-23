@@ -1522,7 +1522,10 @@ Each day of GloFAS discharge (m³/s) is processed as follows:
 1. Missing values (a few GloFAS cells on single days, e.g. the Mackenzie on 7 May 2021) are
    linearly interpolated in time from the nearest days with data; each fill is logged.
 2. Estuaries are the GloFAS river mouths north of 50°N with an upstream area above 1000 km²
-   and an elevation below 10 m. Each is moved to the nearest ocean cell of the model grid.
+   and an elevation below 10 m. Each is moved to the nearest ocean cell of the model grid;
+   estuaries more than 300 km from any ocean cell (rivers draining outside the domain, e.g.
+   the Amur into the Sea of Okhotsk) are dropped (`distance_threshold` in
+   `compute_discharge_NoUI.py`).
 3. From 2001 onwards, only the Ob, Lena and Yenisei are corrected towards ArcticGRO
    observations (a linear correction for each day of the year, fitted for 2001–2019). All
    other rivers, and all years before 2001, are uncorrected GloFAS. Negative corrected values
