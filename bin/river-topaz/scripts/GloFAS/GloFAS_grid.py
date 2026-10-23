@@ -150,6 +150,7 @@ class GloFAS_grid:
             mask_estuaries=np.where(self.ds['ldd']== 5 , 1,np.nan) #Mask based on LDD
             mask_estuaries=mask_estuaries*np.where(self.ds['uparea']> uparea_threshold , 1,np.nan) #Mask based on upstream area: lowX=180000km2 (approx. size of the river Rhine)
             mask_estuaries=mask_estuaries*np.where(self.ds['elevation']< elevation_threshold , 1,np.nan) #Mask based on elevation
+            mask_estuaries=mask_estuaries*np.where(np.isfinite(self.ds['distance_to_topaz']), 1,np.nan) #Drop estuaries too far from the model grid (NaN distance, see get_glofas_into_topaz)
 
             self.mask_estuaries=mask_estuaries #We put the mask in GloGAS grid object so that it can be re used
 
@@ -224,11 +225,11 @@ class GloFAS_grid:
                 clim_file.write(f"{df.loc[[i]].latitude.values[0]:9.2f}")
                 clim_file.write(f"{df.loc[[i]].longitude.values[0]:9.2f}\n")
 
-    def get_glofas_into_topaz(self,depth_grid,distance_threshold=100,lazy_mode=False,input_grids=None):
+    def get_glofas_into_topaz(self,depth_grid,distance_threshold=300,lazy_mode=False,input_grids=None):
         """
         Interpolates the GloFAS point (originally on the GloFAS grid) onto the TOPAZ depth grid using a nearest neighbour method
         :param depth_grid: TOPAZ depth grid [Agrid object]
-        :param distance_threshold: Maximum distance (in m) between a GloFAS estuary and the closest TOPAZ grid depth point to take the estuary into account [int]
+        :param distance_threshold: Maximum distance (in km) between a GloFAS estuary and the closest TOPAZ ocean point; estuaries further away are dropped in find_estuaries() [int]
         """
 
         if lazy_mode==False:
