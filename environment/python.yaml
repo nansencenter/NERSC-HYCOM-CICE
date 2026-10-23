@@ -15,5 +15,9 @@ dependencies:
   - pip
   - udunits2
   - cmocean
+  - xarray        # GloFAS river forcing (river_synoptic.sh)
+  - numba         # GloFAS river forcing
+  - scikit-image  # GloFAS river forcing
+  - cdsapi        # GloFAS download (GloFAS_download.py)
   - pip:
       - cfunits

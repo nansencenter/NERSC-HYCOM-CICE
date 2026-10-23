@@ -26,6 +26,59 @@ logger.propagate=False # Dont propagate to parent in hierarchy (determined by ".
 def date_as_Julian_day(date):
     return (pd.Timestamp(date)-pd.Timestamp(year=1900, month=12, day=31)).days
 
+MAX_GAP = 30  # [days] how far to look before/after a missing value for valid data
+
+
+def fill_missing(full: xr.Dataset, valid: np.ndarray, iday: int, today: np.ndarray) -> np.ndarray:
+    """Return today's discharge with missing values linearly interpolated in time.
+
+    A value is missing where it is NaN today but the cell has data on the first or last day
+    of the GloFAS file (`valid`, the river network). GloFAS has a few such gaps (e.g. the
+    Mackenzie estuary on 2021-05-07), which would otherwise change the estuary list and crash
+    the lazy mode. Each missing value is interpolated linearly between the nearest days with
+    data before and after (at most MAX_GAP days away), using only the original file values,
+    so the result does not depend on the processed period. At the start or end of the file
+    the nearest value is used.
+
+    :param full: GloFAS dataset (whole file) with dis24(time, latitude, longitude)
+    :param valid: True where the cell has data on the first or last day of the file
+    :param iday: index of today in full.time
+    :param today: dis24 of today (latitude, longitude)
+    :return: dis24 of today with the gaps filled (today itself if nothing is missing)
+    """
+    missing = np.flatnonzero(np.isnan(today) & valid)
+    if missing.size == 0:
+        return today
+
+    def nearest(step: int) -> tuple[np.ndarray, np.ndarray]:
+        """Nearest valid values and their distance in days, going back (-1) or forward (+1)."""
+        val, dist = np.full(missing.size, np.nan), np.zeros(missing.size)
+        for k in range(1, MAX_GAP + 1):
+            j = iday + step * k
+            todo = np.flatnonzero(np.isnan(val))
+            if j < 0 or j >= full.sizes["time"] or todo.size == 0:
+                break
+            v = full.dis24.isel(time=j).values.reshape(-1)[missing[todo]]
+            ok = np.isfinite(v)
+            val[todo[ok]], dist[todo[ok]] = v[ok], k
+        return val, dist
+
+    v0, k0 = nearest(-1)
+    v1, k1 = nearest(+1)
+    both = np.isfinite(v0) & np.isfinite(v1)
+    fill = np.where(both, v0 + (v1 - v0) * k0 / np.where(both, k0 + k1, 1.), np.where(np.isfinite(v0), v0, v1))
+    if np.isnan(fill).any():
+        sys.exit("Error: %d GloFAS values on %s are missing for more than %d days"
+                 % (np.isnan(fill).sum(), str(full.time.values[iday])[:10], MAX_GAP))
+    filled = today.copy()
+    filled.reshape(-1)[missing] = fill
+    jj, ii = np.unravel_index(missing, today.shape)
+    for j, i, f in zip(jj, ii, fill):
+        logger.warning("%s: missing GloFAS discharge at %.3fN %.3fE, filled by time interpolation: %.1f m3/s"
+                       % (str(full.time.values[iday])[:10], full.latitude.values[j], full.longitude.values[i], f))
+    return filled
+
+
 def create_river_forcing(input_dataset,start_date,end_date,topaz_grid_file,topaz_depth_file,dt=.25):
     """
     Creates river forcing [ab] files with dt period (6 hourly if dt=0.25) from start_date to end_date (included)
@@ -45,6 +98,14 @@ def create_river_forcing(input_dataset,start_date,end_date,topaz_grid_file,topaz
         data['valid_time']=data['time'] #'valid_time' field is essential for processing,
         #But it sometimes disappears when merging GloFAS data from different years with CDO command
 
+    # Stop if the GloFAS data do not cover the whole period: sel() would silently return
+    # fewer days, and the last requested day would then not be written at all.
+    t0, t1 = data.time.values[0], data.time.values[-1]
+    if np.datetime64(start_date) < t0 or np.datetime64(end_date) > t1:
+        sys.exit("Error: requested period %s to %s, but %s only covers %s to %s"
+                 % (start_date[:10], end_date[:10], input_dataset, str(t0)[:10], str(t1)[:10]))
+    full = data
+    valid = np.isfinite(full.dis24.isel(time=0).values) | np.isfinite(full.dis24.isel(time=-1).values)
     data = data.sel(time=slice(start_date, end_date))
 
     #Create list of times in days since 01/01/1900 with dt as timestep
@@ -64,7 +125,11 @@ def create_river_forcing(input_dataset,start_date,end_date,topaz_grid_file,topaz
         t_day_start = _time.time()
         date_str = str(value)[:10]
 
-        daily_river_discharge=data.sel(time=value)
+        daily_river_discharge=data.sel(time=value).load()
+        today = daily_river_discharge.dis24.values
+        filled = fill_missing(full, valid, full.indexes["time"].get_loc(value), today)
+        if filled is not today:
+            daily_river_discharge["dis24"] = daily_river_discharge.dis24.copy(data=filled)
 
         correct_GloFAS=(value.astype('datetime64[Y]').astype(int)+1970>=2001) & Apply_GloFAS_correction #correction starts in 2001
 
@@ -183,8 +248,14 @@ if __name__ == "__main__" :
    parser.add_argument('end_time',      action=DateTimeParseAction, help='Stop  time in UTC zone. Format = YYYY-mm-dd<THH:MM:SS>')
    parser.add_argument('Outfile_drt',   type=str, help='directory to save the output files')
    parser.add_argument('depth_file',    type=str, help='path to the HYCOM depth .a file for this grid configuration')
+   parser.add_argument('--dt',          type=float, default=0.25,
+                       help='Output record interval as fraction of a day (default 0.25 = 6-hourly, '
+                            'required by HYCOM 2.2.98 where rivers must match the atmospheric forcing times; '
+                            'use 1.0 = daily for HYCOM 2.3, priver=2, which interpolates between any records)')
 
    args = parser.parse_args()
+   if args.dt <= 0. or args.dt > 1. or abs(1./args.dt - round(1./args.dt)) > 1e-6:
+      parser.error('--dt must divide one day evenly (e.g. 0.25, 0.5, 1.0)')
 
    # Start date of forcing file with format: YYYY-MM-DDT00:00:00.000000000
    start_date=str(args.start_time)[0:10] + 'T00:00:00.000000000' 
@@ -226,7 +297,8 @@ if __name__ == "__main__" :
 
    river_forcing=create_river_forcing(input_dataset=input_dataset,
                     start_date=start_date,end_date=end_date,
-                    topaz_grid_file=topaz_grid_file,topaz_depth_file=topaz_depth_file)
+                    topaz_grid_file=topaz_grid_file,topaz_depth_file=topaz_depth_file,
+                    dt=args.dt)
    river_netcdf=river_forcing['river_flux'].transpose("dtime1","longitude","latitude")
    river_netcdf.to_netcdf('{wrkdrt}/riverh_{start}_{end}.nc'.format(wrkdrt=output_path,
                     start=start_date[:10],end=end_date[:10]),unlimited_dims='dtime1')
