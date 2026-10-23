@@ -12,6 +12,8 @@ module m_bio_conversions
    real, parameter :: kd_water=0.041 ! light attenuation coeff. for Arctic sea water 
    real, parameter :: srdet_eco=5.0  ! Sinking rate of detritus
    real, parameter :: sinkIdet=50.0  ! Sinking rate of detritus from ice-algae
+   real, parameter :: tau_target = 4.605 ! Euphotic depth Zeu is defined where I(Zeu)/I0 = 0.01,which corresponds to an integrated optical depth of 4.605: ∫ Kd(z) dz = 4.605
+   real, parameter :: missing_value = -1.0e20
 ! _FABM__caglar_
    contains
 
@@ -241,7 +243,7 @@ module m_bio_conversions
    end subroutine primary_production_eco
 
    subroutine primary_production(primprod,pres,gpp_depthint,onem,idm,jdm,kdm)
-!compute net primary production: mgC m-2 d-1
+!compute integrated net primary production: mgC m-2 d-1
       implicit none
 
       integer, intent(in) :: idm,jdm,kdm
@@ -254,7 +256,7 @@ module m_bio_conversions
       integer :: i,j,k
       real, dimension(idm,jdm,kdm)                ::gpp
 
-! original primprod unit unit: mg C m-3 s-1 (gross pp)
+! original primprod unit: mg C m-3 s-1 (gross pp)
       gpp=primprod*86400. !now in mg C m-3 d-1
 ! calculate layer depth in meters
       do i=1,kdm
@@ -822,6 +824,88 @@ module m_bio_conversions
 
      end subroutine attenuation_ia
 
+     subroutine euphotic_depth(kd,Zeu,idm,jdm,kdm,pres,onem)
+      implicit none
+      integer, intent(in) :: idm,jdm,kdm
+      real, intent(in) :: onem
+      real, dimension(idm,jdm,kdm)  , intent(in)  ::pres, kd
+      real, dimension(idm,jdm)      , intent(out) ::Zeu
+
+      real, dimension(idm,jdm,kdm)   :: dplayer, ldepth
+
+      integer :: i,j,k
+      real    :: tau, dtau
+      
+      ! calculate layer depth in meters
+      do i=1,kdm
+       dplayer(:,:,i)=(pres(:,:,i+1)-pres(:,:,i))/onem
+       ldepth(:,:,i)=pres(:,:,i)/onem
+      end do
+
+      do j = 1, jdm
+        do i = 1, idm
+          tau = 0.0
+          Zeu(i,j) = missing_value
+          do k = 1, kdm
+            dtau = kd(i,j,k) * dplayer(i,j,k)
+            if (tau + dtau < tau_target) then
+              tau = tau + dtau
+            else
+            ! Euphotic depth is inside this layer
+              Zeu(i,j) = ldepth(i,j,k) + (tau_target - tau) / kd(i,j,k)
+              exit
+            end if
+          end do
+          ! if never reached tau_target, cap at bottom
+          if (Zeu(i,j) .eq. missing_value) then
+            Zeu(i,j) = ldepth(i,j,kdm)   ! bottom depth
+          end if
+        end do
+      end do
+     end subroutine 
+
+     subroutine oxygen_minimum(oxy,oxymin,zminoxy,idm,jdm,kdm,pres,onem)
+       implicit none
+       integer, intent(in) :: idm, jdm, kdm
+       real,    intent(in) :: onem
+       real, dimension(idm,jdm,kdm), intent(in) :: oxy, pres
+       real, dimension(idm,jdm),     intent(out) :: oxymin, zminoxy
+     
+       integer :: i, j, k
+       real    :: local_min, local_depth, depth_k
+       logical :: valid_column
+       do j = 1, jdm
+         do i = 1, idm
+           ! --- Check if the entire column is invalid ---
+           valid_column = .false.
+           do k = 1, kdm
+             if (oxy(i,j,k) /= 0.0 .and. oxy(i,j,k) /= missing_value) then
+               valid_column = .true.
+               exit
+             end if
+           end do
+           if (.not. valid_column) then
+             ! No valid oxygen values: assign missing output
+             oxymin(i,j)  = missing_value
+             zminoxy(i,j) = missing_value
+             cycle
+           end if
+           ! initialize with surface layer
+           local_min   = oxy(i,j,1)
+           local_depth = pres(i,j,1) / onem
+           do k = 2, kdm
+             depth_k = pres(i,j,k) / onem
+             if (oxy(i,j,k) < local_min) then
+               local_min   = oxy(i,j,k)
+               local_depth = depth_k
+             end if
+           end do
+           oxymin(i,j)  = local_min
+           zminoxy(i,j) = local_depth
+         end do
+       end do
+     end subroutine oxygen_minimum
+
      subroutine dic_conv(dic,dissic,idm,jdm,kdm)
      !compute dic: mole m-3
       implicit none
@@ -833,6 +917,19 @@ module m_bio_conversions
       dissic=dic/1000.
 
      end subroutine dic_conv
+
+!Shuang
+     subroutine alk_conv(alk,TA,idm,jdm,kdm)
+     !compute alk: mole m-3
+      implicit none
+
+      integer, intent(in) :: idm,jdm,kdm
+      real, dimension(idm,jdm,kdm)  , intent(in)  ::alk !mmol m-3
+      real, dimension(idm,jdm,kdm)  , intent(out) ::TA
+
+      TA=alk/1000.
+
+     end subroutine alk_conv
 
      subroutine pco2_conv(spco2_ppm,spco2,idm,jdm,kdm)
      !
