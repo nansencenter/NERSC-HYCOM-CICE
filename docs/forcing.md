@@ -1421,8 +1421,9 @@ Save the script below as `riverh_job.sh` in the experiment directory,
 `$WORK/<CONFIGNAME>/expt_<EXPT_ID>/`, and set `CONFIGNAME`, `IEXPT`, `DT` and `DEPTH` at
 the top. `DT` is the record interval in days: `1.0` for HYCOM 2.3,
 `0.25` for HYCOM 2.2.98 (see the table above). `DEPTH` is the depth file
-`river_synoptic.sh` uses: `regional.depth.a` if it exists, otherwise
-`depth_<CONFIGNAME>_<T>.a`.
+of the experiment, `depth_<CONFIGNAME>_<T>.a`, where `<T>` is the topography version `T` in
+`EXPT.src`. This is the file `river_synoptic.sh` and the model use, so the river forcing
+has the same land mask as the model.
 
 ```bash
 #!/bin/bash
@@ -1437,7 +1438,7 @@ the top. `DT` is the record interval in days: `1.0` for HYCOM 2.3,
 CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
 IEXPT=<IEXPT>             # e.g. 010
 DT=1.0                    # record interval [days]: 1.0 for HYCOM 2.3, 0.25 for 2.2.98
-DEPTH=$WORK/${CONFIGNAME}/topo/regional.depth.a
+DEPTH=$WORK/${CONFIGNAME}/topo/depth_${CONFIGNAME}_<T>.a   # <T>: topography version, e.g. 04
 
 START=$1   # first day of the whole period, YYYY-MM-DD
 END=$2     # last day of the whole period (included), YYYY-MM-DD

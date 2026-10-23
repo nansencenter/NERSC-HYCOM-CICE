@@ -59,13 +59,12 @@ cd       $S || { echo " Could not descend scratch dir $S" ; exit 1;}
 #
 #copy_setup_files $S
 
-# check the right depth files:
-if [ -s "${BASEDIR}/topo/regional.depth.a" ] && [ -s "${BASEDIR}/topo/regional.depth.b" ]; then
-   depthfile="${BASEDIR}/topo/regional.depth.a"
-elif [ -s "${BASEDIR}/topo/depth_${R}_${T}.a" ] && [ -s "${BASEDIR}/topo/depth_${R}_${T}.b" ]; then
-   depthfile="${BASEDIR}/topo/depth_${R}_${T}.a"
-else
-   echo "Could not find depth files in ${BASEDIR}/topo/: regional.depth.[ab] or depth_${R}_${T}.[ab]"
+# Use the experiment's depth file (topography version T in EXPT.src), the same file the
+# model run and the climatological rivers (copy_topo_files) use, so the land masks match.
+# topo/regional.depth.[ab] may point to another version and is not used.
+depthfile="${BASEDIR}/topo/depth_${R}_${T}.a"
+if [ ! -s "$depthfile" ] || [ ! -s "${depthfile%.a}.b" ]; then
+   echo "Could not find depth files ${BASEDIR}/topo/depth_${R}_${T}.[ab]"
    exit 1
 fi
 
