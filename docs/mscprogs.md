@@ -483,7 +483,7 @@ follows.
 ...
 4000.0
 ```
-To extract variables from bottom layer only. 
+To extract variables from bottom layer only:
 ```
 1        # number of depth levels
 -1
