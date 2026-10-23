@@ -41,7 +41,7 @@ def distance_on_unit_sphere(lat1, long1, lat2, long2):
 
   return arc
 
-def main(path):
+def main(path, depth_file):
     print(path)
 
 
@@ -59,7 +59,7 @@ def main(path):
     plat=abgrid.read_field("plat")
     jdm,idm=plon.shape
 
-    abdepth = abfile.ABFileBathy(path+"../../../topo/regional.depth.b","r",idm=idm,jdm=jdm)
+    abdepth = abfile.ABFileBathy(depth_file,"r",idm=idm,jdm=jdm)
     depthm=abdepth.read_field("depth")
 
     #
@@ -135,7 +135,9 @@ if __name__ == "__main__" :
 
     parser = argparse.ArgumentParser(description='')
     parser.add_argument('path',  type=str, help="path to river forcing files")
+    parser.add_argument('depth_file', type=str,
+                        help="depth file of the experiment, topo/depth_<R>_<T>.b (the land mask the model uses)")
     args = parser.parse_args()
 
-    main(args.path)
+    main(args.path, args.depth_file)
 

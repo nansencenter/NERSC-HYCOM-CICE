@@ -377,7 +377,7 @@ cd $WORK/${CONFIGNAME}/expt_${EXPT_ID}
 $HOME/NERSC-HYCOM-CICE/bin/nest_setup_ports.sh 20 20
 ```
 
-The script reads `regional.grid.a/b` and `regional.depth.a/b` from `topo/`, detects
+The script reads `regional.grid.a/b` and the experiment's depth file `depth_<CONFIGNAME>_<T>.a/b` (`T` in `EXPT.src`) from `topo/`, detects
 open boundary segments automatically from where ocean cells sit at the domain edge, and
 writes `ports.input` and `rmu.a/b` to `nest/<IEXPT>/`.
 
@@ -393,9 +393,11 @@ cp rmu.b rmutr.b
 ```
 
 :::{note}
-`regional.grid.a/b` and `regional.depth.a/b` are pre-existing configuration files in
-`$WORK/<CONFIGNAME>/topo/`. Generating them for a new grid is a separate offline step
-not covered here.
+`regional.grid.a/b` and the depth files `depth_<CONFIGNAME>_<T>.a/b` (one per topography
+version `T`) are pre-existing configuration files in `$WORK/<CONFIGNAME>/topo/`. Generating
+them for a new grid is a separate offline step not covered here. Always use the depth file of
+the experiment's version `T`: `topo/regional.depth.a/b`, if present, is a fixed link to one
+version and may not match the experiment.
 :::
 
 ::::
@@ -1012,13 +1014,14 @@ These files are generated as follows. First, create a scratch directory and link
 ```bash
 CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
 IEXPT=<IEXPT>             # e.g. 010
+T=<T>                     # topography version of the experiment (T in EXPT.src), e.g. 04
 
 mkdir -p $WORK/${CONFIGNAME}/relax/${IEXPT}/SCRATCH
 cd $WORK/${CONFIGNAME}/relax/${IEXPT}/SCRATCH
 ln -sf $WORK/${CONFIGNAME}/topo/regional.grid.a .
 ln -sf $WORK/${CONFIGNAME}/topo/regional.grid.b .
-ln -sf $WORK/${CONFIGNAME}/topo/regional.depth.a .
-ln -sf $WORK/${CONFIGNAME}/topo/regional.depth.b .
+ln -sf $WORK/${CONFIGNAME}/topo/depth_${CONFIGNAME}_${T}.a regional.depth.a
+ln -sf $WORK/${CONFIGNAME}/topo/depth_${CONFIGNAME}_${T}.b regional.depth.b
 ```
 
 Copy the script locally:
