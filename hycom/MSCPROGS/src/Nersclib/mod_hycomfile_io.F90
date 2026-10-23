@@ -151,14 +151,14 @@ contains
 
    if (present(template)) then
       df=template
-      ind=max(index(filename,'.a'),index(filename,'.b'))
+      ind=max(index(filename,'.a',back=.true.),index(filename,'.b',back=.true.))
       df%filebase=filename(1:ind-1)
       df%ftype=ftype
       return
    end if
 
    ! Get file base
-   ind=max(index(filename,'.a'),index(filename,'.b'))
+   ind=max(index(filename,'.a',back=.true.),index(filename,'.b',back=.true.))
    df%filebase=filename(1:ind-1)
    df%ftype=ftype
 
@@ -1090,9 +1090,9 @@ contains
    elseif (trim(df%ftype)=='archv'&
            .or.trim(df%ftype)=='archm'&
            .or.trim(df%ftype)=='archs') then
-      isDPVar=trim(cfld)=='tknss'
+      isDPVar=trim(cfld)=='thknss'
    elseif (trim(df%ftype)=='archv_wav') then
-      isDPVar=trim(cfld)=='tknss'
+      isDPVar=trim(cfld)=='thknss'
    else
       print *,'Unknown file type '//trim(df%ftype)
       stop '(mod_hycomfile_io:isDPVar)'
