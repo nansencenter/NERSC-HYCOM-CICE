@@ -125,7 +125,10 @@ if [ ${iceclim} -eq 1 ]; then
    cd ice_clim
    ln -sf ${BINDIR}ice_climatology/TP4b_1991-2020_AssimSurf.nc .
    ln -sf ${BINDIR}ice_climatology/createmask.py .
-   ln -sf ${EDIR}/../topo/regional.* .
+   ln -sf ${EDIR}/../topo/regional.grid.* .
+   # the experiment's topography version (T in EXPT.src), as in the model run
+   ln -sf ${EDIR}/../topo/depth_${R}_${T}.a regional.depth.a
+   ln -sf ${EDIR}/../topo/depth_${R}_${T}.b regional.depth.b
    if [ -s ${EDIR}/SCRATCH/cice_kmd.nc ]; then
       ln -sf ${EDIR}/SCRATCH/cice_kmd.nc .
    else
@@ -144,7 +147,7 @@ echo "river forcing, if biology active, may take some time"
 if [ $NTRACR -ne 0 ] ; then
    river_nersc.sh 100 300 $INPUTDIR/rivers_ahype-ehype_clim_rev2.dat $INPUTDIR/biorivers.dat > $EDIR/log/ref_river_nersc.out 2>&1
    riverfolder=$(echo $X | cut -c1-2)$(echo $X | cut -c4)
-   python $BINDIR/spread_Ob_river_nutrients.py $BASEDIR/force/rivers/${riverfolder}/ > $EDIR/log/spread_river.out 2>&1 # Spreads Ob River nutrients to outer bay
+   python $BINDIR/spread_Ob_river_nutrients.py $BASEDIR/force/rivers/${riverfolder}/ $BASEDIR/topo/depth_${R}_${T}.b > $EDIR/log/spread_river.out 2>&1 # Spreads Ob River nutrients to outer bay
    python $BINDIR/add_atmdep_to_river.py $BASEDIR/force/rivers/${riverfolder}/  $INPUTDIR/emep_2010_annual_1degree_rv4_17gfecl1p0.nc  > $EDIR/log/add_atmospheric_deposition.out 2>&1
 else
    river_nersc.sh 100 300 $INPUTDIR/rivers_ahype-ehype_clim_rev2.dat > $EDIR/log/ref_river_nersc.out 2>&1

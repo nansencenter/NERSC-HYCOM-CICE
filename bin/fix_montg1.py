@@ -18,7 +18,7 @@ import pickle
 # regress_file. Use the scripts as (in experiment folder):
 #
 # source ../REGION.src
-# python ../bin/fix_montg1.py ../nest/011/archv.2016_001_00.a ${INPUTDIR}montg_regress.pckl ./  ../topo/regional.depth.a
+# python ../bin/fix_montg1.py ../nest/011/archv.2016_001_00.a ${INPUTDIR}montg_regress.pckl ./  ../topo/depth_${R}_${T}.a
 #
 # this code works standalone, so you can use it on existing archive nest files
 # no need to do this if you're creating a new archive file since the code is already embedded to bin/archvz2hycom_biophys.sh
@@ -109,7 +109,7 @@ if __name__ == "__main__" :
    parser.add_argument('archive_file',     type=str, help='Files to add montg1 to',nargs="+")
    parser.add_argument('opath',     type=str, help='Output files path')
    parser.add_argument('regress_file', type=str, help='regression file path')
-   parser.add_argument('depth_file', type=str, help='path to regional_depth.a file')
+   parser.add_argument('depth_file', type=str, help="the experiment's depth file, topo/depth_<R>_<T>.a")
    args = parser.parse_args()
    main(args.archive_file,args.opath,args.regress_file,args.depth_file)
 #,header_line1=args.header_line1,header_line2=args.header_line2,header_line3=args.header_line3)
