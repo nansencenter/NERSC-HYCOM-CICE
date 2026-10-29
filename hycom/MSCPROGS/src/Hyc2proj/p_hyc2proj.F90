@@ -801,14 +801,6 @@ program p_hyc2proj
                   call det_ia_bottom_flux(det,detf,dsnk,biovar,onem,idm,jdm,kdm)
                   hy3d=biovar
                   deallocate(det,detf,biovar)
-                else if (trim(fld(ifld)%fextract)=='spco2') then
-                  ! Compute surface partial pressure of CO2 in water (Pa)
-                  allocate(pco2(idm,jdm,kdm))
-                  allocate(biovar(idm,jdm,kdm))
-                  call HFReadField3D(hfile,pco2,idm,jdm,kdm,'CO2_pCO2 ',1)
-                  call pco2_conv(pco2,biovar,idm,jdm,kdm)
-                  hy3d=biovar
-                  deallocate(pco2,biovar)
 ! _FABM__caglar_
                else  ! LB normal case 
                   call HFReadField3D(hfile,hy3d,idm,jdm,kdm,fld(ifld)%fextract,1)
@@ -923,6 +915,14 @@ program p_hyc2proj
                   call primary_production(pp,pres,biovar2d,onem,idm,jdm,kdm)
                   hy2d=biovar2d
                   deallocate(pp,biovar2d)
+               else if (trim(fld(ifld)%fextract)=='spco2') then
+                  ! Compute surface partial pressure of CO2 in water (Pa)
+                  allocate(pco2(idm,jdm,kdm))
+                  allocate(biovar2D(idm,jdm))
+                  call HFReadField3D(hfile,pco2,idm,jdm,kdm,'CO2_pCO2 ',1)
+                  call pco2_conv(pco2,biovar2d,idm,jdm,kdm)
+                  hy2d=biovar2d
+                  deallocate(pco2,biovar2d)
 ! FABM
               else if (trim(fld(ifld)%fextract)=='npp_euph') then 
                   ! Compute net primary production integrated over the euphotic depth (g m-2 day-1)
