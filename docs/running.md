@@ -57,7 +57,14 @@ Open `srjob.sh` in a text editor and update:
 | `START` | `"YYYY-MM-DDT00:00:00"` | Run start time |
 | `END` | `"YYYY-MM-DDT00:00:00"` | Run end time |
 | `INITFLG` | `""` or `"--init"` | `"--init"` for a cold start; `""` to restart from files |
+| `ATMO_FORCING` | `"era5+lw"` | Forcing option for `atmo_synoptic.sh`; `""` to never generate atmospheric forcing in the job |
 | `#SBATCH --time` | `"HH:MM:SS"` | Wall-clock time limit |
+
+Before running the model, `srjob.sh` checks whether the atmospheric forcing in
+`force/synoptic/<IEXPT>/` already covers `START`..`END`. If it does, the existing files
+are kept; if not, the job runs `atmo_synoptic.sh $ATMO_FORCING $START $END`, which
+overwrites them. To reuse forcing across several jobs, generate it once for the whole
+period (see [Atmospheric forcing](forcing.md#atmospheric-forcing)).
 
 > **`INITFLG="--init"` (cold start):** No restart files are needed.
 > Temperature and salinity (T/S) are set directly from the climatological fields in
@@ -145,18 +152,30 @@ Open `srjob_cycle.sh` and update:
 | `CYCLE_START` | `"1993-01-01T00:00:00"` | Start of cycles 2, 3, … |
 | `CYCLE_END` | `"1998-01-01T00:00:00"` | End of every cycle (wrap date, exclusive) |
 | `NCYCLES` | `5` | Number of cycles |
-| `SEGMENT_MONTHS` | `72` (TP2), `48` (TP5) | Maximum months per preprocess–run–postprocess iteration; the last segment of each cycle is clipped to `CYCLE_END`. The job runs one segment, then resubmits itself |
+| `CYCLES_PER_JOB` | `1` | Number of cycles run in one job before it resubmits itself (see [Restarting after a crash](#restarting-after-a-crash)) |
+| `ATMO_FORCING` | `"era5+lw"` | Forcing option for `atmo_synoptic.sh`; `""` to never generate atmospheric forcing in the job |
+| `HINDCAST_WRAP` | `1` | `1`: after the last cycle, wrap its restarts to `CYCLE_START` in `data/` for the hindcast (see [Starting the hindcast](#starting-the-hindcast)); `0` to skip |
 
 :::{note}
-Set `SEGMENT_MONTHS` so the segment fits within the wall-time limit (`#SBATCH --time`). The defaults above are based on TP2 with BGC taking 5–6 h/year and TP5 without BGC taking 6–7 h/year on Betzy (see the timing note in [Submit a job](#submit-a-job)).
+A full cycle must fit within the wall-time limit (`#SBATCH --time`); raise `CYCLES_PER_JOB` if several fit. On Betzy, TP2 with BGC takes 5–6 h/year and TP5 without BGC 6–7 h/year, so a 5-year cycle takes about 25–35 h (see the timing note in [Submit a job](#submit-a-job)).
 :::
+
+All cycles use the same atmospheric forcing. Before the first cycle, `srjob_cycle.sh`
+checks that the forcing in `force/synoptic/<IEXPT>/` covers `CYCLE_START`..`CYCLE_END`.
+This means all of `CYCLE_START`..`CYCLE_END`, not just `SPINUP_START`..`CYCLE_END`,
+because cycles 2, 3, … start at `CYCLE_START`. If the forcing does not cover that
+period, the job runs `atmo_synoptic.sh $ATMO_FORCING $CYCLE_START $CYCLE_END` once,
+overwriting the existing files; otherwise it reuses them. Generating several years of
+forcing inside the job holds all the job's nodes for a serial task, so you may prefer to
+run `atmo_synoptic.sh` for `CYCLE_START`..`CYCLE_END` beforehand (see
+[Atmospheric forcing](forcing.md#atmospheric-forcing)).
 
 Before submitting, check:
 
 - `D` in `EXPT.src` already contains `${SPINUP_CYCLE:+/cycle_${SPINUP_CYCLE}}` in the
   template experiments, so each cycle writes to its own `data/cycle_NN/` directory.
   If you set up your experiment from scratch, verify this is in place.
-- Both models must write a restart at the end of every segment: `rstrfq` in
+- Both models must write a restart at the end of every cycle: `rstrfq` in
   `blkdat.input` must be positive and `dump_last = .true.` in `ice_in`.
 
 Then submit:
@@ -171,12 +190,19 @@ sbatch srjob_cycle.sh
 `srjob_cycle.sh` always continues from the latest HYCOM/CICE restart pair in the cycle
 data directories, so in most cases you can simply resubmit.
 
+The resubmitted job finishes the interrupted cycle from that restart. The partial cycle
+counts towards `CYCLES_PER_JOB`: with `CYCLES_PER_JOB=1` the job resubmits itself once
+the interrupted cycle is done, and the next cycle starts in a new job. With
+`CYCLES_PER_JOB=2` it finishes the interrupted cycle and then runs one more full cycle.
+That is always shorter than two full cycles, so it fits the wall-time limit if two full
+cycles do.
+
 - **Model exits with an error but the SLURM job completes normally**: `expt_postprocess.sh`
   still runs and moves files to `data/cycle_NN/`. Resubmit directly.
 
 - **Job is killed by SLURM** (wall-time limit, out-of-memory, node failure, or
   `scancel`): `expt_postprocess.sh` never runs. Output files remain in `SCRATCH/`.
-  Run postprocessing manually with the cycle number of the interrupted segment before
+  Run postprocessing manually with the cycle number of the interrupted cycle before
   resubmitting:
 
   ```bash
@@ -188,6 +214,30 @@ data directories, so in most cases you can simply resubmit.
 
   This moves the restart and archive files to `data/cycle_NN/`, where
   `srjob_cycle.sh` will pick them up on the next run.
+
+### Starting the hindcast
+
+The hindcast is a separate run in `data/`, not part of the cycles. With
+`HINDCAST_WRAP=1`, after the last cycle `srjob_cycle.sh` wraps its restarts valid at
+`CYCLE_END` (e.g. 1 January 1998 in `data/cycle_05/`) to `CYCLE_START` (1 January 1993)
+in `data/`, i.e. `restart.1993_001_00_0000.[ab]` and `cice/iced.1993-01-01-00000.nc`.
+If these files are already there, for example when the job is resubmitted after all
+cycles are done, the wrap is skipped.
+
+To do the wrap by hand (e.g. if `HINDCAST_WRAP=0`), run from the experiment directory:
+
+```bash
+python ../bin/cycle_wrap.py data/cycle_05 data 1998-01-01T00:00:00 1993-01-01T00:00:00 \
+       --blkdat blkdat.input --ice-in ice_in
+```
+
+Then start the hindcast with [`srjob.sh`](#submit-a-job):
+
+- Set `START` to `CYCLE_START` (e.g. `"1993-01-01T00:00:00"`) and `INITFLG=""`.
+- Leave `blkdat.input` unchanged: it already has the GLORYS boundary settings.
+- Stage the GLORYS nesting files (and BGC nesting files, if `ntracr>0`) for the whole
+  hindcast period, not just the cycle period. `srjob.sh` regenerates the atmospheric
+  forcing for `START`..`END` if the existing files do not cover it.
 
 ## Check results
 

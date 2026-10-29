@@ -22,8 +22,13 @@
 # CICE is cold-started from ice_initial.nc (INITFLG="--init-ice").
 #
 # The job can be resubmitted at any time: it continues from the latest restart pair
-# found in the cycle data directories. It runs one segment per job and resubmits
-# itself automatically until all cycles are done.
+# found in the cycle data directories. It runs up to CYCLES_PER_JOB cycles per job (an
+# interrupted cycle is continued from its latest restart) and resubmits itself
+# automatically until all cycles are done.
+#
+# With HINDCAST_WRAP=1, the restarts valid at CYCLE_END of the last cycle are finally
+# wrapped to CYCLE_START in the plain data directory data/ (SPINUP_CYCLE unset). The
+# hindcast is then started separately with srjob.sh (START=CYCLE_START, INITFLG="").
 #
 export NMPI=504
 export SLURM_SUBMIT_DIR=$(pwd)
@@ -56,17 +61,16 @@ SPINUP_START="1993-09-01T00:00:00"   # start of cycle 1
 CYCLE_START="1993-01-01T00:00:00"    # start of cycles 2..NCYCLES
 CYCLE_END="1998-01-01T00:00:00"      # end of every cycle (wrap date)
 NCYCLES=5
-SEGMENT_MONTHS=72                    # length of one preprocess/run/postprocess segment
+CYCLES_PER_JOB=1                     # cycles per job; one cycle must fit in the wall-time limit
 JOBSCRIPT=srjob_cycle.sh             # this script, for resubmission
+ATMO_FORCING="era5+lw"               # forcing option for atmo_synoptic.sh; "" to never generate forcing
+HINDCAST_WRAP=1                      # 1: after the last cycle, wrap its restarts to CYCLE_START in data/ for the hindcast; 0: no wrap
 # --------------------------------------------------------------------
 
 EXPTDIR=$P
 
 # Seconds since epoch of an ISO date YYYY-mm-ddTHH:MM:SS
 epoch() { date -u -d "${1/T/ } UTC" +%s ; }
-
-# ISO date + N months
-add_months() { date -u -d "${1/T/ } UTC +$2 months" +%Y-%m-%dT%H:%M:%S ; }
 
 # ISO date of HYCOM restart suffix YYYY_DDD_HH_SSSS
 restart_iso() {
@@ -100,7 +104,34 @@ latest_restart() {
 [ $(epoch $SPINUP_START) -ge $(epoch $CYCLE_START) -a $(epoch $SPINUP_START) -lt $(epoch $CYCLE_END) ] || \
    { echo "SPINUP_START must lie in [CYCLE_START,CYCLE_END)"; exit 1; }
 
+# Atmospheric forcing is the same for all cycles: generate it once for CYCLE_START..CYCLE_END
+# unless the existing forcing in force/synoptic/$E already covers that period.
+# Forcing times in the .b files are in HYCOM days (days since 1900-12-31).
+hycom_day() { echo $(( ($(epoch $1) - $(epoch 1900-12-31T00:00:00)) / 86400 )) ; }
+forcing_covers() {
+   local b=$1 first last
+   [ -s $b -a -s ${b%.b}.a ] || return 1
+   first=$(head -n 6 $b | tail -n 1 | sed "s/.*=//" | awk '{print $1}')
+   last=$(tail -n 1 $b | sed "s/.*=//" | awk '{print $1}')
+   awk -v f=$first -v l=$last -v s=$2 -v e=$3 'BEGIN { exit !(f <= s && l >= e) }'
+}
+FORCDIR=$EXPTDIR/../force/synoptic/$E
+if [ -n "$ATMO_FORCING" ] ; then
+   cs=$(hycom_day $CYCLE_START) ; ce=$(hycom_day $CYCLE_END) ; ok=1
+   for v in radflx shwflx vapmix airtmp precip mslprs wndewd wndnwd dewpt ; do
+      forcing_covers $FORCDIR/$v.b $cs $ce || { ok=0 ; break ; }
+   done
+   if [ $ok -eq 1 ] ; then
+      echo "Atmospheric forcing in $FORCDIR covers $CYCLE_START..$CYCLE_END"
+   else
+      echo "Generating atmospheric forcing ($ATMO_FORCING) for $CYCLE_START..$CYCLE_END in $FORCDIR"
+      cd $EXPTDIR || { echo "Could not go to dir $EXPTDIR"; exit 1; }
+      ../bin/atmo_synoptic.sh $ATMO_FORCING $CYCLE_START $CYCLE_END || { echo "atmo_synoptic.sh failed"; exit 1; }
+   fi
+fi
+
 PREV_D=""
+NDONE=0                              # cycles run in this job
 for c in $(seq 1 $NCYCLES) ; do
    export SPINUP_CYCLE=$(printf "%02d" $c)
    cd $EXPTDIR || { echo "Could not go to dir $EXPTDIR"; exit 1; }
@@ -121,10 +152,9 @@ for c in $(seq 1 $NCYCLES) ; do
    fi
    echo "Cycle $SPINUP_CYCLE: continuing from $cur"
 
-   while [ $(epoch $cur) -lt $(epoch $CYCLE_END) ] ; do
+   if [ $(epoch $cur) -lt $(epoch $CYCLE_END) ] ; then
       START=$cur
-      END=$(add_months $cur $SEGMENT_MONTHS)
-      [ $(epoch $END) -gt $(epoch $CYCLE_END) ] && END=$CYCLE_END
+      END=$CYCLE_END
       INITFLG=""
       if [ $c -eq 1 -a "$START" == "$SPINUP_START" -a ! -f $D/$(cice_restart $START) ] ; then
          INITFLG="--init-ice"
@@ -146,16 +176,32 @@ for c in $(seq 1 $NCYCLES) ; do
       ../bin/expt_postprocess.sh
 
       [ "$(latest_restart $D $END $END none)" == "$END" ] || \
-         { echo "Cycle $SPINUP_CYCLE: no HYCOM/CICE restart for $END in $D after segment, stopping"; exit 1; }
-      cur=$END
-      if [ $(epoch $cur) -lt $(epoch $CYCLE_END) ] || [ $c -lt $NCYCLES ] ; then
-         echo "Segment done, resubmitting $JOBSCRIPT"
+         { echo "Cycle $SPINUP_CYCLE: no HYCOM/CICE restart for $END in $D after cycle, stopping"; exit 1; }
+      NDONE=$((NDONE+1))
+      if [ $c -lt $NCYCLES -a $NDONE -ge $CYCLES_PER_JOB ] ; then
+         echo "Cycle $SPINUP_CYCLE finished, resubmitting $JOBSCRIPT"
          cd $EXPTDIR && sbatch $JOBSCRIPT
          exit 0
       fi
-   done
+   fi
    echo "Cycle $SPINUP_CYCLE finished"
    PREV_D=$D
 done
 echo "All $NCYCLES cycles finished"
+
+# Hindcast start: wrap the restarts valid at CYCLE_END of the last cycle to CYCLE_START in
+# the hindcast data directory (D without cycle_NN). Skipped if they are already there.
+if [ "$HINDCAST_WRAP" == "1" ] ; then
+   cd $EXPTDIR || { echo "Could not go to dir $EXPTDIR"; exit 1; }
+   unset SPINUP_CYCLE
+   source ./EXPT.src  || { echo "Could not source EXPT.src"; exit 1; }
+   if [ "$(latest_restart $D $CYCLE_START $CYCLE_START none)" == "$CYCLE_START" ] ; then
+      echo "Hindcast: HYCOM/CICE restarts for $CYCLE_START already in $D, not wrapping"
+   else
+      echo "Hindcast: wrapping restarts $CYCLE_END in $PREV_D to $CYCLE_START in $D"
+      python ../bin/cycle_wrap.py $PREV_D $D $CYCLE_END $CYCLE_START --blkdat blkdat.input --ice-in ice_in \
+         || { echo "cycle_wrap.py failed"; exit 1; }
+   fi
+   echo "Hindcast: start it with srjob.sh, START=\"$CYCLE_START\", INITFLG=\"\""
+fi
 exit 0
