@@ -840,11 +840,11 @@ module m_bio_conversions
 
       integer, intent(in) :: idm,jdm,kdm
       real, dimension(idm,jdm,kdm)  , intent(in)  ::spco2_ppm !micromol mol-1 (ppm)
-      real, dimension(idm,jdm,kdm)  , intent(out) ::spco2 ! Pa
+      real, dimension(idm,jdm)  , intent(out) ::spco2 ! surface pressure (Pa)
       ! conversion taken from:
       ! https://acsess.onlinelibrary.wiley.com/doi/pdfdirect/10.2134/asaspecpub53.appendix2
 
-      spco2=spco2_ppm/10.1325
+      spco2=spco2_ppm(:,:,1) * 0.101325
 
      end subroutine pco2_conv
 

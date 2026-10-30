@@ -151,14 +151,14 @@ contains
 
    if (present(template)) then
       df=template
-      ind=max(index(filename,'.a'),index(filename,'.b'))
+      ind=max(index(filename,'.a',back=.true.),index(filename,'.b',back=.true.))
       df%filebase=filename(1:ind-1)
       df%ftype=ftype
       return
    end if
 
    ! Get file base
-   ind=max(index(filename,'.a'),index(filename,'.b'))
+   ind=max(index(filename,'.a',back=.true.),index(filename,'.b',back=.true.))
    df%filebase=filename(1:ind-1)
    df%ftype=ftype
 
@@ -1067,8 +1067,6 @@ contains
      is3DVar=.true.
    else if(cfld=='ph') then
      is3DVar=.true.
-   else if(cfld=='spco2') then
-     is3DVar=.true.
 ! _FABM__caglar_
    else if(cfld=='utotl' .and. trim(df%ftype)=='archm') then
      is3DVar=.true.
@@ -1092,9 +1090,9 @@ contains
    elseif (trim(df%ftype)=='archv'&
            .or.trim(df%ftype)=='archm'&
            .or.trim(df%ftype)=='archs') then
-      isDPVar=trim(cfld)=='tknss'
+      isDPVar=trim(cfld)=='thknss'
    elseif (trim(df%ftype)=='archv_wav') then
-      isDPVar=trim(cfld)=='tknss'
+      isDPVar=trim(cfld)=='thknss'
    else
       print *,'Unknown file type '//trim(df%ftype)
       stop '(mod_hycomfile_io:isDPVar)'
@@ -1270,7 +1268,7 @@ contains
          if (.not.gridrotate) then
             stdname='baroclinic_eastward_sea_water_velocity' 
          else
-            stdname='baroclinic_x_sea_water_velocity' 
+            stdname='baroclinic_sea_water_x_velocity' 
          end if
          units='m s-1' ; vname='ubaroclin'
          limits=(/-3,3/)
@@ -1278,7 +1276,7 @@ contains
          if (.not.gridrotate) then
             stdname='baroclinic_northward_sea_water_velocity' 
          else
-            stdname='baroclinic_y_sea_water_velocity' 
+            stdname='baroclinic_sea_water_y_velocity' 
          end if
          units='m s-1' ; vname='vbaroclin'
          limits=(/-3,3/)
@@ -1305,7 +1303,7 @@ contains
          if (.not.gridrotate) then
             stdname='barotropic_eastward_sea_water_velocity' 
          else
-            stdname='barotropic_x_sea_water_velocity' 
+            stdname='barotropic_sea_water_x_velocity' 
          end if
          units='m s-1' ; vname='ubarotrop'
          limits=(/-3,3/)
@@ -1313,7 +1311,7 @@ contains
          if (.not.gridrotate) then
             stdname='barotropic_northward_sea_water_velocity' 
          else
-            stdname='barotropic_y_sea_water_velocity' 
+            stdname='barotropic_sea_water_y_velocity' 
          end if
          units='m s-1' ; vname='vbarotrop'
          limits=(/-3,3/)
@@ -1544,7 +1542,7 @@ contains
          limits=(/0.,200./)
          stdname='depth_integrated_chlorophyll_one_optical_depth'
 !AS06092011
-      case ('albedo','albsni_d')
+      case ('albedo','albsni_d','albsni')
          vname='sialb'
          units='1'
          limits=(/0.,1./)

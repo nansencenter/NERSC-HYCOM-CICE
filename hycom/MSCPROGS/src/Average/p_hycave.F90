@@ -15,11 +15,12 @@ program p_hycave
    use mod_parameters
    use mod_hycomfile_io
    implicit none
-   character(len=80) :: infile,ftype,outfile
+   character(len=80) :: infile,ftype,outfile,arg
 #if defined (IARGC)
    integer*4, external :: iargc
 #endif
    integer :: nfiles,ifile
+   integer, allocatable :: nvalid(:,:)
    real, dimension(:,:), allocatable :: field,flag,mean,dp, sumdp
    real*8, dimension(:,:), allocatable :: iofld
    character(len=8) :: cfld
@@ -38,15 +39,15 @@ program p_hycave
       print *
       print *,'filetype is either restart, nersc_daily, nersc_weekly or archv'
       print *,'Example:'
-      print *,'   hycave nersc_daily TP3DAILY_1990_240_1990_313.a TP3DAILY_1990_240_1990_314.a '
+      print *,'   hycave nersc_daily [-o output_filename.a] TP3DAILY_1990_240_1990_313.a TP3DAILY_1990_240_1990_314.a '
       print *
       call exit(1)
     end if
 
    call xcspmd()
    call zaiost()
-   nfiles=iargc()-1
 
+   allocate(nvalid(idm,jdm))
    allocate(field(idm,jdm))
    allocate(dp   (idm,jdm))
    allocate(sumdp   (idm,jdm))
@@ -77,14 +78,35 @@ program p_hycave
       print *
       print *,'filetype is either restart, nersc_daily, nersc_weekly or archv'
       print *,'Example:'
-      print *,'   hycave nersc_daily TP3DAILY_1990_240_1990_313.a TP3DAILY_1990_240_1990_314.a '
+      print *,'   hycave nersc_daily [-o output_filename.a] TP3DAILY_1990_240_1990_313.a TP3DAILY_1990_240_1990_314.a '
       print *
       call exit(1)
     end if
 
+   ! Optional output filename immediately after filetype
+   nfiles = iargc()-1
+   call getarg(2,arg)
+
+   if (trim(arg) == '-o') then
+      if (iargc() < 4) then
+         print *, 'Error: -o requires an output filename and input file(s)'
+         call exit(1)
+      end if
+      call getarg(3,outfile)
+      nfiles = nfiles-2
+   end if
+
+   if (nfiles < 1) then
+      print *, 'Error: At least one input file is required'
+      call exit(1)
+   end if
 
    ! First file is used for reading fields, and for initializing the averaged file 
-   call getarg(2,infile)
+   if (trim(arg) == '-o') then
+      call getarg(4,infile)
+   else
+      call getarg(2,infile)
+   end if
    call initHF(df0,infile,trim(ftype))
    call initHF(dfave,trim(outfile),trim(ftype),template=df0) 
    dfave%iyear=9999
@@ -106,12 +128,17 @@ program p_hycave
       end if
 
       ! process mean of this field for all files
+      nvalid = 0
       mean  = 0.
       sumdp = 0.
       do ifile=1,nfiles
 
          ! Read .ab file
-         call getarg(ifile+1,infile) 
+         if (trim(arg) == '-o') then
+            call getarg(ifile+3,infile)
+         else
+            call getarg(ifile+1,infile)
+         end if
          call initHF(df,infile,ftype)
          call HFReadField(df,field,idm,jdm,cfld,coord,tlevel)
 !         print *,cfld,minval(field),maxval(field)
@@ -124,13 +151,19 @@ program p_hycave
          if (is3dvar(df,cfld,tlevel)   .and. .not. isDPVar(df,cfld)  ) then
             call HFReadDPField(df,dp,idm,jdm,coord,tlevel)
             ! More robust mean wrt precision loss
-            mean =mean +(field*dp*flag-mean)/ifile
-            sumdp=sumdp+(dp-sumdp*flag)/ifile
+            where (flag == 1.)
+               nvalid = nvalid + 1
+               mean = mean + (field*dp - mean) / real(nvalid)
+               sumdp = sumdp + (dp - sumdp)/ real(nvalid)
+            end where
            ! print *,'toto',mean(13,137),sumdp(13,137),field(13,137),dp(13,137)
          else
             ! More robust mean wrt precision loss
-            mean=mean+(field*flag-mean)/ifile
-            sumdp=1.
+            where (flag == 1.)
+               nvalid = nvalid + 1
+               mean = mean + (field - mean) / real(nvalid)
+               sumdp = 1.
+            end where
          end if
 
          ! On first pass, do consistency check on files
@@ -151,7 +184,11 @@ program p_hycave
 
          ! nersc_weekly have the layer sum on disk, others have layer average 
          if (trim(ftype)/='nersc_weekly') then
-            mean=mean/max(sumdp,1e-4)
+            where (sumdp > 0.)
+               mean = mean / sumdp
+            elsewhere
+               mean = huge
+            end where
          end if
       end if
 
