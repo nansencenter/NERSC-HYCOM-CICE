@@ -357,7 +357,7 @@ if __name__ == "__main__":
    parser.add_argument("--kmt", required=True, help="CICE mask file, e.g. topo/kmt_TP2a0.10_04.nc")
    parser.add_argument("--griddir", default="topo", help="Directory with regional.grid.[ab] (default topo)")
    parser.add_argument("--aice-source", choices=["glorys", "topaz", "piomas"], default="glorys")
-   parser.add_argument("--hi-source", choices=["topaz", "glorys", "piomas"], default="topaz")
+   parser.add_argument("--hi-source", choices=["glorys", "topaz", "piomas"], default="glorys")
    parser.add_argument("--glorys-file", help="GLORYS12 daily file with siconc, sithick")
    parser.add_argument("--glorys-mask-file", help="GLORYS12 physics file (with zos) on the same grid, for the land mask. " +
                        "Default: /nird/datapeak/NS9481K/MERCATOR_DATA/PHY/YYYY/MERCATOR-PHY-24-YYYY-MM-DD-12.nc")

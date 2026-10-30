@@ -10,7 +10,7 @@ spin-up.
 - **Cycled spin-up** (recommended): the model starts from the GLORYS12 reanalysis state on
   1 September 1993. Ocean temperature, salinity, layer thickness, velocity and SSH come
   from the GLORYS nesting file for that day, converted to a HYCOM restart file; sea ice
-  concentration comes from GLORYS12 and sea ice thickness from TOPAZ4b
+  concentration and thickness come from GLORYS12 (or the thickness from TOPAZ4b)
   (`INITFLG="--init-ice"`, see [Cycled spin-up initial files](#cycled-spin-up-initial-files)).
   The model then runs repeatedly through a fixed period with GLORYS boundaries (e.g.
   1993–1997 five times, or 1993–2002 twice). `blkdat.input` keeps the GLORYS settings
@@ -54,7 +54,7 @@ describe each component in detail.
 | **Ocean T/S initial state** | WOA2018 climatology (cold start) or HYCOM restart file | GLORYS12 (first segment of the cycled spin-up) or HYCOM restart file |
 | **Velocity / SSH initial state** | Zero (cold start) or from HYCOM restart file | GLORYS12 (first segment of the cycled spin-up) or HYCOM restart file |
 | **BGC initial state** | WOA2013/GLODAP climatology (cold start) or HYCOM restart file | From HYCOM restart file |
-| **Ice initial state** | TP4 assimilation climatology (cold start) or CICE restart file | GLORYS12 concentration and TOPAZ4b thickness (`ice_initial.nc`, first segment of the cycled spin-up) or CICE restart file |
+| **Ice initial state** | TP4 assimilation climatology (cold start) or CICE restart file | GLORYS12 concentration and thickness, or GLORYS12 concentration and TOPAZ4b thickness (`ice_initial.nc`, first segment of the cycled spin-up), or CICE restart file |
 | **Atmospheric forcing** | ERA5 | ERA5 |
 | **Lateral boundary forcing** | WOA2018 climatology; T/S only, no transports | GLORYS12; T/S, velocity, layer thickness, SSH |
 | **BGC boundary forcing** | WOA2013/GLODAP climatology | CMEMS BGC reanalysis |
@@ -213,7 +213,8 @@ shared on NIRD:
 │   ├── glorys12_ice_19930901.nc    # GLORYS12 siconc, sithick (Copernicus Marine)
 │   └── topaz4b_ice_19930901.nc     # TOPAZ4b siconc, sithick, sisnthick (Copernicus Marine)
 └── TP2a0.10/                       # topography 04, 50 layers, HYCOM 2.3
-    ├── ice_initial_19930901.nc
+    ├── ice_initial_19930901_glorys.nc  # concentration and thickness from GLORYS12
+    ├── ice_initial_19930901.nc         # concentration from GLORYS12, thickness from TOPAZ4b
     ├── restart.1993_244_00_0000.[ab]   # physics
     └── bgc/                            # BGC initial state (ntracr>0), relax/022/relax_int layers
         └── relax.ECO_{no3,pho,sil,oxy}.[ab]
@@ -244,8 +245,21 @@ N=/nird/datapeak/NS9481K/SPINUP_INIT/TP2a0.10
 mkdir -p $WDIR/expt_${EXPT_ID}/data/cycle_01
 cp $N/restart.1993_244_00_0000.[ab] $WDIR/expt_${EXPT_ID}/data/cycle_01/
 cp $N/bgc/relax.ECO_*.[ab] $WDIR/expt_${EXPT_ID}/data/cycle_01/   # only with BGC
-cp $N/ice_initial_19930901.nc $WORK/${CONFIGNAME}/expt_${EXPT_ID}/ice_initial.nc
+cp $N/ice_initial_19930901_glorys.nc $WORK/${CONFIGNAME}/expt_${EXPT_ID}/ice_initial.nc
 ```
+
+There are two ice initial files. Both take the concentration from GLORYS12 and differ only in
+the thickness:
+
+- `ice_initial_19930901_glorys.nc` (recommended): thickness from GLORYS12, so the sea ice
+  comes from the same reanalysis as the ocean initial state and the boundaries.
+- `ice_initial_19930901.nc`: thickness from TOPAZ4b. This is the file used by the first
+  cycled spin-ups (e.g. TP2a0.10 `expt_03.0`); copy it instead to repeat them.
+
+Ice velocities are not taken from either reanalysis: the CICE cold start reads only
+concentration and thickness, and the ice starts at rest with 0.2 m of snow (at most 20% of
+the ice thickness). The ice velocity adjusts to the wind and ocean currents within a day or
+so.
 
 **With BGC** (`ntracr>0`), also copy the `bgc/` files. HYCOM then initialises the tracers in
 the first segment: `expt_preprocess.sh` makes `ntracr` negative in the `SCRATCH` copy of
@@ -337,18 +351,21 @@ Options `--zero-velocity` and `--zero-ssh` start the ocean with zero velocities 
 instead.
 
 **Ice initial state** (`ice_initial.nc`) — built by `bin/cice_ice_initial.py`:
-concentration from GLORYS12 and thickness from TOPAZ4b for 1 September 1993, interpolated
-to the model grid; SST/SSS from the top layer of the GLORYS nesting file, so that they are
+concentration and thickness from GLORYS12 (`--hi-source glorys`) or the thickness from
+TOPAZ4b (`--hi-source topaz`) for 1 September 1993, interpolated to the model grid; SST/SSS from the top layer of the GLORYS nesting file, so that they are
 consistent with the ocean initial state. It is used in the same way as for a cold start
 (see [Cold start initial files](#cold-start-initial-files)).
 
 ```bash
 python $HOME/NERSC-HYCOM-CICE/bin/cice_ice_initial.py 1993-09-01T00:00:00 ../nest/${IEXPT}/archv.1993_244_00 \
     --griddir ../topo --kmt ../topo/kmt_${CONFIGNAME}_${T}.nc \
-    --aice-source glorys --hi-source topaz \
-    --glorys-file $N/sources/glorys12_ice_19930901.nc --topaz-file $N/sources/topaz4b_ice_19930901.nc \
+    --aice-source glorys --hi-source glorys \
+    --glorys-file $N/sources/glorys12_ice_19930901.nc \
     -o ice_initial.nc
 ```
+
+For the TOPAZ4b thickness, use `--hi-source topaz --topaz-file $N/sources/topaz4b_ice_19930901.nc`
+instead.
 
 `cice_ice_initial.py` can also use PIOMAS (`--aice-source piomas`, `--hi-source piomas`) or
 other combinations of the three sources. Interpolation is done on points, so it does not
