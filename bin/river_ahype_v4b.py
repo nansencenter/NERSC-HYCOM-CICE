@@ -13,22 +13,22 @@ Three spreading strategies are supported:
   diffuse      Full operational spreading: rradius=180 km, alongshore=360 km, sigma=3 cells.
 
 The E-HYPE and Roshin components are climatological and repeat every year unchanged.
-All three components are summed into one combined output file per year.
+All three components are summed into one file covering the whole period, one record per
+month at 00:00 on the 15th. Normally called by river_ahype_v4b.sh or
+submit_river_ahype_v4b.sh, which write the result to force/rivers/<E>/riverh.[ab].
 
-Usage (from experiment directory or any directory with access to the data):
-  python <BINDIR>/river_ahype_v4b.py --spreading pointsource --year 2010 --outdir /path/to/out/
+Usage:
+  python river_ahype_v4b.py --spreading coastal --start-year 2002 --end-year 2022 \
+      --grid regional.grid.a --depth depth_TP2a0.10_04.a --out /path/riverh_ahype_v4b
 
-Output: <outdir>/riverh_ahype_v4b_<spreading>_<YYYY>.[ab]
-
-Required data (all have defaults for TP2 on Betzy/Fram):
-  --grid   regional.grid.[ab]      TP2 grid file
-  --depth  depth_TP2a0.10_04.[ab]  TP2 bathymetry
+Data inputs (defaults for TP2 on nn2993k):
   --gpkg   AHYPE v4b .gpkg         outlet metadata
   --ts     AHYPE v4b timeseries    monthly discharge 2002-2022 (tab-separated, m3/s)
   --dat    rivers_ahype-ehype_clim_rev2.dat  for E-HYPE outlets
-  --roshin grivers.[ab]            Roshin Greenland ice melt on TP2 grid
+  --roshin Roshin Greenland ice melt (12 monthly records) on the model grid
 """
 import argparse
+import calendar
 import copy
 import datetime
 import os
@@ -50,17 +50,13 @@ if _GLOFAS not in sys.path:
 from utils.grid_operations import transform_coordinates, cleaning_discharge  # noqa: E402
 import abfile  # noqa: E402
 
-# ── Default data paths (TP2 on Betzy/Fram) ───────────────────────────────────
-_NN2993 = '/cluster/projects/nn2993k'
+# ── Default data paths (Betzy) ───────────────────────────────────────────────
+_AHYPE_V4B = '/cluster/projects/nn2993k/AHYPE_v4b'
 DEFAULTS = dict(
-    grid   = f'{_NN2993}/nlo043/TP2a0.10/topo/regional.grid.a',
-    depth  = f'{_NN2993}/nlo043/TP2a0.10/topo/depth_TP2a0.10_04.a',
-    gpkg   = (f'{_NN2993}/nlo043/rivers_variants/rivers_variants/data/ahype/'
-              'arcfresh_riverdischarge_ahype_v4b_river-to-ocean-outlets.gpkg'),
-    ts     = (f'{_NN2993}/nlo043/rivers_variants/rivers_variants/data/ahype/'
-              'arcfresh_riverdischarge_2002-2022_monthly_m3s_river-to-ocean-outlets.txt'),
-    dat    = f'{_NN2993}/ModelInput/AHYPE_all/rivers_ahype-ehype_clim_rev2.dat',
-    roshin = f'{_NN2993}/ModelInput/TRIP/triver_Roshin/grivers.a',
+    gpkg   = f'{_AHYPE_V4B}/arcfresh_riverdischarge_ahype_v4b_river-to-ocean-outlets.gpkg',
+    ts     = f'{_AHYPE_V4B}/arcfresh_riverdischarge_2002-2022_monthly_m3s_river-to-ocean-outlets.txt',
+    dat    = os.path.join(_BINDIR, '..', 'input', 'rivers_ahype-ehype_clim_rev2.dat'),
+    roshin = '/cluster/projects/nn2993k/TRIP/triver_Roshin',
 )
 
 # ── Grid dimensions ──────────────────────────────────────────────────────────
@@ -92,7 +88,17 @@ def _read_a(path, rec):
     return np.ma.masked_greater(a, 1e29)
 
 
+def check_grid_size(path_a):
+    """Stop unless the i/jdm line of the .b file next to path_a is IDM x JDM."""
+    import re
+    with open(path_a[:-2] + '.b') as f:
+        m = re.search(r'i/jdm\s*=\s*(\d+)\s+(\d+)', f.read())
+    if not m or (int(m.group(1)), int(m.group(2))) != (IDM, JDM):
+        sys.exit(f'Error: {path_a} is not on the {IDM}x{JDM} grid')
+
+
 def load_grid(grid_path, depth_path):
+    check_grid_size(depth_path)
     grid_fields = ['plon', 'plat', 'qlon', 'qlat', 'ulon', 'ulat',
                    'vlon', 'vlat', 'pang', 'scpx', 'scpy']
     g = {name: _read_a(grid_path, i) for i, name in enumerate(grid_fields)}
@@ -239,29 +245,37 @@ def load_ehype_dat(dat_path):
     return pd.DataFrame(records)
 
 
-def ehype_monthly_m3s(ehype_df, month_idx):
-    """Return per-outlet discharge (m³/s) for month_idx (0-based Jan=0).
-    Converts: annual_km3 * frac_m * 1e9 / (days_m * 86400)."""
-    days = np.array([31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31])
-    q    = (ehype_df['annual_km3'].values *
-            np.array([row['fracs'][month_idx] for _, row in ehype_df.iterrows()]) *
-            1e9 / (days[month_idx] * 86400))
-    return q
+def ehype_monthly_m3s(ehype_df, year, month_idx):
+    """Per-outlet discharge (m³/s) for month_idx (0-based): annual_km3 * frac_m * 1e9 / month length."""
+    fracs = np.stack(ehype_df['fracs'].values)[:, month_idx]
+    seconds = days_in_month(year, month_idx + 1) * 86400
+    return ehype_df['annual_km3'].values * fracs * 1e9 / seconds
 
 
 # ── Roshin Greenland ice melt ─────────────────────────────────────────────────
 
-def load_roshin(roshin_path, idm=IDM, jdm=JDM):
-    """Read grivers.[ab] (12 monthly records) on the TP2 grid. Returns (12, JDM, IDM) m/s."""
-    n    = idm * jdm
-    npad = -(-n // 4096) * 4096
-    months = []
-    with open(roshin_path, 'rb') as f:
-        for m in range(12):
-            f.seek(m * npad * 4)
-            a = np.fromfile(f, '>f4', n).reshape(jdm, idm)
-            months.append(np.ma.masked_greater(a, 1e29).filled(0.0))
-    return np.array(months)   # (12, JDM, IDM), m/s
+def load_roshin(roshin_path):
+    """Read the Roshin ice melt (12 monthly records, m/s) on the model grid -> (12, JDM, IDM).
+
+    roshin_path is a .a file, or a directory: then the one grivers*.a on the model grid is
+    used (grivers_tp2.a for TP2a0.10 in $TRIP_PATH/triver_Roshin), as in
+    merge_TRIP_Hype_abfile_4Greenland.py.
+    """
+    if os.path.isdir(roshin_path):
+        import glob
+        import re
+        found = []
+        for bfile in sorted(glob.glob(os.path.join(roshin_path, 'grivers*.b'))):
+            m = re.search(r'i/jdm\s*=\s*(\d+)\s+(\d+)', open(bfile).read())
+            if m and (int(m.group(1)), int(m.group(2))) == (IDM, JDM):
+                found.append(bfile[:-2] + '.a')
+        if len(found) != 1:
+            sys.exit(f'Error: need exactly one grivers*.[ab] on the {IDM}x{JDM} grid in '
+                     f'{roshin_path}, found {len(found)}')
+        roshin_path = found[0]
+    print(f'  {roshin_path}')
+    check_grid_size(roshin_path)
+    return np.array([_read_a(roshin_path, m).filled(0.0) for m in range(12)])
 
 
 # ── Output: ABFileRiverForcing ────────────────────────────────────────────────
@@ -271,29 +285,8 @@ def model_day(date):
     return float((date - MODEL_DAY0).days)
 
 
-def write_riverh(outpath, fields_ms, year, land_2d, cline1='', cline2=''):
-    """Write 12 monthly records to <outpath>.[ab] using ABFileRiverForcing.
-
-    fields_ms : (12, JDM, IDM) array in m/s
-    Records are placed at the 15th of each month; rdtime = days in month.
-    """
-    days_per_month = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
-    mask = land_2d.astype(np.float32)
-    mask[land_2d]  = 1e30
-    mask[~land_2d] = 0.0
-
-    fout = abfile.ABFileRiverForcing(outpath, 'w',
-                                     idm=IDM, jdm=JDM,
-                                     cline1=cline1, cline2=cline2)
-    for m in range(12):
-        date_mid = datetime.date(year, m + 1, 15)
-        dtime1   = model_day(date_mid)
-        rdtime   = float(days_per_month[m])
-        field    = fields_ms[m].astype(np.float32)
-        field[land_2d] = 0.0
-        fout.write_field(field, None, 'rivers', dtime1, rdtime)
-    fout.close()
-    print(f'  Wrote {outpath}.[ab]')
+def days_in_month(year, month):
+    return calendar.monthrange(year, month)[1]
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
@@ -304,12 +297,11 @@ def parse_args():
     p.add_argument('--spreading', choices=['pointsource', 'coastal', 'diffuse'],
                    default='pointsource',
                    help='Spreading strategy (default: pointsource)')
-    p.add_argument('--year', type=int, help='Single year to process')
     p.add_argument('--start-year', type=int, default=2002, help='First year (default: 2002)')
     p.add_argument('--end-year',   type=int, default=2022, help='Last year (default: 2022)')
-    p.add_argument('--outdir', default='.', help='Output directory (default: .)')
-    p.add_argument('--grid',   default=DEFAULTS['grid'],   help='regional.grid.a path')
-    p.add_argument('--depth',  default=DEFAULTS['depth'],  help='depth.a path')
+    p.add_argument('--out',   required=True, help='Output file name, without .a/.b')
+    p.add_argument('--grid',  required=True, help='regional.grid.a path')
+    p.add_argument('--depth', required=True, help='depth .a path (experiment topography)')
     p.add_argument('--gpkg',   default=DEFAULTS['gpkg'],   help='AHYPE v4b .gpkg path')
     p.add_argument('--ts',     default=DEFAULTS['ts'],     help='AHYPE v4b timeseries .txt')
     p.add_argument('--dat',    default=DEFAULTS['dat'],    help='EHYPE .dat path')
@@ -324,8 +316,7 @@ def main():
     spread = args.spreading
     params = SPREADING_PARAMS[spread]
 
-    years  = [args.year] if args.year else list(range(args.start_year, args.end_year + 1))
-    os.makedirs(args.outdir, exist_ok=True)
+    years  = list(range(args.start_year, args.end_year + 1))
 
     # ── Load grid ─────────────────────────────────────────────────────────────
     print('Loading grid ...')
@@ -358,6 +349,10 @@ def main():
     ts = ts[ts.columns.intersection(meta['SUBID'])]
     # Reorder columns to match meta
     ts = ts[[sid for sid in meta['SUBID'] if sid in ts.columns]]
+    missing = [f'{y}-{m:02d}' for y in years for m in range(1, 13)
+               if f'{y}-{m:02d}' not in ts.index]
+    if missing:
+        sys.exit(f'Error: months not in {args.ts}: {missing[0]} ... {missing[-1]}')
 
     # ── Load E-HYPE outlets from .dat ──────────────────────────────────────────
     ehype_df = ehype_flat_idx = None
@@ -400,42 +395,31 @@ def main():
                 ehype_flat_idx, plon_2d, plat_2d, land_2d, r, a, sig)
             print(f'  Done in {time.time()-t0:.0f} s')
 
-    # ── Process each year ─────────────────────────────────────────────────────
+    # ── Write one record per month, at 00:00 on the 15th ──────────────────────
+    fout = abfile.ABFileRiverForcing(
+        args.out, 'w', mask=True, idm=IDM, jdm=JDM,
+        cline1=f'AHYPE v4b + E-HYPE + Roshin, spreading={spread}',
+        cline2='river forcing (m/s)')
+    # Annual totals do not depend on the spreading: compare them between strategies
+    print('\nAnnual totals [km3/yr]:')
     for year in years:
-        print(f'\nProcessing {year} ...')
-        fields = np.zeros((12, JDM, IDM), dtype=np.float64)
-
+        ann_km3 = 0.0
         for m in range(12):
-            month_str = f'{year}-{m+1:02d}'
-            if month_str not in ts.index:
-                print(f'  WARNING: {month_str} not in timeseries, skipping')
-                continue
-
-            # AHYPE v4b
-            q_v4b = ts.loc[month_str].reindex(meta['SUBID']).fillna(0.0).values  # m³/s
-            fields[m] += build_flux_field(flat_idx_v4b, q_v4b, area_2d, land_2d,
-                                          weights=weights_v4b)
-
-            # E-HYPE climatological patch
+            q_v4b = ts.loc[f'{year}-{m+1:02d}'].reindex(meta['SUBID']).fillna(0.0).values
+            field = build_flux_field(flat_idx_v4b, q_v4b, area_2d, land_2d, weights=weights_v4b)
             if ehype_df is not None:
-                q_eh = ehype_monthly_m3s(ehype_df, m)
-                fields[m] += build_flux_field(ehype_flat_idx, q_eh, area_2d, land_2d,
-                                              weights=weights_eh)
-
-            # Roshin Greenland ice melt
+                q_eh = ehype_monthly_m3s(ehype_df, year, m)
+                field += build_flux_field(ehype_flat_idx, q_eh, area_2d, land_2d,
+                                          weights=weights_eh)
             if roshin_months is not None:
-                fields[m] += roshin_months[m]
-
-        # Write output
-        outname = os.path.join(args.outdir,
-                               f'riverh_ahype_v4b_{spread}_{year}')
-        ann_km3 = float((fields.mean(0) * area_2d).sum() * 86400 * 365.25 / 1e9)
-        cline1  = f'AHYPE v4b + E-HYPE + Roshin, spreading={spread}, year={year}'
-        cline2  = f'Annual total: {ann_km3:.0f} km3/yr'
-        write_riverh(outname, fields, year, land_2d, cline1=cline1, cline2=cline2)
-        print(f'  Annual total: {ann_km3:.0f} km³/yr')
-
-    print('\nDone.')
+                field += roshin_months[m]
+            ndays = days_in_month(year, m + 1)
+            fout.write_field(field, land_2d, 'rivers',
+                             model_day(datetime.date(year, m + 1, 15)), float(ndays))
+            ann_km3 += float((field * area_2d).sum()) * ndays * 86400 / 1e9
+        print(f'  {year}: {ann_km3:.1f}')
+    fout.close()
+    print(f'\nWrote {args.out}.[ab]')
 
 
 if __name__ == '__main__':

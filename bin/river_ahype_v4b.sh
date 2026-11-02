@@ -1,69 +1,58 @@
 #!/bin/bash
 #
-# Prepare AHYPE v4b time-varying river forcing (riverh_ahype_v4b_<spreading>_<YYYY>.[ab]).
-#
-# Must be run from the experiment directory (where EXPT.src lives).
-# Reads EXPT.src and REGION.src for R (CONFIGNAME), E (IEXPT), T (topography version).
-#
-# Usage:
-#   river_ahype_v4b.sh <spreading> <start_year> <end_year>
-#   river_ahype_v4b.sh <spreading> <year>
-#
-# spreading: pointsource | coastal | diffuse
-#
-# Examples:
-#   $HOME/NERSC-HYCOM-CICE/bin/river_ahype_v4b.sh coastal 2002 2022
-#   $HOME/NERSC-HYCOM-CICE/bin/river_ahype_v4b.sh diffuse 2010
+# Generates AHYPE v4b river forcing (monthly, AHYPE v4b + E-HYPE + Roshin ice melt) and
+# writes it to force/rivers/<E>/riverh.[ab]. Must be run in the experiment directory.
+# For a Slurm job instead of the login node, use submit_river_ahype_v4b.sh.
 
-if [ $# -lt 2 ] || [ $# -gt 3 ] ; then
+if [ $# -lt 1 -o $# -gt 3 ] ; then
    echo ""
-   echo "Generates AHYPE v4b river forcing (riverh_ahype_v4b_<spreading>_<YYYY>.[ab])"
+   echo "Generates AHYPE v4b river forcing (riverh.[ab]) for whole years"
    echo ""
-   echo "Usage: $(basename $0) <spreading> <start_year> [<end_year>]"
-   echo "  spreading: pointsource | coastal | diffuse"
+   echo " $(basename $0) <spreading> [first_year] [last_year]"
+   echo "    spreading: pointsource | coastal | diffuse"
+   echo "    years default to the whole AHYPE v4b period, 2002 2022"
    echo ""
-   echo "Examples:"
-   echo "  $(basename $0) coastal 2002 2022   # full period"
-   echo "  $(basename $0) diffuse 2010         # single year"
+   echo "Example:"
+   echo "    $(basename $0) coastal"
+   echo "    $(basename $0) diffuse 2010 2012"
    echo ""
    exit 1
 fi
-
-SPREADING=$1
-START_YEAR=$2
-END_YEAR=${3:-$2}
+spreading=$1
+first=${2:-2002}
+last=${3:-2022}
 
 if [ -f EXPT.src ] ; then
    export BASEDIR=$(cd .. && pwd)
 else
-   echo "Could not find EXPT.src. This script must be run in the experiment directory."
+   echo "Could not find EXPT.src. This script must be run in expt dir"
    exit 1
 fi
-
-BINDIR=$(cd $(dirname $0) && pwd)
-source ${BINDIR}/common_functions.sh || { echo "Could not source ${BINDIR}/common_functions.sh" ; exit 1 ; }
+export BINDIR=$(cd $(dirname $0) && pwd)/
+set --    # EXPT.src would otherwise see the positional arguments
 source ${BASEDIR}/REGION.src || { echo "Could not source ${BASEDIR}/REGION.src" ; exit 1 ; }
-source ./EXPT.src             || { echo "Could not source ./EXPT.src" ; exit 1 ; }
+source ./EXPT.src || { echo "Could not source ./EXPT.src" ; exit 1 ; }
 
-# R = CONFIGNAME, E = IEXPT, T = topography version (from src files)
-DEPTH="${BASEDIR}/topo/depth_${R}_${T}.a"
-GRID="${BASEDIR}/topo/regional.grid.a"
-OUTDIR="${BASEDIR}/force/rivers/${E}"
+D=$BASEDIR/force/rivers/$E
+S=$D/SCRATCH
+mkdir -p $S
 
-if [ ! -s "$DEPTH" ] || [ ! -s "${DEPTH%.a}.b" ] ; then
+# Use the experiment's depth file (topography version T in EXPT.src), as river_glofas.sh does
+depthfile="${BASEDIR}/topo/depth_${R}_${T}.a"
+if [ ! -s "$depthfile" ] || [ ! -s "${depthfile%.a}.b" ]; then
    echo "Could not find depth files ${BASEDIR}/topo/depth_${R}_${T}.[ab]"
    exit 1
 fi
 
-mkdir -p "$OUTDIR"
-
-cmd="python -u ${BINDIR}/river_ahype_v4b.py \
-   --spreading  ${SPREADING}  \
-   --start-year ${START_YEAR} \
-   --end-year   ${END_YEAR}   \
-   --outdir     ${OUTDIR}     \
-   --grid       ${GRID}       \
-   --depth      ${DEPTH}"
-
+out=$S/riverh_ahype_v4b_${spreading}_${first}_${last}
+roshin=""
+[ -n "$TRIP_PATH" ] && roshin="--roshin ${TRIP_PATH}/triver_Roshin"
+cmd="python -u ${BINDIR}river_ahype_v4b.py --spreading $spreading --start-year $first --end-year $last \
+   --grid ${BASEDIR}/topo/regional.grid.a --depth $depthfile --out $out $roshin"
 echo "$cmd"
-eval $cmd || { echo "Error running river_ahype_v4b.py" ; exit 1 ; }
+eval $cmd || { echo "Error running $cmd" ; exit 1 ; }
+
+for ext in a b ; do
+   mv ${out}.${ext} $D/riverh.${ext}
+   echo "Created  $D/riverh.${ext}"
+done

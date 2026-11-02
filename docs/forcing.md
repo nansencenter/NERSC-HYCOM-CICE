@@ -1617,66 +1617,50 @@ combining three sources:
 
 Three spreading strategies are available:
 
-| Strategy | rradius | alongshore | Gaussian σ | Approx. runtime |
-|----------|---------|-----------|-----------|-----------------|
-| `pointsource` | none | none | none | ~5 min/yr, 8 GB |
-| `coastal` | 50 km | 100 km | 1 cell | ~30 min/yr, 32 GB |
-| `diffuse` | 180 km | 360 km | 3 cells | ~90 min/yr, 32 GB |
+| Strategy | rradius | alongshore | Gaussian σ |
+|----------|---------|-----------|-----------|
+| `pointsource` | none | none | none |
+| `coastal` | 50 km | 100 km | 1 cell |
+| `diffuse` | 180 km | 360 km | 3 cells |
 
 The spreading algorithm is the same as GloFAS: exponential decay in offshore and
 along-shore distance, same-landmass check, land-crossing removal, optional Gaussian blur.
 
-**Output**: `force/rivers/<IEXPT>/riverh_ahype_v4b_<spreading>_<YYYY>.[ab]` — one file
-per year with 12 monthly records (record placed at the 15th of each month, `rdtime` =
-days in month). Set `priver=2` in `blkdat.input` to use these files.
+**Output**: `force/rivers/<IEXPT>/riverh.[ab]`, one record per month at 00:00 on the 15th.
+Set `priver=2` in `blkdat.input` (HYCOM 2.3), as for GloFAS; `expt_preprocess.sh` links the
+file and checks that it covers each job. Because the first record is on 15 January 2002 and
+the last on 15 December 2022, model runs must lie within that window.
 
-#### Short periods: on the login node
+The script also needs, on Betzy:
 
-Run `river_ahype_v4b.sh` from the experiment directory. It sources `EXPT.src` and
-`REGION.src` automatically (same pattern as `river_synoptic.sh`). Activate the Python
-environment first (see [Climatologies](#climatologies)).
+- the AHYPE v4b outlet file (`.gpkg`) and monthly timeseries (`.txt`) in
+  `/cluster/projects/nn2993k/AHYPE_v4b/` (or pass `--gpkg`/`--ts` to `river_ahype_v4b.py`),
+- the Roshin ice melt on the model grid in `$TRIP_PATH/triver_Roshin/`
+  (`grivers_tp2.[ab]` for TP2a0.10, see above),
+- `input/rivers_ahype-ehype_clim_rev2.dat` from the repository (E-HYPE outlets).
+
+#### Generating the river file
+
+Run from the experiment directory; region, experiment and topography are read from
+`REGION.src` and `EXPT.src`. The spreading weights are computed once and reused for all
+years, so the whole period is a single run. Short tests on the login node (Python
+environment activated):
 
 ```bash
-CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
-EXPT_ID=<EXPT_ID>         # e.g. 01.0
-
 cd $WORK/${CONFIGNAME}/expt_${EXPT_ID}
-$HOME/NERSC-HYCOM-CICE/bin/river_ahype_v4b.sh coastal 2010       # single year
-$HOME/NERSC-HYCOM-CICE/bin/river_ahype_v4b.sh coastal 2002 2022  # full period
+$HOME/NERSC-HYCOM-CICE/bin/river_ahype_v4b.sh coastal 2010 2010
 ```
 
-One year takes 5–90 minutes depending on the spreading strategy (see table above).
-For the full 2002–2022 period with `coastal` or `diffuse` spreading, use the Slurm
-job array below.
-
-#### Long periods: Slurm job array
-
-The years are run in parallel. Create a thin wrapper in the experiment directory that
-sets the experiment-specific variables and submits the array:
+The whole period as a Slurm job (run directly, not with `sbatch`; it submits the job itself):
 
 ```bash
-#!/bin/bash
-# submit_ahype_v4b.sh — experiment wrapper for bin/submit_river_ahype_v4b.sh
-# Place in $WORK/<CONFIGNAME>/expt_<EXPT_ID>/ and run: bash submit_ahype_v4b.sh
-export CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
-export IEXPT=<IEXPT>             # e.g. 030
-export T=<T>                     # topography version, e.g. 04
-export SPREADING=coastal         # pointsource | coastal | diffuse
-
-mkdir -p log
-sbatch --array=2002-2022%12 $HOME/NERSC-HYCOM-CICE/bin/submit_river_ahype_v4b.sh
+cd $WORK/${CONFIGNAME}/expt_${EXPT_ID}
+$HOME/NERSC-HYCOM-CICE/bin/submit_river_ahype_v4b.sh coastal            # 2002-2022
+$HOME/NERSC-HYCOM-CICE/bin/submit_river_ahype_v4b.sh diffuse 2005 2010  # sub-period
 ```
 
-Then from the experiment directory:
-
-```bash
-bash submit_ahype_v4b.sh
-```
-
-The output files are independent (no overlap), so no join step is needed —
-`riverh_ahype_v4b_<spreading>_<YYYY>.[ab]` files can be used directly by the model,
-one per year. To use a single concatenated file instead, join them with
-`bin/concat_riverh.py` as for GloFAS.
+The log prints the annual total (km³/yr) for every year. Spreading only redistributes the
+water, so these totals must be the same for all three strategies.
 
 ## Climatologies
 

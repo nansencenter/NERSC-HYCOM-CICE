@@ -5,58 +5,44 @@
 #SBATCH --qos=preproc
 #SBATCH --ntasks=1
 #SBATCH --mem=32G
-#SBATCH -o log/riverh_ahype_v4b.%A_%a.out
+#SBATCH -o log/riverh_ahype_v4b.%j.out
 
-# AHYPE v4b river forcing — one calendar year per array task.
+# AHYPE v4b river forcing riverh.[ab] as a Slurm job. Gives the same file as
+# river_ahype_v4b.sh. The spreading weights are computed once and reused for every year,
+# so the whole period runs in one job (no job array).
 #
-# Do not submit this script directly. Instead, create a thin wrapper in your
-# experiment directory (see docs/forcing.md for a template) that sets the
-# experiment-specific variables and calls this script:
-#
-#   sbatch --array=2002-2022%12 riverh_ahype_v4b_job.sh
-#
-# Required environment variables (set by the wrapper):
-#   CONFIGNAME   e.g. TP2a0.10
-#   IEXPT        e.g. 030
-#   T            topography version, e.g. 04
-#   SPREADING    pointsource | coastal | diffuse
-#
-# Spreading strategies:
-#   pointsource  No spreading;                       ~5 min/year,  8 GB
-#   coastal      50 km / 100 km, σ=1 cell;          ~30 min/year, 32 GB
-#   diffuse      180 km / 360 km, σ=3 cells;        ~90 min/year, 32 GB
-#
-# Output: $WORK/<CONFIGNAME>/force/rivers/<IEXPT>/riverh_ahype_v4b_<spreading>_<YYYY>.[ab]
-# Join with bin/concat_riverh.py after all tasks finish.
+# Usage, from the experiment directory. Run it directly, not with sbatch: it submits the
+# Slurm job itself (the #SBATCH lines above are for that job):
+#   $HOME/NERSC-HYCOM-CICE/bin/submit_river_ahype_v4b.sh <spreading> [first_year] [last_year]
 
-set -euo pipefail
+spreading=$1
+first=${2:-2002}
+last=${3:-2022}
+MODE=${4:-submit}   # submit (user) or run (the Slurm job submitted by this script)
 
-for var in CONFIGNAME IEXPT T SPREADING; do
-    [[ -z "${!var:-}" ]] && { echo "Error: $var not set. Run via the experiment wrapper."; exit 1; }
-done
+if [ -z "$spreading" ]; then
+    echo "Usage (from the experiment directory): $(basename $0) <spreading> [first_year] [last_year]"
+    echo "   spreading: pointsource | coastal | diffuse; years default to 2002 2022"
+    exit 1
+fi
+if [ ! -f EXPT.src ]; then
+    echo "Could not find EXPT.src. This script must be run in the experiment directory"
+    exit 1
+fi
 
-[[ -z "${SLURM_ARRAY_TASK_ID:-}" ]] && { echo "Error: must run as a Slurm job array."; exit 1; }
+if [ "$MODE" == "submit" ]; then
+    # Inside a Slurm job $0 is a copy of this script, so pass the real bin directory on
+    export AHYPE_BINDIR=$(cd $(dirname $0) && pwd)
+    mkdir -p log
+    jid=$(sbatch --parsable $AHYPE_BINDIR/$(basename $0) $spreading $first $last run) || exit 1
+    echo "Job $jid: AHYPE v4b, spreading=$spreading, $first-$last -> force/rivers/<E>/riverh.[ab]"
+    echo "Log: log/riverh_ahype_v4b.$jid.out"
+    exit 0
+fi
 
-YEAR=$SLURM_ARRAY_TASK_ID
-BINDIR=$(cd "$(dirname "$0")" && pwd)
-DEPTH=$WORK/${CONFIGNAME}/topo/depth_${CONFIGNAME}_${T}.a
-GRID=$WORK/${CONFIGNAME}/topo/regional.grid.a
-OUTDIR=$WORK/${CONFIGNAME}/force/rivers/${IEXPT}
-
-[[ ! -s "$DEPTH" ]] && { echo "Depth file not found: $DEPTH"; exit 1; }
-mkdir -p "$OUTDIR" log
-
-set --   # conda activate reads $@ — clear before sourcing
+set --    # conda's activate would otherwise see the positional arguments
 source ${HOME}/NERSC-HYCOM-CICE/environment/betzy_env.sh
 module load Miniforge3/24.1.2-0
 source ${EBROOTMINIFORGE3}/bin/activate
 conda activate hycom-cice
-
-echo "Year=${YEAR}  spreading=${SPREADING}  outdir=${OUTDIR}"
-
-python -u "${BINDIR}/river_ahype_v4b.py" \
-    --spreading "$SPREADING" \
-    --year      "$YEAR"      \
-    --outdir    "$OUTDIR"    \
-    --grid      "$GRID"      \
-    --depth     "$DEPTH"
+$AHYPE_BINDIR/river_ahype_v4b.sh $spreading $first $last
