@@ -214,7 +214,7 @@ shared on NIRD:
 │   └── topaz4b_ice_19930901.nc     # TOPAZ4b siconc, sithick, sisnthick (Copernicus Marine)
 └── TP2a0.10/                       # topography 04, 50 layers, HYCOM 2.3
     ├── ice_initial_19930901_glorys.nc  # concentration and thickness from GLORYS12
-    ├── ice_initial_19930901.nc         # concentration from GLORYS12, thickness from TOPAZ4b
+    ├── ice_initial_19930901_topaz.nc   # concentration from GLORYS12, thickness from TOPAZ4b
     ├── restart.1993_244_00_0000.[ab]   # physics
     └── bgc/                            # BGC initial state (ntracr>0), relax/022/relax_int layers
         └── relax.ECO_{no3,pho,sil,oxy}.[ab]
@@ -253,8 +253,7 @@ the thickness:
 
 - `ice_initial_19930901_glorys.nc` (recommended): thickness from GLORYS12, so the sea ice
   comes from the same reanalysis as the ocean initial state and the boundaries.
-- `ice_initial_19930901.nc`: thickness from TOPAZ4b. This is the file used by the first
-  cycled spin-ups (e.g. TP2a0.10 `expt_03.0`); copy it instead to repeat them.
+- `ice_initial_19930901_topaz.nc`: thickness from TOPAZ4b.
 
 Ice velocities are not taken from either reanalysis: the CICE cold start reads only
 concentration and thickness, and the ice starts at rest with 0.2 m of snow (at most 20% of
