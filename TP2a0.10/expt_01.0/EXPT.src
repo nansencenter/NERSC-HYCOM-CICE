@@ -25,7 +25,7 @@ export V=2.2.98                                                  # hycom version
 #export K=`grep "'kdm   ' =" blk* | awk '{printf("%03d", $1)}'`   # get kdm from blkdat
 export K=`grep "'kdm   ' =" $mydir/blkdat.input | awk '{printf("%03d", $1)}'`   # get kdm from blkdat
 export P=$mydir                                                  #  ---""---
-export D=$P/data                                                 # Where data ends up
+export D=$P/data${SPINUP_CYCLE:+/cycle_${SPINUP_CYCLE}}            # Where data ends up: $P/data (cycled spin-up with srjob_cycle.sh: $P/data/cycle_NN)
 export S=$P/SCRATCH                  # Scratch area 
 
 export SIGVER=1   # Version of equation of state (this is 7-term sigma 2). Must not cause conflict with thflag in blkdat.input

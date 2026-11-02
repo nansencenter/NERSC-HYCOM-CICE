@@ -1,3 +1,5 @@
+# Installation
+
 ## Clone the repositories
 
 Clone NERSC-HYCOM-CICE into `${HOME}` and switch to the `develop` branch:
