@@ -427,42 +427,32 @@ elif [ $PRIVER -eq 2 ] ; then
       cp $BASEDIR/force/rivers/$E/ECO_pho.b rivers.ECO_pho.b || tellwarn "Could not get PHO river .b file"
   fi
 fi
-# 1: (re)create riverh.[ab] for the period of every job with river_synoptic.sh
-# 0: use the existing riverh.[ab]. Create it offline with river_synoptic.sh when the
-#    model integration covers multiple years (only created here if it does not exist).
-River_online=0
+# --- High frequency river forcing (GloFAS). riverh.[ab] is pre-prepared with river_synoptic.sh
+# --- or submit_river_glofas.sh; here we only link it and check that it covers the job period.
 if [ "$HRIVER" = ".true." ]; then
-   # Check range of file against start and stop times
    RDIR=$BASEDIR/force/rivers/$E
    if [ "$V" == "2.3" ]; then
-      echo "**Setting up high frequency river forcing (priver=2, HYCOM 2.3)"
+      echo "**Setting up pre-prepared high frequency river forcing from $RDIR (priver=2, HYCOM 2.3)"
       Rforfile="forcing.rivers"
    else
-      echo "**Setting up high frequency river forcing (highfq_river=.true., HYCOM 2.2.98)"
+      echo "**Setting up pre-prepared high frequency river forcing from $RDIR (highfq_river=.true., HYCOM 2.2.98)"
       echo "Note: PRIVER must be 0 for highfq_river=true "
       Rforfile="forcing.riverh"
-   fi
-   if [ ! -s  ${RDIR}/riverh.a -o  ! -s ${RDIR}/riverh.b -o ${River_online} -eq 1 ]; then 
-      echo "Create the synoptic river forcing by the python routine ..."
-      cd $P
-      cmd="${BINDIR}river_synoptic.sh $starttime $endtime"
-      eval $cmd ||  tellerror "$cmd failed"
-      cd $S
    fi
    if [ -s  $RDIR/riverh.a -a  -s $RDIR/riverh.b ] 
    then
      ln -sf $RDIR/riverh.a ${Rforfile}.a || tellerror "Could not get river .a file"
      ln -sf $RDIR/riverh.b ${Rforfile}.b || tellerror "Could not get river .b file"
+     # Check range of file against start and stop times
      frcstart=$(head -n  6 ${Rforfile}.b | tail -n1 | sed "s/.*=//" | sed "s/^[ ]*//" | cut -d " " -f 1)
      frcstop=$(tail -n 1 ${Rforfile}.b             | sed "s/.*=//" | sed "s/^[ ]*//" | cut -d " " -f 1)
      test1=$(echo ${tstart#-}'>='$frcstart | bc -l)
      test2=$(echo $tstop '<='$frcstop  | bc -l)
-     [ $test1 -eq 1 ] || tellerror "File $S/${Rforfile}.b: forcing starts after  model starts"
-     [ $test2 -eq 1 ] || tellerror "File $S/${Rforfile}.b: forcing stops  before model stops"
+     [ $test1 -eq 1 ] || tellerror "File $RDIR/riverh.b: forcing starts after  model starts. Create it with river_synoptic.sh or submit_river_glofas.sh"
+     [ $test2 -eq 1 ] || tellerror "File $RDIR/riverh.b: forcing stops  before model stops. Create it with river_synoptic.sh or submit_river_glofas.sh"
    else
-     tellerror "Could not find high frequency river forcing $RDIR/riverh.[ab]"
+     tellerror "Could not find high frequency river forcing $RDIR/riverh.[ab]. Create it with river_synoptic.sh or submit_river_glofas.sh"
    fi
-   cd $S
 fi
 
 #
