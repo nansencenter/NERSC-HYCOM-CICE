@@ -1073,7 +1073,7 @@ options are available:
 | | AHYPE/EHYPE climatology (default) | AHYPE/EHYPE + TRIP + Greenland melt | GloFAS | AHYPE v4b |
 |---|---|---|---|---|
 | **Time variation** | Monthly climatology | Monthly climatology | Daily reanalysis (1 Jan 1979 – 30 Jun 2024) | Monthly reanalysis (2002–2022) |
-| **Produced by** | `create_ref_case.sh` | `river_nersc.sh`, `river_trip.sh`, `merge_TRIP_Hype_abfile_4Greenland.py` | `river_synoptic.sh` | `bin/river_ahype_v4b.py` |
+| **Produced by** | `create_ref_case.sh` | `river_nersc.sh`, `river_trip.sh`, `merge_TRIP_Hype_abfile_4Greenland.py` | `river_synoptic.sh` | `bin/river_ahype_v4b.sh` |
 | **File in `force/rivers/<IEXPT>/`** | `rivers.[ab]` | `rivers.[ab]` (overwrites the default) | `riverh.[ab]` (separate file) | `riverh_ahype_v4b_<spreading>_<YYYY>.[ab]` |
 | **HYCOM 2.3** | `priver=1` | `priver=1` | `priver=2` | `priver=2` |
 | **HYCOM 2.2.98** | `priver=1` | `priver=1` | `priver=0` + `highfq_river=.true.` | — |
@@ -1685,10 +1685,29 @@ along-shore distance, same-landmass check, land-crossing removal, optional Gauss
 per year with 12 monthly records (record placed at the 15th of each month, `rdtime` =
 days in month). Set `priver=2` in `blkdat.input` to use these files.
 
-#### Offline preparation (Slurm job array)
+#### Short periods: on the login node
 
-Create a thin wrapper in the experiment directory that sets the experiment-specific
-variables and submits the array:
+Run `river_ahype_v4b.sh` from the experiment directory. It sources `EXPT.src` and
+`REGION.src` automatically (same pattern as `river_synoptic.sh`). Activate the Python
+environment first (see [Climatologies](#climatologies)).
+
+```bash
+CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+EXPT_ID=<EXPT_ID>         # e.g. 01.0
+
+cd $WORK/${CONFIGNAME}/expt_${EXPT_ID}
+$HOME/NERSC-HYCOM-CICE/bin/river_ahype_v4b.sh coastal 2010       # single year
+$HOME/NERSC-HYCOM-CICE/bin/river_ahype_v4b.sh coastal 2002 2022  # full period
+```
+
+One year takes 5–90 minutes depending on the spreading strategy (see table above).
+For the full 2002–2022 period with `coastal` or `diffuse` spreading, use the Slurm
+job array below.
+
+#### Long periods: Slurm job array
+
+The years are run in parallel. Create a thin wrapper in the experiment directory that
+sets the experiment-specific variables and submits the array:
 
 ```bash
 #!/bin/bash
@@ -1709,10 +1728,10 @@ Then from the experiment directory:
 bash submit_ahype_v4b.sh
 ```
 
-One year takes 5–90 minutes depending on the spreading strategy. The output files are
-independent (no overlap), so no join step is needed — `riverh_ahype_v4b_<spreading>_<YYYY>.[ab]`
-files can be used directly by the model, one per year. To use a single concatenated file
-instead, join them with `bin/concat_riverh.py` as for GloFAS.
+The output files are independent (no overlap), so no join step is needed —
+`riverh_ahype_v4b_<spreading>_<YYYY>.[ab]` files can be used directly by the model,
+one per year. To use a single concatenated file instead, join them with
+`bin/concat_riverh.py` as for GloFAS.
 
 ## Climatologies
 
