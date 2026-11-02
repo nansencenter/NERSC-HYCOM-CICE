@@ -1413,57 +1413,32 @@ and joined afterwards with `bin/concat_riverh.py`. Each array task runs the same
 `river_synoptic.sh` for one calendar year, so a multi-year period takes about as long as
 one year, and the result is identical to a single `river_synoptic.sh` run.
 
-The script reads experiment-specific settings from the environment. Set them in a small
-wrapper script: save the following as `submit_glofas.sh` in the experiment directory,
-`$WORK/<CONFIGNAME>/expt_<EXPT_ID>/`, and replace the `<...>` placeholders:
-
-```bash
-#!/bin/bash
-# submit_glofas.sh — experiment wrapper for bin/submit_river_glofas.sh
-# Place in $WORK/<CONFIGNAME>/expt_<EXPT_ID>/ and run: bash submit_glofas.sh <START> <END>
-export CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
-export IEXPT=<IEXPT>             # e.g. 010
-export T=<T>                     # topography version, e.g. 04
-export DT=1.0                    # 1.0 for HYCOM 2.3, 0.25 for HYCOM 2.2.98
-
-START=$1
-END=$2
-mkdir -p log
-jid=$(sbatch --parsable --array=${START:0:4}-${END:0:4}%12 \
-    $HOME/NERSC-HYCOM-CICE/bin/submit_river_glofas.sh $START $END)
-echo "Array job: $jid"
-```
-
-Submit one array task per year from the experiment directory, together with a job that
-joins the years into `riverh.[ab]` once all of them have finished. `%12` runs at most 12
-years at a time, the `preproc` limit on Betzy. One year takes about 20 minutes and 6 GB
-of memory on a Betzy compute node:
+Run it from the experiment directory, with the first and last day (included) of the
+period. It reads the region, experiment number, topography and HYCOM version from
+`REGION.src` and `EXPT.src`, the same as `river_synoptic.sh`, and submits two jobs: an
+array with one task per year, and a job that joins the years into `riverh.[ab]` once all
+of them have finished:
 
 ```bash
 CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
 EXPT_ID=<EXPT_ID>         # e.g. 01.0
-IEXPT=<IEXPT>             # e.g. 010
-START=1993-01-01          # first day of the period
-END=2024-06-30            # last day of the period (included)
 
 cd $WORK/${CONFIGNAME}/expt_${EXPT_ID}
-bash submit_glofas.sh $START $END   # wrapper sets CONFIGNAME/IEXPT/T/DT and submits the array
-
-# Run the join step once all array tasks succeed:
-RDIR=$WORK/${CONFIGNAME}/force/rivers/${IEXPT}
-jid=<array_job_id>
-sbatch --dependency=afterok:$jid --account=nn2993k --qos=preproc --time=00:30:00 --mem=2G \
-    --output=log/riverh_join.%j.out \
-    --wrap="python $HOME/NERSC-HYCOM-CICE/bin/concat_riverh.py $RDIR/riverh $RDIR/SCRATCH/chunks_${START}_${END}/riverh_*.a"
+$HOME/NERSC-HYCOM-CICE/bin/submit_river_glofas.sh 1993-01-01 2024-06-30
 ```
+
+Do not submit the script with `sbatch` yourself. As with `river_synoptic.sh`, an optional
+third argument overrides the record interval (fraction of a day). At most 12 years run at
+a time, the `preproc` limit on Betzy. One year takes about 20 minutes and 6 GB of memory
+on a Betzy compute node.
 
 The join job only starts if every year finished successfully, and `concat_riverh.py`
 checks the result: records evenly spaced over the whole period (no missing or incomplete
 year), and no NaN, negative or implausibly large values. If a check fails it writes no
 `riverh.[ab]` and says why in `log/riverh_join.<jobid>.out`; otherwise the log ends with
 `all checks passed`. If a year fails, the join job stays in the queue with the reason
-`DependencyNeverSatisfied`: cancel it, check `log/riverh.<jobid>_<year>.out`, and resubmit
-the failed year (`--array=<year>`) and the join job.
+`DependencyNeverSatisfied`: cancel it (`scancel <jobid>`), check
+`log/riverh_glofas.<jobid>_<year>.out`, fix the cause and run the command again.
 
 Where two years overlap, `concat_riverh.py` takes the records from the later year, so
 `riverh.[ab]` is identical, byte for byte, to a single `river_synoptic.sh` run over the

@@ -7,52 +7,85 @@
 #SBATCH --mem=16G
 #SBATCH -o log/riverh_glofas.%A_%a.out
 
-# Slurm job array for GloFAS river forcing (one task per year).
+# GloFAS river forcing riverh.[ab] for a long period, as a Slurm job array (one task per
+# year) followed by a join job (concat_riverh.py). Gives the same file as river_synoptic.sh.
 #
-# Experiment-specific config must be set in the calling environment (or in a
-# thin wrapper script in the experiment directory) before submitting:
+# Usage, from the experiment directory (do not call it with sbatch, it submits itself):
+#   $HOME/NERSC-HYCOM-CICE/bin/submit_river_glofas.sh <START> <END> [dt]
 #
-#   CONFIGNAME  e.g. TP2a0.10
-#   IEXPT       e.g. 010
-#   T           topography version, e.g. 04
-#   DT          record interval in days: 1.0 for HYCOM 2.3, 0.25 for HYCOM 2.2.98
-#
-# Usage (from experiment directory):
-#   sbatch --array=<FIRST_YEAR>-<LAST_YEAR>%12 \
-#       $HOME/NERSC-HYCOM-CICE/bin/submit_river_glofas.sh <START> <END>
-#
-# START and END are dates in YYYY-MM-DD format; SLURM_ARRAY_TASK_ID is the year.
-# The join step (concat_riverh.py) must be run separately once all years finish.
+# START and END are the first and last day (included) of the period, YYYY-MM-DD.
+# Region, experiment number, topography and HYCOM version are read from REGION.src and
+# EXPT.src. dt (fraction of a day) defaults to 1.0 for HYCOM 2.3, 0.25 otherwise.
+# The result is written to force/rivers/<E>/riverh.[ab].
 
-START=$1   # first day of the whole period, YYYY-MM-DD
-END=$2     # last day of the whole period (included), YYYY-MM-DD
+START=$1
+END=$2
+dt=$3
+MODE=${4:-submit}   # submit (user), year or join (Slurm jobs submitted by this script)
 
-if [[ -z "$CONFIGNAME" || -z "$IEXPT" || -z "$T" || -z "$DT" ]]; then
-    echo "Error: CONFIGNAME, IEXPT, T and DT must be set in the environment."
+if [[ -z "$START" || -z "$END" ]]; then
+    echo "Usage (from the experiment directory): $(basename $0) <START> <END> [dt]"
+    echo "   START, END: first and last day (included), YYYY-MM-DD"
     exit 1
 fi
-if [[ -z "$START" || -z "$END" || -z "$SLURM_ARRAY_TASK_ID" ]]; then
-    echo "Usage: sbatch --array=<FIRST_YEAR>-<LAST_YEAR>%12 submit_river_glofas.sh <START> <END>"
+if [ ! -f EXPT.src ]; then
+    echo "Could not find EXPT.src. This script must be run in the experiment directory"
     exit 1
 fi
-set --    # conda's activate would otherwise see the positional arguments
+set --    # conda's activate and EXPT.src would otherwise see the positional arguments
+BASEDIR=$(cd .. && pwd)
+source ${BASEDIR}/REGION.src || { echo "Could not source ${BASEDIR}/REGION.src" ; exit 1 ; }
+source ./EXPT.src || { echo "Could not source ./EXPT.src" ; exit 1 ; }
+if [ -z "$dt" ]; then
+    if [ "$V" == "2.3" ]; then dt=1.0; else dt=0.25; fi
+fi
+RDIR=${BASEDIR}/force/rivers/${E}
+CHUNKS=${RDIR}/SCRATCH/chunks_${START}_${END}
+
+# --- Submit the job array and the join job
+if [ "$MODE" == "submit" ]; then
+    # Inside a Slurm job $0 is a copy of this script, so pass its real path on
+    export GLOFAS_SCRIPT=$(cd $(dirname $0) && pwd)/$(basename $0)
+    mkdir -p log
+    jid=$(sbatch --parsable --array=${START:0:4}-${END:0:4}%12 \
+          $GLOFAS_SCRIPT $START $END $dt year) || exit 1
+    jid_join=$(sbatch --parsable --dependency=afterok:$jid --job-name=riverh_join \
+          --time=00:30:00 --mem=2G --output=log/riverh_join.%j.out \
+          $GLOFAS_SCRIPT $START $END $dt join) || exit 1
+    echo "Region $R, experiment $E, topography $T, dt=$dt day"
+    echo "Array job (one task per year): $jid"
+    echo "Join job (starts when all years succeed): $jid_join"
+    echo "Result: $RDIR/riverh.[ab]"
+    exit 0
+fi
 
 source ${HOME}/NERSC-HYCOM-CICE/environment/betzy_env.sh
 module load Miniforge3/24.1.2-0
 source ${EBROOTMINIFORGE3}/bin/activate
 conda activate hycom-cice
+SCRIPTDIR=$(dirname $GLOFAS_SCRIPT)
 
-DEPTH=$WORK/${CONFIGNAME}/topo/depth_${CONFIGNAME}_${T}.a
+# --- Join the years into riverh.[ab]
+if [ "$MODE" == "join" ]; then
+    python -u ${SCRIPTDIR}/concat_riverh.py $RDIR/riverh ${CHUNKS}/riverh_*.a
+    exit $?
+fi
 
-# This task's year. Run until 1 January of the next year, because a day's records
-# are only written once the next day is processed; concat_riverh.py removes the overlap.
+# --- One year (array task). Use the experiment's depth file, as river_synoptic.sh does.
+depthfile=${BASEDIR}/topo/depth_${R}_${T}.a
+if [ ! -s "$depthfile" ] || [ ! -s "${depthfile%.a}.b" ]; then
+    echo "Could not find depth files ${BASEDIR}/topo/depth_${R}_${T}.[ab]"
+    exit 1
+fi
+
+# Run until 1 January of the next year, because a day's records are only written once
+# the next day is processed; concat_riverh.py removes the overlap.
 YEAR=$SLURM_ARRAY_TASK_ID
 cs=${YEAR}-01-01
 [[ "$cs" < "$START" ]] && cs=$START
 ce=$((YEAR+1))-01-01
 [[ "$ce" > "$END" ]] && ce=$END
 
-OUT=$WORK/${CONFIGNAME}/force/rivers/${IEXPT}/SCRATCH/chunks_${START}_${END}/
-mkdir -p $OUT
-cd $HOME/NERSC-HYCOM-CICE/bin/river-topaz/scripts/GloFAS
-python -u hycom_river_hifre.py --dt $DT ${cs}T00:00:00 ${ce}T00:00:00 $OUT $DEPTH
+mkdir -p $CHUNKS
+cd ${SCRIPTDIR}/river-topaz/scripts/GloFAS
+python -u hycom_river_hifre.py --dt $dt ${cs}T00:00:00 ${ce}T00:00:00 $CHUNKS/ $depthfile
