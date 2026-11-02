@@ -165,7 +165,9 @@ values for your experiment. For TP2, the file should look like this:
 :::{note}
 HYCOM 2.2.98 also supports a `highfq_river` option (use time-varying, high-frequency river
 forcing instead of climatological river forcing). **This option is not available in HYCOM 2.3**
-— including it in `hycom_opt` with 2.3 will cause a namelist read error at startup.
+— including it in `hycom_opt` with 2.3 will cause a namelist read error at startup. In
+HYCOM 2.3, time-varying river forcing is selected with `priver=2` in `blkdat.input` instead
+(see [Time-varying river forcing from GloFAS](forcing.md#time-varying-river-forcing-from-glofas)).
 When using HYCOM 2.2.98 with `highfq_river = .true.`, you must also set `priver=0` in
 `blkdat.input`; the two options are mutually exclusive and the model will abort if both are
 enabled.
@@ -439,7 +441,7 @@ isopycnal target densities ranging from 24.05 to 28.12 (sigma units).
 | `lbmont` | `0` | Barotropic nesting archives have sshflg=2 |
 | `relax` | `1` | Activate lateral boundary nudging (0=F, 1=T) |
 | `trcrlx` | `1` | Activate lateral boundary tracer nudging (0=F, 1=T) |
-| `priver` | `1` | Rivers as precipitation (0=F, 1=T) |
+| `priver` | `1` | Rivers as precipitation. HYCOM 2.2.98: 0=F, 1=T. HYCOM 2.3: 0=no rivers, 1=climatological rivers (`rivers.[ab]`), 2=time-varying GloFAS rivers (`riverh.[ab]`) |
 | `epmass` | `0` | Treat E-P as mass exchange (0=F, 1=T) |
 
 **Incremental update**
@@ -671,7 +673,7 @@ copied from the template experiment by `expt_new.sh`; exceptions are noted.
 | `sr_job_ensemble.sh` | Slurm job script for ensemble runs |
 | `preprocess_mem.sh` | Preprocess script variant for ensemble members |
 | `sr_ensemble_post.sh` | Ensemble postprocessing script (currently empty) |
-| `create_ref_case.sh` | One-time setup script to create a new experiment from a reference case — copied from `bin/` manually (see [Climatologies and river forcing](forcing.md#climatologies-and-river-forcing)) |
+| `create_ref_case.sh` | One-time setup script to create a new experiment from a reference case — copied from `bin/` manually (see [Climatologies](forcing.md#climatologies)) |
 
 **Ensemble forcing**
 
