@@ -1413,8 +1413,9 @@ and joined afterwards with `bin/concat_riverh.py`. Each array task runs the same
 `river_synoptic.sh` for one calendar year, so a multi-year period takes about as long as
 one year, and the result is identical to a single `river_synoptic.sh` run.
 
-The script reads experiment-specific settings from the environment. Create a thin wrapper
-in the experiment directory that sets them and submits the job:
+The script reads experiment-specific settings from the environment. Set them in a small
+wrapper script: save the following as `submit_glofas.sh` in the experiment directory,
+`$WORK/<CONFIGNAME>/expt_<EXPT_ID>/`, and replace the `<...>` placeholders:
 
 ```bash
 #!/bin/bash
