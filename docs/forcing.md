@@ -1070,14 +1070,14 @@ River discharge is applied in the same way as precipitation at the coastal grid 
 near each river mouth, controlled by `priver` in `blkdat.input`. Three river forcing
 options are available:
 
-| | AHYPE/EHYPE climatology (default) | AHYPE/EHYPE + TRIP + Greenland melt | GloFAS |
-|---|---|---|---|
-| **Time variation** | Monthly climatology | Monthly climatology | Daily reanalysis (1 January 1979 to 30 June 2024) |
-| **Produced by** | `create_ref_case.sh` | `river_nersc.sh`, `river_trip.sh`, `merge_TRIP_Hype_abfile_4Greenland.py` | `river_synoptic.sh` |
-| **File in `force/rivers/<IEXPT>/`** | `rivers.[ab]` | `rivers.[ab]` (overwrites the default) | `riverh.[ab]` (separate file) |
-| **HYCOM 2.3** | `priver=1` | `priver=1` | `priver=2` |
-| **HYCOM 2.2.98** | `priver=1` | `priver=1` | `priver=0` and `highfq_river=.true.` in `hycom_opt` |
-| **Details** | [AHYPE/EHYPE (default)](#ahype-ehype-climatology-default) | [AHYPE/EHYPE with TRIP and Greenland melt](#ahype-ehype-climatology-with-trip-runoff-and-greenland-melt) | [GloFAS](#time-varying-river-forcing-from-glofas) |
+| | AHYPE/EHYPE climatology (default) | AHYPE/EHYPE + TRIP + Greenland melt | GloFAS | AHYPE v4b |
+|---|---|---|---|---|
+| **Time variation** | Monthly climatology | Monthly climatology | Daily reanalysis (1 Jan 1979 – 30 Jun 2024) | Monthly reanalysis (2002–2022) |
+| **Produced by** | `create_ref_case.sh` | `river_nersc.sh`, `river_trip.sh`, `merge_TRIP_Hype_abfile_4Greenland.py` | `river_synoptic.sh` | `bin/river_ahype_v4b.py` |
+| **File in `force/rivers/<IEXPT>/`** | `rivers.[ab]` | `rivers.[ab]` (overwrites the default) | `riverh.[ab]` (separate file) | `riverh_ahype_v4b_<spreading>_<YYYY>.[ab]` |
+| **HYCOM 2.3** | `priver=1` | `priver=1` | `priver=2` | `priver=2` |
+| **HYCOM 2.2.98** | `priver=1` | `priver=1` | `priver=0` + `highfq_river=.true.` | — |
+| **Details** | [AHYPE/EHYPE (default)](#ahype-ehype-climatology-default) | [AHYPE/EHYPE with TRIP and Greenland melt](#ahype-ehype-climatology-with-trip-runoff-and-greenland-melt) | [GloFAS](#time-varying-river-forcing-from-glofas) | [AHYPE v4b](#time-varying-river-forcing-from-ahype-v4b) |
 
 All three options only change the river discharge. For BGC runs (`ntracr ≠ 0`), the
 river nutrient files (`ECO_no3`, `ECO_sil`, `ECO_pho`) always come from
@@ -1656,6 +1656,63 @@ each), and cuts them to the grid of `data_all_year.nc`:
 
 For background on the method, see the technical documentation by Adrien Acchiardi
 (`bin/river-topaz/river_forcing_documentation.pdf`, September 2025).
+
+### Time-varying river forcing from AHYPE v4b
+
+This option replaces the AHYPE/EHYPE climatology with a monthly time-varying product
+combining three sources:
+
+- **AHYPE v4b** — Arctic-HYPE v4b monthly discharge, 751 river-to-ocean outlets,
+  2002–2022 (m³/s per outlet). Covers Arctic drainage north of roughly 50°N.
+- **E-HYPE climatological patch** — 1087 European HYPE outlets from
+  `rivers_ahype-ehype_clim_rev2.dat`, used as point sources to fill European coast
+  coverage gaps. Climatological (same every year).
+- **Roshin Greenland ice melt** — precomputed monthly climatology on the TP2 grid
+  (`grivers.[ab]`, ~252 km³/yr). Climatological (same every year).
+
+Three spreading strategies are available:
+
+| Strategy | rradius | alongshore | Gaussian σ | Approx. runtime |
+|----------|---------|-----------|-----------|-----------------|
+| `pointsource` | none | none | none | ~5 min/yr, 8 GB |
+| `coastal` | 50 km | 100 km | 1 cell | ~30 min/yr, 32 GB |
+| `diffuse` | 180 km | 360 km | 3 cells | ~90 min/yr, 32 GB |
+
+The spreading algorithm is the same as GloFAS: exponential decay in offshore and
+along-shore distance, same-landmass check, land-crossing removal, optional Gaussian blur.
+
+**Output**: `force/rivers/<IEXPT>/riverh_ahype_v4b_<spreading>_<YYYY>.[ab]` — one file
+per year with 12 monthly records (record placed at the 15th of each month, `rdtime` =
+days in month). Set `priver=2` in `blkdat.input` to use these files.
+
+#### Offline preparation (Slurm job array)
+
+Create a thin wrapper in the experiment directory that sets the experiment-specific
+variables and submits the array:
+
+```bash
+#!/bin/bash
+# submit_ahype_v4b.sh — experiment wrapper for bin/submit_river_ahype_v4b.sh
+# Place in $WORK/<CONFIGNAME>/expt_<EXPT_ID>/ and run: bash submit_ahype_v4b.sh
+export CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+export IEXPT=<IEXPT>             # e.g. 030
+export T=<T>                     # topography version, e.g. 04
+export SPREADING=coastal         # pointsource | coastal | diffuse
+
+mkdir -p log
+sbatch --array=2002-2022%12 $HOME/NERSC-HYCOM-CICE/bin/submit_river_ahype_v4b.sh
+```
+
+Then from the experiment directory:
+
+```bash
+bash submit_ahype_v4b.sh
+```
+
+One year takes 5–90 minutes depending on the spreading strategy. The output files are
+independent (no overlap), so no join step is needed — `riverh_ahype_v4b_<spreading>_<YYYY>.[ab]`
+files can be used directly by the model, one per year. To use a single concatenated file
+instead, join them with `bin/concat_riverh.py` as for GloFAS.
 
 ## Climatologies
 
