@@ -1412,59 +1412,29 @@ A year takes about 3 hours this way; for more than a few months, use the Slurm j
 
 ::::{dropdown} Long periods: Slurm job array
 
-The years are run in parallel as a Slurm job array and joined afterwards with
-`bin/concat_riverh.py`. Each array task runs the same code as `river_synoptic.sh` for one
-calendar year, so a multi-year period takes about as long as one year, and the result is
-identical to a single `river_synoptic.sh` run.
+The years are run in parallel as a Slurm job array using `bin/submit_river_glofas.sh`,
+and joined afterwards with `bin/concat_riverh.py`. Each array task runs the same code as
+`river_synoptic.sh` for one calendar year, so a multi-year period takes about as long as
+one year, and the result is identical to a single `river_synoptic.sh` run.
 
-Save the script below as `riverh_job.sh` in the experiment directory,
-`$WORK/<CONFIGNAME>/expt_<EXPT_ID>/`, and set `CONFIGNAME`, `IEXPT`, `DT` and `DEPTH` at
-the top. `DT` is the record interval in days: `1.0` for HYCOM 2.3,
-`0.25` for HYCOM 2.2.98 (see the table above). `DEPTH` is the depth file
-of the experiment, `depth_<CONFIGNAME>_<T>.a`, where `<T>` is the topography version `T` in
-`EXPT.src`. This is the file `river_synoptic.sh` and the model use, so the river forcing
-has the same land mask as the model.
+The script reads experiment-specific settings from the environment. Create a thin wrapper
+in the experiment directory that sets them and submits the job:
 
 ```bash
 #!/bin/bash
-#SBATCH --job-name=riverh
-#SBATCH --account=nn2993k
-#SBATCH --time=02:00:00
-#SBATCH --qos=preproc
-#SBATCH --ntasks=1
-#SBATCH --mem=16G
-#SBATCH -o log/riverh.%A_%a.out
+# submit_glofas.sh — experiment wrapper for bin/submit_river_glofas.sh
+# Place in $WORK/<CONFIGNAME>/expt_<EXPT_ID>/ and run: bash submit_glofas.sh <START> <END>
+export CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
+export IEXPT=<IEXPT>             # e.g. 010
+export T=<T>                     # topography version, e.g. 04
+export DT=1.0                    # 1.0 for HYCOM 2.3, 0.25 for HYCOM 2.2.98
 
-CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
-IEXPT=<IEXPT>             # e.g. 010
-DT=1.0                    # record interval [days]: 1.0 for HYCOM 2.3, 0.25 for 2.2.98
-DEPTH=$WORK/${CONFIGNAME}/topo/depth_${CONFIGNAME}_<T>.a   # <T>: topography version, e.g. 04
-
-START=$1   # first day of the whole period, YYYY-MM-DD
-END=$2     # last day of the whole period (included), YYYY-MM-DD
-if [[ -z "$START" || -z "$END" || -z "$SLURM_ARRAY_TASK_ID" ]]; then
-    echo "Usage: sbatch --array=<FIRST_YEAR>-<LAST_YEAR>%12 riverh_job.sh <START> <END>"
-    exit 1
-fi
-set --    # conda's activate would otherwise see the arguments
-
-source ${HOME}/NERSC-HYCOM-CICE/environment/betzy_env.sh
-module load Miniforge3/24.1.2-0
-source ${EBROOTMINIFORGE3}/bin/activate
-conda activate hycom-cice
-
-# This task's year. It runs until 1 January of the next year, because a day's records
-# are only written once the next day is processed; concat_riverh.py removes the overlap.
-YEAR=$SLURM_ARRAY_TASK_ID
-cs=${YEAR}-01-01
-[[ "$cs" < "$START" ]] && cs=$START
-ce=$((YEAR+1))-01-01
-[[ "$ce" > "$END" ]] && ce=$END
-
-OUT=$WORK/${CONFIGNAME}/force/rivers/${IEXPT}/SCRATCH/chunks_${START}_${END}/
-mkdir -p $OUT
-cd $HOME/NERSC-HYCOM-CICE/bin/river-topaz/scripts/GloFAS
-python -u hycom_river_hifre.py --dt $DT ${cs}T00:00:00 ${ce}T00:00:00 $OUT $DEPTH
+START=$1
+END=$2
+mkdir -p log
+jid=$(sbatch --parsable --array=${START:0:4}-${END:0:4}%12 \
+    $HOME/NERSC-HYCOM-CICE/bin/submit_river_glofas.sh $START $END)
+echo "Array job: $jid"
 ```
 
 Submit one array task per year from the experiment directory, together with a job that
@@ -1480,9 +1450,11 @@ START=1993-01-01          # first day of the period
 END=2024-06-30            # last day of the period (included)
 
 cd $WORK/${CONFIGNAME}/expt_${EXPT_ID}
-mkdir -p log
-jid=$(sbatch --parsable --array=${START:0:4}-${END:0:4}%12 riverh_job.sh $START $END)
+bash submit_glofas.sh $START $END   # wrapper sets CONFIGNAME/IEXPT/T/DT and submits the array
+
+# Run the join step once all array tasks succeed:
 RDIR=$WORK/${CONFIGNAME}/force/rivers/${IEXPT}
+jid=<array_job_id>
 sbatch --dependency=afterok:$jid --account=nn2993k --qos=preproc --time=00:30:00 --mem=2G \
     --output=log/riverh_join.%j.out \
     --wrap="python $HOME/NERSC-HYCOM-CICE/bin/concat_riverh.py $RDIR/riverh $RDIR/SCRATCH/chunks_${START}_${END}/riverh_*.a"
