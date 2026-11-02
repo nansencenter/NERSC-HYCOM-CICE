@@ -1424,10 +1424,11 @@ CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
 EXPT_ID=<EXPT_ID>         # e.g. 01.0
 
 cd $WORK/${CONFIGNAME}/expt_${EXPT_ID}
-$HOME/NERSC-HYCOM-CICE/bin/submit_river_glofas.sh 1993-01-01 2024-06-30
+$HOME/NERSC-HYCOM-CICE/bin/submit_river_glofas.sh 1993-01-01 2025-01-01
 ```
 
-Do not submit the script with `sbatch` yourself. As with `river_glofas.sh`, an optional
+Run the script directly, as above, not with `sbatch`: it takes a second on the login node,
+submits the Slurm jobs itself and prints their job IDs. As with `river_glofas.sh`, an optional
 third argument overrides the record interval (fraction of a day). At most 12 years run at
 a time, the `preproc` limit on Betzy. One year takes about 20 minutes and 6 GB of memory
 on a Betzy compute node.

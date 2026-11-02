@@ -10,7 +10,8 @@
 # GloFAS river forcing riverh.[ab] for a long period, as a Slurm job array (one task per
 # year) followed by a join job (concat_riverh.py). Gives the same file as river_glofas.sh.
 #
-# Usage, from the experiment directory (do not call it with sbatch, it submits itself):
+# Usage, from the experiment directory. Run it directly, not with sbatch: it submits the
+# Slurm jobs itself (the #SBATCH lines above are for those jobs):
 #   $HOME/NERSC-HYCOM-CICE/bin/submit_river_glofas.sh <START> <END> [dt]
 #
 # START and END are the first and last day (included) of the period, YYYY-MM-DD.
