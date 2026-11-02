@@ -1415,7 +1415,7 @@ one year, and the result is identical to a single `river_synoptic.sh` run.
 
 Run it from the experiment directory, with the first and last day (included) of the
 period. It reads the region, experiment number, topography and HYCOM version from
-`REGION.src` and `EXPT.src`, the same as `river_synoptic.sh`, and submits two jobs: an
+`REGION.src` and `EXPT.src`, and submits two jobs: an
 array with one task per year, and a job that joins the years into `riverh.[ab]` once all
 of them have finished:
 
