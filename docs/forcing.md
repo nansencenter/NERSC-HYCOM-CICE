@@ -1410,8 +1410,8 @@ A year takes about 3 hours this way; for more than a few months, use the Slurm j
 
 The years are run in parallel as a Slurm job array using `bin/submit_river_glofas.sh`,
 and joined afterwards with `bin/concat_riverh.py`. Each array task runs the same code as
-`river_glofas.sh` for one calendar year, so a multi-year period takes about as long as
-one year, and the result is identical to a single `river_glofas.sh` run.
+`river_glofas.sh` for one calendar year, so the work is spread over up to 12 years at a
+time, and the result is identical to a single `river_glofas.sh` run.
 
 Run it from the experiment directory, with the first and last day (included) of the
 period. It reads the region, experiment number, topography and HYCOM version from
@@ -1430,8 +1430,9 @@ $HOME/NERSC-HYCOM-CICE/bin/submit_river_glofas.sh 1993-01-01 2025-01-01
 Run the script directly, as above, not with `sbatch`: it takes a second on the login node,
 submits the Slurm jobs itself and prints their job IDs. As with `river_glofas.sh`, an optional
 third argument overrides the record interval (fraction of a day). At most 12 years run at
-a time, the `preproc` limit on Betzy. One year takes about 20 minutes and 6 GB of memory
-on a Betzy compute node.
+a time, the `preproc` limit on Betzy, so a period runs in rounds of 12 years. One year
+takes 16–18 minutes and just under 6 GB of memory on a Betzy compute node (daily records,
+HYCOM 2.3): 1993–2024 (32 years, three rounds) takes about 55 minutes in total.
 
 The join job only starts if every year finished successfully, and `concat_riverh.py`
 checks the result: records evenly spaced over the whole period (no missing or incomplete
