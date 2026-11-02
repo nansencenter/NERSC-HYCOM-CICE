@@ -427,7 +427,7 @@ elif [ $PRIVER -eq 2 ] ; then
       cp $BASEDIR/force/rivers/$E/ECO_pho.b rivers.ECO_pho.b || tellwarn "Could not get PHO river .b file"
   fi
 fi
-# --- High frequency river forcing (GloFAS). riverh.[ab] is pre-prepared with river_synoptic.sh
+# --- High frequency river forcing (GloFAS). riverh.[ab] is pre-prepared with river_glofas.sh
 # --- or submit_river_glofas.sh; here we only link it and check that it covers the job period.
 if [ "$HRIVER" = ".true." ]; then
    RDIR=$BASEDIR/force/rivers/$E
@@ -448,10 +448,10 @@ if [ "$HRIVER" = ".true." ]; then
      frcstop=$(tail -n 1 ${Rforfile}.b             | sed "s/.*=//" | sed "s/^[ ]*//" | cut -d " " -f 1)
      test1=$(echo ${tstart#-}'>='$frcstart | bc -l)
      test2=$(echo $tstop '<='$frcstop  | bc -l)
-     [ $test1 -eq 1 ] || tellerror "File $RDIR/riverh.b: forcing starts after  model starts. Create it with river_synoptic.sh or submit_river_glofas.sh"
-     [ $test2 -eq 1 ] || tellerror "File $RDIR/riverh.b: forcing stops  before model stops. Create it with river_synoptic.sh or submit_river_glofas.sh"
+     [ $test1 -eq 1 ] || tellerror "File $RDIR/riverh.b: forcing starts after  model starts. Create it with river_glofas.sh or submit_river_glofas.sh"
+     [ $test2 -eq 1 ] || tellerror "File $RDIR/riverh.b: forcing stops  before model stops. Create it with river_glofas.sh or submit_river_glofas.sh"
    else
-     tellerror "Could not find high frequency river forcing $RDIR/riverh.[ab]. Create it with river_synoptic.sh or submit_river_glofas.sh"
+     tellerror "Could not find high frequency river forcing $RDIR/riverh.[ab]. Create it with river_glofas.sh or submit_river_glofas.sh"
    fi
 fi
 

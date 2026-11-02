@@ -1073,7 +1073,7 @@ options are available:
 | | AHYPE/EHYPE climatology (default) | AHYPE/EHYPE + TRIP + Greenland melt | GloFAS |
 |---|---|---|---|
 | **Time variation** | Monthly climatology | Monthly climatology | Daily reanalysis (1 January 1979 to 30 June 2024) |
-| **Produced by** | `create_ref_case.sh` | `river_nersc.sh`, `river_trip.sh`, `merge_TRIP_Hype_abfile_4Greenland.py` | `river_synoptic.sh` |
+| **Produced by** | `create_ref_case.sh` | `river_nersc.sh`, `river_trip.sh`, `merge_TRIP_Hype_abfile_4Greenland.py` | `river_glofas.sh` |
 | **File in `force/rivers/<IEXPT>/`** | `rivers.[ab]` | `rivers.[ab]` (overwrites the default) | `riverh.[ab]` (separate file) |
 | **HYCOM 2.3** | `priver=1` | `priver=1` | `priver=2` |
 | **HYCOM 2.2.98** | `priver=1` | `priver=1` | `priver=0` and `highfq_river=.true.` in `hycom_opt` |
@@ -1332,7 +1332,7 @@ The script prints the total volume on both grids and how much melt was moved how
 
 Time-varying river forcing uses daily GloFAS v4.0 reanalysis discharge instead of the
 AHYPE/EHYPE discharge climatology. It is generated before the model run, with
-`bin/river_synoptic.sh` (short periods) or `bin/submit_river_glofas.sh` (longer periods).
+`bin/river_glofas.sh` (short periods) or `bin/submit_river_glofas.sh` (longer periods).
 
 #### Replacing the AHYPE/EHYPE climatology
 
@@ -1365,7 +1365,7 @@ The record interval of the output file depends on the HYCOM version (`V` in `EXP
 | **Record interval** | 6-hourly (`dt=0.25`) | daily (`dt=1.0`) |
 | **Why** | river records are read together with the atmospheric forcing and must have the same time stamps | the model reads the river file independently and interpolates linearly in time between consecutive records, whatever their spacing |
 
-`river_synoptic.sh` picks the interval from `V` automatically. Both versions read the
+`river_glofas.sh` picks the interval from `V` automatically. Both versions read the
 same file, `force/rivers/<IEXPT>/riverh.[ab]`; `expt_preprocess.sh` links it to
 `forcing.riverh.[ab]` or `forcing.rivers.[ab]` as appropriate. In HYCOM 2.3, the daily file
 gives exactly the same forcing as the 6-hourly file used by 2.2.98, because the 6-hourly
@@ -1381,7 +1381,7 @@ Generate the file once for the whole period before running the model. The end da
 on or after the end of the last model job. `expt_preprocess.sh` does not create the file:
 it only links it, checks that it covers each job's period, and stops with an error if the
 file is missing or too short.
-`river_synoptic.sh` processes one GloFAS day at a time: after 2–3 minutes of setup it takes
+`river_glofas.sh` processes one GloFAS day at a time: after 2–3 minutes of setup it takes
 about 30 s per day on a Betzy login node and a few seconds per day on a compute node. Run
 short periods directly on the login node, and longer ones as a Slurm job array, which
 processes the years in parallel. Both give the same file. Activate the Python environment
@@ -1389,7 +1389,7 @@ first (see [Climatologies](#climatologies) below).
 
 ::::{dropdown} Short periods: on the login node
 
-Run `river_synoptic.sh` from the experiment directory, passing the start and end of the
+Run `river_glofas.sh` from the experiment directory, passing the start and end of the
 period (same `YYYY-MM-DDTHH:MM:SS` format as `START`/`END` in `srjob.sh`). An optional third
 argument overrides the record interval (fraction of a day):
 
@@ -1398,8 +1398,8 @@ CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
 EXPT_ID=<EXPT_ID>         # e.g. 01.0
 
 cd $WORK/${CONFIGNAME}/expt_${EXPT_ID}
-$HOME/NERSC-HYCOM-CICE/bin/river_synoptic.sh 2013-01-01T00:00:00 2014-01-01T00:00:00        # dt from V
-$HOME/NERSC-HYCOM-CICE/bin/river_synoptic.sh 2013-01-01T00:00:00 2014-01-01T00:00:00 0.25   # force 6-hourly
+$HOME/NERSC-HYCOM-CICE/bin/river_glofas.sh 2013-01-01T00:00:00 2014-01-01T00:00:00        # dt from V
+$HOME/NERSC-HYCOM-CICE/bin/river_glofas.sh 2013-01-01T00:00:00 2014-01-01T00:00:00 0.25   # force 6-hourly
 ```
 
 A year takes about 3 hours this way; for more than a few months, use the Slurm job array.
@@ -1410,8 +1410,8 @@ A year takes about 3 hours this way; for more than a few months, use the Slurm j
 
 The years are run in parallel as a Slurm job array using `bin/submit_river_glofas.sh`,
 and joined afterwards with `bin/concat_riverh.py`. Each array task runs the same code as
-`river_synoptic.sh` for one calendar year, so a multi-year period takes about as long as
-one year, and the result is identical to a single `river_synoptic.sh` run.
+`river_glofas.sh` for one calendar year, so a multi-year period takes about as long as
+one year, and the result is identical to a single `river_glofas.sh` run.
 
 Run it from the experiment directory, with the first and last day (included) of the
 period. It reads the region, experiment number, topography and HYCOM version from
@@ -1427,7 +1427,7 @@ cd $WORK/${CONFIGNAME}/expt_${EXPT_ID}
 $HOME/NERSC-HYCOM-CICE/bin/submit_river_glofas.sh 1993-01-01 2024-06-30
 ```
 
-Do not submit the script with `sbatch` yourself. As with `river_synoptic.sh`, an optional
+Do not submit the script with `sbatch` yourself. As with `river_glofas.sh`, an optional
 third argument overrides the record interval (fraction of a day). At most 12 years run at
 a time, the `preproc` limit on Betzy. One year takes about 20 minutes and 6 GB of memory
 on a Betzy compute node.
@@ -1441,7 +1441,7 @@ year), and no NaN, negative or implausibly large values. If a check fails it wri
 `log/riverh_glofas.<jobid>_<year>.out`, fix the cause and run the command again.
 
 Where two years overlap, `concat_riverh.py` takes the records from the later year, so
-`riverh.[ab]` is identical, byte for byte, to a single `river_synoptic.sh` run over the
+`riverh.[ab]` is identical, byte for byte, to a single `river_glofas.sh` run over the
 whole period (checked for daily and 6-hourly records). `concat_riverh.py` can also cut a
 period out of any `riverh.[ab]`, e.g. a single year:
 
@@ -1525,7 +1525,7 @@ the Ob and the Yenisei water into the Gulf of Ob.
 #### Source data
 
 All input data are under `/cluster/projects/nn9481k/GloFAS_data/` on Betzy. They are read
-internally by `river_synoptic.sh`, so you do not need to touch them, unless the period
+internally by `river_glofas.sh`, so you do not need to touch them, unless the period
 needs to be extended beyond 30 June 2024 (see below). Requesting a period outside the data
 stops with an error. The paths are set in
 `bin/river-topaz/scripts/GloFAS/hycom_river_hifre.py` (discharge) and

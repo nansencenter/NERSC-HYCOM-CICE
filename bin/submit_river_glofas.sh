@@ -8,7 +8,7 @@
 #SBATCH -o log/riverh_glofas.%A_%a.out
 
 # GloFAS river forcing riverh.[ab] for a long period, as a Slurm job array (one task per
-# year) followed by a join job (concat_riverh.py). Gives the same file as river_synoptic.sh.
+# year) followed by a join job (concat_riverh.py). Gives the same file as river_glofas.sh.
 #
 # Usage, from the experiment directory (do not call it with sbatch, it submits itself):
 #   $HOME/NERSC-HYCOM-CICE/bin/submit_river_glofas.sh <START> <END> [dt]
@@ -71,7 +71,7 @@ if [ "$MODE" == "join" ]; then
     exit $?
 fi
 
-# --- One year (array task). Use the experiment's depth file, as river_synoptic.sh does.
+# --- One year (array task). Use the experiment's depth file, as river_glofas.sh does.
 depthfile=${BASEDIR}/topo/depth_${R}_${T}.a
 if [ ! -s "$depthfile" ] || [ ! -s "${depthfile%.a}.b" ]; then
     echo "Could not find depth files ${BASEDIR}/topo/depth_${R}_${T}.[ab]"

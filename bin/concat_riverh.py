@@ -4,7 +4,7 @@ The GloFAS job array in docs/forcing.md runs hycom_river_hifre.py for consecutiv
 periods ("chunks", one per year) in parallel. Each chunk except the last runs one day
 into the next chunk, because a day's records are only written once the following day is
 processed. Where chunks overlap, the records of the later chunk are used, so the result
-is the same as one continuous river_synoptic.sh run.
+is the same as one continuous river_glofas.sh run.
 
 Records are copied byte for byte. With --from/--to only records whose model day lies
 in [from, to] (dates, both inclusive) are kept, e.g. to cut out a single year.
