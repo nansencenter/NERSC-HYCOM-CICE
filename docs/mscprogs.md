@@ -175,13 +175,13 @@ m2transport archm.*.a                          # output: transport_net001.dat, .
 
 - **`m2section`** — extracts fields along sections to `section001.nc`,
   `section002.nc`, … Uses `extract.*` files to select fields.
-- **`m2transport`** — fast barotropic volume, heat, freshwater and ice transport across sections.
+- **`m2transport`** — fast barotropic volume and ice transport across sections.
   Output to ASCII files `transport_net001.dat`, `transport_net002.dat`, …
 - **`m2transport2`** — full-depth transport with finer control. Transport
   criteria (depth range, water mass temperature range, etc.) are set in
   `transport.in`. Also writes `transports2.nc`.
 
-`m2transport2` additionally supports scalar (e.g. heat) transports when
+`m2transport2` additionally supports scalar (e.g. heat and freshwater excluding sea ice) transports when
 `scalartransport.in` is present. Each line specifies:
 
 ```
