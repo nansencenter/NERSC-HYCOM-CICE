@@ -297,7 +297,7 @@ m2transport archm.*.a                          # output: transport_net001.dat, .
   criteria (depth range, water mass temperature range, etc.) are set in
   `transport.in`. Also writes `transports2.nc`.
 
-`m2transport2` additionally supports scalar (e.g. heat) transports when
+`m2transport2` additionally supports scalar (e.g. heat and freshwater excluding sea ice) transports when
 `scalartransport.in` is present. Each line specifies:
 
 ```
