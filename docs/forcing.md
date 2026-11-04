@@ -1072,7 +1072,7 @@ options are available:
 
 | | AHYPE/EHYPE climatology (default) | AHYPE/EHYPE + TRIP + Greenland melt | GloFAS | AHYPE v4b |
 |---|---|---|---|---|
-| **Time variation** | Monthly climatology | Monthly climatology | Daily reanalysis (1 January 1979 to 30 June 2024) | Monthly (January 2002 to December 2022) |
+| **Time variation** | Monthly climatology | Monthly climatology | Daily reanalysis (1 January 1979 to 30 June 2024) | Monthly (January 2002 to December 2022), with GEUS Greenland ice discharge |
 | **Produced by** | `create_ref_case.sh` | `river_nersc.sh`, `river_trip.sh`, `merge_TRIP_Hype_abfile_4Greenland.py` | `river_glofas.sh` | `river_ahype_v4b.sh` |
 | **File in `force/rivers/<IEXPT>/`** | `rivers.[ab]` | `rivers.[ab]` (overwrites the default) | `riverh.[ab]` (separate file) | `riverh.[ab]` (separate file) |
 | **HYCOM 2.3** | `priver=1` | `priver=1` | `priver=2` | `priver=2` |
@@ -1604,18 +1604,25 @@ For background on the method, see the technical documentation by Adrien Acchiard
 
 ### Time-varying river forcing from AHYPE v4b
 
-This option replaces the AHYPE/EHYPE climatology with a monthly time-varying product
-combining three sources:
+This option replaces the AHYPE/EHYPE climatology with monthly time-varying forcing, the sum
+of three sets of point sources:
 
-- **AHYPE v4b** — Arctic-HYPE v4b monthly discharge, 751 river-to-ocean outlets,
-  2002–2022 (m³/s per outlet). Covers Arctic drainage north of roughly 50°N.
-- **E-HYPE climatological patch** — 1087 European HYPE outlets from
-  `rivers_ahype-ehype_clim_rev2.dat`, used as point sources to fill European coast
-  coverage gaps. Climatological (same every year).
-- **Roshin Greenland ice melt** — precomputed monthly climatology on the TP2 grid
-  (`grivers.[ab]`, ~252 km³/yr). Climatological (same every year).
+- **AHYPE v4b**: Arctic-HYPE v4b monthly discharge at 751 river-to-ocean outlets, 2002–2022.
+- **E-HYPE**: the 1087 European HYPE outlets of `rivers_ahype-ehype_clim_rev2.dat` (monthly
+  climatology, the same every year), which fill the European coasts that AHYPE v4b does not
+  cover.
+- **GEUS Greenland solid ice discharge**: monthly discharge of the 266 GEUS flux gates near
+  the marine-terminating glacier fronts (Mankoff et al. 2020, doi:10.5194/essd-12-1367-2020;
+  data doi:10.22008/promice/data/ice_discharge), about 480 Gt/yr in 2002–2022. It is added as
+  liquid freshwater at the glacier's coastal cell (1 Gt = 1 km³), complementing the Greenland
+  liquid runoff in AHYPE v4b. It replaces the Roshin ice melt climatology (`grivers.[ab]`,
+  252 km³/yr) of the [merged climatology](#ahype-ehype-climatology-with-trip-runoff-and-greenland-melt).
+  Treating calving as liquid water at the coast puts it too close to the coast and too early
+  compared with real icebergs, and ignores the heat needed to melt the ice.
 
-Three spreading strategies are available:
+Every outlet and gate goes to the nearest coastal ocean cell (an ocean cell with a land cell
+as direct neighbour) within 300 km; outlets further away are dropped and listed in the log.
+All three sources are then spread in the same way, with one of three strategies:
 
 | Strategy | rradius | alongshore | Gaussian σ |
 |----------|---------|-----------|-----------|
@@ -1623,21 +1630,53 @@ Three spreading strategies are available:
 | `coastal` | 50 km | 100 km | 1 cell |
 | `diffuse` | 180 km | 360 km | 3 cells |
 
-The spreading algorithm is the same as GloFAS: exponential decay in offshore and
-along-shore distance, same-landmass check, land-crossing removal, optional Gaussian blur.
+The spreading algorithm is the one of GloFAS (see
+[How the discharge is spread from the estuaries](#time-varying-river-forcing-from-glofas)):
+exponential decay with distance from the mouth and from the coast, same landmass only, no
+crossing of more than 15 land cells, optional Gaussian smoothing. The weights of each outlet
+are normalised, so the volume is conserved. The grid size is read from `regional.grid.b`, so
+the same scripts work for TP2a0.10 and TP5a0.06.
 
 **Output**: `force/rivers/<IEXPT>/riverh.[ab]`, one record per month at 00:00 on the 15th.
 Set `priver=2` in `blkdat.input` (HYCOM 2.3), as for GloFAS; `expt_preprocess.sh` links the
 file and checks that it covers each job. Because the first record is on 15 January 2002 and
 the last on 15 December 2022, model runs must lie within that window.
 
-The script also needs, on Betzy:
+:::{note}
+The land mask comes from the experiment's depth file. If it has no Baltic Sea (e.g.
+`depth_TP5a0.06_01`), the Baltic E-HYPE outlets within 300 km of the open coast are moved over
+land into the Kattegat/North Sea, and the others are dropped. Check the outlet counts and
+distances in the log.
+:::
 
-- the AHYPE v4b outlet file (`.gpkg`) and monthly timeseries (`.txt`) in
-  `/cluster/projects/nn2993k/AHYPE_v4b/` (or pass `--gpkg`/`--ts` to `river_ahype_v4b.py`),
-- the Roshin ice melt on the model grid in `$TRIP_PATH/triver_Roshin/`
-  (`grivers_tp2.[ab]` for TP2a0.10, see above),
-- `input/rivers_ahype-ehype_clim_rev2.dat` from the repository (E-HYPE outlets).
+#### Input data
+
+On Betzy the scripts expect, in `/cluster/projects/nn2993k/AHYPE_v4b/` (other paths can be
+passed to `river_ahype_v4b.py` with `--gpkg`, `--ts` and `--geus`):
+
+| File | Contents |
+|---|---|
+| `arcfresh_riverdischarge_ahype_v4b_river-to-ocean-outlets.gpkg` | AHYPE v4b outlet positions |
+| `arcfresh_riverdischarge_2002-2022_monthly_m3s_river-to-ocean-outlets.txt` | AHYPE v4b monthly discharge (m³/s) |
+| `geus_gates_monthly.nc` | GEUS monthly gate discharge, made by `geus_preprocess.py` (below) |
+
+The E-HYPE outlets are read from `input/rivers_ahype-ehype_clim_rev2.dat` in the repository.
+
+The GEUS file is made once from the GEUS ice discharge download, the directory with
+`gate.nc`. The irregularly sampled rates (about monthly before 2009, nearly daily 2009–2024,
+12-daily since) are interpolated linearly to daily values and averaged per month:
+
+```bash
+python $HOME/NERSC-HYCOM-CICE/bin/geus_preprocess.py --dataverse-version V131 \
+    <GEUS download directory> /cluster/projects/nn2993k/AHYPE_v4b/geus_gates_monthly.nc
+```
+
+GEUS updates the dataset regularly. The Dataverse version of the download (shown on the dataset
+page, e.g. V131) is not in the files, so it must be given with `--dataverse-version`; it is
+stored in `geus_gates_monthly.nc` together with the product version and git commit of
+`gate.nc`, printed in the log of `river_ahype_v4b.py`, and written to the header of
+`riverh.b`. The forcing in this documentation was made with Dataverse V131, product version
+2.0 (git commit 886d2c1).
 
 #### Generating the river file
 
@@ -1659,8 +1698,9 @@ $HOME/NERSC-HYCOM-CICE/bin/submit_river_ahype_v4b.sh coastal            # 2002-2
 $HOME/NERSC-HYCOM-CICE/bin/submit_river_ahype_v4b.sh diffuse 2005 2010  # sub-period
 ```
 
-The log prints the annual total (km³/yr) for every year. Spreading only redistributes the
-water, so these totals must be the same for all three strategies.
+The log lists, for every year, the annual total of each source and of the gridded field
+(km³/yr). The two totals must agree (the script stops otherwise), and they are the same for
+all three spreading strategies.
 
 ## Climatologies
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Generates AHYPE v4b river forcing (monthly, AHYPE v4b + E-HYPE + Roshin ice melt) and
+# Generates AHYPE v4b river forcing (monthly, AHYPE v4b + E-HYPE + GEUS ice discharge) and
 # writes it to force/rivers/<E>/riverh.[ab]. Must be run in the experiment directory.
 # For a Slurm job instead of the login node, use submit_river_ahype_v4b.sh.
 
@@ -45,10 +45,8 @@ if [ ! -s "$depthfile" ] || [ ! -s "${depthfile%.a}.b" ]; then
 fi
 
 out=$S/riverh_ahype_v4b_${spreading}_${first}_${last}
-roshin=""
-[ -n "$TRIP_PATH" ] && roshin="--roshin ${TRIP_PATH}/triver_Roshin"
 cmd="python -u ${BINDIR}river_ahype_v4b.py --spreading $spreading --start-year $first --end-year $last \
-   --grid ${BASEDIR}/topo/regional.grid.a --depth $depthfile --out $out $roshin"
+   --grid ${BASEDIR}/topo/regional.grid.a --depth $depthfile --out $out"
 echo "$cmd"
 eval $cmd || { echo "Error running $cmd" ; exit 1 ; }
 

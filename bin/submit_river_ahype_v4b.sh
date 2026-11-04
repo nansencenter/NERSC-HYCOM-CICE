@@ -1,10 +1,10 @@
 #!/bin/bash
 #SBATCH --job-name=riverh_ahype_v4b
 #SBATCH --account=nn2993k
-#SBATCH --time=04:00:00
+#SBATCH --time=01:00:00
 #SBATCH --qos=preproc
 #SBATCH --ntasks=1
-#SBATCH --mem=32G
+#SBATCH --mem=4G
 #SBATCH -o log/riverh_ahype_v4b.%j.out
 
 # AHYPE v4b river forcing riverh.[ab] as a Slurm job. Gives the same file as
