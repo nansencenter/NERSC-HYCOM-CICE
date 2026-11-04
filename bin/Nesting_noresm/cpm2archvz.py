@@ -24,7 +24,7 @@ def maplev(a, lpp=1):
     J, I = np.where(~np.isnan(a))
     with np.errstate(invalid='ignore'):
         if len(I) > 0 and len(J) > 0:
-            av = np.nansum(a[J, I]) / (len(I) * len(J))
+            av = np.nansum(a[J, I]) / len(I)
         else:
             av = 0.0
             
