@@ -1604,36 +1604,51 @@ For background on the method, see the technical documentation by Adrien Acchiard
 
 ### Time-varying river forcing from AHYPE v4b
 
-This option replaces the AHYPE/EHYPE climatology with monthly time-varying forcing, the sum
-of three sets of point sources:
+This option replaces the AHYPE/EHYPE climatology with monthly time-varying forcing
+(January 2002 to December 2022), the sum of three sets of point sources:
 
-- **AHYPE v4b**: Arctic-HYPE v4b monthly discharge at 751 river-to-ocean outlets, 2002–2022.
+- **AHYPE v4b**: Arctic-HYPE v4b monthly discharge at 751 river-to-ocean outlets.
 - **E-HYPE**: the 1087 European HYPE outlets of `rivers_ahype-ehype_clim_rev2.dat` (monthly
-  climatology, the same every year), which fill the European coasts that AHYPE v4b does not
-  cover.
-- **GEUS Greenland solid ice discharge**: monthly discharge of the 266 GEUS flux gates near
-  the marine-terminating glacier fronts (Mankoff et al. 2020, doi:10.5194/essd-12-1367-2020;
-  data doi:10.22008/promice/data/ice_discharge), about 480 Gt/yr in 2002–2022. It is added as
-  liquid freshwater at the glacier's coastal cell (1 Gt = 1 km³), complementing the Greenland
-  liquid runoff in AHYPE v4b. It replaces the Roshin ice melt climatology (`grivers.[ab]`,
-  252 km³/yr) of the [merged climatology](#ahype-ehype-climatology-with-trip-runoff-and-greenland-melt).
-  Treating calving as liquid water at the coast puts it too close to the coast and too early
-  compared with real icebergs, and ignores the heat needed to melt the ice.
+  climatology), which fill the European coasts that AHYPE v4b does not cover.
+- **GEUS Greenland solid ice discharge**: monthly discharge at 266 glacier fronts, about
+  480 km³/yr, added as liquid freshwater at the coast. It replaces the Roshin ice melt of the
+  [merged climatology](#ahype-ehype-climatology-with-trip-runoff-and-greenland-melt).
 
-AHYPE v4b outlets draining to the North Pacific (`oceanbasin`) are left out. Every other outlet
-and gate goes to the nearest coastal ocean cell (an ocean cell with a land cell as direct
-neighbour). Outlets outside the model domain, the polygon of the southern and northern grid
-rows, are dropped and listed in the log (21 AHYPE v4b outlets in the Gulf of St. Lawrence,
-the Strait of Belle Isle and the Aleutians, about 245 km³/yr). There is no distance limit: a large river can
-end in an estuary the grid does not resolve, e.g. the Yenisei outlet is 330 km from the nearest
-coastal cell of TP2a0.10 (250 km on TP5a0.06), and its water enters at the mouth of the Yenisei
-Gulf. All three sources are then spread in the same way, with one of three strategies:
+Each outlet goes to the nearest coastal ocean cell and is then spread with one of three
+strategies:
 
 | Strategy | rradius | alongshore | Gaussian σ |
 |----------|---------|-----------|-----------|
 | `pointsource` | none | none | none |
 | `coastal` | 50 km | 100 km | 1 cell |
 | `diffuse` | 180 km | 360 km | 3 cells |
+
+**Output**: `force/rivers/<IEXPT>/riverh.[ab]`, one record per month at 00:00 on the 15th.
+Set `priver=2` in `blkdat.input` (HYCOM 2.3), as for GloFAS. Model runs must lie between
+15 January 2002 and 15 December 2022; `expt_preprocess.sh` links the file and checks this.
+
+::::{dropdown} More on the GEUS ice discharge
+
+Source: Mankoff et al. 2020 (doi:10.5194/essd-12-1367-2020; data
+doi:10.22008/promice/data/ice_discharge), flux gates near the marine-terminating glacier
+fronts. 1 Gt = 1 km³. It replaces the Roshin climatology (`grivers.[ab]`, 252 km³/yr).
+
+Adding the calved ice as liquid water at the glacier front is a simplification: real icebergs
+drift away and melt over months to years, and take heat from the ocean as they melt. This
+forcing ignores both.
+
+::::
+
+::::{dropdown} How outlets are placed and spread
+
+AHYPE v4b outlets draining to the North Pacific (`oceanbasin`) are left out. Every other outlet
+and gate goes to the nearest coastal ocean cell (an ocean cell with a land cell as direct
+neighbour). Outlets outside the model domain, the polygon of the southern and northern grid
+rows, are dropped and listed in the log (21 AHYPE v4b outlets in the Gulf of St. Lawrence,
+the Strait of Belle Isle and the Aleutians, about 245 km³/yr). There is no distance limit: a
+large river can end in an estuary the grid does not resolve, e.g. the Yenisei outlet is 330 km
+from the nearest coastal cell of TP2a0.10 (250 km on TP5a0.06), and its water enters at the
+mouth of the Yenisei Gulf.
 
 The spreading algorithm is the one of GloFAS (see
 [How the discharge is spread from the estuaries](#time-varying-river-forcing-from-glofas)):
@@ -1642,16 +1657,11 @@ crossing of more than 15 land cells, optional Gaussian smoothing. The weights of
 are normalised, so the volume is conserved. The grid size is read from `regional.grid.b`, so
 the same scripts work for TP2a0.10 (topography 04) and TP5a0.06 (topography 05).
 
-**Output**: `force/rivers/<IEXPT>/riverh.[ab]`, one record per month at 00:00 on the 15th.
-Set `priver=2` in `blkdat.input` (HYCOM 2.3), as for GloFAS; `expt_preprocess.sh` links the
-file and checks that it covers each job. Because the first record is on 15 January 2002 and
-the last on 15 December 2022, model runs must lie within that window.
-
-:::{note}
 The land mask comes from the experiment's depth file (`depth_<R>_<T>.a`). Both topographies in
 use, `depth_TP2a0.10_04` and `depth_TP5a0.06_05`, contain the Baltic Sea. With a depth file
 without the Baltic, Baltic rivers would be moved over land into the Kattegat.
-:::
+
+::::
 
 #### Input data
 
@@ -1665,6 +1675,8 @@ passed to `river_ahype_v4b.py` with `--gpkg`, `--ts` and `--geus`):
 | `geus_gates_monthly.nc` | GEUS monthly gate discharge, made by `geus_preprocess.py` (below) |
 
 The E-HYPE outlets are read from `input/rivers_ahype-ehype_clim_rev2.dat` in the repository.
+
+::::{dropdown} Making `geus_gates_monthly.nc`
 
 The GEUS file is made once from the GEUS ice discharge download, the directory with
 `gate.nc`. The irregularly sampled rates (about monthly before 2009, nearly daily 2009–2024,
@@ -1681,6 +1693,8 @@ stored in `geus_gates_monthly.nc` together with the product version and git comm
 `gate.nc`, printed in the log of `river_ahype_v4b.py`, and written to the header of
 `riverh.b`. The forcing in this documentation was made with Dataverse V131, product version
 2.0 (git commit 886d2c1).
+
+::::
 
 #### Generating the river file
 
