@@ -1624,14 +1624,16 @@ strategies:
 | `diffuse` | 180 km | 360 km | 3 cells |
 
 **Output**: `force/rivers/<IEXPT>/riverh.[ab]`, one record per month at 00:00 on the 15th.
-Set `priver=2` in `blkdat.input` (HYCOM 2.3), as for GloFAS. Model runs must lie between
-15 January 2002 and 15 December 2022; `expt_preprocess.sh` links the file and checks this.
+Set `priver=2` in `blkdat.input` (HYCOM 2.3), as for GloFAS; `expt_preprocess.sh` links the
+file and checks that it covers each job. An extra record on 15 December before the first year
+and on 15 January after the last year lets runs cover the whole period, 1 January 2002 to
+31 December 2022. Outside 2002–2022 these records repeat January 2002 and December 2022.
 
 ::::{dropdown} More on the GEUS ice discharge
 
-Source: Mankoff et al. 2020 (doi:10.5194/essd-12-1367-2020; data
-doi:10.22008/promice/data/ice_discharge), flux gates near the marine-terminating glacier
-fronts. 1 Gt = 1 km³. It replaces the Roshin climatology (`grivers.[ab]`, 252 km³/yr).
+Source: [Mankoff et al. 2020](https://doi.org/10.5194/essd-12-1367-2020)
+([data](https://doi.org/10.22008/promice/data/ice_discharge)), flux gates near the
+marine-terminating glacier fronts. 1 Gt = 1 km³. It replaces the Roshin climatology (`grivers.[ab]`, 252 km³/yr).
 
 Adding the calved ice as liquid water at the glacier front is a simplification: real icebergs
 drift away and melt over months to years, and take heat from the ocean as they melt. This
@@ -1679,12 +1681,14 @@ The E-HYPE outlets are read from `input/rivers_ahype-ehype_clim_rev2.dat` in the
 ::::{dropdown} Making `geus_gates_monthly.nc`
 
 The GEUS file is made once from the GEUS ice discharge download, the directory with
-`gate.nc`. The irregularly sampled rates (about monthly before 2009, nearly daily 2009–2024,
+`gate.nc`. On Betzy, the V131 download is in `/cluster/projects/nn2993k/GEUS_ice_discharge/V131/`;
+keep a new download in a new version directory next to it. The irregularly sampled rates (about monthly before 2009, nearly daily 2009–2024,
 12-daily since) are interpolated linearly to daily values and averaged per month:
 
 ```bash
 python $HOME/NERSC-HYCOM-CICE/bin/geus_preprocess.py --dataverse-version V131 \
-    <GEUS download directory> /cluster/projects/nn2993k/AHYPE_v4b/geus_gates_monthly.nc
+    /cluster/projects/nn2993k/GEUS_ice_discharge/V131 \
+    /cluster/projects/nn2993k/AHYPE_v4b/geus_gates_monthly.nc
 ```
 
 GEUS updates the dataset regularly. The Dataverse version of the download (shown on the dataset

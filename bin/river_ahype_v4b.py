@@ -19,8 +19,13 @@ distance from the mouth and from the coast, same landmass only, no crossing of m
 land cells, optional Gaussian smoothing. The weights of each outlet are normalised, so the
 volume is conserved.
 
-The output has one record per month at 00:00 on the 15th, for whole years. Normally called by
-river_ahype_v4b.sh or submit_river_ahype_v4b.sh, which write force/rivers/<E>/riverh.[ab].
+The output has one record per month at 00:00 on the 15th, for whole years, plus one padding
+record on 15 December before the first year and one on 15 January after the last year. HYCOM
+interpolates linearly between records, so with the padding a run can start on 1 January of the
+first year and end on 31 December of the last year. A padding record holds the data of its own
+month if all sources have it (e.g. December 2004 for a file starting in 2005), otherwise a copy
+of the first or last month (outside 2002-2022). Normally called by river_ahype_v4b.sh or
+submit_river_ahype_v4b.sh, which write force/rivers/<E>/riverh.[ab].
 
 Usage:
   python river_ahype_v4b.py --spreading coastal --start-year 2002 --end-year 2022 \\
@@ -270,6 +275,27 @@ def main():
                                      cline1=f'AHYPE v4b + E-HYPE + GEUS ice discharge, spreading={a.spreading}',
                                      cline2='river forcing (m/s)' +
                                      (f', GEUS {geus_version}' if geus_version else ''))
+
+    def discharge(y, m):
+        return np.concatenate([fn(y, m)[keep[name]] for name, (_, _, fn) in sources.items()])
+
+    def write(field, y, m):
+        fout.write_field(field, grid.land, 'rivers', float((datetime.date(y, m, 15) - MODEL_DAY0).days),
+                         float(calendar.monthrange(y, m)[1]))
+
+    def write_padding(y, m, edge):
+        """Padding record on the 15th of month (y, m): its own data if every source has that
+        month, otherwise a copy of the edge month."""
+        try:
+            q, src = discharge(y, m), (y, m)
+        except KeyError:
+            q, src = discharge(*edge), edge
+        write(flux_field(grid, flat_idx, q, weights), y, m)
+        print(f'  padding record {y}-{m:02d}-15 with the data of {src[0]}-{src[1]:02d}')
+
+    print('\nPadding records, so that runs can cover the whole first and last year:')
+    write_padding(years[0] - 1, 12, (years[0], 1))
+
     print('\nAnnual totals [km3/yr]; the gridded total must equal the sum of the sources '
           'and be the same for every spreading:')
     print('  year  ' + '  '.join(f'{n:>10s}' for n in sources) + '     sources    gridded')
@@ -278,17 +304,19 @@ def main():
         tot_grid = 0.0
         for m in range(1, 13):
             sec = calendar.monthrange(y, m)[1] * 86400
-            q = np.concatenate([fn(y, m)[keep[name]] for name, (_, _, fn) in sources.items()])
+            q = discharge(y, m)
             for name in sources:
                 tot_src[name] += q[names == name].sum() * sec / 1e9
             field = flux_field(grid, flat_idx, q, weights)
-            fout.write_field(field, grid.land, 'rivers', float((datetime.date(y, m, 15) - MODEL_DAY0).days),
-                             float(calendar.monthrange(y, m)[1]))
+            write(field, y, m)
             tot_grid += (field * grid.area).sum() * sec / 1e9
         s = sum(tot_src.values())
         print(f'  {y}  ' + '  '.join(f'{v:10.1f}' for v in tot_src.values()) + f'  {s:10.1f} {tot_grid:10.1f}')
         if abs(tot_grid - s) > 1e-3 * s:
             sys.exit(f'Error: gridded total {tot_grid:.1f} differs from the sources {s:.1f} km3/yr')
+
+    print()
+    write_padding(years[-1] + 1, 1, (years[-1], 12))
     fout.close()
     print(f'\nWrote {a.out}.[ab]')
 
