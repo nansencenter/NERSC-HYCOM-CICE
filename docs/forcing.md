@@ -1621,8 +1621,11 @@ of three sets of point sources:
   compared with real icebergs, and ignores the heat needed to melt the ice.
 
 Every outlet and gate goes to the nearest coastal ocean cell (an ocean cell with a land cell
-as direct neighbour) within 300 km; outlets further away are dropped and listed in the log.
-All three sources are then spread in the same way, with one of three strategies:
+as direct neighbour). Outlets outside the model grid (e.g. the Gulf of St. Lawrence, about
+260 km³/yr) are dropped and listed in the log. There is no distance limit: a large river can
+end in an estuary the grid does not resolve, e.g. the Yenisei outlet is 330 km from the nearest
+coastal cell of TP2a0.10 (250 km on TP5a0.06), and its water enters at the mouth of the Yenisei
+Gulf. All three sources are then spread in the same way, with one of three strategies:
 
 | Strategy | rradius | alongshore | Gaussian σ |
 |----------|---------|-----------|-----------|
@@ -1635,7 +1638,7 @@ The spreading algorithm is the one of GloFAS (see
 exponential decay with distance from the mouth and from the coast, same landmass only, no
 crossing of more than 15 land cells, optional Gaussian smoothing. The weights of each outlet
 are normalised, so the volume is conserved. The grid size is read from `regional.grid.b`, so
-the same scripts work for TP2a0.10 and TP5a0.06.
+the same scripts work for TP2a0.10 (topography 04) and TP5a0.06 (topography 05).
 
 **Output**: `force/rivers/<IEXPT>/riverh.[ab]`, one record per month at 00:00 on the 15th.
 Set `priver=2` in `blkdat.input` (HYCOM 2.3), as for GloFAS; `expt_preprocess.sh` links the
@@ -1643,10 +1646,9 @@ file and checks that it covers each job. Because the first record is on 15 Janua
 the last on 15 December 2022, model runs must lie within that window.
 
 :::{note}
-The land mask comes from the experiment's depth file. If it has no Baltic Sea (e.g.
-`depth_TP5a0.06_01`), the Baltic E-HYPE outlets within 300 km of the open coast are moved over
-land into the Kattegat/North Sea, and the others are dropped. Check the outlet counts and
-distances in the log.
+The land mask comes from the experiment's depth file (`depth_<R>_<T>.a`). Both topographies in
+use, `depth_TP2a0.10_04` and `depth_TP5a0.06_05`, contain the Baltic Sea. With a depth file
+without the Baltic, Baltic rivers would be moved over land into the Kattegat.
 :::
 
 #### Input data
