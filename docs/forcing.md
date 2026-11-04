@@ -1620,9 +1620,11 @@ of three sets of point sources:
   Treating calving as liquid water at the coast puts it too close to the coast and too early
   compared with real icebergs, and ignores the heat needed to melt the ice.
 
-Every outlet and gate goes to the nearest coastal ocean cell (an ocean cell with a land cell
-as direct neighbour). Outlets outside the model grid (e.g. the Gulf of St. Lawrence, about
-260 km³/yr) are dropped and listed in the log. There is no distance limit: a large river can
+AHYPE v4b outlets draining to the North Pacific (`oceanbasin`) are left out. Every other outlet
+and gate goes to the nearest coastal ocean cell (an ocean cell with a land cell as direct
+neighbour). Outlets outside the model domain, the polygon of the southern and northern grid
+rows, are dropped and listed in the log (21 AHYPE v4b outlets in the Gulf of St. Lawrence,
+the Strait of Belle Isle and the Aleutians, about 245 km³/yr). There is no distance limit: a large river can
 end in an estuary the grid does not resolve, e.g. the Yenisei outlet is 330 km from the nearest
 coastal cell of TP2a0.10 (250 km on TP5a0.06), and its water enters at the mouth of the Yenisei
 Gulf. All three sources are then spread in the same way, with one of three strategies:

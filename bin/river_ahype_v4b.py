@@ -8,7 +8,7 @@ Monthly freshwater flux (m/s) on the model grid, the sum of three sets of point 
   - GEUS: Greenland solid ice discharge per flux gate (time-varying, monthly means from
     geus_preprocess.py), added as liquid freshwater
 Each outlet or gate goes to the nearest coastal ocean cell (ocean cell with a land cell as
-direct neighbour); outlets outside the model grid are dropped and listed. There is no distance
+direct neighbour); outlets outside the model domain are dropped and listed. There is no distance
 limit, because a large river can enter an estuary the grid does not resolve (the Yenisei is
 330 km from the nearest TP2a0.10 coastal cell). All outlets are spread in the same way:
   pointsource  no spreading
@@ -96,17 +96,23 @@ class Grid:
 
 
 def map_outlets(grid, lons, lats):
-    """Nearest coastal ocean cell (flat index), distance to it [km], and whether each outlet
-    lies inside the model grid (within two cell widths of an interior grid cell, land or ocean)."""
-    xyz = grid.ecef()
-    pts = transform_coordinates(np.column_stack([lats, lons]))
+    """Nearest coastal ocean cell (flat index), distance to it [km], and whether each outlet lies
+    inside the model domain.
+
+    The domain is the polygon of the grid rows j=0 and j=jdm-1 in polar stereographic
+    coordinates (the columns i=0 and i=idm-1 are left out: in geographic space they zigzag
+    through the Aleutians), as in the AHYPE v4b forcing notebook. No distance limit is used.
+    """
+    from matplotlib.path import Path
+    from pyproj import Proj
+    nps = Proj('+proj=stere +lat_0=90 +lon_0=0 +lat_ts=90 +ellps=WGS84')
+    edge = np.vstack([np.column_stack(nps(grid.plon[0, :], grid.plat[0, :])),
+                      np.column_stack(nps(grid.plon[-1, ::-1], grid.plat[-1, ::-1]))])
+    inside = Path(edge).contains_points(np.column_stack(nps(lons, lats)))
+
     coastal = ~grid.land & binary_dilation(grid.land, structure=np.array([[0, 1, 0], [1, 0, 1], [0, 1, 0]]))
     coast_idx = np.flatnonzero(coastal)
-    chord, nn = cKDTree(xyz[coast_idx]).query(pts)
-    interior = np.zeros((grid.jdm, grid.idm), bool)
-    interior[1:-1, 1:-1] = True
-    d_grid, _ = cKDTree(xyz[interior.ravel()]).query(pts)
-    inside = d_grid <= 2 * np.sqrt(grid.area.max()) / 1000.0
+    chord, nn = cKDTree(grid.ecef()[coast_idx]).query(transform_coordinates(np.column_stack([lats, lons])))
     return coast_idx[nn], 2 * R_EARTH * np.arcsin(np.clip(chord / (2 * R_EARTH), 0, 1)), inside
 
 
@@ -236,17 +242,17 @@ def main():
     if not a.no_geus:
         *sources['GEUS'], geus_version = load_geus(a.geus, years)
 
-    # Map every outlet/gate to its coastal cell; drop those outside the model grid
+    # Map every outlet/gate to its coastal cell; drop those outside the model domain
     names, flat_idx, keep = [], [], {}
     for name, (lon, lat, fn) in sources.items():
         idx, dist, keep[name] = map_outlets(grid, lon, lat)
         names += [name] * keep[name].sum()
         flat_idx.append(idx[keep[name]])
-        print(f'{name}: {keep[name].sum()} of {len(lon)} outlets inside the grid; distance to the coastal '
+        print(f'{name}: {keep[name].sum()} of {len(lon)} outlets inside the domain; distance to the coastal '
               f'cell median {np.median(dist[keep[name]]):.0f} km, max {dist[keep[name]].max():.0f} km')
         if (~keep[name]).any():
             q = np.mean([fn(y, m) for y in years for m in range(1, 13)], axis=0) * 365.25 * 86400 / 1e9
-            print(f'  dropped (outside the grid), {q[~keep[name]].sum():.1f} km3/yr:')
+            print(f'  dropped (outside the domain), {q[~keep[name]].sum():.1f} km3/yr:')
             for k in np.flatnonzero(~keep[name]):
                 print(f'    lon {lon[k]:8.2f} lat {lat[k]:6.2f}  {q[k]:7.2f} km3/yr')
     flat_idx = np.concatenate(flat_idx)
