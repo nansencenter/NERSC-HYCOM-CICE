@@ -16,12 +16,12 @@ Finally, you may want to have a look at the technical documentation named 'river
 
 # After November 2025, the Python routine has been merged into the GitHub of HYCOM_CICE 
 #-------------------------
-1) The key Python routine is bin/river_synoptic.sh. It can be performed in the routine of expt_preprocess.sh with online or offline by setting River_online.
+1) The key routine is bin/river_glofas.sh (or bin/submit_river_glofas.sh for long periods). The river forcing is created before the model run; expt_preprocess.sh only links it and checks that it covers the job period.
    
-2) In river_synoptic.sh, the output directory for the river files is automatically created as riverh.ab under the forcing/river/$expnum/ when using River_online=1. In some cases, if the time period is more than one year, it will take a long time. In order to save computing resources, performing the command in your experiment directory, but don't forget to switch off River_online in the expt_preprocess.sh 
+2) river_glofas.sh writes riverh.[ab] to force/rivers/$E/. Run it from your experiment directory, for the whole model period.
 
 Example:
-    bin/river_synoptic.sh 2013-01-01T00:00:00  2014-01-05T00:00:00
+    bin/river_glofas.sh 2013-01-01T00:00:00  2014-01-05T00:00:00
  
 3) The source data including the model grid information and the river data (netCDF) are stored at /cluster/projects/nn9481k/GloFAS_data/data_v40 and /cluster/projects/nn9481k/GloFAS_data/TOPAZrunoff_data/. They are defined in the Python routine:river-topaz/scripts/GloFAS/hycom_river_hifre.py
 

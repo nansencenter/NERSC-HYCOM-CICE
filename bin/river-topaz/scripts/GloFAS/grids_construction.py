@@ -27,6 +27,7 @@ class Grids:
                  field_name='dis24',
                  uparea_threshold=1e9,
                  elevation_thresold=10,
+                 distance_threshold=300,
                  correct_GloFAS=True,
                  climatology=False,
                  month=None,
@@ -81,7 +82,7 @@ class Grids:
 
 
             #-----------------------------Operations: Interpolation, finding estuaries, correction----------------------------
-            self.dis_grid.get_glofas_into_topaz(self.topaz_depth_grid)
+            self.dis_grid.get_glofas_into_topaz(self.topaz_depth_grid,distance_threshold=distance_threshold)
 
             self.dis_grid.find_estuaries(uparea_threshold=uparea_threshold, elevation_threshold=elevation_thresold)
 
@@ -112,7 +113,7 @@ class Grids:
 
 
             #-----------------------------Operations: Interpolation, finding estuaries, correction----------------------------
-            self.dis_grid.get_glofas_into_topaz(self.topaz_depth_grid,lazy_mode=True, input_grids=input_grids)
+            self.dis_grid.get_glofas_into_topaz(self.topaz_depth_grid,distance_threshold=distance_threshold,lazy_mode=True, input_grids=input_grids)
 
             self.dis_grid.load_modif_file(input_edit_file=input_edit_file)
 
