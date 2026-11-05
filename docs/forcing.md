@@ -1644,8 +1644,11 @@ The spreading algorithm is the one of GloFAS (see
 [How the discharge is spread from the estuaries](#time-varying-river-forcing-from-glofas)):
 exponential decay with distance from the mouth and from the coast, same landmass only, no
 crossing of more than 15 land cells, optional Gaussian smoothing. The weights of each outlet
-are normalised, so the volume is conserved. The grid size is read from `regional.grid.b`, so
-the same scripts work for TP2a0.10 (topography 04) and TP5a0.06 (topography 05).
+are normalised, so the volume is conserved. Three
+[spreading strategies](#generating-the-river-file-ahype-v4b) are supported: `pointsource` (no
+spreading), `coastal` and `diffuse`, which differ in how far the water is spread. The grid
+size is read from `regional.grid.b`, so the same scripts work for TP2a0.10 (topography 04)
+and TP5a0.06 (topography 05).
 
 The land mask comes from the experiment's depth file (`depth_<R>_<T>.a`). Both topographies in
 use, `depth_TP2a0.10_04` and `depth_TP5a0.06_05`, contain the Baltic Sea. With a depth file
