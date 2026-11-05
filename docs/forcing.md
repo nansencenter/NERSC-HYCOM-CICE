@@ -1614,14 +1614,8 @@ This option replaces the AHYPE/EHYPE climatology with monthly time-varying forci
   480 km³/yr, added as liquid freshwater at the coast. It replaces the Roshin ice melt of the
   [merged climatology](#ahype-ehype-climatology-with-trip-runoff-and-greenland-melt).
 
-Each outlet goes to the nearest coastal ocean cell and is then spread with one of three
-strategies:
-
-| Strategy | rradius | alongshore | Gaussian σ |
-|----------|---------|-----------|-----------|
-| `pointsource` | none | none | none |
-| `coastal` | 50 km | 100 km | 1 cell |
-| `diffuse` | 180 km | 360 km | 3 cells |
+Each outlet goes to the nearest coastal ocean cell and is then spread along the coast with
+one of three [spreading strategies](#generating-the-river-file-ahype-v4b).
 
 **Output**: `force/rivers/<IEXPT>/riverh.[ab]`, one record per month at 00:00 on the 15th.
 Set `priver=2` in `blkdat.input` (HYCOM 2.3), as for GloFAS; `expt_preprocess.sh` links the
@@ -1700,10 +1694,21 @@ stored in `geus_gates_monthly.nc` together with the product version and git comm
 
 ::::
 
+(generating-the-river-file-ahype-v4b)=
 #### Generating the river file
 
 Run from the experiment directory; region, experiment and topography are read from
-`REGION.src` and `EXPT.src`. The spreading weights are computed once and reused for all
+`REGION.src` and `EXPT.src`. The first argument is the spreading strategy, the optional
+second and third the first and last year (default 2002 and 2022):
+
+| Strategy | rradius | alongshore | Gaussian σ |
+|----------|---------|-----------|-----------|
+| `pointsource` | none | none | none |
+| `coastal` | 50 km | 100 km | 1 cell |
+| `diffuse` | 180 km | 360 km | 3 cells |
+
+`rradius` is how far from the coast and `alongshore` how far along it the water is spread,
+σ the width of the extra smoothing. The spreading weights are computed once and reused for all
 years, so the whole period is a single run. Short tests on the login node (Python
 environment activated):
 
