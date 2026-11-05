@@ -342,7 +342,11 @@ YDDD=$(date -u -d $DATE +%Y_%j)      # e.g. 1993_244 (1996-09-01 is 1996_245)
 **Sources** — the following files must exist for `DATE`:
 
 - GLORYS nesting file `nest/${IEXPT}/archv.${YDDD}_00.[ab]` (see [Nesting files](#nesting-files)),
-  which already holds the GLORYS state on the model grid and layers.
+  which already holds the GLORYS state on the model grid and layers. Its `montg1` field
+  does not need to be fixed yet: `archv2restart.py` does not use it (it only compares it
+  with the new restart and warns if they differ), so the file straight from
+  `nemo_to_hycom.sh` (`montg1 = 0`) is fine. The order is: make the nesting files, build
+  the restart from them, then fix `montg1` in all nesting files with that restart.
 - With BGC, the BGC nesting file `nest/${IEXPT}/archv_fabm.${YDDD}_00.[ab]` (CMEMS BGC
   reanalysis). For TP2, extract it from
   `/nird/datalake/NS9481K/shuang/nest/TP2_expt023/tar_files/archv_fabm.<YYYY>_<D1>_<D2>.tar.gz`,
@@ -420,8 +424,9 @@ python $HOME/NERSC-HYCOM-CICE/bin/archv2bgcinit.py ../nest/${IEXPT}/archv.${YDDD
 The files have the format of the monthly tracer climatology (12 identical months on the
 `relax_int` layers), so they must be built with the experiment's own `relax_int`.
 
-**Fix the nesting files** — run `calc_montg1.py` for all nesting files of the cycling
-period (see [Nesting files](#nesting-files)), with `restartfile` set to the new restart,
+**Fix the nesting files** — after building the restart, run `calc_montg1.py` for all
+nesting files of the cycling period, including the one the restart was built from (see
+[Nesting files](#nesting-files)), with `restartfile` set to the new restart,
 e.g. `$USERWORK/${CONFIGNAME}/expt_${EXPT_ID}/data/cycle_01/restart.${YDDD}_00_0000.a`.
 
 Please add the files to `SPINUP_INIT/` on NIRD with the date in the name, as for
