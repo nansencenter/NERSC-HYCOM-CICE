@@ -201,7 +201,9 @@ The cycled spin-up starts on 1 September 1993 from the GLORYS12 state, with
 cold-started from an `ice_initial.nc` built from reanalysis sea ice fields, and BGC (if
 used) is initialised by HYCOM in the first segment. The files go into the experiment
 directory (`ice_initial.nc`) and into the data directory of the first cycle
-(`data/cycle_01`, see [Cycled spin-up](running.md#cycled-spin-up)).
+(`data/cycle_01`, see [Cycled spin-up](running.md#cycled-spin-up)). To start on another
+day in September, see the dropdown *Building the initial files for another configuration or
+start date* below.
 
 **Ready-made files** — for TP2a0.10 (topography 04, 50 layers, HYCOM 2.3) the files are
 shared on NIRD:
@@ -311,38 +313,73 @@ negative `ntracr` that HYCOM read in the first segment is kept as
 `data/cycle_01/blkdat.input.init`.
 ::::
 
-::::{dropdown} Building the initial files for another configuration
+::::{dropdown} Building the initial files for another configuration or start date
 
-For another configuration (e.g. TP5a0.06, or another topography or number of layers),
-build the files from the experiment directory. The commands use:
+For another configuration (e.g. TP5a0.06, or another topography or number of layers), or
+another start date than 1 September 1993, build the files from the experiment directory,
+after sourcing `EXPT.src`. The commands use:
 
 ```bash
-CONFIGNAME=<CONFIGNAME>   # e.g. TP5a0.06
-IEXPT=<IEXPT>             # nesting/relax dir, e.g. 023
-T=<T>                     # topography version, e.g. 05
+CONFIGNAME=<CONFIGNAME>              # e.g. TP5a0.06
+IEXPT=<IEXPT>                        # nesting/relax dir, e.g. 023
+T=<T>                                # topography version, e.g. 05
 N=/nird/datapeak/NS9481K/SPINUP_INIT
+DATE=<DATE>                          # start date, e.g. 1993-09-01
+YMD=$(date -u -d $DATE +%Y%m%d)      # e.g. 19930901
+YDDD=$(date -u -d $DATE +%Y_%j)      # e.g. 1993_244 (1996-09-01 is 1996_245)
 ```
 
-**HYCOM restart from GLORYS** (`restart.1993_244_00_0000.[ab]`) — built by
-`bin/archv2restart.py` from the GLORYS nesting file for that day
-(`nest/<IEXPT>/archv.1993_244_00`, see [Nesting files](#nesting-files)), which already holds
-the GLORYS state on the model grid and layers. Temperature, salinity, layer thickness and
-the baroclinic and barotropic velocities are copied from the nesting file. No template
-restart is needed: `pbot`, `thkk` and `psikk` are computed from the nesting file exactly as
-HYCOM computes them at a cold start (`inicon.F90`), as if this state were the initial state
-of the run — `pbot` is the sum of the layer thicknesses, the Montgomery potential is
-integrated downward from zero at the surface (ocean at rest with a flat surface), and
-`thkk` and `psikk` are the virtual potential density and Montgomery potential of the
-bottom layer. The barotropic pressure `pbavg` (SSH) is then computed from `srfhgt` with
-these, in the same way as in `calc_montg1.py`, so it does not depend on `montg1` in the
-nesting file. The script warns that `montg1` in the nesting file is not consistent with the
-new restart unless the nesting file was already fixed with it; afterwards, fix the nesting
-files with this restart (see above). Only `kapref=0` is supported. NaN values in the nesting
-file are filled with the nearest ocean value. Run it from the experiment directory after
-sourcing `EXPT.src` (for `SIGVER`, or use `--sigver`):
+**Another start date** — keep in mind:
+
+- The start date must be in **September**. `INITFLG="--init-ice"` is a CICE cold start, and
+  `expt_preprocess.sh` stops with an error for a cold start in any other month.
+- Set `SPINUP_START="${DATE}T00:00:00"` in `srjob_cycle.sh`; it must lie in
+  `[CYCLE_START, CYCLE_END)` (see [Cycled spin-up](running.md#cycled-spin-up)).
+- The HYCOM restart built here is the reference state of the run, so the nesting files must
+  be fixed with **this** restart (see the last step below). Nesting files fixed with the
+  1993-09-01 restart cannot be used.
+
+**Sources** — the following files must exist for `DATE`:
+
+- GLORYS nesting file `nest/${IEXPT}/archv.${YDDD}_00.[ab]` (see [Nesting files](#nesting-files)),
+  which already holds the GLORYS state on the model grid and layers.
+- With BGC, the BGC nesting file `nest/${IEXPT}/archv_fabm.${YDDD}_00.[ab]` (CMEMS BGC
+  reanalysis). For TP2, extract it from
+  `/nird/datalake/NS9481K/shuang/nest/TP2_expt023/tar_files/archv_fabm.<YYYY>_<D1>_<D2>.tar.gz`,
+  the archive whose day range contains the day of year.
+- GLORYS physics file `/nird/datapeak/NS9481K/MERCATOR_DATA/PHY/<YYYY>/MERCATOR-PHY-24-${DATE}-12.nc`,
+  which `cice_ice_initial.py` reads for the GLORYS land mask.
+- Reanalysis sea ice fields `$N/sources/glorys12_ice_${YMD}.nc` (and
+  `topaz4b_ice_${YMD}.nc` for the TOPAZ4b thickness). For 1993-09-01 they are already
+  there; for another date, download them from Copernicus Marine (needs the
+  `copernicusmarine` toolbox and an account):
 
 ```bash
-python $HOME/NERSC-HYCOM-CICE/bin/archv2restart.py ../nest/${IEXPT}/archv.1993_244_00 \
+cd $N/sources
+copernicusmarine subset --dataset-id cmems_mod_glo_phy_my_0.083deg_P1D-m \
+    -v siconc -v sithick -t $DATE -T $DATE -y 45 -Y 90 -f glorys12_ice_${YMD}.nc
+# only for the TOPAZ4b thickness:
+copernicusmarine subset --dataset-id cmems_mod_arc_phy_my_topaz4_P1D-m \
+    -v siconc -v sithick -v sisnthick -t $DATE -T $DATE -f topaz4b_ice_${YMD}.nc
+```
+
+**HYCOM restart from GLORYS** (`restart.${YDDD}_00_0000.[ab]`, named after the nesting
+file) — built by `bin/archv2restart.py` from the GLORYS nesting file. Temperature,
+salinity, layer thickness and the baroclinic and barotropic velocities are copied from the
+nesting file. No template restart is needed: `pbot`, `thkk` and `psikk` are computed from
+the nesting file exactly as HYCOM computes them at a cold start (`inicon.F90`), as if this
+state were the initial state of the run — `pbot` is the sum of the layer thicknesses, the
+Montgomery potential is integrated downward from zero at the surface (ocean at rest with a
+flat surface), and `thkk` and `psikk` are the virtual potential density and Montgomery
+potential of the bottom layer. The barotropic pressure `pbavg` (SSH) is then computed from
+`srfhgt` with these, in the same way as in `calc_montg1.py`, so it does not depend on
+`montg1` in the nesting file. The script warns that `montg1` in the nesting file is not
+consistent with the new restart unless the nesting file was already fixed with it. Only
+`kapref=0` is supported. NaN values in the nesting file are filled with the nearest ocean
+value. `SIGVER` is taken from `EXPT.src` (or use `--sigver`):
+
+```bash
+python $HOME/NERSC-HYCOM-CICE/bin/archv2restart.py ../nest/${IEXPT}/archv.${YDDD}_00 \
     --outdir <data dir of cycle 01>
 ```
 
@@ -351,43 +388,45 @@ instead.
 
 **Ice initial state** (`ice_initial.nc`) — built by `bin/cice_ice_initial.py`:
 concentration and thickness from GLORYS12 (`--hi-source glorys`) or the thickness from
-TOPAZ4b (`--hi-source topaz`) for 1 September 1993, interpolated to the model grid; SST/SSS from the top layer of the GLORYS nesting file, so that they are
-consistent with the ocean initial state. It is used in the same way as for a cold start
-(see [Cold start initial files](#cold-start-initial-files)).
+TOPAZ4b (`--hi-source topaz`), interpolated to the model grid; SST/SSS from the top layer
+of the GLORYS nesting file, so that they are consistent with the ocean initial state. It is
+used in the same way as for a cold start (see [Cold start initial files](#cold-start-initial-files)).
 
 ```bash
-python $HOME/NERSC-HYCOM-CICE/bin/cice_ice_initial.py 1993-09-01T00:00:00 ../nest/${IEXPT}/archv.1993_244_00 \
+python $HOME/NERSC-HYCOM-CICE/bin/cice_ice_initial.py ${DATE}T00:00:00 ../nest/${IEXPT}/archv.${YDDD}_00 \
     --griddir ../topo --kmt ../topo/kmt_${CONFIGNAME}_${T}.nc \
     --aice-source glorys --hi-source glorys \
-    --glorys-file $N/sources/glorys12_ice_19930901.nc \
+    --glorys-file $N/sources/glorys12_ice_${YMD}.nc \
     -o ice_initial.nc
 ```
 
-For the TOPAZ4b thickness, use `--hi-source topaz --topaz-file $N/sources/topaz4b_ice_19930901.nc`
+For the TOPAZ4b thickness, use `--hi-source topaz --topaz-file $N/sources/topaz4b_ice_${YMD}.nc`
 instead.
 
 `cice_ice_initial.py` can also use PIOMAS (`--aice-source piomas`, `--hi-source piomas`) or
 other combinations of the three sources. Interpolation is done on points, so it does not
-depend on the structure of the source or target grid. The GLORYS land mask is read from the
-GLORYS physics file of the same day in `MERCATOR_DATA/PHY`.
+depend on the structure of the source or target grid.
 
 **BGC initial state** (`relax.ECO_{no3,pho,sil,oxy}.[ab]`) — built by
-`bin/archv2bgcinit.py` from the BGC nesting file for that day (CMEMS BGC reanalysis), written
-to the data directory of the first cycle:
+`bin/archv2bgcinit.py` from the BGC nesting file, written to the data directory of the
+first cycle:
 
 ```bash
-python $HOME/NERSC-HYCOM-CICE/bin/archv2bgcinit.py ../nest/${IEXPT}/archv.1993_244_00 \
-    ../nest/${IEXPT}/archv_fabm.1993_244_00 --relax-int ../relax/${IEXPT}/relax_int \
+python $HOME/NERSC-HYCOM-CICE/bin/archv2bgcinit.py ../nest/${IEXPT}/archv.${YDDD}_00 \
+    ../nest/${IEXPT}/archv_fabm.${YDDD}_00 --relax-int ../relax/${IEXPT}/relax_int \
     --outdir <data dir of cycle 01>
 ```
 
 The files have the format of the monthly tracer climatology (12 identical months on the
-`relax_int` layers), so they must be built with the experiment's own `relax_int`. For TP2,
-the BGC nesting file for 1993-09-01 is in
-`/nird/datalake/NS9481K/shuang/nest/TP2_expt023/tar_files/archv_fabm.1993_201_300.tar.gz`.
+`relax_int` layers), so they must be built with the experiment's own `relax_int`.
 
-Please add files built for a new configuration to `SPINUP_INIT/<CONFIGNAME>/` on NIRD and
-describe them in its README.
+**Fix the nesting files** — run `calc_montg1.py` for all nesting files of the cycling
+period (see [Nesting files](#nesting-files)), with `restartfile` set to the new restart,
+e.g. `$USERWORK/${CONFIGNAME}/expt_${EXPT_ID}/data/cycle_01/restart.${YDDD}_00_0000.a`.
+
+Please add the files to `SPINUP_INIT/` on NIRD with the date in the name, as for
+1993-09-01 (`sources/glorys12_ice_${YMD}.nc`, `<CONFIGNAME>/ice_initial_${YMD}_glorys.nc`,
+`<CONFIGNAME>/restart.${YDDD}_00_0000.[ab]`, …), and describe them in the README.
 ::::
 
 ## Atmospheric forcing
