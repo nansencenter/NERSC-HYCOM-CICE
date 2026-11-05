@@ -1617,12 +1617,6 @@ This option replaces the AHYPE/EHYPE climatology with monthly time-varying forci
 Each outlet goes to the nearest coastal ocean cell and is then spread along the coast with
 one of three [spreading strategies](#generating-the-river-file-ahype-v4b).
 
-**Output**: `force/rivers/<IEXPT>/riverh.[ab]`, one record per month at 00:00 on the 15th.
-Set `priver=2` in `blkdat.input` (HYCOM 2.3), as for GloFAS; `expt_preprocess.sh` links the
-file and checks that it covers each job. An extra record on 15 December before the first year
-and on 15 January after the last year lets runs cover the whole period, 1 January 2002 to
-31 December 2022. Outside 2002–2022 these records repeat January 2002 and December 2022.
-
 ::::{dropdown} More on the GEUS ice discharge
 
 Source: [Mankoff et al. 2020](https://doi.org/10.5194/essd-12-1367-2020)
@@ -1728,6 +1722,12 @@ $HOME/NERSC-HYCOM-CICE/bin/submit_river_ahype_v4b.sh diffuse 2005 2010  # sub-pe
 The log lists, for every year, the annual total of each source and of the gridded field
 (km³/yr). The two totals must agree (the script stops otherwise), and they are the same for
 all three spreading strategies.
+
+**Output**: `force/rivers/<IEXPT>/riverh.[ab]`, one record per month at 00:00 on the 15th.
+Set `priver=2` in `blkdat.input` (HYCOM 2.3), as for GloFAS; `expt_preprocess.sh` links the
+file and checks that it covers each job. An extra record on 15 December before the first year
+and on 15 January after the last year lets runs cover the whole period, 1 January 2002 to
+31 December 2022. Outside 2002–2022 these records repeat January 2002 and December 2022.
 
 ## Climatologies
 
