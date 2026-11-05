@@ -2,7 +2,7 @@
 
 #SBATCH --account=nn9481k
 
-#SBATCH -J  TP5_04
+#SBATCH -J TP5_02.3
 
 #SBATCH -N 5 # number of nodes
 ## Each compute node has 24 cores (See more details in section Hardware on Sisu User Guide).
