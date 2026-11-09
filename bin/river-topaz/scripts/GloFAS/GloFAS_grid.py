@@ -14,6 +14,7 @@ import skimage as ski
 # mpl.use('TkAgg')
 import warnings
 from scipy.ndimage import gaussian_filter #Import gausian_filter function
+import scipy.sparse as sp
 
 class GloFAS_grid:
     """ Class containing the GloFAS data grid as a Xarray dataset """
@@ -364,9 +365,6 @@ class GloFAS_grid:
 
             Estuaries_index_list=self.df_dis_Estuary.index
 
-            self.ds_topaz_ocean_weights=xr.Dataset(coords={"longitude":np.arange(0,jdm,1),"latitude":np.arange(0,idm,1), "Estuary_index":self.df_dis_Estuary.index})
-            self.ds_topaz_ocean_weights['ocean_weights']=(['longitude','latitude','Estuary_index'],np.zeros((jdm,idm,self.df_dis_Estuary.index.shape[0])))
-
         else:
             Estuaries_index_list=[river_index_df] #We only propagate the flux for the modified rivers
 
@@ -413,8 +411,9 @@ class GloFAS_grid:
         n_estuaries = len(Estuaries_index_list)
         land_mask_2d = depth_grid.depth.mask.reshape((jdm, idm))
 
-        # Collect cleaned (pre-smooth) weights for all estuaries, then batch-smooth
-        cleaned_weights = np.zeros((jdm * idm, n_estuaries))
+        # The plume weights are kept as a sparse (jdm*idm, n_estuaries) float32 matrix: each plume is
+        # nonzero only near its estuary, so storing a full grid per estuary wastes memory.
+        rows, cols, vals = [], [], []
 
         for loop_idx, i in enumerate(Estuaries_index_list):
 
@@ -454,33 +453,49 @@ class GloFAS_grid:
             else:
                 print('skip river plume cleaning')
 
-            cleaned_weights[:, loop_idx] = ocean_weight
+            # Gaussian smoothing (sigma = 3 cells), zero on land, normalize to a sum of 1
+            smoothed = gaussian_filter(ocean_weight.reshape((jdm, idm)), sigma=3)
+            smoothed[land_mask_2d] = 0
+            total = smoothed.sum()
+            if total == 0:
+                total = 1.0
+            nonzero = np.flatnonzero(smoothed)
+            rows.append(nonzero)
+            cols.append(np.full(nonzero.size, loop_idx))
+            vals.append((smoothed.ravel()[nonzero] / total).astype(np.float32))
 
-        # Apply Gaussian smoothing to all estuaries in one call (sigma=0 on estuary axis = no cross-estuary mixing)
-        smoothed_3d = gaussian_filter(cleaned_weights.reshape((jdm, idm, n_estuaries)), sigma=(3, 3, 0))
-        smoothed_3d[land_mask_2d] = 0  # zero land for all estuaries at once
+        new_weights = sp.csc_matrix(
+            (np.concatenate(vals) if vals else np.zeros(0, np.float32),
+             (np.concatenate(rows) if rows else np.zeros(0, int),
+              np.concatenate(cols) if cols else np.zeros(0, int))),
+            shape=(jdm * idm, n_estuaries), dtype=np.float32)
 
-        # Normalize each estuary's weights
-        sum_weights = smoothed_3d.sum(axis=(0, 1))  # (n_estuaries,)
-        sum_weights = np.where(sum_weights == 0, 1.0, sum_weights)
-        normalized_3d = smoothed_3d / sum_weights[np.newaxis, np.newaxis, :]
+        # Columns of the estuaries just computed (all of them, or the one being re-propagated)
+        positions = [self.df_dis_Estuary.index.get_loc(i) for i in Estuaries_index_list]
+        if re_propagate:
+            pos = positions[0]
+            W = self.ocean_weights
+            self.ocean_weights = sp.hstack([W[:, :pos], new_weights, W[:, pos + 1:]], format='csc')
+        else:
+            self.ocean_weights = new_weights  # reused for the following days in lazy mode
 
-        # Store normalized weights for lazy-mode reuse
-        self.ds_topaz_ocean_weights['ocean_weights'].data[:] = normalized_3d
-
-        # Compute total river flux via matrix multiply (same pattern as lazy mode)
+        # Total river flux on the model grid (m3/s per cell), same as in lazy mode
         dis_array = self.df_dis_Estuary['dis24'].to_numpy()
-        self.river_flux_TOPAZ = normalized_3d.reshape(-1, n_estuaries) @ dis_array
+        self.river_flux_TOPAZ = self.ocean_weights @ dis_array
 
         # Check per-estuary flux conservation
-        for loop_idx, i in enumerate(Estuaries_index_list):
-            estuary_flux = dis_array[loop_idx] * normalized_3d[:, :, loop_idx].flatten()
-            if np.sqrt((np.nansum(estuary_flux)-dis_array[loop_idx])**2)>1:
+        column_sums = np.asarray(self.ocean_weights.sum(axis=0, dtype=np.float64)).ravel()
+        for pos, i in zip(positions, Estuaries_index_list):
+            estuary_total = dis_array[pos] * column_sums[pos]
+            if abs(estuary_total - dis_array[pos]) > 1:
                 warnings.warn('Fluxes do not add up for river at position:'+
                       str(self.df_dis_Estuary['longitude_glofas_on_topaz'].loc[i])+','+str(self.df_dis_Estuary['latitude_glofas_on_topaz'].loc[i]))
-                print(np.nansum(estuary_flux),'!=',dis_array[loop_idx])
+                print(estuary_total,'!=',dis_array[pos])
             else:
-                print("river {river_number},  {Topaz_lon:.3f}, {Topaz_lat:.3f} : flux {river_flux:.3f} ".format(river_number=str(i), river_flux=dis_array[loop_idx], Topaz_lon=self.df_dis_Estuary['longitude_glofas_on_topaz'].loc[i], Topaz_lat=self.df_dis_Estuary['latitude_glofas_on_topaz'].loc[i]))
+                print("river {river_number},  {Topaz_lon:.3f}, {Topaz_lat:.3f} : flux {river_flux:.3f} ".format(river_number=str(i), river_flux=dis_array[pos], Topaz_lon=self.df_dis_Estuary['longitude_glofas_on_topaz'].loc[i], Topaz_lat=self.df_dis_Estuary['latitude_glofas_on_topaz'].loc[i]))
+        print('Plume weights: {n} estuaries, {nnz} nonzero values ({mb:.1f} MB)'.format(
+            n=self.ocean_weights.shape[1], nnz=self.ocean_weights.nnz,
+            mb=(self.ocean_weights.data.nbytes + self.ocean_weights.indices.nbytes + self.ocean_weights.indptr.nbytes) / 1e6))
 
         print('Total propagation time:', time.time()-start_time)
         #35s with no Numba for ocean_weight computation and Numba for cleaning process
@@ -500,14 +515,10 @@ class GloFAS_grid:
         self.ds_topaz_river_flux = xr.Dataset(
             coords={"longitude": depth_grid.lon.data, "latitude": depth_grid.lat.data})
 
-        ds_topaz_ocean_weights=input_grids.dis_grid.ds_topaz_ocean_weights #Getting the ocean weights from Grids
+        ocean_weights=input_grids.dis_grid.ocean_weights #Sparse (jdm*idm, n_estuaries) weights from the first day
+        estuary_dis=self.df_dis_Estuary['dis24'].to_numpy()
 
-        ocean_weight_matrix=ds_topaz_ocean_weights['ocean_weights'].data
-        estuary_dis_matrix=self.df_dis_Estuary['dis24'].to_numpy()
-
-        river_flux=ocean_weight_matrix@estuary_dis_matrix #Faster that way
-
-        self.river_flux_TOPAZ=river_flux[:,:]
+        self.river_flux_TOPAZ=ocean_weights@estuary_dis  # (jdm*idm,) m3/s per cell
 
     def check_total_fluxes(self):
         """
