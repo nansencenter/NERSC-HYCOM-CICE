@@ -2,7 +2,7 @@
 
 #SBATCH --qos=devel
 #SBATCH --account=nn9481k
-#SBATCH --job-name=TP0a10
+#SBATCH --job-name=TP0_01.0
 #SBATCH -t 00:20:00
 #SBATCH -N 1   # number of nodes
 #SBATCH -n 4 # number of cores
