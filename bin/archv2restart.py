@@ -32,11 +32,16 @@ the nearest valid ocean value (in index space).
 
 The restart is valid at the archive time. Its name follows the HYCOM convention
 restart.YYYY_DDD_HH_SSSS, taken from the archive name archv.YYYY_DDD_HH.
+
+A copy of blkdat.input is written next to the restart (restart.YYYY_DDD_HH_SSSS.blkdat).
+For INITFLG="--init-ice", expt_preprocess.sh checks with check_init_files.py that the
+layers (sigma) and thflag of the experiment match it.
 """
 import argparse
 import logging
 import os
 import re
+import shutil
 from typing import Dict, List, Optional, Tuple
 
 import abfile
@@ -265,7 +270,7 @@ def main(archv: str, blkdat: str, outdir: str, sigver: int, zero_velocity: bool 
          raise ValueError("Cannot derive restart name from %s, use --outname" % archv)
       outname = "restart.%s_%s_%s_0000" % m.groups()
    outfile = os.path.join(outdir, outname)
-   for ext in (".a", ".b"):
+   for ext in (".a", ".b", ".blkdat"):
       if os.path.exists(outfile + ext):
          raise ValueError("%s exists, will not overwrite" % (outfile + ext))
    logger.info("Restart time: model day %.5f, nstep %d (baclin %g s)" % (dtime, nstep, baclin))
@@ -278,7 +283,8 @@ def main(archv: str, blkdat: str, outdir: str, sigver: int, zero_velocity: bool 
       out.write_field(numpy.where(ocean, fld, 0.) if name not in ("u", "v", "ubavg", "vbavg") else fld,
                       None, name, k, tl)
    out.close()
-   logger.info("Wrote %s.[ab]" % outfile)
+   shutil.copyfile(blkdat, outfile + ".blkdat")
+   logger.info("Wrote %s.[ab] and %s.blkdat (copy of %s)" % (outfile, outfile, blkdat))
    return outfile
 
 

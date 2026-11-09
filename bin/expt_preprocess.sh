@@ -820,6 +820,20 @@ if [ $ICEFLG -eq 2 -a $ice_init -eq 1 ] ; then
    fi
 fi
 
+#
+# --- --init-ice: check that the HYCOM restart (and ice_initial.nc) match the experiment:
+# --- grid, topography, number of layers, equation of state, and the layers (sigma) if the
+# --- restart comes with the blkdat.input it was built with (restart.*.blkdat, archv2restart.py).
+#
+if [ "$initstr" == "--init-ice" -a -f ${filename}.a -a -f ${filename}.b ] ; then
+   echo "**Checking initial files (--init-ice)"
+   [ -f $D/${filename}.blkdat ] && cp $D/${filename}.blkdat .
+   iceopts=""
+   [ $ICEFLG -eq 2 -a -f "$ice_initial" ] && iceopts="--ice-initial $ice_initial --kmt cice_kmt.nc"
+   $BINDIR/check_init_files.py ${filename} --blkdat blkdat.input --depth regional.depth --sigver $SIGVER $iceopts || \
+      tellerror "Initial files do not match the experiment, see check_init_files.py output above"
+fi
+
 
 
 #

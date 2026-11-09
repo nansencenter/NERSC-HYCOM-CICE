@@ -82,7 +82,9 @@ of the boundary forcing mode, which is set via `blkdat.input` (see the table abo
    restart file is needed. Use this when the HYCOM restart has no matching CICE restart,
    e.g. when the ocean is initialised from a GLORYS state (first segment of the cycled
    spin-up, see [Cycled spin-up initial files](#cycled-spin-up-initial-files)). The start
-   date must be in September.
+   date must be in September. `expt_preprocess.sh` checks that the restart and
+   `ice_initial.nc` match the experiment (see
+   [Cycled spin-up initial files](#cycled-spin-up-initial-files)).
 
 ### Restart files
 
@@ -203,10 +205,10 @@ used) is initialised by HYCOM in the first segment. The files go into the experi
 directory (`ice_initial.nc`) and into the data directory of the first cycle
 (`data/cycle_01`, see [Cycled spin-up](running.md#cycled-spin-up)).
 
-**Ready-made files** are shared on NIRD, one directory per configuration and one set of
-files per start date (use `ls` to see what is available, and `README.md` there for the
-naming). For a configuration or start date that is not there yet, see the dropdown
-*Adding files for another configuration or start date* below. For example:
+**Ready-made files** are shared on NIRD, one set of files per start date in a directory
+`<CONFIGNAME>_T<T>` per configuration and topography version (`T` in `EXPT.src`). Use `ls`
+to see what is available. For a configuration or start date that is not there yet, see the
+dropdown *Adding files for another configuration or start date* below. For example:
 
 ```
 /nird/datapeak/NS9481K/SPINUP_INIT/
@@ -214,10 +216,11 @@ naming). For a configuration or start date that is not there yet, see the dropdo
 ├── sources/
 │   ├── glorys12_ice_19930901.nc    # GLORYS12 siconc, sithick (Copernicus Marine)
 │   └── topaz4b_ice_19930901.nc     # TOPAZ4b siconc, sithick, sisnthick (Copernicus Marine)
-└── TP2a0.10/                       # topography 04, 50 layers, HYCOM 2.3
+└── TP2a0.10_T04/                   # TP2a0.10, topography 04
     ├── ice_initial_19930901_glorys.nc  # concentration and thickness from GLORYS12
     ├── ice_initial_19930901_topaz.nc   # concentration from GLORYS12, thickness from TOPAZ4b
     ├── restart.1993_244_00_0000.[ab]   # physics
+    ├── restart.1993_244_00_0000.blkdat # blkdat.input the restart was built with
     └── bgc/                            # BGC initial state (ntracr>0), relax/022/relax_int layers
         └── 19930901/
             └── relax.ECO_{no3,pho,sil,oxy}.[ab]
@@ -246,13 +249,33 @@ EXPT_ID=<EXPT_ID>         # e.g. 03.0
 DATE=<DATE>               # start date, e.g. 1993-09-01
 YMD=$(date -u -d $DATE +%Y%m%d)    # e.g. 19930901
 YDDD=$(date -u -d $DATE +%Y_%j)    # e.g. 1993_244
-N=/nird/datapeak/NS9481K/SPINUP_INIT/${CONFIGNAME}   # or ${CONFIGNAME}_T<T>_L<kdm>, see README.md there
+N=/nird/datapeak/NS9481K/SPINUP_INIT/<CONFIGNAME>_T<T>   # e.g. TP2a0.10_T04
 
 mkdir -p $WDIR/expt_${EXPT_ID}/data/cycle_01
-cp $N/restart.${YDDD}_00_0000.[ab] $WDIR/expt_${EXPT_ID}/data/cycle_01/
+cp $N/restart.${YDDD}_00_0000.* $WDIR/expt_${EXPT_ID}/data/cycle_01/     # .a, .b, .blkdat
 cp $N/bgc/${YMD}/relax.ECO_*.[ab] $WDIR/expt_${EXPT_ID}/data/cycle_01/   # only with BGC
 cp $N/ice_initial_${YMD}_glorys.nc $WORK/${CONFIGNAME}/expt_${EXPT_ID}/ice_initial.nc
 ```
+
+The files can only be used by an experiment with the same grid, topography, layers and
+equation of state. For the `INITFLG="--init-ice"` segment, `expt_preprocess.sh` checks this
+with `bin/check_init_files.py` and stops with an error if anything differs:
+
+- grid, number of layers and topography: from the restart (`pbot` is the depth times
+  9806 Pa/m);
+- equation of state: `sigver` and `thbase` in the restart header against `SIGVER` in
+  `EXPT.src` and `thbase` in `blkdat.input`;
+- layer target densities (`sigma`) and `thflag`: against `restart.<YYYY>_<DDD>_00_0000.blkdat`,
+  the copy of `blkdat.input` the restart was built with. Without this file (e.g. for a
+  restart written by HYCOM), it only warns;
+- CICE land mask: `kmt` in `ice_initial.nc` against the experiment's `kmt` file (a warning
+  if `ice_initial.nc` has no `kmt`).
+
+The BGC files are not checked. They are on the `relax_int` layers of the experiment that
+built them (`relax/022/relax_int` for TP2a0.10_T04).
+
+The restart contains only physics, which HYCOM 2.2 and 2.3 read in the same way, so it can
+be used with both versions.
 
 There are two ice initial files. Both take the concentration from GLORYS12 and differ only in
 the thickness:
@@ -332,8 +355,7 @@ DATE=<DATE>                          # start date, e.g. 2002-09-01
 YMD=$(date -u -d $DATE +%Y%m%d)      # e.g. 20020901
 YDDD=$(date -u -d $DATE +%Y_%j)      # e.g. 2002_244 (1996-09-01 is 1996_245)
 N=/nird/datapeak/NS9481K/SPINUP_INIT
-C=$N/${CONFIGNAME}                   # template topography and layers; otherwise
-                                     # $N/${CONFIGNAME}_T${T}_L<kdm>, e.g. TP2a0.10_T05_L40
+C=$N/${CONFIGNAME}_T${T}                             # e.g. TP2a0.10_T04
 mkdir -p $C
 ```
 
@@ -360,7 +382,8 @@ copernicusmarine subset --dataset-id cmems_mod_arc_phy_my_topaz4_P1D-m \
     -v siconc -v sithick -v sisnthick -t $DATE -T $DATE -o $N/sources -f topaz4b_ice_${YMD}.nc
 ```
 
-**2. HYCOM restart** (`restart.${YDDD}_00_0000.[ab]`):
+**2. HYCOM restart** (`restart.${YDDD}_00_0000.[ab]`, and `restart.${YDDD}_00_0000.blkdat`,
+a copy of the experiment's `blkdat.input` used by the check in `expt_preprocess.sh`):
 
 ```bash
 python $HOME/NERSC-HYCOM-CICE/bin/archv2restart.py ../nest/${IEXPT}/archv.${YDDD}_00 \
