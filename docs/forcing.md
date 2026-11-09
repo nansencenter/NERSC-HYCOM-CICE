@@ -1545,7 +1545,7 @@ stops with an error. The paths are set in
 | File | Contents |
 |---|---|
 | `data_v40/data_all_year.nc` | GloFAS v4.0 reanalysis, daily mean discharge (`dis24`, m³/s) on the native 0.05° grid, 40–90°N, 1 January 1979 to 30 June 2024. Downloaded from Copernicus (cropped to 40–90°N in the request), converted from GRIB to NetCDF and merged from yearly files with `cdo mergetime`; values unchanged. |
-| `TOPAZrunoff_data/river/auxiliary_files__glofas_v4_0/` | GloFAS v4.0 static maps on the same grid: local drainage direction (`ldd`), upstream area (`uparea`) and elevation. Used to find the estuaries (all river mouths, `ldd=5`, north of 50°N) and, by their upstream area, the Ob, Lena and Yenisei for the correction. <!-- TODO: drop "and elevation" above if the elevation file is no longer read --> Must match the GloFAS version of the discharge. |
+| `TOPAZrunoff_data/river/auxiliary_files__glofas_v4_0/` | GloFAS v4.0 static maps on the same grid: local drainage direction (`ldd`), upstream area (`uparea`) and elevation. Used to find the estuaries (all river mouths, `ldd=5`, north of 50°N) and, by their upstream area, the Ob, Lena and Yenisei for the correction. Must match the GloFAS version of the discharge. |
 
 **Derived at NERSC** (independent of the model grid):
 

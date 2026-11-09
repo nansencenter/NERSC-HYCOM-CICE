@@ -136,21 +136,22 @@ class GloFAS_grid:
 
         self.ds[field_name]=(['latitude','longitude'],var[field_name].data) #We create a new field in the dataset
 
-    def find_estuaries(self,uparea_threshold=1e9,elevation_threshold=100,lazy_mode=False,input_grids=None):
+    # Approximate positions (lat, lon) of the rivers corrected in correct_largest_russian_rivers()
+    LARGE_RIVERS = {'Lena': (72, 129), 'Yenisei': (70.90, 83.30), 'Ob': (66.5, 69.8)}
+
+    def find_estuaries(self,lazy_mode=False,input_grids=None):
         """
-        Finds the cells on the grid that correspond to estuaries by using condition on LDD, upstream area and elevation
-        :param uparea_threshold: minimum upstream area (in m^2) for a cell to be a potential estuary [int]
-        :param elevation_threshold: maximum elevation (in m) for a cell to be a potential estuary [int]
+        Finds the estuaries: all GloFAS river mouths (LDD = 5) that are close enough to the model grid
+        (finite distance_to_topaz, see get_glofas_into_topaz). Every GloFAS catchment ends in exactly one
+        river mouth, so each river is counted once.
+
+        The result, self.df_dis_Estuary, has one row per river mouth. merge_estuaries() then combines the
+        river mouths that are moved to the same model cell; correct_largest_russian_rivers() must be called
+        before that.
         """
 
         if lazy_mode==False:
-            self.__uparea_threshold=uparea_threshold
-            self.__elevation_threshold = elevation_threshold
-
-
             mask_estuaries=np.where(self.ds['ldd']== 5 , 1,np.nan) #Mask based on LDD
-            mask_estuaries=mask_estuaries*np.where(self.ds['uparea']> uparea_threshold , 1,np.nan) #Mask based on upstream area: lowX=180000km2 (approx. size of the river Rhine)
-            mask_estuaries=mask_estuaries*np.where(self.ds['elevation']< elevation_threshold , 1,np.nan) #Mask based on elevation
             mask_estuaries=mask_estuaries*np.where(np.isfinite(self.ds['distance_to_topaz']), 1,np.nan) #Drop estuaries too far from the model grid (NaN distance, see get_glofas_into_topaz)
 
             self.mask_estuaries=mask_estuaries #We put the mask in GloGAS grid object so that it can be re used
@@ -159,10 +160,7 @@ class GloFAS_grid:
             mask_estuaries=input_grids.dis_grid.mask_estuaries
 
         # And now we apply mask to Discharge data:
-        # ds_dis*=mask_estuaries
         self.ds['dis_Estuary'] = self.ds[self._GloFAS_grid__field_name] * mask_estuaries
-
-
 
         # We transform xarray dataset into a panda Dataframe because otherwise
         # It's impossible to drop NaN along multiple dimensions
@@ -171,34 +169,39 @@ class GloFAS_grid:
 
         self.df_dis_Estuary = self.df_dis_Estuary.reset_index()  # Just a trick to make life easier when locating an index
 
-        self.df_dis_Estuary.drop(columns=['longitude_grid','latitude_grid']) #That's useless
-
         self.df_dis_Estuary = self.df_dis_Estuary.round({'longitude': 5, 'latitude': 5}) #rounding up the edges
 
-        #We will aslo find the duplicated rows: if two estuary have the same idx on topaz grid (same point) then they are combined and fluxes are sumed
+        # River mouths of the rivers corrected in correct_largest_russian_rivers(): the mouth with the largest
+        # upstream area within 2 degrees of the approximate position. Found on the first day (the upstream
+        # area is not loaded in lazy mode) and reused.
+        if lazy_mode==False:
+            self.large_river_mouths = {}
+            for river, (lat, lon) in self.LARGE_RIVERS.items():
+                df = self.df_dis_Estuary
+                near = np.hypot(df['latitude'] - lat, df['longitude'] - lon) < 2
+                mouth = df.loc[df.loc[near, 'uparea'].idxmax()]
+                self.large_river_mouths[river] = (mouth['latitude'], mouth['longitude'])
+                print('{river} river mouth: {lat:.3f}, {lon:.3f}, upstream area {up:.0f} km2'.format(
+                    river=river, lat=mouth['latitude'], lon=mouth['longitude'], up=mouth['uparea'] / 1e6))
+        else:
+            self.large_river_mouths = input_grids.dis_grid.large_river_mouths
 
+    def merge_estuaries(self,lazy_mode=False):
+        """
+        Combines the river mouths that are moved to the same model cell (same idx_glofas_on_topaz) into
+        one estuary, summing their discharge. Called after correct_largest_russian_rivers().
+        """
         #Careful here with the field names !! (some may be missing, change the aggregate functions if needed)
         aggregation_functions = {'dis24':'sum', 'valid_time':'first', 'surface':'first', 'land':'first', 'ldd':'first', 'uparea':'sum', 'elevation':'first',
        'longitude_grid':'first', 'latitude_grid':'first', 'latitude_glofas_on_topaz':'first',
        'longitude_glofas_on_topaz':'first', 'distance_to_topaz':'first',
        'dis_Estuary':'sum','latitude':'first','longitude':'first'}
-       #  aggregation_functions = {'dis24': 'sum', 'valid_time': 'first', 'land': 'first',
-       #                           'ldd': 'first', 'uparea': 'sum', 'elevation': 'first',
-       #                           'longitude_grid': 'first', 'latitude_grid': 'first',
-       #                           'latitude_glofas_on_topaz': 'first',
-       #                           'longitude_glofas_on_topaz': 'first', 'distance_to_topaz': 'first',
-       #                           'dis_Estuary': 'sum', 'latitude': 'first', 'longitude': 'first'}
 
         # In lazy mode, we dont have LDD, uparea, etc so we change agg function slightly
         lazy_aggregation_functions={'dis24':'sum', 'valid_time':'first', 'surface':'first', 'land':'first',
        'longitude_grid':'first', 'latitude_grid':'first', 'latitude_glofas_on_topaz':'first',
        'longitude_glofas_on_topaz':'first', 'distance_to_topaz':'first',
        'dis_Estuary':'sum','latitude':'first','longitude':'first'}
-       #  lazy_aggregation_functions = {'dis24': 'sum', 'valid_time': 'first', 'land': 'first',
-       #                                'longitude_grid': 'first', 'latitude_grid': 'first',
-       #                                'latitude_glofas_on_topaz': 'first',
-       #                                'longitude_glofas_on_topaz': 'first', 'distance_to_topaz': 'first',
-       #                                'dis_Estuary': 'sum', 'latitude': 'first', 'longitude': 'first'}
 
         if lazy_mode==False:
             self.df_dis_Estuary=self.df_dis_Estuary.groupby('idx_glofas_on_topaz',as_index=False).aggregate(aggregation_functions)
@@ -308,22 +311,12 @@ class GloFAS_grid:
                 correction = correction.mean(dim='day of the year')
 
 
-            Lena=(72,129) #LAT, LON, idx 354
-            Yenisei=(70.90,83.30) #idx 268
-            Ob=(66.5,69.8) #idx 234
-
-            # Cache estuary indices for the 3 rivers — positions don't change between days
-            if not hasattr(self, '_russian_river_indices'):
-                self._russian_river_indices = {
-                    'Lena':    int(np.sqrt((self.df_dis_Estuary['latitude'] - Lena[0]   )**2 + (self.df_dis_Estuary['longitude'] - Lena[1]   )**2).argmin()),
-                    'Yenisei': int(np.sqrt((self.df_dis_Estuary['latitude'] - Yenisei[0])**2 + (self.df_dis_Estuary['longitude'] - Yenisei[1])**2).argmin()),
-                    'Ob':      int(np.sqrt((self.df_dis_Estuary['latitude'] - Ob[0]     )**2 + (self.df_dis_Estuary['longitude'] - Ob[1]     )**2).argmin()),
-                }
-
-            IDX = self._russian_river_indices
-
+            # The rows of the river mouths themselves (found in find_estuaries), before the river mouths
+            # are merged per model cell, so that neighbouring rivers are not corrected
             for river in correction.river.data:
-                idx=IDX[river]
+                lat, lon = self.large_river_mouths[river]
+                idx = self.df_dis_Estuary.index[(self.df_dis_Estuary['latitude'] == lat) &
+                                                (self.df_dis_Estuary['longitude'] == lon)][0]
 
                 slope=correction.sel({'river':river})['Slope'].data #Select slope and intercept for day and river
                 intercept=correction.sel({'river':river})['Intercept'].data

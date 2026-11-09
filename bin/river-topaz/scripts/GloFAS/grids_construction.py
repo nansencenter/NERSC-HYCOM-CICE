@@ -25,8 +25,6 @@ class Grids:
                  region_list,
                  region_name='Arctic',
                  field_name='dis24',
-                 uparea_threshold=1e9,
-                 elevation_thresold=10,
                  distance_threshold=300,
                  correct_GloFAS=True,
                  climatology=False,
@@ -54,8 +52,6 @@ class Grids:
         :param idm:
         :param jdm:
         :param field_name:
-        :param uparea_threshold:
-        :param elevation_thresold:
         """
 
         if lazy_mode==False: #We do complete process:interpolation, finding estuaries, propagation...
@@ -84,11 +80,14 @@ class Grids:
             #-----------------------------Operations: Interpolation, finding estuaries, correction----------------------------
             self.dis_grid.get_glofas_into_topaz(self.topaz_depth_grid,distance_threshold=distance_threshold)
 
-            self.dis_grid.find_estuaries(uparea_threshold=uparea_threshold, elevation_threshold=elevation_thresold)
+            self.dis_grid.find_estuaries()
+
+            # Correct the large rivers before the river mouths are merged per model cell
+            self.dis_grid.correct_largest_russian_rivers(correction_file=river_correction_file,correct_GloFAS=correct_GloFAS,climatology=climatology)
+
+            self.dis_grid.merge_estuaries()
 
             self.dis_grid.load_modif_file(input_edit_file=input_edit_file,do_edit=edit_estuaries)
-
-            self.dis_grid.correct_largest_russian_rivers(correction_file=river_correction_file,correct_GloFAS=correct_GloFAS,climatology=climatology)
 
             # self.dis_grid.isolate_river(river_name=river_name)
 
@@ -115,13 +114,14 @@ class Grids:
             #-----------------------------Operations: Interpolation, finding estuaries, correction----------------------------
             self.dis_grid.get_glofas_into_topaz(self.topaz_depth_grid,distance_threshold=distance_threshold,lazy_mode=True, input_grids=input_grids)
 
-            self.dis_grid.load_modif_file(input_edit_file=input_edit_file)
+            self.dis_grid.find_estuaries(lazy_mode=True,input_grids=input_grids)
 
-            self.dis_grid.find_estuaries(uparea_threshold=uparea_threshold, elevation_threshold=elevation_thresold,lazy_mode=True,input_grids=input_grids)
+            # Correct the large rivers before the river mouths are merged per model cell
+            self.dis_grid.correct_largest_russian_rivers(correction_file=river_correction_file,correct_GloFAS=correct_GloFAS,climatology=climatology)
+
+            self.dis_grid.merge_estuaries(lazy_mode=True)
 
             self.dis_grid.load_modif_file(input_edit_file=input_edit_file, do_edit=edit_estuaries)
-
-            self.dis_grid.correct_largest_russian_rivers(correction_file=river_correction_file,correct_GloFAS=correct_GloFAS,climatology=climatology)
 
 
             self.dis_grid.propagate_river_plume_lazily(depth_grid=self.topaz_depth_grid,input_grids=input_grids)
