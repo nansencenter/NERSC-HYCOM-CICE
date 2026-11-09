@@ -14,14 +14,14 @@
 # Usage, from the experiment directory. Run it directly, not with sbatch: it submits the
 # Slurm job itself (the #SBATCH lines above are for that job):
 #   $HOME/NERSC-HYCOM-CICE/bin/submit_river_ahype_v4b.sh [-s spreading] [first_year] [last_year]
-# -s: spreading (bin/river_spreading.py), pointsource | coastal | diffuse (default diffuse).
+# -s: spreading (bin/river_spreading.py), pointsource | coastal | diffuse (default pointsource).
 
-spreading=diffuse
+spreading=pointsource
 while getopts "s:h" opt ; do
     case $opt in
         s) spreading=$OPTARG ;;
         *) echo "Usage (from the experiment directory): $(basename $0) [-s spreading] [first_year] [last_year]"
-           echo "   spreading: pointsource | coastal | diffuse (default diffuse); years default to 2002 2022"
+           echo "   spreading: pointsource | coastal | diffuse (default pointsource); years default to 2002 2022"
            exit 1 ;;
     esac
 done

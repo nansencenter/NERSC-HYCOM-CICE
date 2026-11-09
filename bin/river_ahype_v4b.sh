@@ -9,7 +9,7 @@ usage() {
    echo "Generates AHYPE v4b river forcing (riverh.[ab]) for whole years"
    echo ""
    echo " $(basename $0) [-s spreading] [first_year] [last_year]"
-   echo "    -s: spreading (bin/river_spreading.py), pointsource | coastal | diffuse (default diffuse)"
+   echo "    -s: spreading (bin/river_spreading.py), pointsource | coastal | diffuse (default pointsource)"
    echo "    years default to the whole AHYPE v4b period, 2002 2022"
    echo ""
    echo "Example:"
@@ -18,7 +18,7 @@ usage() {
    echo ""
    exit 1
 }
-spreading=diffuse
+spreading=pointsource
 while getopts "s:h" opt ; do
    case $opt in
       s) spreading=$OPTARG ;;
