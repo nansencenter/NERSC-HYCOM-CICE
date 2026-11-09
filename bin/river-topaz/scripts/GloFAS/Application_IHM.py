@@ -50,8 +50,6 @@ class Appli:
                  region_list=Region,
                  region_name=self.ui.p.param('Parameters', 'Region').value(),
                  field_name=self.ui.p.param('Parameters', 'field name').value(),
-                 uparea_threshold=self.ui.p.param('Parameters', 'uparea threshold [m2]').value(),
-                 elevation_thresold=self.ui.p.param('Parameters', 'elevation threshold [m]').value(),
                  correct_GloFAS=self.ui.p.param('Parameters', 'Correct GloFAS data').value(),
                  climatology=self.ui.p.param('Parameters', 'Climatology').value(),
                  month=self.ui.p.param('Parameters', 'Month').value(),

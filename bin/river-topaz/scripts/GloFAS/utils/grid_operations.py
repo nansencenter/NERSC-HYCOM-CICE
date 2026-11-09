@@ -3,8 +3,6 @@
 import logging
 from typing import List, Tuple
 
-from numba import jit
-from numba import njit
 import numpy as np
 from scipy import spatial
 from xarray import DataArray, Dataset, broadcast, open_dataset, zeros_like
@@ -12,69 +10,6 @@ from xarray import DataArray, Dataset, broadcast, open_dataset, zeros_like
 log = logging.getLogger()
 
 
-@jit
-def apply_ocean_weight(ocean_weights,estuaries_dis):
-    """
-    Applies the ocean weight grid to estuary discharge for N estuaries and returns the discharge grid
-    :rtype: 2D array corresponding to river discharge values on TOPAZ grid [jdm,idm]
-    :param ocean_weights: 3D array with ocean weight on TOPAZ grid for every estuary [jdm,idm,N]
-    :param estuaries_dis: 1D array with discharge of every estuary [N,1]
-    """
-
-    return ocean_weights@estuaries_dis
-
-
-@jit(nopython=True)
-def cleaning_discharge(ocean_weight,weight_mask,mini,minj,idm,jdm,depth_grid_mask):
-    shape = (jdm, idm)
-    ndim = len(shape)
-    for idx in weight_mask[0]:
-        coords = np.empty(ndim, dtype=np.int64)
-        index=idx
-        for i in range(ndim - 1, -1, -1):
-            coords[i] = index % shape[i]
-            index = index // shape[i]
-        ii,jj=coords
-
-        count_land = 0
-
-        if ii != mini:
-            list_ii = np.arange(ii, mini, 1 * np.sign(mini - ii))
-        else:
-            list_ii = np.array([ii])
-
-        if jj != minj:
-            list_jj = np.arange(jj, minj, 1 * np.sign(minj - jj))
-        else:
-            list_jj = np.array([jj])
-
-        # indices=[] #list of indices of cells separating ocean point and estuary
-        # for iii in list_ii: indices.append([iii,list_jj[0]])
-        # for jjj in list_jj: indices.append([list_ii[-1],jjj])
-
-        len1 = list_ii.shape[0] + list_jj.shape[0]
-        indices = np.zeros((len1, 2))
-        cntr = 0
-        # list of indices of cells separating ocean point and estuary
-        for iii in list_ii:
-            indices[cntr, :] = iii, list_jj[0]
-            cntr += 1
-        for jjj in list_jj:
-            indices[cntr, :] = list_ii[-1], jjj
-            cntr += 1
-
-        k = 0
-        land_threshold = 15
-        while count_land <= land_threshold and k < len1:
-
-            if depth_grid_mask[int(indices[k, 0]), int(indices[k, 1])] == True:  # For every cell, we look if it's land
-                count_land += 1
-            k += 1
-
-        if count_land > land_threshold: ocean_weight[idx] = 0
-        # If there are more than the limit of land points between estuary and ocean point, then we remove the weight from this ocean point
-
-    return ocean_weight
 
 def transform_coordinates(coords):
     """Transform coordinates from geodetic to cartesian
