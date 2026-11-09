@@ -85,6 +85,15 @@ for i in pbsjob*.sh ; do
    cat $i.tmp | sed "s/PBS[ ]*-N.*$/PBS -N ${R}_X${X}/"  > $i
 done
 
+# Name the Slurm jobs after grid and experiment (e.g. TP2_02.8), so squeue shows which one is
+# running. 8 characters: plain squeue cuts job names after 8.
+jobname=${R:0:3}_$exptnew
+for i in srjob*.sh ; do
+   [ -f "$i" ] || continue
+   sed -i -e "s/^#SBATCH[ ]*--job-name[ =].*/#SBATCH --job-name=$jobname/" \
+          -e "s/^#SBATCH[ ]*-J[ ].*/#SBATCH -J $jobname/" $i
+done
+
 echo
 echo
 echo

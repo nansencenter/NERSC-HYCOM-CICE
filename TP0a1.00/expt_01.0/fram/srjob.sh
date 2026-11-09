@@ -2,7 +2,7 @@
 
 #SBATCH --account=nn9481k
 
-#SBATCH -J  TP5a010
+#SBATCH -J TP0_01.0
 
 #SBATCH -N 11   # number of nodes
 #SBATCH -n 31   # number of nodes
