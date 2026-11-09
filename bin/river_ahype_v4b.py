@@ -10,14 +10,10 @@ Monthly freshwater flux (m/s) on the model grid, the sum of three sets of point 
 Each outlet or gate goes to the nearest coastal ocean cell (ocean cell with a land cell as
 direct neighbour); outlets outside the model domain are dropped and listed. There is no distance
 limit, because a large river can enter an estuary the grid does not resolve (the Yenisei is
-330 km from the nearest TP2a0.10 coastal cell). All outlets are spread in the same way:
-  pointsource  no spreading
-  coastal      rradius=50 km, alongshore=100 km, Gaussian sigma=1 cell
-  diffuse      rradius=180 km, alongshore=360 km, sigma=3 cells (the GloFAS radii)
-The spreading follows propagate_river_plume() of the GloFAS rivers: exponential decay with
-distance from the mouth and from the coast, same landmass only, no crossing of more than 15
-land cells, optional Gaussian smoothing. The weights of each outlet are normalised, so the
-volume is conserved.
+330 km from the nearest TP2a0.10 coastal cell). All outlets are spread in the same way, with one of the strategies of river_spreading.py
+(shared with the GloFAS river forcing): pointsource (no spreading), coastal (rradius=50 km,
+alongshore=100 km, Gaussian sigma=1 cell) or diffuse (180 km, 360 km, sigma=3 cells). The weights
+of each outlet are normalised, so the volume is conserved.
 
 The output has one record per month at 00:00 on the 15th, for whole years. Normally called by
 river_ahype_v4b.sh or submit_river_ahype_v4b.sh, which write force/rivers/<E>/riverh.[ab].
@@ -33,20 +29,21 @@ import os
 import re
 import sqlite3
 import sys
-import time
 
 import numpy as np
 import pandas as pd
 import scipy.sparse as sp
 import xarray as xr
-from scipy.ndimage import binary_dilation, gaussian_filter
-from scipy.ndimage import label as ndlabel
+from scipy.ndimage import binary_dilation
 from scipy.spatial import cKDTree
 
 _BINDIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(_BINDIR, 'river-topaz', 'scripts', 'GloFAS'))
-from utils.grid_operations import transform_coordinates, cleaning_discharge  # noqa: E402
+from utils.grid_operations import transform_coordinates  # noqa: E402
 import abfile  # noqa: E402
+# Shared with the GloFAS river forcing (this directory)
+import geus as geus_module  # noqa: E402
+from river_spreading import SPREADING, spreading_weights  # noqa: E402
 
 # ── Default data paths (Betzy) ───────────────────────────────────────────────
 _AHYPE_V4B = '/cluster/projects/nn2993k/AHYPE_v4b'
@@ -58,11 +55,6 @@ DEFAULTS = dict(
 )
 AHYPE_TABLE = 'arcfresh_riverdischarge_ahype_v4b_river-to-ocean-outlets'
 
-SPREADING_PARAMS = {
-    'pointsource': None,
-    'coastal': dict(rradius=50_000,  alongshore=100_000, sigma=1),
-    'diffuse': dict(rradius=180_000, alongshore=360_000, sigma=3),
-}
 R_EARTH = 6371.0
 MODEL_DAY0 = datetime.date(1900, 12, 31)
 
@@ -116,50 +108,9 @@ def map_outlets(grid, lons, lats):
     return coast_idx[nn], 2 * R_EARTH * np.arcsin(np.clip(chord / (2 * R_EARTH), 0, 1)), inside
 
 
-# ── Spreading weights ─────────────────────────────────────────────────────────
-
-def spreading_weights(grid, flat_idx, rradius, alongshore, sigma):
-    """Sparse (n cells, n outlets) matrix of normalised spreading weights."""
-    jdm, idm = grid.jdm, grid.idm
-    land = grid.land.ravel()
-    xyz = grid.ecef()                                    # km
-    tree_grid = cKDTree(xyz)
-    land_tree = cKDTree(xyz[land])
-    d2land, nn_land = land_tree.query(xyz)
-    d_to_land = d2land * 1000.0                          # m
-    d_to_land[land] = 0.0
-    labels, _ = ndlabel(gaussian_filter(grid.land.astype(float), sigma=0.1) > 0.5,
-                        structure=np.ones((3, 3), int))
-    closest_label = labels.ravel()[land][nn_land]        # landmass nearest to each cell
-
-    rows, cols, vals = [], [], []
-    for k, c in enumerate(flat_idx):
-        if k % 200 == 0:
-            print(f'    outlet {k}/{len(flat_idx)}')
-        cand = np.array(tree_grid.query_ball_point(xyz[c], alongshore / 1000.0), dtype=np.int64)
-        cand = cand[~land[cand] & (d_to_land[cand] <= rradius) & (closest_label[cand] == closest_label[c])]
-        dist = np.linalg.norm(xyz[cand] - xyz[c], axis=1) * 1000.0
-        w = np.zeros(grid.n)
-        w[cand] = np.exp(-dist / alongshore) * np.exp(-2.0 * d_to_land[cand] / rradius)
-        j, i = divmod(int(c), idm)
-        w = cleaning_discharge(w, np.nonzero(w), j, i, idm, jdm, grid.land)
-        if sigma:
-            w = gaussian_filter(w.reshape(jdm, idm), sigma=sigma).ravel()
-        w[land] = 0.0
-        if w.sum() == 0.0:          # nothing left: keep the water at the mouth
-            w[c] = 1.0
-        nz = np.flatnonzero(w)
-        rows.append(nz); cols.append(np.full(nz.size, k)); vals.append(w[nz] / w[nz].sum())
-    return sp.csr_matrix((np.concatenate(vals), (np.concatenate(rows), np.concatenate(cols))),
-                         shape=(grid.n, len(flat_idx)))
-
-
 def flux_field(grid, flat_idx, q_m3s, weights):
     """Flux [m/s] on the grid from per-outlet discharge [m³/s]."""
-    if weights is None:
-        vol = np.bincount(flat_idx, weights=q_m3s, minlength=grid.n)
-    else:
-        vol = weights @ q_m3s
+    vol = weights @ q_m3s
     field = vol.reshape(grid.jdm, grid.idm) / grid.area
     field[grid.land] = 0.0
     return field
@@ -199,25 +150,21 @@ def load_ehype(dat_path):
 
 
 def load_geus(path, years):
-    """GEUS gates and a function month -> discharge [m³/s]."""
-    ds = xr.open_dataset(path)
-    version = (f'Dataverse {ds.attrs.get("geus_dataverse_version", "unknown")}, '
-               f'product version {ds.attrs.get("geus_product_version", "unknown")}')
-    print(f'GEUS ice discharge {version} ({ds.attrs.get("geus_source", "")}), {path}')
-    q = ds['discharge'].transpose('time', 'gate').to_pandas()
-    q.index = q.index.strftime('%Y-%m')
-    missing = [f'{y}-{m:02d}' for y in years for m in range(1, 13) if f'{y}-{m:02d}' not in q.index]
+    """GEUS gates (bin/geus.py), a function month -> discharge [m³/s] and the GEUS version."""
+    geus = geus_module.load_geus(path)
+    missing = [f'{y}-{m:02d}' for y in years for m in range(1, 13)
+               if pd.Period(f'{y}-{m:02d}', 'M') not in geus['monthly'].index]
     if missing:
         sys.exit(f'Error: months not in {path}: {missing[0]} ... {missing[-1]}')
-    return (ds['lon'].values, ds['lat'].values, lambda y, m: q.loc[f'{y}-{m:02d}'].values,
-            version)
+    return (geus['lon'], geus['lat'],
+            lambda y, m: geus_module.geus_discharge(geus, pd.Timestamp(y, m, 15)), geus['version'])
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument('--spreading', choices=list(SPREADING_PARAMS), default='pointsource')
+    p.add_argument('--spreading', choices=list(SPREADING), default='pointsource')
     p.add_argument('--start-year', type=int, default=2002)
     p.add_argument('--end-year', type=int, default=2022)
     p.add_argument('--out', required=True, help='output file name, without .a/.b')
@@ -258,13 +205,9 @@ def main():
     flat_idx = np.concatenate(flat_idx)
     names = np.array(names)
 
-    params = SPREADING_PARAMS[a.spreading]
-    weights = None
-    if params:
-        print(f'Spreading weights ({a.spreading}: {params}) for {len(flat_idx)} outlets ...')
-        t0 = time.time()
-        weights = spreading_weights(grid, flat_idx, **params)
-        print(f'  done in {time.time() - t0:.0f} s, {weights.nnz} non-zero weights')
+    print(f'Spreading weights ({a.spreading}) for {len(flat_idx)} outlets ...')
+    weights = spreading_weights(grid.plon, grid.plat, grid.land, flat_idx, a.spreading)
+    print(f'  {weights.nnz} non-zero weights')
 
     fout = abfile.ABFileRiverForcing(a.out, 'w', mask=True, idm=grid.idm, jdm=grid.jdm,
                                      cline1=f'AHYPE v4b + E-HYPE + GEUS ice discharge, spreading={a.spreading}',
