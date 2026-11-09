@@ -1612,7 +1612,7 @@ end in an estuary the grid does not resolve, e.g. the Yenisei outlet is 330 km f
 coastal cell of TP2a0.10 (250 km on TP5a0.06), and its water enters at the mouth of the Yenisei
 Gulf. All three sources are then spread in the same way, with one of the three strategies of
 [Spreading river discharge from the coast](#spreading-river-discharge-from-the-coast)
-(`pointsource`, `coastal` or `diffuse`; point sources are preferred). The grid size is read from
+(`-s pointsource`, `coastal` or `diffuse`, default `diffuse`). The grid size is read from
 `regional.grid.b`, so the same scripts work for TP2a0.10 (topography 04) and TP5a0.06
 (topography 05).
 
@@ -1665,15 +1665,16 @@ environment activated):
 
 ```bash
 cd $WORK/${CONFIGNAME}/expt_${EXPT_ID}
-$HOME/NERSC-HYCOM-CICE/bin/river_ahype_v4b.sh coastal 2010 2010
+$HOME/NERSC-HYCOM-CICE/bin/river_ahype_v4b.sh 2010 2010              # diffuse spreading
+$HOME/NERSC-HYCOM-CICE/bin/river_ahype_v4b.sh -s pointsource 2010 2010
 ```
 
 The whole period as a Slurm job (run directly, not with `sbatch`; it submits the job itself):
 
 ```bash
 cd $WORK/${CONFIGNAME}/expt_${EXPT_ID}
-$HOME/NERSC-HYCOM-CICE/bin/submit_river_ahype_v4b.sh coastal            # 2002-2022
-$HOME/NERSC-HYCOM-CICE/bin/submit_river_ahype_v4b.sh diffuse 2005 2010  # sub-period
+$HOME/NERSC-HYCOM-CICE/bin/submit_river_ahype_v4b.sh                       # 2002-2022, diffuse
+$HOME/NERSC-HYCOM-CICE/bin/submit_river_ahype_v4b.sh -s coastal 2005 2010  # sub-period, plan B
 ```
 
 The log lists, for every year, the annual total of each source and of the gridded field

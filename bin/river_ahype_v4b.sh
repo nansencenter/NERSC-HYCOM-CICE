@@ -4,23 +4,31 @@
 # writes it to force/rivers/<E>/riverh.[ab]. Must be run in the experiment directory.
 # For a Slurm job instead of the login node, use submit_river_ahype_v4b.sh.
 
-if [ $# -lt 1 -o $# -gt 3 ] ; then
+usage() {
    echo ""
    echo "Generates AHYPE v4b river forcing (riverh.[ab]) for whole years"
    echo ""
-   echo " $(basename $0) <spreading> [first_year] [last_year]"
-   echo "    spreading: pointsource | coastal | diffuse"
+   echo " $(basename $0) [-s spreading] [first_year] [last_year]"
+   echo "    -s: spreading (bin/river_spreading.py), pointsource | coastal | diffuse (default diffuse)"
    echo "    years default to the whole AHYPE v4b period, 2002 2022"
    echo ""
    echo "Example:"
-   echo "    $(basename $0) coastal"
-   echo "    $(basename $0) diffuse 2010 2012"
+   echo "    $(basename $0)"
+   echo "    $(basename $0) -s coastal 2010 2012"
    echo ""
    exit 1
-fi
-spreading=$1
-first=${2:-2002}
-last=${3:-2022}
+}
+spreading=diffuse
+while getopts "s:h" opt ; do
+   case $opt in
+      s) spreading=$OPTARG ;;
+      *) usage ;;
+   esac
+done
+shift $((OPTIND-1))
+[ $# -gt 2 ] && usage
+first=${1:-2002}
+last=${2:-2022}
 
 if [ -f EXPT.src ] ; then
    export BASEDIR=$(cd .. && pwd)

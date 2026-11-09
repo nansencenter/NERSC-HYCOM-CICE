@@ -164,7 +164,7 @@ def load_geus(path, years):
 
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument('--spreading', choices=list(SPREADING), default='pointsource')
+    p.add_argument('--spreading', choices=list(SPREADING), default='diffuse')
     p.add_argument('--start-year', type=int, default=2002)
     p.add_argument('--end-year', type=int, default=2022)
     p.add_argument('--out', required=True, help='output file name, without .a/.b')
