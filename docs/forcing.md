@@ -1381,7 +1381,7 @@ Generate the file once for the whole period before running the model. The end da
 on or after the end of the last model job. `expt_preprocess.sh` does not create the file:
 it only links it, checks that it covers each job's period, and stops with an error if the
 file is missing or too short.
-`river_glofas.sh` processes one GloFAS day at a time: after 2–3 minutes of setup it takes
+`river_glofas.sh` processes one GloFAS day at a time: after <!-- TODO: new setup time --> TODO minutes of setup it takes
 about 30 s per day on a Betzy login node and a few seconds per day on a compute node. Run
 short periods directly on the login node, and longer ones as a Slurm job array, which
 processes the years in parallel. Both give the same file. Activate the Python environment
@@ -1431,8 +1431,9 @@ Run the script directly, as above, not with `sbatch`: it takes a second on the l
 submits the Slurm jobs itself and prints their job IDs. As with `river_glofas.sh`, an optional
 third argument overrides the record interval (fraction of a day). At most 12 years run at
 a time, the `preproc` limit on Betzy, so a period runs in rounds of 12 years. One year
-takes 16–18 minutes and just under 6 GB of memory on a Betzy compute node (daily records,
-HYCOM 2.3): 1993–2024 (32 years, three rounds) takes about 55 minutes in total.
+takes TODO minutes and TODO GB of memory on a Betzy compute node (daily records,
+HYCOM 2.3): 1993–2024 (32 years, three rounds) takes about TODO minutes in total.
+<!-- TODO: update from the Betzy job array (old: 16–18 min, just under 6 GB, ~55 min) -->
 
 The join job only starts if every year finished successfully, and `concat_riverh.py`
 checks the result: records evenly spaced over the whole period (no missing or incomplete
@@ -1468,15 +1469,18 @@ Each day of GloFAS discharge (m³/s) is processed as follows:
 
 1. Missing values (a few GloFAS cells on single days, e.g. the Mackenzie on 7 May 2021) are
    linearly interpolated in time from the nearest days with data; each fill is logged.
-2. Estuaries are the GloFAS river mouths north of 50°N with an upstream area above 1000 km²
-   and an elevation below 10 m. Each is moved to the nearest ocean cell of the model grid;
+2. Estuaries are all GloFAS river mouths (`ldd=5`) north of 50°N. Each GloFAS catchment ends
+   in exactly one river mouth, so every river is counted once. Each estuary is moved to the
+   nearest ocean cell of the model grid, and estuaries that land on the same cell are merged;
    estuaries more than 300 km from any ocean cell (rivers draining outside the domain, e.g.
    the Amur into the Sea of Okhotsk) are dropped (`distance_threshold` in
    `compute_discharge_NoUI.py`).
 3. From 2001 onwards, only the Ob, Lena and Yenisei are corrected towards ArcticGRO
    observations (a linear correction for each day of the year, fitted for 2001–2019). All
    other rivers, and all years before 2001, are uncorrected GloFAS. Negative corrected values
-   are set to zero.
+   are set to zero. Each of the three rivers is the river mouth with the largest upstream area
+   near its known position, and it is corrected before the river mouths are merged per model
+   cell, so neighbouring rivers on the same cell are not corrected.
 4. The discharge is spread over the coastal cells near each estuary and divided by the
    grid-cell area, giving m/s (see the next dropdown). Each daily value is placed at 00:00
    of its date.
@@ -1492,7 +1496,8 @@ the idea of the MSCPROGS `rivers` program used for the
 smoothing steps. The radii are set in `hycom_river_hifre.py`: `rradius` = 180 km and
 `alongshoreradius` = 360 km.
 
-The weights are computed on the first day only and reused for all later days. For each
+The weights are computed on the first day only, stored as a sparse matrix, and reused for
+all later days. For each
 estuary on the model grid:
 
 1. **Distance from the mouth.** An ocean cell at distance `d` from the mouth gets
@@ -1540,7 +1545,7 @@ stops with an error. The paths are set in
 | File | Contents |
 |---|---|
 | `data_v40/data_all_year.nc` | GloFAS v4.0 reanalysis, daily mean discharge (`dis24`, m³/s) on the native 0.05° grid, 40–90°N, 1 January 1979 to 30 June 2024. Downloaded from Copernicus (cropped to 40–90°N in the request), converted from GRIB to NetCDF and merged from yearly files with `cdo mergetime`; values unchanged. |
-| `TOPAZrunoff_data/river/auxiliary_files__glofas_v4_0/` | GloFAS v4.0 static maps on the same grid: local drainage direction (`ldd`), upstream area (`uparea`) and elevation. Used to find the estuaries: river mouths (`ldd=5`) with an upstream area above 1000 km² and an elevation below 10 m, north of 50°N. Must match the GloFAS version of the discharge. |
+| `TOPAZrunoff_data/river/auxiliary_files__glofas_v4_0/` | GloFAS v4.0 static maps on the same grid: local drainage direction (`ldd`), upstream area (`uparea`) and elevation. Used to find the estuaries (all river mouths, `ldd=5`, north of 50°N) and, by their upstream area, the Ob, Lena and Yenisei for the correction. <!-- TODO: drop "and elevation" above if the elevation file is no longer read --> Must match the GloFAS version of the discharge. |
 
 **Derived at NERSC** (independent of the model grid):
 
