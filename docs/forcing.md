@@ -1595,13 +1595,13 @@ nearby ocean cells with `bin/river_spreading.py`. There are three strategies:
 |---|---|---|---|---|
 | A | `pointsource` | none | none | none |
 | B | `coastal` | 50 km | 100 km | 1 cell |
-| C (default) | `diffuse` | 180 km | 360 km | 3 cells |
+| C | `diffuse` | 180 km | 360 km | 3 cells |
 
 From A to C the water is spread over more cells, which lowers the freshwater flux per cell
 and makes the model more stable, at the cost of putting the river water further from the
-mouths. Plan C, the original setting of the GloFAS scripts, is the default. Point sources
-(plan A) put the water where the rivers enter the ocean and are preferred if the model is
-stable with them; plan B is in between. In June 2010, the largest flux per cell is about
+mouths. Point sources (plan A) put the water where the rivers enter the ocean and are
+preferred if the model is stable with them; plan B is in between. The default is plan C for
+GloFAS (the original setting of the GloFAS scripts) and plan A for AHYPE v4b. In June 2010, the largest flux per cell is about
 27 000 mm/day with point sources, 1 000 mm/day with plan B and 300 mm/day with plan C on
 TP2a0.10, and about four times more on TP5a0.06, whose cells are smaller.
 
