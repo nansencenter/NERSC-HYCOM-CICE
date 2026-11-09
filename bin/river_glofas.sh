@@ -1,20 +1,32 @@
 #!/bin/bash
 #
 
+# Optional spreading strategy (bin/river_spreading.py): -s pointsource|coastal|diffuse
+spreading=diffuse
+while getopts "s:" opt ; do
+   case $opt in
+      s) spreading=$OPTARG ;;
+      *) exit 1 ;;
+   esac
+done
+shift $((OPTIND-1))
+
 # Experiment number needed
 if [ $# -lt 2 -o $# -gt 3 ] ; then
    echo ""
    echo "Generates GloFAS river forcing (riverh.[ab]) over the time span"
    echo ""
-   echo " $(basename $0) needs start time, end time and optionally the record interval dt"
+   echo " $(basename $0) [-s spreading] needs start time, end time and optionally the record interval dt"
    echo " (fraction of a day). If dt is omitted it is set from the HYCOM version V in EXPT.src:"
    echo "    V=2.3    : dt=1.0  (daily records; priver=2 interpolates linearly between records)"
    echo "    otherwise: dt=0.25 (6-hourly records; highfq_river in 2.2.98 must match the"
    echo "                        atmospheric forcing times)"
+   echo " -s: spreading of each river mouth, pointsource, coastal or diffuse (default diffuse)"
    echo ""
    echo "Example:"
    echo "    $(basename $0) 2013-01-01T00:00:00  2013-01-05T00:00:00"
    echo "    $(basename $0) 2013-01-01T00:00:00  2013-01-05T00:00:00 0.25"
+   echo "    $(basename $0) -s pointsource 2013-01-01T00:00:00  2013-01-05T00:00:00"
    echo ""
    exit
 fi
@@ -46,7 +58,7 @@ if [ -z "$dt" ] ; then
       dt=0.25
    fi
 fi
-echo "River forcing record interval dt=$dt day (HYCOM version V=$V)"
+echo "River forcing record interval dt=$dt day (HYCOM version V=$V), spreading $spreading"
 
 D=$BASEDIR/force/rivers/$E
 S=$D/SCRATCH
@@ -72,7 +84,7 @@ fi
 # it puts the module's Python 3.10 numpy on PYTHONPATH, which breaks the environment's python.
 cd ${BINDIR}/river-topaz/scripts/GloFAS
 
-cmd="python ${BINDIR}/river-topaz/scripts/GloFAS/hycom_river_hifre.py --dt $dt $start $stop $S/ $depthfile"
+cmd="python ${BINDIR}/river-topaz/scripts/GloFAS/hycom_river_hifre.py --dt $dt --spreading $spreading $start $stop $S/ $depthfile"
 echo "$cmd"
 eval $cmd   ||  { echo "Error running $cmd " ; exit 1 ; }
 

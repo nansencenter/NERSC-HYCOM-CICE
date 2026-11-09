@@ -1400,6 +1400,7 @@ EXPT_ID=<EXPT_ID>         # e.g. 01.0
 cd $WORK/${CONFIGNAME}/expt_${EXPT_ID}
 $HOME/NERSC-HYCOM-CICE/bin/river_glofas.sh 2013-01-01T00:00:00 2014-01-01T00:00:00        # dt from V
 $HOME/NERSC-HYCOM-CICE/bin/river_glofas.sh 2013-01-01T00:00:00 2014-01-01T00:00:00 0.25   # force 6-hourly
+$HOME/NERSC-HYCOM-CICE/bin/river_glofas.sh -s pointsource 2013-01-01T00:00:00 2014-01-01T00:00:00   # no spreading
 ```
 
 A year takes about 3 hours this way; for more than a few months, use the Slurm job array.
@@ -1425,6 +1426,7 @@ EXPT_ID=<EXPT_ID>         # e.g. 01.0
 
 cd $WORK/${CONFIGNAME}/expt_${EXPT_ID}
 $HOME/NERSC-HYCOM-CICE/bin/submit_river_glofas.sh 1993-01-01 2025-01-01
+$HOME/NERSC-HYCOM-CICE/bin/submit_river_glofas.sh -s coastal 1993-01-01 2025-01-01   # spreading plan B
 ```
 
 Run the script directly, as above, not with `sbatch`: it takes a second on the login node,
@@ -1471,61 +1473,36 @@ Each day of GloFAS discharge (m³/s) is processed as follows:
    linearly interpolated in time from the nearest days with data; each fill is logged.
 2. Estuaries are all GloFAS river mouths (`ldd=5`) north of 50°N. Each GloFAS catchment ends
    in exactly one river mouth, so every river is counted once. Each estuary is moved to the
-   nearest ocean cell of the model grid, and estuaries that land on the same cell are merged;
-   estuaries more than 300 km from any ocean cell (rivers draining outside the domain, e.g.
-   the Amur into the Sea of Okhotsk) are dropped (`distance_threshold` in
-   `compute_discharge_NoUI.py`).
+   nearest ocean cell of the model grid; estuaries more than 300 km from any ocean cell
+   (rivers draining outside the domain, e.g. the Amur into the Sea of Okhotsk) are dropped
+   (`distance_threshold` in `compute_discharge_NoUI.py`).
 3. From 2001 onwards, only the Ob, Lena and Yenisei are corrected towards ArcticGRO
    observations (a linear correction for each day of the year, fitted for 2001–2019). All
    other rivers, and all years before 2001, are uncorrected GloFAS. Negative corrected values
    are set to zero. Each of the three rivers is the river mouth with the largest upstream area
-   near its known position, and it is corrected before the river mouths are merged per model
-   cell, so neighbouring rivers on the same cell are not corrected.
-4. The discharge is spread over the coastal cells near each estuary and divided by the
-   grid-cell area, giving m/s (see the next dropdown). Each daily value is placed at 00:00
-   of its date.
+   near its known position.
+4. Greenland solid ice discharge from GEUS is added: each of the 266 GEUS flux gates near the
+   marine-terminating glacier fronts (Mankoff et al. 2020, doi:10.5194/essd-12-1367-2020;
+   data doi:10.22008/promice/data/ice_discharge) becomes an extra estuary at the nearest ocean
+   cell, with the monthly mean discharge of its month (about 480 km³/yr in 2002–2022) as
+   liquid freshwater (1 Gt = 1 km³). GloFAS has the liquid runoff from Greenland but not the
+   ice discharge. Before the GEUS record starts (May 1986), the mean seasonal cycle of
+   1987–1996 is used. Treating calving as liquid water at the coast puts it too close to the
+   coast and too early compared with real icebergs, and ignores the heat needed to melt the ice.
+5. Estuaries that land on the same model cell are merged (their discharge is summed).
+6. The discharge is spread over the ocean cells near each estuary and divided by the
+   grid-cell area, giving m/s (see [Spreading river discharge from the coast](#spreading-river-discharge-from-the-coast)).
+   Each daily value is placed at 00:00 of its date.
 
 ::::
 
 ::::{dropdown} How the discharge is spread from the estuaries
 
-GloFAS does not use the MSCPROGS programs. The spreading is done in Python
-(`propagate_river_plume()` in `bin/river-topaz/scripts/GloFAS/GloFAS_grid.py`) and follows
-the idea of the MSCPROGS `rivers` program used for the
-[default climatology](#ahype-ehype-climatology-default), with extra cleaning and
-smoothing steps. The radii are set in `hycom_river_hifre.py`: `rradius` = 180 km and
-`alongshoreradius` = 360 km.
-
-The weights are computed on the first day only, stored as a sparse matrix, and reused for
-all later days. For each
-estuary on the model grid:
-
-1. **Distance from the mouth.** An ocean cell at distance `d` from the mouth gets
-   `w = exp(−d / alongshoreradius)`, and zero beyond `alongshoreradius`.
-2. **Distance from the coast.** The weight is multiplied by `exp(−2·landdist / rradius)`,
-   and set to zero further than `rradius` from land (`landdist` = distance to the
-   nearest land cell). Unlike MSCPROGS, the factor keeps increasing towards the coast.
-3. **Same landmass.** The land is divided into connected land areas. Ocean cells whose
-   nearest land is a different land area than the mouth's (e.g. an island) get zero, so
-   islands near the mouth do not attract water.
-4. **No crossing of land.** For each remaining cell, a path to the mouth is followed
-   along the grid (first along one grid direction, then the other). If it crosses more
-   than 15 land cells, the cell gets zero. This stops water from reaching the other side
-   of a peninsula (e.g. Ob water on the far side of Yamal). It can be switched off with
-   `Propagation_cleaning_step=False`.
-5. **Smoothing.** The weights are smoothed with a Gaussian filter (σ = 3 grid cells,
-   about 40–60 km on TP2a0.10) and set to zero on land. This step is not in the technical
-   report. It spreads the weights up to about 9 grid cells beyond the limits of steps 1–2,
-   and can give weight again to cells that step 4 removed, if they are close to cells that
-   kept their weight.
-6. **Normalisation.** The weights are divided by their sum, so the volume of each estuary
-   is conserved exactly, and the flux is `Q·w / cell area` (m/s). All estuaries are added.
-
-Compared with the default AHYPE/EHYPE climatology (100 km and 300 km), the GloFAS radii
-are larger and the smoothing spreads the water further, so GloFAS river water starts out
-more widely spread. In the TOPAZ runs of the technical report, for example, GloFAS put
-Yenisei water directly into the open Kara Sea, while the default climatology put both
-the Ob and the Yenisei water into the Gulf of Ob.
+The spreading is shared with the AHYPE v4b river forcing and described in
+[Spreading river discharge from the coast](#spreading-river-discharge-from-the-coast). It is
+chosen with `-s` (`pointsource`, `coastal` or `diffuse`, default `diffuse`) of `river_glofas.sh`
+and `submit_river_glofas.sh`. The weights are computed on the first day only, stored as a sparse
+matrix, and reused for all later days.
 
 ::::
 
@@ -1552,10 +1529,10 @@ stops with an error. The paths are set in
 | File | Contents |
 |---|---|
 | `TOPAZrunoff_data/river/correction_files/largest_river_correction_2001_2019.nc` | Day-of-year correction (slope and intercept) for the Ob, Lena and Yenisei, fitted from GloFAS against ArcticGRO observations for 2001–2019. Applied to discharge from 2001 onwards. |
+| `TOPAZrunoff_data/river/geus/geus_gates_monthly.nc` | GEUS Greenland solid ice discharge, monthly means per flux gate (m³/s), made from the GEUS `gate.nc` with `bin/geus_preprocess.py --dataverse-version <V> <GEUS directory> <output>`. GEUS updates the product: the Dataverse version (e.g. V131) is not in the GEUS files, so give it with `--dataverse-version`; it is stored in the output and written to the `riverh.b` header. Set `geus_file = None` in `hycom_river_hifre.py` to leave GEUS out. |
 
 The spreading of each estuary's discharge over the nearby coastal cells is not stored in
-a file: it is computed for the model grid, with the radii `rradius` (180 km) and
-`alongshoreradius` (360 km) set in `hycom_river_hifre.py`.
+a file: it is computed for the model grid, with the strategy given by `-s`.
 
 ::::
 
@@ -1607,6 +1584,57 @@ each), and cuts them to the grid of `data_all_year.nc`:
 
 For background on the method, see the technical documentation by Adrien Acchiardi
 (`bin/river-topaz/river_forcing_documentation.pdf`, September 2025).
+
+### Spreading river discharge from the coast
+
+The time-varying river forcing (GloFAS, and AHYPE v4b) treats every river mouth, outlet and
+GEUS gate as a point source at an ocean cell of the model grid, and spreads its discharge over
+nearby ocean cells with `bin/river_spreading.py`. There are three strategies:
+
+| Plan | Strategy | `rradius` | `alongshore` | Gaussian σ |
+|---|---|---|---|---|
+| A (preferred) | `pointsource` | none | none | none |
+| B | `coastal` | 50 km | 100 km | 1 cell |
+| C | `diffuse` | 180 km | 360 km | 3 cells |
+
+Point sources (plan A) put the water where the rivers enter the ocean and are preferred. If
+the model is not stable with point sources, use plan B, and then plan C: from A to C the
+water is spread over more cells, which lowers the freshwater flux per cell and may make the
+model more stable, at the cost of putting the river water further from the mouths. Plan C
+is the original setting of the GloFAS scripts.
+
+<!-- TODO: figure comparing the three strategies for GloFAS and AHYPE v4b (June 2010, TP2a0.10) -->
+
+For plans B and C, the weights of each source are:
+
+1. **Distance from the mouth.** An ocean cell at distance `d` from the source cell gets
+   `w = exp(−d / alongshore)`, and zero beyond `alongshore`.
+2. **Distance from the coast.** The weight is multiplied by `exp(−2·landdist / rradius)`,
+   and set to zero further than `rradius` from land (`landdist` = distance to the
+   nearest land cell). Unlike MSCPROGS, the factor keeps increasing towards the coast.
+3. **Same landmass.** The land is divided into connected land areas. Ocean cells whose
+   nearest land is a different land area than the source's (e.g. an island) get zero, so
+   islands near the mouth do not attract water.
+4. **No crossing of land.** For each remaining cell, a path to the source is followed
+   along the grid (first along one grid direction, then the other). If it crosses more
+   than 15 land cells, the cell gets zero. This stops water from reaching the other side
+   of a peninsula (e.g. Ob water on the far side of Yamal).
+5. **Smoothing.** The weights are smoothed with a Gaussian filter (σ grid cells) and set to
+   zero on land. It spreads the weights up to about 3σ grid cells beyond the limits of steps
+   1–2, and can give weight again to cells that step 4 removed, if they are close to cells
+   that kept their weight.
+6. **Normalisation.** The weights are divided by their sum, so the volume of each source is
+   conserved exactly, and the flux is `Q·w / cell area` (m/s). If no weight is left, all the
+   water stays in the source cell.
+
+The algorithm follows the idea of the MSCPROGS `rivers` program used for the
+[default climatology](#ahype-ehype-climatology-default), with extra cleaning and smoothing
+steps, and is the one of the original GloFAS scripts (Acchiardi 2025). Two differences to the
+original GloFAS code: only the cells within `alongshore` of each source are computed, which
+makes it much faster (seconds instead of minutes on TP2a0.10), and the distance from the
+mouth (step 1) is computed correctly. The original code swapped longitude and latitude in this
+distance, which changed where a median 30% of each river's water went (TP2a0.10, plan C); the
+distance from the coast (step 2) was correct.
 
 ## Climatologies
 

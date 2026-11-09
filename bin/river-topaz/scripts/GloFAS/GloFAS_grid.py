@@ -1,20 +1,23 @@
-import copy
+import os
+import sys
 import time
 import xarray as xr
 from utils.grid_operations import refine_grid
 from utils.grid_operations import transform_coordinates
-from utils.grid_operations import apply_ocean_weight
-from utils.grid_operations import cleaning_discharge
 import numpy as np
 import pandas as pd
 # import imageio.v3 as iio
-import skimage as ski
 # import matplotlib.pyplot as plt
 # import matplotlib as mpl
 # mpl.use('TkAgg')
 import warnings
-from scipy.ndimage import gaussian_filter #Import gausian_filter function
 import scipy.sparse as sp
+
+# Shared with the AHYPE v4b river forcing: bin/river_spreading.py and bin/geus.py
+_BINDIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+if _BINDIR not in sys.path:
+    sys.path.insert(0, _BINDIR)
+from river_spreading import spreading_weights
 
 class GloFAS_grid:
     """ Class containing the GloFAS data grid as a Xarray dataset """
@@ -186,6 +189,43 @@ class GloFAS_grid:
         else:
             self.large_river_mouths = input_grids.dis_grid.large_river_mouths
 
+    def add_geus_gates(self,geus,depth_grid,distance_threshold=300,lazy_mode=False,input_grids=None):
+        """
+        Adds the GEUS Greenland ice discharge gates (see geus.py) to self.df_dis_Estuary as extra river
+        mouths, at the nearest ocean cell of the model grid, with the discharge of the current month.
+        They are merged and spread like the rivers. Called after correct_largest_russian_rivers() and
+        before merge_estuaries().
+        """
+        from scipy.spatial import cKDTree
+        from geus import geus_discharge
+
+        if lazy_mode==False:
+            ocean=~np.asarray(depth_grid.depth.mask).ravel()
+            ocean_idx=np.flatnonzero(ocean)
+            lon=np.asarray(depth_grid.lon).ravel()[ocean]
+            lat=np.asarray(depth_grid.lat).ravel()[ocean]
+            tree=cKDTree(transform_coordinates(np.column_stack([lat, lon])))
+            dist,k=tree.query(transform_coordinates(np.column_stack([geus['lat'], geus['lon']])))  # km
+            keep=dist<=distance_threshold
+            self.geus_gates=pd.DataFrame({'gate':np.flatnonzero(keep),
+                                          'latitude':geus['lat'][keep],'longitude':geus['lon'][keep],
+                                          'idx_glofas_on_topaz':ocean_idx[k[keep]],
+                                          'latitude_glofas_on_topaz':lat[k[keep]],
+                                          'longitude_glofas_on_topaz':lon[k[keep]],
+                                          'distance_to_topaz':dist[keep]})
+            print('GEUS: {n} of {N} gates within {d} km of the model grid'.format(
+                n=keep.sum(),N=keep.size,d=distance_threshold))
+        else:
+            self.geus_gates=input_grids.dis_grid.geus_gates
+
+        date=self.df_dis_Estuary['valid_time'].iloc[0]
+        q=geus_discharge(geus,date)[self.geus_gates['gate'].values]
+        gates=self.geus_gates.drop(columns='gate').assign(
+            dis24=q.astype(np.float32),dis_Estuary=q,valid_time=date,
+            surface=self.df_dis_Estuary['surface'].iloc[0],land=1.0,ldd=5.0,uparea=np.nan,elevation=np.nan,
+            longitude_grid=self.geus_gates['longitude'],latitude_grid=self.geus_gates['latitude'])
+        self.df_dis_Estuary=pd.concat([self.df_dis_Estuary,gates],ignore_index=True)
+
     def merge_estuaries(self,lazy_mode=False):
         """
         Combines the river mouths that are moved to the same model cell (same idx_glofas_on_topaz) into
@@ -338,130 +378,37 @@ class GloFAS_grid:
 
 
     def propagate_river_plume(self,depth_grid,rradius = 2.5*80000,alongshoreradius = 2.5*200000,river_index_df=None,re_propagate=False,
-                              Propagation_cleaning_step=True):
+                              Propagation_cleaning_step=True,sigma=3,pointsource=False):
         """
-        Propagates the river discharge from an estuary to the neighbouring points on the TOPAZ grid.
-        This process is done by computing a weight for ocean points within a certain radius from the estuary.
-        This weight depends on proximity to the estuary and to the coast.
-
-        A cleaning process is done to ensure that the flux isn't propagated to points that are separated from the estuary by land.
+        Spreads the discharge of each estuary over the nearby ocean cells of the model grid, with
+        spreading_weights() of bin/river_spreading.py (shared with the AHYPE v4b river forcing).
+        The weights are stored in self.ocean_weights and reused for the following days in lazy mode.
 
         :param depth_grid: TOPAZ depth grid [A-grid object]
-        :param rradius: river radius to define distance max to land [km]
-        :param alongshoreradius: radius to define max distance to river origin (estuary) [km]
+        :param rradius: maximum distance to the coast [m]
+        :param alongshoreradius: maximum distance to the estuary [m]
+        :param Propagation_cleaning_step: remove weight from cells separated from the estuary by land
+        :param sigma: width of the Gaussian smoothing of the weights [grid cells], 0 for none
+        :param pointsource: put each estuary's discharge into its own model cell, without spreading
         """
         idm, jdm = depth_grid.idm, depth_grid.jdm #i and j are reversed in fortran (j for lines, i for columns). It's confusing...
 
         start_time=time.time()
 
         if re_propagate==False:
-
             Estuaries_index_list=self.df_dis_Estuary.index
-
         else:
             Estuaries_index_list=[river_index_df] #We only propagate the flux for the modified rivers
 
-        #extracting depth from TOPAZ
-        depth=depth_grid.grid.read_field('depth').data
-        depth[depth>1e4]=0
-
-        # distance to closest land cell
-        TOPAZ_geodetic=np.vstack((depth_grid.lon.data,depth_grid.lat.data)).T
-        TOPAZ_cartesian=transform_coordinates(TOPAZ_geodetic) #go from lon/lat to ECEF to comptue distances
-        X,Y,Z=TOPAZ_cartesian[:,0],TOPAZ_cartesian[:,1],TOPAZ_cartesian[:,2]
-
-        dist_to_land = np.zeros_like(depth_grid.depth.data) * np.nan
-
-        # project ocean points on land to find closest landpoint with k-d tree
-        distances, indices = refine_grid(depth_grid.lon[depth_grid.depth.mask], depth_grid.lat[depth_grid.depth.mask],
-                                         depth_grid.lon, depth_grid.lat,
-                                         depth_grid.lon[depth_grid.depth.mask].shape,depth_grid.lon.shape)
-
-        # --Connected components method to find isolated lands
-        depth_as_image = ((depth_grid.depth.mask).astype(int) * 200).reshape((jdm, idm))
-        image = np.stack([depth_as_image] * 3, axis=2)
-        image = image.astype(np.float64)
-        gray_image = ski.color.rgb2gray(image)
-        # denoise the image with a Gaussian filter
-        blurred_image = ski.filters.gaussian(gray_image, sigma=0.1)
-        # mask the image according to threshold
-        binary_mask = blurred_image > 0.5
-        labeled_image, count = ski.measure.label(binary_mask, connectivity=2, return_num=True)
-
-        #For each ocean point,find label of closest land
-        # closest_land=labeled_image.flatten()*np.nan
-
-        labeled_image_onland=labeled_image.flatten()[depth_grid.depth.mask]
-        closest_land=labeled_image_onland[indices[0]] #Label of closest isolated land area for each TOPAZ point
-        closest_land = closest_land.reshape((jdm, idm))
-        # colored_label_image = ski.color.label2rgb(labeled_image, bg_label=0)
-
-        dist_to_land[~depth_grid.depth.mask] = distances[
-            ~depth_grid.depth.mask]*1000  # For ocean points we apply distance to closest land point and get in into [m]
-
-        outside_rradius=np.where(dist_to_land>rradius)
-
-        n_estuaries = len(Estuaries_index_list)
-        land_mask_2d = depth_grid.depth.mask.reshape((jdm, idm))
-
-        # The plume weights are kept as a sparse (jdm*idm, n_estuaries) float32 matrix: each plume is
-        # nonzero only near its estuary, so storing a full grid per estuary wastes memory.
-        rows, cols, vals = [], [], []
-
-        for loop_idx, i in enumerate(Estuaries_index_list):
-
-            mini,minj=np.unravel_index(self.df_dis_Estuary['idx_glofas_on_topaz'].loc[i],(jdm,idm))
-
-            pos_estuary=transform_coordinates((self.df_dis_Estuary['longitude_glofas_on_topaz'].loc[i],
-                                               self.df_dis_Estuary['latitude_glofas_on_topaz'].loc[i]))
-
-            x_estuary,y_estuary,z_estuary=pos_estuary[:,0],pos_estuary[:,1],pos_estuary[:,2]
-
-            dist_to_estuary=np.sqrt((x_estuary-X)**2+(y_estuary-Y)**2+(z_estuary-Z)**2)*1000
-
-            dist_to_estuary=np.ma.masked_array(dist_to_estuary,mask=depth_grid.depth.mask)
-
-            #assign weight to ocean points based on distance to estuary
-            ocean_weight=np.zeros_like(dist_to_estuary.data)
-
-            outside_alongshore=np.where(dist_to_estuary>alongshoreradius)
-            ocean_weight[~dist_to_estuary.mask]=np.exp(-dist_to_estuary[~dist_to_estuary.mask]/alongshoreradius)
-            ocean_weight[outside_alongshore]*=0
-
-            #Assign extra weight based on distance to shore
-            ocean_weight[~dist_to_estuary.mask]*=np.exp(-2*dist_to_land[~dist_to_estuary.mask]/rradius)
-            ocean_weight[outside_rradius] *= 0
-
-            # Correct shore distance weight
-            land_area = closest_land[mini, minj] #Find label of land area closest to the estuary
-            other_lands=np.where(closest_land.flatten()!=land_area) #Find points that have different closest land area
-            ocean_weight[other_lands]*=0 #If points have different closest land area than estuary, then they have no weight
-
-            #Remove isolated points using Numba Just In Time method
-            weight_mask=np.where(ocean_weight!=0)
-            if Propagation_cleaning_step:
-                ocean_weight_copy=copy.deepcopy(ocean_weight)
-                ocean_weight=cleaning_discharge(ocean_weight_copy,weight_mask,mini,minj,idm,jdm,
-                                                land_mask_2d)
-            else:
-                print('skip river plume cleaning')
-
-            # Gaussian smoothing (sigma = 3 cells), zero on land, normalize to a sum of 1
-            smoothed = gaussian_filter(ocean_weight.reshape((jdm, idm)), sigma=3)
-            smoothed[land_mask_2d] = 0
-            total = smoothed.sum()
-            if total == 0:
-                total = 1.0
-            nonzero = np.flatnonzero(smoothed)
-            rows.append(nonzero)
-            cols.append(np.full(nonzero.size, loop_idx))
-            vals.append((smoothed.ravel()[nonzero] / total).astype(np.float32))
-
-        new_weights = sp.csc_matrix(
-            (np.concatenate(vals) if vals else np.zeros(0, np.float32),
-             (np.concatenate(rows) if rows else np.zeros(0, int),
-              np.concatenate(cols) if cols else np.zeros(0, int))),
-            shape=(jdm * idm, n_estuaries), dtype=np.float32)
+        land = np.asarray(depth_grid.depth.mask).reshape((jdm, idm))
+        lon = np.asarray(depth_grid.lon).reshape((jdm, idm))
+        lat = np.asarray(depth_grid.lat).reshape((jdm, idm))
+        cells = self.df_dis_Estuary['idx_glofas_on_topaz'].loc[Estuaries_index_list].to_numpy().astype(int)
+        if pointsource:
+            new_weights = spreading_weights(lon, lat, land, cells, strategy='pointsource')
+        else:
+            new_weights = spreading_weights(lon, lat, land, cells, strategy='diffuse', cleaning=Propagation_cleaning_step,
+                                            rradius=rradius, alongshore=alongshoreradius, sigma=sigma)
 
         # Columns of the estuaries just computed (all of them, or the one being re-propagated)
         positions = [self.df_dis_Estuary.index.get_loc(i) for i in Estuaries_index_list]
@@ -479,19 +426,14 @@ class GloFAS_grid:
         # Check per-estuary flux conservation
         column_sums = np.asarray(self.ocean_weights.sum(axis=0, dtype=np.float64)).ravel()
         for pos, i in zip(positions, Estuaries_index_list):
-            estuary_total = dis_array[pos] * column_sums[pos]
-            if abs(estuary_total - dis_array[pos]) > 1:
+            if abs(dis_array[pos] * column_sums[pos] - dis_array[pos]) > 1:
                 warnings.warn('Fluxes do not add up for river at position:'+
                       str(self.df_dis_Estuary['longitude_glofas_on_topaz'].loc[i])+','+str(self.df_dis_Estuary['latitude_glofas_on_topaz'].loc[i]))
-                print(estuary_total,'!=',dis_array[pos])
-            else:
-                print("river {river_number},  {Topaz_lon:.3f}, {Topaz_lat:.3f} : flux {river_flux:.3f} ".format(river_number=str(i), river_flux=dis_array[pos], Topaz_lon=self.df_dis_Estuary['longitude_glofas_on_topaz'].loc[i], Topaz_lat=self.df_dis_Estuary['latitude_glofas_on_topaz'].loc[i]))
+                print(dis_array[pos] * column_sums[pos],'!=',dis_array[pos])
         print('Plume weights: {n} estuaries, {nnz} nonzero values ({mb:.1f} MB)'.format(
             n=self.ocean_weights.shape[1], nnz=self.ocean_weights.nnz,
             mb=(self.ocean_weights.data.nbytes + self.ocean_weights.indices.nbytes + self.ocean_weights.indptr.nbytes) / 1e6))
-
         print('Total propagation time:', time.time()-start_time)
-        #35s with no Numba for ocean_weight computation and Numba for cleaning process
 
 
     def propagate_river_plume_lazily(self,depth_grid,input_grids):

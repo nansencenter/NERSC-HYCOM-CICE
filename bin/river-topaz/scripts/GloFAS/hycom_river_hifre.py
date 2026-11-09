@@ -6,6 +6,10 @@ import numpy as np
 import xarray as xr
 import pandas as pd
 from compute_discharge_NoUI import compute_discharge_noUI
+# bin/ holds river_spreading.py and geus.py, shared with the AHYPE v4b river forcing
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
+from river_spreading import SPREADING
+from geus import load_geus
 import abfile
 import logging
 import datetime
@@ -79,13 +83,14 @@ def fill_missing(full: xr.Dataset, valid: np.ndarray, iday: int, today: np.ndarr
     return filled
 
 
-def create_river_forcing(input_dataset,start_date,end_date,topaz_grid_file,topaz_depth_file,dt=.25):
+def create_river_forcing(input_dataset,start_date,end_date,topaz_grid_file,topaz_depth_file,dt=.25,geus=None):
     """
     Creates river forcing [ab] files with dt period (6 hourly if dt=0.25) from start_date to end_date (included)
     :param input_dataset: Name of the dataset to be used (NetCDF file)
     :param start_date: Start date: yyyy-mm-ddT00:00:00.000000000 [str]
     :param end_date: End date: yyyy-mm-ddT00:00:00.000000000 [str]
     :param dt: Time step for output data AS FRACTION OF DAY--> dt=0.25 => 6 hours period , dt=1 => 1 day period
+    :param geus: GEUS Greenland ice discharge from geus.load_geus(), added as extra river mouths (None: left out)
     :return: NetCDF file with river forcing on TOPAZ grid for every date
     """
     data=xr.open_dataset(input_dataset)
@@ -136,7 +141,8 @@ def create_river_forcing(input_dataset,start_date,end_date,topaz_grid_file,topaz
 
         grids = compute_discharge_noUI(river_data=daily_river_discharge,topaz_grid_file=topaz_grid_file,topaz_depth_file=topaz_depth_file,
                                        lazy_mode=lazy_mode,input_grids=input_grids,correct_GloFAS=correct_GloFAS,Edit_estuaries=Edit_estuaries,Propagation_cleaning_step=Propagation_cleaning_step,
-                                       rradius = rradius ,alongshoreradius = alongshoreradius)
+                                       rradius = rradius ,alongshoreradius = alongshoreradius,
+                                       sigma=sigma,pointsource=pointsource,geus=geus)
 
         day_cntr+=1
 
@@ -157,8 +163,8 @@ def create_river_forcing(input_dataset,start_date,end_date,topaz_grid_file,topaz
             else:
                foutfile=output_path+"riverh_{start}_{end}_{dtt}d".format(start=start_date[:10],end=end_date[:10],dtt=dt)
             ffile = abfile.ABFileRiverForcing(foutfile, "w", mask=True, idm=idm, jdm=jdm,
-                cline1="GloFAS v4.0",
-                cline2="river forcing (m/s)")
+                cline1="GloFAS v4.0" + (" + GEUS ice discharge, " + geus['version'] if geus is not None else ""),
+                cline2="river forcing (m/s), spreading " + spreading)
 
             land_mask = grids.topaz_depth_grid.depth.mask.reshape((jdm, idm))
 
@@ -252,6 +258,9 @@ if __name__ == "__main__" :
                        help='Output record interval as fraction of a day (default 0.25 = 6-hourly, '
                             'required by HYCOM 2.2.98 where rivers must match the atmospheric forcing times; '
                             'use 1.0 = daily for HYCOM 2.3, priver=2, which interpolates between any records)')
+   parser.add_argument('--spreading',   choices=list(SPREADING), default='diffuse',
+                       help='spreading of each river mouth over nearby ocean cells (bin/river_spreading.py): '
+                            'pointsource, coastal (50/100 km) or diffuse (180/360 km, the default)')
 
    args = parser.parse_args()
    if args.dt <= 0. or args.dt > 1. or abs(1./args.dt - round(1./args.dt)) > 1e-6:
@@ -289,16 +298,25 @@ if __name__ == "__main__" :
    Propagation_cleaning_step=True #True to prevent river plume to extend beyond land 
                                   #(can create discontinuities)
 
-   rradius = 2*90000              #Radius for river plume propagation based on distance
-                                  # to shore [m]
-   alongshoreradius = 2*180000    #Radius for river plume propagation based on distance 
-                                  # to estuary [m]
+   # Spreading of each river mouth (--spreading, see bin/river_spreading.py): radii [m] and
+   # Gaussian smoothing [grid cells]; pointsource puts all the water in the mouth's cell
+   spreading = args.spreading
+   pointsource = SPREADING[spreading] is None
+   params = SPREADING[spreading] or SPREADING['diffuse']
+   rradius = params['rradius']                  # maximum distance to the coast [m]
+   alongshoreradius = params['alongshore']      # maximum distance to the estuary [m]
+   sigma = params['sigma']
+
+   # GEUS Greenland solid ice discharge per gate, monthly, from bin/geus_preprocess.py; added as
+   # extra river mouths and spread like the rivers. Set to None to leave it out.
+   geus_file = GloFASdata_path+'/river/geus/geus_gates_monthly.nc'
 #---------------------------------------------------------------------------------------------
 
    river_forcing=create_river_forcing(input_dataset=input_dataset,
                     start_date=start_date,end_date=end_date,
                     topaz_grid_file=topaz_grid_file,topaz_depth_file=topaz_depth_file,
-                    dt=args.dt)
+                    dt=args.dt,
+                    geus=load_geus(geus_file) if geus_file else None)
    river_netcdf=river_forcing['river_flux'].transpose("dtime1","longitude","latitude")
    river_netcdf.to_netcdf('{wrkdrt}/riverh_{start}_{end}.nc'.format(wrkdrt=output_path,
                     start=start_date[:10],end=end_date[:10]),unlimited_dims='dtime1')

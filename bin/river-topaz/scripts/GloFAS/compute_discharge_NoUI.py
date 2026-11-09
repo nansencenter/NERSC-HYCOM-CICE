@@ -46,7 +46,7 @@ Region={'Arctic':[-180,50,180,90], 'Russia':[40,50,180,90], 'Greenland':[-70,55,
 
 #--------------------------------Building grids-------------------------------------------
 
-def compute_discharge_noUI(river_data,topaz_grid_file,topaz_depth_file,input_grids=None,lazy_mode=False,climatology=False,month=1,correct_GloFAS=True,Edit_estuaries=False,Propagation_cleaning_step=True,rradius = 80000,alongshoreradius = 200000):
+def compute_discharge_noUI(river_data,topaz_grid_file,topaz_depth_file,input_grids=None,lazy_mode=False,climatology=False,month=1,correct_GloFAS=True,Edit_estuaries=False,Propagation_cleaning_step=True,rradius = 80000,alongshoreradius = 200000,sigma=3,pointsource=False,geus=None):
     
     print("-----Parameters-----"+"\n"+"Correct GloFAS:"+ str(correct_GloFAS)+"\n"+ "Edit estuary:"+ str(Edit_estuaries)+"\n"+"Cleaning step in propagation:"+str(Propagation_cleaning_step)+"\n"+'rradius='+str(rradius)+"\n"+'alongshoreradius='+str(alongshoreradius)+"\n"+"---------------------------")
 
@@ -55,7 +55,8 @@ def compute_discharge_noUI(river_data,topaz_grid_file,topaz_depth_file,input_gri
             distance_threshold=distance_threshold,correct_GloFAS=correct_GloFAS,
             climatology=climatology,month=month,lazy_mode=lazy_mode,input_grids=input_grids,
             input_edit_file=estuary_edit_file, edit_estuaries=Edit_estuaries,
-        Propagation_cleaning_step=Propagation_cleaning_step,rradius=rradius, alongshoreradius=alongshoreradius)
+        Propagation_cleaning_step=Propagation_cleaning_step,rradius=rradius, alongshoreradius=alongshoreradius,
+        sigma=sigma,pointsource=pointsource,geus=geus)
 
     return grids
 
