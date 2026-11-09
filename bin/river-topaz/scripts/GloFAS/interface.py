@@ -31,8 +31,6 @@ class Ui:
             {'name': 'Parameters', 'type': 'group', 'children': [
                 {'name': 'Region', 'type': 'str', 'value':'Arctic'},
                 {'name': 'field name', 'type': 'str', 'value': 'dis24'},
-                {'name': 'uparea threshold [m2]', 'type': 'float', 'value': 1e9},
-                {'name': 'elevation threshold [m]', 'type': 'float', 'value': 10},
                 {'name': 'Month', 'type': 'float', 'value': 1},
                 {'name': 'Correct GloFAS data', 'type': 'bool', 'value': True},
                 {'name': 'Climatology', 'type': 'bool', 'value': False},
