@@ -215,16 +215,27 @@ dropdown *Adding files for another configuration or start date* below. For examp
 ├── README.md
 ├── sources/
 │   ├── glorys12_ice_19930901.nc    # GLORYS12 siconc, sithick (Copernicus Marine)
+│   ├── glorys12_ice_20020901.nc
 │   └── topaz4b_ice_19930901.nc     # TOPAZ4b siconc, sithick, sisnthick (Copernicus Marine)
 └── TP2a0.10_T04/                   # TP2a0.10, topography 04
     ├── ice_initial_19930901_glorys.nc  # concentration and thickness from GLORYS12
     ├── ice_initial_19930901_topaz.nc   # concentration from GLORYS12, thickness from TOPAZ4b
+    ├── ice_initial_20020901_glorys.nc
     ├── restart.1993_244_00_0000.[ab]   # physics
     ├── restart.1993_244_00_0000.blkdat # blkdat.input the restart was built with
+    ├── restart.2002_244_00_0000.[ab]
+    ├── restart.2002_244_00_0000.blkdat
     └── bgc/                            # BGC initial state (ntracr>0), relax/022/relax_int layers
         └── 19930901/
             └── relax.ECO_{no3,pho,sil,oxy}.[ab]
 ```
+
+For TP2a0.10_T04 this gives:
+
+| Start date | Restart | Ice (GLORYS12 thickness) | Ice (TOPAZ4b thickness) | BGC |
+|---|---|---|---|---|
+| 1993-09-01 | yes | yes | yes | yes |
+| 2002-09-01 | yes | yes | no | no |
 
 :::::{dropdown} WDIR — scratch path by machine
 ::::{tab-set}
@@ -258,8 +269,31 @@ cp $N/ice_initial_${YMD}_glorys.nc $WORK/${CONFIGNAME}/expt_${EXPT_ID}/ice_initi
 ```
 
 The files can only be used by an experiment with the same grid, topography, layers and
-equation of state. For the `INITFLG="--init-ice"` segment, `expt_preprocess.sh` checks this
-with `bin/check_init_files.py` and stops with an error if anything differs:
+equation of state. `expt_preprocess.sh` checks this for the restart and `ice_initial.nc` in
+the `INITFLG="--init-ice"` segment and stops with an error if anything differs (see the
+dropdown *What is checked* below). The restart can be used with HYCOM 2.2 and 2.3.
+
+There are two ice initial files. Both take the concentration from GLORYS12 and differ only in
+the thickness:
+
+- `ice_initial_<YYYYMMDD>_glorys.nc` (recommended): thickness from GLORYS12, so the sea ice
+  comes from the same reanalysis as the ocean initial state and the boundaries.
+- `ice_initial_<YYYYMMDD>_topaz.nc`: thickness from TOPAZ4b.
+
+Ice velocities are not taken from either reanalysis: the CICE cold start reads only
+concentration and thickness, and the ice starts at rest with 0.2 m of snow (at most 20% of
+the ice thickness). The ice velocity adjusts to the wind and ocean currents within a day or
+so.
+
+**With BGC** (`ntracr>0`), also copy the `bgc/` files. HYCOM then initialises the tracers in
+the first segment: nitrate, phosphate, silicate and oxygen from these files (CMEMS BGC
+reanalysis), DIC and alkalinity from the GLODAP climatology, and all other tracers from
+`fabm.yaml` (see the dropdown *BGC initialisation in the first segment* below).
+
+::::{dropdown} What is checked
+
+For the `INITFLG="--init-ice"` segment, `expt_preprocess.sh` runs `bin/check_init_files.py`
+and stops with an error if anything differs:
 
 - grid, number of layers and topography: from the restart (`pbot` is the depth times
   9806 Pa/m);
@@ -276,25 +310,16 @@ built them (`relax/022/relax_int` for TP2a0.10_T04).
 
 The restart contains only physics, which HYCOM 2.2 and 2.3 read in the same way, so it can
 be used with both versions.
+::::
 
-There are two ice initial files. Both take the concentration from GLORYS12 and differ only in
-the thickness:
+::::{dropdown} BGC initialisation in the first segment
 
-- `ice_initial_<YYYYMMDD>_glorys.nc` (recommended): thickness from GLORYS12, so the sea ice
-  comes from the same reanalysis as the ocean initial state and the boundaries.
-- `ice_initial_<YYYYMMDD>_topaz.nc`: thickness from TOPAZ4b.
-
-Ice velocities are not taken from either reanalysis: the CICE cold start reads only
-concentration and thickness, and the ice starts at rest with 0.2 m of snow (at most 20% of
-the ice thickness). The ice velocity adjusts to the wind and ocean currents within a day or
-so.
-
-**With BGC** (`ntracr>0`), also copy the `bgc/` files. HYCOM then initialises the tracers in
-the first segment: `expt_preprocess.sh` makes `ntracr` negative in the `SCRATCH` copy of
-`blkdat.input` for the `INITFLG="--init-ice"` segment (see the dropdown below for why), so
-that HYCOM reads only the physics from the restart, sets every tracer to its default value in `fabm.yaml` (see
+For the `INITFLG="--init-ice"` segment, `expt_preprocess.sh` makes `ntracr` negative in the
+`SCRATCH` copy of `blkdat.input` (see the dropdown *Why `ntracr` is made negative for the
+first segment*). HYCOM then reads only the physics from the restart, sets every tracer to
+its default value in `fabm.yaml` (see
 [Additional steps when using the BGC module](experiment-setup.md#additional-steps-when-using-the-bgc-module))
-and then overwrites the tracers that have a file `relax.<tracer>.[ab]`:
+and overwrites the tracers that have a file `relax.<tracer>.[ab]`:
 
 - Nitrate, phosphate, silicate and oxygen from the CMEMS BGC reanalysis (the `bgc/` files in
   the data directory of the first cycle; without them, the WOA2013 climatology in
@@ -308,6 +333,7 @@ and then overwrites the tracers that have a file `relax.<tracer>.[ab]`:
 HYCOM only uses `relax.<tracer>` files for initialisation with `iniflg=2` in
 `blkdat.input`. The BGC nesting files must cover the whole cycling period, since they also
 provide the BGC boundary forcing (see [Nesting files](#nesting-files)).
+::::
 
 ::::{dropdown} Why `ntracr` is made negative for the first segment
 
