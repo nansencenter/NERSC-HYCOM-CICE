@@ -86,9 +86,20 @@ done
 
 
 # Copy some files useful for analysis
-for i in $(ls regional.grid.* regional.depth.* blkdat.input ice_in cice_*.nc) ; do
+for i in $(ls regional.grid.* regional.depth.* ice_in cice_*.nc) ; do
    cp $i $D
 done
+# blkdat.input: if expt_preprocess.sh made ntracr negative for this segment (BGC starting
+# together with physics, INITFLG="--init-ice"), keep that version as blkdat.input.init and
+# copy the experiment's blkdat.input, so that $D/blkdat.input always has the experiment's ntracr
+ntracr_run=$(awk "/'ntracr'/{print \$1; exit}" blkdat.input)
+ntracr_exp=$(awk "/'ntracr'/{print \$1; exit}" $P/blkdat.input)
+if [ "${ntracr_run:-0}" -lt 0 ] && [ "${ntracr_exp:-0}" -gt 0 ] ; then
+   cp blkdat.input $D/blkdat.input.init
+   cp $P/blkdat.input $D/blkdat.input
+else
+   cp blkdat.input $D
+fi
 
 #
 # --- HYCOM error stop is implied by the absence of a normal stop.

@@ -26,7 +26,7 @@ export V=2.2.98                                                  # hycom version
 export K=`grep "'kdm   ' =" $mydir/blkdat.input | awk '{printf("%03d", $1)}'`   # get kdm from blkdat
 export P=$mydir                                                  #  ---""---
 echo $P
-export D=$P/data                                                 # Where data ends up
+export D=$P/data${SPINUP_CYCLE:+/cycle_${SPINUP_CYCLE}}            # Where data ends up: $P/data (cycled spin-up with srjob_cycle.sh: $P/data/cycle_NN)
 export S=$P/SCRATCH                  # Scratch area 
 [ ! -s ${S} ] && mkdir ${S}
 
