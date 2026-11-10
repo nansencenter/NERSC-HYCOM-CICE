@@ -1435,9 +1435,9 @@ Run the script directly, as above, not with `sbatch`: it takes a second on the l
 submits the Slurm jobs itself and prints their job IDs. As with `river_glofas.sh`, an optional
 third argument overrides the record interval (fraction of a day). At most 12 years run at
 a time, the `preproc` limit on Betzy, so a period runs in rounds of 12 years. One year
-takes 15–26 minutes (2–4 s per day) and up to 3.5 GB of memory on a Betzy compute node (daily
-records, HYCOM 2.3, point sources): 1993 to 30 June 2024 (32 years, three rounds) takes about
-an hour in total, including the join job.
+takes 15–26 minutes (2–4 s per day) and up to 3.6 GB of memory on a Betzy compute node (daily
+records, HYCOM 2.3, about the same with point sources and coastal spreading): 1993 to 30 June
+2024 (32 years, three rounds) takes about an hour in total, including the join job.
 
 The join job only starts if every year finished successfully, and `concat_riverh.py`
 checks the result: records evenly spaced over the whole period (no missing or incomplete
