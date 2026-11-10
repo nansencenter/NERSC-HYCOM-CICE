@@ -1425,8 +1425,10 @@ CONFIGNAME=<CONFIGNAME>   # e.g. TP2a0.10
 EXPT_ID=<EXPT_ID>         # e.g. 01.0
 
 cd $WORK/${CONFIGNAME}/expt_${EXPT_ID}
-$HOME/NERSC-HYCOM-CICE/bin/submit_river_glofas.sh 1993-01-01 2025-01-01
-$HOME/NERSC-HYCOM-CICE/bin/submit_river_glofas.sh -s coastal 1993-01-01 2025-01-01   # spreading plan B
+$HOME/NERSC-HYCOM-CICE/bin/submit_river_glofas.sh 1993-01-01 2024-06-30                  # diffuse (plan C, default), dt from V
+$HOME/NERSC-HYCOM-CICE/bin/submit_river_glofas.sh -s coastal 1993-01-01 2024-06-30       # spreading plan B
+$HOME/NERSC-HYCOM-CICE/bin/submit_river_glofas.sh -s pointsource 1993-01-01 2024-06-30   # plan A, no spreading
+$HOME/NERSC-HYCOM-CICE/bin/submit_river_glofas.sh 1993-01-01 2024-06-30 0.25             # force 6-hourly
 ```
 
 Run the script directly, as above, not with `sbatch`: it takes a second on the login node,
@@ -1529,7 +1531,7 @@ stops with an error. The paths are set in
 | File | Contents |
 |---|---|
 | `TOPAZrunoff_data/river/correction_files/largest_river_correction_2001_2019.nc` | Day-of-year correction (slope and intercept) for the Ob, Lena and Yenisei, fitted from GloFAS against ArcticGRO observations for 2001–2019. Applied to discharge from 2001 onwards. |
-| `TOPAZrunoff_data/river/geus/geus_gates_monthly.nc` | GEUS Greenland solid ice discharge, monthly means per flux gate (m³/s), made from the GEUS `gate.nc` with `bin/geus_preprocess.py --dataverse-version <V> <GEUS directory> <output>`. GEUS updates the product: the Dataverse version (e.g. V131) is not in the GEUS files, so give it with `--dataverse-version`; it is stored in the output and written to the `riverh.b` header. Set `geus_file = None` in `hycom_river_hifre.py` to leave GEUS out. |
+| `/cluster/projects/nn2993k/GEUS_ice_discharge/geus_gates_monthly.nc` (not in the GloFAS data directory; shared with AHYPE v4b) | GEUS Greenland solid ice discharge, monthly means per flux gate (m³/s), made from the GEUS `gate.nc` (download in `GEUS_ice_discharge/<V>/`) with `bin/geus_preprocess.py --dataverse-version <V> <GEUS directory> <output>`. GEUS updates the product: the Dataverse version (e.g. V131) is not in the GEUS files, so give it with `--dataverse-version`; it is stored in the output and written to the `riverh.b` header. Set `geus_file = None` in `hycom_river_hifre.py` to leave GEUS out. |
 
 The spreading of each estuary's discharge over the nearby coastal cells is not stored in
 a file: it is computed for the model grid, with the strategy given by `-s`.

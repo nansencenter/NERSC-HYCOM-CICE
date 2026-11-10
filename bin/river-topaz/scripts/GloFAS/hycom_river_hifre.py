@@ -309,7 +309,7 @@ if __name__ == "__main__" :
 
    # GEUS Greenland solid ice discharge per gate, monthly, from bin/geus_preprocess.py; added as
    # extra river mouths and spread like the rivers. Set to None to leave it out.
-   geus_file = GloFASdata_path+'/river/geus/geus_gates_monthly.nc'
+   geus_file = '/cluster/projects/nn2993k/GEUS_ice_discharge/geus_gates_monthly.nc'   # shared with the AHYPE v4b river forcing
 #---------------------------------------------------------------------------------------------
 
    river_forcing=create_river_forcing(input_dataset=input_dataset,
