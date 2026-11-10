@@ -48,7 +48,12 @@ Region={'Arctic':[-180,50,180,90], 'Russia':[40,50,180,90], 'Greenland':[-70,55,
 
 def compute_discharge_noUI(river_data,topaz_grid_file,topaz_depth_file,input_grids=None,lazy_mode=False,climatology=False,month=1,correct_GloFAS=True,Edit_estuaries=False,Propagation_cleaning_step=True,rradius = 80000,alongshoreradius = 200000,sigma=3,pointsource=False,geus=None):
     
-    print("-----Parameters-----"+"\n"+"Correct GloFAS:"+ str(correct_GloFAS)+"\n"+ "Edit estuary:"+ str(Edit_estuaries)+"\n"+"Cleaning step in propagation:"+str(Propagation_cleaning_step)+"\n"+'rradius='+str(rradius)+"\n"+'alongshoreradius='+str(alongshoreradius)+"\n"+"---------------------------")
+    # With point sources the radii and sigma are not used, so they are not printed
+    if pointsource:
+        spread = "Spreading: pointsource (all water in the mouth's cell)"
+    else:
+        spread = 'rradius='+str(rradius)+"\n"+'alongshoreradius='+str(alongshoreradius)+"\n"+'sigma='+str(sigma)
+    print("-----Parameters-----"+"\n"+"Correct GloFAS:"+ str(correct_GloFAS)+"\n"+ "Edit estuary:"+ str(Edit_estuaries)+"\n"+"Cleaning step in propagation:"+str(Propagation_cleaning_step)+"\n"+spread+"\n"+"---------------------------")
 
     grids=Grids(topaz_grid_file,topaz_depth_file,river_data,ldd_file,uparea_file,elevation_file,
             region_name=region_name,region_list=Region,river_correction_file=river_correction_file,

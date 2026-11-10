@@ -1381,7 +1381,7 @@ Generate the file once for the whole period before running the model. The end da
 on or after the end of the last model job. `expt_preprocess.sh` does not create the file:
 it only links it, checks that it covers each job's period, and stops with an error if the
 file is missing or too short.
-`river_glofas.sh` processes one GloFAS day at a time: after <!-- TODO: new setup time --> TODO minutes of setup it takes
+`river_glofas.sh` processes one GloFAS day at a time: after less than a minute of setup it takes
 about 30 s per day on a Betzy login node and a few seconds per day on a compute node. Run
 short periods directly on the login node, and longer ones as a Slurm job array, which
 processes the years in parallel. Both give the same file. Activate the Python environment
@@ -1435,9 +1435,9 @@ Run the script directly, as above, not with `sbatch`: it takes a second on the l
 submits the Slurm jobs itself and prints their job IDs. As with `river_glofas.sh`, an optional
 third argument overrides the record interval (fraction of a day). At most 12 years run at
 a time, the `preproc` limit on Betzy, so a period runs in rounds of 12 years. One year
-takes TODO minutes and TODO GB of memory on a Betzy compute node (daily records,
-HYCOM 2.3): 1993–2024 (32 years, three rounds) takes about TODO minutes in total.
-<!-- TODO: update from the Betzy job array (old: 16–18 min, just under 6 GB, ~55 min) -->
+takes 15–26 minutes (2–4 s per day) and up to 3.5 GB of memory on a Betzy compute node (daily
+records, HYCOM 2.3, point sources): 1993 to 30 June 2024 (32 years, three rounds) takes about
+an hour in total, including the join job.
 
 The join job only starts if every year finished successfully, and `concat_riverh.py`
 checks the result: records evenly spaced over the whole period (no missing or incomplete

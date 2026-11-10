@@ -302,7 +302,7 @@ if __name__ == "__main__" :
    # Gaussian smoothing [grid cells]; pointsource puts all the water in the mouth's cell
    spreading = args.spreading
    pointsource = SPREADING[spreading] is None
-   params = SPREADING[spreading] or SPREADING['diffuse']
+   params = SPREADING[spreading] or SPREADING['diffuse']   # pointsource: placeholders, not used
    rradius = params['rradius']                  # maximum distance to the coast [m]
    alongshoreradius = params['alongshore']      # maximum distance to the estuary [m]
    sigma = params['sigma']
