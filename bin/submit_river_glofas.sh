@@ -12,25 +12,28 @@
 #
 # Usage, from the experiment directory. Run it directly, not with sbatch: it submits the
 # Slurm jobs itself (the #SBATCH lines above are for those jobs):
-#   $HOME/NERSC-HYCOM-CICE/bin/submit_river_glofas.sh [-s spreading] <START> <END> [dt]
+#   $HOME/NERSC-HYCOM-CICE/bin/submit_river_glofas.sh [-s spreading] [-g] <START> <END> [dt]
 #
 # START and END are the first and last day (included) of the period, YYYY-MM-DD.
 # Region, experiment number, topography and HYCOM version are read from REGION.src and
 # EXPT.src. dt (fraction of a day) defaults to 1.0 for HYCOM 2.3, 0.25 otherwise.
 # -s: spreading of each river mouth (bin/river_spreading.py), pointsource, coastal or diffuse
 # (default diffuse).
+# -g: leave out the GEUS Greenland solid ice discharge (added by default).
 # The result is written to force/rivers/<E>/riverh.[ab].
 
-# The spreading reaches the Slurm jobs through the environment (sbatch exports it)
+# The options reach the Slurm jobs through the environment (sbatch exports it)
 SPREADING=${SPREADING:-diffuse}
-while getopts "s:" opt ; do
+GEUSOPT=${GEUSOPT:-}
+while getopts "s:g" opt ; do
     case $opt in
         s) SPREADING=$OPTARG ;;
+        g) GEUSOPT="--no-geus" ;;
         *) exit 1 ;;
     esac
 done
 shift $((OPTIND-1))
-export SPREADING
+export SPREADING GEUSOPT
 
 START=$1
 END=$2
@@ -38,7 +41,7 @@ dt=$3
 MODE=${4:-submit}   # submit (user), year or join (Slurm jobs submitted by this script)
 
 if [[ -z "$START" || -z "$END" ]]; then
-    echo "Usage (from the experiment directory): $(basename $0) [-s spreading] <START> <END> [dt]"
+    echo "Usage (from the experiment directory): $(basename $0) [-s spreading] [-g] <START> <END> [dt]"
     echo "   START, END: first and last day (included), YYYY-MM-DD"
     exit 1
 fi
@@ -66,7 +69,7 @@ if [ "$MODE" == "submit" ]; then
     jid_join=$(sbatch --parsable --dependency=afterok:$jid --job-name=riverh_join \
           --time=00:30:00 --mem=2G --output=log/riverh_join.%j.out \
           $GLOFAS_SCRIPT $START $END $dt join) || exit 1
-    echo "Region $R, experiment $E, topography $T, dt=$dt day, spreading $SPREADING"
+    echo "Region $R, experiment $E, topography $T, dt=$dt day, spreading $SPREADING${GEUSOPT:+, without GEUS}"
     echo "Array job (one task per year): $jid"
     echo "Join job (starts when all years succeed): $jid_join"
     echo "Result: $RDIR/riverh.[ab]"
@@ -102,4 +105,4 @@ ce=$((YEAR+1))-01-01
 
 mkdir -p $CHUNKS
 cd ${SCRIPTDIR}/river-topaz/scripts/GloFAS
-python -u hycom_river_hifre.py --dt $dt --spreading $SPREADING ${cs}T00:00:00 ${ce}T00:00:00 $CHUNKS/ $depthfile
+python -u hycom_river_hifre.py --dt $dt --spreading $SPREADING $GEUSOPT ${cs}T00:00:00 ${ce}T00:00:00 $CHUNKS/ $depthfile

@@ -1401,6 +1401,7 @@ cd $WORK/${CONFIGNAME}/expt_${EXPT_ID}
 $HOME/NERSC-HYCOM-CICE/bin/river_glofas.sh 2013-01-01T00:00:00 2014-01-01T00:00:00        # dt from V
 $HOME/NERSC-HYCOM-CICE/bin/river_glofas.sh 2013-01-01T00:00:00 2014-01-01T00:00:00 0.25   # force 6-hourly
 $HOME/NERSC-HYCOM-CICE/bin/river_glofas.sh -s pointsource 2013-01-01T00:00:00 2014-01-01T00:00:00   # no spreading
+$HOME/NERSC-HYCOM-CICE/bin/river_glofas.sh -g 2013-01-01T00:00:00 2014-01-01T00:00:00               # without GEUS ice discharge
 ```
 
 A year takes about 3 hours this way; for more than a few months, use the Slurm job array.
@@ -1429,6 +1430,7 @@ $HOME/NERSC-HYCOM-CICE/bin/submit_river_glofas.sh 1993-01-01 2024-06-30         
 $HOME/NERSC-HYCOM-CICE/bin/submit_river_glofas.sh -s coastal 1993-01-01 2024-06-30       # spreading plan B
 $HOME/NERSC-HYCOM-CICE/bin/submit_river_glofas.sh -s pointsource 1993-01-01 2024-06-30   # plan A, no spreading
 $HOME/NERSC-HYCOM-CICE/bin/submit_river_glofas.sh 1993-01-01 2024-06-30 0.25             # force 6-hourly
+$HOME/NERSC-HYCOM-CICE/bin/submit_river_glofas.sh -g 1993-01-01 2024-06-30               # without GEUS ice discharge
 ```
 
 Run the script directly, as above, not with `sbatch`: it takes a second on the login node,
@@ -1489,12 +1491,42 @@ Each day of GloFAS discharge (m³/s) is processed as follows:
    cell, with the monthly mean discharge of its month (about 480 km³/yr in 2002–2022) as
    liquid freshwater (1 Gt = 1 km³). GloFAS has the liquid runoff from Greenland but not the
    ice discharge. Before the GEUS record starts (May 1986), the mean seasonal cycle of
-   1987–1996 is used. Treating calving as liquid water at the coast puts it too close to the
-   coast and too early compared with real icebergs, and ignores the heat needed to melt the ice.
+   1987–1996 is used. `-g` (in `river_glofas.sh` and `submit_river_glofas.sh`) leaves GEUS out,
+   e.g. for sensitivity runs or to compare with forcing made before GEUS was added. The ice enters as liquid freshwater at the coast, at the surface and
+   without the heat needed to melt it (see [Greenland ice discharge as liquid freshwater](#greenland-ice-discharge-as-liquid-freshwater)).
 5. Estuaries that land on the same model cell are merged (their discharge is summed).
 6. The discharge is spread over the ocean cells near each estuary and divided by the
    grid-cell area, giving m/s (see [Spreading river discharge from the coast](#spreading-river-discharge-from-the-coast)).
    Each daily value is placed at 00:00 of its date.
+
+::::
+
+(greenland-ice-discharge-as-liquid-freshwater)=
+::::{dropdown} Greenland ice discharge as liquid freshwater
+
+NERSC-HYCOM-CICE has no iceberg model, and HYCOM adds river forcing to the surface freshwater
+flux like precipitation (`thermf.F`), with no heat attached. So the GEUS ice discharge enters
+as liquid freshwater at the ocean cells nearest the glacier fronts. This is a common
+first-order choice for ocean models without icebergs, and it gets the ~480 km³/yr into the
+right region. It leaves out:
+
+1. **Latent heat.** Melting 480 Gt/yr of ice takes about 5 TW. Over the shelves and basins
+   around Greenland (~10¹² m²) that is a few W/m², small next to the air–sea heat fluxes
+   there, but near the outlets it is hundreds of W/m². Without it the coastal water near the
+   outlets is too warm, which shows up mostly in winter sea ice and coastal SST. Adding it
+   (subtracting L_f × ice flux from the surface heat flux, as in the OMIP protocol for calving)
+   needs the ice discharge as a separate forcing field, since `rivflx` combines all rivers.
+2. **Where the ice melts.** Much of the discharge melts in the fjords (small icebergs, melt at
+   the glacier front), which the model does not resolve, so putting it at the coast is fine
+   for that part. Large icebergs drift for months to years along the East Greenland Current
+   and into Baffin Bay and the Labrador Sea; in the model that freshwater travels with the
+   coastal current instead, and the part that should melt in the interior of the Labrador Sea
+   or Baffin Bay is missing there.
+3. **Depth.** Everything enters at the surface, while melt at glacier fronts happens at depth.
+   This matters mainly in the fjords, which the model does not resolve.
+
+Errors in the Greenland liquid runoff (amount, seasonal cycle, year-to-year variability,
+probably 150–300 km³/yr) are likely larger than these.
 
 ::::
 
@@ -1531,7 +1563,7 @@ stops with an error. The paths are set in
 | File | Contents |
 |---|---|
 | `TOPAZrunoff_data/river/correction_files/largest_river_correction_2001_2019.nc` | Day-of-year correction (slope and intercept) for the Ob, Lena and Yenisei, fitted from GloFAS against ArcticGRO observations for 2001–2019. Applied to discharge from 2001 onwards. |
-| `/cluster/projects/nn2993k/GEUS_ice_discharge/geus_gates_monthly.nc` (not in the GloFAS data directory; shared with AHYPE v4b) | GEUS Greenland solid ice discharge, monthly means per flux gate (m³/s), made from the GEUS `gate.nc` (download in `GEUS_ice_discharge/<V>/`) with `bin/geus_preprocess.py --dataverse-version <V> <GEUS directory> <output>`. GEUS updates the product: the Dataverse version (e.g. V131) is not in the GEUS files, so give it with `--dataverse-version`; it is stored in the output and written to the `riverh.b` header. Set `geus_file = None` in `hycom_river_hifre.py` to leave GEUS out. |
+| `/cluster/projects/nn2993k/GEUS_ice_discharge/geus_gates_monthly.nc` (not in the GloFAS data directory; shared with AHYPE v4b) | GEUS Greenland solid ice discharge, monthly means per flux gate (m³/s), made from the GEUS `gate.nc` (download in `GEUS_ice_discharge/<V>/`) with `bin/geus_preprocess.py --dataverse-version <V> <GEUS directory> <output>`. GEUS updates the product: the Dataverse version (e.g. V131) is not in the GEUS files, so give it with `--dataverse-version`; it is stored in the output and written to the `riverh.b` header. Leave GEUS out with `-g` of `river_glofas.sh` or `submit_river_glofas.sh`. |
 
 The spreading of each estuary's discharge over the nearby coastal cells is not stored in
 a file: it is computed for the model grid, with the strategy given by `-s`.

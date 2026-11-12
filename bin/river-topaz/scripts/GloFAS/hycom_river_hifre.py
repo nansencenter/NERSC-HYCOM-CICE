@@ -261,6 +261,8 @@ if __name__ == "__main__" :
    parser.add_argument('--spreading',   choices=list(SPREADING), default='diffuse',
                        help='spreading of each river mouth over nearby ocean cells (bin/river_spreading.py): '
                             'pointsource, coastal (50/100 km) or diffuse (180/360 km, the default)')
+   parser.add_argument('--no-geus',     action='store_true',
+                       help='leave out the GEUS Greenland solid ice discharge (added by default)')
 
    args = parser.parse_args()
    if args.dt <= 0. or args.dt > 1. or abs(1./args.dt - round(1./args.dt)) > 1e-6:
@@ -308,8 +310,11 @@ if __name__ == "__main__" :
    sigma = params['sigma']
 
    # GEUS Greenland solid ice discharge per gate, monthly, from bin/geus_preprocess.py; added as
-   # extra river mouths and spread like the rivers. Set to None to leave it out.
+   # extra river mouths and spread like the rivers. --no-geus leaves it out.
    geus_file = '/cluster/projects/nn2993k/GEUS_ice_discharge/geus_gates_monthly.nc'   # shared with the AHYPE v4b river forcing
+   if args.no_geus:
+      geus_file = None
+   print('GEUS Greenland ice discharge: ' + (geus_file if geus_file else 'left out (--no-geus)'))
 #---------------------------------------------------------------------------------------------
 
    river_forcing=create_river_forcing(input_dataset=input_dataset,
