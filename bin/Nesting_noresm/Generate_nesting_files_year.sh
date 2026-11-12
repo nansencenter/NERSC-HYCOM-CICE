@@ -78,14 +78,14 @@ done
 if [ "$genbgcnest" = "true" ]; then
 ### Make sure all the files are prepared:                                                                                  
 cd ${Nesting_Files_PATH}
-for vari in no3 po4 o2 si; do
+for vari in no3 po4 o2 si dissic talk; do
    num=`ls ${vari}_Omon_${ESM_ID}_g*_${year}*extrap* | wc -l`
    echo $year $vari $num
    if [ $num -ne 12 ]; then
      echo "Extrapolation required for variable: " $vari
      echo "Performing extrapolation ..."
      echo " "
-     #srun -n1 -c2 --overlap ${BINDIR}/Nesting_noresm/separate_and_extrapolate_files_year.sh $year $vari
+     #srun -n1 -c2 --overlap ${BINDIR}/Nesting_noresm/separate_and_extrapolate_files_year_dissic_talk.sh $year $vari
      ${BINDIR}/Nesting_noresm/separate_and_extrapolate_files_year.sh $year $vari
    else
      echo "Extrapolation was already performed for "${vari}" before"

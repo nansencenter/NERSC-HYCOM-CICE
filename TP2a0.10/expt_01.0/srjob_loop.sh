@@ -1,7 +1,7 @@
 #!/bin/bash -l 
 
 #SBATCH --account=nn9481k
-#SBATCH --job-name=TP2a010
+#SBATCH --job-name=TP2_01.0
 #SBATCH --time="01:00:00"
 #SBATCH --nodes=4 # number of nodes
 #SBATCH --ntasks=504 # number of cores

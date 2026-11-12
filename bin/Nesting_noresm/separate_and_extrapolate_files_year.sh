@@ -1,5 +1,5 @@
 #! /bin/bash
-module load CDO/1.9.10-iimpi-2022a
+module load CDO/2.2.2-gompi-2023b
 
 #
 # Ensure Nesting_Files_PATH is set
@@ -64,13 +64,14 @@ if [ "$vari" != "zos" ]; then
    done
 
 #### Bias correct temperature and salinity
-#### Bias correct nutrient and oxygen, but make sure thye are not negative.
+#### Bias correct nutrient, oxygen, dissic and talk, but make sure thye are not negative.
    for ((mon=1; mon<=12; mon+=1)); do
       smon=`echo -n 0$mon | tail -2c`
       if [ "$vari" == "thetao" ]; then BIASCORR=true; fi
       if [ "$vari" == "so" ]; then BIASCORR=true; fi
       if [ "$vari" == "no3" -o "$vari" == "si" ]; then BIASCORR=true; fi
       if [ "$vari" == "po4" -o "$vari" == "o2" ]; then BIASCORR=true; fi
+      if [ "$vari" == "dissic" -o "$vari" == "talk" ]; then BIASCORR=true; fi
       if [ $BIASCORR = true ]; then
          # cdo sub ${vari}_Omon_${lname}_${year}${smon}_grid.nc \
          #         /cluster/projects/nn9481k/NORESM_bias/bias_${vari}_decal_${smon}.nc \
@@ -81,11 +82,11 @@ if [ "$vari" != "zos" ]; then
       fi
    done
 
-   #### For nutrients and oxygen, set negative values to a small value.
+   #### For nutrients, oxygen, dissic and talk, set negative values to a small value.
    if [ $BIASCORR = true ]; then
       for ((mon=1; mon<=12; mon+=1)); do
          smon=`echo -n 0$mon | tail -2c`
-         if [ "$vari" == "no3" -o "$vari" == "po4" -o "$vari" == "o2" -o "$vari" == "si" ]; then
+         if [ "$vari" == "no3" -o "$vari" == "po4" -o "$vari" == "o2" -o "$vari" == "si" -o "$vari" == "dissic" -o "$vari" == "talk" ]; then
             cdo setrtoc,-inf,0.0001,0.0001 ${Nesting_Files_PATH}/${vari}_Omon_${lname}_${year}${smon}_gridbc.nc \
                ${Nesting_Files_PATH}/${vari}_Omon_${lname}_${year}${smon}_gridbc2.nc
          else

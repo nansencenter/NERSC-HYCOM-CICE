@@ -141,8 +141,11 @@ C --- MOSTAFA: BEGIN
       CHARACTER*40 flag_t,flag_s,flag_u,flag_v,flag_th
       REAL*4, parameter :: onem = 9806.0, spval = 2.0**100, hspval=0.5*2.0**100
       CHARACTER*40 flag_no3,flag_po4,flag_si,flag_o2
+      CHARACTER*40 flag_dissic,flag_talk
       REAL*4,  ALLOCATABLE :: NO3(:,:,:),PO4(:,:,:),SI(:,:,:),O2(:,:,:)
+      REAL*4,  ALLOCATABLE :: DISSIC(:,:,:),TALK(:,:,:)
       REAL*4,  ALLOCATABLE :: NO3M(:,:),PO4M(:,:),SIM(:,:),O2M(:,:)
+      REAL*4,  ALLOCATABLE :: DISSICM(:,:),TALKM(:,:)
       integer  dummy_index
       CHARACTER*80 dummy_name
 
@@ -223,6 +226,12 @@ C
          read (*,'(a)') flag_o2
          write (6,'(2a)') 'BIO: O2: ',flag_o2
 
+         read (*,'(a)') flag_dissic
+         write (6,'(2a)') 'BIO: DISSIC: ',flag_dissic
+
+         read (*,'(a)') flag_talk
+         write (6,'(2a)') 'BIO: TALK: ',flag_talk
+
 
          call flush(6)
 
@@ -282,6 +291,14 @@ C
       if     (flag_o2.ne."NONE") then
           ALLOCATE(     O2M(IDM,JDM) )
           ALLOCATE(     O2(KZ+1,IDM,JDM) )
+      endif
+      if     (flag_dissic.ne."NONE") then
+          ALLOCATE(   DISSICM(IDM,JDM) )
+          ALLOCATE(   DISSIC(KZ+1,IDM,JDM) )
+      endif
+      if     (flag_talk.ne."NONE") then
+          ALLOCATE(    TALKM(IDM,JDM) )
+          ALLOCATE(    TALK(KZ+1,IDM,JDM) )
       endif
 
 
@@ -797,7 +814,8 @@ C /////////////////// NOW 3D /////////////////////////////
      +     BLDP,MIXDP,UBRTP,VBRTP,TZ,SZ,UV,VV,RZ,ZL,
      +     flag_t,flag_s,flag_th,flag_u,flag_v,ISOPYC,
      +     SIGVER,LEVTOP,SIG3D,DEPTH,TZ1,SZ1,UV1,VV1,TH,TH1,
-     +     flag_no3,flag_po4,flag_si,flag_o2,NO3,PO4,SI,O2,MSK)
+     +     flag_no3,flag_po4,flag_si,flag_o2,NO3,PO4,SI,O2,
+     +     flag_dissic,flag_talk,DISSIC,TALK,MSK)
 C
 C    UV1 and VV1 are on P-cell and are converted into the u/v cells after
 C    subroutine GRIRD_REMAPPING
@@ -843,7 +861,8 @@ c ---   if you are using 'archm' for nesting use the following
 cc      dummy_index=index(archvfileo,'archm')
 c ---
       if (flag_no3.ne."NONE" .or.flag_po4.ne."NONE"
-     &    .or.flag_si.ne."NONE".or.flag_o2.ne."NONE" ) then
+     &    .or.flag_si.ne."NONE".or.flag_o2.ne."NONE"
+     &    .or.flag_dissic.ne."NONE".or.flag_talk.ne."NONE" ) then
          dummy_index=index(archvfileo,'archv')
          dummy_name=archvfileo(dummy_index:dummy_index+4)//"_fabm"
      +      //archvfileo(dummy_index+5:dummy_index+17)
@@ -1022,7 +1041,8 @@ C
      +          PU(I,J),PV(I,J),UV(:,I,J),VV(:,I,J),
      +          ldebug,sigver,TZ(:,I,J),SZ(:,I,J),
      +          flag_no3,flag_po4,flag_si,flag_o2,NO3,PO4,
-     +          SI,O2,NO3M,PO4M,SIM,O2M)
+     +          SI,O2,NO3M,PO4M,SIM,O2M,
+     +          flag_dissic,flag_talk,DISSIC,TALK,DISSICM,TALKM)
 
             ENDIF  !DEPTH>0
 
@@ -1054,6 +1074,16 @@ C
            O2M(:,2)=O2M(:,3)
            CALL ZAIOWR(O2M,  MSK,.TRUE.,  XMIN,XMAX, 211, .FALSE.)
            WRITE(211,4201) 'ECO_oxy    ',MONTH,TIME,K,SIGMA(K),XMIN,XMAX
+        endif
+        if     (flag_dissic.ne."NONE") then
+           DISSICM(:,2)=DISSICM(:,3)
+           CALL ZAIOWR(DISSICM,  MSK,.TRUE.,  XMIN,XMAX, 211, .FALSE.)
+           WRITE(211,4201) 'CO2_c      ',MONTH,TIME,K,SIGMA(K),XMIN,XMAX
+        endif
+        if     (flag_talk.ne."NONE") then
+           TALKM(:,2)=TALKM(:,3)
+           CALL ZAIOWR(TALKM,  MSK,.TRUE.,  XMIN,XMAX, 211, .FALSE.)
+           WRITE(211,4201) 'CO2_TA     ',MONTH,TIME,K,SIGMA(K),XMIN,XMAX
         endif
 
 C
@@ -1123,7 +1153,8 @@ C
 
       CALL ZAIOCL(21)
       IF (flag_no3.ne."NONE" .or.flag_po4.ne."NONE"
-     &    .or.flag_si.ne."NONE".or.flag_o2.ne."NONE" ) THEN
+     &    .or.flag_si.ne."NONE".or.flag_o2.ne."NONE"
+     &    .or.flag_dissic.ne."NONE".or.flag_talk.ne."NONE" ) THEN
 
           CALL ZAIOCL(211)
       ENDIF
@@ -1780,10 +1811,11 @@ C
      +          flag_u,flag_v,itest,jtest,SM,TM,UM,VM,UV,VV,
      +          ldebug,sigver,TZ,SZ,
      +          flag_no3,flag_po4,flag_si,flag_o2,
-     +          NO3,PO4,SI,O2,NO3M,PO4M,SIM,O2M)
+     +          NO3,PO4,SI,O2,NO3M,PO4M,SIM,O2M,
+     +          flag_dissic,flag_talk,DISSIC,TALK,DISSICM,TALKM)
 
         IMPLICIT NONE
-         
+
         integer :: K,KDM,kz,i,j,NSIGMA,itest,jtest,sigver
         real*4, intent(in)    :: RZ(kz+1),SIG3D(kdm),PMIX,
      +         depth, DSCK(0:kdm+1),   DPCK(0:kdm+1),
@@ -1791,8 +1823,9 @@ C
      +         DP0K(kdm+1),DP00I,DS0K(kdm+1),
      +         UV(kz+1),VV(kz+1),TZ(kz+1),SZ(kz+1)
 
-        real*4, intent(in) :: 
+        real*4, intent(in) ::
      +     NO3(:,:,:),PO4(:,:,:),SI(:,:,:),O2(:,:,:)
+        real*4, intent(in) :: DISSIC(:,:,:),TALK(:,:,:)
 
         real*4, intent(inout) ::  PM,RM
         real*4,  intent(inout) :: PZBOT,PCM0,PkM2,PCM1,PCM2,
@@ -1800,10 +1833,12 @@ C
 
         real*4, intent(inout) ::
      +     NO3M(:,:),PO4M(:,:),SIM(:,:),O2M(:,:)
+        real*4, intent(inout) :: DISSICM(:,:),TALKM(:,:)
 
        logical    ::  ISOPYC,ldebug
         CHARACTER*40    :: flag_t,flag_s,flag_u,flag_v
        CHARACTER*40    :: flag_no3,flag_po4,flag_si,flag_o2
+       CHARACTER*40    :: flag_dissic,flag_talk
 
        real*4 ::qdep,Q,sigmaa,RZLOC,DPMS,PZMID,THIKMN,THK
        integer :: L,kztop
@@ -2078,6 +2113,11 @@ C
      &                 SIM(I,J) =(1.0-Q)*SI (L,I,J)+Q*SI(L+1,I,J) ! from Z to isop.
                 if(flag_o2.ne."NONE")
      &                 O2M(I,J) =(1.0-Q)*O2 (L,I,J)+Q*O2(L+1,I,J) ! from Z to isop.
+                if(flag_dissic.ne."NONE")
+     &            DISSICM(I,J)=(1.0-Q)*DISSIC(L,I,J)
+     &                        +Q*DISSIC(L+1,I,J) ! from Z to isop.
+                if(flag_talk.ne."NONE")
+     &                 TALKM(I,J) =(1.0-Q)*TALK(L,I,J)+Q*TALK(L+1,I,J) ! from Z to isop.
                   if (ldebug.and.i.eq.itest.and. j.eq.jtest) then
                     WRITE(6,'(A,I4,3F8.4)')
      +                ' TM: L,Q =',L,Q,TM,RM
@@ -2102,7 +2142,8 @@ C
      +     BLDP,MIXDP,UBRTP,VBRTP,TZ,SZ,UV,VV,RZ,ZL,
      +     flag_t,flag_s,flag_th,flag_u,flag_v,ISOPYC,
      +     SIGVER,LEVTOP,SIG3D,DEPTH,TZ1,SZ1,UV1,VV1,TH,TH1,
-     +     flag_no3,flag_po4,flag_si,flag_o2,NO3,PO4,SI,O2,MSK)
+     +     flag_no3,flag_po4,flag_si,flag_o2,NO3,PO4,SI,O2,
+     +     flag_dissic,flag_talk,DISSIC,TALK,MSK)
 
         IMPLICIT NONE
 C
@@ -2123,6 +2164,7 @@ C
 
         REAL*4, intent(inout) :: NO3(:,:,:),
      +                   PO4(:,:,:),SI(:,:,:),O2(:,:,:)
+        REAL*4, intent(inout) :: DISSIC(:,:,:),TALK(:,:,:)
 
         REAL*4          :: PU(IDM,JDM),PV(IDM,JDM)
         LOGICAL         :: ISOPYC
@@ -2130,10 +2172,12 @@ C
         CHARACTER*40, INTENT(IN)::flag_t,flag_s,flag_u,
      +                      flag_v,flag_th,
      +                      flag_no3,flag_po4,flag_si,flag_o2
+        CHARACTER*40, INTENT(IN):: flag_dissic,flag_talk
         CHARACTER*256, INTENT(IN) :: ARCHVFILE
         CHARACTER(len=8), INTENT(IN) :: cfld(NREC)
         REAL*4,allocatable :: NO1(:,:),PO1(:,:),
      +                        SI1(:,:),O21(:,:)
+        REAL*4,allocatable :: DISSIC1(:,:),TALK1(:,:)
 C
         INTEGER   ::  K,I,J
         REAL*4,parameter    ::  spval = 2.0**100
@@ -2180,6 +2224,12 @@ C
       if     (flag_o2.ne."NONE") then
           ALLOCATE(     O21(IDM,JDM) )
       endif
+      if     (flag_dissic.ne."NONE") then
+          ALLOCATE(   DISSIC1(IDM,JDM) )
+      endif
+      if     (flag_talk.ne."NONE") then
+          ALLOCATE(    TALK1(IDM,JDM) )
+      endif
 
       DO K=1,KZ ! LOOP THROUGH LEVELS
 C
@@ -2222,6 +2272,14 @@ C
          call FieldArchive(O21,IDM,JDM,cfld,'ECO_oxy    ',
      &     K,coord,1,tlevel1,nrec,trim(archvfile)//".a")
         endif
+        if     (flag_dissic.ne."NONE") then
+         call FieldArchive(DISSIC1,IDM,JDM,cfld,'CO2_c      ',
+     &     K,coord,1,tlevel1,nrec,trim(archvfile)//".a")
+        endif
+        if     (flag_talk.ne."NONE") then
+         call FieldArchive(TALK1,IDM,JDM,cfld,'CO2_TA     ',
+     &     K,coord,1,tlevel1,nrec,trim(archvfile)//".a")
+        endif
         ! CAUTION:  CONVERT VELOCITY COMPONENTS FROM  U- AND V-CELL TO P-CELL , RESPECTIVELY HERE
         ! TODO:  
         CALL UV2P(IDM,JDM,UV1,VV1,PU,PV)
@@ -2262,6 +2320,12 @@ C ---    U AND V ARE NOW ON P-CELL
                  endif
                  if     (flag_o2.ne."NONE") then
                         O2(K,I,J) = MIN(SPVAL,O21(I,J)) ! oxygen
+                 endif
+                 if     (flag_dissic.ne."NONE") then
+                        DISSIC(K,I,J) = MIN(SPVAL,DISSIC1(I,J)) ! dissolved inorganic carbon
+                 endif
+                 if     (flag_talk.ne."NONE") then
+                        TALK(K,I,J) = MIN(SPVAL,TALK1(I,J)) ! alkalinity
                  endif
 
             ENDDO
@@ -2340,6 +2404,10 @@ C ---    U AND V ARE NOW ON P-CELL
      &                                  SI(K,I,J) = SI(K-1,I,J)
                             if     (flag_o2.ne."NONE")
      &                                  O2(K,I,J) = O2(K-1,I,J)
+                            if     (flag_dissic.ne."NONE")
+     &                                  DISSIC(K,I,J) = DISSIC(K-1,I,J)
+                            if     (flag_talk.ne."NONE")
+     &                                  TALK(K,I,J) = TALK(K-1,I,J)
                             ELSE
                             RZ(K,I,J) = SIG3D(I,J,KDM)
                             TZ(K,I,J) = TOFSIG_V(RZ(K,I,J),

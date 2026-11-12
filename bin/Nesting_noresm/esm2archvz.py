@@ -267,6 +267,8 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=True,iexpt=10,iversn=22,yrflag
          file_po4 = bio_path + "po4"  + filename[6:]
          file_si  = bio_path + "si"  + filename[6:]
          file_o2  = bio_path + "o2"  + filename[6:]
+         file_dissic  = bio_path + "dissic"  + filename[6:]
+         file_talk  = bio_path + "talk"  + filename[6:]
  
       lenstr=len(filename); bsubstr=lenstr-18; esubstr=lenstr-17;
       print(lenstr,bsubstr,esubstr)
@@ -285,6 +287,8 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=True,iexpt=10,iversn=22,yrflag
          ncidsi =Dataset(file_si,"r")
          ncidpo4=Dataset(file_po4,"r")
          ncido2 =Dataset(file_o2,"r")
+         nciddissic =Dataset(file_dissic,"r")
+         ncidtalk =Dataset(file_talk,"r")
 
       # time from gridT file. 
       time = ncidt.variables["time"][0]
@@ -310,6 +314,10 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=True,iexpt=10,iversn=22,yrflag
           po4=po4 * 106.0 * 12.01 * 1000.0 # convert from mol/m3 to mg C/m3 
           o2=np.squeeze(ncido2.variables["o2"][:,:,:,:])
           o2=o2 * 1000.0 # convert from mol/m3 to mmol/m3 
+          dissic = np.squeeze(nciddissic.variables["dissic"][:,:,:,:])
+          dissic = dissic * 1000.0   # mol/m3 -> mmol C/m3
+          talk = np.squeeze(ncidtalk.variables["talk"][:,:,:,:])
+          talk = talk * 1000.0   # mol/m3 -> mmol C/m3 
 
       lev_bnds=ncidu.variables["lev_bnds"][:,:]
       lev=ncidu.variables["lev"][:]
@@ -455,6 +463,14 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=True,iexpt=10,iversn=22,yrflag
             o2l=maplev(o2l)
             o2l = np.where(o2l<1e8,o2l,np.nan)
             o2l = np.minimum(np.maximum(maplev(o2l),0),1.0e8)
+            dicl = np.squeeze(dissic[k,:,:])
+            dicl = maplev(dicl)
+            dicl = np.where(dicl < 1e8, dicl, np.nan)
+            dicl = np.minimum(np.maximum(maplev(dicl), 0), 1.0e8)
+            talkl = np.squeeze(talk[k,:,:])
+            talkl = maplev(talkl)
+            talkl = np.where(talkl < 1e8, talkl, np.nan)
+            talkl = np.minimum(np.maximum(maplev(talkl), 0), 1.0e8)
             if k%10==0 : logger.info("Writing 3D variables including BIO, level %d of %d"%(k+1,uu_x.shape[0]))
          else:
             if k%10==0 : logger.info("Writing 3D variables, level %d of %d"%(k+1,uu_x.shape[0]))
@@ -491,6 +507,8 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=True,iexpt=10,iversn=22,yrflag
                po4l[K] = po4_above[K]
                sil[K] = si_above[K]
                o2l[K] = o2_above[K]
+               dicl[K] = dic_above[K]
+               talkl[K] = talk_above[K]
    
 
          onem=9806.
@@ -504,6 +522,8 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=True,iexpt=10,iversn=22,yrflag
             outfile.write_field(po4l      ,ip,"ECO_pho" ,0,model_day,k+1,0)
             outfile.write_field(sil       ,ip,"ECO_sil" ,0,model_day,k+1,0)
             outfile.write_field(o2l       ,ip,"ECO_oxy" ,0,model_day,k+1,0)
+            outfile.write_field(dicl   ,ip,"CO2_c" ,0,model_day,k+1,0)
+            outfile.write_field(talkl  ,ip,"CO2_TA" ,0,model_day,k+1,0)
 
          tl_above=np.copy(tl)
          sl_above=np.copy(sl)
@@ -512,6 +532,8 @@ def main(filemesh,grid2dfiles,first_j=0,mean_file=True,iexpt=10,iversn=22,yrflag
             po4_above=np.copy(po4l)
             si_above=np.copy(sil)
             o2_above=np.copy(o2l)
+            dic_above=np.copy(dicl)
+            talk_above=np.copy(talkl)
          
 
       # TODO: Process ice data
