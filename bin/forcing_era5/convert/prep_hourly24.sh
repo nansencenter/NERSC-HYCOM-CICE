@@ -20,13 +20,14 @@ if [ $# -eq 1 ]; then
    File1=pre_${File0#*hourly.}   
    if [ ! -s ${File1} ]; then
       ncks -Oh -C -x -v valid_time,expver ${File0} ${File1}
-   fi
-   ncrename -Oh -d valid_time,time ${File1}
-   [ ! -s ${File1} ] && { echo "No ${File1}";  exit 1; }
-   if [ -r ./hourly ]; then
-      ncks -Ah -v time ${FileT} ${File1}
-      ncks -4 -L 4 ${File1} ./hourly/hourly.${File0#*hourly.}
-      [ -s ${File1} ] && rm ${File1}
+      #ncks -Oh -C -x -v valid_time ${File0} ${File1}
+      [ ! -s ${File1} ] && { echo "No ${File1}";  exit 1; }
+      ncrename -Oh -d valid_time,time ${File1}
+      if [ -r ./hourly ]; then
+         ncks -Ah -v time ${FileT} ${File1}
+         ncks -4 -L 4 ${File1} ./hourly/hourly.${File0#*hourly.}
+         [ -s ${File1} ] && rm ${File1}
+      fi
    fi
 
 else

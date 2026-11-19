@@ -101,7 +101,10 @@ if [ -s ${Indir}/hourly.${varname}_${iyy}.nc -a ! -s ./6h/${Fini} ]; then
    if [ ! -s ${Fini} ]; then
       # correct the attribute for oldname
       # ncatted -a att_nm, var_nm, mode, att_typ, att_val in.nc [out.nc]
-      ncatted -Oh -a coordinates,${oldname},m,c,"time latitude longitude" ${Indir}/hourly.${varname}_${iyy}.nc 
+      ncatted -Oh -a coordinates,${oldname},m,c,"time latitude longitude" ${Indir}/hourly.${varname}_${iyy}.nc     #  NCO/5.1.9-iomkl-2022a
+
+
+      ml load CDO/2.0.6-gompi-2022a
       cdo splithour ${Indir}/hourly.${varname}_${iyy}.nc ${varname}_${iyy}.steps
       if [ $ii -le 9 ]; then
          cdo mergetime ${varname}_${iyy}.steps06.nc ${varname}_${iyy}.steps12.nc ${varname}_${iyy}.steps18.nc ${varname}_${iyy}.steps00.nc ${Fini}

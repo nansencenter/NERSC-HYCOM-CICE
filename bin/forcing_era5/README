@@ -34,3 +34,15 @@ Convert hourly to 6-hourly:
 To deal with the hourly files, it can prepare the 6-hourly forcing files in which the variable names will be renamed to keep the same format as we used before.
 
 env.drt: Define the work diretory to deal with the downloaded hourly files into 6h, which should be on the work disk space.
+
+
+#####################################################################3
+# N.B.: update the monthly download, process, and then merge or extend the forcing files
+# at 19th Nov 2026
+#####################################################################3
+1) adding routine&files:  creat_mmdown.sh; Infile/hourly_era5_nc.mal 
+2) step1: adjust the month in  process_downfile.sh  and then to download the houly ERA5files
+   step2: preprocess the hourly files using " sbatch srjob_hourly_prep.sh yyyy"
+   step3: procossing the monthly ERA5 files using "sbatch srjob_convert_era5_6h.sh" 
+
+in the end, combine the monthly fields with the lastest forcing files at the project ERA5  directory.   The command is Extendmm.sh which add the proposted monthly file into the lastest forcing files. 
