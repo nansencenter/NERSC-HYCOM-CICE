@@ -60,7 +60,7 @@ Open `srjob.sh` in a text editor and update:
 
 > **`INITFLG="--init"` (cold start):** No restart files are needed.
 > Temperature and salinity (T/S) are set directly from the climatological fields in
-> `relax/` (see [Climatologies and river forcing](forcing.md#climatologies-and-river-forcing));
+> `relax/` (see [Climatologies](forcing.md#climatologies));
 > velocities and sea surface height (SSH) start at zero. The model then spins up under realistic atmospheric
 > forcing. The start date must be in September (the month of Arctic sea ice minimum).
 > See [Initial conditions](forcing.md#initial-conditions) for details on both options.

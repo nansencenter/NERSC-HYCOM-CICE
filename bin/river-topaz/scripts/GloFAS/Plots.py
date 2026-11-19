@@ -102,33 +102,6 @@ def Plot_estuaries(dis_grid,depth_grid):
     plt.show()
 
 
-def Plot_statistics(dis_grid):
-    Uparea_Thresholds=np.linspace(1,1e11,5000)
-    Nb_estuaries=np.zeros_like(Uparea_Thresholds)
-    Flux_sum = np.zeros_like(Uparea_Thresholds)
-
-    for idx,t in enumerate(Uparea_Thresholds):
-        dis_grid.find_estuaries(t)
-
-        Nb_estuaries[idx]=dis_grid.df_dis_Estuary.dis_Estuary.count() #Number of estuaries
-        Flux_sum[idx]=dis_grid.df_dis_Estuary.dis_Estuary.sum() #Sum of all fluxes from estuaries
-
-    fig1,ax1=plt.subplots()
-    color='blue'
-    ax1.semilogx(Uparea_Thresholds,Nb_estuaries,'-',label='Number of estuaries',color=color)
-    ax1.set_xlabel('uparea threshold '+r'$m^2$')
-    ax1.set_ylabel('Number of estuaries',color=color)
-    ax1.tick_params(axis='y', labelcolor=color)
-
-    ax2=ax1.twinx()
-    color='red'
-    ax2.semilogx(Uparea_Thresholds,Flux_sum,'-',label='Sum of estuaries flux',color=color)
-    ax2.set_ylabel('Flux'+r'$m^3/s$',color=color)
-    ax2.tick_params(axis='y', labelcolor=color)
-
-    plt.show()
-
-
 def Plot_maps(dis_grid):
 
 
@@ -161,7 +134,8 @@ def Plot_maps(dis_grid):
 
 
 def Plot_arctic(dis_grid,depth_grid,region_name='Arctic'):
-    dis_grid.find_estuaries(uparea_threshold=2e9, elevation_threshold=10)
+    dis_grid.find_estuaries()
+    dis_grid.merge_estuaries()
     flux_min=dis_grid.df_dis_Estuary.dis_Estuary.min()
     flux_max = dis_grid.df_dis_Estuary.dis_Estuary.max()
 
