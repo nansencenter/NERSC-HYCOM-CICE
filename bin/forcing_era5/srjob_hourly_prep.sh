@@ -21,7 +21,12 @@
 # Modules of NCO and CDO are default loaded by the system.
 # Otherwise the loading should be added here. 
 
+
+# double check the diretory of "prgdrt" is consitent 
+#  with the definition of "Inidir" in evn.drt:
 prgdrt='/cluster/home/xiejp/ERA5down_2025/'
+#
+
 prg=${prgdrt}convert/prep_hourly24.sh
 
 [ ! -s ${prgdrt}env.drt ] && { echo "warning: check ${prgdrt}env.drt to setup the directory"; exit 0; }

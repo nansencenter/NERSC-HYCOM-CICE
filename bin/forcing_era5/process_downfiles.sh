@@ -1,18 +1,30 @@
 #! /bin/bash -l
 #
-Inidir=/cluster/home/xiejp/work2023/ERA5_down
+if [ -s env.drt ]; then
+   source env.drt
+else
+   Inidir=$(pwd)
+   Rundir=/cluster/work/users/xiejp/ERA5hourly
+fi    
 
-Rundir=/cluster/work/users/xiejp/ERA5hourly
-echo ${Rundir}
-#[ ! -s ${Rundir} ] && exit ("Cannot find ${Rundir}!")
+[ ! -s ${Rundir} ] && { echo "Cannot find ${Rundir}!";  exit 1; }
 cd ${Rundir}
 
 Downvars="10m_u_component_of_wind 10m_v_component_of_wind 2m_dewpoint_temperature 2m_temperature boundary_layer_height mean_sea_level_pressure total_cloud_cover sea_ice_cover skin_temperature surface_net_solar_radiation surface_net_thermal_radiation surface_solar_radiation_downwards surface_thermal_radiation_downwards runoff total_precipitation"
 
 Y1=$1
 Y2=$2
+if [ $# -eq 3 ]; then
+   MM=$3
+else
+   MM=1
+fi
 
-${Inidir}/creat_downpython.sh ${Y1} ${Y2}
+if [ $MM -gt 0 ]; then
+   ${Inidir}/creat_mmdown.sh ${Y1} ${Y2} ${MM}
+else
+   ${Inidir}/creat_downpython.sh ${Y1} ${Y2}
+fi
 
 echo ${Rundir}
 #[ ! -s ${Rundir} ] && exit ("Cannot find ${Rundir}!")
@@ -20,9 +32,9 @@ cd ${Rundir}
 [ ! -r ./download ] && mkdir download 
 
 for iyy in `seq ${Y1} ${Y2}`; do
-   if [ $# -eq 3 ]; then
+   if [ $# -gt 3 ]; then
       # point out the variable inside of the 15 variabls
-      ii=$3
+      ii=$4
    else
       ii=0
    fi
@@ -78,6 +90,7 @@ for iyy in `seq ${Y1} ${Y2}`; do
 
       if [ -s down_${iyy}_${varname}.py -a ! -s ./download/hourly.${varname}_${iyy}.nc ]; then
          python down_${iyy}_${varname}.py  
+         [ -s hourly.${varname}_${iyy}.nc ] && mv hourly.${varname}_${iyy}.nc ./download/.
       fi
 done
 done
