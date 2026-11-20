@@ -35,7 +35,43 @@ This sets `$WORK` to the non-purged projects filesystem used throughout the setu
 A dedicated Python environment keeps the model's Python dependencies isolated from other
 projects and from the system Python, and makes the setup reproducible across machines.
 
-### Set up conda
+### Use the shared environment (Betzy, default)
+
+On Betzy, a ready-made `hycom-cice` environment is shared by the whole project at
+`/cluster/projects/nn9481k/conda/shared/hycom-cice`, so you do not need to build your own.
+You need to be a member of `nn9481k` to use it. Run the following once:
+
+```bash
+module load Miniforge3/24.1.2-0
+source ${EBROOTMINIFORGE3}/bin/activate
+conda config --append envs_dirs /cluster/projects/nn9481k/conda/shared
+```
+
+This adds the shared directory to `envs_dirs` in your `~/.condarc`, so that
+`conda activate hycom-cice` (as used in the job scripts and throughout this documentation)
+finds the shared environment. Check it with:
+
+```bash
+conda activate hycom-cice
+python -c "import modeltools, abfile; print('ok')"
+```
+
+The shared environment is read-only for users and is updated by its maintainer. If you
+need extra packages or want to develop the NERSC Python libraries, build your own
+environment instead (see below).
+
+```{note}
+If you also have your own environment called `hycom-cice`, conda uses the one in the
+first `envs_dirs` entry of your `~/.condarc`. Run `conda env list` to see which one is
+active (marked with `*`).
+```
+
+### Build your own environment (optional)
+
+Building your own environment is needed on a standard workstation and on Olivia. On
+Betzy it is optional, for users who want to customise it.
+
+#### Set up conda
 
 Betzy requires some one-time setup before conda can be used. On a standard workstation
 or on Olivia, skip ahead to [Create the environment](#create-the-environment).
@@ -67,7 +103,7 @@ conda config --append envs_dirs /cluster/projects/nn2993k/conda/${USER}
 
 ::::
 
-### Create the environment
+#### Create the environment
 
 ::::{dropdown} Betzy (NRIS/Sigma2) and workstation
 
@@ -175,6 +211,9 @@ environment is activated by prepending its `bin` directory to `PATH`.
 ::::
 
 ### Update the environment
+
+These steps apply to your own environment. Users of the shared Betzy environment do not
+need to update it; ask its maintainer if a package is missing.
 
 ::::{dropdown} Betzy (NRIS/Sigma2) and workstation
 
